@@ -306,8 +306,8 @@ DMA_PRIORITY TIM1_CH3 TIM1_CH2 TIM1_UP SDMMC* UART8* ADC* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+define HAL_BOARD_LOG_DIRECTORY "/ArduPilot/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/ArduPilot/TERRAIN"
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 

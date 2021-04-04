@@ -49,8 +49,8 @@ private:
     uint16_t xplane_port = 49000;
     uint16_t bind_port = 49001;
     // udp socket, input and output
-    SocketAPM socket_in{true};
-    SocketAPM socket_out{true};
+    SocketArduPilot socket_in{true};
+    SocketArduPilot socket_out{true};
 
     uint64_t time_base_us;
     uint32_t last_data_time_ms;
@@ -76,7 +76,7 @@ private:
     const float throttle_magic_scale = 1.0e6;
     
     // DATA@ frame types. Thanks to TauLabs xplanesimulator.h
-    // (which strangely enough acknowledges APM as a source!)
+    // (which strangely enough acknowledges ArduPilot as a source!)
     enum {
 		FramRate            = 0,
 		Times               = 1,

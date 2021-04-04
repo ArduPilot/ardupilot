@@ -52,7 +52,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
-#include <APM_Control/AR_AttitudeControl.h>
+#include <AP_Control/AR_AttitudeControl.h>
 #include <AR_WPNav/AR_WPNav.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Logger/AP_Logger.h>

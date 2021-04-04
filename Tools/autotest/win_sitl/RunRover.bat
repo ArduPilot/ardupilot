@@ -1,4 +1,4 @@
-rem File run APM:Rover SITL
+rem File run ArduPilot:Rover SITL
 SETLOCAL enableextensions
 @echo off
 

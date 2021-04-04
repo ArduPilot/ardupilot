@@ -347,7 +347,7 @@ bool RCOutput_Tap::_uart_open()
 
 void RCOutput_Tap::init()
 {
-    _perf_rcout = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "APM_rcout");
+    _perf_rcout = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "ArduPilot_rcout");
 
     if (!_uart_open()) {
         AP_HAL::panic("Unable to open " HAL_RCOUTPUT_TAP_DEVICE);

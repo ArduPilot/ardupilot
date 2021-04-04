@@ -223,13 +223,13 @@ void RangeFinder::convert_params(void) {
     AP_Param::ConversionInfo info;
     info.new_name = param_name;
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
     info.old_key = 71;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
     info.old_key = 53;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
     info.old_key = 35;
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
     info.old_key = 197;
 #else
     params[0].type.save(true);

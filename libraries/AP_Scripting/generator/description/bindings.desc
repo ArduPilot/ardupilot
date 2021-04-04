@@ -304,13 +304,13 @@ include AP_Notify/ScriptingLED.h
 singleton ScriptingLED alias LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
-include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+include ../ArduPlane/quadplane.h depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
-singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
 singleton QuadPlane method in_vtol_mode boolean
 
-include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+include AP_Motors/AP_MotorsMatrix.h depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)||ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
+singleton AP_MotorsMatrix depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)||ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 singleton AP_MotorsMatrix alias MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
@@ -320,16 +320,16 @@ singleton AP_Frsky_SPort alias frsky_sport
 singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint16_t 0 UINT16_MAX int32_t -INT32_MAX INT32_MAX
 singleton AP_Frsky_SPort method prep_number uint16_t int32_t INT32_MIN INT32_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
-include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
+singleton AC_AttitudeControl_Multi_6DoF depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 singleton AC_AttitudeControl_Multi_6DoF alias attitude_control
 singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 
 
-include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
+singleton AP_MotorsMatrix_6DoF_Scripting depends ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 singleton AP_MotorsMatrix_6DoF_Scripting alias Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
 singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)

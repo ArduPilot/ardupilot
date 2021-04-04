@@ -158,7 +158,7 @@ protected:
     float ground_level;
     float home_yaw;
     float frame_height;
-    Matrix3f dcm;                        // rotation matrix, APM conventions, from body to earth
+    Matrix3f dcm;                        // rotation matrix, ArduPilot conventions, from body to earth
     Vector3f gyro;                       // rad/s
     Vector3f velocity_ef;                // m/s, earth frame
     Vector3f wind_ef;                    // m/s, earth frame

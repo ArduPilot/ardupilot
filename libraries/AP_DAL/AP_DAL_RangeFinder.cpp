@@ -8,7 +8,7 @@
 
 AP_DAL_RangeFinder::AP_DAL_RangeFinder()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     _RRNH.num_sensors = AP::rangefinder()->num_sensors();
     _RRNI = new log_RRNI[_RRNH.num_sensors];
     _backend = new AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
@@ -33,7 +33,7 @@ failed:
 
 int16_t AP_DAL_RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone)
     const auto *rangefinder = AP::rangefinder();
 
     if (orientation != ROTATION_PITCH_270) {
@@ -48,7 +48,7 @@ int16_t AP_DAL_RangeFinder::ground_clearance_cm_orient(enum Rotation orientation
 
 int16_t AP_DAL_RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone)
     if (orientation != ROTATION_PITCH_270) {
         const auto *rangefinder = AP::rangefinder();
         // the EKF only asks for this from a specific orientation.  Thankfully.

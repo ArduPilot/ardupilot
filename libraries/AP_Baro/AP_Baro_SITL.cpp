@@ -17,7 +17,7 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 {
     if (_sitl != nullptr) {
         _instance = _frontend.register_sensor();
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 #endif
         set_bus_id(_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, _instance, DEVTYPE_BARO_SITL));
@@ -107,7 +107,7 @@ void AP_Baro_SITL::_timer()
         sim_alt = _buffer[best_index].data;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
     float sigma, delta, theta;
 
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);

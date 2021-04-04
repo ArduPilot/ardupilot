@@ -22,37 +22,37 @@
 
 #define CHIBIOS_SCHEDULER_MAX_TIMER_PROCS 8
 
-#define APM_MONITOR_PRIORITY    183
-#define APM_MAIN_PRIORITY       180
-#define APM_TIMER_PRIORITY      181
-#define APM_RCOUT_PRIORITY      181
-#define APM_RCIN_PRIORITY       177
-#define APM_UART_PRIORITY        60
-#define APM_UART_UNBUFFERED_PRIORITY 181
-#define APM_STORAGE_PRIORITY     59
-#define APM_IO_PRIORITY          58
-#define APM_STARTUP_PRIORITY     10
-#define APM_SCRIPTING_PRIORITY  LOWPRIO
+#define ArduPilot_MONITOR_PRIORITY    183
+#define ArduPilot_MAIN_PRIORITY       180
+#define ArduPilot_TIMER_PRIORITY      181
+#define ArduPilot_RCOUT_PRIORITY      181
+#define ArduPilot_RCIN_PRIORITY       177
+#define ArduPilot_UART_PRIORITY        60
+#define ArduPilot_UART_UNBUFFERED_PRIORITY 181
+#define ArduPilot_STORAGE_PRIORITY     59
+#define ArduPilot_IO_PRIORITY          58
+#define ArduPilot_STARTUP_PRIORITY     10
+#define ArduPilot_SCRIPTING_PRIORITY  LOWPRIO
 
 /*
   boost priority handling
  */
-#ifndef APM_MAIN_PRIORITY_BOOST
-#define APM_MAIN_PRIORITY_BOOST 182
+#ifndef ArduPilot_MAIN_PRIORITY_BOOST
+#define ArduPilot_MAIN_PRIORITY_BOOST 182
 #endif
 
-#ifndef APM_SPI_PRIORITY
+#ifndef ArduPilot_SPI_PRIORITY
 // SPI priority needs to be above main priority to ensure fast sampling of IMUs can keep up
 // with the data rate
-#define APM_SPI_PRIORITY        181
+#define ArduPilot_SPI_PRIORITY        181
 #endif
 
-#ifndef APM_CAN_PRIORITY
-#define APM_CAN_PRIORITY        178
+#ifndef ArduPilot_CAN_PRIORITY
+#define ArduPilot_CAN_PRIORITY        178
 #endif
 
-#ifndef APM_I2C_PRIORITY
-#define APM_I2C_PRIORITY        176
+#ifndef ArduPilot_I2C_PRIORITY
+#define ArduPilot_I2C_PRIORITY        176
 #endif
 
 #ifndef TIMER_THD_WA_SIZE

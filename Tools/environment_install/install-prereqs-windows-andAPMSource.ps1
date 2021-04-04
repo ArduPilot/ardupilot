@@ -1,4 +1,4 @@
-#Powershell script to download and configure the APM SITL environment
+#Powershell script to download and configure the ArduPilot SITL environment
 
 Import-Module BitsTransfer
 
@@ -18,9 +18,9 @@ Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -
 Write-Output "Downloading extra Python packages (4/6)"
 Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'pip install empy pyserial pymavlink'"
 
-Write-Output "Downloading APM source (5/6)"
-Copy-Item "APM_install.sh" -Destination "C:\cygwin64\home"
-Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c ../APM_install.sh"
+Write-Output "Downloading ArduPilot source (5/6)"
+Copy-Item "ArduPilot_install.sh" -Destination "C:\cygwin64\home"
+Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c ../ArduPilot_install.sh"
 
 Write-Output "Installing MAVProxy (6/6)"
 & $PSScriptRoot\MAVProxySetup-latest.exe /SILENT | Out-Null

@@ -8,10 +8,10 @@
 
 /*
   parameter defaults for different types of vehicle. The
-  APM_BUILD_DIRECTORY is taken from the main vehicle directory name
+  ArduPilot_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 // copter defaults
 #define VELNE_M_NSE_DEFAULT     0.3f
 #define VELD_M_NSE_DEFAULT      0.5f
@@ -37,7 +37,7 @@
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
 
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
 // rover defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
@@ -63,7 +63,7 @@
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
 
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
 // plane defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
@@ -115,7 +115,7 @@
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
 
-#endif // APM_BUILD_DIRECTORY
+#endif // ArduPilot_BUILD_DIRECTORY
 
 extern const AP_HAL::HAL& hal;
 

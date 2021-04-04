@@ -259,7 +259,7 @@ bool Morse::parse_sensors(const char *json)
 bool Morse::connect_sockets(void)
 {
     if (!sensors_sock) {
-        sensors_sock = new SocketAPM(false);
+        sensors_sock = new SocketArduPilot(false);
         if (!sensors_sock) {
             AP_HAL::panic("Out of memory for sensors socket");
         }
@@ -278,7 +278,7 @@ bool Morse::connect_sockets(void)
         printf("Sensors connected\n");
     }
     if (!control_sock) {
-        control_sock = new SocketAPM(false);
+        control_sock = new SocketArduPilot(false);
         if (!control_sock) {
             AP_HAL::panic("Out of memory for control socket");
         }

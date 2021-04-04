@@ -1,4 +1,4 @@
 #
-# Trivial makefile for building APM
+# Trivial makefile for building ArduPilot
 #
-include ../../mk/apm.mk
+include ../../mk/ArduPilot.mk

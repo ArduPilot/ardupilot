@@ -7,7 +7,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #endif
@@ -21,7 +21,7 @@ bool AP_DAL::logging_started;
 
 void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 
     if (!init_done) {
         init_sensors();
@@ -153,7 +153,7 @@ void AP_DAL::end_frame(void)
 
 void AP_DAL::log_event2(AP_DAL::Event event)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     end_frame();
     struct log_REV2 pkt{
         event          : uint8_t(event),
@@ -164,7 +164,7 @@ void AP_DAL::log_event2(AP_DAL::Event event)
 
 void AP_DAL::log_SetOriginLLH2(const Location &loc)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -176,7 +176,7 @@ void AP_DAL::log_SetOriginLLH2(const Location &loc)
 
 void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     struct log_RWA2 pkt{
         airspeed:      aspeed,
         uncertainty:   uncertainty,
@@ -187,7 +187,7 @@ void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed, const float uncertain
 
 void AP_DAL::log_event3(AP_DAL::Event event)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     end_frame();
     struct log_REV3 pkt{
         event          : uint8_t(event),
@@ -198,7 +198,7 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 
 void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -210,7 +210,7 @@ void AP_DAL::log_SetOriginLLH3(const Location &loc)
 
 void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     struct log_RWA3 pkt{
         airspeed:      aspeed,
         uncertainty:   uncertainty
@@ -221,7 +221,7 @@ void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed, const float uncertain
 
 void AP_DAL::log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     struct log_REY3 pkt{
         yawangle       : yawAngle,
         yawangleerr    : yawAngleErr,
@@ -258,7 +258,7 @@ const AP_DAL_Compass *AP_DAL::get_compass() const
 // map core number for replay
 uint8_t AP_DAL::logging_core(uint8_t c) const
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     return c+100U;
 #else
     return c;
@@ -295,7 +295,7 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 {
     static_assert(INS_MAX_INSTANCES <= 4, "max 4 IMUs");
     const uint8_t mask = (1U<<(core+(uint8_t(etype)*4)));
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     /*
       if we have used more than 1/3 of the time for a loop then we
       return true, indicating that we are low on CPU. This changes the
@@ -382,7 +382,7 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
     WRITE_REPLAY_BLOCK_IFCHANGED(RBOH, _RBOH, old);
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 /*
   handle frame message. This message triggers the EKF2/EKF3 updates and logging
  */
@@ -474,7 +474,7 @@ void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     // note that EKF2 does not support body frame odomotry
     ekf3.writeBodyFrameOdom(msg.quality, msg.delPos, msg.delAng, msg.delTime, msg.timeStamp_ms, msg.delay_ms, msg.posOffset);
 }
-#endif // APM_BUILD_Replay
+#endif // ArduPilot_BUILD_Replay
 
 namespace AP {
 
@@ -492,8 +492,8 @@ AP_DAL &dal()
 void rprintf(const char *format, ...)
 {
 
-#if (APM_BUILD_TYPE(APM_BUILD_Replay) || CONFIG_HAL_BOARD == HAL_BOARD_SITL) && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if (ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay) || CONFIG_HAL_BOARD == HAL_BOARD_SITL) && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     const char *fname = "/tmp/replay.log";
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     const char *fname = "/tmp/real.log";

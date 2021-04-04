@@ -11,7 +11,7 @@ def parse_git_version(gfile):
     '''parse git-version.txt, producing a firmware-version.txt'''
     gv = open(gfile).readlines()
     vline = gv[-1]
-    if not vline.startswith("APMVERSION:"):
+    if not vline.startswith("ArduPilotVERSION:"):
         print("Bad version %s in %s" % (vline, gfile))
         return None
     vline = vline[11:]

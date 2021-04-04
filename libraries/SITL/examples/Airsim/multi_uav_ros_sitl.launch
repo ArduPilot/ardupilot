@@ -6,7 +6,7 @@
         <arg name="ID" value="1"/>
         <arg name="fcu_url" default="udp://:14550@localhost:14555"/>
         <!-- MAVROS -->
-        <include file="$(find mavros)/launch/apm.launch">
+        <include file="$(find mavros)/launch/ArduPilot.launch">
             <arg name="fcu_url" value="$(arg fcu_url)"/>
             <arg name="gcs_url" value=""/>
             <arg name="tgt_system" value="$(arg ID)"/>
@@ -19,7 +19,7 @@
         <arg name="ID" value="2"/>
         <arg name="fcu_url" default="udp://:14560@localhost:14565"/>
         <!-- MAVROS -->
-        <include file="$(find mavros)/launch/apm.launch">
+        <include file="$(find mavros)/launch/ArduPilot.launch">
             <arg name="fcu_url" value="$(arg fcu_url)"/>
             <arg name="gcs_url" value=""/>
             <arg name="tgt_system" value="$(arg ID)"/>

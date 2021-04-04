@@ -14,7 +14,7 @@
  */
 
 /*
- *       APM_Baro.cpp - barometer driver
+ *       ArduPilot_Baro.cpp - barometer driver
  *
  */
 #include "AP_Baro.h"
@@ -653,7 +653,7 @@ void AP_Baro::init(void)
 
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
 
@@ -789,7 +789,7 @@ void AP_Baro::_probe_i2c_barometers(void)
                                               std::move(GET_I2C_DEVICE(i, HAL_BARO_LPS25H_I2C_ADDR))));
         }
     }
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
     if (probe & PROBE_LPS25H) {
         FOREACH_I2C_MASK(i,mask) {
             ADD_BACKEND(AP_Baro_KellerLD::probe(*this,

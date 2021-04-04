@@ -159,8 +159,8 @@ bool sdcard_retry(void)
 #ifdef USE_POSIX
     if (!sdcard_running) {
         if (sdcard_init()) {
-            // create APM directory
-            AP::FS().mkdir("/APM");
+            // create ArduPilot directory
+            AP::FS().mkdir("/ArduPilot");
         }
     }
     return sdcard_running;

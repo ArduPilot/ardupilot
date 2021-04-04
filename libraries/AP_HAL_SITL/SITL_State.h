@@ -201,7 +201,7 @@ private:
     Scheduler *_scheduler;
     Compass *_compass;
 
-    SocketAPM _sitl_rc_in{true};
+    SocketArduPilot _sitl_rc_in{true};
     SITL::SITL *_sitl;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
@@ -308,7 +308,7 @@ private:
     SITL::VectorNav *vectornav;
     
     // output socket for flightgear viewing
-    SocketAPM fg_socket{true};
+    SocketArduPilot fg_socket{true};
     
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 

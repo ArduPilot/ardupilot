@@ -29,7 +29,7 @@ public:
 
 private:
     void send_table();
-    SocketAPM sock{false};
+    SocketArduPilot sock{false};
 
     uint32_t time_send_ms;
     bool connected;

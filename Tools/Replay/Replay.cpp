@@ -229,7 +229,7 @@ void Replay::setup()
     if (filename == nullptr) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // allow replay on stm32
-        filename = "APM/replayin.bin";
+        filename = "ArduPilot/replayin.bin";
 #else
         ::printf("You must supply a log filename\n");
         exit(1);

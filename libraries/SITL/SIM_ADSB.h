@@ -66,7 +66,7 @@ private:
     uint8_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
-    SocketAPM mav_socket { false };
+    SocketArduPilot mav_socket { false };
     struct {
         // socket to telem2 on aircraft
         bool connected;

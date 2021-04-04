@@ -94,7 +94,7 @@ void AP_RCProtocol_FPort2::decode_control(const FPort2_Frame &frame)
 */
 void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
     /*
       if we are getting FPORT2 over a UART then we can ask the FrSky
       telem library for some passthrough data to send back, enabling

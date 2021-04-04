@@ -17,12 +17,12 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
     // work out the base_mode. This value is not very useful
-    // for APM, but we calculate it as best we can so a generic
+    // for ArduPilot, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
     // what the MAV is up to. The actual bit values are highly
-    // ambiguous for most of the APM flight modes. In practice, you
+    // ambiguous for most of the ArduPilot flight modes. In practice, you
     // only get useful information from the custom_mode, which maps to
-    // the APM flight mode and has a well defined meaning in the
+    // the ArduPilot flight mode and has a well defined meaning in the
     // ArduPlane documentation
     if (rover.control_mode->has_manual_input()) {
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;

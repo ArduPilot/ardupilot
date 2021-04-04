@@ -75,7 +75,7 @@ static const struct SPIDriverInfo {
 ChibiOS::SPIDesc SPIDeviceManager::device_table[] = { HAL_SPI_DEVICE_LIST };
 
 SPIBus::SPIBus(uint8_t _bus) :
-    DeviceBus(APM_SPI_PRIORITY),
+    DeviceBus(ArduPilot_SPI_PRIORITY),
     bus(_bus)
 {
     chMtxObjectInit(&dma_lock);

@@ -74,7 +74,7 @@ is_WSL = bool("Microsoft" in platform.uname()[2])
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-3D*',
-                 '/dev/serial/by-id/usb-APM*',
+                 '/dev/serial/by-id/usb-ArduPilot*',
                  '/dev/serial/by-id/usb-Radio*',
                  '/dev/serial/by-id/usb-*_3DR_*',
                  '/dev/serial/by-id/usb-Hex_Technology_Limited*',

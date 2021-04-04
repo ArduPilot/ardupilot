@@ -49,7 +49,7 @@
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+  #if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -64,7 +64,7 @@
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
 #else
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
@@ -880,7 +880,7 @@ bool AP_Arming::can_checks(bool report)
             switch (AP::can().get_driver_type(i)) {
                 case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
                     AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                     if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "KDECAN: %s", fail_msg);
@@ -1133,7 +1133,7 @@ bool AP_Arming::generator_checks(bool display_failure) const
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
     if (armed || require == (uint8_t)Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks

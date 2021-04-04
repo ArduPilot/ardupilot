@@ -321,7 +321,7 @@ bool Plane::trim_radio()
         // don't trim for extreme values - if we attempt to trim so
         // there is less than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
-        // problems with starting APM with the TX off
+        // problems with starting ArduPilot with the TX off
         return false;
     }
 

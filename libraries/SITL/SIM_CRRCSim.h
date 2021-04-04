@@ -73,7 +73,7 @@ private:
 
     bool heli_servos;
     double last_timestamp;
-    SocketAPM sock;
+    SocketArduPilot sock;
 };
 
 } // namespace SITL

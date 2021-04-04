@@ -109,7 +109,7 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
 
 // at the cost of a little flash, we can create much better ranges and values for certain important settings
 // common labels - all strings must be upper case
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 
 static const char* SERIAL_PROTOCOL_VALUES[] = {
     "", "MAV", "MAV2", "FSKY_D", "FSKY_S", "GPS", "", "ALEX", "STORM", "RNG", 
@@ -137,7 +137,7 @@ static const char* SERVO_FUNCTIONS[] = {
 
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
 
 static const char* AUX_OPTIONS[] = {
     "NONE", "", "", "", "RTL", "", "", "", "", "CAM_TRG",
@@ -182,7 +182,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
     { 0, 3, 1,   ARRAY_SIZE(FS_LNG_ACTNS), FS_LNG_ACTNS },                      // OSD_PARAM_FAILSAFE_ACTION_2
 };
 
-#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 
 static const char* AUX_OPTIONS[] = {
     "NONE", "", "FLIP", "SIMP", "RTL", "SAV_TRM", "", "SAV_WP", "", "CAM_TRG",

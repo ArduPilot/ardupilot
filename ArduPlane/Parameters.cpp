@@ -626,7 +626,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
-    // @Description: Number of APM board resets
+    // @Description: Number of ArduPilot board resets
     // @ReadOnly: True
     // @User: Advanced
     GSCALAR(num_resets,             "SYS_NUM_RESETS", 0),
@@ -741,7 +741,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: HIL_SERVOS
     // @DisplayName: HIL Servos enable
-    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
+    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the ArduPilot will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(hil_servos,            "HIL_SERVOS",      0),
@@ -849,19 +849,19 @@ const AP_Param::Info Plane::var_info[] = {
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
     
     // @Group: RLL2SRV_
-    // @Path: ../libraries/APM_Control/AP_RollController.cpp
+    // @Path: ../libraries/AP_Control/AP_RollController.cpp
 	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
 
     // @Group: PTCH2SRV_
-    // @Path: ../libraries/APM_Control/AP_PitchController.cpp
+    // @Path: ../libraries/AP_Control/AP_PitchController.cpp
 	GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
 
     // @Group: YAW2SRV_
-    // @Path: ../libraries/APM_Control/AP_YawController.cpp
+    // @Path: ../libraries/AP_Control/AP_YawController.cpp
 	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
 
     // @Group: STEER2SRV_
-    // @Path: ../libraries/APM_Control/AP_SteerController.cpp
+    // @Path: ../libraries/AP_Control/AP_SteerController.cpp
 	GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
 
 	// variables not in the g class which contain EEPROM saved variables

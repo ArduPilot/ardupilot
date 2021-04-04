@@ -89,17 +89,17 @@ Arducotper UAV Model
       <script>
          setlistener("/sim/signals/fdm-initialized", func {
              var left  = screen.display.new(20, 10);
-             left.add("/apm/motor_right");
-             left.add("/apm/motor_left");
-             left.add("/apm/motor_front");
-             left.add("/apm/motor_back");
+             left.add("/ArduPilot/motor_right");
+             left.add("/ArduPilot/motor_left");
+             left.add("/ArduPilot/motor_front");
+             left.add("/ArduPilot/motor_back");
 
              var right = screen.display.new(-250, 20);
-             right.add("/apm/altitude");
-             right.add("/apm/roll");
-             right.add("/apm/pitch");
-             right.add("/apm/heading");
-             right.add("/apm/airspeed");
+             right.add("/ArduPilot/altitude");
+             right.add("/ArduPilot/roll");
+             right.add("/ArduPilot/pitch");
+             right.add("/ArduPilot/heading");
+             right.add("/ArduPilot/airspeed");
          });
         </script>
     </arducopter>

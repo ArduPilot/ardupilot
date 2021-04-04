@@ -662,7 +662,7 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
 
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 /*
   remember formats for replay. This allows WriteV() to work within
   replay
@@ -686,7 +686,7 @@ void AP_Logger::save_format_Replay(const void *pBuffer)
 
 // start functions pass straight through to backend:
 void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     save_format_Replay(pBuffer);
 #endif
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
@@ -920,12 +920,12 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
 void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
 {
     // WriteV is not safe in replay as we can re-use IDs
-    const bool direct_comp = APM_BUILD_TYPE(APM_BUILD_Replay);
+    const bool direct_comp = ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay);
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt, direct_comp);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
         INTERNAL_ERROR(AP_InternalError::error_t::logger_mapfailure);
 #endif
         return;
@@ -989,7 +989,7 @@ bool AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
               (fmt ? fmt : "nullptr"));
         passed = false;
     }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     if ((f->units != nullptr && units == nullptr) ||
         (f->units == nullptr && units != nullptr) ||
         (units !=nullptr && !streq(f->units, units))) {
@@ -1043,7 +1043,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
         }
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     // don't allow for new msg types during replay. We will be able to
     // support these eventually, but for now they cause corruption
     return nullptr;

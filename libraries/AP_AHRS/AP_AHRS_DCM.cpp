@@ -1,5 +1,5 @@
 /*
- *       APM_AHRS_DCM.cpp
+ *       ArduPilot_AHRS_DCM.cpp
  *
  *       AHRS system using DCM matrices
  *
@@ -283,7 +283,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
     // using the renormalization technique from the DCM IMU paper
     // (see equations 18 to 21).
 
-    // For APM we don't bother with the taylor expansion
+    // For ArduPilot we don't bother with the taylor expansion
     // optimisation from the paper as on our 2560 CPU the cost of
     // the sqrt() is 44 microseconds, and the small time saving of
     // the taylor expansion is not worth the potential of
@@ -291,7 +291,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 
     // Note that we can get significant renormalisation values
     // when we have a larger delta_t due to a glitch eleswhere in
-    // APM, such as a I2c timeout or a set of EEPROM writes. While
+    // ArduPilot, such as a I2c timeout or a set of EEPROM writes. While
     // we would like to avoid these if possible, if it does happen
     // we don't want to compound the error by making DCM less
     // accurate.

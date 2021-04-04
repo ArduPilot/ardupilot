@@ -5,7 +5,7 @@
  *            Lorenz Meier <lm@inf.ethz.ch>
  *            Samuel Zihlmann <samuezih@ee.ethz.ch>
  *
- *   Modified to fit the APM framework by:
+ *   Modified to fit the ArduPilot framework by:
  *          Julien BERAUD <julien.beraud@parrot.com>
  *
  * Redistribution and use in source and binary forms, with or without

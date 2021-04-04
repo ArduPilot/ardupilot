@@ -1,5 +1,5 @@
 /*
-  APM_AHRS.cpp
+  ArduPilot_AHRS.cpp
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -397,7 +397,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
  */
 void AP_AHRS::update_AOA_SSA(void)
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
     const uint32_t now = AP_HAL::millis();
     if (now - _last_AOA_update_ms < 50) {
         // don't update at more than 20Hz

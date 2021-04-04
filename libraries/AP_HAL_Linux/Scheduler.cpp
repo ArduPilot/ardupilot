@@ -23,26 +23,26 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_MAX_PRIORITY          20
-#define APM_LINUX_TIMER_PRIORITY        15
-#define APM_LINUX_UART_PRIORITY         14
-#define APM_LINUX_RCIN_PRIORITY         13
-#define APM_LINUX_MAIN_PRIORITY         12
-#define APM_LINUX_IO_PRIORITY           10
-#define APM_LINUX_SCRIPTING_PRIORITY     1
+#define ArduPilot_LINUX_MAX_PRIORITY          20
+#define ArduPilot_LINUX_TIMER_PRIORITY        15
+#define ArduPilot_LINUX_UART_PRIORITY         14
+#define ArduPilot_LINUX_RCIN_PRIORITY         13
+#define ArduPilot_LINUX_MAIN_PRIORITY         12
+#define ArduPilot_LINUX_IO_PRIORITY           10
+#define ArduPilot_LINUX_SCRIPTING_PRIORITY     1
 
-#define APM_LINUX_TIMER_RATE            1000
-#define APM_LINUX_UART_RATE             100
+#define ArduPilot_LINUX_TIMER_RATE            1000
+#define ArduPilot_LINUX_UART_RATE             100
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
-#define APM_LINUX_RCIN_RATE             500
-#define APM_LINUX_IO_RATE               50
+#define ArduPilot_LINUX_RCIN_RATE             500
+#define ArduPilot_LINUX_IO_RATE               50
 #else
-#define APM_LINUX_RCIN_RATE             100
-#define APM_LINUX_IO_RATE               50
+#define ArduPilot_LINUX_RCIN_RATE             100
+#define ArduPilot_LINUX_IO_RATE               50
 #endif
 
 #define SCHED_THREAD(name_, UPPER_NAME_)                        \
@@ -50,8 +50,8 @@ extern const AP_HAL::HAL& hal;
         .name = "ap-" #name_,                                   \
         .thread = &_##name_##_thread,                           \
         .policy = SCHED_FIFO,                                   \
-        .prio = APM_LINUX_##UPPER_NAME_##_PRIORITY,             \
-        .rate = APM_LINUX_##UPPER_NAME_##_RATE,                 \
+        .prio = ArduPilot_LINUX_##UPPER_NAME_##_PRIORITY,             \
+        .rate = ArduPilot_LINUX_##UPPER_NAME_##_RATE,                 \
     }
 
 Scheduler::Scheduler()
@@ -60,11 +60,11 @@ Scheduler::Scheduler()
 
 void Scheduler::init_realtime()
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     // we don't run Replay in real-time...
     return;
 #endif
-#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     // we opportunistically run examples/tools in realtime
     if (geteuid() != 0) {
         fprintf(stderr, "WARNING: not running as root. Will not use realtime scheduling\n");
@@ -74,7 +74,7 @@ void Scheduler::init_realtime()
 
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
-    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+    struct sched_param param = { .sched_priority = ArduPilot_LINUX_MAIN_PRIORITY };
     if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == -1) {
         AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
                       strerror(errno));
@@ -308,7 +308,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     exit(1);
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     if (time_usec < _stopped_clock_usec) {
@@ -351,26 +351,26 @@ void Scheduler::teardown()
 // calculates an integer to be used as the priority for a newly-created thread
 uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
-    uint8_t thread_priority = APM_LINUX_IO_PRIORITY;
+    uint8_t thread_priority = ArduPilot_LINUX_IO_PRIORITY;
     static const struct {
         priority_base base;
         uint8_t p;
     } priority_map[] = {
-        { PRIORITY_BOOST, APM_LINUX_MAIN_PRIORITY},
-        { PRIORITY_MAIN, APM_LINUX_MAIN_PRIORITY},
+        { PRIORITY_BOOST, ArduPilot_LINUX_MAIN_PRIORITY},
+        { PRIORITY_MAIN, ArduPilot_LINUX_MAIN_PRIORITY},
         { PRIORITY_SPI, AP_LINUX_SENSORS_SCHED_PRIO},
         { PRIORITY_I2C, AP_LINUX_SENSORS_SCHED_PRIO},
-        { PRIORITY_CAN, APM_LINUX_TIMER_PRIORITY},
-        { PRIORITY_TIMER, APM_LINUX_TIMER_PRIORITY},
-        { PRIORITY_RCIN, APM_LINUX_RCIN_PRIORITY},
-        { PRIORITY_IO, APM_LINUX_IO_PRIORITY},
-        { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
-        { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
-        { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
+        { PRIORITY_CAN, ArduPilot_LINUX_TIMER_PRIORITY},
+        { PRIORITY_TIMER, ArduPilot_LINUX_TIMER_PRIORITY},
+        { PRIORITY_RCIN, ArduPilot_LINUX_RCIN_PRIORITY},
+        { PRIORITY_IO, ArduPilot_LINUX_IO_PRIORITY},
+        { PRIORITY_UART, ArduPilot_LINUX_UART_PRIORITY},
+        { PRIORITY_STORAGE, ArduPilot_LINUX_IO_PRIORITY},
+        { PRIORITY_SCRIPTING, ArduPilot_LINUX_SCRIPTING_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
-            thread_priority = constrain_int16(priority_map[i].p + priority, 1, APM_LINUX_MAX_PRIORITY);
+            thread_priority = constrain_int16(priority_map[i].p + priority, 1, ArduPilot_LINUX_MAX_PRIORITY);
             break;
         }
     }

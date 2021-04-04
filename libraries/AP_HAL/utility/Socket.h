@@ -29,11 +29,11 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 
-class SocketAPM {
+class SocketArduPilot {
 public:
-    SocketAPM(bool _datagram);
-    SocketAPM(bool _datagram, int _fd);
-    ~SocketAPM();
+    SocketArduPilot(bool _datagram);
+    SocketArduPilot(bool _datagram, int _fd);
+    ~SocketArduPilot();
 
     bool connect(const char *address, uint16_t port);
     bool bind(const char *address, uint16_t port);
@@ -60,7 +60,7 @@ public:
 
     // accept a new connection. Only valid for TCP connections after
     // listen has been used. A new socket is returned
-    SocketAPM *accept(uint32_t timeout_ms);
+    SocketArduPilot *accept(uint32_t timeout_ms);
 
 private:
     bool datagram;

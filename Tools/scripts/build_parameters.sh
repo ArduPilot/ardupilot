@@ -5,8 +5,8 @@ set -x
 
 PARAMS_DIR="../buildlogs/Parameters"
 
-# work from either APM directory or above
-[ -d ArduPlane ] || cd APM
+# work from either ArduPilot directory or above
+[ -d ArduPlane ] || cd ArduPilot
 
 /bin/mkdir -p "$PARAMS_DIR"
 
@@ -20,8 +20,8 @@ generate_parameters() {
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/$VEHICLE"
     mkdir -p "$VEHICLE_PARAMS_DIR"
     /bin/cp Parameters.wiki Parameters.html *.pdef.xml "$VEHICLE_PARAMS_DIR/"
-    gzip -9 <"$VEHICLE_PARAMS_DIR"/apm.pdef.xml >"$VEHICLE_PARAMS_DIR"/apm.pdef.xml.gz.new && mv "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.gz.new "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.gz
-    xz -e <"$VEHICLE_PARAMS_DIR"/apm.pdef.xml >"$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz.new && mv "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz.new "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz
+    gzip -9 <"$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml >"$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.gz.new && mv "$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.gz.new "$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.gz
+    xz -e <"$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml >"$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.xz.new && mv "$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.xz.new "$VEHICLE_PARAMS_DIR"/ArduPilot.pdef.xml.xz
     if [ -e "Parameters.rst" ]; then
 	/bin/cp Parameters.rst "$VEHICLE_PARAMS_DIR/"
     fi

@@ -44,7 +44,7 @@ void RCInput_SoloLink::init()
         AP_HAL::panic("failed to bind UDP socket");
     }
 
-    // timeout is handled by poll() in SocketAPM
+    // timeout is handled by poll() in SocketArduPilot
     _socket.set_blocking(true);
 
     return;

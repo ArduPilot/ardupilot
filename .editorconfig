@@ -1,4 +1,4 @@
-# This file provide reference settings for the APM code conventions
+# This file provide reference settings for the ArduPilot code conventions
 # There are plug-ins available for nearly every text editor to automatically
 # respect the conventions contained within this file.
 #
@@ -13,7 +13,7 @@ indent_style = space
 indent_size = 4
 end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = false # These are the correct rules for APM coding standards, but fixing up old files causes git spam
+trim_trailing_whitespace = false # These are the correct rules for ArduPilot coding standards, but fixing up old files causes git spam
 insert_final_newline = false
 
 [*.mk]

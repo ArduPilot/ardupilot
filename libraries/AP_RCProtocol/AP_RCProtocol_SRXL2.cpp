@@ -39,7 +39,7 @@ AP_RCProtocol_SRXL2* AP_RCProtocol_SRXL2::_singleton;
 
 AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
         AP_HAL::panic("Duplicate SRXL2 handler\n");
     }
@@ -426,7 +426,7 @@ void srxlSendOnUart(uint8_t uart, uint8_t* pBuffer, uint8_t length)
 // could be used if you would prefer to just populate that with the next outgoing telemetry packet.
 void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 {
-#if HAL_SPEKTRUM_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_SPEKTRUM_TELEM_ENABLED && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
     AP_Spektrum_Telem::get_telem_data(pTelemetryData->raw);
 #endif
 }

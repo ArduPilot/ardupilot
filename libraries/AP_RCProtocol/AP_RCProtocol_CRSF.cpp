@@ -111,7 +111,7 @@ AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
 
 AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
         AP_HAL::panic("Duplicate CRSF handler");
     }
@@ -122,7 +122,7 @@ AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol
         _singleton = this;
     }
 #endif
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_CRSF_TELEM_ENABLED && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0);
     if (_uart) {
         start_uart();
@@ -294,7 +294,7 @@ bool AP_RCProtocol_CRSF::decode_csrf_packet()
             break;
     }
 
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_CRSF_TELEM_ENABLED && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
     }
@@ -313,7 +313,7 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
     }
 
     if (!telem_available) {
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_CRSF_TELEM_ENABLED && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
         if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame)) {
             telem_available = true;
         } else {

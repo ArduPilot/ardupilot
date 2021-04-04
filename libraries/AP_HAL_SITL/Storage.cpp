@@ -11,9 +11,9 @@
 #include <stdio.h>
 
 #ifndef HAL_STORAGE_FILE
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 #define HAL_STORAGE_FILE "eeprom-replay.bin"
-#elif APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_Periph)
 #define HAL_STORAGE_FILE "eeprom-periph.bin"
 #else
 #define HAL_STORAGE_FILE "eeprom.bin"

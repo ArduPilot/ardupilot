@@ -24,7 +24,7 @@
 
 #ifndef REPL_DIRECTORY
   #if HAL_OS_FATFS_IO
-    #define REPL_DIRECTORY "/APM/repl"
+    #define REPL_DIRECTORY "/ArduPilot/repl"
   #else
     #define REPL_DIRECTORY "./repl"
   #endif //HAL_OS_FATFS_IO
@@ -32,7 +32,7 @@
 
 #ifndef SCRIPTING_DIRECTORY
   #if HAL_OS_FATFS_IO
-    #define SCRIPTING_DIRECTORY "/APM/scripts"
+    #define SCRIPTING_DIRECTORY "/ArduPilot/scripts"
   #else
     #define SCRIPTING_DIRECTORY "./scripts"
   #endif //HAL_OS_FATFS_IO

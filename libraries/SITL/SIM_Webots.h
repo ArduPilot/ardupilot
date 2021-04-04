@@ -70,7 +70,7 @@ private:
     uint8_t sensor_buffer[50000];
     uint32_t sensor_buffer_len;
 
-    SocketAPM *sim_sock;
+    SocketArduPilot *sim_sock;
 
     uint32_t connect_counter;
 

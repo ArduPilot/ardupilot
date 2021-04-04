@@ -77,7 +77,7 @@ private:
     uint32_t last_report_ms;
     uint32_t last_heartbeat_ms;
 
-    SocketAPM mav_socket { false };
+    SocketArduPilot mav_socket { false };
     bool mavlink_connected;
 
     void send_report(void);

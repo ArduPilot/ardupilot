@@ -343,7 +343,7 @@ class ManifestGenerator():
             else:
                 # Non-heli build
                 frame = vehicletype  # e.g. Plane
-                platform = platformdir  # e.g. apm2
+                platform = platformdir  # e.g. ArduPilot2
 
             for filename in os.listdir(some_dir):
                 if filename in ["git-version.txt", "firmware-version.txt", "files.html"]:

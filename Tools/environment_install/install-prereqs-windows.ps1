@@ -1,4 +1,4 @@
-#Powershell script to download and configure the APM SITL environment
+#Powershell script to download and configure the ArduPilot SITL environment
 
 Import-Module BitsTransfer
 

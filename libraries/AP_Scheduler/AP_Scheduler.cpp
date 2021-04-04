@@ -14,7 +14,7 @@
  */
 
 /*
- *  main loop scheduler for APM
+ *  main loop scheduler for ArduPilot
  *  Author: Andrew Tridgell, January 2013
  *
  */
@@ -33,7 +33,7 @@
 #endif
 #include <stdio.h>
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
 #define SCHEDULER_DEFAULT_LOOP_RATE 400
 #else
 #define SCHEDULER_DEFAULT_LOOP_RATE  50

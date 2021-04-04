@@ -46,7 +46,7 @@ class XmlEmitMP(Emit):
             self.gname = g.name
             if self.gname == "ArduCopter":
                 self.gname = "ArduCopter2"
-            if self.gname == "APMrover2" or self.gname == "Rover":
+            if self.gname == "ArduPilotrover2" or self.gname == "Rover":
                 self.gname = "ArduRover"
             t = '  <%s>\n' % self.gname
 

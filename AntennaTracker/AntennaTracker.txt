@@ -111,7 +111,7 @@ etc) has configuration values that control and tailor its operation, and which
 are stored in EEPROM on the processor. The configuration is restored from
 EEPROM every time the processsor starts.
 
-You can use MissionPlanner, mavproxy or apm_planner or other mavlink compatible
+You can use MissionPlanner, mavproxy or ArduPilot_planner or other mavlink compatible
 software to check and change the configuration of your AntennaTracker.
 
 You will almost certainly have to change the following configuration items to
@@ -214,7 +214,7 @@ started.
 Simulating an antenna tracker
 -----------------------------
 
-To run a full antenna tracker simulation with a simulated APM:Plane as
+To run a full antenna tracker simulation with a simulated ArduPilot:Plane as
 the vehicle, cd to the ArduPlane directory and run this:
 
   ../Tools/autotest/sim_arduplane.sh -T --aircraft test

@@ -6,7 +6,7 @@ The following instruction assume that:
 a) your model is trimmed correctly in manual mode
 b) you have done your radio calibration
 c) you have calibrated your airspeed sensor
-d) you have set your APM and transmitter to be able to select FBW-A mode
+d) you have set your ArduPilot and transmitter to be able to select FBW-A mode
 e) You have checked your pitch roll and yaw angle on the HUD and
    verified that they match the rotation of the model
 
@@ -27,7 +27,7 @@ Ground checks
 
 6) level the model - the control surfaces should be close to
    neutral. There will be a little bit of offset, but any more than
-   10% of your maximum throw indicates that the APM has not been
+   10% of your maximum throw indicates that the ArduPilot has not been
    leveled or the radio calibration needs to be repeated.
 
 7) With the model level apply LH and RH roll stick inputs on your
@@ -181,7 +181,7 @@ additional values that anbe set by more advanced users.
    increments of 0.01 from the default value of 1.0. If you need to
    change the CTL_PTCH_K_RLL parameter outside the range from 0.7 to
    1.4 then something is likely wrong with either the earlier tuning
-   of your pitch loop, your airspeed calibration or you APM's bank
+   of your pitch loop, your airspeed calibration or you ArduPilot's bank
    angle estimate.
 
 Method 2:

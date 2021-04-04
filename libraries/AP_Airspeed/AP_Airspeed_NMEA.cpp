@@ -19,7 +19,7 @@
  */
 
 #include <AP_Vehicle/AP_Vehicle.h>
-#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub) 
 
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed.h"
@@ -215,4 +215,4 @@ bool AP_Airspeed_NMEA::decode_latest_term()
     return false;
 }
 
-#endif  // APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#endif  // ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub) 

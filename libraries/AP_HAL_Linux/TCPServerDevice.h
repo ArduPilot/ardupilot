@@ -16,8 +16,8 @@ public:
     virtual ssize_t read(uint8_t *buf, uint16_t n) override;
 
 private:
-    SocketAPM listener{false};
-    SocketAPM *sock = nullptr;
+    SocketArduPilot listener{false};
+    SocketArduPilot *sock = nullptr;
     const char *_ip;
     uint16_t _port;
     bool _wait;

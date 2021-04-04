@@ -20,12 +20,12 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     // work out the base_mode. This value is not very useful
-    // for APM, but we calculate it as best we can so a generic
+    // for ArduPilot, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
     // what the MAV is up to. The actual bit values are highly
-    // ambiguous for most of the APM flight modes. In practice, you
+    // ambiguous for most of the ArduPilot flight modes. In practice, you
     // only get useful information from the custom_mode, which maps to
-    // the APM flight mode and has a well defined meaning in the
+    // the ArduPilot flight mode and has a well defined meaning in the
     // ArduPlane documentation
     switch (tracker.mode->number()) {
     case Mode::Number::MANUAL:
@@ -42,8 +42,8 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
-        // APM does in any mode, as that is defined as "system finds its own goal
-        // positions", which APM does not currently do
+        // ArduPilot does in any mode, as that is defined as "system finds its own goal
+        // positions", which ArduPilot does not currently do
         break;
 
     case Mode::Number::INITIALISING:

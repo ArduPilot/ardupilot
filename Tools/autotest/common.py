@@ -1733,7 +1733,7 @@ class AutoTest(ABC):
         return htree
 
     def test_parameter_documentation_get_all_parameters(self):
-        xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
+        xml_filepath = os.path.join(self.buildlogs_dirpath(), "ArduPilot.pdef.xml")
         param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
         try:
             os.unlink(xml_filepath)
@@ -3292,7 +3292,7 @@ class AutoTest(ABC):
             # warning: this assumes MAVProxy was started in the CWD!
             # on the autotest server we invoke autotest.py one-up from
             # the git root, like this:
-            # timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+            # timelimit 32000 ArduPilot/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
             # that means the MAVProxy log files are not reltopdir!
             saved_filepath = mavproxy.match.group(2)
             saved_filepath = saved_filepath.rstrip()
@@ -8996,7 +8996,7 @@ switch value'''
                 mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
                 mavproxy.send("\n")
-            mavproxy.expect("APM: Calibration successful", timeout=timeout)
+            mavproxy.expect("ArduPilot: Calibration successful", timeout=timeout)
             self.drain_mav()
 
             self.progress("Checking results")

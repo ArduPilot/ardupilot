@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
- APM automatic test suite
+ ArduPilot automatic test suite
  Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
@@ -654,11 +654,11 @@ def write_fullresults():
     results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
     results.addfile("CopterAVC core", 'CopterAVC.core')
 
-    results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
-    results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
-    results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
-    results.addglob('APM:Rover documentation', 'docs/Rover/index.html')
-    results.addglob('APM:Sub documentation', 'docs/ArduSub/index.html')
+    results.addglob('ArduPilot:Libraries documentation', 'docs/libraries/index.html')
+    results.addglob('ArduPilot:Plane documentation', 'docs/ArduPlane/index.html')
+    results.addglob('ArduPilot:Copter documentation', 'docs/ArduCopter/index.html')
+    results.addglob('ArduPilot:Rover documentation', 'docs/Rover/index.html')
+    results.addglob('ArduPilot:Sub documentation', 'docs/ArduSub/index.html')
     results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)
@@ -997,19 +997,19 @@ if __name__ == "__main__":
 
     # canonicalise the step names.  This allows
     # backwards-compatability from the hodge-podge
-    # fly.ArduCopter/drive.APMrover2 to the more common test.Copter
+    # fly.ArduCopter/drive.ArduPilotrover2 to the more common test.Copter
     # test.Rover
     step_mapping = {
         "build.ArduPlane": "build.Plane",
         "build.ArduCopter": "build.Copter",
-        "build.APMrover2": "build.Rover",
+        "build.ArduPilotrover2": "build.Rover",
         "build.ArduSub": "build.Sub",
         "build.AntennaTracker": "build.Tracker",
         "fly.ArduCopter": "test.Copter",
         "fly.ArduPlane": "test.Plane",
         "fly.QuadPlane": "test.QuadPlane",
         "dive.ArduSub": "test.Sub",
-        "drive.APMrover2": "test.Rover",
+        "drive.ArduPilotrover2": "test.Rover",
         "drive.BalanceBot": "test.BalanceBot",
         "drive.balancebot": "test.BalanceBot",
         "fly.CopterAVC": "test.Helicopter",
@@ -1017,7 +1017,7 @@ if __name__ == "__main__":
         "defaults.ArduCopter": "defaults.Copter",
         "defaults.ArduPlane": "defaults.Plane",
         "defaults.ArduSub": "defaults.Sub",
-        "defaults.APMrover2": "defaults.Rover",
+        "defaults.ArduPilotrover2": "defaults.Rover",
         "defaults.AntennaTracker": "defaults.Tracker",
         "fly.ArduCopterTests1": "test.CopterTests1",
         "fly.ArduCopterTests1a": "test.CopterTests1a",
@@ -1081,7 +1081,7 @@ if __name__ == "__main__":
 
     atexit.register(util.pexpect_close_all)
 
-    # provide backwards-compatability from (e.g.) drive.APMrover2 -> test.Rover
+    # provide backwards-compatability from (e.g.) drive.ArduPilotrover2 -> test.Rover
     newargs = []
     for arg in args:
         for _from, to in step_mapping.items():

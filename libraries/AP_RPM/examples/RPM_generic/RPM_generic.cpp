@@ -32,7 +32,7 @@ char sensor_state;
 
 void setup()
 {
-    hal.console->printf("APM RPM library test\n\n\n");
+    hal.console->printf("ArduPilot RPM library test\n\n\n");
     RPM.init();
 
     hal.console->printf("Detected %u RPM sensors\n\n", RPM.num_sensors());

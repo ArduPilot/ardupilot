@@ -113,7 +113,7 @@
 #define HAL_I2C_INTERNAL_MASK 1
 #endif
 
-// put all storage of files under /APM directory
+// put all storage of files under /ArduPilot directory
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
-#define HAL_BOARD_STORAGE_DIRECTORY "/APM"
+#define HAL_BOARD_STORAGE_DIRECTORY "/ArduPilot"
 #endif

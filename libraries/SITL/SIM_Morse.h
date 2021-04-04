@@ -43,7 +43,7 @@ private:
     // loopback to convert inbound Morse lidar data into inbound mavlink msgs
     const char *mavlink_loopback_address = "127.0.0.1";
     const uint16_t mavlink_loopback_port = 5762;
-    SocketAPM mav_socket { false };
+    SocketArduPilot mav_socket { false };
     struct {
         // socket to telem2 on aircraft
         bool connected;
@@ -83,8 +83,8 @@ private:
     uint8_t sensor_buffer[50000];
     uint32_t sensor_buffer_len;
 
-    SocketAPM *sensors_sock;
-    SocketAPM *control_sock;
+    SocketArduPilot *sensors_sock;
+    SocketArduPilot *control_sock;
 
     uint32_t no_data_counter;
     uint32_t connect_counter;

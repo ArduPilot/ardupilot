@@ -64,7 +64,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
     rc_frame_count++;
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
     if (rc().ignore_rc_failsafe()) {
         in_failsafe = false;
     }
@@ -105,7 +105,7 @@ void AP_RCProtocol_Backend::decode_11bit_channels(const uint8_t* data, uint8_t n
  */
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     if (rc().log_raw_data()) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {

@@ -6,7 +6,7 @@ from emit import Emit
 from param import known_param_fields, known_units
 
 
-# Emit docs in a form acceptable to the APM wiki site
+# Emit docs in a form acceptable to the ArduPilot wiki site
 class WikiEmit(Emit):
     def __init__(self):
         Emit.__init__(self)

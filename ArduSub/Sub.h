@@ -50,7 +50,7 @@
 #include <AC_AttitudeControl/AC_PosControl_Sub.h>      // Position control library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <Filter/Filter.h>             // Filter library
-#include <AP_Relay/AP_Relay.h>           // APM relay
+#include <AP_Relay/AP_Relay.h>           // ArduPilot relay
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library

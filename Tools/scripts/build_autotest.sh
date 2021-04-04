@@ -3,14 +3,14 @@
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
 
-cd $HOME/APM || exit 1
+cd $HOME/ArduPilot || exit 1
 
 test -n "$FORCEBUILD" || {
-(cd APM && git fetch > /dev/null 2>&1)
+(cd ArduPilot && git fetch > /dev/null 2>&1)
 
-newtags=$(cd APM && git fetch --tags | wc -l)
-oldhash=$(cd APM && git rev-parse origin/master)
-newhash=$(cd APM && git rev-parse HEAD)
+newtags=$(cd ArduPilot && git fetch --tags | wc -l)
+oldhash=$(cd ArduPilot && git rev-parse origin/master)
+newhash=$(cd ArduPilot && git rev-parse HEAD)
 
 if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
     echo "$(date) no change $oldhash $newhash" >> build.log
@@ -69,14 +69,14 @@ EOF
 
 report_pull_failure() {
     d="$1"
-    git show origin/master | mail -s 'APM pull failed' ardupilot.devel@google.com
+    git show origin/master | mail -s 'ArduPilot pull failed' ardupilot.devel@google.com
     exit 1
 }
 
-oldhash=$(cd APM && git rev-parse HEAD)
+oldhash=$(cd ArduPilot && git rev-parse HEAD)
 
-echo "Updating APM"
-pushd APM
+echo "Updating ArduPilot"
+pushd ArduPilot
 git checkout -f master
 git fetch origin
 git submodule update --recursive --force
@@ -87,7 +87,7 @@ git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 cp ../config.mk .
 popd
 
-rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
+rsync -a ArduPilot/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating MAVProxy"
 pushd MAVProxy
@@ -98,19 +98,19 @@ python setup.py build install --user
 popd
 
 echo "Updating pymavlink"
-pushd APM/modules/mavlink/pymavlink
+pushd ArduPilot/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd
 
-githash=$(cd APM && git rev-parse HEAD)
+githash=$(cd ArduPilot && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-(cd APM && Tools/scripts/build_parameters.sh)
+(cd ArduPilot && Tools/scripts/build_parameters.sh)
 
-(cd APM && Tools/scripts/build_log_message_documentation.sh)
+(cd ArduPilot && Tools/scripts/build_log_message_documentation.sh)
 
-(cd APM && Tools/scripts/build_docs.sh)
+(cd ArduPilot && Tools/scripts/build_docs.sh)
 
 killall -9 JSBSim || /bin/true
 
@@ -123,7 +123,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 32000 APM/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+timelimit 32000 ArduPilot/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

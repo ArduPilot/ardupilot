@@ -14,7 +14,7 @@
  */
 
 /*
- *  main loop scheduler for APM
+ *  main loop scheduler for ArduPilot
  *  Author: Andrew Tridgell, January 2013
  *
  */
@@ -44,7 +44,7 @@
 }
 
 /*
-  A task scheduler for APM main loops
+  A task scheduler for ArduPilot main loops
 
   Sketches should call scheduler.init() on startup, then call
   scheduler.tick() at regular intervals (typically every 10ms).

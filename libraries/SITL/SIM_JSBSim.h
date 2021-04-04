@@ -41,10 +41,10 @@ public:
 
 private:
     // tcp input control socket to JSBSIm
-    SocketAPM sock_control;
+    SocketArduPilot sock_control;
 
     // UDP packets from JSBSim in fgFDM format
-    SocketAPM sock_fgfdm;
+    SocketArduPilot sock_fgfdm;
 
     bool initialised;
 

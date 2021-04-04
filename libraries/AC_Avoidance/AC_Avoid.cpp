@@ -21,13 +21,13 @@
 #include <AP_Logger/AP_Logger.h>
 #include <stdio.h>
 
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_STOP
 #else
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_SLIDE
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
     # define AP_AVOID_ENABLE_Z          1
 #endif
 

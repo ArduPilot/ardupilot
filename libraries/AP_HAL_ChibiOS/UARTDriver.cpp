@@ -120,7 +120,7 @@ void UARTDriver::uart_thread()
         // change the thread priority if requested - if unbuffered it should only have higher priority than the owner so that
         // handoff occurs immediately
         if (mask & EVT_TRANSMIT_UNBUFFERED) {
-            chThdSetPriority(unbuffered_writes ? MIN(_uart_owner_thd->realprio + 1, APM_UART_UNBUFFERED_PRIORITY) : APM_UART_PRIORITY);
+            chThdSetPriority(unbuffered_writes ? MIN(_uart_owner_thd->realprio + 1, ArduPilot_UART_UNBUFFERED_PRIORITY) : ArduPilot_UART_PRIORITY);
         }
 #ifndef HAL_UART_NODMA
         osalDbgAssert(!dma_handle || !dma_handle->is_locked(), "DMA handle is already locked");
@@ -167,7 +167,7 @@ void UARTDriver::thread_rx_init(void)
     if (uart_rx_thread_ctx == nullptr) {
         uart_rx_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_UART_RX_STACK_SIZE),
                                               "UART_RX",
-                                              APM_UART_PRIORITY,
+                                              ArduPilot_UART_PRIORITY,
                                               uart_rx_thread,
                                               nullptr);
         if (uart_rx_thread_ctx == nullptr) {
@@ -185,7 +185,7 @@ void UARTDriver::thread_init(void)
         hal.util->snprintf(uart_thread_name, sizeof(uart_thread_name), sdef.is_usb ? "OTG%1u" : "UART%1u", sdef.instance);
         uart_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_UART_STACK_SIZE),
                                               uart_thread_name,
-                                              unbuffered_writes ? APM_UART_UNBUFFERED_PRIORITY : APM_UART_PRIORITY,
+                                              unbuffered_writes ? ArduPilot_UART_UNBUFFERED_PRIORITY : ArduPilot_UART_PRIORITY,
                                               uart_thread_trampoline,
                                               this);
         if (uart_thread_ctx == nullptr) {

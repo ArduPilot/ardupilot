@@ -215,7 +215,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
-    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
+    const bool is_replay = ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,

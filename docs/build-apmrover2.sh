@@ -11,5 +11,5 @@ then
 	exit 0
 fi
 
-doxygen docs/config/apmrover2
+doxygen docs/config/ArduPilotrover2
 

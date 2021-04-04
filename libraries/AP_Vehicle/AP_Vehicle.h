@@ -31,7 +31,7 @@
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Relay/AP_Relay.h>                      // APM relay
+#include <AP_Relay/AP_Relay.h>                      // ArduPilot relay
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library

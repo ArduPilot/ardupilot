@@ -19,7 +19,7 @@
  */
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol_DSM.h"
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
 #include "AP_RCProtocol_SRXL2.h"
 #endif
 
@@ -236,7 +236,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
 
     // Handle VTX control frame.
     if (haveVtxControl) {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_iofirmware)
         AP_RCProtocol_SRXL2::configure_vtx(
             (vtxControl & SPEKTRUM_VTX_BAND_MASK)     >> SPEKTRUM_VTX_BAND_SHIFT,
             (vtxControl & SPEKTRUM_VTX_CHANNEL_MASK)  >> SPEKTRUM_VTX_CHANNEL_SHIFT,

@@ -275,14 +275,14 @@ void _usage(void)
     printf("\t                  -A udp:11.0.0.255:14550:bcast\n");
     printf("\t                  -A udpin:0.0.0.0:14550\n");
     printf("\tcustom log path:\n");
-    printf("\t                  --log-directory /var/APM/logs\n");
-    printf("\t                  -l /var/APM/logs\n");
+    printf("\t                  --log-directory /var/ArduPilot/logs\n");
+    printf("\t                  -l /var/ArduPilot/logs\n");
     printf("\tcustom terrain path:\n");
-    printf("\t                   --terrain-directory /var/APM/terrain\n");
-    printf("\t                   -t /var/APM/terrain\n");
+    printf("\t                   --terrain-directory /var/ArduPilot/terrain\n");
+    printf("\t                   -t /var/ArduPilot/terrain\n");
     printf("\tcustom storage path:\n");
-    printf("\t                   --storage-directory /var/APM/storage\n");
-    printf("\t                   -s /var/APM/storage\n");
+    printf("\t                   --storage-directory /var/ArduPilot/storage\n");
+    printf("\t                   -s /var/ArduPilot/storage\n");
 #if AP_MODULE_SUPPORTED
     printf("\tmodule support:\n");
     printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);

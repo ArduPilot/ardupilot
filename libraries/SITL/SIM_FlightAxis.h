@@ -183,7 +183,7 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-    SocketAPM *sock;
+    SocketArduPilot *sock;
     char replybuf[10000];
 };
 

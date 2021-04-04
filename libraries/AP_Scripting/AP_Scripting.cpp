@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Param: DIR_DISABLE
     // @DisplayName: Directory disable
     // @Description: This will stop scripts being loaded from the given locations
-    // @Bitmask: 0:ROMFS, 1:APM/scripts
+    // @Bitmask: 0:ROMFS, 1:ArduPilot/scripts
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("DIR_DISABLE", 9, AP_Scripting, _dir_disable, 0),

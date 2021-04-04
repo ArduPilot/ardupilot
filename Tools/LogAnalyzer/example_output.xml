@@ -9,7 +9,7 @@
   <coptertype>octo</coptertype>
   <firmwareversion>V3.0.1</firmwareversion>
   <firmwarehash>5c6503e2</firmwarehash>
-  <hardwaretype>APM 2</hardwaretype>
+  <hardwaretype>ArduPilot 2</hardwaretype>
   <freemem>1331</freemem>
   <skippedlines>0</skippedlines>
 </header>

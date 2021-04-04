@@ -69,7 +69,7 @@ private:
     void start_last_letter(void);
 
     uint64_t last_timestamp_us;
-    SocketAPM sock;
+    SocketArduPilot sock;
 };
 
 } // namespace SITL

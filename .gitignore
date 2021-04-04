@@ -6,8 +6,8 @@
 /Tools/autotest/param_metadata/Parameters.rst
 /Tools/autotest/param_metadata/Parameters.wiki
 /Tools/autotest/param_metadata/Parameters.md
-/Tools/autotest/param_metadata/apm.pdef.xml
-/Tools/autotest/param_metadata/apm.pdef.json
+/Tools/autotest/param_metadata/ArduPilot.pdef.xml
+/Tools/autotest/param_metadata/ArduPilot.pdef.json
 /Tools/autotest/jsb_sim/fgout.xml
 /Tools/autotest/jsb_sim/rascal_test.xml
 /Tools/autotest/jsbsim_fgout_0.xml
@@ -110,8 +110,8 @@ Parameters.rst
 Parameters.wiki
 ParameterMetaDataBackup.xml
 ParameterMetaData.xml
-apm.pdef.xml
-apm.pdef.json
+ArduPilot.pdef.xml
+ArduPilot.pdef.json
 parameters.edn
 LogMessages.html
 LogMessages.rst

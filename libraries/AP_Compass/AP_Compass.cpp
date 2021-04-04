@@ -621,7 +621,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("DEV_ID8", 48, Compass, extra_dev_id[4], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_Periph)
     // @Param: CUS_ROLL
     // @DisplayName: Custom orientation roll offset
     // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.

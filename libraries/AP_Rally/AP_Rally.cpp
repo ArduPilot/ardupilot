@@ -11,13 +11,13 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
 assert_storage_size<RallyLocation, 15> _assert_storage_size_RallyLocation;
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
   #define RALLY_LIMIT_KM_DEFAULT 0.3f
   #define RALLY_INCLUDE_HOME_DEFAULT 1
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
   #define RALLY_LIMIT_KM_DEFAULT 5.0f
   #define RALLY_INCLUDE_HOME_DEFAULT 0
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
   #define RALLY_LIMIT_KM_DEFAULT 0.5f
   #define RALLY_INCLUDE_HOME_DEFAULT 1
 #else
@@ -126,7 +126,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
     // we return an absolute altitude, as we add homeloc.alt below
     ret.relative_alt = false;
 
-    //Currently can't do true AGL on the APM.  Relative altitudes are
+    //Currently can't do true AGL on the ArduPilot.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
     ret.alt = (rally_loc.alt*100UL) + AP::ahrs().get_home().alt;

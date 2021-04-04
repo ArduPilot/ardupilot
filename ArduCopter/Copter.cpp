@@ -14,7 +14,7 @@
  */
 
 /*
- *  ArduCopter (also known as APM, APM:Copter or just Copter)
+ *  ArduCopter (also known as ArduPilot, ArduPilot:Copter or just Copter)
  *  Wiki:           copter.ardupilot.org
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay

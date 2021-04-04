@@ -2,7 +2,7 @@
 #
 # A module to analyze and identify any common problems which can be determined from log files
 #
-# Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
+# Initial code by Andrew ChArduPilotan (amchArduPilotan@gmail.com), 16th Jan 2014
 #
 
 
@@ -134,7 +134,7 @@ class TestSuite(object):
                 print("  %29s     %s" % ("",line))
 
         print('\n')
-        print('The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)')
+        print('The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew ChArduPilotan (amchArduPilotan@gmail.com)')
         print('\n')
 
     def outputXML(self, xmlFile):
@@ -215,7 +215,7 @@ def main():
     dirName = os.path.dirname(os.path.abspath(__file__))
 
     # deal with command line arguments
-    parser = argparse.ArgumentParser(description='Analyze an APM Dataflash log for known issues')
+    parser = argparse.ArgumentParser(description='Analyze an ArduPilot Dataflash log for known issues')
     parser.add_argument('logfile', type=argparse.FileType('r'), help='path to Dataflash log file (or - for stdin)')
     parser.add_argument('-f', '--format',  metavar='', type=str, action='store', choices=['bin','log','auto'], default='auto', help='log file format: \'bin\',\'log\' or \'auto\'')
     parser.add_argument('-q', '--quiet',  metavar='', action='store_const', const=True, help='quiet mode, do not print results')

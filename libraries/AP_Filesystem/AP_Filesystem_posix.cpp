@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
  */
 static const char *map_filename(const char *fname)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     // on SITL only allow paths under subdirectory. Users can still
     // escape with .. if they want to
     if (strcmp(fname, "/") == 0) {

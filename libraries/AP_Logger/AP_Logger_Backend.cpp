@@ -114,7 +114,7 @@ void AP_Logger_Backend::push_log_blocks() {
 // for other messages to go out to the log
 bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     return true;
 #endif
 
@@ -149,7 +149,7 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 // source more messages from the startup message writer:
 void AP_Logger_Backend::WriteMoreStartupMessages()
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     return;
 #endif
 
@@ -169,7 +169,7 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
 
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     // sure, sure we did....
     return true;
 #endif
@@ -399,7 +399,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 
 bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     validate_WritePrioritisedBlock(pBuffer, size);
 #endif
     if (!ShouldLog(is_critical)) {

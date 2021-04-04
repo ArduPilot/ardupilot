@@ -48,8 +48,8 @@
 #include <AP_Beacon/AP_Beacon.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
-#include <APM_Control/APM_Control.h>
-#include <APM_Control/AP_AutoTune.h>
+#include <AP_Control/AP_Control.h>
+#include <AP_Control/AP_AutoTune.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
@@ -122,7 +122,7 @@
 #endif
 
 /*
-  main APM:Plane class
+  main ArduPilot:Plane class
  */
 class Plane : public AP_Vehicle {
 public:

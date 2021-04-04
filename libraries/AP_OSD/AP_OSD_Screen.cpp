@@ -39,7 +39,7 @@
 #include <AP_OLC/AP_OLC.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -1513,7 +1513,7 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_Rover)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector3f v = ahrs.wind_estimate();

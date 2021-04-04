@@ -14,7 +14,7 @@
  */
 
 /*
- *       Example of APM_Compass library (HMC5843 sensor).
+ *       Example of ArduPilot_Compass library (HMC5843 sensor).
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
 

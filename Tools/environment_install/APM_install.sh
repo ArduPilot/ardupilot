@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#A simple script to install the APM SITL environment into cygwin
+#A simple script to install the ArduPilot SITL environment into cygwin
 
 git clone git://github.com/ArduPilot/ardupilot.git
 cd ./ardupilot

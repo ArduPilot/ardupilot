@@ -64,7 +64,7 @@
 #endif
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 #define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
 #else
 #define HAL_BRD_OPTIONS_DEFAULT 0
@@ -390,7 +390,7 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
             va_start(arg_list, fmt);
             vprintf(printfmt, arg_list);
             va_end(arg_list);
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
             char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
             hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
             va_start(arg_list, fmt);
@@ -398,7 +398,7 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
             va_end(arg_list);
 #endif
         }
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
         gcs().update_receive();
         gcs().update_send();
 #endif

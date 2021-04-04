@@ -45,11 +45,11 @@ extern const AP_HAL::HAL& hal;
 
 
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
 #define DEFAULT_STILL_THRESH 2.5f
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
 #define DEFAULT_GYRO_FILTER  4
 #define DEFAULT_ACCEL_FILTER 10
 #define DEFAULT_STILL_THRESH 0.1f

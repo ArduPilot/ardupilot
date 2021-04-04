@@ -1,4 +1,4 @@
-APM:Sub Release Notes:
+ArduPilot:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.0.2 21-September-2020
@@ -225,7 +225,7 @@ Notes:
 - Due to parameter reorganization, all parameters will be overwritten when updating
 - Must be used with QGroundControl daily builds or stable version 3.1 (once released)
 - Joystick buttons are configured by default
-- PX4Firmware sensor drivers have been replaced with in-tree APM drivers. On some 
+- PX4Firmware sensor drivers have been replaced with in-tree ArduPilot drivers. On some 
 hardware, the barometer driver will sometimes hang until a reboot. If your pressure 
 sensor is not detected after rebooting, set the BRD_TYPE parameter to 100 and reboot 
 to fall back to the PX4Firmware driver. Please report back if you experience an issue 
@@ -237,7 +237,7 @@ with the pressure sensor and the new driver.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-APM:Copter Release Notes:
+ArduPilot:Copter Release Notes:
 ------------------------------------------------------------------
 Copter 3.3.2 01-Dec-2015 / 3.3.2-rc2 18-Nov-2015
 Changes from 3.3.2-rc1
@@ -442,7 +442,7 @@ Changes from 3.3-rc1
 ------------------------------------------------------------------
 Copter 3.3-rc1 11-Apr-2015
 Changes from 3.2.1
-1) Only support fast CPUs boards (Pixhawk, VRBrain, etc) and drop support for APM1, APM2 (sorry!)
+1) Only support fast CPUs boards (Pixhawk, VRBrain, etc) and drop support for ArduPilot1, ArduPilot2 (sorry!)
 2) AutoTune for yaw
 3) Smooth throttle curve which should reduce wobbles during fast climbs and descents
 4) ch7/ch8 aux switches expanded to ch9 ~ ch12 (see CH9_OPT ~ CH12_OPT params)
@@ -463,7 +463,7 @@ Changes from 3.2.1
 10) Other:
     a) support do-set-home command (allows return-to-me and locked home position once GCS enhancements are completed)
     b) performance improvements for Pixhawk reduce CPU load from 80% to 15%
-    c) firmware string name changed from ArduCopter to APM:Copter
+    c) firmware string name changed from ArduCopter to ArduPilot:Copter
 ------------------------------------------------------------------
 ArduCopter 3.2.1 11-Feb-2015 / 3.2.1-rc2 30-Jan-2015
 Changes from 3.2.1-rc1
@@ -511,14 +511,14 @@ Changes from 3.2-rc12
     a) fix ch6 tuning of wp-speed (was getting stuck at zero)
     b) parachute servo set to off position on startup
     c) Auto Takeoff timing bug fix that could cause severe lean on takeoff
-    d) timer fix for "slow start" of motors on Pixhawk (timer was incorrectly based on 100hz APM2 main loop speed)
-4) reduced number of relays from 4 to 2 (saves memory and flash required on APM boards)
-5) reduced number of range finders from 2 to 1 (saves memory and flash on APM boards)
+    d) timer fix for "slow start" of motors on Pixhawk (timer was incorrectly based on 100hz ArduPilot2 main loop speed)
+4) reduced number of relays from 4 to 2 (saves memory and flash required on ArduPilot boards)
+5) reduced number of range finders from 2 to 1 (saves memory and flash on ArduPilot boards)
 6) allow logging from startup when LOG_BITMASK set to "All+DisarmedLogging" 
 ------------------------------------------------------------------
 ArduCopter 3.2-rc12 10-Oct-2014
 Changes from 3.2-rc11
-1) disable sonar on APM1 and TradHeli (APM1 & APM2) to allow code to fit 
+1) disable sonar on ArduPilot1 and TradHeli (ArduPilot1 & ArduPilot2) to allow code to fit 
 2) Add pre-arm and health check that gyro calibration succeeded 
 3) Bug fix to EKF reporting invalid position and velocity when switched on in flight with Ch7/Ch8 switch 
 ------------------------------------------------------------------
@@ -612,8 +612,8 @@ Changes from 3.2-rc3
        When glitching occurs barometer values are temporarily ignored
     c) Throttle/radio and battery failsafes now disarm vehicle when landed regardless of pilot's throttle position
     d) auto-disarm extended to Drift, Sport and OF_Loiter flight modes
-    e) APM2 buzzer notification added for arming failure
-    f) APM2 arming buzz made longer (now matches Pixhawk)
+    e) ArduPilot2 buzzer notification added for arming failure
+    f) ArduPilot2 arming buzz made longer (now matches Pixhawk)
     g) do-set-servo commands cannot interfere with motor output
 4) Bug Fixes:
     a) Drift slow yaw response fixed
@@ -694,7 +694,7 @@ Changes from 3.1.4
     a) Bug fix for LAND sometimes getting stuck at 10m
     b) During missions, vehicle will maintain altitude even if WPNAV_SPEED is set above the vehicle's capabilities
     c) when autopilot controls throttle (i.e. Loiter, Auto, etc) vehicle will reach speeds specified in PILOT_VELZ_MAX and WPNAV_SPEED_UP, WPNAV_SPEED_DN parameters
-11) CLI removed from APM1/2 to save flash space, critical functions moved to MAVLink:
+11) CLI removed from ArduPilot1/2 to save flash space, critical functions moved to MAVLink:
     a) Individual motor tests (see MP's Initial Setup > Optional Hardware > Motor Test)
     b) compassmot (see MP's Initial Setup > Optional Hardware > Compass/Motor Calib)
     c) parameter reset to factory defautls (see MP's Config/Tuning > Full Parameter List > Reset to Default)
@@ -728,7 +728,7 @@ Changes from 3.1.1
 ------------------------------------------------------------------
 ArduCopter 3.1.1 26-Jan-2014 / ArduCopter 3.1.1-rc2 21-Jan-2014
 Changes from 3.1.1-rc1
-1) Pixhawk improvements (available for APM2 when AC3.2 is released):
+1) Pixhawk improvements (available for ArduPilot2 when AC3.2 is released):
     a) Faster arming
     b) AHRS_TRIM fix - reduces movement in loiter when yawing
     c) AUX Out 5 & 6 turned into general purpose I/O pins
@@ -748,7 +748,7 @@ Changes from 3.1
     e) Futaba SBUS receiver support
 2) Bug fixes:
     a) Loiter initialisation fix (Loiter would act like AltHold until flight mode switch changed position)
-    b) ROI commands were not returning Lat, Lon, Alt to mission planner when mission was loaded from APM
+    b) ROI commands were not returning Lat, Lon, Alt to mission planner when mission was loaded from ArduPilot
 3) TradHeli only fixes:
     a) Drift now uses same (reduced) collective range as stabilize mode
     b) AutoTune disabled (for tradheli only)
@@ -826,7 +826,7 @@ Improvements over 3.1-rc4
 ------------------------------------------------------------------
 ArduCopter 3.1-rc4 13-Oct-2013
 Improvements over 3.1-rc3
-1) Performance improvements to resolve APM alt hold issues for Octacopters:
+1) Performance improvements to resolve ArduPilot alt hold issues for Octacopters:
      a) SPI bus speed increased from 500khz to 8Mhz
      b) Telemetry buffer increased to 512bytes
      c) broke up medium and slow loops into individual scheduled tasks and increased priority of alt hold tasks
@@ -839,8 +839,8 @@ ArduCopter 3.1-rc3 09-Oct-2013
 Improvements over 3.1-rc2
 1) GPS Glitch protection - gps positions are compared with the previous gps position.  Position accepted if within 10m or copter could have reached the position with max accel of 10m/s/s.
 2) Bug fix for pixhawk SPI bus contention that could lead to corrupted accelerometer values on pixhawk resolved
-3) Auto Tuning (compile time option only add "#define AUTOTUNE ENABLED" to APM_Config.h and set CH7_Opt or CH8_Opt parameter to 17)
-4) CPU Performance improvement when reading from MPU6k for APM
+3) Auto Tuning (compile time option only add "#define AUTOTUNE ENABLED" to ArduPilot_Config.h and set CH7_Opt or CH8_Opt parameter to 17)
+4) CPU Performance improvement when reading from MPU6k for ArduPilot
 5) SUPER_SIMPLE parameter changed to a bit map to allow some flight modes to use super simpler while others use regular simple (MP release to allow easier selection will go out with AC3.1 official release)
 6) Safety changes:
     a) safety button must be pushed before arming on pixhawk
@@ -1023,7 +1023,7 @@ ArduCopter 2.9-rc3 11-Jan-2013
 Improvements over 2.9-rc2:
 1) alt hold with sonar improvements - now on by default (Leonard/Randy)
 2) performance and memory usage improvements (Tridge/Randy)
-3) increase APM1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
+3) increase ArduPilot1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
 4) bug fix: altitude error reported to GCS (Randy)
 5) limit inertial nav's max accel offset correction to 100cm/s/s to speed up recovery after hard impacts (Randy)_
 6) moved rate controllers to run after ins read (Tridge/Randy)
@@ -1031,7 +1031,7 @@ Improvements over 2.9-rc2:
 ArduCopter 2.9-rc2 31-Dec-2012
 Improvements over 2.9-rc1:
 1) increased throttle rate gains from 1.0 to 6.0
-2) APM1 fix so it works with inertial nav (5hz update rate of baro was beyond the tolerance set in the inav library)
+2) ArduPilot1 fix so it works with inertial nav (5hz update rate of baro was beyond the tolerance set in the inav library)
 ------------------------------------------------------------------
 ArduCopter 2.9-rc1 23-Dec-2012
 Improvements over 2.8.1:
@@ -1045,7 +1045,7 @@ Improvements over 2.8.1:
 2) landing improvements [Leonard/Randy]
     LAND_SPEED - allows you to set the landing speed in cm/s
 3) camera related improvements:
-    a) AP_Relay enabled for APM2 and integrated with AP_Camera [Sandro Benigno]
+    a) AP_Relay enabled for ArduPilot2 and integrated with AP_Camera [Sandro Benigno]
     b) camera trigger with channel 7 switch or DO_DIGICAM_CONTROL mission command [Randy]
     c) allow yaw override by pilot or with CONDITIONAL_YAW command during missions [Randy]
         YAW_OVR_BEHAVE - Controls when autopilot takes back normal control of yaw after pilot overrides (0=after next wp, 1=never)
@@ -1069,7 +1069,7 @@ Improvements over 2.8.1:
     ACRO_BAL_ROLL, ACRO_BAL_PITCH - controls rate at which roll returns to level
     ACRO_TRAINER - 1 to enable the auto-bring-upright feature
 10) other changes and bug fixes:
-    a) allow >45 degrees when in stabilize mode by adding lines like below to APM_Config (compile time option only) [Jason]
+    a) allow >45 degrees when in stabilize mode by adding lines like below to ArduPilot_Config (compile time option only) [Jason]
         #define MAX_INPUT_ROLL_ANGLE 6000     // 60 degrees
         #define MAX_INPUT_PITCH_ANGLE 6000    // 60 degrees
     b) bug fix to stop RTL from ever climbing to an unreasonable height (i.e. >80m) [Jason]
@@ -1087,15 +1087,15 @@ Improvements over 2.8.1:
 ------------------------------------------------------------------
 ArduCopter 2.8.1 22-Oct-2012
 Improvements over 2.8:
-- 430 bytes of RAM freed up to resolve APM1 level issue and reduce chance of memory corruption on both APM1 and APM2
+- 430 bytes of RAM freed up to resolve ArduPilot1 level issue and reduce chance of memory corruption on both ArduPilot1 and ArduPilot2
 
 Improvements over 2.7.3:
 - Improved ACRO mode (Leonard Hall)
 - Improved stability patch to reduce "climb-on-yaw" problem (Leonard, Rob Lefebvre, Randy)
 - Rate controller targets moved to body frames (yaw control now works properly when copter is inverted) (Leonard/Randy)
 - Less bouncy Stabilize yaw control (Leonard)
-- OpticalFlow sensor support for APM2.5 (Randy)
-- DMP works again by adding "#define DMP_ENABLED ENABLED" to APM_Config.h You can also log DMP vs DCM to the dataflash by adding "#define SECONDARY_DMP_ENABLED ENABLED" (Randy)
+- OpticalFlow sensor support for ArduPilot2.5 (Randy)
+- DMP works again by adding "#define DMP_ENABLED ENABLED" to ArduPilot_Config.h You can also log DMP vs DCM to the dataflash by adding "#define SECONDARY_DMP_ENABLED ENABLED" (Randy)
 - Watch dog added to shutdown motors if main loop feezes for 2 seconds (Randy)
 - Thrust curve added to linearize pwm->thrust. Removes deadzone found above 90% throttle in most ESC/motors (Randy)
 - More timing improvements (main loop is now tied to MPU6000s interrupt) (Randy)

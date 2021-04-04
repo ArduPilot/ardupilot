@@ -53,7 +53,7 @@ class build_binaries(object):
     def board_branch_bit(self, board):
         '''return a fragment which might modify the branch name.
         this was previously used to have a master-AVR branch etc
-        if the board type was apm1 or apm2'''
+        if the board type was ArduPilot1 or ArduPilot2'''
         return None
 
     def board_options(self, board):
@@ -133,8 +133,8 @@ is bob we will attempt to checkout bob-AVR'''
         else:
             tagvehicle = vehicle
             if tagvehicle == "Rover":
-                # FIXME: Rover tags in git still named APMrover2 :-(
-                tagvehicle = "APMrover2"
+                # FIXME: Rover tags in git still named ArduPilotrover2 :-(
+                tagvehicle = "ArduPilotrover2"
             vtag = "%s-%s" % (tagvehicle, ctag)
 
         branches = []
@@ -265,7 +265,7 @@ is bob we will attempt to checkout bob-AVR'''
                 self.progress("Content: (%s)" % content)
             self.progress("Writing version info to %s" %
                           (gitversion_filepath,))
-            gitversion_content += "\nAPMVERSION: %s\n" % (match.group(1))
+            gitversion_content += "\nArduPilotVERSION: %s\n" % (match.group(1))
         else:
             self.progress("%s does not exist" % versionfile)
 

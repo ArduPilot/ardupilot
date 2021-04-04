@@ -7,7 +7,7 @@
 
 AP_DAL_Beacon::AP_DAL_Beacon()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     const auto *bcon = AP::beacon();
     _RBCH.count = bcon->count();
     for (uint8_t i=0; i<ARRAY_SIZE(_RBCI); i++) {

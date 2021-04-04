@@ -6,7 +6,7 @@ export PX4_WINTOOL=y
 export PATH=$PATH:$HOME/jsbsim/build/src
 export BUILDLOGS=/tmp/buildlogs
 
-export APMROOT=/vagrant
+export ArduPilotROOT=/vagrant
 new=$HOME/.local/bin
 case ":${PATH:=$new}:" in
     *:"$new":*)  ;;
@@ -15,10 +15,10 @@ case ":${PATH:=$new}:" in
        fi ;;
 esac
 
-export PATH=$APMROOT/Tools/autotest:$PATH
+export PATH=$ArduPilotROOT/Tools/autotest:$PATH
 export PATH=/usr/lib/ccache:$PATH
 
-cd $APMROOT/ArduCopter
+cd $ArduPilotROOT/ArduCopter
 
 echo "Ardupilot environment ready.  Run 'sim_vehicle.py' to start simulating an arducopter instance."
 echo "To build for fmuv2:"

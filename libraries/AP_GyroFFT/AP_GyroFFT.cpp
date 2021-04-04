@@ -508,7 +508,7 @@ bool AP_GyroFFT::start_update_thread(void)
         return true;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GyroFFT::update_thread, void), "apm_fft", FFT_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GyroFFT::update_thread, void), "ArduPilot_fft", FFT_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
         AP_HAL::panic("Failed to start AP_GyroFFT update thread");
         return false;
     }
@@ -683,7 +683,7 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
     }
 
     if (!_health) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
         AP_Motors* motors = AP::motors();
         if (motors != nullptr) {
             // FFT is not healthy, fallback to throttle-based estimate
@@ -715,7 +715,7 @@ uint8_t AP_GyroFFT::get_weighted_noise_center_frequencies_hz(uint8_t num_freqs, 
     }
 
     if (!_health) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
         AP_Motors* motors = AP::motors();
         if (motors != nullptr) {
             // FFT is not healthy, fallback to throttle-based estimate

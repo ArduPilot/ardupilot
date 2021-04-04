@@ -110,7 +110,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
 
 def get_legacy_defines(sketch_name):
     return [
-        'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
+        'ArduPilot_BUILD_DIRECTORY=ArduPilot_BUILD_' + sketch_name,
         'SKETCH="' + sketch_name + '"',
         'SKETCHNAME="' + sketch_name + '"',
     ]

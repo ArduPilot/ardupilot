@@ -115,7 +115,7 @@ class Playback(object):
             self.fdm.set('rpm', (msg.C4-1060), 3)
 
         if msg.get_type() == 'MSG':
-            print("APM: %s" % msg.Message)
+            print("ArduPilot: %s" % msg.Message)
 
         if msg.get_type() == 'EV':
             if msg.Id == 51:

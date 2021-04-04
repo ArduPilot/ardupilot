@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
     // @Param: TRIGG_DIST
     // @DisplayName: Camera trigger distance
-    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
+    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the position changes by this number of meters regardless of what mode the ArduPilot is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
     // @User: Standard
     // @Units: m
     // @Range: 0 1000
@@ -126,14 +126,14 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-    AP_Relay *_apm_relay = AP::relay();
-    if (_apm_relay == nullptr) {
+    AP_Relay *_ArduPilot_relay = AP::relay();
+    if (_ArduPilot_relay == nullptr) {
         return;
     }
     if (_relay_on) {
-        _apm_relay->on(0);
+        _ArduPilot_relay->on(0);
     } else {
-        _apm_relay->off(0);
+        _ArduPilot_relay->off(0);
     }
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
@@ -178,14 +178,14 @@ AP_Camera::trigger_pic_cleanup()
             SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
             break;
         case CamTrigType::relay: {
-            AP_Relay *_apm_relay = AP::relay();
-            if (_apm_relay == nullptr) {
+            AP_Relay *_ArduPilot_relay = AP::relay();
+            if (_ArduPilot_relay == nullptr) {
                 break;
             }
             if (_relay_on) {
-                _apm_relay->off(0);
+                _ArduPilot_relay->off(0);
             } else {
-                _apm_relay->on(0);
+                _ArduPilot_relay->on(0);
             }
             break;
         }

@@ -1,1 +1,1 @@
-include ../../../../mk/apm.mk
+include ../../../../mk/ArduPilot.mk

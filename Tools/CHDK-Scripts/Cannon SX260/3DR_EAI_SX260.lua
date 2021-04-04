@@ -85,7 +85,7 @@
 --]]
 
     props=require("propcase")
-    capmode=require("capmode")
+    cArduPilotode=require("cArduPilotode")
 
 -- convert user parameter to usable variable names and values
     tv_table       = { -320, 576, 640, 736, 832, 896, 928, 960, 992, 1024, 1056, 1113, 1180, 1276}
@@ -331,8 +331,8 @@ function check_video(shot)
         if( video_button ) then
             click "video"
         else
-            capture_mode=capmode.get()
-            capmode.set('VIDEO_STD')
+            capture_mode=cArduPilotode.get()
+            cArduPilotode.set('VIDEO_STD')
             press("shoot_full")
             sleep(300)
             release("shoot_full")
@@ -347,7 +347,7 @@ function check_video(shot)
             press("shoot_full")
             sleep(300)
             release("shoot_full")
-            capmode.set(capture_mode)
+            cArduPilotode.set(capture_mode)
         end
         printf("Video mode finished.")
         sleep(1000)
@@ -517,7 +517,7 @@ if ((chdk_version<120) or ((chdk_version==120)and(build<3276)) or ((chdk_version
 else
     if( props.CONTINUOUS_AF == nil ) then caf=-999 else caf = get_prop(props.CONTINUOUS_AF) end
     if( props.SERVO_AF == nil ) then saf=-999 else saf = get_prop(props.SERVO_AF) end
-    cmode = capmode.get_name()
+    cmode = cArduPilotode.get_name()
     printf("Mode:%s,Continuous_AF:%d,Servo_AF:%d", cmode,caf,saf)  
     printf(" Tv:"..print_tv(tv96target).." max:"..print_tv(tv96max).." min:"..print_tv(tv96min).." ecomp:"..(ec96adjust/96).."."..(math.abs(ec96adjust*10/96)%10) )
     printf(" Av:"..print_av(av96target).." minAv:"..print_av(av96minimum).." maxAv:"..print_av(av96max) )

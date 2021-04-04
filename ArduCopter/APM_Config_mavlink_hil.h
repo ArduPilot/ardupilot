@@ -11,7 +11,7 @@
 // while you are running hardware in the loop it is necessary to set
 // HIL_PORT to 1. This uses the port that would have been used for the gps
 // as the hardware in the loop port. You will have to solder
-// headers onto the gps port connection on the apm
+// headers onto the gps port connection on the ArduPilot
 // and connect via an ftdi cable.
 //
 // The baud rate is set to 115200 in this mode.

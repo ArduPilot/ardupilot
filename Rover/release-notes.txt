@@ -207,18 +207,18 @@ Rover V3.2.2 19-Mar-2018 / V3.2.2-rc1 08-Mar-2018
 Changes from 3.2.1:
 1) Fix loss of steering control when stopping in Acro and Steering modes
 --------------------------------
-APM:Rover V3.2.1 29-Jan-2018 / V3.2.1-rc1 24-Jan-2018 
+ArduPilot:Rover V3.2.1 29-Jan-2018 / V3.2.1-rc1 24-Jan-2018 
 Changes from 3.2.0:
 1) Fix mode switch logic to allow Auto, Guided, RTL, SmartRTL, Steering, Acro using non-GPS navigation (i.e. wheel encoders, visual odometry)
 --------------------------------
-APM:Rover V3.2.0 13-Jan-2018
+ArduPilot:Rover V3.2.0 13-Jan-2018
 Changes from 3.2.0-rc4:
 1) Here GPS/compass default orientation fix (ICM20948)
 2) PID values sent to ground station regardless of mode (see GCS_PID_MASK parameter)
 3) Steering PID min and max ranges expanded
 4) Mavlink message definition update
 --------------------------------
-APM:Rover V3.2.0-rc4 05-Jan-2018
+ArduPilot:Rover V3.2.0-rc4 05-Jan-2018
 Changes from 3.2.0-rc3:
 1) Steering controller supports feed-forward (reduces wobble)
 2) WP_SPEED, RTL_SPEED parameters allow speed independent of CRUISE_SPEED
@@ -226,7 +226,7 @@ Changes from 3.2.0-rc3:
 4) Remove auto-trim at startup
 5) GPS reports healthy even without 3d lock
 ---------------------------------
-APM:Rover V3.2.0-rc3 05-Dec-2017
+ArduPilot:Rover V3.2.0-rc3 05-Dec-2017
 Changes from 3.2.0-rc2:
 1) SmartRTL mode (retraces path back to home)
 2) Acro mode (pilot controls speed and turn rate)
@@ -237,7 +237,7 @@ Changes from 3.2.0-rc2:
 7) PILOT_STEER_TYPE parameter allows controlling turn direction when backing up
 8) Mixer change to allow steering to use full motor range (removes need for MOT_SKID_FRIC)
 ---------------------------------
-APM:Rover V3.2.0-rc2 28-Oct-2017
+ArduPilot:Rover V3.2.0-rc2 28-Oct-2017
 Changes from 3.2.0-rc1:
 1) MOT_SKID_FRIC parameter allows increasing power for skid-steer vehicle pivot-turns
 2) Bug Fixes:
@@ -246,7 +246,7 @@ Changes from 3.2.0-rc1:
     c) PID desired and achieved reported to GCS when GCS_PID_MASK param set to non-zero value
     d) use-pivot fix to use absolute angle error
 ---------------------------------
-APM:Rover V3.2.0-rc1 25-Aug-2017
+ArduPilot:Rover V3.2.0-rc1 25-Aug-2017
 Changes from 3.1.2:
 1) Skid-steering vehicle support added (i.e. tank track or R2D2 style vehicles)
 2) Brushless motor support
@@ -289,7 +289,7 @@ Minor bugfix release for a crash bug in the SRXL driver
 Release 3.1.0, 22 December 2016
 ===============================
 The ArduPilot development team is proud to announce the release of
-version 3.1.0 of APM:Rover. This is a major release with a lot of
+version 3.1.0 of ArduPilot:Rover. This is a major release with a lot of
 changes so please read the notes carefully!
 
 A huge thanks to ALL the ArduPilot developers.  The Rover code
@@ -449,7 +449,7 @@ stack, including several new features. Some of the changes include:
 Release 3.0.1, 17 June 2016
 ===========================
 The ArduPilot development team is proud to announce the release of
-version 3.0.1 of APM:Rover. This is a minor release with small but
+version 3.0.1 of ArduPilot:Rover. This is a minor release with small but
 important bug fix changes.
 
 The two main motivations for this release
@@ -506,7 +506,7 @@ The other changes in this release are:
 Release 3.0.0, 5 April 2016
 ===========================
 The ArduPilot development team is proud to announce the release of
-version 3.0.0 of APM:Rover. This is a major release with a lot of
+version 3.0.0 of ArduPilot:Rover. This is a major release with a lot of
 changes so please read the notes carefully!
 
 A huge thanks to ALL the ArduPilot developers.  The Rover code
@@ -521,15 +521,15 @@ in this release. We are still working on that, but meanwhile if you
 see a feature that interests you and it isn't documented yet then
 please ask.
 
-The 3.x.x releases and above DON'T support APM1/APM2
+The 3.x.x releases and above DON'T support ArduPilot1/ArduPilot2
 ----------------------------------------------------
-This release DOES NOT SUPPORT the old APM1/APM2 AVR based boards. The
+This release DOES NOT SUPPORT the old ArduPilot1/ArduPilot2 AVR based boards. The
 issue is the amount of effort required to keep the new code ported to
 the old platforms.  We are very sorry this has to occur and if there
 is someone who is willing and technically capable of doing this work
 then please let us know.
 There will be a discussion created on ArduPilot forums where people
-can request features in the new code be backported to the APM code to
+can request features in the new code be backported to the ArduPilot code to
 run on the AVR boards and if it is reasonably easy and they are
 willing to do the beta testing we will do our best to make it happen.
 
@@ -732,7 +732,7 @@ Release 2.50, 19 June 2015
 ==========================
 
 The ardupilot development team has released version 2.50 of
-APM:Rover.  This release is mostly a backend improvement to ArduPilot
+ArduPilot:Rover.  This release is mostly a backend improvement to ArduPilot
 but a few new features and bug fixes are included.
 
 Re-do Accelerometer Calibration
@@ -785,7 +785,7 @@ Release 2.49, March 4th 2015
 ----------------------------
 
 The ardupilot development team has released version 2.49 of
-APM:Rover.  This release is a bug fix release with two important bugs
+ArduPilot:Rover.  This release is a bug fix release with two important bugs
 found by Marco Walther - Thanks Marco!
 
 The bug fixes in this release are:
@@ -801,7 +801,7 @@ Release 2.48, February 20th 2015
 --------------------------------
 
 The ardupilot development team has released version 2.48 of
-APM:Rover.  This release is a bug fix release with some important bugs
+ArduPilot:Rover.  This release is a bug fix release with some important bugs
 found by the users of ardupilot.
 
 The changes in this release are:
@@ -809,7 +809,7 @@ The changes in this release are:
   - fixed a bug that could cause short term loss of RC control with
     some receiver systems and configurations
   - allowed for shorter sync pulse widths for PPM-SUM receivers on
-    APM1 and APM2
+    ArduPilot1 and ArduPilot2
   - fix an issue where battery reporting could be intermittent (thanks
     Georgii Staroselskii!)
   - fixed a mission handling bug that could cause a crash if jump
@@ -867,11 +867,11 @@ that some of those issues were caused by this bug. The dev team would
 like to apologise for taking so long to track down this bug!
 
 The other main change was also related to RC input. Some receivers use
-a PPM-SUM sync pulse width shorter than what the APM1/APM2 code was
+a PPM-SUM sync pulse width shorter than what the ArduPilot1/ArduPilot2 code was
 setup to handle. The OpenLRSng default sync pulse width is 3000
-microseconds, but the APM1/APM2 code was written for a mininum sync
+microseconds, but the ArduPilot1/ArduPilot2 code was written for a mininum sync
 pulse width of 4000 microseconds. For this release we have changed the
-APM1/APM2 driver to accept a sync pulse width down to 2700
+ArduPilot1/ArduPilot2 driver to accept a sync pulse width down to 2700
 microseconds.
 
 Auto format of SD Card
@@ -905,7 +905,7 @@ Release 2.47, November 15th 2014
 --------------------------------
 
 The ardupilot development team is proud to announce the release of 
-version 2.47 of APM:Rover. This is a minor bug fix release.  The most 
+version 2.47 of ArduPilot:Rover. This is a minor bug fix release.  The most 
 important change in this release is the fixing of the skid steering 
 support but there have been a number of fixes in other areas as well.
 
@@ -948,11 +948,11 @@ Release 2.46, August 26th 2014
 ------------------------------
 
 The ardupilot development team is proud to announce the release of
-version 2.46 of APM:Rover. This is a major release with a lot of new
+version 2.46 of ArduPilot:Rover. This is a major release with a lot of new
 features and bug fixes.
 
 This release is based on a lot of development and testing that
-happened prior to the AVC competition where APM based vehicles
+happened prior to the AVC competition where ArduPilot based vehicles
 performed very well.
 
 Full changes list for this release:

@@ -38,7 +38,7 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_RCTelemetry::init(void)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     // make telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
     // add firmware and frame info to message queue
     const char* _frame_string = gcs().frame_string();

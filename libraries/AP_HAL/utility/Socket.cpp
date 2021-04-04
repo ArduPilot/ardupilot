@@ -24,12 +24,12 @@
 /*
   constructor
  */
-SocketAPM::SocketAPM(bool _datagram) :
-    SocketAPM(_datagram, 
+SocketArduPilot::SocketArduPilot(bool _datagram) :
+    SocketArduPilot(_datagram, 
               socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
 {}
 
-SocketAPM::SocketAPM(bool _datagram, int _fd) :
+SocketArduPilot::SocketArduPilot(bool _datagram, int _fd) :
     datagram(_datagram),
     fd(_fd)
 {
@@ -40,7 +40,7 @@ SocketAPM::SocketAPM(bool _datagram, int _fd) :
     }
 }
 
-SocketAPM::~SocketAPM()
+SocketArduPilot::~SocketArduPilot()
 {
     if (fd != -1) {
         ::close(fd);
@@ -48,7 +48,7 @@ SocketAPM::~SocketAPM()
     }
 }
 
-void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
+void SocketArduPilot::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
     memset(&sockaddr, 0, sizeof(sockaddr));
 
@@ -63,7 +63,7 @@ void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockadd
 /*
   connect the socket
  */
-bool SocketAPM::connect(const char *address, uint16_t port)
+bool SocketArduPilot::connect(const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
@@ -77,7 +77,7 @@ bool SocketAPM::connect(const char *address, uint16_t port)
 /*
   bind the socket
  */
-bool SocketAPM::bind(const char *address, uint16_t port)
+bool SocketArduPilot::bind(const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
@@ -92,7 +92,7 @@ bool SocketAPM::bind(const char *address, uint16_t port)
 /*
   set SO_REUSEADDR
  */
-bool SocketAPM::reuseaddress(void) const
+bool SocketArduPilot::reuseaddress(void) const
 {
     int one = 1;
     return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
@@ -101,7 +101,7 @@ bool SocketAPM::reuseaddress(void) const
 /*
   set blocking state
  */
-bool SocketAPM::set_blocking(bool blocking) const
+bool SocketArduPilot::set_blocking(bool blocking) const
 {
     int fcntl_ret;
     if (blocking) {
@@ -115,7 +115,7 @@ bool SocketAPM::set_blocking(bool blocking) const
 /*
   set cloexec state
  */
-bool SocketAPM::set_cloexec() const
+bool SocketArduPilot::set_cloexec() const
 {
     return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
 }
@@ -123,7 +123,7 @@ bool SocketAPM::set_cloexec() const
 /*
   send some data
  */
-ssize_t SocketAPM::send(const void *buf, size_t size) const
+ssize_t SocketArduPilot::send(const void *buf, size_t size) const
 {
     return ::send(fd, buf, size, 0);
 }
@@ -131,7 +131,7 @@ ssize_t SocketAPM::send(const void *buf, size_t size) const
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SocketArduPilot::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
@@ -141,7 +141,7 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
 /*
   receive some data
  */
-ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
+ssize_t SocketArduPilot::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
         return -1;
@@ -153,13 +153,13 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 /*
   return the IP address and port of the last received packet
  */
-void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
+void SocketArduPilot::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
     ip_addr = inet_ntoa(in_addr.sin_addr);
     port = ntohs(in_addr.sin_port);
 }
 
-void SocketAPM::set_broadcast(void) const
+void SocketArduPilot::set_broadcast(void) const
 {
     int one = 1;
     setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
@@ -168,7 +168,7 @@ void SocketAPM::set_broadcast(void) const
 /*
   return true if there is pending data for input
  */
-bool SocketAPM::pollin(uint32_t timeout_ms)
+bool SocketArduPilot::pollin(uint32_t timeout_ms)
 {
     fd_set fds;
     struct timeval tv;
@@ -189,7 +189,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
 /*
   return true if there is room for output data
  */
-bool SocketAPM::pollout(uint32_t timeout_ms)
+bool SocketArduPilot::pollout(uint32_t timeout_ms)
 {
     fd_set fds;
     struct timeval tv;
@@ -209,7 +209,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
 /* 
    start listening for new tcp connections
  */
-bool SocketAPM::listen(uint16_t backlog) const
+bool SocketArduPilot::listen(uint16_t backlog) const
 {
     return ::listen(fd, (int)backlog) == 0;
 }
@@ -218,7 +218,7 @@ bool SocketAPM::listen(uint16_t backlog) const
   accept a new connection. Only valid for TCP connections after
   listen has been used. A new socket is returned
 */
-SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
+SocketArduPilot *SocketArduPilot::accept(uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
         return nullptr;
@@ -231,7 +231,7 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     // turn off nagle for lower latency
     int one = 1;
     setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-    return new SocketAPM(false, newfd);
+    return new SocketArduPilot(false, newfd);
 }
 
 #endif // HAL_OS_SOCKETS

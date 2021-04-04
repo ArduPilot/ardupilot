@@ -60,6 +60,6 @@ Additional notes:
  pgm_read_byte: 0.5 usec per byte
 
 dataflash write: 
-  50 usec per byte, same on APM1 and APM2
+  50 usec per byte, same on ArduPilot1 and ArduPilot2
   if we change API to do block writes, will be 8 usec per byte
 

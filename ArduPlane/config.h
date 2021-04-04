@@ -16,8 +16,8 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-#ifdef CONFIG_APM_HARDWARE
-#error CONFIG_APM_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
+#ifdef CONFIG_ArduPilot_HARDWARE
+#error CONFIG_ArduPilot_HARDWARE option is depreated! use CONFIG_HAL_BOARD instead.
 #endif
 
 #ifndef MAV_SYSTEM_ID

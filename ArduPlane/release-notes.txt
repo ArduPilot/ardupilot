@@ -41,7 +41,7 @@ have been automatically recovered, avoiding the need to reload
 parameters and re-calibrate.
 
 If you get this internal error then it would be appreciated if you
-could send us the contents of your APM/STRG_BAK directory on the
+could send us the contents of your ArduPilot/STRG_BAK directory on the
 microSD card so we can analyse the corruption that happened and ensure
 that the fix covers all real cases.
 
@@ -1695,7 +1695,7 @@ Release 3.8.0, 5th August 2017
 ------------------------------
 
 The ArduPilot development team is very proud to announce the release
-of APM:Plane 3.8.0. This is a major release, with a lot of new
+of ArduPilot:Plane 3.8.0. This is a major release, with a lot of new
 features and improvements. The release has been a long time coming,
 and the dev team would like to thank everyone who has contributed,
 in terms of code and documentation as well as the many testers of beta
@@ -1752,7 +1752,7 @@ Release 3.8.0beta5, 1st May 2017
 --------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.8.0beta of APM:Plane. This is a major release. All users
+version 3.8.0beta of ArduPilot:Plane. This is a major release. All users
 should carefully check their setup when upgrading.
 
 Major changes include:
@@ -1786,7 +1786,7 @@ Release 3.7.1, 21st October 2016
 --------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.7.1 of APM:Plane. This is a minor bug fix release. A major
+version 3.7.1 of ArduPilot:Plane. This is a minor bug fix release. A major
 release of 3.8.0 is also being prepared now and will be in beta soon.
 
 Changes in this release:
@@ -1813,7 +1813,7 @@ Release 3.7.0, 9th September 2016
 ---------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.7.0 of APM:Plane. This is a major update so please read the
+version 3.7.0 of ArduPilot:Plane. This is a major update so please read the
 notes carefully.
 
 The biggest changes in this release are:
@@ -1983,7 +1983,7 @@ Release 3.6.0, 6th June 2016
 ----------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.6.0 of APM:Plane. This is a major update so please read the
+version 3.6.0 of ArduPilot:Plane. This is a major update so please read the
 notes carefully.
 
 The biggest changes in this release are:
@@ -2077,7 +2077,7 @@ Release 3.6.0beta1, 30th April 2016
 -----------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.6.0beta1 of APM:Plane. This is the first beta version of a
+version 3.6.0beta1 of ArduPilot:Plane. This is the first beta version of a
 major release.
 
 The biggest changes in this release is the major update of the
@@ -2129,7 +2129,7 @@ Release 3.5.3, 30th April 2016
 ------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.5.3 of APM:Plane. This is a minor release with only small
+version 3.5.3 of ArduPilot:Plane. This is a minor release with only small
 bugfix changes.
 
 The main motivation for the release is a problem with flying without a
@@ -2151,7 +2151,7 @@ Release 3.5.2, 26th March 2016
 ------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.5.2 of APM:Plane. This is a minor release with small
+version 3.5.2 of ArduPilot:Plane. This is a minor release with small
 changes.
 
 The main reason for this release over 3.5.1 is a fix for a bug where
@@ -2201,7 +2201,7 @@ Release 3.5.1, 21st March 2016
 ------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.5.1 of APM:Plane. This is a minor release with primarily
+version 3.5.1 of ArduPilot:Plane. This is a minor release with primarily
 small changes.
 
 The changes in this release are:
@@ -2255,7 +2255,7 @@ Release 3.5.0, 30th January 2016
 --------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.5.0 of APM:Plane. This is a major release with a lot of
+version 3.5.0 of ArduPilot:Plane. This is a major release with a lot of
 changes so please read the notes carefully!
 
 The biggest changes in this release are:
@@ -2270,7 +2270,7 @@ The biggest changes in this release are:
 
 New Kalman Filter
 
-The 3.4 release series was the first where APM:Plane used a Kalman
+The 3.4 release series was the first where ArduPilot:Plane used a Kalman
 Filter by default for attitude and position estimation. It works very
 well, but Paul Riseborough has been working hard recently on a new
 EKF variant which fixes many issues seen with the old estimator. The
@@ -2300,7 +2300,7 @@ QuadPlane Support
 
 This release includes support for hybrid plane/multi-rotors called
 QuadPlanes. More details are available in this blog post:
-http://diydrones.com/profiles/blogs/quadplane-support-in-apm-plane-3-5-0
+http://diydrones.com/profiles/blogs/quadplane-support-in-ArduPilot-plane-3-5-0
 
 Support for 4 new Flight Boards
 
@@ -2379,7 +2379,7 @@ Release 3.4.0, 24th September 2015
 ----------------------------------
 
 The ArduPilot development team is proud to announce the release of
-version 3.4.0 of APM:Plane. This is a major release with a lot of
+version 3.4.0 of ArduPilot:Plane. This is a major release with a lot of
 changes so please read the notes carefully!
 
 First release with EKF by default
@@ -2398,20 +2398,20 @@ setup of the aircraft. That is why in the last release we enabled
 arming and pre-arm checks by default. Please don't disable the arming
 checks, they are there for very good reasons.
 
-Last release with APM1/APM2 support
+Last release with ArduPilot1/ArduPilot2 support
 
-This will be the last major release that supports the old APM1/APM2
+This will be the last major release that supports the old ArduPilot1/ArduPilot2
 AVR based boards. We have finally run out of flash space and
 memory. In the last few releases we spent quite a bit of time trying
-to squeeze more and more into the small flash space of the APM1/APM2,
+to squeeze more and more into the small flash space of the ArduPilot1/ArduPilot2,
 but it had to end someday if ArduPilot is to continue to develop. I am
 open to the idea of someone else volunteering to keep doing
-development of APM1/APM2 so if you have the skills and inclination do
+development of ArduPilot1/ArduPilot2 so if you have the skills and inclination do
 please get in touch. Otherwise I will only do small point release
 changes for major bugs.
 
-Even to get this release onto the APM1/APM2 we had to make sacrifices
-in terms of functionality. The APM1/APM2 release is missing quite a
+Even to get this release onto the ArduPilot1/ArduPilot2 we had to make sacrifices
+in terms of functionality. The ArduPilot1/ArduPilot2 release is missing quite a
 few features that are on the Pixhawk and other boards. For example:
 
   - no rangefinder support for landing
@@ -2424,11 +2424,11 @@ few features that are on the Pixhawk and other boards. For example:
   - support for far fewer GPS types
 
 that is just the most obvious major features that are missing on
-APM1/APM2. There are also numerous other smaller things where we need
-to take shortcuts on the APM1/APM2. Some of these features were
-available on older APM1/APM2 releases but needed to be removed to
+ArduPilot1/ArduPilot2. There are also numerous other smaller things where we need
+to take shortcuts on the ArduPilot1/ArduPilot2. Some of these features were
+available on older ArduPilot1/ArduPilot2 releases but needed to be removed to
 allow us to squeeze the new release onto the board. So if you are
-happy with a previous release on your APM2 and want a feature that is
+happy with a previous release on your ArduPilot2 and want a feature that is
 in that older release and not in this one then perhaps you shouldn't
 upgrade.
 
@@ -2576,7 +2576,7 @@ Release 3.3.0, 20th May 2015
 ----------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.3.0 of APM:Plane. This is a major release with a lot of
+version 3.3.0 of ArduPilot:Plane. This is a major release with a lot of
 changes. Please read the release notes carefully!
 
 The last stable release was 3 months ago, and since that time we have
@@ -2590,7 +2590,7 @@ you see listed that you want some more information on.
 Arming Changes
 --------------
 
-This is the first release of APM:Plane where ARMING_CHECK and
+This is the first release of ArduPilot:Plane where ARMING_CHECK and
 ARMING_REQUIRE both default to enabled. That means when you upgrade if
 you didn't previously have arming enabled you will need to learn about
 arming your plane.
@@ -2673,18 +2673,18 @@ for more information on flying with a rudder only aircraft:
 
   http://plane.ardupilot.com/wiki/arduplane-parameters/#rudder_only_aircraft_arduplanerudder_only
 
-APM1/APM2 Support
+ArduPilot1/ArduPilot2 Support
 -----------------
 
-We have managed to keep support for the APM1 and APM2 in this release,
+We have managed to keep support for the ArduPilot1 and ArduPilot2 in this release,
 but in order to fit it in the limited flash space we had to disable
 some more features when building for those boards. For this release
 the AP_Mount code for controlling camera mounts is disabled on
-APM1/APM2.
+ArduPilot1/ArduPilot2.
 
 At some point soon it will become impractical to keep supporting the
-APM1/APM2 for planes. Please consider moving to a 32 bit autopilot
-soon if you are still using an APM1 or APM2.
+ArduPilot1/ArduPilot2 for planes. Please consider moving to a 32 bit autopilot
+soon if you are still using an ArduPilot1 or ArduPilot2.
 
 New INS code
 ------------
@@ -2751,7 +2751,7 @@ Other secondary changes in this release include:
  - added NAV_LOITER_TO_ALT mission item
  - fixed landing approach without an airspeed sensor
  - support RTL_AUTOLAND=2 for landing without coming to home first
- - disabled camera mount support on APM1/APM2
+ - disabled camera mount support on ArduPilot1/ArduPilot2
  - added support for SToRM32 and Alexmos camera gimbals
  - added support for Jaimes mavlink enabled gimbal
  - improved EKF default tuning for planes
@@ -2763,7 +2763,7 @@ Other secondary changes in this release include:
  - switched to faster accel sampling on Pixhawk
  - added coning corrections on Pixhawk
  - set ARMING_CHECK to 1 by default
- - disable NMEA and SiRF GPS on APM1/APM2
+ - disable NMEA and SiRF GPS on ArduPilot1/ArduPilot2
  - support MPU9255 IMU on Linux
  - updates to BBBMINI port for Linux
  - added TECS_LAND_PMAX parameter
@@ -2778,7 +2778,7 @@ Other secondary changes in this release include:
  - support setting AHRS_TRIM in preflight calibration
  - fixed a PX4 mixer out of range error
 
-Best wishes to all APM:Plane users from the dev team, and happy
+Best wishes to all ArduPilot:Plane users from the dev team, and happy
 flying!
 
 
@@ -2786,7 +2786,7 @@ Release 3.2.2, February 10th 2015
 ---------------------------------
 
 The ardupilot development team has released version 3.2.2 of
-APM:Plane. This is a bugfix release for some important bugs found by
+ArduPilot:Plane. This is a bugfix release for some important bugs found by
 users of the 3.2.1 release.
 
 The changes in this release are:
@@ -2795,7 +2795,7 @@ The changes in this release are:
     some receiver systems and configurations
 
   - allowed for shorter sync pulse widths for PPM-SUM receivers on
-    APM1 and APM2
+    ArduPilot1 and ArduPilot2
 
   - fixed HIL mode altitude
 
@@ -2834,11 +2834,11 @@ that some of those issues were caused by this bug. The dev team would
 like to apologise for taking so long to track down this bug!
 
 The other main change was also related to RC input. Some receivers use
-a PPM-SUM sync pulse width shorter than what the APM1/APM2 code was
+a PPM-SUM sync pulse width shorter than what the ArduPilot1/ArduPilot2 code was
 setup to handle. The OpenLRSng default sync pulse width is 3000
-microseconds, but the APM1/APM2 code was written for a mininum sync
+microseconds, but the ArduPilot1/ArduPilot2 code was written for a mininum sync
 pulse width of 4000 microseconds. For this release I have changed the
-APM1/APM2 driver to accept a sync pulse width down to 2700
+ArduPilot1/ArduPilot2 driver to accept a sync pulse width down to 2700
 microseconds.
 
 
@@ -2846,7 +2846,7 @@ Release 3.2.1, February 5th 2015
 --------------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.2.1 of APM:Plane. This is primarily a bugfix release, but
+version 3.2.1 of ArduPilot:Plane. This is primarily a bugfix release, but
 does have some new features.
 
 The major changes in this release are:
@@ -2863,7 +2863,7 @@ The major changes in this release are:
     detection, glide slope calculation and lag handling
   - fixed a bug that could cause a change altitude MAVLink command
     from causing a sudden descent
-  - re-enable CLI on non-APM1/APM2 boards
+  - re-enable CLI on non-ArduPilot1/ArduPilot2 boards
   - Lots of EKF changes, including reducing impact of ground magnetic
     interference, reducing the impact of a GPS outage and integrating
     optical flow support
@@ -2883,7 +2883,7 @@ Release 3.2.0, November 25th 2014
 ---------------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.2.0 of APM:Plane. This is a major release with a lot of 
+version 3.2.0 of ArduPilot:Plane. This is a major release with a lot of 
 new features.
 
 The changes span a lot of different areas of the code, but arguably
@@ -3027,9 +3027,9 @@ More complete list of changes:
 Note: If you use flaperons you may need to re-trim them before you
 fly due to the change in flaperon trim handling.
 
-I hope that everyone enjoys flying this new APM:Plane release as much
+I hope that everyone enjoys flying this new ArduPilot:Plane release as much
 as we enjoyed producing it! It is a major milestone in the development
-of the fixed wing code for APM, and I think puts us in a great
+of the fixed wing code for ArduPilot, and I think puts us in a great
 position for future development.
 
 Happy flying!
@@ -3040,7 +3040,7 @@ Release 3.1.1, September 12th 2014
 ----------------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.1.1 of APM:Plane. This is primarily a bugfix release with a
+version 3.1.1 of ArduPilot:Plane. This is primarily a bugfix release with a
 small number of new features.
 
 The main bug fixed in this release is a bug that could affect saving
@@ -3090,7 +3090,7 @@ Release 3.1.0, August 26th 2014
 -------------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.1.0 of APM:Plane. This is a major release with a lot of new
+version 3.1.0 of ArduPilot:Plane. This is a major release with a lot of new
 features and bug fixes.
 
 The biggest change in this release is the addition of automatic
@@ -3160,7 +3160,7 @@ Changes in this release:
 
   - added airspeed sensor support in HIL
 
-  - fixed HIL on APM2. HIL should now work again on all boards.
+  - fixed HIL on ArduPilot2. HIL should now work again on all boards.
 
   - added StorageManager library, which expands available FRAM storage
     on Pixhawk to 16 kByte. This allows for 724 waypoints, 50 rally
@@ -3218,7 +3218,7 @@ Release 3.0.3, May 19th 2014
 ----------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.0.3 of APM:Plane. This release contains some important bug
+version 3.0.3 of ArduPilot:Plane. This release contains some important bug
 fixes for all supported boards.
 
 The key bug fixes in this release are:
@@ -3227,7 +3227,7 @@ The key bug fixes in this release are:
  - fixed a glide slope calculation bug when entering AUTO mode
 
 The EKF fixes are the main focus of this release. During testing of
-APM:Plane with the AHRS_EKF_USE enabled it was found that under some
+ArduPilot:Plane with the AHRS_EKF_USE enabled it was found that under some
 circumstances the EKF could diverge, resulting in loss of attitude
 estimate. Unless the pilot quickly took control in MANUAL this could
 result in the aircraft crashing.
@@ -3238,7 +3238,7 @@ this type additional numerical checks were added to allow the EKF to
 automatically reset in flight when the internal state shows
 large gyro bias changes, which are the first sign of something going
 wrong in the filter. If this happens again the EKF will automatically
-disable itself for 10 seconds, allowing APM:Plane to fall back to the
+disable itself for 10 seconds, allowing ArduPilot:Plane to fall back to the
 old DCM code. The EKF will then reset itself using initial state based
 on the DCM state. The aircraft will report the failure using the AHRS
 health bit in the SYS_STATUS MAVLink message.
@@ -3265,7 +3265,7 @@ Release 3.0.2, May 4th 2014
 ---------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.0.2 of APM:Plane. This release combines some important bug
+version 3.0.2 of ArduPilot:Plane. This release combines some important bug
 fixes with some new features.
 
 I2C bug fix
@@ -3300,7 +3300,7 @@ Full documentation for how to use automatic tuning is available here:
   http://plane.ardupilot.com/wiki/automatic-tuning-with-autotune/
 
 we hope that the automatic tuning will help users who have had
-difficulty with the standard APM:Plane manual tuning procedure. We
+difficulty with the standard ArduPilot:Plane manual tuning procedure. We
 plan on extending autotune to other aspects of fixed wing tuning in
 future releases.
 
@@ -3310,7 +3310,7 @@ Other changes
  - fixed a glide slope calculation error when very close to waypoints
  - fixed a bug when swithing to another auto-throttle mode during auto
    takeoff (thanks to Marco for finding this bug!)
- - added MIS_AUTORESET parameter (thanks to Andrew Chapman)
+ - added MIS_AUTORESET parameter (thanks to Andrew ChArduPilotan)
  - support compassmot calibration by supplying current measurments to the
    compass driver (thanks to Jon Challinger)
  - fixed a GPS driver bug that could cause GPS lag in case of lost GPS
@@ -3324,7 +3324,7 @@ Other changes
  - improved tuning of EKF for fixed wing aircraft (thanks to Paul
    Riseborough)
  - Converted rally point code to library AP_Rally (thanks to Andrew
-   Chapman)
+   ChArduPilotan)
  - added SITL checking for numerical errors
 
 Thanks to testers!
@@ -3338,7 +3338,7 @@ autotune code.
 Release 3.0.1, April 9th 2014
 -----------------------------
 
-I've just released APM:Plane 3.0.1, a bug fix release for the 3.0.0 release.
+I've just released ArduPilot:Plane 3.0.1, a bug fix release for the 3.0.0 release.
 This release fixes two bugs:
 
     throttle failsafe for aircraft using PWM level for failsafe detection
@@ -3361,7 +3361,7 @@ Release 3.0.0, April 8th 2014
 -----------------------------
 
 The ardupilot development team is proud to announce the release of
-version 3.0.0 of APM:Plane. This is a major release with a lot of new
+version 3.0.0 of ArduPilot:Plane. This is a major release with a lot of new
 features.
 
 For each release I try to highlight the two or 3 key new features that
@@ -3371,12 +3371,12 @@ think the most important ones are the new Extended Kalman Filter (EKF)
 for attitude/position estimation, the extensive dual sensors support
 and the new AP_Mission library.
 
-We have also managed to still keep support for the APM1 and APM2,
+We have also managed to still keep support for the ArduPilot1 and ArduPilot2,
 although quite a few of the new features are not available on those
 boards. We don't yet know for how long we'll be able to keep going on
 supporting these old boards, so if you are thinking of getting a new
 board then you should get a Pixhawk, and if you want the best
-performance from the APM:Plane code then you should swap to a
+performance from the ArduPilot:Plane code then you should swap to a
 Pixhawk now. It really is a big improvement.
 
 New Extended Kalman Filter
@@ -3385,7 +3385,7 @@ New Extended Kalman Filter
 The biggest change for the 3.0.0 release (and in fact the major reason
 why we are calling it 3.0.0) is the new Extended Kalman Filter from
 Paul Riseborough. Using an EKF for attitude and position estimation
-was never an option on the APM2 as it didn't have the CPU power or
+was never an option on the ArduPilot2 as it didn't have the CPU power or
 memory to handle it. The Pixhawk does have plenty of floating point
 performance, and Paul has done a fantastic job of taking full
 advantage of the faster board.
@@ -3418,7 +3418,7 @@ gains on your roll and pitch attitude controllers.
 Paul has written up a more technical description of the new EKF code
 here:
 
-  http://plane.ardupilot.com/wiki/common-apm-navigation-extended-kalman-filter-overview/
+  http://plane.ardupilot.com/wiki/common-ArduPilot-navigation-extended-kalman-filter-overview/
 
 
 Dual Sensors
@@ -3448,7 +3448,7 @@ m/s/s to +1 m/s/s. That resulted in massive errors in the attitude
 solution.
 
 This sort of error happens because of the way the accelerometer is
-sampled. In the APM code the MPU6000 (used on both the APM2 and
+sampled. In the ArduPilot code the MPU6000 (used on both the ArduPilot2 and
 Pixhawk) samples the acceleration at 1kHz. So if you have a strong
 vibrational mode that is right on 1kHz then you are sampling the "top
 of the sine wave", and get a DC offset.
@@ -3457,7 +3457,7 @@ The normal way to fix this issue is to improve the physical
 anti-vibration mounting in the aircraft, but I don't like to fix
 problems like this by making changes to my aircraft, as if I fix my
 aircraft it does nothing for the thousands of other people running the
-same code. As the lead APM developer I instead like to fix things in
+same code. As the lead ArduPilot developer I instead like to fix things in
 software, so that everyone benefits.
 
 The solution was to take advantage of the fact that the Pixhawk has
@@ -3479,7 +3479,7 @@ Since adding that code I have been on the lookout for signs of
 aliasing in other logs that people send me, and it looks like it is
 more common than we expected. It is rarely so dramatic as seen on my
 BigStik, but often results in some pitch error in turns. I am hopeful
-that with a Pixhawk and the 3.0 release of APM:Plane that these types
+that with a Pixhawk and the 3.0 release of ArduPilot:Plane that these types
 of problems will now be greatly reduced.
 
 For the dual gyro support we went with a much simpler solution and
@@ -3520,7 +3520,7 @@ The real advantage of AP_Mission will come in future releases though,
 as it has the ability to look ahead in the mission to see what is
 coming, allowing for more sophisticated navigation. The copter code
 already takes advantage of this with the new spline waypoint feature,
-and we expect to take similar advantage of this in APM:Plane in future
+and we expect to take similar advantage of this in ArduPilot:Plane in future
 releases.
 
 New Piksi GPS driver
@@ -3535,7 +3535,7 @@ possibly even centimetre level relative positioning, which has a lot
 of potential for small aircraft, particularly for landing control and
 more precise aerial mapping.
 
-This release of APM:Plane has the first driver for the Piksi. The new
+This release of ArduPilot:Plane has the first driver for the Piksi. The new
 driver is written by Niels Joubert, and he has done a great job. It is
 only a start though, as this is a single point positioning driver. It
 will allow you to use your new Piksi if you were part of the
@@ -3577,7 +3577,7 @@ enable/disable the geofence via MAVLink, allowing ground stations to
 control the fence. 
 
 There are also three new fence control parameters. One is
-FENCE_RET_RALLY which when enabled tells APM to fly back to the
+FENCE_RET_RALLY which when enabled tells ArduPilot to fly back to the
 closest rally point on a fence breach, instead of flying to the center
 of the fence area. That can be very useful for more precise control of
 fence breach handling.
@@ -3645,7 +3645,7 @@ important changes not mentioned above:
   - support a separate steering channel from the rudder channel
   - faster mission upload on USB
   - new mavlink API for reduced memory usage
-  - fixes for the APM_OBC Outback Challenge module
+  - fixes for the ArduPilot_OBC Outback Challenge module
   - fixed accelerometer launch detection with no airspeed sensor
   - greatly improved UART flow control on Pixhawk
   - added BRD_SAFETYENABLE option to auto-enable the safety
@@ -3662,9 +3662,9 @@ important changes not mentioned above:
   - added MS4525 I2C airspeed sensor voltage compensation
 
 
-I hope that everyone enjoys flying this new APM:Plane release as much
+I hope that everyone enjoys flying this new ArduPilot:Plane release as much
 as we enjoyed producing it! It is a major milestone in the development
-of the fixed wing code for APM, and I think puts us in a great
+of the fixed wing code for ArduPilot, and I think puts us in a great
 position for future development.
 
 

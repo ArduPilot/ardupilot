@@ -29,7 +29,7 @@ namespace ChibiOS {
 
 class DeviceBus {
 public:
-    DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY);
+    DeviceBus(uint8_t _thread_priority = ArduPilot_I2C_PRIORITY);
 
     struct DeviceBus *next;
     Semaphore semaphore;

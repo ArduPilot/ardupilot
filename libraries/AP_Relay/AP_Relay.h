@@ -6,7 +6,7 @@
  */
 
 /// @file	AP_Relay.h
-/// @brief	APM relay control class
+/// @brief	ArduPilot relay control class
 #pragma once
 
 #include <AP_Param/AP_Param.h>

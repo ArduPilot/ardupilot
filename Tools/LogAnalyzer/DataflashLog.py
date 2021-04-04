@@ -1,7 +1,7 @@
 #
-# Code to abstract the parsing of APM Dataflash log files, currently only used by the LogAnalyzer
+# Code to abstract the parsing of ArduPilot Dataflash log files, currently only used by the LogAnalyzer
 #
-# Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
+# Initial code by Andrew ChArduPilotan (amchArduPilotan@gmail.com), 16th Jan 2014
 #
 
 from __future__ import print_function
@@ -417,7 +417,7 @@ class DataflashLogHelper:
 class DataflashLog(object):
     '''ArduPilot Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
 
-    knownHardwareTypes = ["APM", "PX4", "MPNG"]
+    knownHardwareTypes = ["ArduPilot", "PX4", "MPNG"]
 
     def __init__(self, logfile=None, format="auto", ignoreBadlines=False):
         self.filename = None
@@ -427,7 +427,7 @@ class DataflashLog(object):
         self.firmwareVersion = ""
         self.firmwareHash    = ""
         self.freeRAM         = 0
-        self.hardwareType    = "" # APM 1, APM 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
+        self.hardwareType    = "" # ArduPilot 1, ArduPilot 2, PX4, MPNG, etc What is VRBrain? BeagleBone, etc? Needs more testing
     
         self.formats     = {} # name -> Format
         self.parameters  = {} # token -> value
@@ -535,7 +535,7 @@ class DataflashLog(object):
 
     msg_vehicle_to_vehicle_map = {
         "ArduCopter": VehicleType.Copter,
-        "APM:Copter": VehicleType.Copter,
+        "ArduPilot:Copter": VehicleType.Copter,
         "ArduPlane": VehicleType.Plane,
         "ArduRover": VehicleType.Rover
     }
@@ -661,7 +661,7 @@ class DataflashLog(object):
         self.formats = {'FMT':Format}
         lineNumber = 0
         numBytes = 0
-        knownHardwareTypes = ["APM", "PX4", "MPNG"]
+        knownHardwareTypes = ["ArduPilot", "PX4", "MPNG"]
         for line in f:
             lineNumber = lineNumber + 1
             numBytes += len(line) + 1

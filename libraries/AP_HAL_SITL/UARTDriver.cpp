@@ -601,7 +601,7 @@ bool UARTDriver::_select_check(int fd)
     if (fd == -1) {
         return false;
     }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     fd_set fds;
     struct timeval tv;
 

@@ -158,7 +158,7 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     // open SOAP socket to FlightAxis
     delete sock;
 
-    sock = new SocketAPM(false);
+    sock = new SocketArduPilot(false);
     if (!sock->connect(controller_ip, controller_port)) {
         ::printf("connect failed\n");
         delete sock;

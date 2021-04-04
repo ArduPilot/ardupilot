@@ -52,8 +52,8 @@ def _vehicle_index(vehicle):
     return _vehicle_indexes[vehicle]
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
-_vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
-                   'APM_BUILD_TYPE',
+_vehicle_macros = ['SKETCHNAME', 'SKETCH', 'ArduPilot_BUILD_DIRECTORY',
+                   'ArduPilot_BUILD_TYPE',
                    'AP_NavEKF3_core.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 

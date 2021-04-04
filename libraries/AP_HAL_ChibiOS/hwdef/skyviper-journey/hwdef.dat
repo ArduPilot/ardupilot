@@ -36,7 +36,7 @@ I2C_ORDER I2C2 I2C1
 define HAL_I2C_MAX_CLOCK 400000
 
 # run I2C bus thread at high priority for IMU
-define APM_I2C_PRIORITY 181
+define ArduPilot_I2C_PRIORITY 181
 
 # order of UARTs
 SERIAL_ORDER USART1 USART2 EMPTY USART6

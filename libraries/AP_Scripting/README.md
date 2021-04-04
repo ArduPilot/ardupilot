@@ -26,7 +26,7 @@ Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` 
 ## Adding Scripts
 
 The vehicle will automatically look for and launch any scripts that are contained in the `scripts` folder when it starts.
-On real hardware this should be inside of the `APM` folder of the SD card. In SITL this should be in the working directory (typically the main `ardupilot` directory).
+On real hardware this should be inside of the `ArduPilot` folder of the SD card. In SITL this should be in the working directory (typically the main `ardupilot` directory).
 
 An example script is given below:
 

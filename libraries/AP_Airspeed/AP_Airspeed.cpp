@@ -36,7 +36,7 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
 #endif
-#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
 #include "AP_Airspeed_NMEA.h"
 #endif
 #if HAL_MSP_AIRSPEED_ENABLED
@@ -52,7 +52,7 @@ extern const AP_HAL::HAL &hal;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
  #define ARSPD_DEFAULT_PIN 1
-#elif APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub) 
  #define ARSPD_DEFAULT_TYPE TYPE_NONE
  #define ARSPD_DEFAULT_PIN 15
 #else
@@ -368,7 +368,7 @@ void AP_Airspeed::init()
 #endif
             break;
         case TYPE_NMEA_WATER:
-#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub) 
             sensor[i] = new AP_Airspeed_NMEA(*this, i);
 #endif
             break;

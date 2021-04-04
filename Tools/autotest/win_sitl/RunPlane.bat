@@ -1,4 +1,4 @@
-rem File run APM:Plane SITL
+rem File run ArduPilot:Plane SITL
 SETLOCAL enableextensions
 @echo off
 

@@ -155,7 +155,7 @@ extern const AP_HAL::HAL& hal;
 
 
 /*
-  set the priority of the main APM task
+  set the priority of the main ArduPilot task
  */
 void hal_chibios_set_priority(uint8_t priority)
 {
@@ -184,7 +184,7 @@ static void main_loop()
     /*
       switch to high priority for main loop
      */
-    chThdSetPriority(APM_MAIN_PRIORITY);
+    chThdSetPriority(ArduPilot_MAIN_PRIORITY);
 
 #ifdef HAL_I2C_CLEAR_BUS
     // Clear all I2C Buses. This can be needed on some boards which
@@ -212,7 +212,7 @@ static void main_loop()
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    hal_chibios_set_priority(APM_STARTUP_PRIORITY);
+    hal_chibios_set_priority(ArduPilot_STARTUP_PRIORITY);
 
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
@@ -251,7 +251,7 @@ static void main_loop()
     /*
       switch to high priority for main loop
      */
-    chThdSetPriority(APM_MAIN_PRIORITY);
+    chThdSetPriority(ArduPilot_MAIN_PRIORITY);
 
     while (true) {
         g_callbacks->loop();
@@ -264,7 +264,7 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
-#if !defined(HAL_DISABLE_LOOP_DELAY) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !defined(HAL_DISABLE_LOOP_DELAY) && !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(50);
         }

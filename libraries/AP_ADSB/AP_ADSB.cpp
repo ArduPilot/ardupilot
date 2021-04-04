@@ -38,7 +38,7 @@
 #endif
 
 #ifndef ADSB_LIST_RADIUS_DEFAULT
-    #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
         #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
     #else
         #define ADSB_LIST_RADIUS_DEFAULT        2000 // in meters

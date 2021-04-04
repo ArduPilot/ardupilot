@@ -12,10 +12,10 @@
 
 /*
   parameter defaults for different types of vehicle. The
-  APM_BUILD_DIRECTORY is taken from the main vehicle directory name
+  ArduPilot_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter) || ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
 // copter defaults
 #define VELNE_M_NSE_DEFAULT     0.3f
 #define VELD_M_NSE_DEFAULT      0.5f
@@ -41,7 +41,7 @@
 #define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.2
 
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
 // rover defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
@@ -67,7 +67,7 @@
 #define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.1
 
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
 // plane defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
 #define VELD_M_NSE_DEFAULT      0.7f
@@ -119,7 +119,7 @@
 #define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.1
 
-#endif // APM_BUILD_DIRECTORY
+#endif // ArduPilot_BUILD_DIRECTORY
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF3::var_info[] = {
@@ -736,12 +736,12 @@ bool NavEKF3::InitialiseFilter(void)
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_AP_DAL_Standalone)
     // convert parameters if necessary
     convert_parameters();
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
         return false;
     }

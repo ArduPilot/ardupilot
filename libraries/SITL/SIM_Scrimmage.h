@@ -76,8 +76,8 @@ private:
     void send_servos(const struct sitl_input &input);
 
     uint64_t prev_timestamp_us;
-    SocketAPM recv_sock;
-    SocketAPM send_sock;
+    SocketArduPilot recv_sock;
+    SocketArduPilot send_sock;
 
     const char *frame_str;
 };

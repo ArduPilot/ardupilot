@@ -194,7 +194,7 @@ void SITL_State::_fdm_input_step(void)
         }
     }
 
-    // trigger all APM timers.
+    // trigger all ArduPilot timers.
     _scheduler->timer_event();
     _scheduler->sitl_end_atomic();
 }

@@ -24,7 +24,7 @@ try:
 	assert(logdata.firmwareVersion == "V3.0.1")
 	assert(logdata.firmwareHash    == "5c6503e2")
 	assert(logdata.freeRAM         == 1331)
-	assert(logdata.hardwareType    == "APM 2")
+	assert(logdata.hardwareType    == "ArduPilot 2")
 	assert(len(logdata.formats) == 27)
 	assert(logdata.formats['GPS'].labels == ['Status', 'Time', 'NSats', 'HDop', 'Lat', 'Lng', 'RelAlt', 'Alt', 'Spd', 'GCrs'])
 	assert(logdata.formats['ATT'].labels == ['RollIn', 'Roll', 'PitchIn', 'Pitch', 'YawIn', 'Yaw', 'NavYaw'])

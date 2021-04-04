@@ -101,7 +101,7 @@ private:
     /* ArduPlane's internal time when the first packet from Silent Wings is received. */
     uint64_t time_base_us;
     
-    SocketAPM sock;
+    SocketArduPilot sock;
     const char *_sw_address = "127.0.0.1";
     int _port_in = 6060;
     int _sw_port = 6070;

@@ -68,7 +68,7 @@ private:
 
     double last_timestamp;
 
-    SocketAPM socket_sitl;
+    SocketArduPilot socket_sitl;
     const char *_gazebo_address = "127.0.0.1";
     int _gazebo_port = 9002;
     static const uint64_t GAZEBO_TIMEOUT_US = 5000000;

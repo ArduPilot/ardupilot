@@ -873,7 +873,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
           in the cmd structure. When we expand the mission structure
           we can do this properly
          */
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
         // acceptance radius in meters and pass by distance in meters
         uint16_t acp = packet.param2;           // param 2 is acceptance radius in meters is held in low p1
         uint16_t passby = packet.param3;        // param 3 is pass by distance in meters is held in high p1
@@ -1327,7 +1327,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         return false;
 
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
         // acceptance radius in meters
 
         packet.param2 = LOWBYTE(cmd.p1);        // param 2 is acceptance radius in meters is held in low p1

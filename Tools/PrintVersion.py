@@ -29,7 +29,7 @@ if len(args) > 0:
         sys.exit(1)
     includefilepath = "%s/%s" % (vehicle, includefiles[vehicle])
 else:
-    # assume we are in e.g. APM/Rover/
+    # assume we are in e.g. ArduPilot/Rover/
     vehicle = os.path.basename(os.getcwd())
     if vehicle not in includefiles:
         print("Unknown vehicle (%s) (be in a vehicle directory or supply a vehicle type as an argument)" % (vehicle,))

@@ -252,13 +252,13 @@ void AP_BattMonitor::convert_params(void) {
     AP_Param::ConversionInfo info;
     info.new_name = param_name;
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
     info.old_key = 166;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
     info.old_key = 36;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduSub)
     info.old_key = 33;
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Rover)
     info.old_key = 145;
 #else
     _params[0]._type.save(true);
@@ -460,7 +460,7 @@ bool AP_BattMonitor::overpower_detected() const
 
 bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
     if (instance < _num_instances && _params[instance]._watt_max > 0) {
         float power = state[instance].current_amps * state[instance].voltage;
         return state[instance].healthy && (power > _params[instance]._watt_max);

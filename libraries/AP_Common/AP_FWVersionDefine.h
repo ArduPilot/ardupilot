@@ -29,7 +29,7 @@ const AP_FWVersion AP_FWVersion::fwver{
     .header_version = 0x0100U, // Major and minor version
     .pointer_size = static_cast<uint8_t>(sizeof(void*)),
     .reserved = 0,
-    .vehicle_type = static_cast<uint8_t>(APM_BUILD_DIRECTORY),
+    .vehicle_type = static_cast<uint8_t>(ArduPilot_BUILD_DIRECTORY),
     .board_type = static_cast<uint8_t>(CONFIG_HAL_BOARD),
     .board_subtype = static_cast<uint16_t>(CONFIG_HAL_BOARD_SUBTYPE),
     .major = FW_MAJOR,

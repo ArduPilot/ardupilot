@@ -2,7 +2,7 @@
 
 ArduCopter V3.1 (5c6503e2)
 Free RAM: 1044
-APM 2
+ArduPilot 2
 FMT, 128, 89, FMT, BBnNZ, Type,Length,Name,Format
 FMT, 129, 23, PARM, Nf, Name,Value
 FMT, 130, 45, GPS, BIHBcLLeeEefI, Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T

@@ -44,11 +44,11 @@ prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
-apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
-vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
+ArduPilot_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
+vehicle_paths = glob.glob(ArduPilot_path + "%s/Parameters.cpp" % args.vehicle)
 extension = 'cpp'
 if len(vehicle_paths) == 0:
-    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % args.vehicle)
+    vehicle_paths = glob.glob(ArduPilot_path + "%s/Parameters.pde" % args.vehicle)
     extension = 'pde'
 vehicle_paths.sort(reverse=True)
 
@@ -178,7 +178,7 @@ def process_library(vehicle, library, pathprefix=None):
                 continue
             libraryfname = os.path.join(vehicles[0].path, path)
         else:
-            libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
+            libraryfname = os.path.normpath(os.path.join(ArduPilot_path + '/libraries/' + path))
         if path and os.path.exists(libraryfname):
             f = open(libraryfname)
             p_text = f.read()

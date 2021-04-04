@@ -80,7 +80,7 @@ void Scheduler::init()
     // setup the monitor thread - this is used to detect software lockups
     _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
                      sizeof(_monitor_thread_wa),
-                     APM_MONITOR_PRIORITY,        /* Initial priority.    */
+                     ArduPilot_MONITOR_PRIORITY,        /* Initial priority.    */
                      _monitor_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 #endif
@@ -89,7 +89,7 @@ void Scheduler::init()
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
-                     APM_TIMER_PRIORITY,        /* Initial priority.    */
+                     ArduPilot_TIMER_PRIORITY,        /* Initial priority.    */
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 #endif
@@ -98,7 +98,7 @@ void Scheduler::init()
     // setup the RCOUT thread - this will call tasks at 1kHz
     _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
                      sizeof(_rcout_thread_wa),
-                     APM_RCOUT_PRIORITY,        /* Initial priority.    */
+                     ArduPilot_RCOUT_PRIORITY,        /* Initial priority.    */
                      _rcout_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 #endif
@@ -107,7 +107,7 @@ void Scheduler::init()
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
-                     APM_RCIN_PRIORITY,        /* Initial priority.    */
+                     ArduPilot_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 #endif
@@ -115,7 +115,7 @@ void Scheduler::init()
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
                      sizeof(_io_thread_wa),
-                     APM_IO_PRIORITY,        /* Initial priority.      */
+                     ArduPilot_IO_PRIORITY,        /* Initial priority.      */
                      _io_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
 #endif
@@ -124,7 +124,7 @@ void Scheduler::init()
     // the storage thread runs at just above IO priority
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
-                     APM_STORAGE_PRIORITY,        /* Initial priority.      */
+                     ArduPilot_STORAGE_PRIORITY,        /* Initial priority.      */
                      _storage_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
 #endif
@@ -150,8 +150,8 @@ void Scheduler::delay_microseconds(uint16_t usec)
  */
 static void set_high_priority()
 {
-#if APM_MAIN_PRIORITY_BOOST != APM_MAIN_PRIORITY
-    hal_chibios_set_priority(APM_MAIN_PRIORITY_BOOST);
+#if ArduPilot_MAIN_PRIORITY_BOOST != ArduPilot_MAIN_PRIORITY
+    hal_chibios_set_priority(ArduPilot_MAIN_PRIORITY_BOOST);
 #endif
 }
 
@@ -160,17 +160,17 @@ static void set_high_priority()
  */
 void Scheduler::boost_end(void)
 {
-#if APM_MAIN_PRIORITY_BOOST != APM_MAIN_PRIORITY
+#if ArduPilot_MAIN_PRIORITY_BOOST != ArduPilot_MAIN_PRIORITY
     if (in_main_thread() && _priority_boosted) {
         _priority_boosted = false;
-        hal_chibios_set_priority(APM_MAIN_PRIORITY);
+        hal_chibios_set_priority(ArduPilot_MAIN_PRIORITY);
     }
 #endif
 }
 
 /*
   a variant of delay_microseconds that boosts priority to
-  APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
+  ArduPilot_MAIN_PRIORITY_BOOST for ArduPilot_MAIN_PRIORITY_BOOST_USEC
   microseconds when the time completes. This significantly improves
   the regularity of timing of the main loop
  */
@@ -629,23 +629,23 @@ void Scheduler::thread_create_trampoline(void *ctx)
 // calculates an integer to be used as the priority for a newly-created thread
 uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
-    uint8_t thread_priority = APM_IO_PRIORITY;
+    uint8_t thread_priority = ArduPilot_IO_PRIORITY;
     static const struct {
         priority_base base;
         uint8_t p;
     } priority_map[] = {
-        { PRIORITY_BOOST, APM_MAIN_PRIORITY_BOOST},
-        { PRIORITY_MAIN, APM_MAIN_PRIORITY},
-        { PRIORITY_SPI, APM_SPI_PRIORITY},
-        { PRIORITY_I2C, APM_I2C_PRIORITY},
-        { PRIORITY_CAN, APM_CAN_PRIORITY},
-        { PRIORITY_TIMER, APM_TIMER_PRIORITY},
-        { PRIORITY_RCOUT, APM_RCOUT_PRIORITY},
-        { PRIORITY_RCIN, APM_RCIN_PRIORITY},
-        { PRIORITY_IO, APM_IO_PRIORITY},
-        { PRIORITY_UART, APM_UART_PRIORITY},
-        { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
-        { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
+        { PRIORITY_BOOST, ArduPilot_MAIN_PRIORITY_BOOST},
+        { PRIORITY_MAIN, ArduPilot_MAIN_PRIORITY},
+        { PRIORITY_SPI, ArduPilot_SPI_PRIORITY},
+        { PRIORITY_I2C, ArduPilot_I2C_PRIORITY},
+        { PRIORITY_CAN, ArduPilot_CAN_PRIORITY},
+        { PRIORITY_TIMER, ArduPilot_TIMER_PRIORITY},
+        { PRIORITY_RCOUT, ArduPilot_RCOUT_PRIORITY},
+        { PRIORITY_RCIN, ArduPilot_RCIN_PRIORITY},
+        { PRIORITY_IO, ArduPilot_IO_PRIORITY},
+        { PRIORITY_UART, ArduPilot_UART_PRIORITY},
+        { PRIORITY_STORAGE, ArduPilot_STORAGE_PRIORITY},
+        { PRIORITY_SCRIPTING, ArduPilot_SCRIPTING_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

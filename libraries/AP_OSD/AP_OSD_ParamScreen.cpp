@@ -125,7 +125,7 @@ static const char* event_names[5] = {
 #endif
 
 static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SCREENS][AP_OSD_ParamScreen::NUM_PARAMS] {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduCopter)
     {
         { 1, { 102, 0, 4033 }, OSD_PARAM_NONE },            // ATC_RAT_RLL_P
         { 2, { 102, 0, 129  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_D
@@ -148,7 +148,7 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
         { 8, { 6, 0, 25105 }, OSD_PARAM_AUX_FUNCTION },     // RC8_OPTION
         { 9, { 36, 0, 1047 }, OSD_PARAM_FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
     }
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#elif ArduPilot_BUILD_TYPE(ArduPilot_BUILD_ArduPlane)
     {
         { 1, { 232, 0, 1 }, OSD_PARAM_NONE },               // RLL2SRV_P
         { 2, { 232, 0, 3 }, OSD_PARAM_NONE },               // RLL2SRV_I

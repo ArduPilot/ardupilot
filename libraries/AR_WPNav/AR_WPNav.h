@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <APM_Control/AR_AttitudeControl.h>
+#include <AP_Control/AR_AttitudeControl.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
 

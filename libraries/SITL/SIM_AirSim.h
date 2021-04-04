@@ -70,7 +70,7 @@ private:
 	// connection_info_.sitl_ip_port
 	uint16_t airsim_control_port = 9002;
 
-	SocketAPM sock;
+	SocketArduPilot sock;
 
     double average_frame_time;
     uint64_t frame_counter;

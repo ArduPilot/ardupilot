@@ -1,4 +1,4 @@
-rem File to update the APM source
+rem File to update the ArduPilot source
 rem Assumes a Cgywin install at C:\cygwin
 @echo off
 

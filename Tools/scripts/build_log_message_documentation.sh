@@ -5,8 +5,8 @@ set -x
 
 DIR="../buildlogs/LogMessages"
 
-# work from either APM directory or above
-[ -d ArduPlane ] || cd APM
+# work from either ArduPilot directory or above
+[ -d ArduPlane ] || cd ArduPilot
 
 /bin/mkdir -p "$DIR"
 

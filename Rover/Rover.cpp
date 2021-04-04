@@ -24,7 +24,7 @@
 
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier
 
-   APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
+   ArduPilotrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
    Please contribute your ideas! See https://dev.ardupilot.org for details
 */

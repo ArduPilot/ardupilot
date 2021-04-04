@@ -2138,7 +2138,7 @@ int main(int argc, char **argv) {
   free(file_name);
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
-  fprintf(header, "#include <AP_Vehicle/AP_Vehicle_Type.h> // needed for APM_BUILD_TYPE #if\n");
+  fprintf(header, "#include <AP_Vehicle/AP_Vehicle_Type.h> // needed for ArduPilot_BUILD_TYPE #if\n");
   emit_headers(header);
   fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
   fprintf(header, "#include <new>\n\n");

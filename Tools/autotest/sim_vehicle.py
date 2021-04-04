@@ -737,7 +737,7 @@ def start_mavproxy(opts, stuff):
 
     if opts.fresh_params:
         # these were built earlier:
-        path = os.path.join(os.getcwd(), "apm.pdef.xml")
+        path = os.path.join(os.getcwd(), "ArduPilot.pdef.xml")
         cmd.extend(['--load-module', 'param:{"xml-filepath":"%s"}' % path])
 
     if len(extra_cmd):
@@ -809,7 +809,7 @@ parser = CompatOptionParser(
 
 vehicle_choices = list(vinfo.options.keys())
 # add an alias for people with too much m
-vehicle_choices.append("APMrover2")
+vehicle_choices.append("ArduPilotrover2")
 
 parser.add_option("-v", "--vehicle",
                   type='choice',
@@ -1176,10 +1176,10 @@ if cmd_opts.vehicle not in vinfo.options:
             break
         cwd = os.path.dirname(cwd)
 
-# map from some vehicle aliases back to canonical names.  APMrover2
+# map from some vehicle aliases back to canonical names.  ArduPilotrover2
 # was the old name / directory name for Rover.
 vehicle_map = {
-    "APMrover2": "Rover",
+    "ArduPilotrover2": "Rover",
 }
 if cmd_opts.vehicle in vehicle_map:
     progress("%s is now known as %s" %

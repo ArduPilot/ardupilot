@@ -747,7 +747,7 @@ void AP_CRSF_Telem::calc_flight_mode()
 
 // return device information about ArduPilot
 void AP_CRSF_Telem::calc_device_info() {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_UNKNOWN)
     _telem.ext.info.destination = _param_request.origin;
     _telem.ext.info.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
 

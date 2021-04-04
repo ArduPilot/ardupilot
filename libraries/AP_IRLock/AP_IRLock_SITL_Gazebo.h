@@ -24,6 +24,6 @@ public:
 private:
 
     uint32_t _last_timestamp;
-    SocketAPM sock;
+    SocketArduPilot sock;
 };
 #endif // CONFIG_HAL_BOARD

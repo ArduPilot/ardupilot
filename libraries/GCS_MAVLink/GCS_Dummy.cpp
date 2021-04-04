@@ -12,7 +12,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
  */
 void GCS_Dummy::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !ArduPilot_BUILD_TYPE(ArduPilot_BUILD_Replay)
     hal.console->printf("TOGCS: ");
     hal.console->vprintf(fmt, arg_list);
     hal.console->printf("\n");

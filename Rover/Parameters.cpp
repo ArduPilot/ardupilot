@@ -71,7 +71,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: AUTO_TRIGGER_PIN
     // @DisplayName: Auto mode trigger pin
     // @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
-    // @Values: -1:Disabled,0:APM TriggerPin0,1:APM TriggerPin1,2:APM TriggerPin2,3:APM TriggerPin3,4:APM TriggerPin4,5:APM TriggerPin5,6:APM TriggerPin6,7:APM TriggerPin7,8:APM TriggerPin8,50:Pixhawk TriggerPin50,51:Pixhawk TriggerPin51,52:Pixhawk TriggerPin52,53:Pixhawk TriggerPin53,54:Pixhawk TriggerPin54,55:Pixhawk TriggerPin55
+    // @Values: -1:Disabled,0:ArduPilot TriggerPin0,1:ArduPilot TriggerPin1,2:ArduPilot TriggerPin2,3:ArduPilot TriggerPin3,4:ArduPilot TriggerPin4,5:ArduPilot TriggerPin5,6:ArduPilot TriggerPin6,7:ArduPilot TriggerPin7,8:ArduPilot TriggerPin8,50:Pixhawk TriggerPin50,51:Pixhawk TriggerPin51,52:Pixhawk TriggerPin52,53:Pixhawk TriggerPin53,54:Pixhawk TriggerPin54,55:Pixhawk TriggerPin55
     // @User: Standard
     GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
@@ -449,7 +449,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(wheel_encoder, "WENC", 9, ParametersG2, AP_WheelEncoder),
 
     // @Group: ATC
-    // @Path: ../libraries/APM_Control/AR_AttitudeControl.cpp
+    // @Path: ../libraries/AP_Control/AR_AttitudeControl.cpp
     AP_SUBGROUPINFO(attitude_control, "ATC", 10, ParametersG2, AR_AttitudeControl),
 
     // @Param: TURN_RADIUS
