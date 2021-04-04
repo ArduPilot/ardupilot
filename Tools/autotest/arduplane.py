@@ -2184,6 +2184,36 @@ class AutoTestPlane(AutoTest):
 
         self.fly_mission("ap-terrain.txt", mission_timeout=600)
 
+    def test_loiter_terrain(self):
+        default_rad = self.get_parameter("WP_LOITER_RAD")
+        self.set_parameter("TERRAIN_FOLLOW", 1) # enable terrain following in loiter
+        self.set_parameter("WP_LOITER_RAD", 2000) # set very large loiter rad to get some terrain changes
+        alt = 200
+        self.takeoff(alt*0.9, alt*1.1)
+        self.set_rc(3, 1500)
+        self.change_mode("LOITER")
+        self.progress("loitering at %um" % alt)
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60*15: # enough time to do one and a bit circles
+                break
+            terrain = self.mav.recv_match(
+                type='TERRAIN_REPORT',
+                blocking=True,
+                timeout=1
+            )
+            if terrain is None:
+                raise NotAchievedException("Did not get TERRAIN_REPORT message")
+            rel_alt = terrain.current_height
+            self.progress("%um above terrain" % rel_alt)
+            if rel_alt > alt*1.2 or rel_alt < alt * 0.8:
+                raise NotAchievedException("Not terrain following")
+        self.progress("Returning home")
+        self.set_parameter("TERRAIN_FOLLOW", 0)
+        self.set_parameter("WP_LOITER_RAD", default_rad)
+        self.fly_home_land_and_disarm(240)
+
     def fly_external_AHRS(self):
         """Fly with external AHRS (VectorNav)"""
         self.customise_SITL_commandline(["--uartE=sim:VectorNav"])
@@ -2921,6 +2951,10 @@ class AutoTestPlane(AutoTest):
              "Test terrain following in mission",
              self.fly_terrain_mission),
 
+            ("Terrain-loiter",
+             "Test terrain following in loiter",
+             self.test_loiter_terrain),
+
             ("ExternalAHRS",
              "Test external AHRS support",
              self.fly_external_AHRS),
@@ -2965,4 +2999,5 @@ class AutoTestPlane(AutoTest):
 
     def disabled_tests(self):
         return {
+            "Terrain-loiter": "Loading of terrain data is not reliable",
         }
