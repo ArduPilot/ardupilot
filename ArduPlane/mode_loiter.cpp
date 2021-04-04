@@ -4,6 +4,7 @@
 bool ModeLoiter::_enter()
 {
     plane.do_loiter_at_location();
+    plane.setup_terrain_target_alt(plane.next_WP_loc);
     plane.loiter_angle_reset();
 
     return true;
