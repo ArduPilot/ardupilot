@@ -131,12 +131,15 @@ private:
     } rc_channels[RCIN_RPI_CHN_NUM];
 
     bool _initialized = false;
-
+    int _version =0;
+    
     void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);
     void init_registers();
     void init_ctrl_data();
     void init_PCM();
+    void init_PCM_BCM2835();
+    void init_PCM_BCM2711();
     void init_DMA();
     void init_buffer();
     static void stop_dma();
