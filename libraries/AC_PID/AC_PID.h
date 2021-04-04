@@ -82,6 +82,8 @@ public:
     AP_Float &filt_T_hz() { return _filt_T_hz; }
     AP_Float &filt_E_hz() { return _filt_E_hz; }
     AP_Float &filt_D_hz() { return _filt_D_hz; }
+    AP_Float &slew_limit() { return _slew_rate_max; }
+
     float imax() const { return _kimax.get(); }
     float get_filt_alpha(float filt_hz) const;
     float get_filt_T_alpha() const;
@@ -109,6 +111,9 @@ public:
 
     // set slew limiter scale factor
     void set_slew_limit_scale(int8_t scale) { _slew_limit_scale = scale; }
+
+    // return current slew rate of slew limiter. Will return 0 if SMAX is zero
+    float get_slew_rate(void) const { return _slew_limiter.get_slew_rate(); }
 
     const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 

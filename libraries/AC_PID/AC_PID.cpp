@@ -161,6 +161,7 @@ float AC_PID::update_all(float target, float measurement, bool limit)
 
     // calculate slew limit modifier for P+D
     _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
@@ -213,6 +214,7 @@ float AC_PID::update_error(float error, bool limit)
 
     // calculate slew limit modifier for P+D
     _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
