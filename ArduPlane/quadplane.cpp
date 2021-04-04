@@ -2626,16 +2626,29 @@ void QuadPlane::vtol_position_controller(void)
         }
         if (plane.control_mode == &plane.mode_qrtl || plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
             plane.ahrs.get_position(plane.current_loc);
-            float target_altitude = plane.next_WP_loc.alt;
+            int32_t target_altitude_cm;
+            if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,target_altitude_cm)) {
+                break;
+            }
             if (poscontrol.slow_descent) {
                 // gradually descend as we approach target
                 plane.auto_state.wp_proportion = plane.current_loc.line_path_proportion(plane.prev_WP_loc, plane.next_WP_loc);
-                target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
-                                                     plane.next_WP_loc.alt,
-                                                     plane.auto_state.wp_proportion,
-                                                     0, 1);
+                int32_t prev_alt;
+                if (plane.prev_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,prev_alt)) {
+                    target_altitude_cm = linear_interpolate(prev_alt,
+                                                         target_altitude_cm,
+                                                         plane.auto_state.wp_proportion,
+                                                         0, 1);
+                }
             }
-            adjust_alt_target(target_altitude - plane.home.alt);
+#if AP_TERRAIN_AVAILABLE
+            float terrain_altitude_offset_cm;
+            if (plane.next_WP_loc.terrain_alt && plane.terrain.height_terrain_difference_home(terrain_altitude_offset_cm, true)) {
+                // Climb if current terrain is above home, target_altitude_cm is reltive to home
+                target_altitude_cm += MAX(terrain_altitude_offset_cm*100,0);
+            }
+#endif
+            pos_control->set_alt_target_with_slew(target_altitude_cm, plane.G_Dt);
         } else {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
         }
@@ -2819,11 +2832,18 @@ void QuadPlane::init_qrtl(void)
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
-    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
+    int32_t from_alt;
+    int32_t to_alt;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
+        poscontrol.slow_descent = from_alt > to_alt;
+        return;
+    }
+    // defualt back to old method
+    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
 /*
@@ -3324,6 +3344,13 @@ void QuadPlane::guided_start(void)
     poscontrol.speed_scale = 0;
     guided_takeoff = false;
     setup_target_position();
+    int32_t from_alt;
+    int32_t to_alt;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
+        poscontrol.slow_descent = from_alt > to_alt;
+        return;
+    }
+    // defualt back to old method
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
@@ -3376,18 +3403,7 @@ bool QuadPlane::guided_mode_enabled(void)
  */
 void QuadPlane::set_alt_target_current(void)
 {
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-}
-
-/*
-  adjust the altitude target to the given target, moving it slowly
- */
-void QuadPlane::adjust_alt_target(float altitude_cm)
-{
-    float current_alt = inertial_nav.get_altitude();
-    // don't let it get beyond 50cm from current altitude
-    float target_cm = constrain_float(altitude_cm, current_alt-50, current_alt+50);
-    pos_control->set_alt_target(target_cm);
+    pos_control->set_alt_target_to_current_alt();
 }
 
 // user initiated takeoff for guided mode

@@ -592,9 +592,6 @@ private:
 
     // set altitude target to current altitude
     void set_alt_target_current(void);
-    
-    // adjust altitude target smoothly
-    void adjust_alt_target(float target_cm);
 
     // additional options
     AP_Int32 options;
