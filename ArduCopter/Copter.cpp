@@ -711,12 +711,7 @@ int16_t nbytes= uart->available();
 
     if(distance > MAX_DISTANCE_UWB)
     {
-
-
 //play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
-
-
-
     }
 
 uart->end();
