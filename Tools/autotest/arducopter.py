@@ -1870,7 +1870,6 @@ class AutoTestCopter(AutoTest):
     # fly_optical_flow_limits - test EKF navigation limiting
     def fly_optical_flow_limits(self):
         ex = None
-        self.context_push()
         try:
 
             self.set_parameter("SIM_FLOW_ENABLE", 1)
@@ -1933,9 +1932,7 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.set_rc(2, 1500)
-        self.context_pop()
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()
 
         if ex is not None:
             raise ex
@@ -3872,7 +3869,6 @@ class AutoTestCopter(AutoTest):
 
     def test_mount(self):
         ex = None
-        self.context_push()
         old_srcSystem = self.mav.mav.srcSystem
         self.mav.mav.srcSystem = 250
         self.set_parameter("DISARM_DELAY", 0)
@@ -4292,11 +4288,9 @@ class AutoTestCopter(AutoTest):
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.context_pop()
 
         self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
-        self.reboot_sitl() # to handle MNT_TYPE changing
 
         if ex is not None:
             raise ex
@@ -4916,8 +4910,6 @@ class AutoTestCopter(AutoTest):
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
-        self.context_push()
-
         ex = None
         try:
             self.set_parameter("PLND_ENABLED", 1)
@@ -4965,10 +4957,9 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.zero_throttle()
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()
+
         self.progress("All done")
 
         if ex is not None:
@@ -5313,9 +5304,8 @@ class AutoTestCopter(AutoTest):
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
-        self.context_pop()
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()
+        self.context_pop()
         if ex is not None:
             raise ex
 

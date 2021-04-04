@@ -235,7 +235,6 @@ class AutoTestRover(AutoTest):
 
     def test_sprayer(self):
         """Test sprayer functionality."""
-        self.context_push()
         ex = None
         try:
             rc_ch = 5
@@ -342,13 +341,12 @@ class AutoTestRover(AutoTest):
             self.wait_servo_channel_value(pump_ch, pump_ch_min)
             self.set_rc(3, 1000) # start driving forward
 
+            self.disarm_vehicle(force=True)
+
             self.progress("Sprayer OK")
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.context_pop()
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
         if ex:
             raise ex
 
@@ -570,7 +568,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("RTL Mission OK (%fm)" % home_distance)
 
     def drive_fence_ac_avoidance(self):
-        self.context_push()
         ex = None
         try:
             self.load_fence("rover-fence-ac-avoid.txt")
@@ -595,13 +592,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # watch for speed zero
             self.wait_groundspeed(0, 0.2, timeout=120)
 
+            self.disarm_vehicle(force=True)
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.context_pop()
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
         if ex:
             raise ex
 
@@ -803,7 +798,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.disarm_vehicle()
 
     def test_rc_overrides(self):
-        self.context_push()
         self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
@@ -1034,6 +1028,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 if self.get_rc_channel_value(ch) != ch_override_value:
                     raise NotAchievedException("Did not maintain value")
 
+            self.disarm_vehicle()
+
             self.context_pop()
 
             self.end_subtest("Checking higher-channel semantics")
@@ -1042,15 +1038,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
-        self.disarm_vehicle()
-        self.reboot_sitl()
-
         if ex is not None:
             raise ex
 
     def test_manual_control(self):
-        self.context_push()
         self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
@@ -1127,13 +1118,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Waiting for RC to revert to normal RC input")
             self.wait_rc_channel_value(3, normal_rc_throttle, timeout=10)
 
+            self.disarm_vehicle()
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-
-        self.context_pop()
-        self.disarm_vehicle()
-        self.reboot_sitl()
 
         if ex is not None:
             raise ex

@@ -7048,12 +7048,22 @@ Also, ignores heartbeats not from our target system'''
             if numlogs != 2 or log_num != 1 or size <= 0:
                 raise NotAchievedException("Unexpected log information %d %d %d" % (log_num, numlogs, lastlog))
             self.progress("Log size: %d" % size)
+            self.progress("LOG_DISARMED is %f" % self.get_parameter("LOG_DISARMED"))
             self.reboot_sitl()
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time
             self.wait_ready_to_arm()
             # Third log created here
             mavproxy.send("log list\n")
-            mavproxy.expect("Log 1  numLogs 3 lastLog 3 size")
+            mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+            log_num = int(mavproxy.match.group(1))
+            numlogs = int(mavproxy.match.group(2))
+            lastlog = int(mavproxy.match.group(3))
+            if log_num != 1:
+                raise NotAchievedException("Wanted log_num == 1 got %u" % log_num)
+            if numlogs != 3:
+                raise NotAchievedException("Wanted numlogs == 3 got %u" % numlogs)
+            if lastlog != 3:
+                raise NotAchievedException("Wanted lastlog == 3 got %u" % lastlog)
 
             # Download second and third logs
             mavproxy.send("log download 2 logs/dataflash-log-002.BIN\n")
