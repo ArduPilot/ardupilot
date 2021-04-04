@@ -18,6 +18,13 @@ public:
     */
     float modifier(float sample, float dt);
 
+    /*
+      get last slew rate
+     */
+    float get_slew_rate(void) const {
+        return slew_filter.get();
+    }
+
 private:
     const float &slew_rate_max;
     const float &slew_rate_tau;
