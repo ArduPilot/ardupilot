@@ -309,9 +309,10 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     bool PD_significant = (max_P > PD_high || max_D > PD_high);
 
     // see if we overshot
-    bool overshot = (state == ATState::DEMAND_POS)?
-        (max_rate > max_target*AUTOTUNE_OVERSHOOT):
-        (min_rate < min_target*AUTOTUNE_OVERSHOOT);
+    const float dem_ratio  = (state == ATState::DEMAND_POS)?
+        constrain_float(max_rate / max_target, 0.1, 2):
+        constrain_float(min_rate / min_target, 0.1, 2);
+    bool overshot = dem_ratio > AUTOTUNE_OVERSHOOT;
 
     // adjust P and D
     float D = rpid.kD();
@@ -322,13 +323,23 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
 
     // if the slew limiter kicked in or
     if (min_Dmod < 1.0 || (overshot && PD_significant)) {
+        // we apply a gain reduction in proportion to the overshoot and dmod
+        const float gain_mul = (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+        const float dmod_mul = linear_interpolate(1, gain_mul,
+                                                  min_Dmod,
+                                                  1.0, 0.6);
+        const float overshoot_mul = linear_interpolate(1, gain_mul,
+                                                       dem_ratio,
+                                                       AUTOTUNE_OVERSHOOT,
+                                                       1.3 * AUTOTUNE_OVERSHOOT);
+
         // we're overshooting or oscillating, decrease gains. We
         // assume the gain that needs to be reduced is the one that
         // peaked at a higher value
         if (max_P < max_D) {
-            D *= (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+            D *= dmod_mul * overshoot_mul;
         } else {
-            P *= (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+            P *= dmod_mul * overshoot_mul;
         }
         action = Action::LOWER_PD;
     } else {
