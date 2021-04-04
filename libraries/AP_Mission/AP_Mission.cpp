@@ -892,22 +892,22 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
         cmd.p1 = fabsf(packet.param3);                  // store radius as 16bit since no other params are competing for space
-        cmd.content.location.loiter_ccw = (packet.param3 < 0);    // -1 = counter clockwise, +1 = clockwise
+        cmd.content.location.loiter_ccw = packet.param3;    // -1 = counter clockwise, +1 = clockwise
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS: {                    // MAV ID: 18
         uint16_t num_turns = packet.param1;              // param 1 is number of times to circle is held in low p1
         uint16_t radius_m = fabsf(packet.param3);        // param 3 is radius in meters is held in high p1
         cmd.p1 = (radius_m<<8) | (num_turns & 0x00FF);   // store radius in high byte of p1, num turns in low byte of p1
-        cmd.content.location.loiter_ccw = (packet.param3 < 0);
-        cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.location.loiter_ccw = packet.param3;
+        cmd.content.location.loiter_xtrack = packet.param4; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
     }
     break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
         cmd.p1 = packet.param1;                         // loiter time in seconds uses all 16 bits, 8bit seconds is too small. No room for radius.
-        cmd.content.location.loiter_ccw = (packet.param3 < 0);
-        cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.location.loiter_ccw = packet.param3;
+        cmd.content.location.loiter_xtrack = packet.param4; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
