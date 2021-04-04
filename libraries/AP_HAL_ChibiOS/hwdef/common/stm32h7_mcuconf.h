@@ -18,6 +18,9 @@
  */
 #pragma once
 
+// we want to cope with both revision XY chips and newer chips
+#define STM32_ENFORCE_H7_REV_XY
+
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
 #endif
