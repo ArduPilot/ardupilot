@@ -351,7 +351,7 @@ public:
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
-        k_param_FBWB_max_altitude_m,  // 0=disabled, maximum value for altitude in meters
+        k_param_fbwb_max_altitude_m,  // 0=disabled, maximum value for altitude in meters
     };
 
     AP_Int16 format_version;
@@ -404,7 +404,7 @@ public:
     AP_Int8 flybywire_elev_reverse;
     AP_Int8 flybywire_climb_rate;
     AP_Int16 FBWB_min_altitude_cm;
-    AP_Int16 FBWB_max_altitude_m;
+    AP_Int16 fbwb_max_altitude_m;
 
     // Throttle
     //

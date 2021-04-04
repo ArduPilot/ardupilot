@@ -335,7 +335,7 @@ void Plane::constrain_target_altitude_location(const Location &loc1, const Locat
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc1.alt, loc2.alt);
     }
 }
-s
+
 /*
   return error between target altitude and current altitude
  */
@@ -352,15 +352,15 @@ int32_t Plane::calc_altitude_error_cm(void)
 }
 
 /*
-  check for min and max altitude: FBWB_min_altitude_cm and FBWB_max_altitude_m violation
+  check for min and max altitude: FBWB_min_altitude_cm and fbwb_max_altitude_m violation
  */
 void Plane::check_fbwb_altitude(void)//check_fbwb_minimum_altitude
 {
     //check for max
-    if (g.FBWB_max_altitude_m*1000 > g.FBWB_min_altitude_cm && g.FBWB_max_altitude_m > 0)
+    if (g.fbwb_max_altitude_m*1000 > g.FBWB_min_altitude_cm && g.fbwb_max_altitude_m > 0)
     {
-        if (target_altitude.amsl_cm > home.alt + g.FBWB_max_altitude_m*1000) {
-            target_altitude.amsl_cm = home.alt + g.FBWB_max_altitude_m*1000;
+        if (target_altitude.amsl_cm > home.alt + g.fbwb_max_altitude_m*1000) {
+            target_altitude.amsl_cm = home.alt + g.fbwb_max_altitude_m*1000;
         }
     }
 

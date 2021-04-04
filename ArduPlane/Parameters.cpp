@@ -686,7 +686,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This is the maximum altitude in meters that FBWB and CRUISE modes will allow. If you attempt to descend upper this altitude the plane will hold level. A value of zero means no limit.
     // @Units: m
     // @User: Standard
-    GSCALAR(FBWB_max_altitude_m,   "ALT_FBWCM_MAX", 0),
+    GSCALAR(fbwb_max_altitude_m,   "ALT_FBWCM_MAX", 0),
 
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
