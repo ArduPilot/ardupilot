@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Units: m/s
     // @Range: 0 2
     // @User: Standard
-    AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_max, 0.5f),
+    AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_max, 0.75f),
 
     // @Param: ALT_MIN
     // @DisplayName: Avoidance minimum altitude
@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Units: m
     // @Range: 0 6
     // @User: Standard
-    AP_GROUPINFO("ALT_MIN", 7, AC_Avoid, _alt_min, 2.0f),
+    AP_GROUPINFO("ALT_MIN", 7, AC_Avoid, _alt_min, 0.0f),
 
     // @Param: ACCEL_MAX
     // @DisplayName: Avoidance maximum acceleration
