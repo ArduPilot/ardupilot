@@ -357,6 +357,7 @@ public:
         float D;
         float FF;
         float Dmod;
+        float slew_rate;
         bool  limit;
     };
 
