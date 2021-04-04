@@ -172,9 +172,10 @@ bool SoaringController::suppress_throttle()
         _spdHgt.reset_pitch_I();
 
         _cruise_start_time_us = AP_HAL::micros64();
+
         // Reset the filtered vario rate - it is currently elevated due to the climb rate and would otherwise take a while to fall again,
         // leading to false positives.
-        _vario.filtered_reading = 0;
+        _vario.reset_trigger_filter(0.0f);
     }
 
     return _throttle_suppressed;
@@ -186,7 +187,7 @@ bool SoaringController::check_thermal_criteria()
 
     return (status == ActiveStatus::AUTO_MODE_CHANGE
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
-            && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
+            && (_vario.get_trigger_value() - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
             && _vario.alt > alt_min);
 }
@@ -217,7 +218,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
         const float mcCreadyAlt = McCready(alt);
         if (_thermalability < mcCreadyAlt) {
             result = LoiterStatus::THERMAL_WEAK;
-        } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
+        } else if (alt < (-_thermal_start_pos.z) || _vario.get_filtered_climb() < 0.0) {
             result = LoiterStatus::ALT_LOST;
         } else if (check_drift(prev_wp, next_wp)) {
             result = LoiterStatus::DRIFT_EXCEEDED;
@@ -270,7 +271,7 @@ void SoaringController::init_thermalling()
     _thermal_start_time_us = AP_HAL::micros64();
     _thermal_start_pos = position;
 
-    _vario.reset_filter(0.0);
+    _vario.reset_climb_filter(0.0);
 
     _position_x_filter.reset(_ekf.X[2]);
     _position_y_filter.reset(_ekf.X[3]);
@@ -298,7 +299,7 @@ void SoaringController::update_thermalling()
         return;
     }
 
-    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.smoothed_climb_rate/_ekf.X[0];
+    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.get_filtered_climb()/_ekf.X[0];
 
     // update the filter
     _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);

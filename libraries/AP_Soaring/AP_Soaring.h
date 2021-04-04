@@ -118,7 +118,7 @@ public:
 
     float get_vario_reading() const
     {
-        return _vario.displayed_reading;
+        return _vario.get_displayed_value();
     }
 
     void update_vario();
