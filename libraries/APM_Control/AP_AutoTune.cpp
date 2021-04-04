@@ -45,10 +45,7 @@ extern const AP_HAL::HAL& hal;
 
 // step size for increasing gains, percentage
 #define AUTOTUNE_INCREASE_FF_STEP 12
-#define AUTOTUNE_INCREASE_PD_STEP 5
-
-// step size for increasing gains when low impact, percentage
-#define AUTOTUNE_INCREASE_PD_LOW_STEP 30
+#define AUTOTUNE_INCREASE_PD_STEP 10
 
 // step size for decreasing gains, percentage
 #define AUTOTUNE_DECREASE_FF_STEP 15
@@ -87,6 +84,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
   tuning parameters based on a user chosen AUTOTUNE_LEVEL parameter
   from 1 to 10. Level 1 is a very soft tune. Level 10 is a very
   aggressive tune.
+  Level 0 means use the existing RMAX and TCONST parameters
  */
 static const struct {
     float tau;
@@ -129,12 +127,14 @@ void AP_AutoTune::start(void)
     actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
     rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
 
-    // scale slew limit to more agressively find oscillations during autotune
-    rpid.set_slew_limit_scale(1.5*45);
-
     ff_filter.reset();
     actuator_filter.reset();
     rate_filter.reset();
+
+    if (!is_positive(rpid.slew_limit())) {
+        // we must have a slew limit, default to 150 deg/s
+        rpid.slew_limit().set_and_save(150);
+    }
 
     Debug("START FF -> %.3f\n", rpid.ff().get());
 }
@@ -199,6 +199,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     max_P = MAX(max_P, fabsf(pinfo.P));
     max_D = MAX(max_D, fabsf(pinfo.D));
     min_Dmod = MIN(min_Dmod, pinfo.Dmod);
+    max_SRate = MAX(max_SRate, pinfo.slew_rate);
 
     int16_t att_limit_cd;
     if (type == AUTOTUNE_ROLL) {
@@ -273,6 +274,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         state = ATState::IDLE;
         action = Action::LOW_RATE;
         min_Dmod = 1;
+        max_SRate = 0;
         max_P = max_D = 0;
         return;
     }
@@ -282,6 +284,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         state = ATState::IDLE;
         action = Action::SHORT;
         min_Dmod = 1;
+        max_SRate = 0;
         max_P = max_D = 0;
         return;
     }
@@ -325,13 +328,12 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     if (min_Dmod < 1.0 || (overshot && PD_significant)) {
         // we apply a gain reduction in proportion to the overshoot and dmod
         const float gain_mul = (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
-        const float dmod_mul = linear_interpolate(1, gain_mul,
+        const float dmod_mul = linear_interpolate(gain_mul, 1,
                                                   min_Dmod,
-                                                  1.0, 0.6);
+                                                  0.6, 1.0);
         const float overshoot_mul = linear_interpolate(1, gain_mul,
                                                        dem_ratio,
-                                                       AUTOTUNE_OVERSHOOT,
-                                                       1.3 * AUTOTUNE_OVERSHOOT);
+                                                       AUTOTUNE_OVERSHOOT, 1.3 * AUTOTUNE_OVERSHOOT);
 
         // we're overshooting or oscillating, decrease gains. We
         // assume the gain that needs to be reduced is the one that
@@ -343,20 +345,20 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         }
         action = Action::LOWER_PD;
     } else {
-        const float low_PD = 0.05 * MAX(max_actuator, fabsf(min_actuator));
-        // not oscillating or overshooting, increase the gains
-        if (max_P < low_PD) {
-            // P is very small, increase rapidly
-            P *= (100 + AUTOTUNE_INCREASE_PD_LOW_STEP)*0.01;
-        } else {
-            P *= (100 + AUTOTUNE_INCREASE_PD_STEP)*0.01;
-        }
-        if (max_D < low_PD) {
-            // D is very small, increase rapidly
-            D *= (100 + AUTOTUNE_INCREASE_PD_LOW_STEP)*0.01;
-        } else {
-            D *= (100 + AUTOTUNE_INCREASE_PD_STEP)*0.01;
-        }
+        /* not oscillating or overshooting, increase the gains
+
+           The increase is based on how far we are below the slew
+           limit. At 80% of the limit we stop increasing gains, to
+           give some margin. Below 25% of the limit we apply max
+           increase
+         */
+        const float slew_limit = rpid.slew_limit();
+        const float gain_mul = (100+AUTOTUNE_INCREASE_PD_STEP)*0.01;
+        const float PD_mul = linear_interpolate(gain_mul, 1,
+                                                max_SRate,
+                                                0.2*slew_limit, 0.6*slew_limit);
+        P *= PD_mul;
+        D *= PD_mul;
         action = Action::RAISE_PD;
     }
 
@@ -380,6 +382,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     update_rmax();
 
     min_Dmod = 1;
+    max_SRate = 0;
     max_P = max_D = 0;
     state = new_state;
     state_enter_ms = now;
