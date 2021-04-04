@@ -96,7 +96,7 @@ int global_compteur = 0;
 const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,              100,    130),
     SCHED_TASK(throttle_loop,         50,     75),
-    //SCHED_TASK(read_uwb,    10,    100),
+    SCHED_TASK(read_uwb,    10,    100),
 
 
     SCHED_TASK_CLASS(AP_GPS, &copter.gps, update, 50, 200),
@@ -222,6 +222,7 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 }
 
 constexpr int8_t Copter::_failsafe_priorities[7];
+
 
 // Main loop - 400hz
 void Copter::fast_loop()
@@ -676,7 +677,8 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 }
 
 
-/*void read_uwb(void)
+
+void Copter::read_uwb(void)
 {
 
 AP_HAL::UARTDriver *uart = nullptr;
@@ -721,7 +723,6 @@ uart->end();
 
 }
 
-*/
 
 
 
