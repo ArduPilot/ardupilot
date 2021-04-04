@@ -1068,19 +1068,11 @@ void QuadPlane::run_z_controller(void)
         // initialize vertical speeds and leash lengths
         pos_control->set_max_speed_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up);
         pos_control->set_max_accel_z(pilot_accel_z);
-        
-        // it has been two seconds since we last ran the Z
-        // controller. We need to assume the integrator may be way off
-
-        // the base throttle we start at is the current throttle we are using
-        // note that AC_PosControl::run_z_controller() adds the Z pid (_pid_accel_z) output to _motors.get_throttle_hover()
-        float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
-        pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
         last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
-    pos_control->update_z_controller();    
+    pos_control->update_z_controller();
 }
 
 void QuadPlane::relax_attitude_control()
