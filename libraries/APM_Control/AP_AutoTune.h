@@ -117,5 +117,6 @@ private:
     float max_P;
     float max_D;
     float min_Dmod;
+    float max_SRate;
     float FF_single;
 };
