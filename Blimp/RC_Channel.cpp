@@ -36,6 +36,11 @@ void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 }
 
+bool RC_Channels_Blimp::in_rc_failsafe() const
+{
+    return blimp.failsafe.radio;
+}
+
 bool RC_Channels_Blimp::has_valid_input() const
 {
     if (blimp.failsafe.radio) {
