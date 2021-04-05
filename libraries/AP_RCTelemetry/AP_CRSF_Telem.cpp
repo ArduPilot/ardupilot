@@ -565,7 +565,9 @@ void AP_CRSF_Telem::update_vtx_params()
     }
 
     _vtx_freq_change_pending = vtx.update_band() || vtx.update_channel() || vtx.update_frequency() || _vtx_freq_change_pending;
-    _vtx_power_change_pending = vtx.update_power() || _vtx_power_change_pending;
+    // don't update the power if we are supposed to be in pitmode as this will take us out of pitmode
+    const bool pitmode = vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
+    _vtx_power_change_pending = !pitmode && (vtx.update_power() || _vtx_power_change_pending);
     _vtx_options_change_pending = vtx.update_options() || _vtx_options_change_pending;
 
     if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
@@ -591,7 +593,15 @@ void AP_CRSF_Telem::update_vtx_params()
         _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX;
 
         uint8_t len = 5;
-        if (_vtx_freq_change_pending && _vtx_freq_update) {
+        // prioritize option changes so that the pilot can get in and out of pitmode
+        if (_vtx_options_change_pending) {
+            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
+            if (vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) {
+                _telem.ext.command.payload[1] = 1;
+            } else {
+                _telem.ext.command.payload[1] = 0;
+            }
+        } else if (_vtx_freq_change_pending && _vtx_freq_update) {
             _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_FREQ;
             _telem.ext.command.payload[1] = (vtx.get_frequency_mhz() & 0xFF00) >> 8;
             _telem.ext.command.payload[2] = (vtx.get_frequency_mhz() & 0xFF);
@@ -626,13 +636,6 @@ void AP_CRSF_Telem::update_vtx_params()
             }
             _telem.ext.command.payload[1] = vtx.get_configured_power_level();
             _vtx_dbm_update = true;
-        } else if (_vtx_options_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
-            if (vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) {
-                _telem.ext.command.payload[1] = 1;
-            } else {
-                _telem.ext.command.payload[1] = 0;
-            }
         }
         _telem_pending = true;
         // calculate command crc
