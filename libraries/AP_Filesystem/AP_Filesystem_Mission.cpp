@@ -26,6 +26,8 @@
 extern const AP_HAL::HAL& hal;
 extern int errno;
 
+#define IDLE_TIMEOUT_MS 30000
+
 int AP_Filesystem_Mission::open(const char *fname, int flags)
 {
     enum MAV_MISSION_TYPE mtype;
@@ -34,11 +36,19 @@ int AP_Filesystem_Mission::open(const char *fname, int flags)
         errno = ENOENT;
         return -1;
     }
-    if ((flags & O_ACCMODE) != O_RDONLY) {
-        return -1;
-    }
     uint8_t idx;
+    bool readonly = ((flags & O_ACCMODE) == O_RDONLY);
+    uint32_t now = AP_HAL::millis();
     for (idx=0; idx<max_open_file; idx++) {
+        if (now - file[idx].last_op_ms > IDLE_TIMEOUT_MS) {
+            file[idx].open = false;
+            delete file[idx].writebuf;
+            file[idx].writebuf = nullptr;
+        }
+        if (!readonly && file[idx].writebuf != nullptr) {
+            // only one upload at a time
+            return -1;
+        }
         if (!file[idx].open) {
             break;
         }
@@ -52,6 +62,13 @@ int AP_Filesystem_Mission::open(const char *fname, int flags)
     r.open = true;
     r.mtype = mtype;
     r.num_items = get_num_items(r.mtype);
+    if (!readonly) {
+        // setup for upload
+        r.writebuf = new ExpandingString();
+    } else {
+        r.writebuf = nullptr;
+    }
+    r.last_op_ms = now;
 
     return idx;
 }
@@ -64,6 +81,15 @@ int AP_Filesystem_Mission::close(int fd)
     }
     struct rfile &r = file[fd];
     r.open = false;
+    if (r.writebuf != nullptr) {
+        bool ok = finish_upload(r);
+        delete r.writebuf;
+        r.writebuf = nullptr;
+        if (!ok) {
+            errno = EINVAL;
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -88,6 +114,14 @@ int32_t AP_Filesystem_Mission::read(int fd, void *buf, uint32_t count)
     }
 
     struct rfile &r = file[fd];
+
+    if (r.writebuf != nullptr) {
+        errno = EBADF;
+        return -1;
+    }
+
+    r.last_op_ms = AP_HAL::millis();
+
     size_t header_total = 0;
     uint8_t *ubuf = (uint8_t *)buf;
 
@@ -244,4 +278,91 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
         break;
     }
     return 0;
+}
+
+/*
+  support mission upload
+ */
+int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
+{
+    if (fd < 0 || fd >= max_open_file || !file[fd].open) {
+        errno = EBADF;
+        return -1;
+    }
+    struct rfile &r = file[fd];
+    if (r.writebuf == nullptr) {
+        errno = EBADF;
+        return -1;
+    }
+    r.last_op_ms = AP_HAL::millis();
+    struct header hdr;
+    if (r.file_ofs == 0 && count >= sizeof(hdr)) {
+        // pre-expand the buffer to the full size when we get the header
+        memcpy(&hdr, buf, sizeof(hdr));
+        if (hdr.num_items < 0xFFFF) {
+            const uint32_t flen = sizeof(hdr) + hdr.num_items * MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN;
+            if (flen > r.writebuf->get_length()) {
+                if (!r.writebuf->append(nullptr, flen - r.writebuf->get_length())) {
+                    // not enough memory
+                    return -1;
+                }
+            }
+        }
+    }
+    if (r.file_ofs + count > r.writebuf->get_length()) {
+        if (!r.writebuf->append(nullptr, r.file_ofs + count - r.writebuf->get_length())) {
+            return -1;
+        }
+    }
+    uint8_t *b = (uint8_t *)r.writebuf->get_writeable_string();
+    memcpy(&b[r.file_ofs], buf, count);
+    r.file_ofs += count;
+    return count;
+}
+
+/*
+  finish mission upload
+ */
+bool AP_Filesystem_Mission::finish_upload(const rfile &r)
+{
+    const uint32_t flen = r.writebuf->get_length();
+    uint8_t *b = (uint8_t *)r.writebuf->get_writeable_string();
+    struct header hdr;
+    if (flen < sizeof(hdr)) {
+        return false;
+    }
+    const uint8_t item_size = MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN;
+    const uint32_t nitems = (flen - sizeof(hdr)) / item_size;
+
+    memcpy(&hdr, b, sizeof(hdr));
+    if (hdr.magic != mission_magic) {
+        return false;
+    }
+    if (nitems != hdr.num_items) {
+        return false;
+    }
+
+    auto *mission = AP::mission();
+    if (mission == nullptr) {
+        return false;
+    }
+    WITH_SEMAPHORE(mission->get_semaphore());
+    mission->clear();
+    for (uint32_t i=0; i<nitems; i++) {
+        mavlink_mission_item_int_t m;
+        AP_Mission::Mission_Command cmd;
+        memcpy(&m, &b[sizeof(hdr)+i*item_size], item_size);
+        const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(m, cmd);
+        if (res != MAV_MISSION_ACCEPTED) {
+            return false;
+        }
+        if (cmd.id == MAV_CMD_DO_JUMP &&
+            (cmd.content.jump.target >= nitems || cmd.content.jump.target == 0)) {
+            return false;
+        }
+        if (!mission->add_cmd(cmd)) {
+            return false;
+        }
+    }
+    return true;
 }
