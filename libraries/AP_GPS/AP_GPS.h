@@ -533,6 +533,12 @@ public:
     bool get_error_codes(uint8_t instance, uint32_t &error_codes) const;
     bool get_error_codes(uint32_t &error_codes) const { return get_error_codes(primary_instance, error_codes); }
 
+    enum class SBAS_Mode : int8_t {
+        Disabled = 0,
+        Enabled = 1,
+        DoNotChange = 2,
+    };
+
 protected:
 
     // configuration parameters
@@ -543,7 +549,7 @@ protected:
     AP_Int16 _sbp_logmask;
     AP_Int8 _inject_to;
     uint32_t _last_instance_swap_ms;
-    AP_Int8 _sbas_mode;
+    AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
     AP_Int8 _gnss_mode[GPS_MAX_RECEIVERS];
