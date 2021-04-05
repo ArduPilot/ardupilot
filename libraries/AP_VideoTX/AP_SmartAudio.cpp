@@ -201,7 +201,14 @@ void AP_SmartAudio::update_vtx_params()
             }
         }
 
-        if (_vtx_freq_change_pending) {
+        if (pitMode) {// prevent power changes in pitmode as this takes the VTX out of pitmode
+            _vtx_power_change_pending = false;
+        }
+
+        // prioritize pitmode changes
+        if (_vtx_options_change_pending) {
+            set_operation_mode(mode);
+        } else if (_vtx_freq_change_pending) {
             if (_vtx_use_set_freq) {
                 set_frequency(vtx.get_configured_frequency_mhz(), false);
             } else {
@@ -224,8 +231,6 @@ void AP_SmartAudio::update_vtx_params()
                 }
                 break;
             }
-        } else if (_vtx_options_change_pending) {
-            set_operation_mode(mode);
         }
     }
 }
