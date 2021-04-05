@@ -138,8 +138,6 @@ private:
     void init_registers();
     void init_ctrl_data();
     void init_PCM();
-    void init_PCM_BCM2835();
-    void init_PCM_BCM2711();
     void init_DMA();
     void init_buffer();
     static void stop_dma();
