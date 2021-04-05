@@ -58,6 +58,9 @@ extern const AP_HAL::HAL& hal;
 // ratio of I to P
 #define AUTOTUNE_I_RATIO 0.75
 
+// time constant of rate trim loop
+#define TRIM_TCONST 1.0f
+
 // overshoot threshold
 #define AUTOTUNE_OVERSHOOT 1.1
 
@@ -365,7 +368,8 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     rpid.ff().set(FF);
     rpid.kP().set(P);
     rpid.kD().set(D);
-    rpid.kI().set(P*AUTOTUNE_I_RATIO);
+    rpid.kI().set(MAX(P*AUTOTUNE_I_RATIO, (FF / TRIM_TCONST)));
+
     current.FF = FF;
     current.P = P;
     current.I = rpid.kI().get();
@@ -507,6 +511,10 @@ void AP_AutoTune::update_rmax(void)
     } else {
         target_rmax = tuning_table[level-1].rmax;
         target_tau = tuning_table[level-1].tau;
+    }
+
+    if (level > 0) {
+        target_tau = 1.0f / ((1.0f / target_tau) + (current.I / current.FF));
     }
 
     if (current.rmax_pos == 0) {
