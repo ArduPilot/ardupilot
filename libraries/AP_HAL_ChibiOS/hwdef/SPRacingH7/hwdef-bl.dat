@@ -5,7 +5,7 @@
 MCU STM32H7xx STM32H750xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1027
+APJ_BOARD_ID 1028
 
 
 # crystal frequency, setup to use external oscillator
