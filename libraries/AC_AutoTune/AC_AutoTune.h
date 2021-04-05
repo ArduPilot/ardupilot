@@ -384,6 +384,8 @@ protected:
     float    curr_test_freq;
     bool     dwell_complete;
     Vector3f start_angles;
+    uint32_t settle_time;
+    uint32_t phase_out_time;
 
     LowPassFilterFloat  command_filt;               // filtered command
     LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second

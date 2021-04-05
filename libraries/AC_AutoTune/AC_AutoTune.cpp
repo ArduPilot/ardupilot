@@ -1431,6 +1431,8 @@ void AC_AutoTune::rate_ff_test_init()
     test_rate_filt = 0.0f;
     test_tgt_rate_filt = 0.0f;
     filt_target_rate = 0.0f;
+    settle_time = 200;
+    phase_out_time = 500;
 }
 
 void AC_AutoTune::rate_ff_test_run(float max_angle_cd, float target_rate_cds, float dir_sign)
@@ -1439,8 +1441,6 @@ void AC_AutoTune::rate_ff_test_run(float max_angle_cd, float target_rate_cds, fl
     float command_reading = 0.0f;
     float tgt_rate_reading = 0.0f;
     const uint32_t now = AP_HAL::millis();
-    static uint32_t settle_time = 200;
-    static uint32_t phase_out_time = 500;
     static float trim_command_reading = 0.0f;
     static float trim_heading = 0.0f;
     static float rate_request_cds;
@@ -1607,8 +1607,6 @@ void AC_AutoTune::rate_ff_test_run(float max_angle_cd, float target_rate_cds, fl
     if (now - step_start_time_ms >= step_time_limit_ms || (ff_test_phase == 2 && phase_out_time == 0)) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
-        settle_time = 200;
-        phase_out_time = 300;
         rate_request_cds = 0.0f;
         angle_request_cd = 0.0f;
     }
@@ -1628,6 +1626,7 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
     test_tgt_rate_filt = 0.0f;
     filt_target_rate = 0.0f;
     dwell_start_time_ms = 0.0f;
+    settle_time = 200;
 }
 
 void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase)
@@ -1638,7 +1637,6 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
     float tgt_attitude = 2.5f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_rate_cds;
-    static uint32_t settle_time = 200;
     static float trim_command;
 
     float cycle_time_ms = 0;
@@ -1723,7 +1721,6 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
     if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
-        settle_time = 200;
     }
 }
 
@@ -1733,6 +1730,7 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
     command_filt.set_cutoff_frequency(filt_freq);
     target_rate_filt.set_cutoff_frequency(filt_freq);
     dwell_start_time_ms = 0.0f;
+    settle_time = 200;
     switch (axis) {
     case ROLL:
         rotation_rate_filt.reset(((float)ahrs_view->roll_sensor) / 5730.0f);
@@ -1760,7 +1758,6 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
         filt_target_rate = 0.0f;
         break;
     }
-
 }
 
 void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase)
@@ -1771,7 +1768,6 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     float tgt_attitude = 5.0f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
-    static uint32_t settle_time = 200;
     static float trim_yaw_tgt_reading = 0.0f;
     static float trim_yaw_heading_reading = 0.0f;
 
@@ -1841,7 +1837,6 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
-        settle_time = 200;
     }
 }
 

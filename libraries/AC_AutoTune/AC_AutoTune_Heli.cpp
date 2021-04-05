@@ -69,9 +69,9 @@ void AC_AutoTune_Heli::test_init()
                 test_freq[0] = 2.0f * 3.14159f * 2.0f;
                 curr_test_freq = test_freq[0];
             }
-            // reset determine_gain function for first use in the event autotune is restarted
-            determine_gain(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
         }
+        // reset determine_gain function whenever test is initialized
+        determine_gain(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
         dwell_test_init(curr_test_freq);
         if (!is_zero(curr_test_freq)) {
             // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
@@ -83,9 +83,9 @@ void AC_AutoTune_Heli::test_init()
             test_freq[0] = 1.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
             test_accel_max = 0.0f;
-            // reset determine_gain function for first use in the event autotune is restarted
-            determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], test_accel_max, dwell_complete, true);
         }
+        // reset determine_gain function whenever test is initialized
+        determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], test_accel_max, dwell_complete, true);
         angle_dwell_test_init(curr_test_freq);
 //        angle_dwell_test_init(5.0f);
         if (!is_zero(curr_test_freq)) {
