@@ -107,11 +107,10 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 
 #define RCIN_RPI_PLL_CLK         50000
 /*
-*  Defaults to 107.14MHz in the firmware setup. 
-*  The PLL channel that used to generate the 100MHz now runs at 750MHz instead of 500,
-*  so the fw uses 750/7.
-*
-*  see: https://www.raspberrypi.org/forums/viewtopic.php?t=251902
+* Defaults to 107.14MHz in the firmware setup.
+* The PLL channel that used to generate the 100MHz now runs at 750MHz instead of 500,
+* so the fw uses 750/7.
+* see: https://www.raspberrypi.org/forums/viewtopic.php?t=251902
 */
 #define RCIN_RPI4_PLL_CLK        70000
 
@@ -366,29 +365,28 @@ void RCInput_RPI::init_ctrl_data()
     ((dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages, cbp))->next = (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages, 0);
 }
 
-void RCInput_RPI::init_PCM()
-{
-    if (_version != 4)
-    {
-        init_PCM_BCM2835();
-    }
-    else
-    {
-        init_PCM_BCM2711();
-    }
-}
 
 /*Initialise PCM
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
- */
-void RCInput_RPI::init_PCM_BCM2835()
+  
+  See BCM2711 documentation:
+  https://datasheets.raspberrypi.org/bcm2711/bcm2711-peripherals.pdf
+*/
+void RCInput_RPI::init_PCM()
 {
     pcm_reg[RCIN_RPI_PCM_CS_A] = 1;                                          // Disable Rx+Tx, Enable PCM block
     hal.scheduler->delay_microseconds(100);
     clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000006;                              // Source=PLLD (500MHz)
     hal.scheduler->delay_microseconds(100);
-    clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div. If we need to configure DMA frequency.
+    if (_version != 4)
+    {
+        clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div for BCM2835 500MHZ clock. If we need to configure DMA frequency.
+    }
+    else
+    {
+        clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // Set pcm div for BCM2711 700MHz clock. If we need to configure DMA frequency.
+    }
     hal.scheduler->delay_microseconds(100);
     clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000016;                              // Source=PLLD and enable
     hal.scheduler->delay_microseconds(100);
@@ -406,33 +404,6 @@ void RCInput_RPI::init_PCM_BCM2835()
     hal.scheduler->delay_microseconds(100);
 }
 
-
-/*Initialise PCM
-  See BCM2711 documentation:
- */
-void RCInput_RPI::init_PCM_BCM2711()
-{
-    pcm_reg[RCIN_RPI_PCM_CS_A] = 1;                                          // Disable Rx+Tx, Enable PCM block
-    hal.scheduler->delay_microseconds(100);
-    clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000006;                              // Source=PLLD (700MHz) // https://www.raspberrypi.org/forums/viewtopic.php?t=251902
-    hal.scheduler->delay_microseconds(100);
-    clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // 0x5A001900; //0x0x5A001900; //0x5A000000 | ((50000/RCIN_RPI_SAMPLE_FREQ)<< 4);   // Set pcm div. If we need to configure DMA frequency.
-    hal.scheduler->delay_microseconds(100);
-    clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000016;                              // Source=PLLD and enable
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_TXC_A] = 0<<31 | 1<<30 | 0<<20 | 0<<16;             // 1 channel, 8 bits
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_MODE_A] = (10 - 1) << 10;                           //PCM mode 0b0010010000000000
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_CS_A] |= 1<<4 | 1<<3;                               // Clear FIFOs
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_DREQ_A] = 64<<24 | 64<<8;                           // DMA Req when one slot is free?
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_CS_A] |= 1<<9;                                      // Enable DMA
-    hal.scheduler->delay_microseconds(100);
-    pcm_reg[RCIN_RPI_PCM_CS_A] |= 1<<2;                                      // Enable Tx
-    hal.scheduler->delay_microseconds(100);
-}
 
 /*Initialise DMA
   See BCM2835 documentation:
@@ -510,15 +481,16 @@ void RCInput_RPI::init()
     uint64_t signal_states(0);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-    int version = 2;
+    _version = 2;
 #else
-    int version = UtilRPI::from(hal.util)->get_rpi_version();
+    _version = UtilRPI::from(hal.util)->get_rpi_version();
 #endif
-    set_physical_addresses(version);
+
+    set_physical_addresses(_version);
     // Init memory for buffer and for DMA control blocks.
     // See comments in "init_ctrl_data()" to understand values "2" and "15"
-    circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, version);
-    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 15, version);
+    circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, _version);
+    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 15, _version);
 
     init_registers();
 
