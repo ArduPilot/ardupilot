@@ -96,11 +96,11 @@ static const struct {
     { 0.70, 50 },   // level 4
     { 0.60, 60 },   // level 5
     { 0.50, 75 },   // level 6
-    { 0.25, 90 },   // level 7
-    { 0.12, 120 },   // level 8
-    { 0.06, 160 },   // level 9
-    { 0.03, 210 },   // level 10
-    { 0.01, 300 },   // (yes, it goes to 11)
+    { 0.30, 90 },   // level 7
+    { 0.2, 120 },   // level 8
+    { 0.15, 160 },   // level 9
+    { 0.1, 210 },   // level 10
+    { 0.1, 300 },   // (yes, it goes to 11)
 };
 
 /*
@@ -148,7 +148,6 @@ void AP_AutoTune::stop(void)
         running = false;
         save_gains(restore);
         current = restore;
-        rpid.set_slew_limit_scale(45);
     }
 }
 
