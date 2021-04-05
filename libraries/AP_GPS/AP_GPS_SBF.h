@@ -70,6 +70,7 @@ private:
         Baud_Rate,
         SSO,
         Blob,
+        SBAS,
         Complete
     };
     Config_State config_step;
@@ -83,6 +84,12 @@ private:
     GPS_SBF_EXTRA_CONFIG
 #endif
     };
+    static constexpr const char* sbas_off = "sst, -SBAS";
+    static constexpr const char* sbas_on_blob[] = {
+                                                   "snt,+GEOL1+GEOL5",
+                                                   "sst,+SBAS",
+                                                   "ssbc,auto,Operational,MixedSystems,auto",
+                                                  };
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
