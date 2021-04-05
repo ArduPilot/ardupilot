@@ -255,7 +255,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
         break;
     case STEP_POLL_SBAS:
-        if (gps._sbas_mode != 2) {
+        if (gps._sbas_mode != AP_GPS::SBAS_Mode::DoNotChange) {
             _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
         } else {
             _unconfigured_messages &= ~CONFIG_SBAS;
@@ -1016,7 +1016,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
 
         case MSG_CFG_SBAS:
-            if (gps._sbas_mode != 2) {
+            if (gps._sbas_mode != AP_GPS::SBAS_Mode::DoNotChange) {
 	        Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
                       (unsigned)_buffer.sbas.mode,
                       (unsigned)_buffer.sbas.usage,
