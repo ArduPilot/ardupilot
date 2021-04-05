@@ -154,6 +154,17 @@ class VehicleInfo(object):
             },
         },
     },
+    "Blimp": {
+        "default_frame": "quad",
+        "frames": {
+            # BLIMP
+            "quad": {
+                "model": "+",
+                "waf_target": "bin/blimp",
+                "default_params_filename": "default_params/blimp.parm",
+            },
+        },
+    },
     "ArduPlane": {
         "default_frame": "plane",
         "frames": {

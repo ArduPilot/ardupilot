@@ -51,7 +51,7 @@ void Sub::guided_pos_control_start()
     // set to position control mode
     guided_mode = Guided_WP;
 
-    // initialise waypoint and spline controller
+    // initialise waypoint controller
     wp_nav.wp_and_spline_init();
 
     // initialise wpnav to stopping point at current altitude
@@ -145,7 +145,7 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -181,7 +181,7 @@ bool Sub::guided_set_destination(const Location& dest_loc)
     }
 #endif
 
-    if (!wp_nav.set_wp_destination(dest_loc)) {
+    if (!wp_nav.set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -217,7 +217,7 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -386,7 +386,7 @@ void Sub::guided_vel_control_run()
     }
 }
 
-// guided_posvel_control_run - runs the guided spline controller
+// guided_posvel_control_run - runs the guided posvel controller
 // called from guided_run
 void Sub::guided_posvel_control_run()
 {

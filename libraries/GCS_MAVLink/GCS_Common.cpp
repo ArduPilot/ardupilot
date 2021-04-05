@@ -2466,6 +2466,21 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_long_t &packet)
+{
+    if (packet.param2 > 2) {
+        return MAV_RESULT_DENIED;
+    }
+    const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
+    const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
+    if (!rc().do_aux_function(aux_func, position)) {
+        // note that this is not quite right; we could be more nuanced
+        // about our return code here.
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_long_t &packet)
 {
     return set_message_interval((uint32_t)packet.param1, (int32_t)packet.param2);
@@ -3833,7 +3848,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_
 {
     const uint16_t battery_mask = packet.param1;
     const float percentage = packet.param2;
-    if (AP::battery().reset_remaining(battery_mask, percentage)) {
+    if (AP::battery().reset_remaining_mask(battery_mask, percentage)) {
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
@@ -4136,6 +4151,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
             send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
             result= MAV_RESULT_ACCEPTED;
         }
+        break;
+
+    case MAV_CMD_DO_AUX_FUNCTION:
+        result = handle_command_do_aux_function(packet);
         break;
 
     case MAV_CMD_SET_MESSAGE_INTERVAL:

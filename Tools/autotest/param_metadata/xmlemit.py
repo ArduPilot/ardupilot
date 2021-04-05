@@ -21,7 +21,7 @@ class XmlEmit(Emit):
         self.current_element = self.vehicles
 
     def close(self):
-        etree.indent(self.paramfile)
+        # etree.indent(self.paramfile)  # not available on thor, Ubuntu 16.04
         pretty_xml = etree.tostring(self.paramfile, pretty_print=True, encoding='unicode')
         self.f.write(pretty_xml)
         self.f.close()

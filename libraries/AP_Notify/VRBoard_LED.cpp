@@ -35,7 +35,7 @@ VRBoard_LED::VRBoard_LED():
 {
 
 }
-bool VRBoard_LED::hw_init(void){
+bool VRBoard_LED::init(void){
     // setup the main LEDs as outputs
     hal.gpio->pinMode(HAL_GPIO_A_LED_PIN, HAL_GPIO_OUTPUT);
     hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, HAL_GPIO_OUTPUT);

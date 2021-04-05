@@ -55,7 +55,7 @@ public:
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
-    virtual bool allows_arming(bool from_gcs) const = 0;
+    virtual bool allows_arming(AP_Arming::Method method) const = 0;
     virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
@@ -272,7 +272,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
     void exit();
@@ -324,7 +324,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
@@ -354,7 +354,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override;
+    bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
@@ -369,8 +369,6 @@ public:
     void land_start(const Vector3f& destination);
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
-    void spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
-    void spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
     void nav_guided_start();
 
     bool is_landing() const override;
@@ -417,9 +415,10 @@ private:
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void exit_mission();
 
+    bool check_for_mission_change();    // detect external changes to mission
+
     void takeoff_run();
     void wp_run();
-    void spline_run();
     void land_run();
     void rtl_run();
     void circle_run();
@@ -427,7 +426,7 @@ private:
     void loiter_run();
     void loiter_to_alt_run();
 
-    Location loc_from_cmd(const AP_Mission::Mission_Command& cmd) const;
+    Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
     void payload_place_start(const Vector3f& destination);
     void payload_place_run();
@@ -442,12 +441,14 @@ private:
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
     void do_land(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+    void get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
 #if NAV_GUIDED == ENABLED
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
@@ -525,6 +526,15 @@ private:
     } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
+
+    // variables to detect mission changes
+    static const uint8_t mis_change_detect_cmd_max = 3;
+    struct {
+        uint32_t last_change_time_ms;       // local copy of last time mission was changed
+        uint16_t curr_cmd_index;            // local copy of AP_Mission's current command index
+        uint8_t cmd_count;                  // number of commands in the cmd array
+        AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max]; // local copy of the next few mission commands
+    } mis_change_detect = {};
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -548,6 +558,9 @@ protected:
 
 class ModeAutoTune : public Mode {
 
+    // ParametersG2 sets a pointer within our autotune object:
+    friend class ParametersG2;
+
 public:
     // inherit constructor
     using Mode::Mode;
@@ -558,7 +571,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return false; }
 
     void save_tuning_gains();
@@ -569,6 +582,11 @@ protected:
 
     const char *name() const override { return "AUTOTUNE"; }
     const char *name4() const override { return "ATUN"; }
+
+private:
+
+    AutoTune autotune;
+
 };
 #endif
 
@@ -585,7 +603,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
 
     void timeout_to_loiter_ms(uint32_t timeout_ms);
@@ -617,7 +635,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
 
 protected:
@@ -648,7 +666,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
 
 protected:
@@ -675,7 +693,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
 
 protected:
@@ -721,7 +739,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
@@ -805,7 +823,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override;
+    bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
@@ -905,7 +923,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
 
     bool is_landing() const override { return true; };
@@ -946,7 +964,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
@@ -989,7 +1007,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
@@ -1074,7 +1092,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
 
     bool requires_terrain_failsafe() const override { return true; }
@@ -1181,7 +1199,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
 
     void save_position();
@@ -1227,7 +1245,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
@@ -1254,7 +1272,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
@@ -1297,7 +1315,7 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
 
@@ -1366,7 +1384,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
 
     // Throw types
@@ -1423,7 +1441,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
 
     bool set_velocity(const Vector3f& velocity_neu);
@@ -1451,7 +1469,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
 
 protected:
@@ -1499,7 +1517,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; }
     bool is_autopilot() const override { return true; }
 
     // save current position as A or B.  If both A and B have been saved move to the one specified
@@ -1575,7 +1593,7 @@ public:
     bool is_autopilot() const override { return true; }
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
 
     static const struct AP_Param::GroupInfo  var_info[];
 

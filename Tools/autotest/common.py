@@ -1274,7 +1274,7 @@ class AutoTest(ABC):
 
     def __del__(self):
         if self.rc_thread is not None:
-            self.progress("Joining thread in __del__")
+            self.progress("Joining RC thread in __del__")
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None
@@ -1570,6 +1570,16 @@ class AutoTest(ABC):
 
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
+        # we must make sure that stats have been reset - otherwise
+        # when we reboot we'll reset statistics again and lose our
+        # STAT_BOOTCNT increment:
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException("STAT_RESET did not go non-zero")
+            if self.get_parameter('STAT_RESET') != 0:
+                break
+
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
@@ -2191,14 +2201,10 @@ class AutoTest(ABC):
 
     def close(self):
         """Tidy up after running all tests."""
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
 
         if self.mav is not None:
             self.mav.close()
             self.mav = None
-        util.pexpect_close(self.mavproxy)
         self.stop_SITL()
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
@@ -3473,6 +3479,7 @@ class AutoTest(ABC):
                     bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
                     break
             if len(bad_channels) == 0:
+                self.progress("RC values good")
                 break
             self.progress("RC values bad:%s" % bad_channels)
             if not self.rc_thread.is_alive():
@@ -5695,6 +5702,10 @@ Also, ignores heartbeats not from our target system'''
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
+            if self.use_map:
+                self.mavproxy.send("module unload map\n")
+                self.mavproxy.expect("Unloaded module map")
+
             self.expect_list_remove(self._mavproxy)
             util.pexpect_close(self._mavproxy)
             self._mavproxy = None
@@ -5836,7 +5847,6 @@ Also, ignores heartbeats not from our target system'''
         return self.sitl.isalive()
 
     def autostart_mavproxy(self):
-        return False
         return self.use_map
 
     def init(self):
@@ -8607,7 +8617,7 @@ switch value'''
                     self.check_logs("FRAMEWORK")
 
         if self.rc_thread is not None:
-            self.progress("Joining thread")
+            self.progress("Joining RC thread")
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None

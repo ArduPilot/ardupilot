@@ -666,16 +666,19 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         // flush bytes from port
         while (num_bytes--) {
             int16_t ret = _port->read_locked(_serial_lock_key);
-            if (ret <= 0) {
+            if (ret < 0) {
                 break;
             }
             addByte(ret);
+            if (!rx_queue_.space()) {
+                break;
+            }
         }
     }
     if (rx_queue_.available()) {
         // if we already have something in buffer transmit it
         CanRxItem frm;
-        if (!rx_queue_.pop(frm)) {
+        if (!rx_queue_.peek(frm)) {
             return 0;
         }
         out_frame = frm.frame;
@@ -685,7 +688,22 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         // Also send this frame over can_iface when in passthrough mode,
         // We just push this frame without caring for priority etc
         if (_can_iface) {
-            _can_iface->send(out_frame, AP_HAL::native_micros64() + 1000, out_flags);
+            bool read = false;
+            bool write = true;
+            _can_iface->select(read, write, &out_frame, 0); // select without blocking
+            if (write && _can_iface->send(out_frame, AP_HAL::native_micros64() + 100000, out_flags) == 1) {
+                    rx_queue_.pop();
+                    num_tries = 0;
+            } else if (num_tries > 8) {
+                rx_queue_.pop();
+                num_tries = 0;
+            } else {
+                num_tries++;
+            }
+        } else {
+            // we just throw away frames if we don't
+            // have any can iface to pass through to
+            rx_queue_.pop();
         }
         return 1;
     }

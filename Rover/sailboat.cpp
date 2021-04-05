@@ -8,7 +8,7 @@
 To Do List
  - Improve tacking in light winds and bearing away in strong wings
  - consider drag vs lift sailing differences, ie upwind sail is like wing, dead down wind sail is like parachute
- - max speed paramiter and controller, for mapping you may not want to go too fast
+ - max speed parameter and controller, for mapping you may not want to go too fast
  - mavlink sailing messages
  - smart decision making, ie tack on windshifts, what to do if stuck head to wind
  - some sailing codes track waves to try and 'surf' and to allow tacking on a flat bit, not sure if there is much gain to be had here

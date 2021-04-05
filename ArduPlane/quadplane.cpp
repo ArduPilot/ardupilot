@@ -194,8 +194,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: RTL_MODE
     // @DisplayName: VTOL RTL mode
-    // @Description: If this is set to 1 then an RTL will change to QRTL when within RTL_RADIUS meters of the RTL destination
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If this is set to 1 then an RTL will change to QRTL when within RTL_RADIUS meters of the RTL destination, VTOL approach: vehicle will RTL at RTL alt and circle with a radius of Q_FW_LND_APR_RAD down to Q_RLT_ALT and then transission into the wind and QRTL, see 'AUTO VTOL Landing'
+    // @Values: 0:Disabled,1:Enabled,2:VTOL approach
     // @User: Standard
     AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
 
@@ -772,10 +772,6 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-
-    if (!motors->initialised_ok()) {
-        AP_BoardConfig::config_error("init failed: Q_FRAME_CLASS=%u Q_FRAME_TYPE=%u", frame_class, frame_type);
-    }
 
     tilt.is_vectored = tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW;
 

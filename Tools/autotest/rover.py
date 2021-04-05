@@ -619,19 +619,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.customise_SITL_commandline([
             "--rc-in-port", "5502",
         ])
-        self.load_mission(self.arming_test_mission())
-        self.wait_ready_to_arm()
-        fnoo = [(1, 'MANUAL'),
-                (2, 'MANUAL'),
-                (3, 'RTL'),
-                (4, 'AUTO'),
-                (5, 'AUTO'),  # non-existant mode, should stay in RTL
-                (6, 'MANUAL')]
-        mavproxy = self.start_mavproxy()
-        for (num, expected) in fnoo:
-            mavproxy.send('switch %u\n' % num)
-            self.wait_mode(expected)
-        self.stop_mavproxy(mavproxy)
+        ex = None
+        try:
+            self.load_mission(self.arming_test_mission())
+            self.wait_ready_to_arm()
+            fnoo = [(1, 'MANUAL'),
+                    (2, 'MANUAL'),
+                    (3, 'RTL'),
+                    (4, 'AUTO'),
+                    (5, 'AUTO'),  # non-existant mode, should stay in RTL
+                    (6, 'MANUAL')]
+            mavproxy = self.start_mavproxy()
+            for (num, expected) in fnoo:
+                mavproxy.send('switch %u\n' % num)
+                self.wait_mode(expected)
+            self.stop_mavproxy(mavproxy)
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        # if we don't put things back ourselves then the test cleanup
+        # doesn't go well as we can't set the RC defaults correctly:
+        self.customise_SITL_commandline([
+        ])
+
+        if ex is not None:
+            raise ex
 
     def test_setting_modes_via_mavproxy_mode_command(self):
         fnoo = [(1, 'ACRO'),

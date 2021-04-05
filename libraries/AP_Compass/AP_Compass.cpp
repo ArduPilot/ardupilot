@@ -1725,12 +1725,6 @@ uint8_t Compass::get_num_enabled(void) const
 }
 
 void
-Compass::set_use_for_yaw(uint8_t i, bool use)
-{
-    _use_for_yaw[Priority(i)].set(use);
-}
-
-void
 Compass::set_declination(float radians, bool save_to_eeprom)
 {
     if (save_to_eeprom) {

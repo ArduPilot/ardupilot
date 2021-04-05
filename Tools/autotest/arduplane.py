@@ -1691,7 +1691,7 @@ class AutoTestPlane(AutoTest):
                 % (distance, new_distance)
             )
 
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def rtl_climb_min(self):
         self.wait_ready_to_arm()
@@ -2738,6 +2738,44 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
+    def run_auxfunc(self,
+                    function,
+                    level,
+                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+            function,  # p1
+            level,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=want_result
+        )
+
+    def fly_aux_function(self):
+        self.context_collect('STATUSTEXT')
+        self.run_auxfunc(64, 2)  # 64 == reverse throttle
+        self.wait_statustext("RevThrottle: ENABLE", check_context=True)
+        self.run_auxfunc(64, 0)
+        self.wait_statustext("RevThrottle: DISABLE", check_context=True)
+        self.run_auxfunc(65, 2)  # 65 == GPS_DISABLE
+
+        self.start_subtest("Bad auxfunc")
+        self.run_auxfunc(
+            65231,
+            2,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+
+        self.start_subtest("Bad switchpos")
+        self.run_auxfunc(
+            62,
+            17,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -2910,6 +2948,10 @@ class AutoTestPlane(AutoTest):
             ("IMUTempCal",
              "Test IMU temperature calibration",
              self.test_imu_tempcal),
+
+            ("MAV_DO_AUX_FUNCTION",
+             "Test triggering Auxillary Functions via mavlink",
+             self.fly_aux_function),
 
             ("LogUpload",
              "Log upload",

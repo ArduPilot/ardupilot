@@ -177,6 +177,13 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 }
 
 
+// called when an attempt to change into a mode is unsuccessful:
+void Copter::mode_change_failed(const Mode *mode, const char *reason)
+{
+    gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
+    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
@@ -213,8 +220,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         #endif
 
         if (!in_autorotation_check) {
-            gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
-            AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+            mode_change_failed(new_flightmode, "runup not complete");
             return false;
         }
     }
@@ -236,8 +242,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         user_throttle &&
         !copter.flightmode->has_manual_throttle() &&
         new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        mode_change_failed(new_flightmode, "throttle too high");
         return false;
     }
 #endif
@@ -245,8 +250,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     if (!ignore_checks &&
         new_flightmode->requires_GPS() &&
         !copter.position_ok()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        mode_change_failed(new_flightmode, "requires position");
         return false;
     }
 
@@ -256,14 +260,12 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         !copter.ekf_alt_ok() &&
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        mode_change_failed(new_flightmode, "need alt estimate");
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        mode_change_failed(new_flightmode, "initialisation failed");
         return false;
     }
 
@@ -562,7 +564,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
             const float precland_min_descent_speed = 10.0f;
 
             float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
 #endif

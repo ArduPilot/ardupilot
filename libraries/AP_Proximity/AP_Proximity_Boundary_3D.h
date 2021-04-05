@@ -29,9 +29,10 @@
 #define PROXIMITY_BOUNDARY_DIST_MIN   0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
 #define PROXIMITY_FILT_RESET_TIME     1000    // reset filter if last distance was pushed more than this many ms away
+#define PROXIMITY_FACE_RESET_MS       1250    // face will be reset if not updated within this many ms
 
-class AP_Proximity_Boundary_3D 
-{ 
+class AP_Proximity_Boundary_3D
+{
 public:
     // constructor. This incorporates initialisation as well.
 	AP_Proximity_Boundary_3D();
@@ -90,6 +91,9 @@ public:
     // i.e Distance is marked as not-valid
     void reset_face(const Face &face);
 
+    // check if a face has valid distance even if it was updated a long time back
+    void check_face_timeout();
+
     // get distance for a face.  returns true on success and fills in distance argument with distance in meters
     bool get_distance(const Face &face, float &distance) const;
 
@@ -118,6 +122,9 @@ public:
     // get raw and filtered distances in 8 directions per layer.
     bool get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
 
+    // pass down filter cut-off freq from params
+    void set_filter_freq(float filt_freq) { _filter_freq = filt_freq; }
+
     // sectors
     static_assert(PROXIMITY_NUM_SECTORS == 8, "PROXIMITY_NUM_SECTOR must be 8");
     const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
@@ -143,6 +150,9 @@ private:
     // The resultant is packed into a Boundary Location object and returned by reference as "face"
     bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const WARN_IF_UNUSED;
 
+    // Apply a new cutoff_freq to low-pass filter
+    void apply_filter_freq(float cutoff_freq);
+
     // Apply low pass filter on the raw distance
     void set_filtered_distance(const Face &face, float distance);
 
@@ -158,6 +168,7 @@ private:
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
+    float _filter_freq;                                                 // cutoff freq of low pass filter
 };
 
 #endif // HAL_PROXIMITY_ENABLED

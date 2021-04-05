@@ -86,10 +86,10 @@ void ModeGuided::run()
     }
  }
 
-bool ModeGuided::allows_arming(bool from_gcs) const
+bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station
-    if (from_gcs) {
+    if (method == AP_Arming::Method::MAVLINK) {
         return true;
     }
 
@@ -116,7 +116,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     }
     target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
-    if (!wp_nav->set_wp_destination(target_loc)) {
+    if (!wp_nav->set_wp_destination_loc(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -241,7 +241,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 {
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -296,7 +296,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         pos_control_start();
     }
 
-    if (!wp_nav->set_wp_destination(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -340,7 +340,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 {
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -789,7 +789,7 @@ uint32_t ModeGuided::wp_distance() const
         return wp_nav->get_wp_distance_to_destination();
         break;
     case Guided_PosVel:
-        return pos_control->get_distance_to_target();
+        return pos_control->get_pos_error_xy();
         break;
     default:
         return 0;

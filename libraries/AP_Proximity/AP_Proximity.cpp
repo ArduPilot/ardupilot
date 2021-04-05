@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Description: Ignore proximity data that is within 1 meter of the ground below the vehicle. This requires a downward facing rangefinder
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
-    AP_GROUPINFO_FRAME("_IGN_GND", 16, AP_Proximity, _ign_gnd_enable, 1, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("_IGN_GND", 16, AP_Proximity, _ign_gnd_enable, 0, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param: _LOG_RAW
     // @DisplayName: Proximity raw distances log
@@ -165,6 +165,14 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Values: 0:Off, 1:On
     // @User: Advanced
     AP_GROUPINFO("_LOG_RAW", 17, AP_Proximity, _raw_log_enable, 0),
+
+    // @Param: _FILT
+    // @DisplayName: Proximity filter cutoff frequency
+    // @Description: Cutoff frequency for low pass filter applied to each face in the proximity boundary
+    // @Units: Hz
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("_FILT", 18, AP_Proximity, _filt_freq, 0.25f),
 
     AP_GROUPEND
 };
@@ -209,6 +217,7 @@ void AP_Proximity::update(void)
             continue;
         }
         drivers[i]->update();
+        drivers[i]->boundary_3D_checks();
     }
 
     // work out primary instance - first sensor returning good data

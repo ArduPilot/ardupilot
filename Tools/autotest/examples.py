@@ -1,4 +1,13 @@
+#!/usr/bin/env python
+
+"""
+Contains functions used to test the ArduPilot examples
+
+AP_FLAKE8_CLEAN
+"""
+
 from __future__ import print_function
+
 
 import os
 import pexpect
@@ -7,6 +16,7 @@ import subprocess
 import time
 
 from pysim import util
+
 
 def run_example(filepath, valgrind=False, gdb=False):
     cmd = []
@@ -40,6 +50,7 @@ def run_example(filepath, valgrind=False, gdb=False):
         raise ValueError("Process exitted with non-zero exitcode %s" % str(retcode))
 
     print("Ran: (%s)" % str(cmd))
+
 
 def run_examples(debug=False, valgrind=False, gdb=False):
     dirpath = util.reltopdir(os.path.join('build', 'linux', 'examples'))

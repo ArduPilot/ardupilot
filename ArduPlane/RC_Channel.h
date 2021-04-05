@@ -11,7 +11,7 @@ protected:
 
     void init_aux_function(aux_func_t ch_option,
                            AuxSwitchPos ch_flag) override;
-    void do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
+    bool do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
 
 private:
 

@@ -24,6 +24,7 @@
 
 #define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
 #define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 1000 // we should check the 3D boundary faces after every this many ms
 
 class AP_Proximity_Backend
 {
@@ -37,6 +38,9 @@ public:
 
     // update the state structure
     virtual void update() = 0;
+
+    // timeout faces that have not received data recently and update filter frequencies
+    void boundary_3D_checks();
 
     // get maximum and minimum distances (in meters) of sensor
     virtual float distance_max() const = 0;
@@ -107,6 +111,8 @@ protected:
         database_push(angle, 0.0f, distance, timestamp_ms, current_pos, body_to_ned);
     };
     static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+
+    uint32_t _last_timeout_check_ms;  // time when boundary was checked for non-updated valid faces
 
     // used for ground detection
     uint32_t _last_downward_update_ms;
