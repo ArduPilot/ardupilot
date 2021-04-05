@@ -7277,6 +7277,31 @@ class AutoTestCopter(AutoTest):
 
         self.upload_simple_relhome_mission(items)
 
+    def RefindGPS(self):
+        # https://github.com/ArduPilot/ardupilot/issues/14236
+        self.progress("arm the vehicle and takeoff in Guided")
+        self.takeoff(20, mode='GUIDED')
+        self.progress("fly 50m North (or whatever)")
+        old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        self.fly_guided_move_global_relative_alt(50, 0, 20)
+        self.set_parameter('GPS_TYPE', 0)
+        self.drain_mav()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30 and self.mode_is('LAND'):
+                self.progress("Bug not reproduced")
+                break
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+            self.progress("Received (%s)" % str(m))
+            if m is None:
+                raise NotAchievedException("No GLOBAL_POSITION_INT?!")
+            pos_delta = self.get_distance_int(old_pos, m)
+            self.progress("Distance: %f" % pos_delta)
+            if pos_delta < 5:
+                raise NotAchievedException("Bug reproduced - returned to near origin")
+        self.set_parameter('GPS_TYPE', 1)
+        self.do_RTL()
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -7803,6 +7828,10 @@ class AutoTestCopter(AutoTest):
                  "Fly Dynamic Notches driven by ESC Telemetry",
                  self.fly_esc_telemetry_notches,
                  attempts=8),
+
+            Test("RefindGPS",
+                 "Refind the GPS and attempt to RTL rather than continue to land",
+                 self.RefindGPS),
 
             Test("GyroFFT",
                  "Fly Gyro FFT",
