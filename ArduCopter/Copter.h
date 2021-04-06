@@ -244,6 +244,9 @@ private:
 
     AP_Logger logger;
 
+    // milliseconds when we started to consider disarminging the vehicle automatically:
+    uint32_t auto_disarm_begin;
+
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
@@ -818,8 +821,6 @@ private:
     void auto_disarm_check();
     void motors_output();
     void lost_vehicle_check();
-    uint32_t auto_disarm_begin;
-
 
     // navigation.cpp
     void run_nav_updates(void);
