@@ -711,7 +711,15 @@ int16_t nbytes= uart->available();
 
     if(distance > MAX_DISTANCE_UWB)
     {
-//play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
+
+   // AP_ToneAlarm son_a_jouer2;
+
+  //  son_a_jouer2.play_tone(8);
+
+ //   set_mode(Mode::Number::LAND, ModeReason::FAILSAFE);
+ //   update_flight_mode();
+
+
     }
 
 uart->end();
