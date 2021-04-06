@@ -44,19 +44,34 @@ float SlewLimiter::modifier(float sample, float dt)
         return 1.0;
     }
 
-    // Calculate the slew rate amplitude produced by the unmodified sample
     // calculate a low pass filtered slew rate
-    float Pterm_slew_rate = slew_filter.apply((fabsf(sample - last_sample)/ dt), dt);
+    const float slew_rate = slew_filter.apply((sample - last_sample) / dt, dt);
+    last_sample = sample;
 
-    // rectify and apply a decaying envelope filter. The 10 in the
+    // Rectify and apply a decaying envelope filter. The 10 in the
     // constrain limits the modifier to be between 0.1 and 1.0, so we
     // never drop PID gains below 10% of configured value
-    float alpha = 1.0 - constrain_float(dt/slew_rate_tau, 0.0, 1.0);
-    slew_amplitude = constrain_float(Pterm_slew_rate, alpha * slew_amplitude, 10 * slew_rate_max);
+    // Do this separately for the positive and negative direction and use the smaller of
+    // these to avoid single direction transients causing unwanted gain compression
+    if (slew_rate > _max_pos_slew_rate) {
+        _max_pos_slew_rate = fminf(slew_rate, 10.0f * slew_rate_max);
+    } else {
+        _max_pos_slew_rate *= (1.0f - fminf(dt, slew_rate_tau) / slew_rate_tau);
+    }
+    if (slew_rate < -_max_neg_slew_rate) {
+        _max_neg_slew_rate = fminf(-slew_rate, 10.0f * slew_rate_max);
+    } else {
+        _max_neg_slew_rate *= (1.0f - fminf(dt, slew_rate_tau) / slew_rate_tau);
+    }
+    const float slew_rate_amplitude = fminf(_max_pos_slew_rate,_max_neg_slew_rate);
 
     // Calculate the gain adjustment
-    float mod = slew_rate_max / fmaxf(slew_amplitude, slew_rate_max);
-    last_sample = mod * sample;
+    float mod;
+    if (slew_rate_amplitude > slew_rate_max) {
+        mod = slew_rate_max / fmaxf(slew_rate_amplitude, slew_rate_max);
+    } else {
+        mod = 1.0f;
+    }
 
     return mod;
 }

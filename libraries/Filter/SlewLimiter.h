@@ -31,4 +31,6 @@ private:
     LowPassFilterFloat slew_filter;
     float slew_amplitude;
     float last_sample;
+    float _max_pos_slew_rate;
+    float _max_neg_slew_rate;
 };
