@@ -124,11 +124,13 @@ void AP_Avoidance_Plane::handle_recovery(RecoveryAction recovery_action)
             case RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER:
                 if (prev_control_mode_number == Mode::Number::AUTO) {
                     plane.set_mode(plane.mode_auto, ModeReason::AVOIDANCE_RECOVERY);
+                } else {
+                    plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE_RECOVERY);
                 }
-                // else do nothing, same as RecoveryAction::LOITER
                 break;
 
             default:
+                plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE_RECOVERY);
                 break;
             } // switch
         }
@@ -195,6 +197,8 @@ bool AP_Avoidance_Plane::handle_avoidance_horizontal(const AP_Avoidance::Obstacl
         velocity_neu *= 10000;
 
         // set target
+        plane.guided_WP_loc.lat = plane.current_loc.lat;
+        plane.guided_WP_loc.lng = plane.current_loc.lng;
         plane.guided_WP_loc.offset(velocity_neu.x, velocity_neu.y);
         return true;
     }
