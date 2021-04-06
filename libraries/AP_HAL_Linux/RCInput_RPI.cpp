@@ -379,12 +379,10 @@ void RCInput_RPI::init_PCM()
     hal.scheduler->delay_microseconds(100);
     clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000006;                              // Source=PLLD (500MHz)
     hal.scheduler->delay_microseconds(100);
-    if (_version != 4)
-    {
+    if (_version != 4) {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div for BCM2835 500MHZ clock. If we need to configure DMA frequency.
     }
-    else
-    {
+    else {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // Set pcm div for BCM2711 700MHz clock. If we need to configure DMA frequency.
     }
     hal.scheduler->delay_microseconds(100);
