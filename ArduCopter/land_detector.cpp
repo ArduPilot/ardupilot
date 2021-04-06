@@ -69,10 +69,12 @@ void Copter::update_land_detector()
 #endif
 
         uint8_t land_detector_scalar = 1;
+#if LANDING_GEAR_ENABLED == ENABLED
         if (landinggear.get_wow_state() != AP_LandingGear::LG_WOW_UNKNOWN) {
             // we have a WoW sensor so lets loosen the strictness of the landing detector
             land_detector_scalar = 2;
         }
+#endif
 
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
@@ -84,7 +86,11 @@ void Copter::update_land_detector()
         bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
 
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
+#if LANDING_GEAR_ENABLED == ENABLED
         const bool WoW_check = (landinggear.get_wow_state() == AP_LandingGear::LG_WOW || landinggear.get_wow_state() == AP_LandingGear::LG_WOW_UNKNOWN);
+#else
+        const bool WoW_check = true;
+#endif
 
         if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
