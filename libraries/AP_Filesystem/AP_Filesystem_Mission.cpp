@@ -320,6 +320,17 @@ int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
     return count;
 }
 
+// see if a block of memory is all zero
+bool AP_Filesystem_Mission::all_zero(const uint8_t *b, uint8_t len) const
+{
+    while (len--) {
+        if (*b++ != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /*
   finish mission upload
  */
@@ -340,6 +351,15 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
     }
     if (nitems != hdr.num_items) {
         return false;
+    }
+
+    // if any item is all zeros then reject, it means client didn't
+    // fill in the whole file
+    for (uint32_t i=0; i<nitems; i++) {
+        const uint8_t *b2 = b + sizeof(hdr) + i*item_size;
+        if (all_zero(b2, item_size)) {
+            return false;
+        }
     }
 
     auto *mission = AP::mission();

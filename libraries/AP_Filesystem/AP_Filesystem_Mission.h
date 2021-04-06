@@ -62,4 +62,7 @@ private:
 
     // finish loading items
     bool finish_upload(const rfile &r);
+
+    // see if a block of memory is all zero
+    bool all_zero(const uint8_t *b, uint8_t size) const;
 };
