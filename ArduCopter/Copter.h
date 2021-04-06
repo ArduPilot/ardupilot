@@ -950,8 +950,6 @@ private:
     void motors_output(bool full_push = true);
     void motors_output_main();
     void lost_vehicle_check();
-    uint32_t auto_disarm_begin;
-
 
     // navigation.cpp
     void run_nav_updates(void);
