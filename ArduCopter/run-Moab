@@ -1,4 +1,6 @@
 #!/bin/bash
+#export TETHER_KG_PER_METER=.0238
+export TETHER_KG_PER_METER=0
 /bin/rm -rf logs mav.tlog  mav.tlog.raw /tmp/master-gps.data
 python3 ../Tools/autotest/sim_vehicle.py --instance=0 --map --console -L Moab -f hexa
 #python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --map --console -L Moab -I 0
