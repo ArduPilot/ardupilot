@@ -870,13 +870,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         return;
     }
 
-    uint16_t tx_len = 0;
-
     while (n > 0) {
-        /* TX DMA channel preparation.*/
-        _total_written += tx_len;
-        _tx_stats_bytes += tx_len;
-
         if (_flow_control != FLOW_CONTROL_DISABLE &&
             sdef.cts_line != 0 &&
             palReadLine(sdef.cts_line)) {
@@ -885,14 +879,13 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             // low to indicate the receiver has space. We do this before
             // we take the DMA lock to prevent a high CTS line holding a
             // DMA channel that may be needed by another device
-            tx_len = 0;
             return;
         }
 
+        uint16_t tx_len = 0;
+
         {
             WITH_SEMAPHORE(_write_mutex);
-            // skip over what was previously written
-            _writebuf.advance(tx_len);
             // get some more to write
             tx_len = _writebuf.peekbytes(tx_bounce_buf, MIN(n, TX_BOUNCE_BUFSIZE));
 
@@ -948,19 +941,32 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 
             const uint32_t tx_size = dmaStreamGetTransactionSize(txdma);
 
-            if (tx_size == 0) {
-                // There are no bytes left so we are done
-                _last_write_completed_us = AP_HAL::micros();
+            if (tx_size >= tx_len) {
+                // we didn't write any of our bytes
+                tx_len = 0;
             } else {
-                // an actual timeout occurred, record how much was sent
-                // tx_size is how much was not sent (could be 0)
-                tx_len = MIN(tx_len, tx_size);
+                // record how much was sent tx_size is how much was
+                // not sent (could be 0)
+                tx_len -= tx_size;
+            }
+            if (tx_len > 0) {
+                _last_write_completed_us = AP_HAL::micros();
             }
             chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
             chSysUnlock();
         }
         // clean up pending locks
         dma_handle->unlock(mask & EVT_TRANSMIT_DMA_COMPLETE);
+
+        if (tx_len) {
+            WITH_SEMAPHORE(_write_mutex);
+            // skip over amount actually written
+            _writebuf.advance(tx_len);
+
+            // update stats
+            _total_written += tx_len;
+            _tx_stats_bytes += tx_len;
+        }
     }
 }
 #pragma GCC diagnostic pop
