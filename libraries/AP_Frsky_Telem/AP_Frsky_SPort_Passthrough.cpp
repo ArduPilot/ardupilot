@@ -206,8 +206,8 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         {
             packet_ready = false;
 #if AP_TERRAIN_AVAILABLE
-            const AP_Terrain &terrain = AP::terrain();
-            packet_ready = terrain.enabled();
+            const AP_Terrain *terrain = AP::terrain();
+            packet_ready = terrain && terrain->enabled();
 #endif
         }
         break;
@@ -638,12 +638,12 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_terrain(void)
 {
     uint32_t value = 0;
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain &terrain = AP::terrain();
-    if (!terrain.enabled()) {
+    AP_Terrain *terrain = AP::terrain();
+    if (terrain == nullptr || !terrain->enabled()) {
         return value;
     }
     float height_above_terrain;
-    if (terrain.height_above_terrain(height_above_terrain, true)) {
+    if (terrain->height_above_terrain(height_above_terrain, true)) {
         // vehicle height above terrain
         value |= prep_number(roundf(height_above_terrain * 10), 3, 2);
     }
