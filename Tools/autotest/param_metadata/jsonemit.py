@@ -7,8 +7,8 @@ from emit import Emit
 
 # Emit APM documentation in JSON format
 class JSONEmit(Emit):
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         json_fname = 'apm.pdef.json'
         self.f = open(json_fname, mode='w')
         self.content = {"json": {"version": 0}}

@@ -13,8 +13,8 @@ except Exception:
 
 class HtmlEmit(Emit):
 
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         html_fname = 'Parameters.html'
         self.f = open(html_fname, mode='w')
         self.preamble = """<!-- Dynamically generated list of documented parameters
