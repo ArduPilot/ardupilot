@@ -7,8 +7,8 @@ import re
 
 
 class Emit:
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, sitl=False):
+        self.sitl = sitl
 
     prog_values_field = re.compile(r"\s*(-?\w+:\w+)+,*")
 

@@ -29,6 +29,12 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
+parser.add_argument("--sitl",
+                    dest='emit_sitl',
+                    action='store_true',
+                    default=False,
+                    help="true to only emit sitl parameters, false to not emit sitl parameters")
+
 args = parser.parse_args()
 
 
@@ -118,7 +124,11 @@ for vehicle in vehicles:
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
 
-    param_matches = prog_param.findall(p_text)
+    param_matches = []
+    if not args.emit_sitl:
+        param_matches = prog_param.findall(p_text)
+
+
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
                                                    param_match[1],
@@ -152,10 +162,16 @@ for vehicle in vehicles:
 
 debug("Found %u documented libraries" % len(libraries))
 
+if args.emit_sitl:
+    libraries = filter(lambda x : x.name == 'SIM_', libraries)
+else:
+    libraries = filter(lambda x : x.name != 'SIM_', libraries)
+
+libraries = list(libraries)
+
 alllibs = libraries[:]
 
 vehicle = vehicles[0]
-
 
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
@@ -424,11 +440,17 @@ for emitter_name in all_emitters.keys():
     if args.output_format == 'all' or args.output_format == emitter_name:
         emitters_to_use.append(emitter_name)
 
+if args.emit_sitl:
+    # only generate rst for SITL for now:
+    emitters_to_use = ['rst']
+
 # actually invoke each emiiter:
 for emitter_name in emitters_to_use:
-    emit = all_emitters[emitter_name]()
-    for vehicle in vehicles:
-        emit.emit(vehicle)
+    emit = all_emitters[emitter_name](sitl=args.emit_sitl)
+
+    if not args.emit_sitl:
+        for vehicle in vehicles:
+            emit.emit(vehicle)
 
     emit.start_libraries()
 
