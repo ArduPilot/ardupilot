@@ -17,8 +17,8 @@ nparams = ['RCn_', 'SERVOn_', 'SRn_', 'BTNn_']
 
 class MDEmit(Emit):
 
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         fname = 'Parameters.md'
         self.nparams = []
         self.f = open(fname, mode='w')

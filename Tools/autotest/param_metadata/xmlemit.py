@@ -7,8 +7,8 @@ from param import known_param_fields, known_units
 
 # Emit APM documentation in an machine readable XML format
 class XmlEmit(Emit):
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         self.wiki_fname = 'apm.pdef.xml'
         self.f = open(self.wiki_fname, mode='w')
         self.preamble = '''<?xml version="1.0" encoding="utf-8"?>
