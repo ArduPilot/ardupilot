@@ -63,7 +63,7 @@ Aircraft::Aircraft(const char *frame_str) :
         sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     }
 
-    terrain = &AP::terrain();
+    terrain = AP::terrain();
 
     // init rangefinder array to -1 to signify no data
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++){
