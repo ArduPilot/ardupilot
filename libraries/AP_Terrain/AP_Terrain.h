@@ -440,7 +440,7 @@ private:
 };
 
 namespace AP {
-    AP_Terrain &terrain();
+    AP_Terrain *terrain();
 };
 
 #endif // AP_TERRAIN_AVAILABLE
