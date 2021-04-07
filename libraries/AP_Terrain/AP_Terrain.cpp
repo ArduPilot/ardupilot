@@ -402,9 +402,9 @@ bool AP_Terrain::allocate(void)
 
 namespace AP {
 
-AP_Terrain &terrain()
+AP_Terrain *terrain()
 {
-    return *AP_Terrain::get_singleton();
+    return AP_Terrain::get_singleton();
 }
 
 };
