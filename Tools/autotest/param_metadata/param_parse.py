@@ -105,7 +105,6 @@ for vehicle in vehicles:
     f = open(current_file)
     p_text = f.read()
     f.close()
-    param_matches = prog_param.findall(p_text)
     group_matches = prog_groups.findall(p_text)
 
     debug(group_matches)
@@ -120,6 +119,7 @@ for vehicle in vehicles:
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
 
+    param_matches = prog_param.findall(p_text)
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
                                                    param_match[1],
