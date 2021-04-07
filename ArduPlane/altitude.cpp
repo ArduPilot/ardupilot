@@ -463,7 +463,7 @@ void Plane::setup_terrain_target_alt(Location &loc) const
 {
 #if AP_TERRAIN_AVAILABLE
     if (terrain_enabled_in_current_mode()) {
-        loc.terrain_alt = true;
+        loc.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
     }
 #endif
 }
