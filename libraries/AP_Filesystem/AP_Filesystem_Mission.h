@@ -36,11 +36,17 @@ private:
 
     static constexpr uint16_t mission_magic = 0x763d;
 
+    enum class Options {
+        NO_CLEAR = (1U<<0), // don't clear the old mission
+    };
+
     // header at front of the file
     struct header {
         uint16_t magic = mission_magic;
         uint16_t data_type; // MAV_MISSION_TYPE_*
-        uint32_t num_items;
+        uint16_t options; // optional features
+        uint16_t start; // first WP num, 0 for full upload
+        uint16_t num_items;
     };
 
     struct rfile {
