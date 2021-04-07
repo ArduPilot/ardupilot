@@ -367,7 +367,9 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
         return false;
     }
     WITH_SEMAPHORE(mission->get_semaphore());
-    mission->clear();
+    if ((hdr.options & unsigned(Options::NO_CLEAR)) == 0) {
+        mission->clear();
+    }
     for (uint32_t i=0; i<nitems; i++) {
         mavlink_mission_item_int_t m;
         AP_Mission::Mission_Command cmd;
@@ -380,8 +382,15 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
             (cmd.content.jump.target >= nitems || cmd.content.jump.target == 0)) {
             return false;
         }
-        if (!mission->add_cmd(cmd)) {
-            return false;
+        uint16_t idx = i + hdr.start;
+        if (idx == mission->num_commands()) {
+            if (!mission->add_cmd(cmd)) {
+                return false;
+            }
+        } else {
+            if (!mission->replace_cmd(idx, cmd)) {
+                return false;
+            }
         }
     }
     return true;
