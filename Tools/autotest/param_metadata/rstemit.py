@@ -20,8 +20,8 @@ This list is automatically generated from the latest ardupilot source code, and 
     def toolname(self):
         return "Tools/autotest/param_metadata/param_parse.py"
 
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         output_fname = 'Parameters.rst'
         self.f = open(output_fname, mode='w')
         self.spacer = re.compile("^", re.MULTILINE)
