@@ -5,7 +5,7 @@ from lxml import etree
 from emit import Emit
 from param import known_param_fields, known_units
 
-# Emit APM documentation in an machine readable XML format
+# Emit ArduPilot documentation in an machine readable XML format
 class XmlEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)

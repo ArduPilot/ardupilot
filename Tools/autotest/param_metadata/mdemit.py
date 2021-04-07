@@ -29,7 +29,7 @@ class MDEmit(Emit):
         if os.getenv('BRDOC') is not None:
             self.header = """---\nlayout: default\ntitle: "Parameters"\npermalink: /parameters/\nnav:"""
         
-        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
+        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
 
     def close(self):

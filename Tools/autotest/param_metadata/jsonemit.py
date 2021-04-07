@@ -5,7 +5,7 @@ import copy
 from emit import Emit
 
 
-# Emit APM documentation in JSON format
+# Emit ArduPilot documentation in JSON format
 class JSONEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)

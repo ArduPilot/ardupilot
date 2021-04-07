@@ -27,7 +27,7 @@ DO NOT EDIT
 <h3 style="text-align: center">Complete Parameter List</h3>
 <hr />
 
-<p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
+<p>This is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.</p>
 
 <!-- add auto-generated table of contents with "Table of Contents Plus" plugin -->
 [toc exclude="Complete Parameter List"]
