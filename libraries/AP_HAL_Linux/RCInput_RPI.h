@@ -143,7 +143,7 @@ private:
     static void stop_dma();
     static void termination_handler(int signum);
     void set_sigaction();
-    void set_physical_addresses(int version);
+    void set_physical_addresses();
     void teardown() override;
 };
 
