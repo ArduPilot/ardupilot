@@ -395,9 +395,38 @@ for library in libraries:
     for param in library.params:
         validate(param)
 
+if not args.emit_params:
+    sys.exit(error_count)
 
-def do_emit(emit):
-    emit.set_annotate_with_vehicle(len(vehicles) > 1)
+all_emitters = {
+    'json': JSONEmit,
+    'xml': XmlEmit,
+    'html': HtmlEmit,
+    'rst': RSTEmit,
+    'md': MDEmit,
+    'xml_mp': XmlEmitMP,
+}
+
+try:
+    from ednemit import EDNEmit
+    all_emitters['edn'] = EDNEmit
+except ImportError:
+    # if the user wanted edn only then don't hide any errors
+    if args.output_format == 'edn':
+        raise
+
+    if args.verbose:
+        print("Unable to emit EDN, install edn_format and pytz if edn is desired")
+
+# filter to just the ones we want to emit:
+emitters_to_use = []
+for emitter_name in all_emitters.keys():
+    if args.output_format == 'all' or args.output_format == emitter_name:
+        emitters_to_use.append(emitter_name)
+
+# actually invoke each emiiter:
+for emitter_name in emitters_to_use:
+    emit = all_emitters[emitter_name]()
     for vehicle in vehicles:
         emit.emit(vehicle)
 
@@ -408,31 +437,5 @@ def do_emit(emit):
             emit.emit(library)
 
     emit.close()
-
-
-if args.emit_params:
-    if args.output_format == 'all' or args.output_format == 'json':
-        do_emit(JSONEmit())
-    if args.output_format == 'all' or args.output_format == 'xml':
-        do_emit(XmlEmit())
-    if args.output_format == 'all' or args.output_format == 'html':
-        do_emit(HtmlEmit())
-    if args.output_format == 'all' or args.output_format == 'rst':
-        do_emit(RSTEmit())
-    if args.output_format == 'all' or args.output_format == 'md':
-        do_emit(MDEmit())
-    if args.output_format == 'all' or args.output_format == 'xml_mp':
-        do_emit(XmlEmitMP())
-    if args.output_format == 'all' or args.output_format == 'edn':
-        try:
-            from ednemit import EDNEmit
-            do_emit(EDNEmit())
-        except ImportError:
-            # if the user wanted edn only then don't hide any errors
-            if args.output_format == 'edn':
-                raise
-
-            if args.verbose:
-                print("Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)
