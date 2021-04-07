@@ -24,6 +24,11 @@
 *****************************************/
 void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
+    if (!(control_mode->does_auto_throttle() || quadplane.in_assisted_flight() || quadplane.in_vtol_mode())) {
+        // only do throttle slew limiting in modes where throttle control is automatic
+        return;
+    }
+
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
@@ -836,13 +841,8 @@ void Plane::set_servos(void)
     // set airbrake outputs
     airbrake_update();
 
-    if (control_mode->does_auto_throttle() ||
-        quadplane.in_assisted_flight() ||
-        quadplane.in_vtol_mode()) {
-        /* only do throttle slew limiting in modes where throttle
-         *  control is automatic */
-        throttle_slew_limit(SRV_Channel::k_throttle);
-    }
+    // slew rate limit throttle
+    throttle_slew_limit(SRV_Channel::k_throttle);
 
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
