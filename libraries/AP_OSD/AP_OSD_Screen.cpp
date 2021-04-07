@@ -1934,10 +1934,10 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 {
-    AP_Terrain &terrain = AP::terrain();
+    AP_Terrain *terrain = AP::terrain();
 
     float terrain_altitude;
-    if (terrain.height_above_terrain(terrain_altitude,true)) {
+    if (terrain != nullptr && terrain->height_above_terrain(terrain_altitude,true)) {
         backend->write(x, y, terrain_altitude < osd->warn_terr, "%4d%c", (int)u_scale(ALTITUDE, terrain_altitude), u_icon(ALTITUDE));
      } else {
         backend->write(x, y, false, " ---%c", u_icon(ALTITUDE));
