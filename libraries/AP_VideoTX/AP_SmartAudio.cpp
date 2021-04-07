@@ -183,8 +183,9 @@ void AP_SmartAudio::update_vtx_params()
         uint8_t pitModeRunning = (vtx.get_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
         uint8_t pitMode = opts & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
         uint8_t mode;
-        // check if we are turning pitmode on or off
-        if (pitMode != pitModeRunning) {
+        // check if we are turning pitmode on or off, but only on SA 2.1 as older versions
+        // appear not to work properly
+        if (pitMode != pitModeRunning && _protocol_version >= SMARTAUDIO_SPEC_PROTOCOL_v21) {
             if (pitModeRunning) {
                 debug("Turning OFF pitmode");
                 // turn it off
