@@ -64,6 +64,10 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
 //Memory Addresses
+#define RCIN_RPI_RPI0_DMA_BASE 0x20007000
+#define RCIN_RPI_RPI0_CLK_BASE 0x20101000
+#define RCIN_RPI_RPI0_PCM_BASE 0x20203000
+
 #define RCIN_RPI_RPI1_DMA_BASE 0x20007000
 #define RCIN_RPI_RPI1_CLK_BASE 0x20101000
 #define RCIN_RPI_RPI1_PCM_BASE 0x20203000
@@ -71,6 +75,14 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #define RCIN_RPI_RPI2_DMA_BASE 0x3F007000
 #define RCIN_RPI_RPI2_CLK_BASE 0x3F101000
 #define RCIN_RPI_RPI2_PCM_BASE 0x3F203000
+
+#define RCIN_RPI_RPI3_DMA_BASE 0x3F007000
+#define RCIN_RPI_RPI3_CLK_BASE 0x3F101000
+#define RCIN_RPI_RPI3_PCM_BASE 0x3F203000
+
+#define RCIN_RPI_RPI4_DMA_BASE 0xFE007000
+#define RCIN_RPI_RPI4_CLK_BASE 0xFE101000 
+#define RCIN_RPI_RPI4_PCM_BASE 0xFE203000
 
 #define RCIN_RPI_GPIO_LEV0_ADDR  0x7e200034
 #define RCIN_RPI_DMA_LEN         0x1000
@@ -238,16 +250,22 @@ uint32_t Memory_table::get_page_count() const
 }
 
 // Physical addresses of peripheral depends on Raspberry Pi's version
-void RCInput_RPI::set_physical_addresses(int version)
+void RCInput_RPI::set_physical_addresses()
 {
-    if (version == 1) {
+    if (_version == 1) { 
+        // 1 & zero are the same
         dma_base = RCIN_RPI_RPI1_DMA_BASE;
         clk_base = RCIN_RPI_RPI1_CLK_BASE;
         pcm_base = RCIN_RPI_RPI1_PCM_BASE;
-    } else if (version == 2) {
+    } else if (_version == 2) { 
+        // 2 & 3 are the same
         dma_base = RCIN_RPI_RPI2_DMA_BASE;
         clk_base = RCIN_RPI_RPI2_CLK_BASE;
         pcm_base = RCIN_RPI_RPI2_PCM_BASE;
+    } else if (_version == 4) {
+        dma_base = RCIN_RPI_RPI4_DMA_BASE;
+        clk_base = RCIN_RPI_RPI4_CLK_BASE;
+        pcm_base = RCIN_RPI_RPI4_PCM_BASE;
     }
 }
 
@@ -484,7 +502,7 @@ void RCInput_RPI::init()
     _version = UtilRPI::from(hal.util)->get_rpi_version();
 #endif
 
-    set_physical_addresses(_version);
+    set_physical_addresses();
     // Init memory for buffer and for DMA control blocks.
     // See comments in "init_ctrl_data()" to understand values "2" and "15"
     circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, _version);
