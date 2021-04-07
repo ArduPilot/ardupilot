@@ -10,7 +10,6 @@ from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
-from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
@@ -416,8 +415,6 @@ if args.emit_params:
         do_emit(JSONEmit())
     if args.output_format == 'all' or args.output_format == 'xml':
         do_emit(XmlEmit())
-    if args.output_format == 'all' or args.output_format == 'wiki':
-        do_emit(WikiEmit())
     if args.output_format == 'all' or args.output_format == 'html':
         do_emit(HtmlEmit())
     if args.output_format == 'all' or args.output_format == 'rst':
