@@ -212,10 +212,7 @@ Complete Parameter List
             # Get param path if defined (i.e. is duplicate parameter)
             param_path = getattr(param, 'path', '')
 
-            if self.annotate_with_vehicle:
-                name = param.name
-            else:
-                name = param.name.split(':')[-1]
+            name = param.name.split(':')[-1]
 
             tag_param_path = ' (%s)' % param_path if param_path else ''
             tag = '%s%s: %s' % (self.escape(name), self.escape(tag_param_path), self.escape(param.DisplayName),)
@@ -223,10 +220,7 @@ Complete Parameter List
             tag = tag.strip()
             reference = param.name
             # remove e.g. "ArduPlane:" from start of parameter name:
-            if self.annotate_with_vehicle:
-                reference = g.name + "_" + reference.split(":")[-1]
-            else:
-                reference = reference.split(":")[-1]
+            reference = reference.split(":")[-1]
             if param_path:
                 reference += '__' + param_path
 
