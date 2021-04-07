@@ -46,10 +46,6 @@ prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
-extension = 'cpp'
-if len(vehicle_paths) == 0:
-    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % args.vehicle)
-    extension = 'pde'
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
@@ -104,7 +100,7 @@ if len(vehicles) > 1 or len(vehicles) == 0:
 
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
-    current_file = vehicle.path+'/Parameters.' + extension
+    current_file = vehicle.path+'/Parameters.cpp'
 
     f = open(current_file)
     p_text = f.read()
