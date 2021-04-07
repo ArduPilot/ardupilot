@@ -2,14 +2,14 @@
 
 FETtec OneWire is an [ESC](https://en.wikipedia.org/wiki/Electronic_speed_control) communication protocol created by Felix Niessen (former Flyduino KISS developer) from [FETtec](https://fettec.net).
 It is a (bidirectional) [digital half-duplex asynchronous serial communication protocol](https://en.wikipedia.org/wiki/Asynchronous_serial_communication) running at 2Mbit/s Baudrate. It requires a single wire connection (hence the name OneWire) regardless of the number of ESCs connected.
-Unlike Dshot, the FETtec OneWire protocol does not need one DMA channel per ESC for bidirectional communication. 
+Unlike bidirectional-Dshot, the FETtec OneWire protocol does not need one DMA channel per ESC for bidirectional communication. 
 
 For purchase, connection and configuration information please see the [Ardupilot FETtec OneWire wiki page](https://ardupilot.org/copter/docs/common-fettec-onewire.html).
 
 
 ## Ardupilot to ESC protocol
 
-The FETtec OneWire protocol supports up to 22 ESCs. As most copters only use at most 12 motors the Ardupilot implementation suports only 12 to save memory.
+The FETtec OneWire protocol supports up to 22 ESCs. As most copters only use at most 12 motors, Ardupilot's implementation suports only 12 to save memory.
 
 There are two types of messages sent to the ESCs:
 
@@ -52,19 +52,22 @@ Four ESCs need 90uS for the throttle request and telemetry reception. With four 
 	
 **Note:** You need at least a 4Hz motor signal (max 250ms between messages) before the motors disarm.
 
-The [FETtec ESC configurator](https://github.com/FETtec/ESC-Configurator/releases) can change all ESC's settings and do ESC firmware updates.
-These are also made via OneWire so a passthough is possible.
-Often used parameters are for example: 
-* **Motor direction** - If your motor spins in the wrong direction you can change it easily without rewiring
-* **Motor beeps** - Enables or disables motor beeps
-* **Soft brake** - If you have props that "unscrew" if they are stopped too fast you can use the softbreak option. 
+### Connection and Halfduplex with STM
 
-3D Mode is not required with OneWire as it is standard. (1020-2000 is throttle forward, 980-0 is throttle backward)
-	
+To have reliable 2Mbit/s Baudrate the GPIO should be set to PushPull.
+On STM it is a special mode that is initialized like this:
+
+```
+    gpioInit.mode = LL_GPIO_MODE_ALTERNATE;
+    gpioInit.Pull = LL_GPIO_MODE_ALTERNATE;
+    gpio.Pull = LL_GPIO_PULL_UP;
+    gpioInit.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+    gpioInit.Alternate = LL_GPIO_AF_1;
+```	
 	
 ## ESC to Ardupilot protocol
 
-OneWire supports ESC telemetry, so information from the ESC status is sent back to the autopilot:
+OneWire ESC telemetry information is sent back to the autopilot:
 
 - Electronic rotations per minute (eRPM/100) (must be divided by number of motor poles to translate to propeller RPM)
 - Input voltage (V/10)
@@ -72,7 +75,7 @@ OneWire supports ESC telemetry, so information from the ESC status is sent back 
 - Power consumption (mAh)
 - Temperature (°C/10)
 
-This information is used by Ardupilot to
+This information is used by Ardupilot to:
 
 - log the status of each ESC to the SDCard or internal Flash, for post flight analysis
 - send the status of each ESC to the ground station or companion computer for real-time monitoring
