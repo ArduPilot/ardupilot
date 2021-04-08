@@ -363,10 +363,17 @@ void Plane::stabilize_acro(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
-    /*
-      manual rudder for now
-     */
-    steering_control.steering = steering_control.rudder = rudder_input();
+    steering_control.steering = rudder_input();
+
+    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+        // use yaw controller
+        calc_nav_yaw_coordinated(speed_scaler);
+    } else {
+        /*
+          manual rudder
+        */
+        steering_control.rudder = steering_control.steering;
+    }
 }
 
 /*
