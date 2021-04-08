@@ -304,6 +304,7 @@ public:
     /// @param  value           The new value
     /// @return                 true if the variable is found
     static bool set_and_save_by_name(const char *name, float value);
+    static bool set_and_save_by_name_ifchanged(const char *name, float value);
     // name helper for scripting
     static bool set_and_save(const char *name, float value) { return set_and_save_by_name(name, value); };
 

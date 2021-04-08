@@ -1207,8 +1207,8 @@ void AP_Param::save(bool force_save)
     }
     while (!save_queue.push(p)) {
         // if we can't save to the queue
-        if (hal.util->get_soft_armed() || !hal.scheduler->in_main_thread()) {
-            // if we are armed then don't sleep, instead we lose the
+        if (hal.util->get_soft_armed() && hal.scheduler->in_main_thread()) {
+            // if we are armed in main thread then don't sleep, instead we lose the
             // parameter save
             return;
         }
@@ -2559,6 +2559,36 @@ bool AP_Param::set_and_save_by_name(const char *name, float value)
         return true;
     case AP_PARAM_FLOAT:
         ((AP_Float *)vp)->set_and_save(value);
+        return true;
+    default:
+        break;
+    }
+    // not a supported type
+    return false;
+}
+
+/*
+  set and save a value by name
+ */
+bool AP_Param::set_and_save_by_name_ifchanged(const char *name, float value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        ((AP_Int8 *)vp)->set_and_save_ifchanged(value);
+        return true;
+    case AP_PARAM_INT16:
+        ((AP_Int16 *)vp)->set_and_save_ifchanged(value);
+        return true;
+    case AP_PARAM_INT32:
+        ((AP_Int32 *)vp)->set_and_save_ifchanged(value);
+        return true;
+    case AP_PARAM_FLOAT:
+        ((AP_Float *)vp)->set_and_save_ifchanged(value);
         return true;
     default:
         break;
