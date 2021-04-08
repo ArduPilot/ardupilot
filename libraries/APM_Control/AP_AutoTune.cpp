@@ -139,6 +139,12 @@ void AP_AutoTune::start(void)
         rpid.slew_limit().set_and_save(150);
     }
 
+    if (current.FF < 0.01) {
+        // don't allow for zero FF
+        current.FF = 0.01;
+        rpid.ff().set(current.FF);
+    }
+
     Debug("START FF -> %.3f\n", rpid.ff().get());
 }
 
@@ -167,6 +173,7 @@ void AP_AutoTune::stop(void)
 // @Field: FF0: FF value single sample
 // @Field: FF: FF value
 // @Field: P: P value
+// @Field: I: I value
 // @Field: D: D value
 // @Field: Action: action taken
 // @Field: RMAX: Rate maximum
@@ -238,10 +245,10 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     // like two different log msgs in one Write call
     AP::logger().Write(
         "ATRP",
-        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,D,Action,RMAX,TAU",
-        "s#-dkk-----ks",
-        "F--0000000-00",
-        "QBBfffffffBHf",
+        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,I,D,Action,RMAX,TAU",
+        "s#-dkk------ks",
+        "F--00000000-00",
+        "QBBffffffffBHf",
         AP_HAL::micros64(),
         unsigned(type),
         unsigned(new_state),
@@ -251,6 +258,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         FF_single,
         current.FF,
         current.P,
+        current.I,
         current.D,
         unsigned(action),
         current.rmax_pos.get(),
@@ -507,14 +515,17 @@ void AP_AutoTune::update_rmax(void)
     if (level == 0) {
         // this level means to keep current values of RMAX and TCONST
         target_rmax = constrain_float(current.rmax_pos, 75, 720);
-        target_tau = current.tau;
+        target_tau = constrain_float(current.tau, 0.1, 2);
     } else {
         target_rmax = tuning_table[level-1].rmax;
         target_tau = tuning_table[level-1].tau;
     }
 
-    if (level > 0) {
-        target_tau = 1.0f / ((1.0f / target_tau) + (current.I / current.FF));
+    if (level > 0 && is_positive(current.FF)) {
+        const float invtau = ((1.0f / target_tau) + (current.I / current.FF));
+        if (is_positive(invtau)) {
+            target_tau = 1.0f / invtau;
+        }
     }
 
     if (current.rmax_pos == 0) {
