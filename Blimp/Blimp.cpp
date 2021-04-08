@@ -69,7 +69,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
     SCHED_TASK(update_batt_compass,   10,    120,  12),
     SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
-    SCHED_TASK(arm_motors_check,      10,     50,  18),
     SCHED_TASK(update_altitude,       10,    100,  21),
     SCHED_TASK(three_hz_loop,          3,     75,  24),
 #if AP_SERVORELAYEVENTS_ENABLED
