@@ -287,7 +287,6 @@ protected:
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     float       _track_error_xy;        // horizontal error of the actual position vs the desired position
-    float       _track_desired;         // our desired distance along the track in cm
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
     float       _yaw;                   // current yaw heading in centi-degrees based on track direction
     float       _yaw_rate_cds;          // current yaw rate in centi-degrees/second based on track curvature
