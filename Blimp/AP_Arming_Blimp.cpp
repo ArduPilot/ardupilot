@@ -378,6 +378,12 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
         return true;
     }
 
+    if (method == AP_Arming::Method::RUDDER) {
+        if (!blimp.flightmode->has_manual_throttle() && !blimp.ap.land_complete) {
+            return false;
+        }
+    }
+
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
