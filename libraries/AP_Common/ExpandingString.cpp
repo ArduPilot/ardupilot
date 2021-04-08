@@ -43,6 +43,7 @@ bool ExpandingString::expand(uint32_t min_extra_space_needed)
 
     buflen = newsize;
     buf = (char *)newbuf;
+    memset(&buf[used], 0, newsize-used);
 
     return true;
 }
