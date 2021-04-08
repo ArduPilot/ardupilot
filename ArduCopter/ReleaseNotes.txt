@@ -1,6 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.6-rc1 21-Dec-2020
+Copter 4.0.7 22-Feb-2021
+Changes from 4.0.7-rc1
+1) fixed build on Durandal board
+2) multiple fixes for mRo boards: ControlZero*, PixracerPro
+------------------------------------------------------------------
+Copter 4.0.7rc1 6-Feb-2021
+Changes from 4.0.6
+1) added automatic backup/restore of parameters in case of FRAM corruption for F7/H7 boards with 32k FRAM parameter storage
+2) fixed a bug in EKF2/EKF3 that could cause memory corruption if external naviagtion sources (such as vision based position and velocity data) is supplied before the EKF has initialised
+3) fixed a problem with low accuracy data from UAVCAN GPS modules when GPS blending is enabled
+4) fixed an arming check failure with u-blox M9 based GPS modules
+5) fixed a race condition in SmartRTL which could cause a LAND mode to be triggered
+------------------------------------------------------------------
+Copter 4.0.6 25-Jan-2021 / 4.0.6-rc2 16-Jan-2021
+Changes from 4.0.6-rc1
+1) Add support for keeping a backup of storage for last 100 boots
+2) Bug fixes:
+    a) Fix support for BLHeli_S passthru
+------------------------------------------------------------------
+Copter 4.0.6-rc1 23-Dec-2020
 Changes from 4.0.5
 1) Bug fixes:
     a) Fix vertical flyaways when rangefinder stops providing data and the user has configured EK*_ALT_SOURCE=1
@@ -9,10 +28,16 @@ Changes from 4.0.5
     d) Correct compilation when Advanced Failsafe compile time option is enabled
     e) Correct time wrap in RAW_IMU mavlink message
     f) PixracerPro - Fix analog volt pin assignments
+    g) fix landing detector for tradheli in acro mode
 2) Small enhancements:
     a) Parameter documentation enhancements and corrections
     b) Improve harmonic notch filter parameter documentation
     c) Report prearm check status in the MAV_SYS_STATUS_PREARM_CHECK flag of the SYS_STATUS mavlink message
+    d) Smooth I term reset over 0.5 seconds
+3) TradHeli enhancements:
+    a) Differential Collective Pitch (DCP) trim support for Dual Heli
+    b) Incorporate hover collective learning
+    c) Option for pitch, roll and yaw I term to be based on takeoff/landing
 ------------------------------------------------------------------
 Copter 4.0.5 27-Oct-2020 / 4.0.5-rc2 08-Oct-2020
 Changes from 4.0.5-rc1

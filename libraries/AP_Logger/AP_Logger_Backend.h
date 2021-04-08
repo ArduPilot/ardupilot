@@ -15,14 +15,12 @@ public:
     AP_Logger_Backend(AP_Logger &front,
                       class LoggerMessageWriter_DFLogStart *writer);
 
-    vehicle_startup_message_Writer vehicle_message_writer();
+    vehicle_startup_message_Writer vehicle_message_writer() const;
 
     virtual bool CardInserted(void) const = 0;
 
     // erase handling
     virtual void EraseAll() = 0;
-
-    virtual void Prep() = 0;
 
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size) {
@@ -97,7 +95,7 @@ public:
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Write_Mode(uint8_t mode, const ModeReason reason = ModeReason::UNKNOWN);
+    bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
@@ -131,6 +129,8 @@ public:
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
+
+    virtual void io_timer(void) {}
 
 protected:
 

@@ -1,15 +1,6 @@
 #include "mode.h"
 #include "Plane.h"
 
-bool ModeFBWA::_enter()
-{
-    plane.throttle_allows_nudging = false;
-    plane.auto_throttle_mode = false;
-    plane.auto_navigation_mode = false;
-
-    return true;
-}
-
 void ModeFBWA::update()
 {
     // set nav_roll and nav_pitch using sticks
@@ -32,9 +23,10 @@ void ModeFBWA::update()
         plane.nav_pitch_cd = 0;
         SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::MIN);
     }
-    if (plane.g.fbwa_tdrag_chan > 0) {
+    RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER);
+    if (chan != nullptr) {
         // check for the user enabling FBWA taildrag takeoff mode
-        bool tdrag_mode = (RC_Channels::get_radio_in(plane.g.fbwa_tdrag_chan-1) > 1700);
+        bool tdrag_mode = chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH;
         if (tdrag_mode && !plane.auto_state.fbwa_tdrag_takeoff_mode) {
             if (plane.auto_state.highest_airspeed < plane.g.takeoff_tdrag_speed1) {
                 plane.auto_state.fbwa_tdrag_takeoff_mode = true;

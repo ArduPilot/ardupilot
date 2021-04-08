@@ -27,6 +27,10 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#ifndef HAL_LOGGING_STACK_SIZE
+#define HAL_LOGGING_STACK_SIZE 1024
+#endif
+
 #ifndef HAL_LOGGING_MAV_BUFSIZE
 #define HAL_LOGGING_MAV_BUFSIZE  8
 #endif 
@@ -41,10 +45,14 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
-# ifdef HAL_LOGGING_DATAFLASH
+# if HAL_LOGGING_DATAFLASH_ENABLED
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
-# else
+# elif HAL_LOGGING_FILESYSTEM_ENABLED
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+# elif HAL_LOGGING_MAVLINK_ENABLED
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::MAVLINK
+# else
+#  define HAL_LOGGING_BACKENDS_DEFAULT 0
 # endif
 #endif
 
@@ -142,7 +150,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _num_types = num_types;
     _structures = structures;
 
-#if defined(HAL_BOARD_LOG_DIRECTORY) && HAVE_FILESYSTEM_SUPPORT
+#if HAL_LOGGING_FILESYSTEM_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
@@ -159,9 +167,9 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
             _next_backend++;
         }
     }
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED
 
-#ifdef HAL_LOGGING_DATAFLASH
+#if HAL_LOGGING_DATAFLASH_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -182,7 +190,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if HAL_LOGGING_SITL_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -203,7 +211,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif
     // the "main" logging type needs to come before mavlink so that index 0 is correct
-#if LOGGER_MAVLINK_SUPPORT
+#if HAL_LOGGING_MAVLINK_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -229,7 +237,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         backends[i]->Init();
     }
 
-    Prep();
+    start_io_thread();
 
     EnableWrites(true);
 }
@@ -580,6 +588,8 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
 
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
+    _log_start_count++;
+
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i] == backend) { // pointer comparison!
             // reset sent masks
@@ -698,6 +708,14 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
             }
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // things will almost certainly go sour.  However, if we are not
+    // logging while disarmed then the EKF can be started and trying
+    // to log things even 'though the backends might be saying "no".
+    if (!ret && log_while_disarmed()) {
+        AP_HAL::panic("Failed to log replay block");
+    }
+#endif
     return ret;
 }
 
@@ -721,10 +739,6 @@ bool AP_Logger::CardInserted(void) {
         }
     }
     return false;
-}
-
-void AP_Logger::Prep() {
-    FOR_EACH_BACKEND(Prep());
 }
 
 void AP_Logger::StopLogging()
@@ -1101,7 +1115,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     return f;
 }
 
-const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type)
+const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type) const
 {
     for (uint16_t i=0; i<_num_types;i++) {
         const struct LogStructure *s = structure(i);
@@ -1239,6 +1253,45 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
         }
     }
     return len;
+}
+
+// thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
+// and the thread will sleep while this completes preventing other tasks from running, it therefore
+// is necessary to run the IO in it's own thread
+void AP_Logger::io_thread(void)
+{
+    uint32_t last_run_us = AP_HAL::micros();
+
+    while (true) {
+        uint32_t now = AP_HAL::micros();
+
+        uint32_t delay = 250U; // always have some delay
+        if (now - last_run_us < 1000) {
+            delay = MAX(1000 - (now - last_run_us), delay);
+        }
+        hal.scheduler->delay_microseconds(delay);
+
+        last_run_us = AP_HAL::micros();
+
+        FOR_EACH_BACKEND(io_timer());
+    }
+}
+
+// start the update thread
+void AP_Logger::start_io_thread(void)
+{
+    WITH_SEMAPHORE(_log_send_sem);
+
+    if (_io_thread_started) {
+        return;
+    }
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
+        AP_HAL::panic("Failed to start Logger IO thread");
+    }
+
+    _io_thread_started = true;
+    return;
 }
 
 /* End of Write support */

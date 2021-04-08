@@ -169,6 +169,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BUS", 20, AP_BattMonitor_Params, _i2c_bus, 0),
 
+    // @Param: OPTIONS
+    // @DisplayName: Battery monitor options
+    // @Description: This sets options to change the behaviour of the battery monitor
+    // @Bitmask: 1:IgnoreUAVCAN SoC
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
+
     AP_GROUPEND
 
 };

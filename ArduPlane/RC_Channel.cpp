@@ -135,6 +135,12 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         }    
 }
 
+void RC_Channel_Plane::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
+{
+    plane.mission.start();
+    plane.prev_WP_loc = plane.current_loc;
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
@@ -150,8 +156,11 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FBWA:
+    case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
+    case AUX_FUNC::PARACHUTE_RELEASE:
+    case AUX_FUNC::MODE_SWITCH_RESET:
         break;
 
     case AUX_FUNC::Q_ASSIST:
@@ -190,7 +199,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
-void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
@@ -239,7 +248,8 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 
     case AUX_FUNC::FLAP:
-        break; // flap input label, nothing to do
+    case AUX_FUNC::FBWA_TAILDRAGGER:
+        break; // input labels, nothing to do
 
     case AUX_FUNC::Q_ASSIST:
         do_aux_function_q_assist_state(ch_flag);
@@ -304,8 +314,19 @@ case AUX_FUNC::ARSPD_CALIBRATE:
        do_aux_function_flare(ch_flag);
        break;
 
-    default:
-        RC_Channel::do_aux_function(ch_option, ch_flag);
+    case AUX_FUNC::PARACHUTE_RELEASE:
+#if PARACHUTE == ENABLED
+        plane.parachute_manual_release();
+#endif
         break;
+
+    case AUX_FUNC::MODE_SWITCH_RESET:
+        plane.reset_control_switch();
+        break;
+
+    default:
+        return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
+
+    return true;
 }

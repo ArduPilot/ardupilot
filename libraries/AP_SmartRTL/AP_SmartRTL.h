@@ -43,6 +43,10 @@ public:
     // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
 
+    // peek at next point on the path without removing it form the path. Returns true on success
+    // this may fail if the IO thread has taken the path semaphore
+    bool peek_point(Vector3f& point);
+
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
@@ -74,6 +78,9 @@ public:
     // run background cleanup - should be run regularly from the IO thread
     void run_background_cleanup();
 
+    // returns true if pilot's yaw input should be used to adjust vehicle's heading
+    bool use_pilot_yaw(void) const;
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -87,11 +94,18 @@ private:
         SRTL_ADD_FAILED_NO_SEMAPHORE,
         SRTL_ADD_FAILED_PATH_FULL,
         SRTL_POP_FAILED_NO_SEMAPHORE,
+        SRTL_PEEK_FAILED_NO_SEMAPHORE,
         SRTL_DEACTIVATED_INIT_FAILED,
         SRTL_DEACTIVATED_BAD_POSITION,
         SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT,
         SRTL_DEACTIVATED_PATH_FULL_TIMEOUT,
         SRTL_DEACTIVATED_PROGRAM_ERROR,
+    };
+
+    // enum for SRTL_OPTIONS parameter
+    enum class Options : int32_t {
+        // bits 1 and 2 are still available, pilot yaw was mapped to bit 2 for symmetry with auto
+        IgnorePilotYaw    = (1U << 2),
     };
 
     // add point to end of path
@@ -159,11 +173,12 @@ private:
     void deactivate(SRTL_Actions action, const char *reason);
 
     // logging
-    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f());
+    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const;
 
     // parameters
     AP_Float _accuracy;
     AP_Int16 _points_max;
+    AP_Int32 _options;
 
     // SmartRTL State Variables
     bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will be permanently deactivated (for the remainder of the flight)

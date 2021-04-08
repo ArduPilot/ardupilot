@@ -119,17 +119,20 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
     float tasVar = 0;
     Vector2f offset;
     uint16_t _faultStatus=0;
-    uint8_t timeoutStatus=0;
+    const uint8_t timeoutStatus =
+        posTimeout<<0 |
+        velTimeout<<1 |
+        hgtTimeout<<2 |
+        magTimeout<<3 |
+        tasTimeout<<4;
+
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
-    getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
-    float tiltError;
-    getTiltError(tiltError);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,
@@ -139,9 +142,9 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : (float)tiltError,
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
+        tiltErr : tiltErrFilt,  // tilt error convergence metric
+        offsetNorth : offset.x,
+        offsetEast : offset.y,
         faults : _faultStatus,
         timeouts : (uint8_t)(timeoutStatus),
         solution : (uint32_t)(solutionStatus.value),
@@ -323,51 +326,5 @@ void NavEKF2_core::Log_Write_GSF(uint64_t time_us) const
     if (yawEstimator == nullptr) {
         return;
     }
-
-    float yaw_composite;
-    float yaw_composite_variance;
-    float yaw[N_MODELS_EKFGSF];
-    float ivn[N_MODELS_EKFGSF];
-    float ive[N_MODELS_EKFGSF];
-    float wgt[N_MODELS_EKFGSF];
-
-    if (!yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
-        return;
-    }
-
-    const struct log_NKY0 nky0{
-        LOG_PACKET_HEADER_INIT(LOG_NKY0_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        yaw_composite           : yaw_composite,
-        yaw_composite_variance  : sqrtf(MAX(yaw_composite_variance, 0.0f)),
-        yaw0                    : yaw[0],
-        yaw1                    : yaw[1],
-        yaw2                    : yaw[2],
-        yaw3                    : yaw[3],
-        yaw4                    : yaw[4],
-        wgt0                    : wgt[0],
-        wgt1                    : wgt[1],
-        wgt2                    : wgt[2],
-        wgt3                    : wgt[3],
-        wgt4                    : wgt[4],
-    };
-    AP::logger().WriteBlock(&nky0, sizeof(nky0));
-
-    const struct log_NKY1 nky1{
-        LOG_PACKET_HEADER_INIT(LOG_NKY1_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        ivn0                    : ivn[0],
-        ivn1                    : ivn[1],
-        ivn2                    : ivn[2],
-        ivn3                    : ivn[3],
-        ivn4                    : ivn[4],
-        ive0                    : ive[0],
-        ive1                    : ive[1],
-        ive2                    : ive[2],
-        ive3                    : ive[3],
-        ive4                    : ive[4],
-    };
-    AP::logger().WriteBlock(&nky1, sizeof(nky1));
+    yawEstimator->Log_Write(time_us, LOG_NKY0_MSG, LOG_NKY1_MSG, DAL_CORE(core_index));
 }

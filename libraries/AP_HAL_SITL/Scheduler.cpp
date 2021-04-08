@@ -73,7 +73,7 @@ bool Scheduler::in_main_thread() const
  * time (due to the logic in SITL_State::wait_clock) and thus taking
  * the semaphore never times out - meaning we essentially deadlock.
  */
-bool Scheduler::semaphore_wait_hack_required()
+bool Scheduler::semaphore_wait_hack_required() const
 {
     if (pthread_self() != _main_ctx) {
         // only the main thread ever moves stuff forwards
@@ -143,7 +143,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::system_initialized() {
+void Scheduler::set_system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");

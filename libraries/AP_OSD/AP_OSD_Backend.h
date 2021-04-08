@@ -68,7 +68,7 @@ protected:
     }
 
     //check option
-    bool check_option(uint32_t option)
+    bool check_option(uint32_t option) const
     {
         return (_osd.options & option) != 0;
     }

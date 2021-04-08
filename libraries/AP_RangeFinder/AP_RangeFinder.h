@@ -87,6 +87,7 @@ public:
         HC_SR04 = 30,
         GYUS42v2 = 31,
         MSP = 32,
+        USD1_CAN = 33,
         SITL = 100,
     };
 
@@ -211,7 +212,7 @@ private:
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
 
     uint32_t _log_rfnd_bit = -1;
-    void Log_RFND();
+    void Log_RFND() const;
 };
 
 namespace AP {

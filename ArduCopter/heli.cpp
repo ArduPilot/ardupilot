@@ -73,8 +73,20 @@ void Copter::check_dynamic_flight(void)
 // should be run between the rate controller and the servo updates.
 void Copter::update_heli_control_dynamics(void)
 {
-    // Use Leaky_I if we are not moving fast
-    attitude_control->use_leaky_i(!heli_flags.dynamic_flight);
+
+    if (!motors->using_leaky_integrator()) {
+        //turn off leaky_I
+        attitude_control->use_leaky_i(false);
+        if (ap.land_complete || ap.land_complete_maybe) {
+            motors->set_land_complete(true);
+        } else {
+            motors->set_land_complete(false);
+        }
+    } else {
+        // Use Leaky_I if we are not moving fast
+        attitude_control->use_leaky_i(!heli_flags.dynamic_flight);
+        motors->set_land_complete(false);
+    }
 
     if (ap.land_complete || (is_zero(motors->get_desired_rotor_speed()))){
         // if we are landed or there is no rotor power demanded, decrement slew scalar
@@ -92,7 +104,7 @@ void Copter::update_heli_control_dynamics(void)
 bool Copter::should_use_landing_swash() const
 {
     if (flightmode->has_manual_throttle() ||
-        control_mode == Mode::Number::DRIFT) {
+        flightmode->mode_number() == Mode::Number::DRIFT) {
         // manual modes always uses full swash range
         return false;
     }

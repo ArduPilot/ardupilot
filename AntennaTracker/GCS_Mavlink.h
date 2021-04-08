@@ -18,6 +18,7 @@ protected:
 
     uint8_t sysid_my_gcs() const override;
 
+    MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
 

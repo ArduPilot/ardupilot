@@ -42,6 +42,7 @@ class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
     friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_Sagetech;
 
     // constructor
     AP_ADSB();
@@ -59,6 +60,7 @@ public:
     enum class Type {
         None                = 0,
         uAvionix_MAVLink    = 1,
+        Sagetech            = 2,
     };
 
     struct adsb_vehicle_t {
@@ -95,7 +97,7 @@ public:
     void set_is_auto_mode(const bool is_in_auto_mode) { out_state.is_in_auto_mode = is_in_auto_mode; }
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
 
-    UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
+    UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) const { return out_state.status; }
 
     // extract a location out of a vehicle item
     Location get_location(const adsb_vehicle_t &vehicle) const;

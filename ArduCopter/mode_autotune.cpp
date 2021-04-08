@@ -9,7 +9,7 @@
 bool AutoTune::init()
 {
     // use position hold while tuning if we were in QLOITER
-    bool position_hold = (copter.control_mode == Mode::Number::LOITER || copter.control_mode == Mode::Number::POSHOLD);
+    bool position_hold = (copter.flightmode->mode_number() == Mode::Number::LOITER || copter.flightmode->mode_number() == Mode::Number::POSHOLD);
 
     return init_internals(position_hold,
                           copter.attitude_control,
@@ -23,11 +23,8 @@ bool AutoTune::init()
  */
 bool AutoTune::start()
 {
-    // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
-    if (copter.control_mode != Mode::Number::STABILIZE &&
-        copter.control_mode != Mode::Number::ALT_HOLD &&
-        copter.control_mode != Mode::Number::LOITER &&
-        copter.control_mode != Mode::Number::POSHOLD) {
+    // only allow AutoTune from some flight modes, for example Stabilize, AltHold,  PosHold or Loiter modes
+    if (!copter.flightmode->allows_autotune()) {
         return false;
     }
 
@@ -60,7 +57,7 @@ void AutoTune::run()
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         }
-        copter.attitude_control->reset_rate_controller_I_terms();
+        copter.attitude_control->reset_rate_controller_I_terms_smoothly();
         copter.attitude_control->set_yaw_target_to_current_heading();
 
         float target_roll, target_pitch, target_yaw_rate;
@@ -128,28 +125,28 @@ bool AutoTune::position_ok()
 */
 bool ModeAutoTune::init(bool ignore_checks)
 {
-    return copter.autotune.init();
+    return autotune.init();
 }
 
 
 void ModeAutoTune::run()
 {
-    copter.autotune.run();
+    autotune.run();
 }
 
 void ModeAutoTune::save_tuning_gains()
 {
-    copter.autotune.save_tuning_gains();
+    autotune.save_tuning_gains();
 }
 
 void ModeAutoTune::stop()
 {
-    copter.autotune.stop();
+    autotune.stop();
 }
 
 void ModeAutoTune::reset()
 {
-    copter.autotune.reset();
+    autotune.reset();
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED

@@ -80,6 +80,18 @@ void AP_Mount_SToRM32_serial::update()
             }
             break;
 
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            // constantly update the home location:
+            if (!AP::ahrs().home_is_set()) {
+                break;
+            }
+            _state._roi_target = AP::ahrs().get_home();
+            _state._roi_target_set = true;
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+                resend_now = true;
+            }
+            break;
+
         case MAV_MOUNT_MODE_SYSID_TARGET:
             if (calc_angle_to_sysid_target(_angle_ef_target_rad,
                                            true,

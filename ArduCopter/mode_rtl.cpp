@@ -18,7 +18,7 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init();
+    wp_nav->wp_and_spline_init(g.rtl_speed_cms);
     _state = RTL_Starting;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -117,20 +117,14 @@ void ModeRTL::climb_start()
     _state = RTL_InitialClimb;
     _state_complete = false;
 
-    // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (g.rtl_speed_cms != 0) {
-        wp_nav->set_speed_xy(g.rtl_speed_cms);
-    }
-
     // set the destination
-    if (!wp_nav->set_wp_destination(rtl_path.climb_target)) {
+    if (!wp_nav->set_wp_destination_loc(rtl_path.climb_target) || !wp_nav->set_wp_destination_next_loc(rtl_path.return_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available
         gcs().send_text(MAV_SEVERITY_CRITICAL,"RTL: unexpected error setting climb target");
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         copter.set_mode(Mode::Number::LAND, ModeReason::TERRAIN_FAILSAFE);
         return;
     }
-    wp_nav->set_fast_waypoint(true);
 
     // hold current yaw during initial climb
     auto_yaw.set_mode(AUTO_YAW_HOLD);
@@ -142,7 +136,7 @@ void ModeRTL::return_start()
     _state = RTL_ReturnHome;
     _state_complete = false;
 
-    if (!wp_nav->set_wp_destination(rtl_path.return_target)) {
+    if (!wp_nav->set_wp_destination_loc(rtl_path.return_target)) {
         // failure must be caused by missing terrain data, restart RTL
         restart_without_terrain();
     }
@@ -275,8 +269,15 @@ void ModeRTL::descent_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
@@ -363,8 +364,15 @@ void ModeRTL::land_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 bool ModeRTL::is_landing() const
@@ -405,7 +413,7 @@ void ModeRTL::build_path()
     Vector3f stopping_point;
     pos_control->get_stopping_point_xy(stopping_point);
     pos_control->get_stopping_point_z(stopping_point);
-    rtl_path.origin_point = Location(stopping_point);
+    rtl_path.origin_point = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
     rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
     // compute return target

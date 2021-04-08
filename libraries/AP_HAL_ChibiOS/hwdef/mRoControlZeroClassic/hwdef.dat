@@ -33,7 +33,7 @@ env OPTIMIZE -O2
 FLASH_RESERVE_START_KB 128
 
 # use FRAM for storage
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 
 # Enable RAMTROM parameter storage.
 define HAL_WITH_RAMTRON 1

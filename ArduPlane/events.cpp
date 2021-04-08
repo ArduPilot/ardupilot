@@ -40,6 +40,13 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         break;
         
     case Mode::Number::AUTO:
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
+            quadplane.in_vtol_land_sequence()) {
+            // don't failsafe in a landing sequence
+            break;
+        }
+        FALLTHROUGH;
+
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
@@ -84,6 +91,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::CRUISE:
     case Mode::Number::TRAINING:
     case Mode::Number::CIRCLE:
+    case Mode::Number::LOITER:
+    case Mode::Number::THERMAL:
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
@@ -108,10 +117,15 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         break;
         
     case Mode::Number::AUTO:
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
+            quadplane.in_vtol_land_sequence()) {
+            // don't failsafe in a landing sequence
+            break;
+        }
+        FALLTHROUGH;
+
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
-    case Mode::Number::LOITER:
-    case Mode::Number::THERMAL:
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();

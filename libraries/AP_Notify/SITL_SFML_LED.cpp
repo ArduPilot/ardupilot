@@ -208,7 +208,7 @@ void *SITL_SFML_LED::update_thread_start(void *obj)
     return nullptr;
 }
 
-bool SITL_SFML_LED::hw_init()
+bool SITL_SFML_LED::init()
 {
     pthread_create(&thread, NULL, update_thread_start, this);
 

@@ -106,7 +106,7 @@ size_t MMLPlayer::next_dots()
     return ret;
 }
 
-float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots)
+float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots) const
 {
     float whole_note_period = 240.0f / _tempo;
     if (rest_length == 0) {
@@ -114,7 +114,7 @@ float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots)
     }
 
     float rest_period = whole_note_period/rest_length;
-    float dot_extension = rest_period/2;
+    float dot_extension = rest_period * 0.5f;
 
     while (dots--) {
         rest_period += dot_extension;
@@ -299,7 +299,7 @@ void MMLPlayer::next_action()
     }
     note_period -= _silence_duration;
 
-    float dot_extension = note_period/2;
+    float dot_extension = note_period * 0.5f;
     uint8_t dots = next_dots();
     while (dots--) {
         note_period += dot_extension;

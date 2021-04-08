@@ -18,7 +18,7 @@ public:
     virtual bool take(uint32_t timeout_ms) WARN_IF_UNUSED = 0 ;
     virtual bool take_nonblocking() WARN_IF_UNUSED = 0;
 
-    // a varient that blocks forever
+    // a variant that blocks forever
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-result"
     virtual void take_blocking() { take(HAL_SEMAPHORE_BLOCK_FOREVER); };

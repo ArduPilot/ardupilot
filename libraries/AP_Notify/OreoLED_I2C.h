@@ -164,7 +164,7 @@ private:
                      uint8_t new_blue, uint8_t new_amplitude_red, uint8_t new_amplitude_green, uint8_t new_amplitude_blue,
                      uint16_t new_period, uint16_t new_phase_offset);
 
-        bool operator==(const oreo_state &os);
+        bool operator==(const oreo_state &os) const;
     };
 
     typedef struct {

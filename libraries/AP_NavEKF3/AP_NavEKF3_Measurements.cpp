@@ -113,6 +113,7 @@ void NavEKF3_core::readRangeFinder(void)
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
+#if EK3_FEATURE_BODY_ODOM
     // protect against NaN
     if (isnan(quality) || delPos.is_nan() || delAng.is_nan() || isnan(delTime) || posOffset.is_nan()) {
         return;
@@ -138,9 +139,10 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
     bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
     storedBodyOdm.push(bodyOdmDataNew);
-
+#endif // EK3_FEATURE_BODY_ODOM
 }
 
+#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
@@ -166,6 +168,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
     storedWheelOdm.push(wheelOdmDataNew);
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
 // write the raw optical flow measurements
 // this needs to be called externally.
@@ -428,8 +431,8 @@ void NavEKF3_core::readIMUData()
     imuDataNew.accel_index = accel_index_active;
     
     // Get delta angle data from primary gyro or primary if not available
-    readDeltaAngle(gyro_index_active, imuDataNew.delAng);
-    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(gyro_index_active),1.0e-4f);
+    readDeltaAngle(gyro_index_active, imuDataNew.delAng, imuDataNew.delAngDT);
+    imuDataNew.delAngDT = MAX(imuDataNew.delAngDT, 1.0e-4f);
     imuDataNew.gyro_index = gyro_index_active;
 
     // Get current time stamp
@@ -527,8 +530,8 @@ bool NavEKF3_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
-        ins.get_delta_velocity(ins_index,dVel);
-        dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
+        ins.get_delta_velocity(ins_index,dVel,dVel_dt);
+        dVel_dt = MAX(dVel_dt,1.0e-4f);
         return true;
     }
     return false;
@@ -707,11 +710,11 @@ void NavEKF3_core::readGpsData()
 
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
-bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAngDT) {
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        ins.get_delta_angle(ins_index,dAng);
+        ins.get_delta_angle(ins_index, dAng, dAngDT);
         return true;
     }
     return false;
@@ -812,15 +815,17 @@ void NavEKF3_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF3_core::readAirSpdData()
 {
+    const float EAS2TAS = dal.get_EAS2TAS();
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
+
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
         airspeed->use(selected_airspeed) &&
         airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * dal.get_EAS2TAS();
+        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
@@ -832,6 +837,16 @@ void NavEKF3_core::readAirSpdData()
     }
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
+    // Allow use of a default value if the measurement times out
+    if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 5000 && is_positive(defaultAirSpeed)) {
+        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
+        easErrVar = MAX(defaultAirSpeedVariance, easErrVar);
+        usingDefaultAirspeed = true;
+    } else {
+        usingDefaultAirspeed = false;
+    }
+    tasErrVar =  easErrVar * sq(EAS2TAS);
 }
 
 /********************************************************
@@ -975,10 +990,11 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     yawMeasTime_ms = timeStamp_ms;
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3_core::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
     defaultAirSpeed = airspeed;
+    defaultAirSpeedVariance = sq(uncertainty);
 }
 
 /********************************************************
@@ -987,6 +1003,7 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // protect against NaN
     if (pos.is_nan() || isnan(posErr)) {
         return;
@@ -1028,15 +1045,19 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         // extract yaw from the attitude
         float roll_rad, pitch_rad, yaw_rad;
         quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-
-        // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
-        const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
-        writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+        yaw_elements extNavYawAngDataNew;
+        extNavYawAngDataNew.yawAng = yaw_rad;
+        extNavYawAngDataNew.yawAngErr = MAX(angErr, radians(5.0f)); // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+        extNavYawAngDataNew.order = rotationOrder::TAIT_BRYAN_321; // Euler rotation order is 321 (ZYX)
+        extNavYawAngDataNew.time_ms = timeStamp_ms;
+        storedExtNavYawAng.push(extNavYawAngDataNew);
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // sanity check for NaNs
     if (vel.is_nan() || isnan(err)) {
         return;
@@ -1062,6 +1083,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     extNavVelNew.corrected = false;
 
     storedExtNavVel.push(extNavVelNew);
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 /*
@@ -1288,7 +1310,8 @@ float NavEKF3_core::MagDeclination(void) const
 void NavEKF3_core::updateMovementCheck(void)
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass());
+    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
     if (!runCheck)
     {
         onGroundNotMoving = false;
@@ -1296,7 +1319,7 @@ void NavEKF3_core::updateMovementCheck(void)
     }
 
     const float gyro_limit = radians(3.0f);
-    const float gyro_diff_limit = 0.1;
+    const float gyro_diff_limit = 0.2f;
     const float accel_limit = 1.0f;
     const float accel_diff_limit = 5.0f;
     const float hysteresis_ratio = 0.7f;
@@ -1332,18 +1355,18 @@ void NavEKF3_core::updateMovementCheck(void)
     const float accel_diff_ratio = accel_diff / accel_diff_limit;
     bool logStatusChange = false;
     if (onGroundNotMoving) {
-        if (gyro_length_ratio > 1.0f ||
-            fabsf(accel_length_ratio) > 1.0f ||
-            gyro_diff_ratio > 1.0f ||
-            accel_diff_ratio > 1.0f)
+        if (gyro_length_ratio > frontend->_ognmTestScaleFactor ||
+            fabsf(accel_length_ratio) > frontend->_ognmTestScaleFactor ||
+            gyro_diff_ratio > frontend->_ognmTestScaleFactor ||
+            accel_diff_ratio > frontend->_ognmTestScaleFactor)
         {
             onGroundNotMoving = false;
             logStatusChange = true;
         }
-    } else if (gyro_length_ratio < hysteresis_ratio &&
-            fabsf(accel_length_ratio) < hysteresis_ratio &&
-            gyro_diff_ratio < hysteresis_ratio &&
-            accel_diff_ratio < hysteresis_ratio)
+    } else if (gyro_length_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            fabsf(accel_length_ratio) < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            gyro_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            accel_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio)
     {
         onGroundNotMoving = true;
         logStatusChange = true;
@@ -1367,6 +1390,7 @@ void NavEKF3_core::updateMovementCheck(void)
 
 void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
+#if EK3_FEATURE_DRAG_FUSION
     // Average and down sample to 5Hz
     const float bcoef_x = frontend->_ballisticCoef_x;
     const float bcoef_y = frontend->_ballisticCoef_y;
@@ -1409,4 +1433,5 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
         dragDownSampled.time_ms = 0;
         dragSampleTimeDelta = 0.0f;
     }
+#endif // EK3_FEATURE_DRAG_FUSION
 }

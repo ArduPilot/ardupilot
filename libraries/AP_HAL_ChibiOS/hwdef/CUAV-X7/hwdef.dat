@@ -285,7 +285,7 @@ define HAL_GPIO_LED_OFF 1
 define HAL_HAVE_PIXRACER_LED
 
 # enable RAMTROM parameter storage
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
 # allow to have have a dedicated safety switch pin

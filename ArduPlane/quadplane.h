@@ -43,6 +43,10 @@ public:
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
+    static QuadPlane *get_singleton() {
+        return _singleton;
+    }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
@@ -85,7 +89,7 @@ public:
     */
     bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
 
-    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
+    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
@@ -115,8 +119,11 @@ public:
     // return true when tailsitter frame configured
     bool is_tailsitter(void) const;
 
-    // return true when flying a control surface only tailsitter tailsitter
-    bool is_contol_surface_tailsitter(void) const;
+    // return true when flying a control surface only tailsitter
+    bool is_control_surface_tailsitter(void) const;
+
+    // true when flying a tilt-vectored tailsitter
+    bool _is_vectored;
 
     // return true when flying a tailsitter in VTOL
     bool tailsitter_active(void);
@@ -147,6 +154,8 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
+
+    uint16_t get_pilot_velocity_z_max_dn() const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -181,8 +190,8 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AP_Int8 frame_class;
-    AP_Int8 frame_type;
+    AP_Enum<AP_Motors::motor_frame_class> frame_class;
+    AP_Enum<AP_Motors::motor_frame_type> frame_type;
     
     AP_MotorsMulticopter *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
@@ -193,7 +202,8 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Int16 pilot_velocity_z_max;
+    AP_Int16 pilot_velocity_z_max_up;
+    AP_Int16 pilot_velocity_z_max_dn;
 
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
@@ -236,6 +246,9 @@ private:
 
     // use multicopter rate controller
     void multicopter_attitude_rate_update(float yaw_rate_cds);
+
+    // update yaw target for tiltrotor transition
+    void update_yaw_target();
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -247,6 +260,8 @@ private:
     void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
+    void relax_attitude_control();
+
 
     void init_loiter(void);
     void init_qland(void);
@@ -335,6 +350,11 @@ private:
 
     // control if a VTOL RTL will be used
     AP_Int8 rtl_mode;
+    enum RTL_MODE{
+        NONE,
+        SWITCH_QRTL,
+        VTOL_APPROACH_QRTL,
+    };
 
     // control if a VTOL GUIDED will be used
     AP_Int8 guided_mode;
@@ -477,10 +497,14 @@ private:
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
         AP_Float tilt_yaw_angle;
+        AP_Float fixed_angle;
+        AP_Float fixed_gain;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
-        float transition_yaw;
+        float transition_yaw_cd;
+        uint32_t transition_yaw_set_ms;
+        bool is_vectored;
     } tilt;
 
     // bit 0 enables plane mode and bit 1 enables body-frame roll mode
@@ -497,13 +521,20 @@ private:
     };
 
     enum tailsitter_gscl_mask {
-        TAILSITTER_GSCL_BOOST   = (1U<<0),
+        TAILSITTER_GSCL_THROTTLE = (1U<<0),
         TAILSITTER_GSCL_ATT_THR = (1U<<1),
+        TAILSITTER_GSCL_DISK_THEORY = (1U<<2),
+        TAILSITTER_GSCL_ALTITUDE = (1U<<3),
     };
 
     // tailsitter control variables
     struct {
-        AP_Int8 transition_angle;
+        // transition from VTOL to forward
+        AP_Int8 transition_angle_fw;
+        AP_Float transition_rate_fw;
+        // transition from forward to VTOL
+        AP_Int8 transition_angle_vtol;
+        AP_Float transition_rate_vtol;
         AP_Int8 input_type;
         AP_Int8 input_mask;
         AP_Int8 input_mask_chan;
@@ -517,7 +548,11 @@ private:
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
+        AP_Float disk_loading;
     } tailsitter;
+
+    // return the transition_angle_vtol value
+    int8_t get_tailsitter_transition_angle_vtol(void) const;
 
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
@@ -541,15 +576,16 @@ private:
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
-    void tiltrotor_vectored_yaw(void);
+    void tiltrotor_vectoring(void);
     void tiltrotor_bicopter(void);
+    float tilt_throttle_scaling(void);
     void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
     }
-    bool tiltrotor_fully_fwd(void);
-    float tilt_max_change(bool up);
+    bool tiltrotor_fully_fwd(void) const;
+    float tilt_max_change(bool up) const;
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
@@ -577,6 +613,7 @@ private:
         OPTION_DELAY_ARMING=(1<<11),
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
+        OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
     };
 
     AP_Float takeoff_failure_scalar;
@@ -636,4 +673,6 @@ public:
                                         uint8_t motor_count);
 private:
     void motor_test_stop();
+
+    static QuadPlane *_singleton;
 };

@@ -36,7 +36,8 @@ public:
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
 
-    void     system_initialized() override;
+    void     set_system_initialized() override;
+    bool     is_system_initialized() override { return _initialized; };
 
     void     reboot(bool hold_in_bootloader) override;
 
@@ -84,6 +85,10 @@ private:
 
     AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_IO_PROCS];
     uint8_t _num_io_procs;
+
+    // calculates an integer to be used as the priority for a
+    // newly-created thread
+    uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
 
     SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
     SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};

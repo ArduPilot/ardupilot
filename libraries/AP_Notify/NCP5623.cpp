@@ -61,7 +61,7 @@ bool NCP5623::write_pwm(uint8_t _rgb[3])
     return true;
 }
 
-bool NCP5623::hw_init(void)
+bool NCP5623::init(void)
 {
     uint8_t addrs[] = { NCP5623_LED_I2C_ADDR, NCP5623_C_LED_I2C_ADDR };
     for (uint8_t i=0; i<ARRAY_SIZE(addrs); i++) {

@@ -166,6 +166,8 @@ public:
      *   Common CAN methods                   *
      * ****************************************/
     CANIface(uint8_t index);
+    CANIface();
+    static uint8_t next_interface;
 
     // Initialise CAN Peripheral
     bool init(const uint32_t bitrate, const OperatingMode mode) override;
@@ -219,7 +221,7 @@ public:
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &str) override;
 #endif
     /************************************
      * Methods used inside interrupt    *
@@ -232,14 +234,9 @@ public:
     // droping the frame, and counting errors
     void pollErrorFlagsFromISR(void);
 
-    // CAN Peripheral register structure
-    static constexpr CanType* const Can[HAL_NUM_CAN_IFACES] = {
-        reinterpret_cast<CanType*>(FDCAN1_BASE)
-#if HAL_NUM_CAN_IFACES > 1
-        ,
-        reinterpret_cast<CanType*>(FDCAN2_BASE)
-#endif
-    };
+    // CAN Peripheral register structure, pointing at base
+    // register. Indexed by locical interface number
+    static constexpr CanType* const Can[HAL_NUM_CAN_IFACES] = { HAL_CAN_BASE_LIST };
 };
 
 

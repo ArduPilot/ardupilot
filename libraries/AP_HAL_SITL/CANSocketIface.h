@@ -62,6 +62,9 @@ public:
       , _max_frames_in_socket_tx_queue(2)
     { }
 
+    static uint8_t next_interface;
+    CANIface() : CANIface(next_interface++) {}
+
     ~CANIface() { }
 
     // Initialise CAN Peripheral
@@ -113,7 +116,7 @@ public:
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &str) override;
 
     class CANSocketEventSource : public AP_HAL::EventSource {
         friend class CANIface;

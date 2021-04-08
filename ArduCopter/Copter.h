@@ -42,6 +42,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
+#include <AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h> // 6DoF Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
@@ -66,6 +67,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 // Configuration
 #include "defines.h"
@@ -127,9 +129,6 @@
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
-#endif
-#if PROXIMITY_ENABLED == ENABLED
- # include <AP_Proximity/AP_Proximity.h>
 #endif
 
 #include <AP_Mount/AP_Mount.h>
@@ -377,18 +376,16 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    Mode::Number control_mode;
-    ModeReason control_mode_reason = ModeReason::UNKNOWN;
+    Mode *flightmode;
     Mode::Number prev_control_mode;
 
     RCMapper rcmap;
 
-    // intertial nav alt when we armed
+    // inertial nav alt when we armed
     float arming_altitude_m;
 
     // Failsafe
     struct {
-        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
 
@@ -515,7 +512,9 @@ private:
 #endif
 
     // Landing Gear Controller
+#if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landinggear;
+#endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN && MODE_AUTO_ENABLED == ENABLED
@@ -608,6 +607,12 @@ private:
         RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
+
+    enum class FlightOptions {
+        DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
+        DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
                                                       Failsafe_Action_Land,
@@ -640,6 +645,7 @@ private:
     void fast_loop() override;
     bool start_takeoff(float alt) override;
     bool set_target_location(const Location& target_loc) override;
+    bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     void rc_loop();
@@ -657,13 +663,15 @@ private:
     void update_altitude();
 
     // Attitude.cpp
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
     void update_throttle_hover();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
-    uint16_t get_pilot_speed_dn();
+    uint16_t get_pilot_speed_dn() const;
+
+    // avoidance.cpp
+    void low_alt_avoidance();
 
 #if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
@@ -687,6 +695,9 @@ private:
     // crash_check.cpp
     void crash_check();
     void thrust_loss_check();
+    void yaw_imbalance_check();
+    LowPassFilterFloat yaw_I_filt{0.05f};
+    uint32_t last_yaw_warn_ms;
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
@@ -732,7 +743,9 @@ private:
 #endif
 
     // fence.cpp
+#if AC_FENCE == ENABLED
     void fence_check();
+#endif
 
     // heli.cpp
     void heli_init();
@@ -756,15 +769,16 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_mix();
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // landing_gear.cpp
     void landinggear_update();
+#endif
 
     // standby.cpp
     void standby_update();
 
     // Log.cpp
     void Log_Write_Control_Tuning();
-    void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
@@ -788,7 +802,9 @@ private:
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
-    uint8_t get_mode() const override { return (uint8_t)control_mode; }
+    // called when an attempt to change into a mode is unsuccessful:
+    void mode_change_failed(const Mode *mode, const char *reason);
+    uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
     void update_flight_mode();
     void notify_flight_mode();
 
@@ -817,8 +833,8 @@ private:
     void load_parameters(void) override;
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
-    void convert_tradheli_parameters(void);
-    void convert_fs_options_params(void);
+    void convert_tradheli_parameters(void) const;
+    void convert_fs_options_params(void) const;
 
     // precision_landing.cpp
     void init_precland();
@@ -839,8 +855,8 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
-    bool rangefinder_alt_ok();
-    bool rangefinder_up_ok();
+    bool rangefinder_alt_ok() const;
+    bool rangefinder_up_ok() const;
     void rpm_update();
     void init_optflow();
     void update_optical_flow(void);
@@ -864,8 +880,7 @@ private:
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
-    MAV_TYPE get_frame_mav_type();
-    const char* get_frame_string();
+    const char* get_frame_string() const;
     void allocate_motors(void);
     bool is_tradheli() const;
 
@@ -892,7 +907,6 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-    Mode *flightmode;
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;
@@ -905,7 +919,6 @@ private:
     ModeAuto mode_auto;
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
-    AutoTune autotune;
     ModeAutoTune mode_autotune;
 #endif
 #if MODE_BRAKE_ENABLED == ENABLED

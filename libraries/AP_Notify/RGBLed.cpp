@@ -30,11 +30,6 @@ RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t 
     _led_dim(led_dim)
 {
 
-}    
-
-bool RGBLed::init()
-{
-    return hw_init();
 }
 
 // set_rgb - set color as a combination of red, green and blue values
@@ -109,8 +104,11 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_initialising;
     }
 
-    // save trim and esc calibration pattern
-    if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
+    // save trim or any calibration pattern
+    if (AP_Notify::flags.save_trim ||
+        AP_Notify::flags.esc_calibration ||
+        AP_Notify::flags.compass_cal_running ||
+        AP_Notify::flags.temp_cal_running) {
         return sequence_trim_or_esc;
     }
 
@@ -242,7 +240,7 @@ void RGBLed::handle_led_control(const mavlink_message_t &msg)
     mavlink_msg_led_control_decode(&msg, &packet);
 
     _led_override.start_ms = AP_HAL::millis();
-    
+
     switch (packet.custom_len) {
     case 3:
         _led_override.rate_hz = 0;

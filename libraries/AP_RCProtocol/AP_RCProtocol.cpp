@@ -40,17 +40,17 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true);
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #ifndef IOMCU_FW
+    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
-    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -266,7 +266,6 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->configure_parity(0);
             added.uart->set_stop_bits(1);
             added.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-            added.uart->set_unbuffered_writes(true);
             added.uart->set_blocking_writes(false);
             added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
             break;
@@ -274,7 +273,9 @@ void AP_RCProtocol::check_added_uart(void)
         added.uart->begin(added.baudrate, 128, 128);
         added.last_baud_change_ms = AP_HAL::millis();
     }
-
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
     process_handshake(added.baudrate);
 
     uint32_t n = added.uart->available();

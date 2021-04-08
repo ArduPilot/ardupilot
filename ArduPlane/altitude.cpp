@@ -137,7 +137,7 @@ void Plane::setup_glide_slope(void)
 /*
   return RTL altitude as AMSL altitude
  */
-int32_t Plane::get_RTL_altitude()
+int32_t Plane::get_RTL_altitude() const
 {
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
@@ -200,7 +200,7 @@ void Plane::set_target_altitude_current(void)
 #if AP_TERRAIN_AVAILABLE
     // also record the terrain altitude if possible
     float terrain_altitude;
-    if (g.terrain_follow && terrain.height_above_terrain(terrain_altitude, true) && !terrain_disabled()) {
+    if (terrain_enabled_in_current_mode() && terrain.height_above_terrain(terrain_altitude, true) && !terrain_disabled()) {
         target_altitude.terrain_following = true;
         target_altitude.terrain_alt_cm = terrain_altitude*100;
     } else {
@@ -459,10 +459,10 @@ bool Plane::above_location_current(const Location &loc)
   modify a destination to be setup for terrain following if
   TERRAIN_FOLLOW is enabled
  */
-void Plane::setup_terrain_target_alt(Location &loc)
+void Plane::setup_terrain_target_alt(Location &loc) const
 {
 #if AP_TERRAIN_AVAILABLE
-    if (g.terrain_follow) {
+    if (terrain_enabled_in_current_mode()) {
         loc.terrain_alt = true;
     }
 #endif
@@ -618,7 +618,7 @@ void Plane::rangefinder_terrain_correction(float &height)
 #if AP_TERRAIN_AVAILABLE
     if (!g.rangefinder_landing ||
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND ||
-        g.terrain_follow == 0) {
+        !terrain_enabled_in_current_mode()) {
         return;
     }
     float terrain_amsl1, terrain_amsl2;
@@ -690,7 +690,7 @@ void Plane::rangefinder_height_update(void)
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
-        if ((target_altitude.terrain_following || g.terrain_follow) && 
+        if ((target_altitude.terrain_following || terrain_enabled_in_current_mode()) && 
             terrain.height_above_terrain(terrain_altitude, true)) {
             correction = terrain_altitude - rangefinder_state.height_estimate;
         }
@@ -730,3 +730,41 @@ bool Plane::terrain_disabled()
 }
 
 
+/*
+  Check if terrain following is enabled for the current mode
+ */
+#if AP_TERRAIN_AVAILABLE
+const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
+    {Mode::Number::FLY_BY_WIRE_B, terrain_bitmask::FLY_BY_WIRE_B},
+    {Mode::Number::CRUISE, terrain_bitmask::CRUISE},
+    {Mode::Number::AUTO, terrain_bitmask::AUTO},
+    {Mode::Number::RTL, terrain_bitmask::RTL},
+    {Mode::Number::AVOID_ADSB, terrain_bitmask::AVOID_ADSB},
+    {Mode::Number::GUIDED, terrain_bitmask::GUIDED},
+    {Mode::Number::LOITER, terrain_bitmask::LOITER},
+    {Mode::Number::CIRCLE, terrain_bitmask::CIRCLE},
+    {Mode::Number::QRTL, terrain_bitmask::QRTL},
+    {Mode::Number::QLAND, terrain_bitmask::QLAND},
+    {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
+};
+
+bool Plane::terrain_enabled_in_current_mode() const
+{
+    // Global enable
+    if ((g.terrain_follow.get() & int32_t(terrain_bitmask::ALL)) != 0) {
+        return true;
+    }
+
+    // Specific enable
+    for (const struct TerrainLookupTable entry : Terrain_lookup) {
+        if (entry.mode_num == control_mode->mode_number()) {
+            if ((g.terrain_follow.get() & int32_t(entry.bitmask)) != 0) {
+                return true;
+            }
+            break;
+        }
+    }
+
+    return false;
+}
+#endif

@@ -310,7 +310,7 @@ private:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_RTL();
+    bool verify_RTL() const;
     bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
@@ -327,7 +327,8 @@ private:
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,
         MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2
+        MIS_DONE_BEHAVE_ACRO      = 2,
+        MIS_DONE_BEHAVE_MANUAL    = 3
     };
 
     bool auto_triggered;        // true when auto has been triggered to start
@@ -429,7 +430,7 @@ protected:
     bool have_attitude_target;  // true if we have a valid attitude target
     uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
-    bool sent_notification;     // used to send one time notification to ground station
+    bool send_notification;     // used to send one time notification to ground station
     float _desired_speed;       // desired speed used only in HeadingAndSpeed submode
 
     // direct steering and throttle control
@@ -552,7 +553,7 @@ protected:
 
     bool _enter() override;
 
-    bool sent_notification; // used to send one time notification to ground station
+    bool send_notification; // used to send one time notification to ground station
     bool _loitering;        // true if loitering at end of RTL
 
 };
@@ -638,9 +639,14 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
+
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+protected:
+    bool _enter() override { return false; };
 };
 
 class ModeFollow : public Mode

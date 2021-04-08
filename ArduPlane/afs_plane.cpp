@@ -90,7 +90,7 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
  */
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
 {
-    if (plane.auto_throttle_mode) {
+    if (plane.control_mode->does_auto_throttle()) {
         return AP_AdvancedFailsafe::AFS_AUTO;
     }
     if (plane.control_mode == &plane.mode_manual) {

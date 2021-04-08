@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Math/AP_Math.h>
 
 #include "StorageManager.h"
 
@@ -65,13 +66,23 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
 #if STORAGE_NUM_AREAS == 11
     // optimised for lots of parameters for 15k boards with OSD
     { StorageParam,    8192,  7168},
+#elif STORAGE_NUM_AREAS == 12
+    // optimised for lots of parameters for 15k boards with OSD, plus room for CAN DNA
+    { StorageParam,    8192,  6144},
+    { StorageCANDNA,   14336, 1024},
 #endif
-#if STORAGE_NUM_AREAS >= 12
+#if STORAGE_NUM_AREAS >= 13
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
     { StorageMission,  10028,  5204}, // leave 128 byte gap for expansion
     { StorageCANDNA,   15232,  1024},
+    // 128 byte gap at end of first 16k
+#endif
+#if STORAGE_NUM_AREAS >= 19
+    { StorageParam,    16384, 1280},
+    { StorageMission,  17664, 9842},
+    { StorageParamBak, 27506, 5376},
 #endif
 };
 
@@ -98,13 +109,23 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
 #if STORAGE_NUM_AREAS == 11
     // optimised for lots of parameters for 15k boards with OSD
     { StorageParam,    8192,  7168},
+#elif STORAGE_NUM_AREAS == 12
+    // optimised for lots of parameters for 15k boards with OSD, plus room for CAN DNA
+    { StorageParam,    8192,  6144},
+    { StorageCANDNA,   14336, 1024},
 #endif
-#if STORAGE_NUM_AREAS >= 12
+#if STORAGE_NUM_AREAS >= 13
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
     { StorageMission,  10028,  5204}, // leave 128 byte gap for expansion
     { StorageCANDNA,   15232,  1024},
+    // 128 byte gap at end of first 16k
+#endif
+#if STORAGE_NUM_AREAS >= 19
+    { StorageParam,    16384, 1280},
+    { StorageMission,  17664, 9842},
+    { StorageParamBak, 27506, 5376},
 #endif
 };
 #endif // STORAGE_NUM_AREAS == 1
@@ -266,4 +287,26 @@ void StorageAccess::write_uint16(uint16_t loc, uint16_t value) const
 void StorageAccess::write_uint32(uint16_t loc, uint32_t value) const
 {
     write_block(loc, &value, sizeof(value));
+}
+
+/*
+  copy one area to another
+ */
+bool StorageAccess::copy_area(const StorageAccess &source) const
+{
+    // we deliberately allow for copies from smaller areas. This
+    // allows for a partial backup region for parameters
+    uint16_t total = MIN(source.size(), size());
+    uint16_t ofs = 0;
+    while (total > 0) {
+        uint8_t block[32];
+        uint16_t n = MIN(sizeof(block), total);
+        if (!source.read_block(block, ofs, n) ||
+            !write_block(ofs, block, n)) {
+            return false;
+        }
+        total -= n;
+        ofs += n;
+    }
+    return true;
 }

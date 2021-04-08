@@ -66,6 +66,12 @@ Apparent wind:
 ```
 for example:```"windvane":{"direction":0,"speed":0}```
 
+Airspeed:
+
+```
+    airspeed (m/s)
+```
+
 When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
 
 For example:

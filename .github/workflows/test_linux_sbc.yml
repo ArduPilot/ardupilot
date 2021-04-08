@@ -1,6 +1,6 @@
 name: test Linux SBC
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
@@ -8,7 +8,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: khancyr/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

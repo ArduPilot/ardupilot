@@ -28,6 +28,10 @@ public:
     virtual void handle_msp(const MSP::msp_baro_data_message_t &pkt) {}
 #endif 
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt) {}
+#endif 
+    
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as BARO_DEVID* parameters to

@@ -44,8 +44,6 @@ SITL *SITL::_singleton = nullptr;
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
     
-    AP_GROUPINFO("GYR_RND",        1, SITL,  gyro_noise,  0),
-    AP_GROUPINFO("ACC_RND",        2, SITL,  accel_noise, 0),
     AP_GROUPINFO("DRIFT_SPEED",    5, SITL,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SITL,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SITL,  engine_mul,  1),
@@ -55,20 +53,16 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SITL,  batt_capacity_ah,  0),
-    AP_GROUPINFO("ACCEL_FAIL",    21, SITL,  accel_fail,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
-    AP_GROUPINFO("ACC_BIAS",      30, SITL,  accel_bias, 0),
     AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
     AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
-    AP_GROUPINFO("ACC2_RND",      42, SITL,  accel2_noise, 0),
-    AP_GROUPINFO("GYR_SCALE",     44, SITL,  gyro_scale, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SITL,  adsb_altitude_m, 1000),
@@ -76,9 +70,9 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
+    AP_SUBGROUPEXTENSION("",      54, SITL,  var_ins),
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
-    AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SITL,  engine_fail,  0),
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SITL, ShipSim),
     AP_SUBGROUPEXTENSION("",      60, SITL,  var_mag),
@@ -134,10 +128,6 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     
     // optical flow sensor measurement noise in rad/sec
     AP_GROUPINFO("FLOW_RND",   34, SITL,  flow_noise,  0.05f),
-
-    // accel and gyro fail masks
-    AP_GROUPINFO("GYR_FAIL_MSK",   35, SITL,  gyro_fail_mask,  0),
-    AP_GROUPINFO("ACC_FAIL_MSK",   36, SITL,  accel_fail_mask,  0),
 
     AP_GROUPINFO("TWIST_X",     37, SITL,  twist.x, 0),
     AP_GROUPINFO("TWIST_Y",     38, SITL,  twist.y, 0),
@@ -368,11 +358,45 @@ const AP_Param::GroupInfo SITL::var_sfml_joystick[] = {
     AP_GROUPINFO("SF_JS_AXIS8",    9, SITL,  sfml_joystick_axis[7], sf::Joystick::Axis::PovY),
     AP_GROUPEND
 };
-
 #endif //SFML_JOYSTICK
+
+// INS SITL parameters
+const AP_Param::GroupInfo SITL::var_ins[] = {
+    AP_GROUPINFO("IMUT_START",    1, SITL, imu_temp_start,  25),
+    AP_GROUPINFO("IMUT_END",      2, SITL, imu_temp_end, 45),
+    AP_GROUPINFO("IMUT_TCONST",   3, SITL, imu_temp_tconst, 300),
+    AP_GROUPINFO("IMUT_FIXED",    4, SITL, imu_temp_fixed, 0),
+    AP_GROUPINFO("ACC1_BIAS",     5, SITL, accel_bias[0], 0),
+    AP_GROUPINFO("ACC2_BIAS",     6, SITL, accel_bias[1], 0),
+    AP_GROUPINFO("ACC3_BIAS",     7, SITL, accel_bias[2], 0),
+    AP_GROUPINFO("GYR1_RND",      8, SITL, gyro_noise[0],  0),
+    AP_GROUPINFO("GYR2_RND",      9, SITL, gyro_noise[1],  0),
+    AP_GROUPINFO("GYR3_RND",     10, SITL, gyro_noise[2],  0),
+    AP_GROUPINFO("ACC1_RND",     11, SITL, accel_noise[0], 0),
+    AP_GROUPINFO("ACC2_RND",     12, SITL, accel_noise[1], 0),
+    AP_GROUPINFO("ACC3_RND",     13, SITL, accel_noise[2], 0),
+    AP_GROUPINFO("GYR1_SCALE",   14, SITL, gyro_scale[0], 0),
+    AP_GROUPINFO("GYR2_SCALE",   15, SITL, gyro_scale[1], 0),
+    AP_GROUPINFO("GYR3_SCALE",   16, SITL, gyro_scale[2], 0),
+    AP_GROUPINFO("ACCEL1_FAIL",  17, SITL, accel_fail[0],  0),
+    AP_GROUPINFO("ACCEL2_FAIL",  18, SITL, accel_fail[1],  0),
+    AP_GROUPINFO("ACCEL3_FAIL",  19, SITL, accel_fail[2],  0),
+    AP_GROUPINFO("GYR_FAIL_MSK", 20, SITL, gyro_fail_mask,  0),
+    AP_GROUPINFO("ACC_FAIL_MSK", 21, SITL, accel_fail_mask,  0),
+    AP_GROUPINFO("ACC1_SCAL",    22, SITL, accel_scale[0], 0),
+    AP_GROUPINFO("ACC2_SCAL",    23, SITL, accel_scale[1], 0),
+    AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
+    AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
+
+    // the IMUT parameters must be last due to the enable parameters
+    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SITL, AP_InertialSensor::TCal),
+    AP_GROUPEND
+};
     
-/* report SITL state via MAVLink */
-void SITL::simstate_send(mavlink_channel_t chan)
+/* report SITL state via MAVLink SIMSTATE*/
+void SITL::simstate_send(mavlink_channel_t chan) const
 {
     float yaw;
 
@@ -394,6 +418,39 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               radians(state.yawRate),
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
+}
+
+/* report SITL state via MAVLink SIM_STATE */
+void SITL::sim_state_send(mavlink_channel_t chan) const
+{
+    // convert to same conventions as DCM
+    float yaw = state.yawDeg;
+    if (yaw > 180) {
+        yaw -= 360;
+    }
+
+    mavlink_msg_sim_state_send(chan,
+            state.quaternion.q1,
+            state.quaternion.q2,
+            state.quaternion.q3,
+            state.quaternion.q4,
+            ToRad(state.rollDeg),
+            ToRad(state.pitchDeg),
+            ToRad(yaw),
+            state.xAccel,
+            state.yAccel,
+            state.zAccel,
+            radians(state.rollRate),
+            radians(state.pitchRate),
+            radians(state.yawRate),
+            state.latitude*1.0e7,
+            state.longitude*1.0e7,
+            (float)state.altitude,
+            0.0,
+            0.0,
+            state.speedN,
+            state.speedE,
+            state.speedD);
 }
 
 /* report SITL state to AP_Logger */

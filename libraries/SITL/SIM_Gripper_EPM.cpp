@@ -101,7 +101,7 @@ void Gripper_EPM::update(const struct sitl_input &input)
 }
 
 
-bool Gripper_EPM::should_report()
+bool Gripper_EPM::should_report() const
 {
     if (AP_HAL::micros64() - last_report_us < report_interval) {
         return false;
@@ -114,7 +114,7 @@ bool Gripper_EPM::should_report()
     return false;
 }
 
-float Gripper_EPM::tesla()
+float Gripper_EPM::tesla() const
 {
     // https://en.wikipedia.org/wiki/Orders_of_magnitude_(magnetic_field)
     // 200N lifting capacity ~= 2.5T

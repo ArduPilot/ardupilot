@@ -55,6 +55,9 @@ public:
         CRSF_FRAMETYPE_PARAMETER_READ = 0x2C,
         CRSF_FRAMETYPE_PARAMETER_WRITE = 0x2D,
         CRSF_FRAMETYPE_COMMAND = 0x32,
+        // Custom Telemetry Frames 0x7F,0x80
+        CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY = 0x7F,   // as suggested by Remo Masina for fw < 4.06
+        CRSF_FRAMETYPE_AP_CUSTOM_TELEM = 0x80,          // reserved for ArduPilot by TBS, requires fw >= 4.06
     };
 
     // Command IDs for CRSF_FRAMETYPE_COMMAND
@@ -116,6 +119,13 @@ public:
         CRSF_COMMAND_RX_BIND = 0x01,
     };
 
+    // SubType IDs for CRSF_FRAMETYPE_CUSTOM_TELEM
+    enum CustomTelemSubTypeID : uint8_t {
+        CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH = 0xF0,
+        CRSF_AP_CUSTOM_TELEM_STATUS_TEXT = 0xF1,
+        CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH = 0xF2,
+    };
+
     enum DeviceAddress {
         CRSF_ADDRESS_BROADCAST = 0x00,
         CRSF_ADDRESS_USB = 0x10,
@@ -161,6 +171,25 @@ public:
         int8_t downlink_dnr; // ( db )
     } PACKED;
 
+    enum class RFMode : uint8_t {
+        CRSF_RF_MODE_4HZ = 0,
+        CRSF_RF_MODE_50HZ,
+        CRSF_RF_MODE_150HZ,
+        CRSF_RF_MODE_250HZ,
+        CRSF_RF_MODE_UNKNOWN,
+    };
+
+    struct LinkStatus {
+        int16_t rssi = -1;
+        RFMode rf_mode;
+    };
+
+    // this will be used by AP_CRSF_Telem to access link status data
+    // from within AP_RCProtocol_CRSF thread so no need for cross-thread synch
+    const volatile LinkStatus& get_link_status() const {
+        return _link_status;
+    }
+
 private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
@@ -187,8 +216,8 @@ private:
     uint32_t _last_rx_time_us;
     uint32_t _start_frame_time_us;
     bool telem_available;
-    bool _fast_telem; // is 150Hz telemetry active
-    int16_t _current_rssi = -1;
+
+    volatile struct LinkStatus _link_status;
 
     AP_HAL::UARTDriver *_uart;
 

@@ -223,8 +223,5 @@ bool Mode::is_taking_off() const
     if (copter.ap.land_complete) {
         return false;
     }
-    if (takeoff.running()) {
-        return true;
-    }
-    return false;
+    return takeoff.running();
 }

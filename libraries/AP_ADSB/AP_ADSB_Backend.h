@@ -31,9 +31,14 @@ public:
     static bool detect();
 
     virtual void update() = 0;
+
+    virtual bool init() { return true; }
+
 protected:
 
     uint8_t _instance;
+
+    AP_HAL::UARTDriver *_port;
 
     // references
     AP_ADSB &_frontend;

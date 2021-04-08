@@ -15,4 +15,4 @@ To continue with the current EEPROM, run:
 To update the APM code with the latest of Github, run UpdateAPMSource.bat. Note this is bleeding-edge source code and some bugs may be present.
 Deleting the SITL environment
 
-To uninstall/delete the SITL environment, simply delete the "cygwin" folder in the C:\ drive.
+To uninstall/delete the SITL environment, simply delete the "cygwin64" folder in the C:\ drive.

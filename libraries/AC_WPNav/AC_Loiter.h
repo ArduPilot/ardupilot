@@ -39,7 +39,7 @@ public:
     void get_stopping_point_xy(Vector3f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_xy(); }
 
     /// get bearing to target in centi-degrees
     int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
@@ -48,7 +48,7 @@ public:
     float get_angle_max_cd() const;
 
     /// run the loiter controller
-    void update();
+    void update(bool avoidance_on = true);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
@@ -63,7 +63,7 @@ protected:
 
     /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
-    void calc_desired_velocity(float nav_dt);
+    void calc_desired_velocity(float nav_dt, bool avoidance_on = true);
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;

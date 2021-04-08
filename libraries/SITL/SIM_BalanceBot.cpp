@@ -34,7 +34,7 @@ BalanceBot::BalanceBot(const char *frame_str) :
 /*
    return yaw rate in degrees/second given steering_angle
 */
-float BalanceBot::calc_yaw_rate(float steering)
+float BalanceBot::calc_yaw_rate(float steering) const
 {
     float wheel_base_length = 0.15f;
     return steering * degrees( skid_turn_rate/wheel_base_length );

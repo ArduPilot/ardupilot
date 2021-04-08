@@ -9,9 +9,11 @@
 
 void AP_Periph_FW::msp_init(AP_HAL::UARTDriver *_uart)
 {
-    msp.port.uart = _uart;
-    msp.port.msp_version = MSP::MSP_V2_NATIVE;
-    _uart->begin(115200, 512, 512);
+    if (_uart) {
+        msp.port.uart = _uart;
+        msp.port.msp_version = MSP::MSP_V2_NATIVE;
+        _uart->begin(115200, 512, 512);
+    }
 }
 
 
@@ -39,6 +41,9 @@ void AP_Periph_FW::send_msp_packet(uint16_t cmd, void *p, uint16_t size)
  */
 void AP_Periph_FW::msp_sensor_update(void)
 {
+    if (msp.port.uart == nullptr) {
+        return;
+    }
 #ifdef HAL_PERIPH_ENABLE_GPS
     send_msp_GPS();
 #endif
@@ -128,12 +133,12 @@ void AP_Periph_FW::send_msp_baro(void)
     if (msp.last_baro_ms == baro.get_last_update(0)) {
         return;
     }
-    msp.last_baro_ms = baro.get_last_update(0);
     if (!baro.healthy()) {
         // don't send any data
         return;
     }
-
+    msp.last_baro_ms = baro.get_last_update(0);
+    
     p.instance = 0;
     p.time_ms = msp.last_baro_ms;
     p.pressure_pa = baro.get_pressure();

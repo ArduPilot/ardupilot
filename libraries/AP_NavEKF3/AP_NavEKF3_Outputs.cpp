@@ -59,6 +59,7 @@ float NavEKF3_core::errorScore() const
     return score;
 }
 
+#if EK3_FEATURE_BODY_ODOM
 // return data for debugging body frame odometry fusion
 uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
 {
@@ -70,6 +71,7 @@ uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velIn
     velInnovVar.z = varInnovBodyVel[2];
     return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
@@ -123,12 +125,6 @@ void NavEKF3_core::getAccelBias(Vector3f &accelBias) const
     accelBias = stateStruct.accel_bias / dtEkfAvg;
 }
 
-// return estimated 1-sigma tilt error in radians
-void NavEKF3_core::getTiltError(float &ang) const
-{
-    ang = sqrtf(MAX(tiltErrorVariance,0.0f));
-}
-
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF3_core::getRotationBodyToNED(Matrix3f &mat) const
 {
@@ -175,13 +171,14 @@ uint32_t NavEKF3_core::getLastVelNorthEastReset(Vector2f &vel) const
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3_core::getWind(Vector3f &wind) const
+// returns true if wind state estimation is active
+bool NavEKF3_core::getWind(Vector3f &wind) const
 {
     wind.x = stateStruct.wind_vel.x;
     wind.y = stateStruct.wind_vel.y;
     wind.z = 0.0f; // currently don't estimate this
+    return !inhibitWindStates;
 }
-
 
 // return the NED velocity of the body frame origin in m/s
 //
@@ -214,12 +211,6 @@ float NavEKF3_core::getPosDownDerivative(void) const
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     // correct for the IMU offset (EKF calculations are at the IMU)
     return vertCompFiltState.vel + velOffsetNED.z;
-}
-
-// This returns the specific forces in the NED frame
-void NavEKF3_core::getAccelNED(Vector3f &accelNED) const {
-    accelNED = velDotNED;
-    accelNED.z -= GRAVITY_MSS;
 }
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
@@ -301,57 +292,58 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(struct Location &loc) const
 {
-    const auto &gps = dal.gps();
-
     Location origin;
-    float posD;
-
-    if(getPosD(posD) && getOriginLLH(origin)) {
-        // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt = origin.alt - posD*100;
-        loc.relative_alt = 0;
-        loc.terrain_alt = 0;
-
-        // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
-        if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
-            loc.lat = EKF_origin.lat;
-            loc.lng = EKF_origin.lng;
-            loc.offset(outputDataNew.position.x, outputDataNew.position.y);
-            return true;
-        } else {
-            // we could be in constant position mode because the vehicle has taken off without GPS, or has lost GPS
-            // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
-                // we have a GPS position fix to return
-                const struct Location &gpsloc = gps.location(selected_gps);
-                loc.lat = gpsloc.lat;
-                loc.lng = gpsloc.lng;
-                return true;
-            } else {
-                // if no GPS fix, provide last known position before entering the mode
+    if (getOriginLLH(origin)) {
+        float posD;
+        if(getPosD(posD) && PV_AidingMode != AID_NONE) {
+            // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
+            loc.alt = origin.alt - posD*100;
+            loc.relative_alt = 0;
+            loc.terrain_alt = 0;
+            if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
+                // The EKF is able to provide a position estimate
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                if (PV_AidingMode == AID_NONE) {
-                    loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                return true;
+            } else {
+                // We have been be doing inertial dead reckoning for too long so use raw GPS if available
+                if (getGPSLLH(loc)) {
+                    return true;
                 } else {
+                    // Return the EKF estimate but mark it as invalid
+                    loc.lat = EKF_origin.lat;
+                    loc.lng = EKF_origin.lng;
                     loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                    return false;
                 }
+            }
+        } else {
+            // Return a raw GPS reading if available and the last recorded positon if not
+            if (getGPSLLH(loc)) {
+                return true;
+            } else {
+                loc.lat = EKF_origin.lat;
+                loc.lng = EKF_origin.lng;
+                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
                 return false;
             }
         }
     } else {
-        // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
-        // GPS reading if available and return false
-        if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
-            const struct Location &gpsloc = gps.location(selected_gps);
-            loc = gpsloc;
-            loc.relative_alt = 0;
-            loc.terrain_alt = 0;
-        }
-        return false;
+        // The EKF is not navigating so use raw GPS if available
+        return getGPSLLH(loc);
     }
 }
 
+bool NavEKF3_core::getGPSLLH(struct Location &loc) const
+{
+    const auto &gps = dal.gps();
+    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+        loc = gps.location(selected_gps);
+        return true;
+    }
+    return false;
+}
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
@@ -450,9 +442,11 @@ void  NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 // return the synthetic air data drag and sideslip innovations
 void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const
 {
+#if EK3_FEATURE_DRAG_FUSION
     dragInnov.x = innovDrag[0];
     dragInnov.y = innovDrag[1];
     betaInnov   = innovBeta;
+#endif
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
@@ -484,6 +478,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         innovations = gpsVelInnov;
         variances = gpsVelVarInnov;
         return true;
+#if EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::EXTNAV:
         // check for timeouts
         if (AP_HAL::millis() - extNavVelInnovTime_ms > 500) {
@@ -492,6 +487,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         innovations = extNavVelInnov;
         variances = extNavVelVarInnov;
         return true;
+#endif // EK3_FEATURE_EXTERNAL_NAV
     default:
         // variances are not available for this source
         return false;
@@ -522,26 +518,6 @@ void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
               faultStatus.bad_airspeed<<5 |
               faultStatus.bad_sideslip<<6 |
               !statesInitialised<<7);
-}
-
-/*
-return filter timeout status as a bitmasked integer
- 0 = position measurement timeout
- 1 = velocity measurement timeout
- 2 = height measurement timeout
- 3 = magnetometer measurement timeout
- 4 = true airspeed measurement timeout
- 5 = unassigned
- 6 = unassigned
- 7 = unassigned
-*/
-void  NavEKF3_core::getFilterTimeouts(uint8_t &timeouts) const
-{
-    timeouts = (posTimeout<<0 |
-                velTimeout<<1 |
-                hgtTimeout<<2 |
-                magTimeout<<3 |
-                tasTimeout<<4);
 }
 
 // Return the navigation filter status message

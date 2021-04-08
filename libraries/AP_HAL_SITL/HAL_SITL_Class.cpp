@@ -211,7 +211,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     fill_stack_nan();
 
     callbacks->setup();
-    scheduler->system_initialized();
+    scheduler->set_system_initialized();
 
 #ifndef HAL_NO_LOGGING
     if (getenv("SITL_WATCHDOG_RESET")) {

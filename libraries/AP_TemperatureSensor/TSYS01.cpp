@@ -15,9 +15,6 @@ static const uint8_t TSYS01_CMD_READ_ADC    = 0x00;
 
 bool TSYS01::init(uint8_t bus)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    return false;
-#endif
     _dev = std::move(hal.i2c_mgr->get_device(bus, TSYS01_ADDR));
     if (!_dev) {
         printf("TSYS01 device is null!");
@@ -56,7 +53,7 @@ bool TSYS01::init(uint8_t bus)
     return true;
 }
 
-bool TSYS01::_reset()
+bool TSYS01::_reset() const
 {
     return _dev->transfer(&TSYS01_CMD_RESET, 1, nullptr, 0);
 }
@@ -83,7 +80,7 @@ bool TSYS01::_read_prom()
 }
 
 // Borrowed from MS Baro driver
-uint16_t TSYS01::_read_prom_word(uint8_t word)
+uint16_t TSYS01::_read_prom_word(uint8_t word) const
 {
     const uint8_t reg = TSYS01_CMD_READ_PROM + (word << 1);
     uint8_t val[2];
@@ -93,12 +90,12 @@ uint16_t TSYS01::_read_prom_word(uint8_t word)
     return (val[0] << 8) | val[1];
 }
 
-bool TSYS01::_convert()
+bool TSYS01::_convert() const
 {
     return _dev->transfer(&TSYS01_CMD_CONVERT, 1, nullptr, 0);
 }
 
-uint32_t TSYS01::_read_adc()
+uint32_t TSYS01::_read_adc() const
 {
     uint8_t val[3];
     if (!_dev->transfer(&TSYS01_CMD_READ_ADC, 1, val, 3)) {

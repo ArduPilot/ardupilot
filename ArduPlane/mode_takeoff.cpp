@@ -51,11 +51,6 @@ ModeTakeoff::ModeTakeoff()
 
 bool ModeTakeoff::_enter()
 {
-    // the altitude to circle at is taken from the current altitude
-    plane.throttle_allows_nudging = true;
-    plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
-
     takeoff_started = false;
 
     return true;
@@ -117,7 +112,10 @@ void ModeTakeoff::update()
         plane.next_WP_loc.alt = start_loc.alt + target_alt*100.0;
 
         plane.set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
-        plane.complete_auto_takeoff();
+        
+#if AC_FENCE == ENABLED
+        plane.fence.auto_enable_fence_after_takeoff();
+#endif
     }
 
     if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {

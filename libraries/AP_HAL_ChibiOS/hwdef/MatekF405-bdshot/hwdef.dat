@@ -1,0 +1,7 @@
+# Bi-directional dshot version of MatekF405
+
+include ../MatekF405/hwdef.dat
+
+undef PC6
+
+PC6  TIM8_CH1 TIM8 PWM(1) GPIO(50) BIDIR

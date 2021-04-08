@@ -138,17 +138,20 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tasVar = 0;
     uint16_t _faultStatus=0;
     Vector2f offset;
-    uint8_t timeoutStatus=0;
+    const uint8_t timeoutStatus =
+        posTimeout<<0 |
+        velTimeout<<1 |
+        hgtTimeout<<2 |
+        magTimeout<<3 |
+        tasTimeout<<4;
+
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
-    getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
-    float tiltError;
-    getTiltError(tiltError);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
@@ -158,9 +161,9 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : tiltError,
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
+        tiltErr : sqrtf(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
+        offsetNorth : offset.x,
+        offsetEast : offset.y,
         faults : _faultStatus,
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
@@ -376,8 +379,10 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
 
+#if EK3_FEATURE_BODY_ODOM
     // write debug data for body frame odometry fusion
     Log_Write_BodyOdom(time_us);
+#endif
 
     // log state variances every 0.49s
     Log_Write_State_Variances(time_us);
@@ -418,51 +423,5 @@ void NavEKF3_core::Log_Write_GSF(uint64_t time_us)
     if (yawEstimator == nullptr) {
         return;
     }
-
-    float yaw_composite;
-    float yaw_composite_variance;
-    float yaw[N_MODELS_EKFGSF];
-    float ivn[N_MODELS_EKFGSF];
-    float ive[N_MODELS_EKFGSF];
-    float wgt[N_MODELS_EKFGSF];
-
-    if (!yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
-        return;
-    }
-
-    const struct log_XKY0 xky0{
-        LOG_PACKET_HEADER_INIT(LOG_XKY0_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        yaw_composite           : yaw_composite,
-        yaw_composite_variance  : sqrtf(MAX(yaw_composite_variance, 0.0f)),
-        yaw0                    : yaw[0],
-        yaw1                    : yaw[1],
-        yaw2                    : yaw[2],
-        yaw3                    : yaw[3],
-        yaw4                    : yaw[4],
-        wgt0                    : wgt[0],
-        wgt1                    : wgt[1],
-        wgt2                    : wgt[2],
-        wgt3                    : wgt[3],
-        wgt4                    : wgt[4],
-    };
-    AP::logger().WriteBlock(&xky0, sizeof(xky0));
-
-    const struct log_XKY1 xky1{
-        LOG_PACKET_HEADER_INIT(LOG_XKY1_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        ivn0                    : ivn[0],
-        ivn1                    : ivn[1],
-        ivn2                    : ivn[2],
-        ivn3                    : ivn[3],
-        ivn4                    : ivn[4],
-        ive0                    : ive[0],
-        ive1                    : ive[1],
-        ive2                    : ive[2],
-        ive3                    : ive[3],
-        ive4                    : ive[4],
-    };
-    AP::logger().WriteBlock(&xky1, sizeof(xky1));
+    yawEstimator->Log_Write(time_us, LOG_XKY0_MSG, LOG_XKY1_MSG, DAL_CORE(core_index));
 }

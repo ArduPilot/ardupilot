@@ -2,7 +2,7 @@
 
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
+#include <AP_RPM/AP_RPM.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -105,8 +105,11 @@ float AP_Frsky_Backend::format_gps(float dec)
  */
 void AP_Frsky_Backend::calc_gps_position(void)
 {
-    if (AP::gps().status() >= 3) {
-        const Location &loc = AP::gps().location(); //get gps instance 0
+    AP_AHRS &_ahrs = AP::ahrs();
+
+    Location loc;
+
+    if (_ahrs.get_position(loc)) {
         float lat = format_gps(fabsf(loc.lat/10000000.0f));
         _SPort_data.latdddmm = lat;
         _SPort_data.latmmmm = (lat - _SPort_data.latdddmm) * 10000;
@@ -121,7 +124,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.alt_gps_meters = (int16_t)alt;
         _SPort_data.alt_gps_cm = (alt - _SPort_data.alt_gps_meters) * 100;
 
-        float speed = AP::gps().ground_speed();
+        const float speed = AP::ahrs().groundspeed();
         _SPort_data.speed_in_meter = speed;
         _SPort_data.speed_in_centimeter = (speed - _SPort_data.speed_in_meter) * 100;
     } else {
@@ -136,7 +139,24 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.speed_in_centimeter = 0;
     }
 
-    AP_AHRS &_ahrs = AP::ahrs();
     _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS
 }
 
+/*
+ * prepare rpm data
+ * for FrSky D and SPort protocols
+ */
+bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
+{
+    const AP_RPM* rpm = AP::rpm();
+    if (rpm == nullptr) {
+        return false;
+    }
+
+    float rpm_value;
+    if (!rpm->get_rpm(instance, rpm_value)) {
+        return false;
+    }
+    value = static_cast<int32_t>(roundf(rpm_value));
+    return true;
+}

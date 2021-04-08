@@ -13,11 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_SITL.h"
 
+#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_Param/AP_Param.h>
-#include "AP_Proximity_SITL.h"
+
 #include <AC_Fence/AC_Fence.h>
 #include <stdio.h>
 
@@ -52,18 +55,19 @@ void AP_Proximity_SITL::update(void)
         // only called to prompt polyfence to reload fence if required
     }
     if (AP::fence()->polyfence().inclusion_boundary_available()) {
-        // update distance in one sector
-        if (get_distance_to_fence(_sector_middle_deg[last_sector], _distance[last_sector])) {
-            set_status(AP_Proximity::Status::Good);
-            _distance_valid[last_sector] = true;
-            _angle[last_sector] = _sector_middle_deg[last_sector];
-            update_boundary_for_sector(last_sector, true);
-        } else {
-            _distance_valid[last_sector] = false;
-        }
-        last_sector++;
-        if (last_sector >= PROXIMITY_NUM_SECTORS) {
-            last_sector = 0;
+        set_status(AP_Proximity::Status::Good);
+        // update distance in each sector
+        for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+            const float yaw_angle_deg = sector * 45.0f;
+            AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+            float fence_distance;
+            if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
+                boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
+                // update OA database
+                database_push(yaw_angle_deg, fence_distance);
+            } else {
+                boundary.reset_face(face);
+            }
         }
     } else {
         set_status(AP_Proximity::Status::NoData);
@@ -97,6 +101,10 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         }
     }
     distance = min_dist;
+    if (check_obstacle_near_ground(angle_deg, distance)) {
+        // obstacle near land, lets ignore it
+        return false;
+    }
     return true;
 }
 
@@ -119,3 +127,5 @@ bool AP_Proximity_SITL::get_upward_distance(float &distance) const
 }
 
 #endif // CONFIG_HAL_BOARD
+
+#endif // HAL_PROXIMITY_ENABLED

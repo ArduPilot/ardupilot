@@ -79,6 +79,7 @@ class CANIface: public AP_HAL::CANIface
     int8_t _prev_ser_port;
     int8_t _iface_num = -1;
     uint32_t _last_had_activity;
+    uint8_t num_tries;
     AP_HAL::CANIface* _can_iface; // Can interface to be used for interaction by SLCAN interface
     HAL_Semaphore port_sem;
     bool _set_by_sermgr;
@@ -112,7 +113,7 @@ public:
     bool set_event_handle(AP_HAL::EventHandle* evt_handle) override;
     uint16_t getNumFilters() const override;
     uint32_t getErrorCount() const override;
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &) override;
     bool is_busoff() const override;
     bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs) override;
     void flush_tx() override;

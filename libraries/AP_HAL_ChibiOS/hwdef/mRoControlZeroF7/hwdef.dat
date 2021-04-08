@@ -39,7 +39,7 @@ env OPTIMIZE -O2
 FLASH_RESERVE_START_KB 96
 
 # use FRAM for storage
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
 # fallback storage in case FRAM is not populated
@@ -264,7 +264,7 @@ IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # 1 baro
-BARO DPS280      SPI:dps310
+BARO DPS310      SPI:dps310
 
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180

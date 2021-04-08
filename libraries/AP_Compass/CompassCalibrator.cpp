@@ -459,7 +459,7 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
     };
 }
 
-bool CompassCalibrator::fit_acceptable()
+bool CompassCalibrator::fit_acceptable() const
 {
     if (!isnan(_fitness) &&
         _params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX &&
@@ -655,11 +655,11 @@ void CompassCalibrator::run_sphere_fit()
         JTJ2[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda/lma_damping;
     }
 
-    if (!inverse(JTJ, JTJ, 4)) {
+    if (!mat_inverse(JTJ, JTJ, 4)) {
         return;
     }
 
-    if (!inverse(JTJ2, JTJ2, 4)) {
+    if (!mat_inverse(JTJ2, JTJ2, 4)) {
         return;
     }
 
@@ -771,11 +771,11 @@ void CompassCalibrator::run_ellipsoid_fit()
         JTJ2[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _ellipsoid_lambda/lma_damping;
     }
 
-    if (!inverse(JTJ, JTJ, 9)) {
+    if (!mat_inverse(JTJ, JTJ, 9)) {
         return;
     }
 
-    if (!inverse(JTJ2, JTJ2, 9)) {
+    if (!mat_inverse(JTJ2, JTJ2, 9)) {
         return;
     }
 
@@ -845,7 +845,7 @@ void CompassCalibrator::AttitudeSample::set_from_ahrs(void)
     yaw = constrain_int16(127 * (yaw_rad / M_PI), -127, 127);
 }
 
-Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void)
+Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) const
 {
     float roll_rad, pitch_rad, yaw_rad;
     roll_rad = roll * (M_PI / 127);

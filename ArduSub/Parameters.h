@@ -206,6 +206,10 @@ public:
         // RC_Mapper Library
         k_param_rcmap, // Disabled
 
+        k_param_gcs4,
+        k_param_gcs5,
+        k_param_gcs6,
+
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
         k_param_pilot_speed_dn,
@@ -320,7 +324,7 @@ public:
     AP_Gripper gripper;
 #endif
 
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library
     AP_Proximity proximity;
 #endif

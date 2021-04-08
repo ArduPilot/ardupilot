@@ -269,11 +269,7 @@ bool ModeThrow::throw_detected()
     bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((inertial_nav.get_velocity().z - free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
-    if (throw_condition_confirmed) {
-        return true;
-    } else {
-        return false;
-    }
+    return throw_condition_confirmed;
 }
 
 bool ModeThrow::throw_attitude_good()
@@ -292,6 +288,6 @@ bool ModeThrow::throw_height_good()
 bool ModeThrow::throw_position_good()
 {
     // check that our horizontal position error is within 50cm
-    return (pos_control->get_horizontal_error() < 50.0f);
+    return (pos_control->get_pos_error_xy() < 50.0f);
 }
 #endif

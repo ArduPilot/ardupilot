@@ -7,7 +7,7 @@ import re
 
 
 class Emit:
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         pass
 
     prog_values_field = re.compile(r"\s*(-?\w+:\w+)+,*")
@@ -20,6 +20,3 @@ class Emit:
 
     def emit(self, g):
         pass
-
-    def set_annotate_with_vehicle(self, value):
-        self.annotate_with_vehicle = value

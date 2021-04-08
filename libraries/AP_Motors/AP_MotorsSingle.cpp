@@ -37,6 +37,8 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
         SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
     }
 
+    _mav_type = MAV_TYPE_COAXIAL;
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_SINGLE);
 }
@@ -111,7 +113,7 @@ uint16_t AP_MotorsSingle::get_motor_mask()
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6;
 
-    uint16_t mask = rc_map_mask(motor_mask);
+    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
@@ -175,7 +177,6 @@ void AP_MotorsSingle::output_armed_stabilizing()
 
     // combine roll, pitch and yaw on each actuator
     // front servo
-
     actuator[0] = rp_scale * roll_thrust - yaw_thrust;
     // right servo
     actuator[1] = rp_scale * pitch_thrust - yaw_thrust;

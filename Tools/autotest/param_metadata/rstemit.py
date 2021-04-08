@@ -3,7 +3,10 @@ from __future__ import print_function
 import re
 from param import known_param_fields, known_units
 from emit import Emit
-import html
+try:
+    from cgi import escape as cescape
+except Exception:
+    from html import escape as cescape
 
 
 # Emit docs in a RST format
@@ -17,8 +20,8 @@ This list is automatically generated from the latest ardupilot source code, and 
     def toolname(self):
         return "Tools/autotest/param_metadata/param_parse.py"
 
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         output_fname = 'Parameters.rst'
         self.f = open(output_fname, mode='w')
         self.spacer = re.compile("^", re.MULTILINE)
@@ -209,10 +212,7 @@ Complete Parameter List
             # Get param path if defined (i.e. is duplicate parameter)
             param_path = getattr(param, 'path', '')
 
-            if self.annotate_with_vehicle:
-                name = param.name
-            else:
-                name = param.name.split(':')[-1]
+            name = param.name.split(':')[-1]
 
             tag_param_path = ' (%s)' % param_path if param_path else ''
             tag = '%s%s: %s' % (self.escape(name), self.escape(tag_param_path), self.escape(param.DisplayName),)
@@ -220,10 +220,7 @@ Complete Parameter List
             tag = tag.strip()
             reference = param.name
             # remove e.g. "ArduPlane:" from start of parameter name:
-            if self.annotate_with_vehicle:
-                reference = g.name + "_" + reference.split(":")[-1]
-            else:
-                reference = reference.split(":")[-1]
+            reference = reference.split(":")[-1]
             if param_path:
                 reference += '__' + param_path
 
@@ -256,9 +253,9 @@ Complete Parameter List
                             # convert the abreviated unit into a full
                             # textual one:
                             units = known_units[abreviated_units]
-                            row.append(html.escape(units))
+                            row.append(cescape(units))
                     else:
-                        row.append(html.escape(param.__dict__[field]))
+                        row.append(cescape(param.__dict__[field]))
             if len(row):
                 ret += "\n\n" + self.tablify([row], headings=headings) + "\n\n"
         self.t += ret + "\n"

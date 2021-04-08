@@ -19,10 +19,11 @@
 #define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
+#define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
+#define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
 
 /*
- * This class prevents the vehicle from leaving a polygon fence in
- * 2 dimensions by limiting velocity (adjust_velocity).
+ * This class prevents the vehicle from leaving a polygon fence or hitting proximity-based obstacles
  * Additionally the vehicle may back up if the margin to obstacle is breached
  */
 class AC_Avoid {
@@ -41,17 +42,19 @@ public:
     // return true if any avoidance feature is enabled
     bool enabled() const { return _enabled != AC_AVOID_DISABLED; }
 
-    /*
-     * Adjusts the desired velocity so that the vehicle can stop
-     * before the fence/object.
-     * Note: Vector3f version is for convenience and only adjusts x and y axis
-     */
-    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt) {
+    // Adjusts the desired velocity so that the vehicle can stop
+    // before the fence/object.
+    // kP, accel_cmss are for the horizontal axis
+    // kP_z, accel_cmss_z are for vertical axis
+    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt);
+    void adjust_velocity(Vector3f &desired_vel_cms, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt) {
         bool backing_up = false;
-        adjust_velocity(kP, accel_cmss, desired_vel_cms, backing_up, dt);
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
     }
-    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float dt);
-    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, bool &backing_up,float dt);
+
+    // This method limits velocity and calculates backaway velocity from various supported fences
+    // Also limits vertical velocity using adjust_velocity_z method
+    void adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt);
 
     // adjust desired horizontal speed so that the vehicle stops before the fence or object
     // accel (maximum acceleration/deceleration) is in m/s/s
@@ -62,7 +65,15 @@ public:
     void adjust_speed(float kP, float accel, float heading, float &speed, float dt);
 
     // adjust vertical climb rate so vehicle does not break the vertical fence
-    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
+        float backup_speed = 0.0f;
+        adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
+        if (!is_zero(backup_speed)) {
+            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
+        }
+    }
+    
 
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
@@ -71,7 +82,8 @@ public:
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
-    bool proximity_avoidance_enabled() { return _proximity_enabled; }
+    bool proximity_avoidance_enabled() const { return _proximity_enabled; }
+    void proximity_alt_avoidance_enable(bool on_off) { _proximity_alt_enabled = on_off; }
 
     // helper functions
 
@@ -79,8 +91,12 @@ public:
     // limit_direction to be at most the maximum speed permitted by the limit_distance_cm.
     // uses velocity adjustment idea from Randy's second email on this thread:
     //   https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
-    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt);
-
+    void limit_velocity_2D(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt);
+    
+    // Note: This method is used to limit velocity horizontally and vertically given a 3D desired velocity vector 
+    // Limits the component of desired_vel_cms in the direction of the obstacle_vector based on the passed value of "margin"
+    void limit_velocity_3D(float kP, float accel_cmss, Vector3f &desired_vel_cms, const Vector3f& limit_direction, float limit_distance_cm, float kP_z, float accel_cmss_z ,float dt);
+    
      // compute the speed such that the stopping distance of the vehicle will
      // be exactly the input distance.
      // kP should be non-zero for Copter which has a non-linear response
@@ -88,6 +104,9 @@ public:
 
     // return margin (in meters) that the vehicle should stay from objects
     float get_margin() const { return _margin; }
+
+    // return minimum alt (in meters) above which avoidance will be active
+    float get_min_alt() const { return _alt_min; }
 
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
@@ -100,6 +119,12 @@ private:
         BEHAVIOR_SLIDE = 0,
         BEHAVIOR_STOP = 1
     };
+
+    /*
+     * Limit acceleration so that change of velocity output by avoidance library is controlled
+     * This helps reduce jerks and sudden movements in the vehicle
+     */
+    void limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -125,15 +150,15 @@ private:
     /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
-    void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, float dt);
+    void adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt);
 
     /*
      * Adjusts the desired velocity given an array of boundary points
-     *   earth_frame should be true if boundary is in earth-frame, false for body-frame
-     *   margin is the distance (in meters) that the vehicle should stop short of the polygon
-     *   stay_inside should be true for fences, false for exclusion polygons
+     * The boundary must be in Earth Frame
+     * margin is the distance (in meters) that the vehicle should stop short of the polygon
+     * stay_inside should be true for fences, false for exclusion polygons
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, float margin, float dt, bool stay_inside);
 
     /*
      * Computes distance required to stop, given current speed.
@@ -146,8 +171,16 @@ private:
     *        It then calculates the desired backup velocity and passes it on to "find_max_quadrant_velocity" method to distribute the velocity vector into respective quadrants
     * OUTPUT: The method then outputs four velocities (quad1/2/3/4_back_vel_cms), which correspond to the final desired backup velocity in each quadrant
     */
-    void calc_backup_velocity(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &qua2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cm, Vector2f limit_direction, float dt);
-
+    void calc_backup_velocity_2D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &qua2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cm, Vector2f limit_direction, float dt);
+    
+    /*
+    * Compute the back away velocity required to avoid breaching margin, including vertical component
+    * min_z_vel is <= 0, and stores the greatest velocity in the downwards direction
+    * max_z_vel is >= 0, and stores the greatest velocity in the upwards direction
+    * eventually max_z_vel + min_z_vel will give the final desired Z backaway velocity
+    */
+    void calc_backup_velocity_3D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &quad2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cms, Vector3f limit_direction, float kp_z, float accel_cmss_z, float back_distance_z, float& min_z_vel, float& max_z_vel, float dt);
+   
    /*
     * Calculate maximum velocity vector that can be formed in each quadrant 
     * This method takes the desired backup velocity, and four other velocities corresponding to each quadrant
@@ -155,6 +188,11 @@ private:
     * This ensures that we have multiple backup velocities, we can get the maximum of all of those velocities in each quadrant
     */
     void find_max_quadrant_velocity(Vector2f &desired_vel, Vector2f &quad1_vel, Vector2f &quad2_vel, Vector2f &quad3_vel, Vector2f &quad4_vel);
+
+    /*
+    * Calculate maximum velocity vector that can be formed in each quadrant and separately store max & min of vertical components
+    */
+    void find_max_quadrant_velocity_3D(Vector3f &desired_vel, Vector2f &quad1_vel, Vector2f &quad2_vel, Vector2f &quad3_vel, Vector2f &quad4_vel, float &max_z_vel, float &min_z_vel);
 
     /*
      * methods for avoidance in non-GPS flight modes
@@ -173,10 +211,14 @@ private:
     AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
     AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
+    AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;        // maximum accelration while simple avoidance is active
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
+    bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
+    Vector3f _prev_avoid_vel;       // copy of avoidance adjusted velocity
 
     static AC_Avoid *_singleton;
 };

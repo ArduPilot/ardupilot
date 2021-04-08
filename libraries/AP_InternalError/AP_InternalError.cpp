@@ -13,6 +13,7 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
     switch (e) {
     case AP_InternalError::error_t::watchdog_reset:
     case AP_InternalError::error_t::main_loop_stuck:
+    case AP_InternalError::error_t::params_restored:
         // don't panic on these to facilitate watchdog testing
         break;
     default:
@@ -36,7 +37,7 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "write_mssfmt",  // logger_logwrite_missingfmt
         "many_deletes",  // logger_too_many_deletions
         "bad_getfile",  // logger_bad_getfilename
-        "unused1",
+        "panic",
         "flush_no_sem",  // logger_flushing_without_sem
         "bad_curr_blk",  // logger_bad_current_block
         "blkcnt_bad",  // logger_blockcount_mismatch
@@ -58,6 +59,9 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "imu_reset",  // imu_reset
         "gpio_isr",
         "mem_guard",
+        "dma_fail",
+        "params_restored",
+        "invalid arguments",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");

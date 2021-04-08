@@ -79,7 +79,6 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
-#endif
 
     // @Param: 2_PIN
     // @DisplayName: RPM2 input pin number
@@ -87,7 +86,8 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
     AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
-    
+#endif
+
     AP_GROUPEND
 };
 
@@ -132,7 +132,7 @@ void AP_RPM::init(void)
             drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
         }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (drivers[i] == nullptr) {
+        if (type == RPM_TYPE_SITL) {
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
         }
 #endif

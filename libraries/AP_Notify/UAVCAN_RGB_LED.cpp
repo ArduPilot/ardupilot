@@ -43,9 +43,17 @@ UAVCAN_RGB_LED::UAVCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
 {
 }
 
-bool UAVCAN_RGB_LED::hw_init()
+bool UAVCAN_RGB_LED::init()
 {
-    return true;
+    const uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan != nullptr) {
+            return true;
+        }
+    }
+    // no UAVCAN drivers
+    return false;
 }
 
 

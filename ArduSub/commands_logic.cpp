@@ -55,10 +55,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_time(cmd);
         break;
 
-    case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
-        do_spline_wp(cmd);
-        break;
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:             // 92  accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
@@ -167,9 +163,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
-    case MAV_CMD_NAV_SPLINE_WAYPOINT:
-        return verify_spline_wp(cmd);
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return verify_nav_guided_enable(cmd);
@@ -252,11 +245,6 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // Set wp navigation target
     auto_wp_start(target_loc);
-
-    // if no delay set the waypoint as "fast"
-    if (loiter_time_max == 0) {
-        wp_nav.set_fast_waypoint(true);
-    }
 }
 
 // do_surface - initiate surface procedure
@@ -312,7 +300,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         // To-Do: make this simpler
         Vector3f temp_pos;
         wp_nav.get_wp_stopping_point_xy(temp_pos);
-        const Location temp_loc(temp_pos);
+        const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
@@ -383,79 +371,6 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;     // units are (seconds)
 }
 
-// do_spline_wp - initiate move to next waypoint
-void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
-{
-    Location target_loc(cmd.content.location);
-    // use current lat, lon if zero
-    if (target_loc.lat == 0 && target_loc.lng == 0) {
-        target_loc.lat = current_loc.lat;
-        target_loc.lng = current_loc.lng;
-    }
-    // use current altitude if not provided
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-        }
-    }
-
-    // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time = 0;
-    // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
-
-    // determine segment start and end type
-    bool stopped_at_start = true;
-    AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
-    AP_Mission::Mission_Command temp_cmd;
-
-    // if previous command was a wp_nav command with no delay set stopped_at_start to false
-    // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
-    uint16_t prev_cmd_idx = mission.get_prev_nav_cmd_index();
-    if (prev_cmd_idx != AP_MISSION_CMD_INDEX_NONE) {
-        if (mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
-            if ((temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) && temp_cmd.p1 == 0) {
-                stopped_at_start = false;
-            }
-        }
-    }
-
-    // if there is no delay at the end of this segment get next nav command
-    Location next_loc;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-        next_loc = temp_cmd.content.location;
-        // default lat, lon to first waypoint's lat, lon
-        if (next_loc.lat == 0 && next_loc.lng == 0) {
-            next_loc.lat = target_loc.lat;
-            next_loc.lng = target_loc.lng;
-        }
-        // default alt to first waypoint's alt but in next waypoint's alt frame
-        if (next_loc.alt == 0) {
-            int32_t next_alt;
-            if (target_loc.get_alt_cm(next_loc.get_alt_frame(), next_alt)) {
-                next_loc.set_alt_cm(next_alt, next_loc.get_alt_frame());
-            } else {
-                // default to first waypoints altitude
-                next_loc.set_alt_cm(target_loc.alt, target_loc.get_alt_frame());
-            }
-        }
-        // if the next nav command is a waypoint set end type to spline or straight
-        if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
-            seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-        } else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
-            seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-        }
-    }
-
-    // set spline navigation target
-    auto_spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
-}
-
 #if NAV_GUIDED == ENABLED
 // do_nav_guided_enable - initiate accepting commands from external nav computer
 void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
@@ -464,7 +379,7 @@ void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
         // initialise guided limits
         guided_limit_init_time_and_pos();
 
-        // set spline navigation target
+        // set navigation target
         auto_nav_guided_start();
     }
 }
@@ -616,28 +531,6 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
 
     // check if we have completed circling
     return fabsf(circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
-}
-
-// verify_spline_wp - check if we have reached the next way point using spline
-bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
-{
-    // check if we have reached the waypoint
-    if (!wp_nav.reached_wp_destination()) {
-        return false;
-    }
-
-    // start timer if necessary
-    if (loiter_time == 0) {
-        loiter_time = AP_HAL::millis();
-    }
-
-    // check if timer has run out
-    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
-        return true;
-    }
-
-    return false;
 }
 
 #if NAV_GUIDED == ENABLED

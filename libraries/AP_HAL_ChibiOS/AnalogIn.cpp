@@ -64,6 +64,14 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
+#if defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+// on H7 we use 16 bit ADC transfers, giving us more resolution. We
+// need to scale by 1/16 to match the 12 bit scale factors in hwdef.dat
+#define ADC_BOARD_SCALING (1.0/16)
+#else
+#define ADC_BOARD_SCALING 1
+#endif
+
 // samples filled in by ADC DMA engine
 adcsample_t *AnalogIn::samples;
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
@@ -209,11 +217,11 @@ void AnalogIn::init()
     adcgrpcfg.circular = true;
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;
     adcgrpcfg.end_cb = adccallback;
-#if defined(STM32H7)
-    // use 12 bits resolution to keep scaling factors the same as other boards.
-    // todo: enable oversampling in cfgr2 ?
-    adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_12BITS;
+#if defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+    // use 16 bit resolution
+    adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_16BITS;
 #else
+    // use 12 bit resolution
     adcgrpcfg.sqr1 = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
     adcgrpcfg.cr2 = ADC_CR2_SWSTART;
 #endif
@@ -224,6 +232,20 @@ void AnalogIn::init()
 #if defined(STM32H7)
         adcgrpcfg.pcsel |= (1<<chan);
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
+        if (i < 4) {
+            adcgrpcfg.sqr[0] |= chan << (6*(i+1));
+        } else if (i < 9) {
+            adcgrpcfg.sqr[1] |= chan << (6*(i-4));
+        } else {
+            adcgrpcfg.sqr[2] |= chan << (6*(i-9));
+        }
+#elif defined(STM32F3) || defined(STM32G4)
+#if defined(STM32G4)
+        adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_640P5 << (3*(chan%10));
+#else
+        adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_601P5 << (3*(chan%10));
+#endif
+        // setup channel sequence
         if (i < 4) {
             adcgrpcfg.sqr[0] |= chan << (6*(i+1));
         } else if (i < 9) {
@@ -291,12 +313,12 @@ void AnalogIn::_timer_tick(void)
         if (pin_config[i].channel == ANALOG_VCC_5V_PIN) {
             // record the Vcc value for later use in
             // voltage_average_ratiometric()
-            _board_voltage = buf_adc[i] * pin_config[i].scaling;
+            _board_voltage = buf_adc[i] * pin_config[i].scaling * ADC_BOARD_SCALING;
         }
 #endif
 #ifdef FMU_SERVORAIL_ADC_CHAN
         if (pin_config[i].channel == FMU_SERVORAIL_ADC_CHAN) {
-           _servorail_voltage = buf_adc[i] * pin_config[i].scaling;
+           _servorail_voltage = buf_adc[i] * pin_config[i].scaling * ADC_BOARD_SCALING;
         }
 #endif
     }
@@ -316,7 +338,7 @@ void AnalogIn::_timer_tick(void)
             if (c != nullptr) {
                 if (pin_config[i].channel == c->_pin) {
                     // add a value
-                    c->_add_value(buf_adc[i], _board_voltage);
+                    c->_add_value(buf_adc[i] * ADC_BOARD_SCALING, _board_voltage);
                 } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
                     c->_add_value(_rssi_voltage / VOLTAGE_SCALING, 0);
                 }
@@ -334,7 +356,7 @@ void AnalogIn::_timer_tick(void)
             n = 6;
         }
         for (uint8_t i=0; i < n; i++) {
-            adc[i] = buf_adc[i];
+            adc[i] = buf_adc[i] * ADC_BOARD_SCALING;
         }
         mavlink_msg_ap_adc_send(MAVLINK_COMM_0, adc[0], adc[1], adc[2], adc[3], adc[4], adc[5]);
     }
@@ -343,6 +365,7 @@ void AnalogIn::_timer_tick(void)
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
 {
+    WITH_SEMAPHORE(_semaphore);
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new AnalogSource(pin);

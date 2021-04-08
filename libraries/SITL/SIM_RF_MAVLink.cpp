@@ -42,7 +42,7 @@ uint32_t RF_MAVLink::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t bu
     const mavlink_distance_sensor_t distance_sensor{
         time_boot_ms: AP_HAL::millis(),
         min_distance: 10, // cm
-        max_distance: 10, // cm
+        max_distance: 1000, // cm
         current_distance: alt_cm,
         type: 0,
         id: 72, // ID

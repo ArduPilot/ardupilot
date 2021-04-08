@@ -1,9 +1,75 @@
-Release 4.0.7beta1, 2nd October 2020
-------------------------------------
+Release 4.0.9, 23rd February 2021
+---------------------------------
 
-This is a minor release with some important bug fixes against 4.0.6.
+This is a minor release with just bug fixes:
 
-The changes are:
+ - added automatic backup/restore of parameters in case of FRAM
+   corruption for F7/H7 boards with 32k FRAM parameter storage
+
+ - fixed a bug in EKF2/EKF3 that could cause memory corruption if
+   external naviagtion sources (such as vision based position and
+   velocity data) is supplied before the EKF has initialised
+
+ - fixed a problem with low accuracy data from UAVCAN GPS modules when
+   GPS blending is enabled
+
+ - fixed an arming check failure with u-blox M9 based GPS modules
+
+ - added mRoControlZeroH7 support
+
+The main reason for this release is the parameter backup/restore. This
+has been an ongoing issue for quite some time. The symptom is an
+unexpected full parameter reset on boards using FRAM (also known as
+RAMTRON) for storage, particularly those using F7 or H7 based
+MCUs. The issue has most commonly been seen on the Hex CubeOrange
+board, but has been seen on boards from other vendors as well.
+
+The issue has been frustratingly difficult to reproduce. We did narrow
+down one cause last year which was a floating CS pin in the bootloader
+triggering corruption before ArduPilot starts. An updated bootloader
+reduced the occurrance of the issue a lot and we thought it was
+solved. Since then the problem has still happened a few times on
+boards that have had a bootloader update.
+
+This release avoids the issue by keeping a complete second copy of the
+parameters in the 2nd half of 32k FRAM devices. On boot we check the
+integrity of the primary parameter storage area via a simple signature
+check and if it has been corruptted then we restore from the backup
+area. We also raise an internal error named "params_restored". You
+will then need to reboot to clear the error, but your parameters will
+have been automatically recovered, avoiding the need to reload
+parameters and re-calibrate.
+
+If you get this internal error then it would be appreciated if you
+could send us the contents of your APM/STRG_BAK directory on the
+microSD card so we can analyse the corruption that happened and ensure
+that the fix covers all real cases.
+
+Happy flying!
+
+Release 4.0.8, 26th January 2021
+--------------------------------
+
+This is a minor release with just bug fixes:
+
+ - fixed a bug where an unhealthy airspeed sensor could be fused in EKF2/EKF3
+
+ - fixed FPort RSSI scaling
+
+ - fixed timestamp on RAW_IMU data to be 64 bit
+
+ - fixed an issue with BLHeli pass-thru on some ESCs
+
+Happy flying!
+
+Release 4.0.7, 3rd November 2020
+--------------------------------
+
+This is a minor release over 4.0.6. The changes are:
+
+ - enable telem3 on Durandal
+
+ - fixed SBUS output when scanning for FPort on IOMCU
 
  - Fixed F32Lightening board IMU fast sampling issue
 

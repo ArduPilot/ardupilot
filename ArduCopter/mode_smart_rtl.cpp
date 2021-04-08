@@ -82,7 +82,7 @@ void ModeSmartRTL::wait_cleanup_run()
 void ModeSmartRTL::path_follow_run()
 {
     float target_yaw_rate = 0.0f;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && g2.smart_rtl.use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -92,21 +92,33 @@ void ModeSmartRTL::path_follow_run()
 
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
-        Vector3f next_point;
+        Vector3f dest_NED;
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
-        if (g2.smart_rtl.pop_point(next_point)) {
+        if (g2.smart_rtl.pop_point(dest_NED)) {
             path_follow_last_pop_fail_ms = 0;
-            bool fast_waypoint = true;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
-                next_point.z -= 2.0f;
+                dest_NED.z -= 2.0f;
                 smart_rtl_state = SmartRTL_PreLandPosition;
-                fast_waypoint = false;
+                wp_nav->set_wp_destination_NED(dest_NED);
+            } else {
+                // peek at the next point.  this can fail if the IO task currently has the path semaphore
+                Vector3f next_dest_NED;
+                if (g2.smart_rtl.peek_point(next_dest_NED)) {
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    if (g2.smart_rtl.get_num_points() == 1) {
+                        // this is the very last point, add 2m to the target alt
+                        next_dest_NED.z -= 2.0f;
+                    }
+                    wp_nav->set_wp_destination_next_NED(next_dest_NED);
+                } else {
+                    // this can only happen if peek failed to take the semaphore
+                    // send next point anyway which will cause the vehicle to slow at the next point
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                }
             }
-            // send target to waypoint controller
-            wp_nav->set_wp_destination_NED(next_point);
-            wp_nav->set_fast_waypoint(fast_waypoint);
         } else if (g2.smart_rtl.get_num_points() == 0) {
             // We should never get here; should always have at least
             // two points and the "zero points left" is handled above.
@@ -163,7 +175,7 @@ void ModeSmartRTL::pre_land_position_run()
 // save current position for use by the smart_rtl flight mode
 void ModeSmartRTL::save_position()
 {
-    const bool should_save_position = motors->armed() && (copter.control_mode != Mode::Number::SMART_RTL);
+    const bool should_save_position = motors->armed() && (copter.flightmode->mode_number() != Mode::Number::SMART_RTL);
 
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
@@ -176,7 +188,7 @@ bool ModeSmartRTL::get_wp(Location& destination)
     case SmartRTL_PathFollow:
     case SmartRTL_PreLandPosition:
     case SmartRTL_Descend:
-        return wp_nav->get_wp_destination(destination);
+        return wp_nav->get_wp_destination_loc(destination);
     case SmartRTL_Land:
         return false;
     }

@@ -5,6 +5,8 @@ _sim_vehicle() {
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD - 1]}"
+  # don't complet =
+  _init_completion -n = || return
 
   # TODO: generate for waf help
   opts="--help -h"
@@ -87,7 +89,8 @@ _sim_vehicle() {
     ;;
   esac
 
-  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+  COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+  [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }
 
 complete -F _sim_vehicle sim_vehicle.py

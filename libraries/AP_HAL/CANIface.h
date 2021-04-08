@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include "AP_HAL_Namespace.h"
 
+class ExpandingString;
+
 /**
  * Raw CAN frame, as passed to/from the CAN driver.
  */
@@ -191,10 +193,7 @@ public:
     }
 
     //Get status info of the interface
-    virtual uint32_t get_stats(char* data, uint32_t max_size)
-    {
-        return 0;
-    }
+    virtual void get_stats(ExpandingString &str) {}
 
     // return true if busoff was detected and not cleared
     virtual bool is_busoff() const

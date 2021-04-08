@@ -56,7 +56,8 @@ public:
     bool healthy(void) const;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+    // requires_position should be true if horizontal position configuration should be checked
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -93,9 +94,6 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(int8_t instance) const;
 
-    // This returns the specific forces in the NED frame
-    void getAccelNED(Vector3f &accelNED) const;
-
     // return body axis gyro bias estimates in rad/sec for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
@@ -103,10 +101,6 @@ public:
     // return accelerometer bias estimate in m/s/s
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
-
-    // return estimated 1-sigma tilt error for the specified instance in radians
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getTiltError(int8_t instance, float &ang) const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -123,8 +117,9 @@ public:
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getWind(int8_t instance, Vector3f &wind) const;
+    // An out of range instance (eg -1) returns data for the the primary instance
+    // returns true if wind state estimation is active
+    bool getWind(int8_t instance, Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units / 1000 for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
@@ -305,20 +300,6 @@ public:
     void getFilterFaults(int8_t instance, uint16_t &faults) const;
 
     /*
-    return filter timeout status as a bitmasked integer for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     4 = unassigned
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-    */
-    void getFilterTimeouts(int8_t instance, uint8_t &timeouts) const;
-
-    /*
     return filter gps quality check status for the specified instance
     An out of range instance (eg -1) returns data for the primary instance
     */
@@ -385,12 +366,15 @@ public:
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
-
-    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-    void writeDefaultAirSpeed(float airspeed);
+    
+    // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
     // parameter conversion
     void convert_parameters();
+
+    // returns true when the yaw angle has been aligned
+    bool yawAlignmentComplete(void) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -462,6 +446,8 @@ private:
     AP_Float _ballisticCoef_x;      // ballistic coefficient measured for flow in X body frame directions
     AP_Float _ballisticCoef_y;      // ballistic coefficient measured for flow in Y body frame directions
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
+    AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
+    AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -500,6 +486,7 @@ private:
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
     const uint8_t extNavIntervalMin_ms = 20;       // The minimum allowed time between measurements from external navigation sensors (msec)
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
+    const uint16_t deadReckonDeclare_ms = 1000;    // Time without equivalent position or velocity observation to constrain drift beore dead reckoning is declared (msec)
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;

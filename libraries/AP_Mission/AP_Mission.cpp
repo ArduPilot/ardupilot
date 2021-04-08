@@ -28,6 +28,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions.
     // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
+    // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
+    // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
@@ -297,6 +299,9 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_PARACHUTE:
+    case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+    case MAV_CMD_DO_SPRAYER:
+    case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return true;
     default:
@@ -313,6 +318,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 
     gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     switch (cmd.id) {
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return start_command_do_aux_function(cmd);
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
     case MAV_CMD_DO_SET_SERVO:
@@ -327,6 +334,10 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return start_command_camera(cmd);
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
+    case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+        return start_command_do_scripting(cmd);
+    case MAV_CMD_DO_SPRAYER:
+        return start_command_do_sprayer(cmd);
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return command_do_set_repeat_dist(cmd);
     default:
@@ -506,6 +517,24 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
     return true;
 }
 
+// restart current navigation command.  Used to handle external changes to mission
+// returns true on success, false if mission is not running or current nav command is invalid
+bool AP_Mission::restart_current_nav_cmd()
+{
+    // return immediately if mission is not running
+    if (_flags.state != MISSION_RUNNING) {
+        return false;
+    }
+
+    // return immediately if nav command index is invalid
+    const uint16_t nav_cmd_index = get_current_nav_index();
+    if ((nav_cmd_index == 0) || (nav_cmd_index >= num_commands())) {
+        return false;
+    }
+
+    return set_current_cmd(_nav_cmd.index);
+}
+
 // returns false on any issue at all.
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
@@ -513,7 +542,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     AP_Mission::Mission_Command cmd;
 
     // can't handle request for anything bigger than the mission size+1...
-    if (index > num_commands() ) {
+    if (index > num_commands()) {
         return false;
     }
 
@@ -524,15 +553,15 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
 
     // A request to set the 'next' item after the end is how we add an extra
     //  item to the list, thus allowing us to write entire missions if needed.
-    if (index == num_commands() ) {
-        return add_cmd( cmd);
+    if (index == num_commands()) {
+        return add_cmd(cmd);
     }
 
     // replacing an existing mission item...
-    return AP_Mission::replace_cmd( index, cmd);
+    return AP_Mission::replace_cmd(index, cmd);
 }
 
-bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet)
+bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet) const
 {
     // setting ret_packet.command = -1  and/or returning false
     //  means it contains invalid data after it leaves here.
@@ -541,7 +570,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     AP_Mission::Mission_Command cmd;
 
     // can't handle request for anything bigger than the mission size...
-    if (index >= num_commands() ) {
+    if (index >= num_commands()) {
         ret_packet.command = -1;
         return false;
     }
@@ -622,9 +651,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
     // special handling for command #0 which is home
     if (index == 0) {
-        cmd.index = 0;
+        cmd = {};
         cmd.id = MAV_CMD_NAV_WAYPOINT;
-        cmd.p1 = 0;
         cmd.content.location = AP::ahrs().get_home();
         return true;
     }
@@ -632,6 +660,9 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     if (index >= (unsigned)_cmd_total) {
         return false;
     }
+
+    // ensure all bytes of cmd are zeroed
+    cmd = {};
 
     // Find out proper location in memory by using the start_byte position + the index
     // we can load a command, we don't process it yet
@@ -1020,6 +1051,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // action 0=disable, 1=enable
         break;
 
+    case MAV_CMD_DO_AUX_FUNCTION:
+        cmd.content.auxfunction.function = packet.param1;
+        cmd.content.auxfunction.switchpos = packet.param2;
+        break;
+
     case MAV_CMD_DO_PARACHUTE:                         // MAV ID: 208
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
@@ -1089,6 +1125,17 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         cmd.p1 = packet.param1; // Resume repeat distance (m)
+        break;
+
+    case MAV_CMD_DO_SPRAYER:
+        cmd.p1 = packet.param1;                        // action 0=disable, 1=enable
+        break;
+
+    case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+        cmd.p1 = packet.param1;
+        cmd.content.scripting.p1 = packet.param2;
+        cmd.content.scripting.p2 = packet.param3;
+        cmd.content.scripting.p3 = packet.param4;
         break;
 
     default:
@@ -1464,6 +1511,15 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
 
+    case MAV_CMD_DO_SPRAYER:
+        packet.param1 = cmd.p1;                         // action 0=disable, 1=enable
+        break;
+
+    case MAV_CMD_DO_AUX_FUNCTION:
+        packet.param1 = cmd.content.auxfunction.function;
+        packet.param2 = cmd.content.auxfunction.switchpos;
+        break;
+
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         packet.param1 = cmd.p1;                         // normal=0 inverted=1
         break;
@@ -1511,7 +1567,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
+        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (cm->m)
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -1529,6 +1585,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         packet.param1 = cmd.p1; // Resume repeat distance (m)
+        break;
+
+    case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+        packet.param1 = cmd.p1;
+        packet.param2 = cmd.content.scripting.p1;
+        packet.param3 = cmd.content.scripting.p2;
+        packet.param4 = cmd.content.scripting.p3;
         break;
 
     default:
@@ -1646,7 +1709,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 _flags.nav_cmd_loaded = true;
             }
             // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-            // and prevent history being re-written until vehicle returns to interupted position
+            // and prevent history being re-written until vehicle returns to interrupted position
             if (_repeat_dist > 0 && !_flags.resuming_mission && _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_nav_cmd.content.location.lat == 0 && _nav_cmd.content.location.lng == 0)) {
                 // update mission history. last index position is always the most recent wp loaded.
                 for (uint8_t i=0; i<AP_MISSION_MAX_WP_HISTORY-1; i++) {
@@ -1654,10 +1717,10 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 }
                 _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1] = _nav_cmd.index;
             }
-            // check if the vehicle is resuming and has returned to where it was interupted
+            // check if the vehicle is resuming and has returned to where it was interrupted
             if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
                 // vehicle has resumed previous position
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interupted WP");
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
                 _flags.resuming_mission = false;
             }
 
@@ -1915,7 +1978,7 @@ uint16_t AP_Mission::num_commands_max(void) const
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // return its index.  Returns 0 if no appropriate DO_LAND_START point can
 // be found.
-uint16_t AP_Mission::get_landing_sequence_start()
+uint16_t AP_Mission::get_landing_sequence_start() const
 {
     struct Location current_loc;
 
@@ -2230,10 +2293,16 @@ const char *AP_Mission::Mission_Command::type() const
         return "PayloadPlace";
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
+    case MAV_CMD_DO_SPRAYER:
+        return "Sprayer";
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return "AuxFunction";
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
     case MAV_CMD_DO_WINCH:
         return "Winch";
+    case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
+        return "Scripting";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

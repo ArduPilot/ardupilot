@@ -5,10 +5,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#ifdef HAL_LOGGING_DATAFLASH
-#include "AP_Logger_Backend.h"
 #include "AP_Logger_Block.h"
 
+#if HAL_LOGGING_DATAFLASH_ENABLED
 
 class AP_Logger_DataFlash : public AP_Logger_Block {
 public:
@@ -43,4 +42,4 @@ private:
     bool use_32bit_address;
 };
 
-#endif // HAL_LOGGING_DATAFLASH
+#endif // HAL_LOGGING_DATAFLASH_ENABLED

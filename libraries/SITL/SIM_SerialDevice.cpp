@@ -75,7 +75,7 @@ bool SerialDevice::init_sitl_pointer()
 }
 
 
-ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size)
+ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
 {
     const ssize_t ret = ::read(read_fd_my_end, buffer, size);
     // if (ret > 0) {
@@ -93,7 +93,7 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size)
     return ret;
 }
 
-ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size)
+ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) const
 {
     const ssize_t ret = write(fd_my_end, buffer, size);
     // ::fprintf(stderr, "write to autopilot: (");

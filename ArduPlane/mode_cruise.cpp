@@ -3,9 +3,6 @@
 
 bool ModeCruise::_enter()
 {
-    plane.throttle_allows_nudging = false;
-    plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = false;
     locked_heading = false;
     lock_timer_ms = 0;
 
@@ -72,7 +69,7 @@ void ModeCruise::navigate()
     }
 }
 
-bool ModeCruise::get_target_heading_cd(int32_t &target_heading)
+bool ModeCruise::get_target_heading_cd(int32_t &target_heading) const
 {
     target_heading = locked_heading_cd;
     return locked_heading;

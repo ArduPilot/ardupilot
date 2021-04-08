@@ -154,6 +154,11 @@ void Plane::init_ardupilot()
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
+
+    // init fence
+#if AC_FENCE == ENABLED
+    fence.init();
+#endif
 }
 
 //********************************************************************************
@@ -195,7 +200,7 @@ void Plane::startup_ground(void)
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    failsafe.last_heartbeat_ms = millis();
+    gcs().sysid_myggcs_seen(AP_HAL::millis());
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -222,13 +227,12 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
-    const ModeReason previous_mode_reason_backup = previous_mode_reason;
 
     // update control_mode assuming success
     // TODO: move these to be after enter() once start_command_callback() no longer checks control_mode
     previous_mode = control_mode;
     control_mode = &new_mode;
-    previous_mode_reason = control_mode_reason;
+    const ModeReason previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
 
     // attempt to enter new mode
@@ -241,7 +245,6 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         control_mode = &old_mode;
 
         control_mode_reason = previous_mode_reason;
-        previous_mode_reason = previous_mode_reason_backup;
 
         // currently, only Q modes can fail enter(). This will likely change in the future and all modes
         // should be changed to check dependencies and fail early before depending on changes in Mode::set_mode()
@@ -261,7 +264,6 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     old_mode.exit();
 
     // record reasons
-    previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
 
     // log and notify mode change
@@ -295,7 +297,8 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 
 void Plane::check_long_failsafe()
 {
-    uint32_t tnow = millis();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t tnow = millis();
     // only act on changes
     // -------------------
     if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
@@ -308,13 +311,13 @@ void Plane::check_long_failsafe()
             (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, ModeReason::RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
-                   failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
+                   gcs_last_seen_ms != 0 &&
+                   (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         } else if ((g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT ||
                     g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI) &&
-                   failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
+                   gcs_last_seen_ms != 0 &&
+                   (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
                    gcs().chan(0) != nullptr &&
@@ -330,7 +333,7 @@ void Plane::check_long_failsafe()
         }
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
-            (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
+            (tnow - gcs_last_seen_ms) < timeout_seconds*1000) {
             failsafe_long_off_event(ModeReason::GCS_FAILSAFE);
         } else if (failsafe.state == FAILSAFE_LONG && 
                    !failsafe.rc_failsafe) {

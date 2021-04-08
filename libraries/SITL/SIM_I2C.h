@@ -40,6 +40,7 @@ public:
 #define I2C_M_RD 1
 #define I2C_RDWR 0
     struct i2c_msg {
+        uint8_t bus;
         uint8_t addr;
         uint8_t flags;
         uint8_t *buf;

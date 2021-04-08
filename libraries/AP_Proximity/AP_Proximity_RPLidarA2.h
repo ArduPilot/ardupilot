@@ -29,10 +29,9 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend_Serial.h"
-#include <AP_HAL/AP_HAL.h>                   ///< for UARTDriver
 
+#if HAL_PROXIMITY_ENABLED
 
 class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
@@ -91,14 +90,15 @@ private:
     // request related variables
     enum ResponseType _response_type;         ///< response from the lidar
     enum rp_state _rp_state;
-    uint8_t   _last_sector;                   ///< last sector requested
     uint32_t  _last_request_ms;               ///< system time of last request
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
     uint32_t  _last_reset_ms;
 
-    // sector related variables
-    float _angle_deg_last;
-    float _distance_m_last;
+    // face related variables
+    AP_Proximity_Boundary_3D::Face _last_face;///< last face requested
+    float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
+    float _last_distance_m;                   ///< shortest distance for _last_face
+    bool _last_distance_valid;                ///< true if _last_distance_m is valid
 
     struct PACKED _sensor_scan {
         uint8_t startbit      : 1;            ///< on the first revolution 1 else 0
@@ -120,3 +120,5 @@ private:
         _sensor_health sensor_health;
     } payload;
 };
+
+#endif // HAL_PROXIMITY_ENABLED

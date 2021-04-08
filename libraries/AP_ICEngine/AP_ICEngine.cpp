@@ -180,9 +180,9 @@ void AP_ICEngine::update(void)
         // snap the input to either 1000, 1500, or 2000
         // this is useful to compare a debounce changed value
         // while ignoring tiny noise
-        if (cvalue >= 1700) {
+        if (cvalue >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
             cvalue = 2000;
-        } else if ((cvalue > 800) && (cvalue <= 1300)) {
+        } else if ((cvalue > 800) && (cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW)) {
             cvalue = 1300;
         } else {
             cvalue = 1500;
@@ -203,9 +203,9 @@ void AP_ICEngine::update(void)
     }
 
 
-    if (state == ICE_OFF && start_chan_last_value >= 1700) {
+    if (state == ICE_OFF && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
         should_run = true;
-    } else if (start_chan_last_value <= 1300) {
+    } else if (start_chan_last_value <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
@@ -360,7 +360,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         uint16_t cvalue = c->get_radio_in();
-        if (cvalue >= start_chan_min_pwm && cvalue <= 1300) {
+        if (cvalue >= start_chan_min_pwm && cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
@@ -383,6 +383,9 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
 */
 void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 {
+    if (!enable) {
+        return;
+    }
     const int8_t min_throttle_base = min_throttle;
 
     // Initialize idle point to min_throttle on the first run

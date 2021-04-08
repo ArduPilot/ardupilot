@@ -134,7 +134,7 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
     // allow use of external governor autorotation bailout window on main rotor
     if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
         // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
-        _main_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
+        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
     }
 }
 
@@ -223,9 +223,6 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll = false;
-    limit.pitch = false;
-    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -245,6 +242,16 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
     }
+
+    // updates below mid collective flag
+    if (collective_out <= _collective_mid_pct) {
+        _heliflags.below_mid_collective = true;
+    } else {
+        _heliflags.below_mid_collective = false;
+    }
+
+    // updates takeoff collective flag based on 50% hover collective
+    update_takeoff_collective_flag(collective_out);
 
     float collective_range = (_collective_max - _collective_min) * 0.001f;
 

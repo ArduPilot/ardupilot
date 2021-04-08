@@ -39,6 +39,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
@@ -183,8 +185,8 @@ public:
     // write body odometry measurements to the EKF
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
 
-    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-    void writeDefaultAirSpeed(float airspeed);
+    // Writes the default equivalent airspeed and its 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
     // Write position and quaternion data from an external navigation system
     void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) override;
@@ -201,7 +203,8 @@ public:
     bool healthy() const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
+    // requires_position should be true if horizontal position configuration should be checked
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
@@ -315,6 +318,11 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise) override;
 
+    // active EKF type for logging
+    uint8_t get_active_AHRS_type(void) const override {
+        return uint8_t(active_EKF_type());
+    }
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
@@ -335,8 +343,15 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
 #endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+        ,EXTERNAL = 11
+#endif
     };
     EKFType active_EKF_type(void) const;
+
+    // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
+    // returns false if no secondary (i.e. only using DCM)
+    bool get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
@@ -379,9 +394,15 @@ private:
     TriState takeoffExpectedState = TriState::UNKNOWN;
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
+    EKFType last_active_ekf_type;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
+#endif    
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void update_external(void);
 #endif    
 };

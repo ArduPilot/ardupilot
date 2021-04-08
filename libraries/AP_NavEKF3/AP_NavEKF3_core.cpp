@@ -101,9 +101,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     // calculate buffer size for external nav data
     const uint8_t extnav_buffer_length = MIN((ekf_delay_ms / frontend->extNavIntervalMin_ms) + 1, imu_buffer_length);
 
-    // buffer size for external yaw
-    const uint8_t yaw_angle_buffer_length = MAX(obs_buffer_length, extnav_buffer_length);
-
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
     }
@@ -119,6 +116,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
         return false;
     }
+#if EK3_FEATURE_BODY_ODOM
     if(frontend->sources.ext_nav_enabled() && !storedBodyOdm.init(obs_buffer_length)) {
         return false;
     }
@@ -126,7 +124,8 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
-    if(frontend->sources.ext_yaw_enabled() && !storedYawAng.init(yaw_angle_buffer_length)) {
+#endif // EK3_FEATURE_BODY_ODOM
+    if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
@@ -137,21 +136,28 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
     }
+#if EK3_FEATURE_EXTERNAL_NAV
     if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
         return false;
     }
     if (frontend->sources.ext_nav_enabled() && !storedExtNavVel.init(extnav_buffer_length)) {
         return false;
     }
+    if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
+        return false;
+    }
+#endif // EK3_FEATURE_EXTERNAL_NAV
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
+#if EK3_FEATURE_DRAG_FUSION
     if (!storedDrag.init(obs_buffer_length)) {
         return false;
     }
+#endif
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
@@ -220,6 +226,8 @@ void NavEKF3_core::InitialiseVariables()
     lastRngMeasTime_ms = 0;
 
     // initialise other variables
+    memset(&dvelBiasAxisInhibit, 0, sizeof(dvelBiasAxisInhibit));
+	dvelBiasAxisVarPrev.zero();
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
     tasTimeout = true;
@@ -304,6 +312,7 @@ void NavEKF3_core::InitialiseVariables()
     flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
+    airDataFusionWindOnly = false;
     posResetNE.zero();
     velResetNE.zero();
     posResetD = 0.0f;
@@ -372,9 +381,11 @@ void NavEKF3_core::InitialiseVariables()
     bcnPosOffsetNED.zero();
     bcnOriginEstInit = false;
 
+#if EK3_FEATURE_BODY_ODOM
     // body frame displacement fusion
     memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
     memset((void *)&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
+#endif
     lastbodyVelPassTime_ms = 0;
     memset(&bodyVelTestRatio, 0, sizeof(bodyVelTestRatio));
     memset(&varInnovBodyVel, 0, sizeof(varInnovBodyVel));
@@ -389,6 +400,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
     extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
@@ -399,6 +411,7 @@ void NavEKF3_core::InitialiseVariables()
     extNavVelToFuse = false;
     useExtNavVel = false;
     extNavVelMeasTime_ms = 0;
+#endif
 
     // zero data buffers
     storedIMU.reset();
@@ -408,10 +421,14 @@ void NavEKF3_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
+#if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();
     storedWheelOdm.reset();
+#endif
+#if EK3_FEATURE_EXTERNAL_NAV
     storedExtNav.reset();
     storedExtNavVel.reset();
+#endif
 
     // initialise pre-arm message
     dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
@@ -452,6 +469,9 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+#if EK3_FEATURE_EXTERNAL_NAV
+    storedExtNavYawAng.reset();
+#endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
 }
@@ -671,8 +691,10 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Update states using optical flow data
         SelectFlowFusion();
 
+#if EK3_FEATURE_BODY_ODOM
         // Update states using body frame odometry data
         SelectBodyOdomFusion();
+#endif
 
         // Update states using airspeed data
         SelectTasFusion();
@@ -686,6 +708,27 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     // Wind output forward from the fusion to output time horizon
     calcOutputStates();
+
+    /*
+      this is a check to cope with a vehicle sitting idle on the
+      ground and getting over-confident of the state. The symptoms
+      would be "gyros still settling" when the user tries to arm. In
+      that state the EKF can't recover, so we do a hard reset and let
+      it try again.
+     */
+    if (filterStatus.value != 0) {
+        last_filter_ok_ms = dal.millis();
+    }
+    if (filterStatus.value == 0 &&
+        last_filter_ok_ms != 0 &&
+        dal.millis() - last_filter_ok_ms > 5000 &&
+        !dal.get_armed()) {
+        // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u forced reset",(unsigned)imu_index);
+        last_filter_ok_ms = 0;
+        statesInitialised = false;
+        InitialiseFilterBootstrap();
+    }
 }
 
 void NavEKF3_core::correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index)
@@ -823,7 +866,7 @@ void NavEKF3_core::calcOutputStates()
     // Coefficients selected to place all three filter poles at omega
     const float CompFiltOmega = M_2PI * constrain_float(frontend->_hrt_filt_freq, 0.1f, 30.0f);
     float omega2 = CompFiltOmega * CompFiltOmega;
-    float pos_err = outputDataNew.position.z - vertCompFiltState.pos;
+    float pos_err = constrain_float(outputDataNew.position.z - vertCompFiltState.pos, -1e5, 1e5);
     float integ1_input = pos_err * omega2 * CompFiltOmega * imuDataNew.delVelDT;
     vertCompFiltState.acc += integ1_input;
     float integ2_input = delVelNav.z + (vertCompFiltState.acc + pos_err * omega2 * 3.0f) * imuDataNew.delVelDT;
@@ -853,6 +896,15 @@ void NavEKF3_core::calcOutputStates()
     } else {
         velOffsetNED.zero();
         posOffsetNED.zero();
+    }
+
+    // Detect fixed wing launch acceleration using latest data from IMU to enable early startup of filter functions
+    // that use launch acceleration to detect start of flight
+    if (!inFlight && !expectTakeoff && assume_zero_sideslip()) {
+        const float launchDelVel = imuDataNew.delVel.x + GRAVITY_MSS * imuDataNew.delVelDT * Tbn_temp.c.x;
+        if (launchDelVel > GRAVITY_MSS * imuDataNew.delVelDT) {
+            setTakeoffExpected(true);
+        }
     }
 
     // store INS states in a ring buffer that with the same length and time coordinates as the IMU data buffer
@@ -987,15 +1039,10 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
     }
 
     if (!inhibitDelVelBiasStates) {
+        // default process noise (m/s)^2
         float dVelBiasVar = sq(sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f));
         for (uint8_t i=3; i<=5; i++) {
-            uint8_t stateIndex = i + 10;
-            if (P[stateIndex][stateIndex] > 1E-8f) {
-                processNoiseVariance[i] = dVelBiasVar;
-            } else {
-                // increase the process noise variance up to a maximum of 100 x the nominal value if the variance is below the target minimum
-                processNoiseVariance[i] = 10.0f * dVelBiasVar * (1e-8f / fmaxf(P[stateIndex][stateIndex],1e-9f));
-            }
+            processNoiseVariance[i] = dVelBiasVar;
         }
     }
 
@@ -1085,6 +1132,24 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
     }
     float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 10.0f);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
+
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t stateIndex = 13; stateIndex <= 15; stateIndex++) {
+            const uint8_t index = stateIndex - 13;
+
+            // Don't attempt learning of IMU delta velocty bias if on ground and not aligned with the gravity vector
+            const bool is_bias_observable = (fabsf(prevTnb[index][2]) > 0.8f) && onGround;
+
+            if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
+                // store variances to be reinstated wben learning can commence later
+                dvelBiasAxisVarPrev[index] = P[stateIndex][stateIndex];
+                dvelBiasAxisInhibit[index] = true;
+            } else if (is_bias_observable && dvelBiasAxisInhibit[index]) {
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+                dvelBiasAxisInhibit[index] = false;
+            }
+        }
+    }
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the lower diagonal and copy to take advantage of symmetry
@@ -1614,6 +1679,18 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
         }
     }
 
+    // inactive delta velocity bias states have all covariances zeroed to prevent
+    // interacton with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            const uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroCols(nextP,stateIndex,stateIndex);
+                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
+        }
+    }
+
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1738,21 +1815,29 @@ void NavEKF3_core::ConstrainVariances()
         zeroRows(P,10,12);
     }
 
+    const float minStateVarTarget = 1E-8f;
     if (!inhibitDelVelBiasStates) {
-        // limit delta velocity bias state variance levels and request a reset if below the safe minimum
+
+        // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
+        const float minSafeStateVar = 1e-9f;
+        float maxStateVar = minSafeStateVar;
         bool resetRequired = false;
-        for (uint8_t i=13; i<=15; i++) {
-            if (P[i][i] > 1E-9f) {
-                // variance is above the safe minimum
-                P[i][i] = fminf(P[i][i], sq(10.0f * dtEkfAvg));
-            } else {
-                // Set the variance to the target minimum and request a covariance reset
-                P[i][i] = 1E-8f;
+        for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
+            if (P[stateIndex][stateIndex] > maxStateVar) {
+                maxStateVar = P[stateIndex][stateIndex];
+            } else if (P[stateIndex][stateIndex] < minSafeStateVar) {
                 resetRequired = true;
             }
         }
 
-        // If any one axis is below the safe minimum, all delta velocity covariance terms must be reset to zero
+        // To ensure stability of the covariance matrix operations, the ratio of a max and min variance must
+        // not exceed 100 and the minimum variance must not fall below the target minimum
+        float minAllowedStateVar = fmaxf(0.01f * maxStateVar, minStateVarTarget);
+        for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
+            P[stateIndex][stateIndex] = constrain_float(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
+        }
+
+        // If any one axis has fallen below the safe minimum, all delta velocity covariance terms must be reset to zero
         if (resetRequired) {
             float delVelBiasVar[3];
             // store all delta velocity bias variances
@@ -1770,6 +1855,10 @@ void NavEKF3_core::ConstrainVariances()
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
+        for (uint8_t i=0; i<=2; i++) {
+            const uint8_t stateIndex = 1 + 13;
+            P[stateIndex][stateIndex] = fmaxf(P[stateIndex][stateIndex], minStateVarTarget);
+        }
     }
 
     if (!inhibitMagStates) {

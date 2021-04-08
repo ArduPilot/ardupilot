@@ -37,12 +37,14 @@
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
 #include <uavcan/equipment/indication/BeepCommand.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
+#include <uavcan/equipment/safety/ArmingStatus.hpp>
 #include <ardupilot/indication/SafetyState.hpp>
 #include <ardupilot/indication/Button.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
 
+#include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
@@ -110,6 +112,7 @@ static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[HAL_MAX_CA
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // subscribers
@@ -182,6 +185,8 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
     return true;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wframe-larger-than=1400"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -284,6 +289,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     safety_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     safety_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
+    arming_status[driver_index] = new uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>(*_node);
+    arming_status[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    arming_status[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
     rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node);
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
@@ -338,6 +347,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     _initialized = true;
     debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
 }
+#pragma GCC diagnostic pop
 
 // send ESC telemetry messages over MAVLink
 void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
@@ -699,25 +709,35 @@ void AP_UAVCAN::rtcm_stream_send()
 // SafetyState send
 void AP_UAVCAN::safety_state_send()
 {
-    ardupilot::indication::SafetyState msg;
     uint32_t now = AP_HAL::native_millis();
     if (now - _last_safety_state_ms < 500) {
         // update at 2Hz
         return;
     }
     _last_safety_state_ms = now;
-    switch (hal.util->safety_switch_state()) {
-    case AP_HAL::Util::SAFETY_ARMED:
-        msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_OFF;
-        break;
-    case AP_HAL::Util::SAFETY_DISARMED:
-        msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_ON;
-        break;
-    default:
-        // nothing to send
-        return;
+
+    { // handle SafetyState
+        ardupilot::indication::SafetyState safety_msg;
+        switch (hal.util->safety_switch_state()) {
+        case AP_HAL::Util::SAFETY_ARMED:
+            safety_msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_OFF;
+            break;
+        case AP_HAL::Util::SAFETY_DISARMED:
+            safety_msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_ON;
+            break;
+        default:
+            // nothing to send
+            break;
+        }
+        safety_state[_driver_index]->broadcast(safety_msg);
     }
-    safety_state[_driver_index]->broadcast(msg);
+
+    { // handle ArmingStatus
+        uavcan::equipment::safety::ArmingStatus arming_msg;
+        arming_msg.status = AP::arming().is_armed() ? uavcan::equipment::safety::ArmingStatus::STATUS_FULLY_ARMED :
+                                                      uavcan::equipment::safety::ArmingStatus::STATUS_DISARMED;
+        arming_status[_driver_index]->broadcast(arming_msg);
+    }
 }
 
 /*

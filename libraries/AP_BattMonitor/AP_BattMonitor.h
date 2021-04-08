@@ -185,7 +185,7 @@ public:
     bool overpower_detected(uint8_t instance) const;
 
     // cell voltages in millivolts
-    bool has_cell_voltages() { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    bool has_cell_voltages() const { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     bool has_cell_voltages(const uint8_t instance) const;
     const cells &get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     const cells &get_cell_voltages(const uint8_t instance) const;
@@ -208,7 +208,8 @@ public:
     void checkPoweringOff(void);
 
     // reset battery remaining percentage
-    bool reset_remaining(uint16_t battery_mask, float percentage);
+    bool reset_remaining_mask(uint16_t battery_mask, float percentage);
+    bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
 
     static const struct AP_Param::GroupInfo var_info[];
 

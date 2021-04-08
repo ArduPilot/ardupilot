@@ -3,9 +3,6 @@
 
 bool ModeGuided::_enter()
 {
-    plane.throttle_allows_nudging = true;
-    plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
     plane.guided_throttle_passthru = false;
     /*
       when entering guided mode we set the target as the current
@@ -13,7 +10,6 @@ bool ModeGuided::_enter()
     */
     plane.guided_WP_loc = plane.current_loc;
     plane.set_guided_WP();
-
     return true;
 }
 
@@ -33,4 +29,3 @@ void ModeGuided::navigate()
     // Zero indicates to use WP_LOITER_RAD
     plane.update_loiter(0);
 }
-

@@ -9,9 +9,6 @@ bool ModeThermal::_enter()
         return false;
     }
 
-    plane.throttle_allows_nudging = true;
-    plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
     plane.do_loiter_at_location();
     plane.loiter_angle_reset();
 
@@ -117,8 +114,10 @@ void ModeThermal::update_soaring()
 
 void ModeThermal::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    // Soaring library calculates radius from SOAR_THML_BANK.
+    const float radius = plane.g2.soaring_controller.get_thermalling_radius();
+
+    plane.update_loiter(radius);
 }
 
 bool ModeThermal::exit_heading_aligned() const

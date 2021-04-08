@@ -84,8 +84,8 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
             // left paddle from steering input channel, right paddle from throttle input channel
             // steering = left-paddle - right-paddle
             // throttle = average(left-paddle, right-paddle)
-            const float left_paddle = rover.channel_steer->norm_input();
-            const float right_paddle = rover.channel_throttle->norm_input();
+            const float left_paddle = rover.channel_steer->norm_input_dz();
+            const float right_paddle = rover.channel_throttle->norm_input_dz();
 
             throttle_out = 0.5f * (left_paddle + right_paddle) * 100.0f;
             steering_out = (left_paddle - right_paddle) * 0.5f * 4500.0f;

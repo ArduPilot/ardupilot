@@ -13,8 +13,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Logger_File.h"
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -29,10 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 #define LOGGER_PAGE_SIZE 1024UL
 
-#ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
-#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
-#endif
-
 #define MB_to_B 1000000
 #define B_to_MB 0.000001
 
@@ -46,15 +43,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
                                LoggerMessageWriter_DFLogStart *writer,
                                const char *log_directory) :
     AP_Logger_Backend(front, writer),
-    _write_fd(-1),
-    _read_fd(-1),
-    _log_directory(log_directory),
-    _writebuf(0),
-    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE),
-    _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
-    _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
-    _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
-    _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
+    _log_directory(log_directory)
 {
     df_stats_clear();
 }
@@ -99,12 +88,13 @@ void AP_Logger_File::Init()
     hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
         _log_directory = custom_dir;
     }
+
+    Prep_MinSpace();
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const
@@ -134,6 +124,15 @@ void AP_Logger_File::periodic_1Hz()
 {
     AP_Logger_Backend::periodic_1Hz();
 
+    if (_initialised &&
+        _write_fd == -1 && _read_fd == -1 &&
+        erase.log_num == 0 &&
+        erase.was_logging) {
+        // restart logging after an erase if needed
+        erase.was_logging = false;
+        start_new_log();
+    }
+    
     if (_initialised &&
         _write_fd == -1 && _read_fd == -1 &&
         logging_enabled() &&
@@ -281,6 +280,11 @@ void AP_Logger_File::Prep_MinSpace()
         // don't clear space if watchdog reset, it takes too long
         return;
     }
+
+    if (!CardInserted()) {
+        return;
+    }
+
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -288,8 +292,6 @@ void AP_Logger_File::Prep_MinSpace()
     }
 
     const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
-
-    _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -317,6 +319,7 @@ void AP_Logger_File::Prep_MinSpace()
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
+                _cached_oldest_log = 0;
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -335,36 +338,6 @@ void AP_Logger_File::Prep_MinSpace()
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
-}
-
-void AP_Logger_File::Prep() {
-    if (!NeedPrep()) {
-        return;
-    }
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-    Prep_MinSpace();
-}
-
-bool AP_Logger_File::NeedPrep()
-{
-    if (!CardInserted()) {
-        // should not have been called?!
-        return false;
-    }
-
-    const int64_t actual = disk_space_avail();
-    if (actual == -1) {
-        return false;
-    }
-
-    if (actual < (int64_t)_front._params.min_MB_free * MB_to_B) {
-        return true;
-    }
-
-    return false;
 }
 
 /*
@@ -439,29 +412,10 @@ void AP_Logger_File::EraseAll()
         return;
     }
 
-    const bool was_logging = (_write_fd != -1);
+    erase.was_logging = (_write_fd != -1);
     stop_logging();
 
-    for (uint16_t log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
-        char *fname = _log_file_name(log_num);
-        if (fname == nullptr) {
-            break;
-        }
-        EXPECT_DELAY_MS(3000);
-        AP::FS().unlink(fname);
-        free(fname);
-    }
-    char *fname = _lastlog_file_name();
-    if (fname != nullptr) {
-        AP::FS().unlink(fname);
-        free(fname);
-    }
-
-    _cached_oldest_log = 0;
-
-    if (was_logging) {
-        start_new_log();
-    }
+    erase.log_num = 1;
 }
 
 bool AP_Logger_File::WritesOK() const
@@ -528,7 +482,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 
     // if no room for entire message - drop it:
     if (space < size) {
-        hal.util->perf_count(_perf_overruns);
         _dropped++;
         return false;
     }
@@ -761,6 +714,13 @@ void AP_Logger_File::start_new_log(void)
         return;
     }
 
+    if (erase.log_num != 0) {
+        // don't start a new log while erasing, but record that we
+        // want to start logging when erase finished
+        erase.was_logging = true;
+        return;
+    }
+
     const bool open_error_ms_was_zero = (_open_error_ms == 0);
 
     // set _open_error here to avoid infinite recursion.  Simply
@@ -873,7 +833,7 @@ void AP_Logger_File::flush(void)
         if (tnow > 2001) { // avoid resetting _last_write_time to 0
             _last_write_time = tnow - 2001;
         }
-        _io_timer();
+        io_timer();
     }
     if (write_fd_semaphore.take(1)) {
         if (_write_fd != -1) {
@@ -891,10 +851,17 @@ void AP_Logger_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
-void AP_Logger_File::_io_timer(void)
+void AP_Logger_File::io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
+
+    if (erase.log_num != 0) {
+        // continue erase
+        erase_next();
+        return;
+    }
+
     if (_write_fd == -1 || !_initialised || recent_open_error()) {
         return;
     }
@@ -921,8 +888,6 @@ void AP_Logger_File::_io_timer(void)
         }
         last_io_operation = "";
     }
-
-    hal.util->perf_begin(_perf_write);
 
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
@@ -957,7 +922,6 @@ void AP_Logger_File::_io_timer(void)
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
-            hal.util->perf_count(_perf_errors);
             last_io_operation = "close";
             AP::FS().close(_write_fd);
             last_io_operation = "";
@@ -996,14 +960,27 @@ void AP_Logger_File::_io_timer(void)
     }
 
     write_fd_semaphore.give();
-    hal.util->perf_end(_perf_write);
 }
 
 bool AP_Logger_File::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in a full seconds then it is dead
-    // this is enough time for a sdcard remount
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U;
+    if (!hal.scheduler->is_system_initialized()) {
+        // the system has long pauses during initialisation
+        return false;
+    }
+    // if the io thread hasn't had a heartbeat in a while then it is
+    // considered dead. Three seconds is enough time for a sdcard remount.
+    uint32_t timeout_ms = 3000;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // the IO thread is working with hardware - writing to a physical
+    // disk.  Unfortunately these hardware devices do not obey our
+    // SITL speedup options, so we allow for it here.
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl != nullptr) {
+        timeout_ms *= sitl->speedup;
+    }
+#endif
+    return (AP_HAL::millis() - _io_timer_heartbeat) < timeout_ms;
 }
 
 bool AP_Logger_File::logging_failed() const
@@ -1026,5 +1003,35 @@ bool AP_Logger_File::logging_failed() const
     return false;
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+/*
+  erase another file in async erase operation
+ */
+void AP_Logger_File::erase_next(void)
+{
+    char *fname = _log_file_name(erase.log_num);
+    if (fname == nullptr) {
+        erase.log_num = 0;
+        return;
+    }
+
+    AP::FS().unlink(fname);
+    free(fname);
+
+    erase.log_num++;
+    if (erase.log_num <= MAX_LOG_FILES) {
+        return;
+    }
+    
+    fname = _lastlog_file_name();
+    if (fname != nullptr) {
+        AP::FS().unlink(fname);
+        free(fname);
+    }
+
+    _cached_oldest_log = 0;
+
+    erase.log_num = 0;
+}
+
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED
 

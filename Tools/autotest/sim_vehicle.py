@@ -5,10 +5,14 @@ Framework to start a simulated vehicle and connect it to MAVProxy.
 
 Peter Barker, April 2016
 based on sim_vehicle.sh by Andrew Tridgell, October 2011
+
+AP_FLAKE8_CLEAN
+
 """
 from __future__ import print_function
 
 import atexit
+import datetime
 import errno
 import optparse
 import os
@@ -26,8 +30,6 @@ import binascii
 from pymavlink import mavextra
 from pysim import vehicleinfo
 
-import time
-import datetime
 
 # List of open terminal windows for macosx
 windowID = []
@@ -36,6 +38,7 @@ autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
 
 os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
+
 
 class CompatError(Exception):
     """A custom exception class to hold state if we encounter the parse
@@ -165,7 +168,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except Exception as e:
+            except Exception:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -281,7 +284,7 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
-def do_build_waf(opts, frame_options):
+def do_build(opts, frame_options):
     """Build sitl using waf"""
     progress("WAF build")
 
@@ -300,7 +303,7 @@ def do_build_waf(opts, frame_options):
 
     if opts.OSDMSP:
         cmd_configure.append("--osd")
-        
+
     if opts.rgbled:
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-rgbled")
@@ -319,7 +322,7 @@ def do_build_waf(opts, frame_options):
 
     if opts.disable_ekf3:
         cmd_configure.append("--disable-ekf3")
-        
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -368,39 +371,6 @@ def do_build_parameters(vehicle):
         sys.exit(1)
 
 
-def do_build(vehicledir, opts, frame_options):
-    """Build build target (e.g. sitl) in directory vehicledir"""
-
-    if opts.build_system == 'waf':
-        return do_build_waf(opts, frame_options)
-
-    old_dir = os.getcwd()
-
-    os.chdir(vehicledir)
-
-    if opts.clean:
-        run_cmd_blocking("Building clean", ["make", "clean"])
-
-    build_target = frame_options["make_target"]
-    if opts.debug:
-        build_target += "-debug"
-
-    build_cmd = ["make", build_target]
-    if opts.jobs is not None:
-        build_cmd += ['-j', str(opts.jobs)]
-
-    _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-    if sts != 0:
-        progress("Build failed; cleaning and rebuilding")
-        run_cmd_blocking("Cleaning", ["make", "clean"])
-        _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-        if sts != 0:
-            progress("Build failed")
-            sys.exit(1)
-
-    os.chdir(old_dir)
-
-
 def get_user_locations_path():
     '''The user locations.txt file is located by default in
     $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
@@ -420,7 +390,7 @@ def get_user_locations_path():
 def find_offsets(instances, file_path):
     offsets = {}
     swarminit_filepath = os.path.join(autotest_dir, "swarminit.txt")
-    comment_regex = re.compile("\s*#.*")
+    comment_regex = re.compile(r"\s*#.*")
     for path in [file_path, swarminit_filepath]:
         if os.path.isfile(path):
             with open(path, 'r') as fd:
@@ -432,7 +402,7 @@ def find_offsets(instances, file_path):
                     (instance, offset) = line.split("=")
                     instance = (int)(instance)
                     if (instance not in offsets) and (instance in instances):
-                        offsets[instance] = [ (float)(x) for x in offset.split(",") ]
+                        offsets[instance] = [(float)(x) for x in offset.split(",")]
                         continue
                     if len(offsets) == len(instances):
                         return offsets
@@ -449,7 +419,7 @@ def find_location_by_name(locname):
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
                                         get_user_locations_path())
     locations_filepath = os.path.join(autotest_dir, "locations.txt")
-    comment_regex = re.compile("\s*#.*")
+    comment_regex = re.compile(r"\s*#.*")
     for path in [locations_userpath, locations_filepath]:
         if not os.path.isfile(path):
             continue
@@ -461,7 +431,7 @@ def find_location_by_name(locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
-                    return [ (float)(x) for x in loc.split(",") ]
+                    return [(float)(x) for x in loc.split(",")]
 
     print("Failed to find location (%s)" % cmd_opts.location)
     sys.exit(1)
@@ -550,7 +520,7 @@ def start_antenna_tracker(opts):
     options = vinfo.options["AntennaTracker"]
     tracker_default_frame = options["default_frame"]
     tracker_frame_options = options["frames"][tracker_default_frame]
-    do_build(vehicledir, opts, tracker_frame_options)
+    do_build(opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
@@ -647,12 +617,18 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.add_param_file:
-        if not os.path.isfile(opts.add_param_file):
-            print("The parameter file (%s) does not exist" %
-                  (opts.add_param_file,))
-            sys.exit(1)
-        path += "," + str(opts.add_param_file)
-        progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+        for file in opts.add_param_file:
+            if not os.path.isfile(file):
+                print("The parameter file (%s) does not exist" %
+                      (file,))
+                sys.exit(1)
+
+            if path is not None:
+                path += "," + str(file)
+            else:
+                path = str(file)
+
+            progress("Adding parameters from (%s)" % (str(file),))
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
@@ -667,7 +643,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         # Parse start_time into a double precision number specifying seconds since 1900.
         try:
             start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
-        except:
+        except Exception:
             print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
             sys.exit(1)
 
@@ -1047,6 +1023,7 @@ group_sim.add_option("", "--rgbled",
                      help="Enable SITL RGBLed")
 group_sim.add_option("", "--add-param-file",
                      type='string',
+                     action="append",
                      default=None,
                      help="Add a parameters file to use")
 group_sim.add_option("", "--no-extra-ports",
@@ -1251,7 +1228,7 @@ if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
 if cmd_opts.custom_location:
-    location = [ (float)(x) for x in cmd_opts.custom_location.split(",") ]
+    location = [(float)(x) for x in cmd_opts.custom_location.split(",")]
     progress("Starting up at %s" % (location,))
 elif cmd_opts.location is not None:
     location = find_location_by_name(cmd_opts.location)
@@ -1262,7 +1239,7 @@ else:
 if cmd_opts.swarm is not None:
     offsets = find_offsets(instances, cmd_opts.swarm)
 else:
-    offsets = { x: [0.0, 0.0, 0.0, None] for x in instances }
+    offsets = {x: [0.0, 0.0, 0.0, None] for x in instances}
 if location is not None:
     spawns = find_spawns(location, offsets)
 else:
@@ -1307,7 +1284,7 @@ if cmd_opts.hil:
 
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
-        do_build(vehicle_dir, cmd_opts, frame_infos)
+        do_build(cmd_opts, frame_infos)
 
     if cmd_opts.fresh_params:
         do_build_parameters(cmd_opts.vehicle)

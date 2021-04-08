@@ -63,12 +63,18 @@ public:
         DEVTYPE_SITL  = 0x0F,
         DEVTYPE_IST8308 = 0x10,
         DEVTYPE_RM3100 = 0x11,
+        DEVTYPE_RM3100_2 = 0x12, // unused, past mistake
+        DEVTYPE_MMC5883 = 0x13,
     };
 
 #if HAL_MSP_COMPASS_ENABLED
     virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}
+#endif
+    
 protected:
 
     /*

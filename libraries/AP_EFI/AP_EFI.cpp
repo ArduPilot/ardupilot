@@ -18,7 +18,12 @@
 #if EFI_ENABLED
 
 #include "AP_EFI_Serial_MS.h"
+#include "AP_EFI_NWPMU.h"
 #include <AP_Logger/AP_Logger.h>
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#include <AP_CANManager/AP_CANManager.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,7 +32,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS
+    // @Values: 0:None,1:Serial-MS,2:NWPMU
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -67,9 +72,20 @@ void AP_EFI::init(void)
         // Init called twice, perhaps
         return;
     }
-    // Check for MegaSquirt Serial EFI
-    if (type == EFI_COMMUNICATION_TYPE_SERIAL_MS) {
+    switch ((Type)type.get()) {
+    case Type::NONE:
+        break;
+    case Type::MegaSquirt:
         backend = new AP_EFI_Serial_MS(*this);
+        break;
+    case Type::NWPMU:
+#if HAL_EFI_NWPWU_ENABLED
+        backend = new AP_EFI_NWPMU(*this);
+#endif
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_INFO, "Unknown EFI type");
+        break;
     }
 }
 
@@ -211,8 +227,8 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         state.spark_dwell_time_ms,
         state.atmospheric_pressure_kpa,
         state.intake_manifold_pressure_kpa,
-        (state.intake_manifold_temperature - 273.0f),
-        (state.cylinder_status[0].cylinder_head_temperature - 273.0f),
+        (state.intake_manifold_temperature - C_TO_KELVIN),
+        (state.cylinder_status[0].cylinder_head_temperature - C_TO_KELVIN),
         state.cylinder_status[0].ignition_timing_deg,
         state.cylinder_status[0].injection_time_ms,
         0, 0, 0);

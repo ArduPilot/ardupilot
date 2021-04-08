@@ -14,15 +14,17 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
-#include <AP_Common/Location.h>
 
-#define PROXIMITY_NUM_SECTORS           8       // number of sectors
-#define PROXIMITY_SECTOR_WIDTH_DEG      45.0f   // width of sectors in degrees
-#define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
-#define PROXIMITY_BOUNDARY_DIST_DEFAULT 100 // if we have no data for a sector, boundary is placed 100m out
+#if HAL_PROXIMITY_ENABLED
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
+#include "AP_Proximity_Boundary_3D.h"
+
+#define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
+#define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 1000 // we should check the 3D boundary faces after every this many ms
 
 class AP_Proximity_Backend
 {
@@ -37,6 +39,9 @@ public:
     // update the state structure
     virtual void update() = 0;
 
+    // timeout faces that have not received data recently and update filter frequencies
+    void boundary_3D_checks();
+
     // get maximum and minimum distances (in meters) of sensor
     virtual float distance_max() const = 0;
     virtual float distance_min() const = 0;
@@ -47,20 +52,35 @@ public:
     // handle mavlink DISTANCE_SENSOR messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
-    // get boundary points around vehicle for use by avoidance
-    //   returns nullptr and sets num_points to zero if no boundary can be returned
-    const Vector2f* get_boundary_points(uint16_t& num_points) const;
+    // get total number of obstacles, used in GPS based Simple Avoidance
+    uint8_t get_obstacle_count() { return boundary.get_obstacle_count(); }
+    
+    // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const { return boundary.get_obstacle(obstacle_num, vec_to_obstacle); }
+    
+    // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
+    // used in GPS based Simple Avoidance
+    float distance_to_obstacle(const uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const { return boundary.distance_to_obstacle(obstacle_num , seg_start, seg_end, closest_point); } 
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
-    bool get_closest_object(float& angle_deg, float &distance) const;
+    bool get_closest_object(float& angle_deg, float &distance) const { return boundary.get_closest_object(angle_deg, distance); }
 
     // get number of objects, angle and distance - used for non-GPS avoidance
-    uint8_t get_object_count() const;
-    bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+    uint8_t get_horizontal_object_count() const {return boundary.get_horizontal_object_count(); }
+    bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const { return boundary.get_horizontal_object_angle_and_distance(object_number, angle_deg, distance); }
 
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
+
+    // get raw and filtered distances in 8 directions per layer. used for logging
+    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+
+    // get number of layers
+    uint8_t get_num_layers() const { return boundary.get_num_layers(); }
+
+    // store rangefinder values
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
 
 protected:
 
@@ -69,39 +89,42 @@ protected:
 
     // correct an angle (in degrees) based on the orientation and yaw correction parameters
     float correct_angle_for_orientation(float angle_degrees) const;
-
-    // find which sector a given angle falls into
-    uint8_t convert_angle_to_sector(float angle_degrees) const;
-
-    // initialise the boundary and sector_edge_vector array used for object avoidance
-    //   should be called if the sector_middle_deg or _setor_width_deg arrays are changed
-    void init_boundary();
-
-    // update boundary points used for object avoidance based on a single sector's distance changing
-    //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
-    //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB);
-
+    
     // check if a reading should be ignored because it falls into an ignore area
     // angles should be in degrees and in the range of 0 to 360
-    bool ignore_reading(uint16_t angle_deg) const;
+    bool ignore_reading(uint16_t angle_deg, float distance_m) const;
 
-    // database helpers.  all angles are in degrees
-    bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
-    void database_push(float angle, float distance);
-    void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+    // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
+    bool get_rangefinder_alt(float &alt_m) const;
+
+    // Check if Obstacle defined by body-frame yaw and pitch is near ground
+    bool check_obstacle_near_ground(float yaw, float pitch, float distance) const;
+    bool check_obstacle_near_ground(float yaw, float distance) const { return check_obstacle_near_ground(yaw, 0.0f, distance); };
+    // Check if Obstacle defined by Vector3f is near ground. The vector is assumed to be body frame FRD
+    bool check_obstacle_near_ground(const Vector3f &obstacle) const;
+
+    // database helpers. All angles are in degrees
+    static bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
+    // Note: "angle" refers to yaw (in body frame) towards the obstacle
+    static void database_push(float angle, float distance);
+    static void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned) {
+        database_push(angle, 0.0f, distance, timestamp_ms, current_pos, body_to_ned);
+    };
+    static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+
+    uint32_t _last_timeout_check_ms;  // time when boundary was checked for non-updated valid faces
+
+    // used for ground detection
+    uint32_t _last_downward_update_ms;
+    bool     _rangefinder_use;
+    bool     _rangefinder_healthy;
+    float    _rangefinder_alt;
+
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 
-    // sectors
-    const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
-
-    // sensor data
-    float _angle[PROXIMITY_NUM_SECTORS];            // angle to closest object within each sector
-    float _distance[PROXIMITY_NUM_SECTORS];         // distance to closest object within each sector
-    bool _distance_valid[PROXIMITY_NUM_SECTORS];    // true if a valid distance received for each sector
-
-    // fence boundary
-    Vector2f _sector_edge_vector[PROXIMITY_NUM_SECTORS];    // vector for right-edge of each sector, used to speed up calculation of boundary
-    Vector2f _boundary_point[PROXIMITY_NUM_SECTORS];        // bounding polygon around the vehicle calculated conservatively for object avoidance
+    // Methods to manipulate 3D boundary in this class
+    AP_Proximity_Boundary_3D boundary;
 };
+
+#endif // HAL_PROXIMITY_ENABLED

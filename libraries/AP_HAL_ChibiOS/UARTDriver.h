@@ -32,6 +32,10 @@ class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
 
+    /* Do not allow copies */
+    UARTDriver(const UARTDriver &other) = delete;
+    UARTDriver &operator=(const UARTDriver&) = delete;
+
     void begin(uint32_t b) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
     void end() override;
@@ -48,7 +52,8 @@ public:
     int16_t read() override;
     ssize_t read(uint8_t *buffer, uint16_t count) override;
     int16_t read_locked(uint32_t key) override;
-    void _timer_tick(void) override;
+    void _rx_timer_tick(void);
+    void _tx_timer_tick(void);
 
     bool discard_input() override;
 
@@ -81,6 +86,7 @@ public:
         ioline_t tx_line;
         ioline_t rx_line;
         ioline_t rts_line;
+        ioline_t cts_line;
         int8_t rxinv_gpio;
         uint8_t rxinv_polarity;
         int8_t txinv_gpio;
@@ -122,6 +128,8 @@ public:
         }
         return _baudrate/(9*1024);
     }
+    // request information on uart I/O
+    static void uart_info(ExpandingString &str);
 
 private:
     const SerialDef &sdef;
@@ -133,12 +141,16 @@ private:
      */
     ioline_t atx_line;
     ioline_t arx_line;
-    
+
     // thread used for all UARTs
-    static thread_t *uart_thread_ctx;
+    static thread_t* volatile uart_rx_thread_ctx;
 
     // table to find UARTDrivers from serial number, used for event handling
     static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+    
+    // thread used for writing and reading
+    thread_t* volatile uart_thread_ctx;
+    char uart_thread_name[6];
 
     // index into uart_drivers table
     uint8_t serial_num;
@@ -148,7 +160,6 @@ private:
     uint32_t lock_read_key;
 
     uint32_t _baudrate;
-    volatile uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
 #endif
@@ -164,10 +175,10 @@ private:
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
 #ifndef HAL_UART_NODMA
-    volatile bool tx_bounce_buf_ready;
     volatile uint8_t rx_bounce_idx;
     uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;
+    uint16_t contention_counter;
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
@@ -176,11 +187,12 @@ private:
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    virtual_timer_t tx_timeout;
-    bool _in_timer;
+    volatile bool _in_rx_timer;
+    volatile bool _in_tx_timer;
     bool _blocking_writes;
-    bool _initialised;
-    bool _device_initialised;
+    volatile bool _rx_initialised;
+    volatile bool _tx_initialised;
+    volatile bool _device_initialised;
 #ifndef HAL_UART_NODMA
     Shared_DMA *dma_handle;
 #endif
@@ -197,6 +209,11 @@ private:
     uint32_t _first_write_started_us;
     uint32_t _total_written;
 
+    // statistics
+    uint32_t _tx_stats_bytes;
+    uint32_t _rx_stats_bytes;
+    static uint32_t _last_stats_ms;
+
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
     uint32_t _cr2_options;
@@ -208,7 +225,7 @@ private:
 #if CH_CFG_USE_EVENTS == TRUE
     bool half_duplex;
     event_listener_t hd_listener;
-    bool hd_tx_active;
+    eventflags_t hd_tx_active;
     void half_duplex_setup_tx(void);
 #endif
 
@@ -226,7 +243,6 @@ private:
 #endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
-    static void handle_tx_timeout(void *arg);
 
 #ifndef HAL_UART_NODMA
     void dma_tx_allocate(Shared_DMA *ctx);
@@ -241,14 +257,18 @@ private:
 #endif
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
+    void read_bytes_NODMA();
 
     void receive_timestamp_update(void);
 
     // set SERIALn_OPTIONS for pullup/pulldown
     void set_pushpull(uint16_t options);
 
+    static void thread_rx_init();
     void thread_init();
-    static void uart_thread(void *);
+    void uart_thread();
+    static void uart_rx_thread(void* arg);
+    static void uart_thread_trampoline(void* p);
 };
 
 // access to usb init for stdio.cpp

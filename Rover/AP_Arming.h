@@ -21,7 +21,7 @@ public:
     bool rc_calibration_checks(const bool display_failure) override;
     bool gps_checks(bool display_failure) override;
 
-    bool disarm(AP_Arming::Method method) override;
+    bool disarm(AP_Arming::Method method, bool do_disarm_checks=true) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
     void update_soft_armed();

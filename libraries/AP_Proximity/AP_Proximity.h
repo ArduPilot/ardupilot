@@ -14,8 +14,16 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_PROXIMITY_ENABLED
+#define HAL_PROXIMITY_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if HAL_PROXIMITY_ENABLED
+
+#include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -64,6 +72,12 @@ public:
     struct Proximity_Distance_Array {
         uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
         float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
+        bool valid(uint8_t offset) const {
+            // returns true if the distance stored at offset is valid
+            return (offset < 8 && (offset_valid & (1U<<offset)));
+        };
+
+        uint8_t offset_valid; // bitmask
     };
 
     // detect and initialise any available proximity sensors
@@ -75,6 +89,7 @@ public:
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
+    float get_filter_freq() const { return _filt_freq; }
 
     // return sensor health
     Status get_status(uint8_t instance) const;
@@ -88,10 +103,18 @@ public:
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
 
-    // get boundary points around vehicle for use by avoidance
-    //   returns nullptr and sets num_points to zero if no boundary can be returned
-    const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
-    const Vector2f* get_boundary_points(uint16_t& num_points) const;
+    // get raw and filtered distances in 8 directions per layer. used for logging
+    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+
+    // get total number of obstacles, used in GPS based Simple Avoidance
+    uint8_t get_obstacle_count() const;
+    
+    // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const;
+    
+    // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
+    // returns FLT_MAX if it's an invalid instance.
+    float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
@@ -100,6 +123,9 @@ public:
     // get number of objects, angle and distance - used for non-GPS avoidance
     uint8_t get_object_count() const;
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+
+    // get number of layers
+    uint8_t get_num_layers() const;
 
     // get maximum and minimum distances (in meters) of primary sensor
     float distance_max() const;
@@ -124,6 +150,9 @@ public:
 
     Type get_type(uint8_t instance) const;
 
+    // true if raw distances should be logged
+    bool get_raw_log_enable() const { return _raw_log_enable; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -134,6 +163,9 @@ public:
     bool sensor_present() const;
     bool sensor_enabled() const;
     bool sensor_failed() const;
+
+    // set alt as read from downward facing rangefinder. Tilt is already adjusted for
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
 
 private:
     static AP_Proximity *_singleton;
@@ -155,6 +187,9 @@ private:
     AP_Int16 _yaw_correction[PROXIMITY_MAX_INSTANCES];
     AP_Int16 _ignore_angle_deg[PROXIMITY_MAX_IGNORE];   // angle (in degrees) of area that should be ignored by sensor (i.e. leg shows up)
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
+    AP_Int8 _raw_log_enable;                            // enable logging raw distances
+    AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
+    AP_Float _filt_freq;                               // cutoff frequency for low pass filter
 
     void detect_instance(uint8_t instance);
 };
@@ -162,3 +197,5 @@ private:
 namespace AP {
     AP_Proximity *proximity();
 };
+
+#endif // HAL_PROXIMITY_ENABLED

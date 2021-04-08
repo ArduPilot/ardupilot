@@ -169,7 +169,7 @@ IMU Invensensev2 SPI:imu2 ROTATION_YAW_90
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
 # one BARO, multiple possible choices for different
-# board varients
+# board variants
 BARO SPL06 SPI:spl06
 
 # dummy for testing

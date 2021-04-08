@@ -77,7 +77,6 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 //
 AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities) :
     _log_battery_bit(log_battery_bit),
-    _num_instances(0),
     _battery_failsafe_handler_fn(battery_failsafe_handler_fn),
     _failsafe_priorities(failsafe_priorities)
 {
@@ -285,24 +284,30 @@ void AP_BattMonitor::convert_params(void) {
     _params[0]._type.save(true);
 }
 
-// read - read the voltage and current for all instances
-void
-AP_BattMonitor::read()
+// read - For all active instances read voltage & current; log BAT, BCL, POWR
+void AP_BattMonitor::read()
 {
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
+        logger->Write_Power();
+    }
+#endif
+
     for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
+            
+#ifndef HAL_BUILD_AP_PERIPH
+            if (logger != nullptr && logger->should_log(_log_battery_bit)) {
+                const uint64_t time_us = AP_HAL::micros64();
+                drivers[i]->Log_Write_BAT(i, time_us);
+                drivers[i]->Log_Write_BCL(i, time_us);
+            }
+#endif
         }
     }
-
-#ifndef HAL_BUILD_AP_PERIPH
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
-        logger->Write_Current();
-        logger->Write_Power();
-    }
-#endif
 
     check_failsafes();
     
@@ -488,12 +493,13 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
 // returns true if there is a temperature reading
 bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
 {
-    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == nullptr) {
         return false;
-    } else {
-        temperature = state[instance].temperature;
-        return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
-    }
+    } 
+    
+    temperature = state[instance].temperature;
+
+    return drivers[instance]->has_temperature();
 }
 
 // return true if cycle count can be provided and fills in cycles argument
@@ -548,13 +554,18 @@ void AP_BattMonitor::checkPoweringOff(void)
   reset battery remaining percentage for batteries that integrate to
   calculate percentage remaining
 */
-bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
+bool AP_BattMonitor::reset_remaining_mask(uint16_t battery_mask, float percentage)
 {
+    static_assert(AP_BATT_MONITOR_MAX_INSTANCES <= 16, "More batteries are enabled then can be reset");
     bool ret = true;
     Failsafe highest_failsafe = Failsafe::None;
     for (uint8_t i = 0; i < _num_instances; i++) {
         if ((1U<<i) & battery_mask) {
-            ret &= drivers[i]->reset_remaining(percentage);
+            if (drivers[i] != nullptr) {
+                ret &= drivers[i]->reset_remaining(percentage);
+            } else {
+                ret = false;
+            }
         }
         if (state[i].failsafe > highest_failsafe) {
             highest_failsafe = state[i].failsafe;

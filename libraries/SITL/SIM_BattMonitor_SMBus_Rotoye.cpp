@@ -16,6 +16,7 @@ void SITL::Rotoye::update(const class Aircraft &aircraft)
     const uint32_t now = AP_HAL::millis();
     if (now - last_temperature_update_ms > 1000) {
         last_temperature_update_ms = now;
-        set_register(SMBusBattRotoyeDevReg::TEMP_EXT, int16_t(be16toh(word[SMBusBattRotoyeDevReg::TEMP]) + 100));  // it's a little warmer inside.... (10 degrees here)
+        int16_t outside_temp = get_reg_value(SMBusBattRotoyeDevReg::TEMP);
+        set_register(SMBusBattRotoyeDevReg::TEMP_EXT, int16_t(outside_temp + 100));  // it's a little warmer inside.... (10 degrees here)
     }
 }

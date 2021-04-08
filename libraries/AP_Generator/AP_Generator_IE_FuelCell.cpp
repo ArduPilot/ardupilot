@@ -116,7 +116,7 @@ bool AP_Generator_IE_FuelCell::pre_arm_check(char *failmsg, uint8_t failmsg_len)
 {
     // Refuse arming if not healthy
     if (!healthy()) {
-        strncpy(failmsg, "Driver not healthy", failmsg_len);
+        strncpy(failmsg, "Not healthy", failmsg_len);
         return false;
     }
 
@@ -150,7 +150,7 @@ void AP_Generator_IE_FuelCell::check_status()
     if (!healthy() && !_health_warn_sent) {
         // Don't spam GCS with unhealthy message
         _health_warn_sent = true;
-        gcs().send_text(MAV_SEVERITY_ALERT, "Generator: Driver not healthy");
+        gcs().send_text(MAV_SEVERITY_ALERT, "Generator: Not healthy");
 
     } else if (healthy()) {
         _health_warn_sent = false;

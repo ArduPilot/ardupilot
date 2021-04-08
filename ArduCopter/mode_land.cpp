@@ -1,17 +1,11 @@
 #include "Copter.h"
 
-// FIXME? why are these static?
-static bool land_with_gps;
-
-static uint32_t land_start_time;
-static bool land_pause;
-
 // land_init - initialise land controller
 bool ModeLand::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
-    land_with_gps = copter.position_ok();
-    if (land_with_gps) {
+    control_position = copter.position_ok();
+    if (control_position) {
         // set target to stopping point
         Vector3f stopping_point;
         loiter_nav->get_stopping_point_xy(stopping_point);
@@ -37,8 +31,15 @@ bool ModeLand::init(bool ignore_checks)
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 
     return true;
 }
@@ -47,7 +48,7 @@ bool ModeLand::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeLand::run()
 {
-    if (land_with_gps) {
+    if (control_position) {
         gps_run();
     } else {
         nogps_run();
@@ -143,7 +144,7 @@ void ModeLand::nogps_run()
 //  has no effect if we are not already in LAND mode
 void ModeLand::do_not_use_GPS()
 {
-    land_with_gps = false;
+    control_position = false;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
@@ -151,7 +152,7 @@ void ModeLand::do_not_use_GPS()
 void Copter::set_mode_land_with_pause(ModeReason reason)
 {
     set_mode(Mode::Number::LAND, reason);
-    land_pause = true;
+    mode_land.set_land_pause(true);
 
     // alert pilot to mode change
     AP_Notify::events.failsafe_mode_change = 1;
@@ -160,5 +161,6 @@ void Copter::set_mode_land_with_pause(ModeReason reason)
 // landing_with_GPS - returns true if vehicle is landing using GPS
 bool Copter::landing_with_GPS()
 {
-    return (control_mode == Mode::Number::LAND && land_with_gps);
+    return (flightmode->mode_number() == Mode::Number::LAND &&
+            mode_land.controlling_position());
 }

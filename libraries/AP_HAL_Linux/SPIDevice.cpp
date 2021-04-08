@@ -79,9 +79,8 @@ SPIDesc SPIDeviceManager::_device[] = {
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("lsm9ds1_ag",  1, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
-    SPIDesc("lsm9ds1_m",  1, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
-    SPIDesc("bmp280",     1, 2, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ,10*MHZ),
+    SPIDesc("led",        0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  6*MHZ, 6*MHZ),
+    SPIDesc("icm20602",   1, 2, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 SPIDesc SPIDeviceManager::_device[] = {
@@ -274,8 +273,6 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     unsigned nmsgs = 0;
     int fd = _bus.fd[_desc.subdev];
 
-    assert(fd >= 0);
-
     if (send && send_len != 0) {
         msgs[nmsgs].tx_buf = (uint64_t) send;
         msgs[nmsgs].rx_buf = 0;
@@ -354,8 +351,6 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
 {
     struct spi_ioc_transfer msgs[1] = { };
     int fd = _bus.fd[_desc.subdev];
-
-    assert(fd >= 0);
 
     if (!send || !recv || len == 0) {
         return false;

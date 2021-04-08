@@ -368,7 +368,7 @@ AltFunction_map = {
 	"PB7:EVENTOUT"      	:	15,
 	"PB7:FMC_NL"        	:	12,
 	"PB7:I2C1_SDA"      	:	4,
-	"PB7:I2S4_SDA"      	:	11,
+	"PB7:I2C4_SDA"      	:	11,
 	"PB7:TIM4_CH2"      	:	2,
 	"PB7:USART1_RX"     	:	7,
 	"PB8:CAN1_RX"       	:	9,

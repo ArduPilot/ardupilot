@@ -15,8 +15,9 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -41,9 +42,7 @@ public:
 private:
     SITL::SITL *sitl = AP::sitl();
 
-    // sector related variables
-    float _angle_deg_last;
-    float _distance_m_last;
-    uint8_t _last_sector;
 };
 #endif // CONFIG_HAL_BOARD
+
+#endif // HAL_PROXIMITY_ENABLED

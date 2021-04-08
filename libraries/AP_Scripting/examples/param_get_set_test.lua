@@ -1,6 +1,19 @@
 -- This script is a test of param set and get
 local count = 0
 
+-- for fast param acess it is better to get a param object,
+-- this saves the code searching for the param by name every time
+local VM_I_Count = Parameter()
+if not VM_I_Count:init('SCR_VM_I_COUNT') then
+  gcs:send_text(6, 'get SCR_VM_I_COUNT failed')
+end
+
+-- returns null if param cant be found
+local fake_param = Parameter()
+if not fake_param:init('FAKE_PARAM') then
+  gcs:send_text(6, 'get FAKE_PARAM failed')
+end
+
 function update() -- this is the loop which periodically runs
 
   -- get and print all the scripting parameters
@@ -37,6 +50,18 @@ function update() -- this is the loop which periodically runs
     end
   else
     gcs:send_text(6, 'LUA: get SCR_HEAP_SIZE failed')
+  end
+
+  
+  -- increment the VM I count by one using direct accsess method
+  local VM_count = VM_I_Count:get()
+  if VM_count then
+    gcs:send_text(6, string.format('LUA: SCR_VM_I_COUNT: %i',VM_count))
+    if not VM_I_Count:set( VM_count + 1) then
+        gcs:send_text(6, string.format('LUA: failed to set SCR_VM_I_COUNT'))
+    end
+  else
+    gcs:send_text(6, 'LUA: read SCR_VM_I_COUNT failed')
   end
 
 

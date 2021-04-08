@@ -63,12 +63,12 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, enum Rotation rotation)
+AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, bool force_external, enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_BMM150 *sensor = new AP_Compass_BMM150(std::move(dev), rotation);
+    AP_Compass_BMM150 *sensor = new AP_Compass_BMM150(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -77,8 +77,8 @@ AP_Compass_Backend *AP_Compass_BMM150::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> d
     return sensor;
 }
 
-AP_Compass_BMM150::AP_Compass_BMM150(AP_HAL::OwnPtr<AP_HAL::Device> dev, enum Rotation rotation)
-    : _dev(std::move(dev)), _rotation(rotation)
+AP_Compass_BMM150::AP_Compass_BMM150(AP_HAL::OwnPtr<AP_HAL::Device> dev, bool force_external, enum Rotation rotation)
+    : _dev(std::move(dev)), _rotation(rotation), _force_external(force_external)
 {
 }
 
@@ -219,6 +219,9 @@ bool AP_Compass_BMM150::init()
 
     set_rotation(_compass_instance, _rotation);
 
+    if (_force_external) {
+        set_external(_compass_instance, true);
+    }
 
     _perf_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "BMM150_err");
 
@@ -233,7 +236,6 @@ bool AP_Compass_BMM150::init()
     return true;
 
 bus_error:
-    hal.console->printf("BMM150: Bus communication error\n");
     _dev->get_semaphore()->give();
     return false;
 }
@@ -242,7 +244,7 @@ bus_error:
  * Compensation algorithm got from https://github.com/BoschSensortec/BMM050_driver
  * this is not explained in datasheet.
  */
-int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2)
+int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2) const
 {
     int32_t inter = ((int32_t)_dig.xyz1) << 14;
     inter /= rhall;
@@ -261,7 +263,7 @@ int16_t AP_Compass_BMM150::_compensate_xy(int16_t xy, uint32_t rhall, int32_t tx
     return val;
 }
 
-int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
+int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall) const
 {
     int32_t dividend = int32_t(z - _dig.z4) << 15;
     int32_t dividend2 = dividend - ((_dig.z3 * (int32_t(rhall) - int32_t(_dig.xyz1))) >> 2);

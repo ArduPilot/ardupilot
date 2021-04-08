@@ -5,6 +5,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+#include "SRV_Channel/SRV_Channel.h"
+#include <AP_Notify/AP_Notify.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -13,9 +15,25 @@
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 
-#if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED)
-#define AP_PERIPH_HAVE_LED
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
+#define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+    #ifndef HAL_PERIPH_ENABLE_RC_OUT
+        #error "HAL_PERIPH_ENABLE_NOTIFY requires HAL_PERIPH_ENABLE_RC_OUT"
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
+        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY at the same time. Notify already includes it"
+    #endif
+    #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
+        #error "You cannot enable HAL_PERIPH_ENABLE_NOTIFY and any HAL_PERIPH_ENABLE_<device>_LED_WITHOUT_NOTIFY at the same time. Notify already includes them all"
+    #endif
+    #ifdef HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY
+        #error "You cannot use HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
+    #endif
+#endif
+
 
 #include "Parameters.h"
 
@@ -45,9 +63,11 @@ public:
     void can_battery_update();
 
     void load_parameters();
+    void prepare_reboot();
 
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);
-    void reboot(bool hold_in_bootloader);
+#endif
 
     AP_SerialManager serial_manager;
 
@@ -127,7 +147,28 @@ public:
     HWESC_Telem hwesc_telem;
     void hwesc_telem_update();
 #endif
-    
+
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+    SRV_Channels servo_channels;
+    bool rcout_has_new_data_to_update;
+
+    void rcout_init();
+    void rcout_init_1Hz();
+    void rcout_esc(int16_t *rc, uint8_t num_channels);
+    void rcout_srv(const uint8_t actuator_id, const float command_value);
+    void rcout_update();
+    void rcout_handle_safety_state(uint8_t safety_state);
+#endif
+
+
+#if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
+    void update_rainbow();
+#endif
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+    // notification object for LEDs, buzzers etc
+    AP_Notify notify;
+#endif
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 

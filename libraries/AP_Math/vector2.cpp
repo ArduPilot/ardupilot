@@ -32,6 +32,19 @@ float Vector2<T>::length(void) const
     return norm(x, y);
 }
 
+// limit vector to a given length. returns true if vector was limited
+template <typename T>
+bool Vector2<T>::limit_length(float max_length)
+{
+    const float len = length();
+    if ((len > max_length) && is_positive(len)) {
+        x *= (max_length / len);
+        y *= (max_length / len);
+        return true;
+    }
+    return false;
+}
+
 // dot product
 template <typename T>
 T Vector2<T>::operator *(const Vector2<T> &v) const
@@ -199,13 +212,15 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     const float a = sq(seg_end_minus_start.x) + sq(seg_end_minus_start.y);
     const float b = 2 * ((seg_end_minus_start.x * seg_start_local.x) + (seg_end_minus_start.y * seg_start_local.y));
     const float c = sq(seg_start_local.x) + sq(seg_start_local.y) - sq(radius);
-    const float delta = sq(b) - (4.0f * a * c);
 
     // check for invalid data
-    if (::is_zero(a)) {
-        return false;
+    if (::is_zero(a) || isnan(a) || isnan(b) || isnan(c)) {
+       return false;
     }
-    if (isnan(a) || isnan(b) || isnan(c) || isnan(delta)) {
+
+    const float delta = sq(b) - (4.0f * a * c);
+
+    if (isnan(delta)) {
        return false;
     }
 
@@ -434,45 +449,10 @@ void Vector2<T>::rotate(float angle_rad)
 }
 
 // only define for float
-template float Vector2<float>::length_squared(void) const;
-template float Vector2<float>::length(void) const;
-template Vector2<float> Vector2<float>::normalized() const;
-template void Vector2<float>::normalize();
-template float Vector2<float>::operator *(const Vector2<float> &v) const;
-template float Vector2<float>::operator %(const Vector2<float> &v) const;
-template Vector2<float> &Vector2<float>::operator *=(const float num);
-template Vector2<float> &Vector2<float>::operator /=(const float num);
-template Vector2<float> &Vector2<float>::operator -=(const Vector2<float> &v);
-template Vector2<float> &Vector2<float>::operator +=(const Vector2<float> &v);
-template Vector2<float> Vector2<float>::operator /(const float num) const;
-template Vector2<float> Vector2<float>::operator *(const float num) const;
-template Vector2<float> Vector2<float>::operator +(const Vector2<float> &v) const;
-template Vector2<float> Vector2<float>::operator -(const Vector2<float> &v) const;
-template Vector2<float> Vector2<float>::operator -(void) const;
-template bool Vector2<float>::operator ==(const Vector2<float> &v) const;
-template bool Vector2<float>::operator !=(const Vector2<float> &v) const;
-template bool Vector2<float>::is_nan(void) const;
-template bool Vector2<float>::is_inf(void) const;
-template float Vector2<float>::angle(const Vector2<float> &v) const;
-template float Vector2<float>::angle(void) const;
-template void Vector2<float>::offset_bearing(float bearing, float distance);
-template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
-template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
-template Vector2<float> Vector2<float>::perpendicular(const Vector2<float> &pos_delta, const Vector2<float> &v1);
-template Vector2<float> Vector2<float>::closest_point(const Vector2<float> &p, const Vector2<float> &v, const Vector2<float> &w);
-template float Vector2<float>::closest_distance_between_radial_and_point_squared(const Vector2<float> &w, const Vector2<float> &p);
-template float Vector2<float>::closest_distance_between_radial_and_point(const Vector2<float> &w, const Vector2<float> &p);
-template float Vector2<float>::closest_distance_between_line_and_point(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
-template float Vector2<float>::closest_distance_between_line_and_point_squared(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
-template float Vector2<float>::closest_distance_between_lines_squared(const Vector2<float> &a1,const Vector2<float> &a2,const Vector2<float> &b1,const Vector2<float> &b2);
-template Vector2<float> Vector2<float>::projected(const Vector2<float> &v);
-template void Vector2<float>::rotate(float angle);
+template class Vector2<float>;
 
-
-template void Vector2<float>::reflect(const Vector2<float> &n);
-
+// define some ops for int and long
 template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
-
-// define for int
+template bool Vector2<long>::operator !=(const Vector2<long> &v) const;
 template bool Vector2<int>::operator ==(const Vector2<int> &v) const;
 template bool Vector2<int>::operator !=(const Vector2<int> &v) const;
