@@ -371,11 +371,6 @@ bool AC_WPNav::set_wp_destination_next_NED(const Vector3f& destination_NED)
 ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
 void AC_WPNav::shift_wp_origin_to_current_pos()
 {
-    // return immediately if vehicle is not at the origin
-    if (_track_desired > 0.0f) {
-        return;
-    }
-
     // get current and target locations
     const Vector3f &curr_pos = _inav.get_position();
     const Vector3f pos_target = _pos_control.get_pos_target();
