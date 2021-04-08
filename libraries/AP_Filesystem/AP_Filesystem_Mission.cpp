@@ -337,7 +337,7 @@ bool AP_Filesystem_Mission::all_zero(const uint8_t *b, uint8_t len) const
 bool AP_Filesystem_Mission::finish_upload(const rfile &r)
 {
     const uint32_t flen = r.writebuf->get_length();
-    uint8_t *b = (uint8_t *)r.writebuf->get_writeable_string();
+    const uint8_t *b = (const uint8_t *)r.writebuf->get_string();
     struct header hdr;
     if (flen < sizeof(hdr)) {
         return false;
