@@ -1,5 +1,104 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.1.0-beta1 08-Apr-2021
+Changes from 4.0.0
+1) EKF changes:
+    a) EKF3 is default estimator (EKF2 is available as an option)
+    b) External AHRS/IMU support (e.g. VectorNav)
+    c) Gaussian Sum Filter (GSF) allows emergency yaw correction using GPS
+    d) GPS-for-yaw (dual F9 UBlox GPS can provide yaw)
+    e) Lane switching logic improvements
+    f) Sensor affinity (improves sensor failure redundancy)
+    g) Source switching for GPS/Non-GPS transitions (see EK3_SRCx_ parameters)
+    h) Yaw estimation and reliability improvements
+2) Control improvements:
+    a) Vectored thrust improvements (see MOT_VEC_ANGLEMAX parameter)
+    b) Skid-steering supports prioritising steering vs throttle (see MOT_STR_THR_MIX parameter)
+3) Walking robot support (basic)
+4) Object avoidance:
+    a) BendyRuler hesitancy improvements
+    b) Intel Realsense 435/455 camera support (companion copmuter required)
+    c) Return to original path after clearing obstacle (see OA_OPTIONS parameter)
+    d) Simple avoidance backs away from obstacles (see AVOID_BACKUP_SPD parameter)
+    e) Simple avoidance accel limited (see AVOID_ACCEL_MAX parameter)
+    f) Simultaneous Dijkstra and BendyRuler path planning
+    g) Obstacle database now 3D
+    h) Obstacle filtering improvements
+5) Compass enhancements
+    a) In-flight learning improvements (see COMPASS_LEARN = 3)
+    b) Large vehicle calibration support (e.g. point vehicle north and push button in MP)
+    c) Prioritisation (see MP's compass prioritisation table)
+    d) Custom orientations
+6) Intel RealSense T265 support (see VISO_TYPE = 2, companion computer required)
+    a) Position and velocity from external sources accepted at up to 50hz
+    b) Resets from external sources accepted
+7) New autopilot boards
+    a) CUAV-Nora, CUAV-X7
+    b) FlywooF745
+    c) Holybro Pix32v5
+    d) iFlight BeastF7 and BeastH7
+    e) MatekH743
+    f) mRo ControlZero, Nexus, PixracerPro
+    g) R9Pilot
+    h) SuccexF4
+    i) QioTekZealotF427
+8) IMU improvements:
+    a) temperature calibration
+    b) faster gyro sampling on high performance autopilots (F7 and faster, see INS_GYRO_RATE)
+9) New drivers
+    a) AllyStar NMEA GPS
+    b) BMM150 as external compass
+    c) CRSF and SRXL2 RC protocols
+    d) Dshot (bi-directional) for RPM telemetry
+    e) GY-US32-v2 lidar
+    f) HC-SR04 lidar
+    g) Intelligent Energy hydrogen fuel cell
+    h) Lightware SF45b lidar
+    i) MSP protocol support (and DJI DPV systems)
+    j) RichenPower generator
+    k) Rotoye smart battery
+    l) RunCam Split 4 and RunCam hybrid support
+    m) Smart Audio
+    n) SMBus batteries up to 12 cells
+    o) USD1 CAN radar
+10) Scripting enhancements:
+    a) Button, Proximity, RangeFinder and RPM sensor support
+    b) DO_ mission commands can be triggered from scripts
+    c) I2C sensor driver support (i.e. allows writing sensor drivers in Lua)
+    d) Logging (i.e. allows Lua scripts to write to onboard logs)
+    e) Mission item read support
+    f) Motor drivers support (used for walking robots)
+    g) Position, velocity and direct steering & throttle control while in Guided mode
+    h) Pre-arm checks (i.e. allows writing custom pre-arm checks in Lua)
+    i) RCx_OPTIONs can be triggered from scripts
+    j) ROMFS support (allows writing scripts to ROMFS instead of SD Card)
+    k) Serial port support (allows reading/writing to serial port from Lua)
+    l) ToshibaCAN ESC usage time read support
+11) Other enhancements:
+    a) Baro parameters start with BARO_ (was GND_)
+    b) Barometers get device id for easier identification
+    c) ChibiOS upgrade to 20.3
+    d) CRSF passthrough for Yaapu widget
+    e) DShot rates increased (see SERVO_DSHOT_RATE)
+    f) Filesystem/MAVFTP expansion including @SYS for performance monitoring
+    g) MAV_CMD_DO_REPOSITIOaN support
+    h) MAVFTP performance improvements
+    i) Parameter reset workaround by backing-up and restoring old params after eeprom corruption
+    j) Sailboats get arming check for windvane health
+    k) Simple mode supports two paddle input
+    l) Speed nudging in Auto made more consistent with Acro (i.e. same stick position results in same speed)
+    m) Spektrum VTX control 
+    n) Switch to Manual mode after mission completes (see MIS_DONE_BEHAVIOR parameter)
+12) Bug fixes:
+    a) Arming rejected in RTL, SmartRTL and Initising modes
+    b) CAN GPS ordering fix (previously order could switch meaning GPS_POS_ params were used on the wrong GPS)
+    c) Logging reliability improvements
+    d) RM3100 compass scaling fixed
+    e) Speed control jumps avoided by resetting I-term when stopped
+    f) Throttle slew rate fix (MOT_SLEWRATE param)
+    g) Two paddle steering deadzone fix
+    h) Wheel encoder fix (data could be skipped)
+--------------------------------
 Rover 4.0.0 26-Nov-2019 / 4.0.0-rc4 20-Nov-2019
 Changes from 4.0.0-rc3
 1) Lightware SF40c lidar driver for latest version
