@@ -1097,7 +1097,7 @@ void AP_Param::notify() const {
 /*
   Save the variable to HAL storage, synchronous version
 */
-void AP_Param::save_sync(bool force_save)
+void AP_Param::save_sync(bool force_save, bool send_to_gcs)
 {
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
@@ -1144,7 +1144,9 @@ void AP_Param::save_sync(bool force_save)
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
-        send_parameter(name, (enum ap_var_type)phdr.type, idx);
+        if (send_to_gcs) {
+            send_parameter(name, (enum ap_var_type)phdr.type, idx);
+        }
         return;
     }
     if (ofs == (uint16_t) ~0) {
@@ -1161,7 +1163,9 @@ void AP_Param::save_sync(bool force_save)
             v2 = get_default_value(this, &info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
-            GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+            if (send_to_gcs) {
+                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+            }
             return;
         }
         if (!force_save &&
@@ -1169,7 +1173,9 @@ void AP_Param::save_sync(bool force_save)
              (fabsf(v1-v2) < 0.0001f*fabsf(v1)))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
-            GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+            if (send_to_gcs) {
+                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+            }
             return;
         }
     }
@@ -1185,7 +1191,9 @@ void AP_Param::save_sync(bool force_save)
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
 
-    send_parameter(name, (enum ap_var_type)phdr.type, idx);
+    if (send_to_gcs) {
+        send_parameter(name, (enum ap_var_type)phdr.type, idx);
+    }
 }
 
 /*
@@ -1228,7 +1236,7 @@ void AP_Param::save_io_handler(void)
 {
     struct param_save p;
     while (save_queue.pop(p)) {
-        p.param->save_sync(p.force_save);
+        p.param->save_sync(p.force_save, true);
     }
     if (hal.scheduler->is_system_initialized()) {
         // pay the cost of parameter counting in the IO thread
