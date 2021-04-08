@@ -126,9 +126,9 @@ void AP_AutoTune::start(void)
 
     next_save = current;
 
-    // use 2Hz filters on the actuator and rate to reduce impact of noise
-    actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
-    rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
+    // use 0.75Hz filters on the actuator and rate to reduce impact of noise
+    actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 0.75);
+    rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 0.75);
 
     ff_filter.reset();
     actuator_filter.reset();
