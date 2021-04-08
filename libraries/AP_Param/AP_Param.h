@@ -355,7 +355,7 @@ public:
     ///
     /// @return                True if the variable was saved successfully.
     ///
-    void save_sync(bool force_save=false);
+    void save_sync(bool force_save, bool send_to_gcs);
 
     /// flush all pending parameter saves
     /// used on reboot
