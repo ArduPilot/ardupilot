@@ -39,6 +39,5 @@ void ModeFollow::update()
 
 void ModeFollow::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(5);    
+    plane.update_loiter(3);    
 }
