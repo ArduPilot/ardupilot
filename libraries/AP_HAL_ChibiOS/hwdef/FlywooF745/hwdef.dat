@@ -146,7 +146,7 @@ BARO BMP280 I2C:0:0x76
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
-ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 define BOARD_PWM_COUNT_DEFAULT 10
 define STM32_PWM_USE_ADVANCED TRUE
@@ -158,3 +158,8 @@ define STM32_PWM_USE_ADVANCED TRUE
 # EK2 options (disabled by default)
 # define HAL_NAVEKF2_AVAILABLE 1
 # define HAL_NAVEKF3_AVAILABLE 0
+
+# save some flash
+define GENERATOR_ENABLED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define PRECISION_LANDING 0
