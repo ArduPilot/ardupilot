@@ -42,7 +42,7 @@ public:
     bool center_is_terrain_alt() const { return _terrain_alt; }
 
     /// get_radius - returns radius of circle in cm
-    float get_radius() const { return _radius; }
+    float get_radius() const { return is_positive(_radius)?_radius:_radius_parm; }
 
     /// set_radius - sets circle radius in cm
     void set_radius(float radius_cm);
@@ -134,12 +134,13 @@ private:
     };
 
     // parameters
-    AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
+    AP_Float    _radius_parm;   // radius of circle in cm loaded from params
     AP_Float    _rate;          // rotation speed in deg/sec
     AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
     Vector3f    _center;        // center of circle in cm from home
+    float       _radius;        // radius of circle in cm
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle traveled in radians
