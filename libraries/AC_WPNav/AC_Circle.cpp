@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Range: 0 200000
     // @Increment: 100
     // @User: Standard
-    AP_GROUPINFO("RADIUS",  0,  AC_Circle, _radius, AC_CIRCLE_RADIUS_DEFAULT),
+    AP_GROUPINFO("RADIUS",  0,  AC_Circle, _radius_parm, AC_CIRCLE_RADIUS_DEFAULT),
 
     // @Param: RATE
     // @DisplayName: Circle rate
@@ -62,7 +62,6 @@ void AC_Circle::init(const Vector3f& center, bool terrain_alt)
 {
     _center = center;
     _terrain_alt = terrain_alt;
-
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.set_desired_velocity_xy(0.0f,0.0f);
@@ -82,7 +81,9 @@ void AC_Circle::init(const Vector3f& center, bool terrain_alt)
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
-{
+{   
+    //initialize radius from params
+    _radius =_radius_parm;
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.set_desired_velocity_xy(0.0f,0.0f);
