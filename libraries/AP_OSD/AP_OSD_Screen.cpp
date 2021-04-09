@@ -1055,6 +1055,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AH        0xF3
 #define SYM_MW        0xF4
 #define SYM_CLK       0xBC
+#define SYM_KILO      0x4B
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -1610,7 +1611,7 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
         if (!blheli->get_telem_data(0, td)) {
             return;
         }
-        backend->write(x, y, false, "%5d%c", td.rpm, SYM_RPM);
+        backend->write(x, y, false, "%3.1f%c%c", td.rpm * 0.001f, SYM_KILO, SYM_RPM);
     }
 }
 
