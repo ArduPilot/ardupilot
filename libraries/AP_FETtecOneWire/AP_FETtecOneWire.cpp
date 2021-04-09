@@ -115,7 +115,7 @@ void AP_FETtecOneWire::update()
             if (mask & esc_mask) { // only update telemetry of enabled ESCs
                 switch(_telem_avail) {
                 case telem_type::TEMP:
-                    t.temperature_cdeg = int16_t(requestedTelemetry[i] * 100);
+                    t.temperature_cdeg = int16_t(requestedTelemetry[i]);
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
                     break;
 
