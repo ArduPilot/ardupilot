@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include "LowPassFilter.h"
 
+#define N_EVENTS 2 // number of positive and negative consecutive slew rate exceedance events recorded where a value of 2 corresponds to a complete cycle 
+#define WINDOW_MS 250 // time in msec required for a half cycle of the slowest oscillation frequency expected
+
 class SlewLimiter {
 public:
     SlewLimiter(const float &slew_rate_max, const float &slew_rate_tau);
@@ -19,18 +22,26 @@ public:
     float modifier(float sample, float dt);
 
     /*
-      get last slew rate
+      get last oscillation slew rate
      */
     float get_slew_rate(void) const {
-        return slew_filter.get();
+        return _oscillation_slew_rate;
     }
 
 private:
     const float &slew_rate_max;
     const float &slew_rate_tau;
     LowPassFilterFloat slew_filter;
-    float slew_amplitude;
+    float _oscillation_slew_rate;
     float last_sample;
     float _max_pos_slew_rate;
     float _max_neg_slew_rate;
+    uint32_t _max_pos_slew_event_ms;
+    uint32_t _max_neg_slew_event_ms;
+    uint8_t _pos_event_index;
+    uint8_t _neg_event_index;
+    uint32_t _pos_event_ms[N_EVENTS];
+    uint32_t _neg_event_ms[N_EVENTS];
+    bool _pos_event_stored;
+    bool _neg_event_stored;
 };
