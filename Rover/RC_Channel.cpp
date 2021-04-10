@@ -52,6 +52,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     case AUX_FUNC::SIMPLE:
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STEERING:
+    case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
@@ -245,6 +246,7 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
+    case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;
 
     default:
