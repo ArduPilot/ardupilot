@@ -490,6 +490,21 @@ private:
         BLOCK      = (1<<2),
     };
 
+    struct MAVLinkEventInterfaceQueue {
+        uint32_t mavlink_event_id;
+        uint32_t time_boot_ms;
+        uint16_t seqno;
+        uint8_t log_level;
+        uint8_t args[1];  // uint8_t[40] in the mavlink message
+    } mavlink_event_interface_queue[5];
+    uint8_t next_mavlink_event_interface_queue_entry;
+    bool queue_full;
+    uint16_t mavlink_event_interface_seq;
+    void queue_entry_to_event_message(mavlink_event_t &packet, const MAVLinkEventInterfaceQueue &entry);
+    void send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry);
+    void send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry, const GCS_MAVLINK &link);
+    void handle_message_request_event(GCS_MAVLINK &link, const mavlink_message_t &msg);
+
     /*
      * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.

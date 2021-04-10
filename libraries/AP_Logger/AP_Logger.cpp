@@ -787,6 +787,45 @@ bool AP_Logger::logging_started(void) {
     return false;
 }
 
+void AP_Logger::handle_message_request_event(GCS_MAVLINK &link, const mavlink_message_t &msg)
+{
+    mavlink_request_event_t packet;
+    mavlink_msg_request_event_decode(&msg, &packet);
+
+    // if (packet.target_system != gcs().sysid_this_mav()) {
+    //     return;
+    // }
+
+    // if (packet.target_component != gcs().compid_this_mav()) {
+    //     return;
+    // }
+
+    if (packet.target_system != 1) {
+        return;
+    }
+
+    if (packet.target_component != 1) {
+        return;
+    }
+
+    const uint8_t queue_count = queue_full ? ARRAY_SIZE(mavlink_event_interface_queue) : next_mavlink_event_interface_queue_entry;
+    for (uint8_t i=0; i<queue_count; i++) {
+        if (!HAVE_PAYLOAD_SPACE(link.get_chan(), EVENT)) {
+            return;
+        }
+        const uint16_t seqno = mavlink_event_interface_queue[i].seqno;
+        if (packet.first_sequence <= packet.last_sequence) {
+            if (seqno >= packet.first_sequence && seqno <= packet.last_sequence) {
+                send_mavlink_event_interface_queue_entry(mavlink_event_interface_queue[i], link);
+            }
+        } else {
+            if (seqno <= packet.last_sequence || seqno >= packet.first_sequence) {
+                send_mavlink_event_interface_queue_entry(mavlink_event_interface_queue[i], link);
+            }
+        }
+    }
+}
+
 void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
@@ -801,6 +840,9 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
         FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
+        break;
+    case MAVLINK_MSG_ID_REQUEST_EVENT:
+        handle_message_request_event(link, msg);
         break;
     }
 }
@@ -1359,9 +1401,52 @@ bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
     return backends[0]->WriteBlock(&pkt, sizeof(pkt));
 }
 
+void AP_Logger::queue_entry_to_event_message(mavlink_event_t &packet, const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    packet = {
+        entry.mavlink_event_id,  // event id (component metadata)
+        entry.time_boot_ms,
+        entry.seqno,
+        0,  // destination sysID
+        0,  // destination compid
+        entry.log_level,
+        { entry.args[0] }
+    };
+}
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry, const GCS_MAVLINK &link)
+{
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    link.send_message(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+
 // Wrote an event packet
 void AP_Logger::Write_Event(LogEvent id)
 {
+    const struct MAVLinkEventInterfaceQueue queue_entry {
+        (uint8_t)id,
+        AP_HAL::millis(),
+        mavlink_event_interface_seq++,
+        0,
+        { uint8_t(id) }
+    };
+    mavlink_event_interface_queue[next_mavlink_event_interface_queue_entry++] = queue_entry;
+    if (next_mavlink_event_interface_queue_entry >= ARRAY_SIZE(mavlink_event_interface_queue)) {
+        next_mavlink_event_interface_queue_entry = 0;
+        queue_full = true;
+    }
+
+    send_mavlink_event_interface_queue_entry(queue_entry);
+
     const struct log_Event pkt{
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
