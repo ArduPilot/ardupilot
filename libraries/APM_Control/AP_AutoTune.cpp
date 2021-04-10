@@ -117,7 +117,7 @@ void AP_AutoTune::start(void)
 
     last_save_ms = now;
 
-    restore = last_save = get_gains(current);
+    current = restore = last_save = get_gains(current);
 
     // do first update of rmax and tau now
     update_rmax();
