@@ -30,7 +30,7 @@ SlewLimiter::SlewLimiter(const float &_slew_rate_max, const float &_slew_rate_ta
     slew_rate_max(_slew_rate_max),
     slew_rate_tau(_slew_rate_tau)
 {
-    slew_filter.set_cutoff_frequency(10.0);
+    slew_filter.set_cutoff_frequency(DERIVATIVE_CUTOFF_FREQ);
     slew_filter.reset(0.0);
 }
 
@@ -100,26 +100,31 @@ float SlewLimiter::modifier(float sample, float dt)
         _max_neg_slew_rate *= (1.0f - decay_alpha);
     }
 
-    float decayed_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
+    const float raw_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
 
     // Apply a further reduction when the oldest exceedance event falls outside the window rewuired for the
     // specified number of exceedance events. This prevents spikes due to control mode changed, etc causing
-    // unwanted gain reduction
+    // unwanted gain reduction and is only applied to the slew rate used for gain reduction
+    float modifier_input = raw_slew_rate;
     if (now_ms - oldest_ms > (N_EVENTS + 1) * WINDOW_MS) {
         const float oldest_time_from_window = 0.001f*(float)(now_ms - oldest_ms - (N_EVENTS + 1) * WINDOW_MS);
-        decayed_slew_rate *= expf(-oldest_time_from_window / slew_rate_tau);
+        modifier_input *= expf(-oldest_time_from_window / slew_rate_tau);
     }
 
-    // Apply a filter to increases in slew rate only to reduce the effect of spikes due to mode changes
-    // when limit cycle gain reduction is alteady active. Use a time constant half that of the decay.
+    // Apply a filter to increases in slew rate only to reduce the effect of gusts and large controller
+    // setpoint changeschanges
     const float attack_alpha = fminf(2.0f * decay_alpha, 1.0f);
-    _oscillation_slew_rate = (1.0f - attack_alpha) * _oscillation_slew_rate + attack_alpha * decayed_slew_rate;
-    _oscillation_slew_rate = fminf(_oscillation_slew_rate, decayed_slew_rate);
+
+    _modifier_slew_rate = (1.0f - attack_alpha) * _modifier_slew_rate + attack_alpha * modifier_input;
+    _modifier_slew_rate = fminf(_modifier_slew_rate, modifier_input);
+
+    _output_slew_rate = (1.0f - attack_alpha) * _output_slew_rate + attack_alpha * raw_slew_rate;
+    _output_slew_rate = fminf(_output_slew_rate, raw_slew_rate);
 
     // Calculate the gain adjustment
     float mod;
-    if (_oscillation_slew_rate > slew_rate_max) {
-        mod = slew_rate_max / (slew_rate_max + MODIFIER_GAIN * (_oscillation_slew_rate - slew_rate_max));
+    if (_modifier_slew_rate > slew_rate_max) {
+        mod = slew_rate_max / (slew_rate_max + MODIFIER_GAIN * (_modifier_slew_rate - slew_rate_max));
     } else {
         mod = 1.0f;
     }
