@@ -42,11 +42,11 @@ void AP_WindVane_SITL::update_direction()
         wind_vector_ef.x += AP::sitl()->state.speedN;
         wind_vector_ef.y += AP::sitl()->state.speedE;
 
-        direction_update_frontend(atan2f(wind_vector_ef.y, wind_vector_ef.x));
+        _frontend._direction_apparent_raw =  wrap_PI(atan2f(wind_vector_ef.y, wind_vector_ef.x) - AP::ahrs().yaw);
 
     } else { // WINDVANE_SITL_APARRENT
         // directly read the apparent wind from as set by physics backend
-        direction_update_frontend(AP::sitl()->get_apparent_wind_dir());
+        _frontend._direction_apparent_raw =  wrap_PI(AP::sitl()->get_apparent_wind_dir() - AP::ahrs().yaw);
     }
 
 }
@@ -67,11 +67,11 @@ void AP_WindVane_SITL::update_speed()
         wind_vector_ef.x += AP::sitl()->state.speedN;
         wind_vector_ef.y += AP::sitl()->state.speedE;
 
-        speed_update_frontend(wind_vector_ef.length());
+        _frontend._speed_apparent_raw = wind_vector_ef.length();
 
     } else { // WINDSPEED_SITL_APARRENT
         // directly read the apparent wind from as set by physics backend
-        speed_update_frontend(AP::sitl()->get_apparent_wind_spd());
+        _frontend._speed_apparent_raw = AP::sitl()->get_apparent_wind_spd();
     }
 }
 #endif

@@ -50,7 +50,7 @@ void AP_WindVane_ModernDevice::update_speed()
     }
 
     // simplified equation from data sheet, converted from mph to m/s
-    speed_update_frontend(24.254896f * powf((analog_voltage / powf(temp_ambient, 0.115157f)), 3.009364f));
+    _frontend._speed_apparent_raw  = 24.254896f * powf((analog_voltage / powf(temp_ambient, 0.115157f)), 3.009364f);
 }
 
 void AP_WindVane_ModernDevice::calibrate()
