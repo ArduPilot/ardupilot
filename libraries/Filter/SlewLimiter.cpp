@@ -44,14 +44,14 @@ float SlewLimiter::modifier(float sample, float dt)
         return 1.0;
     }
 
-    // calculate a low pass filtered slew rate
+    // Calculate a low pass filtered slew rate
     const float slew_rate = slew_filter.apply((sample - last_sample) / dt, dt);
     last_sample = sample;
 
     uint32_t now_ms = AP_HAL::millis();
     const float decay_alpha = fminf(dt, slew_rate_tau) / slew_rate_tau;
 
-    // store a series of positive slew rate exceedance events
+    // Store a series of positive slew rate exceedance events
     if (!_pos_event_stored && slew_rate > slew_rate_max) {
         if (_pos_event_index >= N_EVENTS) {
             _pos_event_index = 0;
@@ -62,7 +62,7 @@ float SlewLimiter::modifier(float sample, float dt)
         _neg_event_stored = false;
     }
 
-    // store a series of negative slew rate exceedance events
+    // Store a series of negative slew rate exceedance events
     if (!_neg_event_stored && slew_rate < - slew_rate_max) {
         if (_neg_event_index >= N_EVENTS) {
             _neg_event_index = 0;
@@ -73,7 +73,7 @@ float SlewLimiter::modifier(float sample, float dt)
         _pos_event_stored = false;
     }
 
-    // find the oldest event time
+    // Find the oldest event time
     uint32_t oldest_ms = now_ms;
     for (uint8_t index = 0; index < N_EVENTS; index++) {
         if (_pos_event_ms[index] < oldest_ms) {
@@ -84,8 +84,8 @@ float SlewLimiter::modifier(float sample, float dt)
         }
     }
 
-    // decay the peak positive and negative slew rate if they are outside the window
-    // never drop PID gains below 10% of configured value
+    // Decay the peak positive and negative slew rate if they are outside the window
+    // Never drop PID gains below 10% of configured value
     if (slew_rate > _max_pos_slew_rate) {
         _max_pos_slew_rate = fminf(slew_rate, 10.0f * slew_rate_max);
         _max_pos_slew_event_ms = now_ms;
@@ -100,14 +100,21 @@ float SlewLimiter::modifier(float sample, float dt)
         _max_neg_slew_rate *= (1.0f - decay_alpha);
     }
 
-    _oscillation_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
+    float decayed_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
 
     // Apply a further reduction when the oldest exceedance event falls outside the window rewuired for the
-    // specified number of exceedance events
+    // specified number of exceedance events. This prevents spikes due to control mode changed, etc causing
+    // unwanted gain reduction
     if (now_ms - oldest_ms > (N_EVENTS + 1) * WINDOW_MS) {
         const float oldest_time_from_window = 0.001f*(float)(now_ms - oldest_ms - (N_EVENTS + 1) * WINDOW_MS);
-        _oscillation_slew_rate *= expf(-oldest_time_from_window / slew_rate_tau);
+        decayed_slew_rate *= expf(-oldest_time_from_window / slew_rate_tau);
     }
+
+    // Apply a filter to increases in slew rate only to reduce the effect of spikes due to mode changes
+    // when limit cycle gain reduction is alteady active. Use a time constant half that of the decay.
+    const float attack_alpha = fminf(2.0f * decay_alpha, 1.0f);
+    _oscillation_slew_rate = (1.0f - attack_alpha) * _oscillation_slew_rate + attack_alpha * decayed_slew_rate;
+    _oscillation_slew_rate = fminf(_oscillation_slew_rate, decayed_slew_rate);
 
     // Calculate the gain adjustment
     float mod;
