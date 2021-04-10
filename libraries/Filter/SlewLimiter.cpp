@@ -119,7 +119,7 @@ float SlewLimiter::modifier(float sample, float dt)
     // Calculate the gain adjustment
     float mod;
     if (_oscillation_slew_rate > slew_rate_max) {
-        mod = slew_rate_max / fmaxf(_oscillation_slew_rate, slew_rate_max);
+        mod = slew_rate_max / _oscillation_slew_rate;
     } else {
         mod = 1.0f;
     }
