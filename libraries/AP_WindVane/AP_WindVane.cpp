@@ -35,13 +35,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_WindVane, _direction_type, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: RC_IN_NO
-    // @DisplayName: Wind vane sensor RC Input Channel
-    // @Description: RC Input Channel to use as wind angle value
-    // @Range: 0 16
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("RC_IN_NO", 2, AP_WindVane, _rc_in_no, 0),
+    // 2 was RC_IN_NO
 
     // @Param: DIR_PIN
     // @DisplayName: Wind vane analog voltage pin for direction

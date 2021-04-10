@@ -98,7 +98,6 @@ private:
 
     // parameters
     AP_Int8 _direction_type;                        // type of windvane being used
-    AP_Int8 _rc_in_no;                              // RC input channel to use
     AP_Int8 _dir_analog_pin;                        // analog pin connected to wind vane direction sensor
     AP_Float _dir_analog_volt_min;                  // minimum voltage read by windvane
     AP_Float _dir_analog_volt_max;                  // maximum voltage read by windvane
