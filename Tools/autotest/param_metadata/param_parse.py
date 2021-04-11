@@ -51,6 +51,8 @@ prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
+apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
+vehicle_paths += glob.glob(apm_tools_path + "%s/Parameters.cpp" % args.vehicle)
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
@@ -90,6 +92,7 @@ truename_map = {
     "ArduCopter": "Copter",
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
+    "AP_Periph": "AP_Periph",
 }
 valid_truenames = frozenset(truename_map.values())
 
