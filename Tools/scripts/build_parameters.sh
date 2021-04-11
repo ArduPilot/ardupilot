@@ -54,4 +54,6 @@ generate_parameters ArduSub
 
 generate_parameters AntennaTracker
 
+generate_parameters AP_Periph
+
 generate_sitl_parameters
