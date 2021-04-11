@@ -27,6 +27,7 @@ import ardusub
 import antennatracker
 import quadplane
 import balancebot
+import sailboat
 
 import examples
 from pysim import util
@@ -298,6 +299,7 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
+    "Sailboat": "ardurover",
     "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
     "CAN": "arducopter",
 }
@@ -364,6 +366,7 @@ tester_class_map = {
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
+    "test.Sailboat": sailboat.AutoTestSailboat,
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
@@ -733,7 +736,7 @@ def run_tests(steps):
     return passed
 
 
-vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter']
+vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat']
 
 
 def list_subtests():
@@ -958,6 +961,7 @@ if __name__ == "__main__":
         'defaults.Rover',
         'test.Rover',
         'test.BalanceBot',
+        'test.Sailboat',
 
         'build.Copter',
         'defaults.Copter',
