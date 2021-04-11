@@ -44,6 +44,7 @@
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
+#include <SITL/SIM_AIS.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -311,6 +312,9 @@ private:
 
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
+
+    // simulated AIS stream
+    SITL::AIS *ais;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
