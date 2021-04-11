@@ -382,6 +382,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         vectornav = new SITL::VectorNav();
         return vectornav->fd();
+    } else if (streq(name, "AIS")) {
+        if (ais != nullptr) {
+            AP_HAL::panic("Only one AIS at a time");
+        }
+        ais = new SITL::AIS();
+        return ais->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -502,6 +508,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No VectorNav created");
         }
         return vectornav->write_fd();
+    } else if (streq(name, "AIS")) {
+        if (ais == nullptr) {
+            AP_HAL::panic("No AIS created");
+        }
+        return ais->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -721,6 +732,10 @@ void SITL_State::_fdm_input_local(void)
     }
     if (vectornav != nullptr) {
         vectornav->update();
+    }
+
+    if (ais != nullptr) {
+        ais->update();
     }
 
     if (_sitl) {
