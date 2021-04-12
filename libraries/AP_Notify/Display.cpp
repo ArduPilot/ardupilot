@@ -377,6 +377,17 @@ void Display::update()
     }
     timer = 0;
 
+    // If we have received an override from scripting recently allow update
+    if (AP_HAL::millis() - _last_scr_override <= _script_timeout_ms) {
+        if (_screenpage != 3) {
+            _driver->clear_screen();
+            _screenpage = 3;
+        }
+        update_scr_screen();
+        _driver->hw_update();
+        return;
+    }
+
     if (AP_Notify::flags.armed) {
         if (_screenpage != 1) {
             _driver->clear_screen();
@@ -582,3 +593,18 @@ void Display::update_text(uint8_t r)
 
     draw_text(COLUMN(0), ROW(0), msg);
  }
+
+// Allow scripting to override text lines on the display
+void Display::scr_disp_overide(uint8_t r, const char *str) {
+    // Prevent chars being left from previous message by clearing with spaces first
+    memset(_scr_msg[r], ' ', DISPLAY_MESSAGE_SIZE-1); // leave null termination
+    strncpy(_scr_msg[r], str, strlen(str));
+
+    _last_scr_override = AP_HAL::millis();
+}
+
+void Display::update_scr_screen() {
+    for (uint8_t i = 0; i < 6; i++) {
+        draw_text(COLUMN(0), ROW(i), _scr_msg[i]);
+    }
+}
