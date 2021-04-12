@@ -17,7 +17,7 @@ Changes from 4.0.0
 3) Walking robot support (basic)
 4) Object avoidance:
     a) BendyRuler hesitancy improvements
-    b) Intel Realsense 435/455 camera support (companion copmuter required)
+    b) Intel Realsense 435/455 camera support (companion computer required)
     c) Return to original path after clearing obstacle (see OA_OPTIONS parameter)
     d) Simple avoidance backs away from obstacles (see AVOID_BACKUP_SPD parameter)
     e) Simple avoidance accel limited (see AVOID_ACCEL_MAX parameter)
@@ -70,10 +70,9 @@ Changes from 4.0.0
     f) Motor drivers support (used for walking robots)
     g) Position, velocity and direct steering & throttle control while in Guided mode
     h) Pre-arm checks (i.e. allows writing custom pre-arm checks in Lua)
-    i) RCx_OPTIONs can be triggered from scripts
-    j) ROMFS support (allows writing scripts to ROMFS instead of SD Card)
-    k) Serial port support (allows reading/writing to serial port from Lua)
-    l) ToshibaCAN ESC usage time read support
+    i) ROMFS support (allows writing scripts to ROMFS instead of SD Card)
+    j) Serial port support (allows reading/writing to serial port from Lua)
+    k) ToshibaCAN ESC usage time read support
 11) Other enhancements:
     a) Baro parameters start with BARO_ (was GND_)
     b) Barometers get device id for easier identification
@@ -81,7 +80,7 @@ Changes from 4.0.0
     d) CRSF passthrough for Yaapu widget
     e) DShot rates increased (see SERVO_DSHOT_RATE)
     f) Filesystem/MAVFTP expansion including @SYS for performance monitoring
-    g) MAV_CMD_DO_REPOSITIOaN support
+    g) MAV_CMD_DO_REPOSITION support
     h) MAVFTP performance improvements
     i) Parameter reset workaround by backing-up and restoring old params after eeprom corruption
     j) Sailboats get arming check for windvane health
@@ -90,7 +89,7 @@ Changes from 4.0.0
     m) Spektrum VTX control 
     n) Switch to Manual mode after mission completes (see MIS_DONE_BEHAVIOR parameter)
 12) Bug fixes:
-    a) Arming rejected in RTL, SmartRTL and Initising modes
+    a) Arming rejected in RTL, SmartRTL and Initializing modes
     b) CAN GPS ordering fix (previously order could switch meaning GPS_POS_ params were used on the wrong GPS)
     c) Logging reliability improvements
     d) RM3100 compass scaling fixed
