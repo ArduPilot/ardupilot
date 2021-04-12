@@ -78,6 +78,9 @@ private:
     // time when we last saved
     uint32_t last_save_ms;
 
+    // last logging time
+    uint32_t last_log_ms;
+
     // the demanded/achieved state
     enum class ATState {IDLE,
                         DEMAND_POS,
