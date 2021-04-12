@@ -160,25 +160,6 @@ void AP_AutoTune::stop(void)
     }
 }
 
-
-// @LoggerMessage: ATRP
-// @Description: Plane AutoTune
-// @Vehicles: Plane
-// @Field: TimeUS: Time since system startup
-// @Field: Axis: tuning axis
-// @Field: State: tuning state
-// @Field: Sur: control surface deflection
-// @Field: Tar: target rate
-// @Field: Act: actual rate
-// @Field: FF0: FF value single sample
-// @Field: FF: FF value
-// @Field: P: P value
-// @Field: I: I value
-// @Field: D: D value
-// @Field: Action: action taken
-// @Field: RMAX: Rate maximum
-// @Field: TAU: time constant
-
 /*
   one update cycle of the autotuner
  */
@@ -242,28 +223,24 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         break;
     }
 
-    // unfortunately the LoggerDocumentation test doesn't
-    // like two different log msgs in one Write call
-    AP::logger().Write(
-        "ATRP",
-        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,I,D,Action,RMAX,TAU",
-        "s#-dkk------ks",
-        "F--00000000-00",
-        "QBBffffffffBHf",
-        AP_HAL::micros64(),
-        unsigned(type),
-        unsigned(new_state),
-        actuator,
-        desired_rate,
-        actual_rate,
-        FF_single,
-        current.FF,
-        current.P,
-        current.I,
-        current.D,
-        unsigned(action),
-        current.rmax_pos.get(),
-        current.tau);
+    struct log_ATRP pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
+        time_us : AP_HAL::micros64(),
+        type : uint8_t(type),
+        state: uint8_t(new_state),
+        actuator : actuator,
+        desired_rate : desired_rate,
+        actual_rate : actual_rate,
+        FF0: FF_single,
+        FF: current.FF,
+        P: current.P,
+        I: current.I,
+        D: current.D,
+        action: uint8_t(action),
+        rmax: float(current.rmax_pos.get()),
+        tau: current.tau
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
     const uint32_t now = AP_HAL::millis();
 
