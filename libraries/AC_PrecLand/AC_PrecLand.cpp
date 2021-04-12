@@ -210,6 +210,12 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
         _backend->update();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
     }
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_log_ms > 40) {  // 25Hz
+        last_log_ms = now;
+        Write_Precland();
+    }
 }
 
 bool AC_PrecLand::target_acquired()
@@ -454,3 +460,38 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 }
+
+// Write a precision landing entry
+void AC_PrecLand::Write_Precland()
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    Vector3f target_pos_meas;
+    Vector2f target_pos_rel;
+    Vector2f target_vel_rel;
+    get_target_position_relative_cm(target_pos_rel);
+    get_target_velocity_relative_cms(target_vel_rel);
+    get_target_position_measurement_cm(target_pos_meas);
+
+    const struct log_Precland pkt {
+        LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
+        time_us         : AP_HAL::micros64(),
+        healthy         : healthy(),
+        target_acquired : target_acquired(),
+        pos_x           : target_pos_rel.x,
+        pos_y           : target_pos_rel.y,
+        vel_x           : target_vel_rel.x,
+        vel_y           : target_vel_rel.y,
+        meas_x          : target_pos_meas.x,
+        meas_y          : target_pos_meas.y,
+        meas_z          : target_pos_meas.z,
+        last_meas       : last_backend_los_meas_ms(),
+        ekf_outcount    : ekf_outlier_count(),
+        estimator       : estimator_type()
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
