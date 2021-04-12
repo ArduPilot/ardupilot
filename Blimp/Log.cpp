@@ -464,7 +464,6 @@ void Blimp::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Blimp::Log_Write_Data(LogDataID id, float value) {}
 void Blimp::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Blimp::Log_Sensor_Health() {}
-void Blimp::Log_Write_Precland() {}
 void Blimp::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Blimp::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
 void Blimp::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
