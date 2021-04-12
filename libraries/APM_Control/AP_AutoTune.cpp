@@ -223,26 +223,30 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         break;
     }
 
-    struct log_ATRP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        time_us : AP_HAL::micros64(),
-        type : uint8_t(type),
-        state: uint8_t(new_state),
-        actuator : actuator,
-        desired_rate : desired_rate,
-        actual_rate : actual_rate,
-        FF0: FF_single,
-        FF: current.FF,
-        P: current.P,
-        I: current.I,
-        D: current.D,
-        action: uint8_t(action),
-        rmax: float(current.rmax_pos.get()),
-        tau: current.tau
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
-
     const uint32_t now = AP_HAL::millis();
+
+    if (now - last_log_ms >= 40) {
+        // log at 25Hz
+        struct log_ATRP pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
+            time_us : AP_HAL::micros64(),
+            type : uint8_t(type),
+            state: uint8_t(new_state),
+            actuator : actuator,
+            desired_rate : desired_rate,
+            actual_rate : actual_rate,
+            FF0: FF_single,
+            FF: current.FF,
+            P: current.P,
+            I: current.I,
+            D: current.D,
+            action: uint8_t(action),
+            rmax: float(current.rmax_pos.get()),
+            tau: current.tau
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+        last_log_ms = now;
+    }
 
     if (new_state == state) {
         if (state == ATState::IDLE &&
