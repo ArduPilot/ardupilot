@@ -156,4 +156,8 @@ private:
         bool    healthy;
     } _backend_state;
     AC_PrecLand_Backend         *_backend;  // pointers to backend precision landing driver
+
+    // write out PREC message to log:
+    void Write_Precland();
+    uint32_t last_log_ms;  // last time we logged
 };
