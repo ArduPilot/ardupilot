@@ -353,34 +353,51 @@ int32_t Plane::calc_altitude_error_cm(void)
 
 /*
   check for min and max altitude: FBWB_min_altitude_cm and fbwb_max_altitude_m violation
- */
-void Plane::check_fbwb_altitude(void)//check_fbwb_minimum_altitude
+*/
+void Plane::check_fbwb_altitude(void)
 {
-    //check for max
-    if (g.fbwb_max_altitude_m*1000 > g.FBWB_min_altitude_cm && g.fbwb_max_altitude_m > 0)
-    {
-        if (target_altitude.amsl_cm > home.alt + g.fbwb_max_altitude_m*1000) {
-            target_altitude.amsl_cm = home.alt + g.fbwb_max_altitude_m*1000;
-        }
-    }
+    bool should_check_max = (g.fbwb_max_altitude_m * 1000 > g.FBWB_min_altitude_cm && g.fbwb_max_altitude_m > 0); //larger than alt min AND fbwb_max_altitude_m > 0
+    bool should_check_min = (g.FBWB_min_altitude_cm != 0);
 
-    //check for min 
-    if (g.FBWB_min_altitude_cm == 0) {
+    if (!should_check_min && !should_check_max)
+    {
         return;
     }
 
+//check if terrain following (min and max)
 #if AP_TERRAIN_AVAILABLE
-    if (target_altitude.terrain_following) {
-            // set our target terrain height to be at least the min set
-            if (target_altitude.terrain_alt_cm < g.FBWB_min_altitude_cm) {
-                target_altitude.terrain_alt_cm = g.FBWB_min_altitude_cm;
-            }
-            return;
+    if (target_altitude.terrain_following)
+    {
+        // set our target terrain height to be at least the min set
+        if (should_check_min && target_altitude.terrain_alt_cm < g.FBWB_min_altitude_cm)
+        {
+            target_altitude.terrain_alt_cm = g.FBWB_min_altitude_cm;
+        }
+        // set our target terrain height no more then max set
+        else if (should_check_max && target_altitude.terrain_alt_cm > g.fbwb_max_altitude_m*1000)
+        {
+            target_altitude.terrain_alt_cm = g.fbwb_max_altitude_m*1000;
+        }
+        return;
     }
 #endif
 
-    if (target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm) {
-        target_altitude.amsl_cm = home.alt + g.FBWB_min_altitude_cm;
+    //check for max
+    if (should_check_max)
+    {
+        if (target_altitude.amsl_cm > home.alt + g.fbwb_max_altitude_m * 1000)
+        {
+            target_altitude.amsl_cm = home.alt + g.fbwb_max_altitude_m * 1000;
+        }
+    }
+
+    //check for min
+    if (should_check_min)
+    {
+        if (target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm)
+        {
+            target_altitude.amsl_cm = home.alt + g.FBWB_min_altitude_cm;
+        }
     }
 }
 
