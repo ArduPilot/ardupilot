@@ -310,6 +310,21 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& t
     return mode_guided.set_destination_posvel(pos_neu_cm, vel_neu_cms);
 }
 
+// set target position, velocity, and acceleration (for use by scripting)
+bool Copter::set_target_posvelacc_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_acc)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
+    const Vector3f acc_neu_cmss(target_acc.x * 100.0f, target_acc.y * 100.0f, -target_acc.z * 100.0f);
+
+    return mode_guided.set_destination_posvelacc(pos_neu_cm, vel_neu_cms, acc_neu_cmss);
+}
+
 bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
