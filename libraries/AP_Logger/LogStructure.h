@@ -127,6 +127,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Camera/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
+#include <AC_PrecLand/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -1469,6 +1470,7 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI", "s-", "F-"  }, \
 LOG_STRUCTURE_FROM_BARO \
+LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -1692,6 +1694,7 @@ enum LogMessages : uint8_t {
     LOG_PSC_MSG,
     LOG_PSCZ_MSG,
     LOG_RAW_PROXIMITY_MSG,
+    LOG_IDS_FROM_PRECLAND,
 
     _LOG_LAST_MSG_
 };
