@@ -23,12 +23,19 @@ public:
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
         uint64_t time_us;
-        uint8_t  type;
-        uint8_t  state;
-        int16_t  servo;
-        float    demanded;
-        float    achieved;
-        float    P;
+        uint8_t type;
+        uint8_t state;
+        float actuator;
+        float desired_rate;
+        float actual_rate;
+        float FF0;
+        float FF;
+        float P;
+        float I;
+        float D;
+        uint8_t action;
+        float rmax;
+        float tau;
     };
 
 
