@@ -82,7 +82,8 @@ private:
                        LOW_RATE,
                        SHORT,
                        RAISE_PD,
-                       LOWER_PD};
+                       LOWER_PD,
+                       IDLE_LOWER_PD};
     Action action;
 
     // when we entered the current state
@@ -94,6 +95,7 @@ private:
 
     void save_float_if_changed(AP_Float &v, float value);
     void save_int16_if_changed(AP_Int16 &v, int16_t value);
+    void state_change(ATState newstate);
 
     // get gains with PID components
     ATGains get_gains(const ATGains &current);
@@ -117,6 +119,7 @@ private:
     float max_P;
     float max_D;
     float min_Dmod;
+    float max_Dmod;
     float max_SRate;
     float FF_single;
 };

@@ -208,6 +208,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     max_P = MAX(max_P, fabsf(pinfo.P));
     max_D = MAX(max_D, fabsf(pinfo.D));
     min_Dmod = MIN(min_Dmod, pinfo.Dmod);
+    max_Dmod = MAX(max_Dmod, pinfo.Dmod);
     max_SRate = MAX(max_SRate, pinfo.slew_rate);
 
     int16_t att_limit_cd;
@@ -264,11 +265,26 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         current.rmax_pos.get(),
         current.tau);
 
+    const uint32_t now = AP_HAL::millis();
+
     if (new_state == state) {
+        if (state == ATState::IDLE &&
+            now - state_enter_ms > 500 &&
+            max_Dmod < 0.9) {
+            // we've been oscillating while idle, reduce P or D
+            const float gain_mul = (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+            if (max_P < max_D) {
+                current.D *= gain_mul;
+            } else {
+                current.P *= gain_mul;
+            }
+            rpid.kP().set(current.P);
+            rpid.kD().set(current.D);
+            action = Action::IDLE_LOWER_PD;
+            state_change(state);
+        }
         return;
     }
-
-    const uint32_t now = AP_HAL::millis();
 
     if (new_state != ATState::IDLE) {
         // starting an event
@@ -281,21 +297,15 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     if ((state == ATState::DEMAND_POS && max_rate < 0.01 * current.rmax_pos) ||
         (state == ATState::DEMAND_NEG && min_rate > -0.01 * current.rmax_neg)) {
         // we didn't get enough rate
-        state = ATState::IDLE;
         action = Action::LOW_RATE;
-        min_Dmod = 1;
-        max_SRate = 0;
-        max_P = max_D = 0;
+        state_change(ATState::IDLE);
         return;
     }
 
     if (now - state_enter_ms < 100) {
         // not long enough sample
-        state = ATState::IDLE;
         action = Action::SHORT;
-        min_Dmod = 1;
-        max_SRate = 0;
-        max_P = max_D = 0;
+        state_change(ATState::IDLE);
         return;
     }
 
@@ -392,11 +402,20 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     // move rmax and tau towards target
     update_rmax();
 
+    state_change(new_state);
+}
+
+/*
+  record a state change
+ */
+void AP_AutoTune::state_change(ATState new_state)
+{
     min_Dmod = 1;
+    max_Dmod = 0;
     max_SRate = 0;
     max_P = max_D = 0;
     state = new_state;
-    state_enter_ms = now;
+    state_enter_ms = AP_HAL::millis();
 }
 
 /*
