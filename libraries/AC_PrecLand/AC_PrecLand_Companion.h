@@ -39,7 +39,6 @@ public:
     void handle_msg(const mavlink_message_t &msg) override;
 
 private:
-    uint64_t            _timestamp_us;          // timestamp from message
     float               _distance_to_target;    // distance from the camera to target in meters
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
