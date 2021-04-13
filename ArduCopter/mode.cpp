@@ -643,8 +643,7 @@ void Mode::land_run_horizontal_control()
     // run loiter controller
     loiter_nav->update();
 
-    float nav_roll  = loiter_nav->get_roll();
-    float nav_pitch = loiter_nav->get_pitch();
+    Vector3f thrust_vector = loiter_nav->get_thrust_vector();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation
@@ -655,11 +654,12 @@ void Mode::land_run_horizontal_control()
         // interpolate for 1m above that
         float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        float total_angle_cd = norm(nav_roll, nav_pitch);
-        if (total_angle_cd > attitude_limit_cd) {
-            float ratio = attitude_limit_cd / total_angle_cd;
-            nav_roll *= ratio;
-            nav_pitch *= ratio;
+        float thrust_vector_max = sinf(radians(attitude_limit_cd / 100.0f)) * GRAVITY_MSS * 100.0f;
+        float thrust_vector_mag = norm(thrust_vector.x, thrust_vector.y);
+        if (thrust_vector_mag > thrust_vector_max) {
+            float ratio = thrust_vector_max / thrust_vector_mag;
+            thrust_vector.x *= ratio;
+            thrust_vector.y *= ratio;
 
             // tell position controller we are applying an external limit
             pos_control->set_limit_accel_xy();
@@ -669,10 +669,10 @@ void Mode::land_run_horizontal_control()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(thrust_vector, target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(nav_roll, nav_pitch, auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
     }
 }
 
