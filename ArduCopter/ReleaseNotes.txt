@@ -1,5 +1,112 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta1 14-Apr-2021
+Changes from 4.0.7
+1) EKF changes:
+    a) EKF3 is default estimator (EKF2 is available as an option)
+    b) External AHRS/IMU support (e.g. VectorNav)
+    c) Gaussian Sum Filter (GSF) allows emergency yaw correction using GPS
+    d) GPS-for-yaw (dual F9 UBlox, Septentrio, NMEA GPS can provide yaw)
+    e) Lane switching logic improvements
+    f) Sensor affinity (improves sensor failure redundancy)
+    g) Source switching for GPS/Non-GPS transitions (see EK3_SRCx_ parameters)
+    h) Yaw estimation and reliability improvements
+    i) Wind speed estimation and barometer interference compensation
+2) Control and Navigation improvements:
+    a) Acro "air mode" support (see ACRO_OPTIONS)
+    b) Auto mode arming and takeoff (see AUTO_OPTIONS)
+    c) Circle options to face direction of travel and/or init at circle center (see CIRCLE_OPTIONS)
+    d) DO_LAND_START command support for landing sequences
+    e) Horizontal Velocity controller gets feed forward and logging
+    f) Position controller update to remove hard-coded Alt Hold velocity derivative and other enhancements
+    g) Rate PID slew limiting to to detect and suppress oscillations
+    h) SCurves for waypoint navigation
+    i) Yaw imbalance check
+3) TradHeli improvements:
+    a) Conventional and compound helicopter SITL dynamic models improved
+    b) Intermeshing rotor and coaxial rotor support added to Dual heli frame
+4) 6DoF frame support
+5) Object avoidance:
+    a) BendyRuler hesitancy improvements
+    b) Intel Realsense 435/455 camera support (companion computer required)
+    c) Obstacle database now 3D
+    d) Obstacle filtering improvements
+    e) Obstacles ignored in cylinder around home (see OA_DB_ALT_MIN)
+    f) Obstacles ignored near ground (see PRX_IGN_GND)
+    g) Vertical BendyRuler
+    h) Simple avoidance backs away from obstacles (see AVOID_BACKUP_SPD parameter)
+    i) Simple avoidance accel limited (see AVOID_ACCEL_MAX parameter)
+    j) Simple avoidance enabled above min altitude (see AVOID_ALT_MIN)
+    k) Simultaneous Dijkstra and BendyRuler path planning
+6) Compass enhancements
+    a) Custom orientations
+    b) In-flight learning improvements (see COMPASS_LEARN = 3)
+    c) Large vehicle calibration support (e.g. point vehicle north and push button in MP)
+7) Intel RealSense T265 support (see VISO_TYPE = 2, companion computer required)
+    a) Position and velocity from external sources accepted at up to 50hz
+    b) Resets from external sources accepted
+8) New autopilot boards
+    a) FlywooF745
+    b) iFlight BeastF7 and BeastH7
+    c) MambaF405v2
+    d) QioTekZealotF427
+9) IMU improvements:
+    a) temperature calibration
+    b) faster gyro sampling on high performance autopilots (F7 and faster, see INS_GYRO_RATE)
+10) New drivers
+    a) AllyStar NMEA GPS
+    b) BMM150 as external compass
+    c) CRSF and SRXL2 RC protocols
+    d) Dshot (bi-directional) for RPM telemetry
+    e) GY-US32-v2 lidar
+    f) HC-SR04 lidar
+    g) Intelligent Energy hydrogen fuel cell
+    h) Lightware SF45b lidar
+    i) MSP protocol support (and DJI DPV systems)
+    j) RichenPower generator
+    k) Rotoye smart battery
+    l) RunCam Split 4 and RunCam hybrid support
+    m) Smart Audio
+    n) SMBus batteries up to 12 cells
+    o) USD1 CAN radar
+11) Harmonic Notch Improvements
+    a) Bi-directional dshot support
+    b) Double notch support (see INS_HNTCH_OPTS = 1)
+    c) In-flight FFT (see INS_HNTCH_MODE = 4, FFT_* params)
+    d) In-flight learning of throttle notch using in-flight FFT
+    e) Notch per motor support using ESC telemetry and notch-per-peak with FFT (INS_HNTCH_OPTS = 2)
+    f) Notch slewing and increased update rate to avoid "shot" noise
+    g) RPM status driven from harmonic notch input
+12) Scripting enhancements:
+    a) Button, Proximity, RPM sensor support
+    b) DO_ mission commands can be triggered from scripts
+    c) I2C sensor driver support (i.e. allows writing sensor drivers in Lua)
+    d) Logging (i.e. allows Lua scripts to write to onboard logs)
+    e) Mission item read support
+    f) Motor drivers support allowing custom frame types and 6DOF
+    g) Pre-arm checks (i.e. allows writing custom pre-arm checks in Lua)
+    h) ROMFS support (allows writing scripts to ROMFS instead of SD Card)
+    i) Serial port support (allows reading/writing to serial port from Lua)
+    j) ToshibaCAN ESC usage time read support
+13) Other enhancements:
+    a) Baro parameters start with BARO_ (was GND_)
+    b) Barometers get device id for easier identification
+    c) ChibiOS upgrade to 20.3
+    d) CRSF passthrough for Yaapu widget
+    e) DShot rates increased (see SERVO_DSHOT_RATE)
+    f) Filesystem/MAVFTP expansion including @SYS for performance monitoring
+    g) GCS failsafe timeout configurable
+    h) MAV_CMD_DO_REPOSITION support
+    i) MAVFTP performance improvements
+    j) Serial option to disable forwarding of mavlink to/from a port
+    k) Serial ports may use shared DMA for better performance
+    l) Spektrum VTX control
+    m) Spektrum SRXL2 listen-only device support
+    n) Vibration logged for all IMUs
+    o) @SYS/tasks.txt, dma.txt, uart.txt for near real-time inspection of system performance
+14) Bug fixes:
+    a) CAN GPS ordering fix (previously order could switch meaning GPS_POS_ params were used on the wrong GPS)
+------------------------------------------------------------------
 Copter 4.0.7 22-Feb-2021
 Changes from 4.0.7-rc1
 1) fixed build on Durandal board
