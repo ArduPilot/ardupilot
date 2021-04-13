@@ -59,6 +59,9 @@ public:
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
+    // get temperature reading in C.  returns true on success and populates temp argument
+    virtual bool get_temp(float &temp) { return false; }
+
 protected:
 
     // update status based on distance measurement
