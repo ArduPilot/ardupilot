@@ -48,7 +48,6 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_message_t &msg)
     __mavlink_landing_target_t packet;
     mavlink_msg_landing_target_decode(&msg, &packet);
 
-    _timestamp_us = packet.time_usec;
     _distance_to_target = packet.distance;
 
     // compute unit vector towards target
