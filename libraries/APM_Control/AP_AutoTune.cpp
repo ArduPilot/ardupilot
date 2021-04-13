@@ -126,9 +126,12 @@ void AP_AutoTune::start(void)
 
     next_save = current;
 
-    // use 0.75Hz filters on the actuator and rate to reduce impact of noise
+    // use 0.75Hz filters on the actuator, rate and target to reduce impact of noise
     actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 0.75);
     rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 0.75);
+
+    // target filter is a bit broader
+    target_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 4);
 
     ff_filter.reset();
     actuator_filter.reset();
@@ -163,7 +166,7 @@ void AP_AutoTune::stop(void)
 /*
   one update cycle of the autotuner
  */
-void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
+void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_err_deg)
 {
     if (!running) {
         return;
@@ -171,7 +174,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     check_save();
     // see what state we are in
     ATState new_state = state;
-    const float desired_rate = pinfo.target;
+    const float desired_rate = target_filter.apply(pinfo.target);
 
     // filter actuator without I term so we can take ratios without
     // accounting for trim offsets. We first need to include the I and
@@ -192,22 +195,23 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     max_Dmod = MAX(max_Dmod, pinfo.Dmod);
     max_SRate = MAX(max_SRate, pinfo.slew_rate);
 
-    int16_t att_limit_cd;
+    float att_limit_deg;
     if (type == AUTOTUNE_ROLL) {
-        att_limit_cd = aparm.roll_limit_cd;
+        att_limit_deg = aparm.roll_limit_cd * 0.01;
     } else {
-        att_limit_cd = MIN(abs(aparm.pitch_limit_max_cd),abs(aparm.pitch_limit_min_cd));
+        att_limit_deg = MIN(abs(aparm.pitch_limit_max_cd),abs(aparm.pitch_limit_min_cd))*0.01;
     }
 
     // thresholds for when we consider an event to start and end
-    const float rate_threshold1 = 0.75 * MIN(att_limit_cd * 0.01 / current.tau.get(), current.rmax_pos);
+    const float rate_threshold1 = 0.75 * MIN(att_limit_deg / current.tau.get(), current.rmax_pos);
     const float rate_threshold2 = 0.25 * rate_threshold1;
+    bool in_att_demand = fabsf(angle_err_deg) >= 0.3 * att_limit_deg;
 
     switch (state) {
     case ATState::IDLE:
-        if (desired_rate > rate_threshold1) {
+        if (desired_rate > rate_threshold1 && in_att_demand) {
             new_state = ATState::DEMAND_POS;
-        } else if (desired_rate < -rate_threshold1) {
+        } else if (desired_rate < -rate_threshold1 && in_att_demand) {
             new_state = ATState::DEMAND_NEG;
         }
         break;
@@ -242,7 +246,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
             D: current.D,
             action: uint8_t(action),
             rmax: float(current.rmax_pos.get()),
-            tau: current.tau
+            tau: current.tau.get()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
         last_log_ms = now;

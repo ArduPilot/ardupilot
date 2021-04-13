@@ -191,7 +191,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
-        autotune->update(pinfo, scaler);
+        autotune->update(pinfo, scaler, angle_err_deg);
     }
     
     // output is scaled to notional centidegrees of deflection
@@ -225,8 +225,9 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
         gains.tau.set(0.05f);
     }
 	
-	// Calculate the desired roll rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / gains.tau;
+    // Calculate the desired roll rate (deg/sec) from the angle error
+    angle_err_deg = angle_err * 0.01;
+    float desired_rate = angle_err_deg/ gains.tau;
 
     // Limit the demanded roll rate
     if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
