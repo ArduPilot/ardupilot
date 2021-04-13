@@ -108,13 +108,9 @@ void ModeCircle::run()
 
     // call attitude controller
     if (pilot_yaw_override) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(),
-                                                                      copter.circle_nav->get_pitch(),
-                                                                      target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
     } else {
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(),
-                                                           copter.circle_nav->get_pitch(),
-                                                           copter.circle_nav->get_yaw(), true);
+        attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), copter.circle_nav->get_yaw());
     }
 
     // update altitude target and call position controller

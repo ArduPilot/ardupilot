@@ -821,10 +821,10 @@ void ModeAuto::wp_run()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), auto_yaw.rate_cds());
+        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
     }
 }
 
@@ -878,10 +878,10 @@ void ModeAuto::circle_run()
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -919,7 +919,7 @@ void ModeAuto::loiter_run()
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     pos_control->update_z_controller();
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+    attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
 }
 
 // auto_loiter_run - loiter to altitude in AUTO flight mode
