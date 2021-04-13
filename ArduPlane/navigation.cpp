@@ -238,8 +238,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (aparm.airspeed_max * 100))
-        target_airspeed_cm = (aparm.airspeed_max * 100);
+    target_airspeed_cm = constrain_int32(target_airspeed_cm, aparm.airspeed_min*100, aparm.airspeed_max*100);
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
