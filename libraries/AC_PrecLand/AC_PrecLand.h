@@ -86,7 +86,7 @@ public:
     bool target_acquired();
 
     // process a LANDING_TARGET mavlink message
-    void handle_msg(const mavlink_message_t &msg);
+    void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms);
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];

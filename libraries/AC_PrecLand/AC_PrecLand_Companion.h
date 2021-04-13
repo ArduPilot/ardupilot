@@ -36,7 +36,7 @@ public:
     float distance_to_target() override;
 
     // parses a mavlink message from the companion computer
-    void handle_msg(const mavlink_message_t &msg) override;
+    void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
 private:
     float               _distance_to_target;    // distance from the camera to target in meters
