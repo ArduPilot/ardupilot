@@ -1237,7 +1237,7 @@ public:
     bool is_landing() const override;
 
     // Safe RTL states
-    enum class SmartRTLState : uint8_t {
+    enum class SubMode : uint8_t {
         WAIT_FOR_PATH_CLEANUP,
         PATH_FOLLOW,
         PRELAND_POSITION,
@@ -1262,7 +1262,7 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SmartRTLState smart_rtl_state = SmartRTLState::PATH_FOLLOW;
+    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
