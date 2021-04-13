@@ -25,7 +25,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
         auto_yaw.set_mode_to_default(true);
 
         // wait for cleanup of return path
-        smart_rtl_state = SmartRTLState::WAIT_FOR_PATH_CLEANUP;
+        smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
         return true;
     }
 
@@ -41,19 +41,19 @@ void ModeSmartRTL::exit()
 void ModeSmartRTL::run()
 {
     switch (smart_rtl_state) {
-        case SmartRTLState::WAIT_FOR_PATH_CLEANUP:
+        case SubMode::WAIT_FOR_PATH_CLEANUP:
             wait_cleanup_run();
             break;
-        case SmartRTLState::PATH_FOLLOW:
+        case SubMode::PATH_FOLLOW:
             path_follow_run();
             break;
-        case SmartRTLState::PRELAND_POSITION:
+        case SubMode::PRELAND_POSITION:
             pre_land_position_run();
             break;
-        case SmartRTLState::DESCEND:
+        case SubMode::DESCEND:
             descent_run(); // Re-using the descend method from normal rtl mode.
             break;
-        case SmartRTLState::LAND:
+        case SubMode::LAND:
             land_run(true); // Re-using the land method from normal rtl mode.
             break;
     }
@@ -61,7 +61,7 @@ void ModeSmartRTL::run()
 
 bool ModeSmartRTL::is_landing() const
 {
-    return smart_rtl_state == SmartRTLState::LAND;
+    return smart_rtl_state == SubMode::LAND;
 }
 
 void ModeSmartRTL::wait_cleanup_run()
@@ -75,7 +75,7 @@ void ModeSmartRTL::wait_cleanup_run()
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
         path_follow_last_pop_fail_ms = 0;
-        smart_rtl_state = SmartRTLState::PATH_FOLLOW;
+        smart_rtl_state = SubMode::PATH_FOLLOW;
     }
 }
 
@@ -100,7 +100,7 @@ void ModeSmartRTL::path_follow_run()
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 dest_NED.z -= 2.0f;
-                smart_rtl_state = SmartRTLState::PRELAND_POSITION;
+                smart_rtl_state = SubMode::PRELAND_POSITION;
                 wp_nav->set_wp_destination_NED(dest_NED);
             } else {
                 // peek at the next point.  this can fail if the IO task currently has the path semaphore
@@ -123,7 +123,7 @@ void ModeSmartRTL::path_follow_run()
             // We should never get here; should always have at least
             // two points and the "zero points left" is handled above.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SmartRTLState::PRELAND_POSITION;
+            smart_rtl_state = SubMode::PRELAND_POSITION;
         } else if (path_follow_last_pop_fail_ms == 0) {
             // first time we've failed to pop off (ever, or after a success)
             path_follow_last_pop_fail_ms = AP_HAL::millis();
@@ -131,7 +131,7 @@ void ModeSmartRTL::path_follow_run()
             // we failed to pop a point off for 10 seconds.  This is
             // almost certainly a bug.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SmartRTLState::PRELAND_POSITION;
+            smart_rtl_state = SubMode::PRELAND_POSITION;
         }
     }
 
@@ -157,11 +157,11 @@ void ModeSmartRTL::pre_land_position_run()
         // choose descend and hold, or land based on user parameter rtl_alt_final
         if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
             land_start();
-            smart_rtl_state = SmartRTLState::LAND;
+            smart_rtl_state = SubMode::LAND;
         } else {
             set_descent_target_alt(copter.g.rtl_alt_final);
             descent_start();
-            smart_rtl_state = SmartRTLState::DESCEND;
+            smart_rtl_state = SubMode::DESCEND;
         }
     }
 
@@ -184,12 +184,12 @@ bool ModeSmartRTL::get_wp(Location& destination)
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
-    case SmartRTLState::WAIT_FOR_PATH_CLEANUP:
-    case SmartRTLState::PATH_FOLLOW:
-    case SmartRTLState::PRELAND_POSITION:
-    case SmartRTLState::DESCEND:
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+    case SubMode::PATH_FOLLOW:
+    case SubMode::PRELAND_POSITION:
+    case SubMode::DESCEND:
         return wp_nav->get_wp_destination_loc(destination);
-    case SmartRTLState::LAND:
+    case SubMode::LAND:
         return false;
     }
 
