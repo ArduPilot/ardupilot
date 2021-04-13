@@ -57,19 +57,27 @@ void Rover::Log_Write_Depth()
     }
     rangefinder_last_reading_ms = reading_ms;
 
+    // get temperature
+    float temp_C;
+    if (!rangefinder.get_temp(ROTATION_PITCH_270, temp_C)) {
+        temp_C = 0.0f;
+    }
+
 // @LoggerMessage: DPTH
 // @Description: Depth messages on boats with downwards facing range finder
 // @Field: TimeUS: Time since system startup
 // @Field: Lat: Latitude 
 // @Field: Lng: Longitude   
 // @Field: Depth: Depth as detected by the sensor
+// @Field: Temp: Temperature
 
-    logger.Write("DPTH", "TimeUS,Lat,Lng,Depth",
-                        "sDUm", "FGG0", "QLLf",
+    logger.Write("DPTH", "TimeUS,Lat,Lng,Depth,Temp",
+                        "sDUmO", "FGG00", "QLLff",
                         AP_HAL::micros64(),
                         loc.lat,
                         loc.lng,
-                        (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f));
+                        (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f),
+                        temp_C);
 }
 
 // guided mode logging
