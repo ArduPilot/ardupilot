@@ -51,7 +51,7 @@ public:
 
     // update called whenever autotune mode is active. This is
     // called at the main loop rate
-    void update(AP_Logger::PID_Info &pid_info, float scaler);
+    void update(AP_Logger::PID_Info &pid_info, float scaler, float angle_err_deg);
 
     // are we running?
     bool running;
@@ -119,6 +119,7 @@ private:
 
     LowPassFilterFloat actuator_filter;
     LowPassFilterFloat rate_filter;
+    LowPassFilterFloat target_filter;
 
     float max_actuator;
     float min_actuator;

@@ -202,7 +202,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
-        autotune->update(pinfo, scaler);
+        autotune->update(pinfo, scaler, angle_err_deg);
     }
     
     // output is scaled to notional centidegrees of deflection
@@ -294,7 +294,8 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
     rate_offset = _get_coordination_rate_offset(aspeed, inverted);
 	
 	// Calculate the desired pitch rate (deg/sec) from the angle error
-	float desired_rate = angle_err * 0.01f / gains.tau;
+    angle_err_deg = angle_err * 0.01;
+    float desired_rate = angle_err_deg / gains.tau;
 	
 	// limit the maximum pitch rate demand. Don't apply when inverted
 	// as the rates will be tuned when upright, and it is common that
