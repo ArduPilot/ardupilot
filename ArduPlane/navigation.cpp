@@ -203,7 +203,10 @@ void Plane::calc_airspeed_errors()
             // normal AUTO mode and new_airspeed variable was set by DO_CHANGE_SPEED command while in AUTO mode
             if (new_airspeed_cm > 0) {
                 target_airspeed_cm = new_airspeed_cm;
-           }
+            } else {
+                // fallover to normal airspeed
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
         }
     } else {
         // Normal airspeed target for all other cases
