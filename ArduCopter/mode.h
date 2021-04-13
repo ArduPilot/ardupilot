@@ -1130,7 +1130,7 @@ public:
     bool get_wp(Location &loc) override;
 
     // RTL states
-    enum class RTLState : uint8_t {
+    enum class SubMode : uint8_t {
         STARTING,
         INITIAL_CLIMB,
         RETURN_HOME,
@@ -1138,7 +1138,7 @@ public:
         FINAL_DESCENT,
         LAND
     };
-    RTLState state() { return _state; }
+    SubMode state() { return _state; }
 
     // this should probably not be exposed
     bool state_complete() const { return _state_complete; }
@@ -1181,7 +1181,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTLState::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
