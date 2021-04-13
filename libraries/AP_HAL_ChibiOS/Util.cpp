@@ -338,36 +338,66 @@ bool Util::was_watchdog_reset() const
  */
 void Util::thread_info(ExpandingString &str)
 {
-  // a header to allow for machine parsers to determine format
-  const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
-  str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
-             &__main_stack_base__,
-             unsigned(stack_free(&__main_stack_base__)),
-             unsigned(isr_stack_size));
-
-  for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
-      uint32_t total_stack;
-      if (tp->wabase == (void*)&__main_thread_stack_base__) {
-          // main thread has its stack separated from the thread context
-          total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
-      } else {
-          // all other threads have their thread context pointer
-          // above the stack top
-          total_stack = uint32_t(tp) - uint32_t(tp->wabase);
-      }
 #if HAL_ENABLE_THREAD_STATISTICS
-      str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
-                 tp->name, unsigned(tp->realprio), tp->wabase,
-                 unsigned(stack_free(tp->wabase)), unsigned(total_stack), unsigned(RTC2US(STM32_HSECLK, tp->stats.best)),
-                 unsigned(RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n)))),
-                 unsigned(RTC2US(STM32_HSECLK, tp->stats.worst)));
-      chTMObjectInit(&tp->stats); // reset counters to zero
-#else
-      str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
-                 tp->name, unsigned(tp->realprio), tp->wabase,
-                 unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+    uint64_t cumulative_cycles = ch.kernel_stats.m_crit_isr.cumulative;
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (tp->stats.best > 0) { // not run
+            cumulative_cycles += (uint64_t)tp->stats.cumulative;
+        }
+    }
 #endif
-  }
+    // a header to allow for machine parsers to determine format
+    const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#if HAL_ENABLE_THREAD_STATISTICS
+    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+                &__main_stack_base__,
+                unsigned(stack_free(&__main_stack_base__)),
+                unsigned(isr_stack_size), 100.0f * float(ch.kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
+    ch.kernel_stats.m_crit_isr.cumulative = 0U;
+#else
+    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+                &__main_stack_base__,
+                unsigned(stack_free(&__main_stack_base__)),
+                unsigned(isr_stack_size));
+#endif
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        uint32_t total_stack;
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            total_stack = uint32_t(tp) - uint32_t(tp->wabase);
+        }
+#if HAL_ENABLE_THREAD_STATISTICS
+        time_measurement_t stats = tp->stats;
+        if (tp->stats.best > 0) { // not run
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack),
+                        100.0f * float(stats.cumulative) / float(cumulative_cycles),
+                        // more than a loop slice is bad for everyone else, warn on
+                        // more than a 200Hz slice so that only the worst offenders are identified
+                        // also don't do this for the main or idle threads
+                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
+        } else {
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+        }
+        // Giovanni thinks this is dangerous, but we can't get useable data without it
+        if (tp != chThdGetSelfX()) {
+            chTMObjectInit(&tp->stats); // reset counters to zero
+        } else {
+            tp->stats.cumulative = 0U;
+        }
+#else
+        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+                    tp->name, unsigned(tp->realprio), tp->wabase,
+                    unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+#endif
+    }
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
