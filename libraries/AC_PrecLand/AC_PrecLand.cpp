@@ -263,11 +263,11 @@ bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
-void AC_PrecLand::handle_msg(const mavlink_message_t &msg)
+void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
     // run backend update
     if (_backend != nullptr) {
-        _backend->handle_msg(msg);
+        _backend->handle_msg(packet, timestamp_ms);
     }
 }
 
