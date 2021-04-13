@@ -358,17 +358,16 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == AutoMode::NAVGUIDED; }
+    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED; }
 
     // Auto modes
-    enum class AutoMode : uint8_t {
+    enum class SubMode : uint8_t {
         TAKEOFF,
         WP,
         LAND,
         RTL,
         CIRCLE_MOVE_TO_EDGE,
         CIRCLE,
-        SPLINE,
         NAVGUIDED,
         LOITER,
         LOITER_TO_ALT,
@@ -376,7 +375,7 @@ public:
     };
 
     // Auto
-    AutoMode mode() const { return _mode; }
+    SubMode mode() const { return _mode; }
 
     bool loiter_start();
     void rtl_start();
@@ -452,7 +451,7 @@ private:
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = AutoMode::TAKEOFF;   // controls which auto controller is run
+    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
