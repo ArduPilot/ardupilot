@@ -1085,6 +1085,14 @@ void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cms
     accel_y_cmss = (GRAVITY_MSS * 100) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.5f);
 }
 
+// returns the NED target acceleration vector for attitude control
+Vector3f AC_PosControl::get_thrust_vector() const
+{
+    Vector3f accel_target = get_accel_target();
+    accel_target.z = -GRAVITY_MSS * 100.0f;
+    return accel_target;
+}
+
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
 float AC_PosControl::calc_leash_length(float speed_cms, float accel_cms, float kP) const
 {
