@@ -212,6 +212,7 @@ uint8_t AP_BattMonitor_SMBus::read_block(uint8_t reg, uint8_t* data, bool append
     // optionally add zero to end
     if (append_zero) {
         data[bufflen] = '\0';
+        ++bufflen;
     }
 
     // return success
