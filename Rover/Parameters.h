@@ -404,6 +404,11 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+#if HAL_AIS_ENABLED
+    // AIS Lib
+    AP_AIS ais;
+#endif
 };
 
 extern const AP_Param::Info var_info[];
