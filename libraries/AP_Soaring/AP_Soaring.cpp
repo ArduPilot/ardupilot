@@ -253,7 +253,7 @@ void SoaringController::init_thermalling()
     }
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
-    const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
+    const float init_xr[4] = {_vario.get_trigger_value(),
                               INITIAL_THERMAL_RADIUS,
                               position.x + thermal_distance_ahead * cosf(_ahrs.yaw),
                               position.y + thermal_distance_ahead * sinf(_ahrs.yaw)};
