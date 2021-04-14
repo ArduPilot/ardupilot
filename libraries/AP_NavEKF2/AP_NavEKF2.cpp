@@ -1632,3 +1632,13 @@ void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
         }
     }
 }
+
+// set flag to use baro as active height source
+void NavEKF2::setUsingQnhFlag(bool use_qnh) const
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].setUsingQnhFlag(use_qnh);
+        }
+    }
+}

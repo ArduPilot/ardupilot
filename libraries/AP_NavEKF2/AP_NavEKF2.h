@@ -313,6 +313,9 @@ public:
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
+    // Sets a flag forcing the active alt source to be baro when flying on QNH sea level pressure reference
+    void setUsingQnhFlag(bool use_qnh) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
