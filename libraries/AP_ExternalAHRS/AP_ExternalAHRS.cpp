@@ -72,6 +72,8 @@ void AP_ExternalAHRS::init(void)
     }
 
     switch (DevType(devtype)) {
+    case DevType::None:
+        break;
     case DevType::VecNav:
         backend = new AP_ExternalAHRS_VectorNav(this, state);
         break;
