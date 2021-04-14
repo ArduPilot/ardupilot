@@ -6,6 +6,7 @@
 #define CRASH_CHECK_ANGLE_MIN_DEG       15.0f   // vehicle must be leaning at least 15deg to trigger crash check
 #define CRASH_CHECK_SPEED_MAX           10.0f   // vehicle must be moving at less than 10m/s to trigger crash check
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
+#define CRASH_CHECK_ANGLE_DEG           80.0f   // vehicle byound this lean angle will trigger crash check
 
 // Code to detect a thrust loss main ArduCopter code
 #define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second descent while level and high throttle indicates thrust loss
@@ -242,12 +243,7 @@ void Copter::parachute_check()
     parachute.set_is_flying(!ap.land_complete);
 
     // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01f);
-
-    // exit immediately if in standby
-    if (standby_active) {
-        return;
-    }
+    parachute.update(-inertial_nav.get_velocity_z() * 0.01f,copter.ahrs.get_accel_ef().z);
 
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
@@ -280,16 +276,26 @@ void Copter::parachute_check()
         return;
     }
 
-    // trigger parachute release based on sink rate
-    parachute.check_sink_rate();
+    // Check parachute thresholds
+    parachute.check();
 
-    // check for angle error over 30 degrees
-    const float angle_error = attitude_control->get_att_error_angle_deg();
-    if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
-        if (control_loss_count > 0) {
-            control_loss_count--;
+    if (standby_active) {
+        // in standby mode check for large angles
+        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > CRASH_CHECK_ANGLE_DEG) {
+            if (control_loss_count > 0) {
+                control_loss_count--;
+            }
+            return;
         }
-        return;
+    } else {
+        // full control check for angle error over 30 degrees
+        const float angle_error = attitude_control->get_att_error_angle_deg();
+        if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
+            if (control_loss_count > 0) {
+                control_loss_count--;
+            }
+            return;
+        }
     }
 
     // increment counter
@@ -314,7 +320,7 @@ void Copter::parachute_check()
         control_loss_count = 0;
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
         // release parachute
-        parachute_release();
+        parachute.release(AP_Parachute::release_reason::CONTROL_LOSS);
     }
 }
 
@@ -360,7 +366,7 @@ void Copter::parachute_manual_release()
     }
 
     // if we get this far release parachute
-    parachute_release();
+    parachute.release(AP_Parachute::release_reason::MANUAL);
 }
 
 #endif // PARACHUTE == ENABLED
