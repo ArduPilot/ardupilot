@@ -62,6 +62,7 @@ private:
         uint16_t start;
         uint16_t count;
         uint32_t file_ofs;
+        uint32_t file_size;
         struct cursor *cursors;
     } file[max_open_file];
 
