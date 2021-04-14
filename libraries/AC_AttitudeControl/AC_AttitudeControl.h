@@ -298,12 +298,16 @@ public:
     // translates body frame acceleration limits to the euler axis
     Vector3f euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel);
 
-    // thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
-    // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-    void thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_error_angle);
-
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
+
+    // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_vehicle_quat quaternion to the attitude_target_quat quaternion.
+    // The maximum error in the yaw axis is limited based on the angle yaw P value and acceleration.
+    void thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_angle, float& thrust_error_angle);
+
+    // thrust_vector_rotation_angles - calculates two ordered rotations to move the attitude_vehicle_quat quaternion to the attitude_target_quat quaternion.
+    // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
+    void thrust_vector_rotation_angles(const Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Quaternion& thrust_vec_correction_quat, Vector3f& rotation, float& thrust_angle, float& thrust_error_angle);
 
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
