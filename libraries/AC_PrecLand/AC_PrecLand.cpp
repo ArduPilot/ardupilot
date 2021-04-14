@@ -150,24 +150,24 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     }
 
     // instantiate backend based on type parameter
-    switch ((enum PrecLandType)(_type.get())) {
+    switch ((Type)(_type.get())) {
         // no type defined
-        case PRECLAND_TYPE_NONE:
+        case Type::NONE:
         default:
             return;
         // companion computer
-        case PRECLAND_TYPE_COMPANION:
+        case Type::COMPANION:
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
-        case PRECLAND_TYPE_IRLOCK:
+        case Type::IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        case PRECLAND_TYPE_SITL_GAZEBO:
+        case Type::SITL_GAZEBO:
             _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
             break;
-        case PRECLAND_TYPE_SITL:
+        case Type::SITL:
             _backend = new AC_PrecLand_SITL(*this, _backend_state);
             break;
 #endif
