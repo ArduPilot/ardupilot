@@ -29,13 +29,6 @@ public:
     AC_PrecLand(const AC_PrecLand &other) = delete;
     AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
-    // precision landing behaviours (held in PRECLAND_ENABLED parameter)
-    enum PrecLandBehaviour {
-        PRECLAND_BEHAVIOUR_DISABLED,
-        PRECLAND_BEHAVIOR_ALWAYSLAND,
-        PRECLAND_BEHAVIOR_CAUTIOUS
-    };
-
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum PrecLandType {
         PRECLAND_TYPE_NONE = 0,
@@ -94,9 +87,6 @@ private:
         KALMAN_FILTER = 1,
     };
 
-    // returns enabled parameter as an behaviour
-    enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
-
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
@@ -111,7 +101,7 @@ private:
     void run_output_prediction();
 
     // parameters
-    AP_Int8                     _enabled;           // enabled/disabled and behaviour
+    AP_Int8                     _enabled;           // enabled/disabled
     AP_Int8                     _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
     AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type

@@ -14,8 +14,8 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: ENABLED
-    // @DisplayName: Precision Land enabled/disabled and behaviour
-    // @Description: Precision Land enabled/disabled and behaviour
+    // @DisplayName: Precision Land enabled/disabled
+    // @Description: Precision Land enabled/disabled
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 0, AP_PARAM_FLAG_ENABLE),
