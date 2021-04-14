@@ -262,17 +262,17 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _flags_heli.flybar_passthrough = true;
 
     // set bf rate targets to current body frame rates (i.e. relax and be ready for vehicle to switch out of acro)
-    _attitude_target_ang_vel.x = _ahrs.get_gyro().x;
-    _attitude_target_ang_vel.y = _ahrs.get_gyro().y;
+    _ang_vel_target.x = _ahrs.get_gyro().x;
+    _ang_vel_target.y = _ahrs.get_gyro().y;
 
     // accel limit desired yaw rate
     if (get_accel_yaw_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
-        float rate_change_rads = yaw_rate_bf_rads - _attitude_target_ang_vel.z;
+        float rate_change_rads = yaw_rate_bf_rads - _ang_vel_target.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
-        _attitude_target_ang_vel.z += rate_change_rads;
+        _ang_vel_target.z += rate_change_rads;
     } else {
-        _attitude_target_ang_vel.z = yaw_rate_bf_rads;
+        _ang_vel_target.z = yaw_rate_bf_rads;
     }
 
     integrate_bf_rate_error_to_angle_errors();
@@ -285,39 +285,39 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     // convert angle error rotation vector into 321-intrinsic euler angle difference
     // NOTE: this results an an approximation linearized about the vehicle's attitude
     if (ang_vel_to_euler_rate(Vector3f(_ahrs.roll, _ahrs.pitch, _ahrs.yaw), _att_error_rot_vec_rad, att_error_euler_rad)) {
-        _attitude_target_euler_angle.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
-        _attitude_target_euler_angle.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
-        _attitude_target_euler_angle.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
+        _euler_angle_target.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
+        _euler_angle_target.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
+        _euler_angle_target.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
     }
 
     // handle flipping over pitch axis
-    if (_attitude_target_euler_angle.y > M_PI / 2.0f) {
-        _attitude_target_euler_angle.x = wrap_PI(_attitude_target_euler_angle.x + M_PI);
-        _attitude_target_euler_angle.y = wrap_PI(M_PI - _attitude_target_euler_angle.x);
-        _attitude_target_euler_angle.z = wrap_2PI(_attitude_target_euler_angle.z + M_PI);
+    if (_euler_angle_target.y > M_PI / 2.0f) {
+        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
+        _euler_angle_target.y = wrap_PI(M_PI - _euler_angle_target.x);
+        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
     }
-    if (_attitude_target_euler_angle.y < -M_PI / 2.0f) {
-        _attitude_target_euler_angle.x = wrap_PI(_attitude_target_euler_angle.x + M_PI);
-        _attitude_target_euler_angle.y = wrap_PI(-M_PI - _attitude_target_euler_angle.x);
-        _attitude_target_euler_angle.z = wrap_2PI(_attitude_target_euler_angle.z + M_PI);
+    if (_euler_angle_target.y < -M_PI / 2.0f) {
+        _euler_angle_target.x = wrap_PI(_euler_angle_target.x + M_PI);
+        _euler_angle_target.y = wrap_PI(-M_PI - _euler_angle_target.x);
+        _euler_angle_target.z = wrap_2PI(_euler_angle_target.z + M_PI);
     }
 
     // convert body-frame angle errors to body-frame rate targets
-    _rate_target_ang_vel = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
+    _ang_vel_body = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
 
     // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
-    _rate_target_ang_vel.x = _attitude_target_ang_vel.x;
-    _rate_target_ang_vel.y = _attitude_target_ang_vel.y;
+    _ang_vel_body.x = _ang_vel_target.x;
+    _ang_vel_body.y = _ang_vel_target.y;
 
     // add desired target to yaw
-    _rate_target_ang_vel.z += _attitude_target_ang_vel.z;
+    _ang_vel_body.z += _ang_vel_target.z;
     _thrust_error_angle = norm(_att_error_rot_vec_rad.x, _att_error_rot_vec_rad.y);
 }
 
 void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
 {
     // Integrate the angular velocity error into the attitude error
-    _att_error_rot_vec_rad += (_attitude_target_ang_vel - _ahrs.get_gyro()) * _dt;
+    _att_error_rot_vec_rad += (_ang_vel_target - _ahrs.get_gyro()) * _dt;
 
     // Constrain attitude error
     _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
@@ -341,7 +341,7 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
 {	
-    _rate_target_ang_vel += _rate_sysid_ang_vel;
+    _ang_vel_body += _sysid_ang_vel_body;
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
 
@@ -351,15 +351,15 @@ void AC_AttitudeControl_Heli::rate_controller_run()
         _motors.set_roll(_passthrough_roll / 4500.0f);
         _motors.set_pitch(_passthrough_pitch / 4500.0f);
     } else {
-        rate_bf_to_motor_roll_pitch(gyro_latest, _rate_target_ang_vel.x, _rate_target_ang_vel.y);
+        rate_bf_to_motor_roll_pitch(gyro_latest, _ang_vel_body.x, _ang_vel_body.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw / 4500.0f);
     } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
+        _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _ang_vel_body.z));
     }
 
-    _rate_sysid_ang_vel.zero();
+    _sysid_ang_vel_body.zero();
     _actuator_sysid.zero();
 
 }
