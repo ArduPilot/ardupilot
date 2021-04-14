@@ -295,6 +295,10 @@ void AP_WindVane::update()
             // assume true wind has not changed, calculate the apparent wind direction and speed
             update_apparent_wind_dir_from_true();
         }
+    } else {
+        // only have direction, cant to true wind calcs, set true direction to apparent
+        _direction_true = _direction_apparent_raw + AP::ahrs().yaw;
+        _speed_true = 0.0f;
     }
 
     /*
