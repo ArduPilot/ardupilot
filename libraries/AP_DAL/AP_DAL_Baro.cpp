@@ -17,6 +17,7 @@ void AP_DAL_Baro::start_frame()
     const log_RBRH old_RBRH = _RBRH;
     _RBRH.primary = baro.get_primary();
     _RBRH.num_instances = baro.num_instances();
+    _RBRH.offset = baro.get_alt_offset();
     WRITE_REPLAY_BLOCK_IFCHANGED(RBRH, _RBRH, old_RBRH);
 
     for (uint8_t i=0; i<_RBRH.num_instances; i++) {
