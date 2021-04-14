@@ -64,7 +64,7 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
-#if defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(ADC_CFGR_RES_16BITS)
 // on H7 we use 16 bit ADC transfers, giving us more resolution. We
 // need to scale by 1/16 to match the 12 bit scale factors in hwdef.dat
 #define ADC_BOARD_SCALING (1.0/16)
@@ -217,11 +217,14 @@ void AnalogIn::init()
     adcgrpcfg.circular = true;
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;
     adcgrpcfg.end_cb = adccallback;
-#if defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(ADC_CFGR_RES_16BITS)
     // use 16 bit resolution
     adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_16BITS;
-#else
+#elif defined(ADC_CFGR_RES_12BITS)
     // use 12 bit resolution
+    adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_12BITS;
+#else
+    // use 12 bit resolution with ADCv1 or ADCv2
     adcgrpcfg.sqr1 = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
     adcgrpcfg.cr2 = ADC_CR2_SWSTART;
 #endif
