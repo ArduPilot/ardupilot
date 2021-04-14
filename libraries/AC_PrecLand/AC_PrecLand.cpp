@@ -277,89 +277,89 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 
 void AC_PrecLand::run_estimator_raw(const struct AC_PrecLand::inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-            // Return if there's any invalid velocity data
-            for (uint8_t i=0; i<_inertial_history->available(); i++) {
-                const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
-                if (!inertial_data->inertialNavVelocityValid) {
-                    _target_acquired = false;
-                    return;
-                }
-            }
+    // Return if there's any invalid velocity data
+    for (uint8_t i=0; i<_inertial_history->available(); i++) {
+        const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
+        if (!inertial_data->inertialNavVelocityValid) {
+            _target_acquired = false;
+            return;
+        }
+    }
 
-            // Predict
-            if (target_acquired()) {
-                _target_pos_rel_est_NE.x -= inertial_data_delayed->inertialNavVelocity.x * inertial_data_delayed->dt;
-                _target_pos_rel_est_NE.y -= inertial_data_delayed->inertialNavVelocity.y * inertial_data_delayed->dt;
-                _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
-                _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
-            }
+    // Predict
+    if (target_acquired()) {
+        _target_pos_rel_est_NE.x -= inertial_data_delayed->inertialNavVelocity.x * inertial_data_delayed->dt;
+        _target_pos_rel_est_NE.y -= inertial_data_delayed->inertialNavVelocity.y * inertial_data_delayed->dt;
+        _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
+        _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
+    }
 
-            // Update if a new Line-Of-Sight measurement is available
-            if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
-                _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
-                _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
-                _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
-                _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
+    // Update if a new Line-Of-Sight measurement is available
+    if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
+        _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
+        _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
+        _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
+        _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
 
-                _last_update_ms = AP_HAL::millis();
-                _target_acquired = true;
-            }
+        _last_update_ms = AP_HAL::millis();
+        _target_acquired = true;
+    }
 
-            // Output prediction
-            if (target_acquired()) {
-                run_output_prediction();
-            }
+    // Output prediction
+    if (target_acquired()) {
+        run_output_prediction();
+    }
 }
 
 void AC_PrecLand::run_estimator_kf(const struct AC_PrecLand::inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-            // Predict
-            if (target_acquired()) {
-                const float& dt = inertial_data_delayed->dt;
-                const Vector3f& vehicleDelVel = inertial_data_delayed->correctedVehicleDeltaVelocityNED;
+    // Predict
+    if (target_acquired()) {
+        const float& dt = inertial_data_delayed->dt;
+        const Vector3f& vehicleDelVel = inertial_data_delayed->correctedVehicleDeltaVelocityNED;
 
-                _ekf_x.predict(dt, -vehicleDelVel.x, _accel_noise*dt);
-                _ekf_y.predict(dt, -vehicleDelVel.y, _accel_noise*dt);
+        _ekf_x.predict(dt, -vehicleDelVel.x, _accel_noise*dt);
+        _ekf_y.predict(dt, -vehicleDelVel.y, _accel_noise*dt);
+    }
+
+    // Update if a new Line-Of-Sight measurement is available
+    if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
+        float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
+        if (!target_acquired()) {
+            // reset filter state
+            if (inertial_data_delayed->inertialNavVelocityValid) {
+                _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
+                _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.y, sq(2.0f));
+            } else {
+                _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, 0.0f, sq(10.0f));
+                _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
             }
-
-            // Update if a new Line-Of-Sight measurement is available
-            if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
-                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
-                if (!target_acquired()) {
-                    // reset filter state
-                    if (inertial_data_delayed->inertialNavVelocityValid) {
-                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
-                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.y, sq(2.0f));
-                    } else {
-                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, 0.0f, sq(10.0f));
-                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
-                    }
-                    _last_update_ms = AP_HAL::millis();
-                    _target_acquired = true;
-                } else {
-                    float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
-                    float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
-                    if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
-                        _outlier_reject_count = 0;
-                        _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
-                        _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
-                        _last_update_ms = AP_HAL::millis();
-                        _target_acquired = true;
-                    } else {
-                        _outlier_reject_count++;
-                    }
-                }
+            _last_update_ms = AP_HAL::millis();
+            _target_acquired = true;
+        } else {
+            float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
+            float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
+            if (MAX(NIS_x, NIS_y) < 3.0f || _outlier_reject_count >= 3) {
+                _outlier_reject_count = 0;
+                _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
+                _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
+                _last_update_ms = AP_HAL::millis();
+                _target_acquired = true;
+            } else {
+                _outlier_reject_count++;
             }
+        }
+    }
 
-            // Output prediction
-            if (target_acquired()) {
-                _target_pos_rel_est_NE.x = _ekf_x.getPos();
-                _target_pos_rel_est_NE.y = _ekf_y.getPos();
-                _target_vel_rel_est_NE.x = _ekf_x.getVel();
-                _target_vel_rel_est_NE.y = _ekf_y.getVel();
+    // Output prediction
+    if (target_acquired()) {
+        _target_pos_rel_est_NE.x = _ekf_x.getPos();
+        _target_pos_rel_est_NE.y = _ekf_y.getPos();
+        _target_vel_rel_est_NE.x = _ekf_x.getVel();
+        _target_vel_rel_est_NE.y = _ekf_y.getVel();
 
-                run_output_prediction();
-            }
+        run_output_prediction();
+    }
 }
 
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
