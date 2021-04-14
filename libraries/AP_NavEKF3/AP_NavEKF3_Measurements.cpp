@@ -735,6 +735,10 @@ void NavEKF3_core::readBaroData()
 
         baroDataNew.hgt = baro.get_altitude(selected_baro);
 
+        // record current offset and sensor index to cope with any change
+        baroDataNew.offset = baro.get_alt_offset();
+        baroDataNew.sensor_idx = selected_baro;
+
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to rotor wash ground interaction corrupting the EKF altitude during initial ascent
         if (expectGndEffectTakeoff) {
