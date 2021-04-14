@@ -239,7 +239,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
             actuator : actuator,
             desired_rate : desired_rate,
             actual_rate : actual_rate,
-            FF0: FF_single,
+            FF_single: FF_single,
             FF: current.FF,
             P: current.P,
             I: current.I,
