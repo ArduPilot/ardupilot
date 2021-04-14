@@ -6,6 +6,9 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/sdcard.h>
+#endif
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -85,6 +88,14 @@ void AP_Vehicle::setup()
                         (unsigned)hal.util->available_memory());
 
     load_parameters();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
+        // user wants the SDcard slower, we need to remount
+        sdcard_stop();
+        sdcard_retry();
+    }
+#endif
 
     // initialise the main loop scheduler
     const AP_Scheduler::Task *tasks;
