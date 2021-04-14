@@ -279,8 +279,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 {
     const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
-    switch (_estimator_type) {
-        case ESTIMATOR_TYPE_RAW_SENSOR: {
+    switch ((EstimatorType)_estimator_type.get()) {
+        case EstimatorType::RAW_SENSOR: {
             // Return if there's any invalid velocity data
             for (uint8_t i=0; i<_inertial_history->available(); i++) {
                 const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
@@ -315,7 +315,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
             break;
         }
-        case ESTIMATOR_TYPE_KALMAN_FILTER: {
+        case EstimatorType::KALMAN_FILTER: {
             // Predict
             if (target_acquired()) {
                 const float& dt = inertial_data_delayed->dt;
@@ -490,7 +490,7 @@ void AC_PrecLand::Write_Precland()
         meas_z          : target_pos_meas.z,
         last_meas       : last_backend_los_meas_ms(),
         ekf_outcount    : ekf_outlier_count(),
-        estimator       : estimator_type()
+        estimator       : (uint8_t)_estimator_type
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
