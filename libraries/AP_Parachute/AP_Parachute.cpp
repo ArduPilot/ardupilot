@@ -10,6 +10,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_Arming/AP_Arming.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -67,14 +69,29 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     
     // @Param: CRT_SINK
     // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
-    // @Description: Release parachute when critical sink rate is reached
+    // @Description: Release parachute when critical sink rate is reached, 0 = disabled
     // @Range: 0 15
     // @Units: m/s
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("CRT_SINK", 6, AP_Parachute, _critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
-    
-    
+
+    // @Param: MIN_ACCEL
+    // @DisplayName: Critical earth frame Z acceleration to trigger emergency parachute
+    // @Description: 0 measured earth frame Z acceleration would indicate the vehicle is falling at 1g, 9.81m/s/s would be a hover, 0 = disabled
+    // @Range: 0 9.81
+    // @Units: m/s/s
+    // @User: Standard
+    AP_GROUPINFO("MIN_ACCEL", 7, AP_Parachute, _min_accel, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: Options bitmask
+    // @Description: 0 measured earth frame Z acceleration would indicate the vehicle is falling at 1g, 9.81m/s/s would be a hover, 0 = disabled
+    // @Bitmask: 0:Don't deploy landing gear, 1:Don't disarm, 2:Notify only, parachute will not be relased! testing only!
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 8, AP_Parachute, _options, 0),
+
+
     AP_GROUPEND
 };
 
@@ -90,19 +107,28 @@ void AP_Parachute::enabled(bool on_off)
 }
 
 /// release - release parachute
-void AP_Parachute::release()
+void AP_Parachute::release(release_reason reason)
 {
     // exit immediately if not enabled
     if (_enabled <= 0) {
         return;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
+    const char *string = string_for_release(reason);
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released %s", string);
     AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
+
+    if (_options & NOTIFY_ONLY) {
+        // just send text and write to log, do not actually do anything
+        // usefull for testing thresholds are not exceeded in normal flight
+        return;
+    }
 
     // set release time to current system time
     if (_release_time == 0) {
         _release_time = AP_HAL::millis();
+        _release_setup = false;
     }
 
     _release_initiated = true;
@@ -125,6 +151,20 @@ void AP_Parachute::update()
 
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
+        if (!_release_setup) {
+            if ((_options & DONT_DEPLOY_LANDING_GEAR) == 0) {
+                // deploy landing gear
+                AP_LandingGear *lg = AP_LandingGear::get_singleton();
+                if (lg != nullptr) {
+                    lg->set_position(AP_LandingGear::LandingGear_Deploy);
+                }
+            }
+            if ((_options & DONT_DISARM) == 0) {
+                // force disarm
+                AP::arming().disarm(AP_Arming::Method::PARACHUTE_RELEASE,false);
+            }
+            _release_setup = true;
+        }
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -152,29 +192,35 @@ void AP_Parachute::update()
     }
 }
 
-// set_sink_rate - set vehicle sink rate
-void AP_Parachute::set_sink_rate(float sink_rate)
+// update - set vehicle sink rate and accel
+void AP_Parachute::update(float sink_rate, float accel)
 {
     // reset sink time if critical sink rate check is disabled or vehicle is not flying
-    if ((_critical_sink <= 0) || !_is_flying) {
+    if (!_is_flying) {
         _sink_time_ms = 0;
+        _fall_time_ms = 0;
         return;
     }
 
-    // reset sink_time if vehicle is not sinking too fast
-    if (sink_rate <= _critical_sink) {
+    if (sink_rate <= _critical_sink && is_positive(_critical_sink)) {
+        // reset sink_time if vehicle is not sinking too fast
         _sink_time_ms = 0;
-        return;
-    }
-
-    // start time when sinking too fast
-    if (_sink_time_ms == 0) {
+    } else if (_sink_time_ms == 0) {
+        // start time when sinking too fast
         _sink_time_ms = AP_HAL::millis();
+    }
+
+    if (accel <= _min_accel && is_positive(_min_accel)) {
+        // reset fall time if vehicle is not falling too fast
+        _fall_time_ms = 0;
+    } else if (_fall_time_ms == 0) {
+        // start time when falling too fast
+        _fall_time_ms = AP_HAL::millis();
     }
 }
 
-// trigger parachute release if sink_rate is below critical_sink_rate for 1sec
-void AP_Parachute::check_sink_rate()
+// trigger parachute release if sink_rate or accretion checks have triggered for at least for 1sec
+void AP_Parachute::check()
 {
     // return immediately if parachute is being released or vehicle is not flying
     if (_release_initiated || !_is_flying) {
@@ -182,10 +228,33 @@ void AP_Parachute::check_sink_rate()
     }
 
     // if vehicle is sinking too fast for more than a second release parachute
-    if ((_sink_time_ms > 0) && ((AP_HAL::millis() - _sink_time_ms) > 1000)) {
-        release();
+    uint32_t now = AP_HAL::millis();
+    if ((_sink_time_ms > 0) && ((now - _sink_time_ms) > 1000)) {
+        release(release_reason::SINK_RATE);
+        return;
+    }
+    if ((_fall_time_ms > 0) && ((now - _fall_time_ms) > 1000)) {
+        release(release_reason::ACCEL_FALLING);
     }
 }
+
+const AP_Parachute::LookupTable AP_Parachute::lookuptable[] = {
+    { release_reason::SINK_RATE,"sink rate"},
+    { release_reason::ACCEL_FALLING,"acceleration"},
+    { release_reason::CONTROL_LOSS,"loss of control"},
+    { release_reason::MISSION_ITEM,"mission item"},
+    { release_reason::MANUAL,"manual"},
+};
+
+const char *AP_Parachute::string_for_release(release_reason reason) const
+{
+     for (const struct LookupTable entry : lookuptable) {
+        if (entry.option == reason) {
+            return entry.announcement;
+        }
+     }
+     return nullptr;
+};
 
 // singleton instance
 AP_Parachute *AP_Parachute::_singleton;

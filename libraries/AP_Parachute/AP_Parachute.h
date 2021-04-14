@@ -58,8 +58,16 @@ public:
     /// enabled - returns true if parachute release is enabled
     bool enabled() const { return _enabled; }
 
+    enum release_reason {
+        SINK_RATE,
+        ACCEL_FALLING,
+        CONTROL_LOSS,
+        MISSION_ITEM,
+        MANUAL,
+    };
+
     /// release - release parachute
-    void release();
+    void release(release_reason reason);
 
     /// released - true if the parachute has been released (or release is in progress)
     bool released() const { return _released; }
@@ -80,11 +88,11 @@ public:
     /// set_is_flying - accessor to the is_flying flag
     void set_is_flying(const bool is_flying) { _is_flying = is_flying; }
 
-    // set_sink_rate - set vehicle sink rate
-    void set_sink_rate(float sink_rate);
+    // update - set vehicle sink rate and earth frame Z accel
+    void update(float sink_rate, float accel);
 
-    // trigger parachute release if sink_rate is below critical_sink_rate for 1sec
-    void check_sink_rate();
+    // trigger parachute release thresholds
+    void check();
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -92,6 +100,21 @@ public:
     static AP_Parachute *get_singleton() { return _singleton; }
 
 private:
+
+    // Structure to lookup for release reasons
+    struct LookupTable{
+       release_reason option;
+       const char *announcement;
+    };
+    static const LookupTable lookuptable[];
+    const char *string_for_release(release_reason reason) const;
+
+    enum OPTIONS {
+        DONT_DEPLOY_LANDING_GEAR = 1U << 0,
+        DONT_DISARM = 1U << 1,
+        NOTIFY_ONLY = 1U << 2,
+    };
+
     static AP_Parachute *_singleton;
     // Parameters
     AP_Int8     _enabled;       // 1 if parachute release is enabled
@@ -101,15 +124,19 @@ private:
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
     AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
+    AP_Float    _min_accel;          // critical earth frame Z acceleration
+    AP_Int32    _options;            // bitmask of options
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
     bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
+    bool        _release_setup:1;        // true if parchute release has been setup (vehicle disarmed, landing gear deployed)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
+    uint32_t    _fall_time_ms;           // system time that the vehicle stated falling lower faster _min_accel
 };
 
 namespace AP {
