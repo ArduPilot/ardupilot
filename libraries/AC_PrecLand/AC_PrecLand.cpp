@@ -206,7 +206,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     _inertial_history->push_force(inertial_data_newest);
 
     // update estimator of target position
-    if (_backend != nullptr && _enabled) {
+    if (_enabled) {
         _backend->update();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
         // Output prediction
