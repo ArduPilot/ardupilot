@@ -61,9 +61,6 @@ public:
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
-    // returns estimator type
-    uint8_t estimator_type() const { return _estimator_type; }
-
     // returns ekf outlier count
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
@@ -92,9 +89,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    enum estimator_type_t {
-        ESTIMATOR_TYPE_RAW_SENSOR = 0,
-        ESTIMATOR_TYPE_KALMAN_FILTER = 1
+    enum class EstimatorType : uint8_t {
+        RAW_SENSOR = 0,
+        KALMAN_FILTER = 1,
     };
 
     // returns enabled parameter as an behaviour
@@ -117,7 +114,7 @@ private:
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
     AP_Int8                     _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
-    AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type
     AP_Float                    _lag;               // sensor lag in seconds
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
