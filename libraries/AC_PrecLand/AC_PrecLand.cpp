@@ -275,12 +275,8 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 // Private methods
 //
 
-void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
+void AC_PrecLand::run_estimator_raw(const struct AC_PrecLand::inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-    const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
-
-    switch ((EstimatorType)_estimator_type.get()) {
-        case EstimatorType::RAW_SENSOR: {
             // Return if there's any invalid velocity data
             for (uint8_t i=0; i<_inertial_history->available(); i++) {
                 const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
@@ -313,9 +309,10 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             if (target_acquired()) {
                 run_output_prediction();
             }
-            break;
-        }
-        case EstimatorType::KALMAN_FILTER: {
+}
+
+void AC_PrecLand::run_estimator_kf(const struct AC_PrecLand::inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid)
+{
             // Predict
             if (target_acquired()) {
                 const float& dt = inertial_data_delayed->dt;
@@ -363,8 +360,22 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 
                 run_output_prediction();
             }
+}
+
+void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
+{
+    const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
+
+    switch ((EstimatorType)_estimator_type.get()) {
+        case EstimatorType::RAW_SENSOR:
+            run_estimator_raw(inertial_data_delayed, rangefinder_alt_m, rangefinder_alt_valid);
             break;
-        }
+        case EstimatorType::KALMAN_FILTER:
+            run_estimator_kf(inertial_data_delayed, rangefinder_alt_m, rangefinder_alt_valid);
+            break;
+    default:
+        // invalid parameter value
+        return;
     }
 }
 
