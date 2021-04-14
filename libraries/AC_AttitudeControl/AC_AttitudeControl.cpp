@@ -608,7 +608,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Compute attitude error
     Vector3f attitude_error_vector;
-    thrust_heading_rotation_angles(_attitude_target_quat, attitude_vehicle_quat, attitude_error_vector, _thrust_error_angle);
+    thrust_heading_rotation_angles(_attitude_target_quat, attitude_vehicle_quat, attitude_error_vector, _thrust_angle, _thrust_error_angle);
 
     // Compute the angular velocity target from the attitude error
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
@@ -618,7 +618,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Add the angular velocity feedforward, rotated into vehicle frame
     Quaternion attitude_target_ang_vel_quat = Quaternion(0.0f, _attitude_target_ang_vel.x, _attitude_target_ang_vel.y, _attitude_target_ang_vel.z);
+
+    // rotation from the target frame to the vehicle frame
     Quaternion to_to_from_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
+
+    // target angle velocity vector in the vehicle frame
     Quaternion desired_ang_vel_quat = to_to_from_quat * attitude_target_ang_vel_quat * to_to_from_quat.inverse();
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
@@ -645,50 +649,65 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         _attitude_target_quat.normalize();
     }
 
-    // ensure Quaternions stay normalized
+    // ensure Quaternion stay normalised
     _attitude_target_quat.normalize();
 
     // Record error to handle EKF resets
     _attitude_ang_error = attitude_vehicle_quat.inverse() * _attitude_target_quat;
 }
 
-// thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
-// The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_error_angle)
+// thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_vehicle_quat quaternion to the attitude_target_quat quaternion.
+// The maximum error in the yaw axis is limited based on the angle yaw P value and acceleration.
+void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_angle, float& thrust_error_angle)
 {
-    Matrix3f att_to_rot_matrix; // rotation from the target body frame to the inertial frame.
-    attitude_target_quat.rotation_matrix(att_to_rot_matrix);
-    Vector3f att_to_thrust_vec = att_to_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
+    Quaternion thrust_vec_correction_quat;
+    thrust_vector_rotation_angles(attitude_target_quat, attitude_vehicle_quat, thrust_vec_correction_quat, attitude_error_vector, thrust_angle, thrust_error_angle);
 
-    Matrix3f att_from_rot_matrix; // rotation from the current body frame to the inertial frame.
-    attitude_vehicle_quat.rotation_matrix(att_from_rot_matrix);
-    Vector3f att_from_thrust_vec = att_from_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
+    // Todo: Limit roll an pitch error based on output saturation and maximum error.
+
+    // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
+    // Currently the limit is based on the maximum acceleration using the linear part of the SQRT controller.
+    // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
+    Quaternion yaw_vec_correction_quat;
+    if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error_vector.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
+        attitude_error_vector.z = constrain_float(wrap_PI(attitude_error_vector.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
+        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f, 0.0f, attitude_error_vector.z));
+        attitude_target_quat = attitude_vehicle_quat * thrust_vec_correction_quat * yaw_vec_correction_quat;
+    }
+}
+
+// thrust_vector_rotation_angles - calculates two ordered rotations to move the attitude_vehicle_quat quaternion to the attitude_target_quat quaternion.
+// The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
+void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Quaternion& thrust_vec_correction_quat, Vector3f& attitude_error_vector, float& thrust_angle, float& thrust_error_angle)
+{
+    Matrix3f att_target_rot_matrix; // rotation from the inertial frame to the target body frame.
+    attitude_target_quat.rotation_matrix(att_target_rot_matrix);
+    Vector3f att_target_thrust_vec = att_target_rot_matrix * Vector3f(0.0f, 0.0f, -1.0f); // target thrust vector
+
+    Matrix3f att_vehicle_rot_matrix; // rotation from the inertial frame to the vehicle body frame.
+    attitude_vehicle_quat.rotation_matrix(att_vehicle_rot_matrix);
+    Vector3f att_vehicle_thrust_vec = att_vehicle_rot_matrix * Vector3f(0.0f, 0.0f, -1.0f); // current thrust vector
 
     // the dot product is used to calculate the current lean angle for use of external functions
-    _thrust_angle = acosf(constrain_float(Vector3f(0.0f,0.0f,1.0f) * att_from_thrust_vec,-1.0f,1.0f));
+    thrust_angle = acosf(constrain_float(Vector3f(0.0f,0.0f,1.0f) * att_vehicle_thrust_vec,-1.0f,1.0f));
 
     // the cross product of the desired and target thrust vector defines the rotation vector
-    Vector3f thrust_vec_cross = att_from_thrust_vec % att_to_thrust_vec;
+    Vector3f thrust_vec_cross = att_vehicle_thrust_vec % att_target_thrust_vec;
 
     // the dot product is used to calculate the angle between the target and desired thrust vectors
-    thrust_error_angle = acosf(constrain_float(att_from_thrust_vec * att_to_thrust_vec, -1.0f, 1.0f));
+    thrust_error_angle = acosf(constrain_float(att_vehicle_thrust_vec * att_target_thrust_vec, -1.0f, 1.0f));
 
     // Normalize the thrust rotation vector
     float thrust_vector_length = thrust_vec_cross.length();
     if (is_zero(thrust_vector_length) || is_zero(thrust_error_angle)) {
         thrust_vec_cross = Vector3f(0, 0, 1);
-        thrust_error_angle = 0.0f;
     } else {
         thrust_vec_cross /= thrust_vector_length;
     }
-    Quaternion thrust_vec_correction_quat;
     thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_error_angle);
 
-    // Rotate thrust_vec_correction_quat to the att_from frame
+    // Rotate thrust_vec_correction_quat to the att_vehicle frame
     thrust_vec_correction_quat = attitude_vehicle_quat.inverse() * thrust_vec_correction_quat * attitude_vehicle_quat;
-
-    // calculate the remaining rotation required after thrust vector is rotated transformed to the att_from frame
-    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse() * attitude_vehicle_quat.inverse() * attitude_target_quat;
 
     // calculate the angle error in x and y.
     Vector3f rotation;
@@ -696,20 +715,12 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_tar
     attitude_error_vector.x = rotation.x;
     attitude_error_vector.y = rotation.y;
 
+    // calculate the remaining rotation required after thrust vector is rotated transformed to the att_vehicle frame
+    Quaternion heading_vec_correction_quat = thrust_vec_correction_quat.inverse() * attitude_vehicle_quat.inverse() * attitude_target_quat;
+
     // calculate the angle error in z (x and y should be zero here).
-    yaw_vec_correction_quat.to_axis_angle(rotation);
+    heading_vec_correction_quat.to_axis_angle(rotation);
     attitude_error_vector.z = rotation.z;
-
-    // Todo: Limit roll an pitch error based on output saturation and maximum error.
-
-    // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
-    // Currently the limit is based on the maximum acceleration using the linear part of the SQRT controller.
-    // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
-    if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error_vector.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
-        attitude_error_vector.z = constrain_float(wrap_PI(attitude_error_vector.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
-        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f, 0.0f, attitude_error_vector.z));
-        attitude_target_quat = attitude_vehicle_quat * thrust_vec_correction_quat * yaw_vec_correction_quat;
-    }
 }
 
 // calculates the velocity correction from an angle error. The angular velocity has acceleration and
