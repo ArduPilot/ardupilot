@@ -29,15 +29,6 @@ public:
     AC_PrecLand(const AC_PrecLand &other) = delete;
     AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
-    // types of precision landing (used for PRECLAND_TYPE parameter)
-    enum PrecLandType {
-        PRECLAND_TYPE_NONE = 0,
-        PRECLAND_TYPE_COMPANION,
-        PRECLAND_TYPE_IRLOCK,
-        PRECLAND_TYPE_SITL_GAZEBO,
-        PRECLAND_TYPE_SITL,
-    };
-
     // perform any required initialisation of landing controllers
     // update_rate_hz should be the rate at which the update method will be called in hz
     void init(uint16_t update_rate_hz);
@@ -87,6 +78,15 @@ private:
         KALMAN_FILTER = 1,
     };
 
+    // types of precision landing (used for PRECLAND_TYPE parameter)
+    enum class Type : uint8_t {
+        NONE = 0,
+        COMPANION = 1,
+        IRLOCK = 2,
+        SITL_GAZEBO = 3,
+        SITL = 4,
+    };
+
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
@@ -102,7 +102,7 @@ private:
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled
-    AP_Int8                     _type;              // precision landing sensor type
+    AP_Enum<Type>               _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
     AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type
     AP_Float                    _lag;               // sensor lag in seconds
