@@ -28,7 +28,7 @@ public:
         float actuator;
         float desired_rate;
         float actual_rate;
-        float FF0;
+        float FF_single;
         float FF;
         float P;
         float I;
