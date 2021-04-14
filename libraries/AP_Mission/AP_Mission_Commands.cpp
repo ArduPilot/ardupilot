@@ -148,7 +148,7 @@ bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
         parachute->enabled(true);
         break;
     case PARACHUTE_RELEASE:
-        parachute->release();
+        parachute->release(AP_Parachute::release_reason::MISSION_ITEM);
         break;
     default:
         // do nothing
