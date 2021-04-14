@@ -254,6 +254,14 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         return -1;
     }
 
+    if (r.file_size != 0) {
+        // ensure we don't try to read past EOF
+        if (r.file_ofs > r.file_size) {
+            count = 0;
+        } else {
+            count = MIN(count, r.file_size - r.file_ofs);
+        }
+    }
 
     if (r.file_ofs < sizeof(struct header)) {
         struct header hdr;
@@ -321,7 +329,13 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         uint8_t tbuf[max_pack_len];
         uint8_t len = pack_param(r, c, tbuf);
         if (len == 0) {
-            // no more params
+            // no more params, use this to trigger EOF in later reads
+            const uint32_t size = r.file_ofs + total;
+            if (r.file_size == 0) {
+                r.file_size = size;
+            } else {
+                r.file_size = MIN(size, r.file_size);
+            }
             break;
         }
         uint8_t n = MIN(len, count);
