@@ -209,6 +209,10 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     if (_backend != nullptr && _enabled) {
         _backend->update();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
+        // Output prediction
+        if (target_acquired()) {
+            run_output_prediction();
+        }
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -304,11 +308,6 @@ void AC_PrecLand::run_estimator_raw(const struct AC_PrecLand::inertial_data_fram
         _last_update_ms = AP_HAL::millis();
         _target_acquired = true;
     }
-
-    // Output prediction
-    if (target_acquired()) {
-        run_output_prediction();
-    }
 }
 
 void AC_PrecLand::run_estimator_kf(const struct AC_PrecLand::inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid)
@@ -357,8 +356,6 @@ void AC_PrecLand::run_estimator_kf(const struct AC_PrecLand::inertial_data_frame
         _target_pos_rel_est_NE.y = _ekf_y.getPos();
         _target_vel_rel_est_NE.x = _ekf_x.getVel();
         _target_vel_rel_est_NE.y = _ekf_y.getVel();
-
-        run_output_prediction();
     }
 }
 
