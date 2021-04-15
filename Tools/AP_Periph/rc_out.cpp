@@ -57,6 +57,9 @@ void AP_Periph_FW::rcout_init()
 
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
+
+    // run DShot at 1kHz
+    hal.rcout->set_dshot_rate(0, 400);
 }
 
 void AP_Periph_FW::rcout_init_1Hz()
