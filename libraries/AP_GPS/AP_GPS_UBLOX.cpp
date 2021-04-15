@@ -1226,6 +1226,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
         state.location.alt    = _buffer.posllh.altitude_msl / 10;
+        state.location.alt_ellipsoid = _buffer.posllh.altitude_ellipsoid / 10;
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.posllh.horizontal_accuracy*1.0e-3f;
@@ -1373,6 +1374,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
         state.location.alt    = _buffer.pvt.h_msl / 10;
+        state.location.alt_ellipsoid = _buffer.pvt.height / 10;
         switch (_buffer.pvt.fix_type) 
         {
             case 0:

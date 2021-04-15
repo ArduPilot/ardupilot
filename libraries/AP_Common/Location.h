@@ -20,7 +20,7 @@ public:
     int32_t alt;
     int32_t lat;
     int32_t lng;
-
+    int32_t alt_ellipsoid;
     /// enumeration of possible altitude types
     enum class AltFrame {
         ABSOLUTE = 0,
