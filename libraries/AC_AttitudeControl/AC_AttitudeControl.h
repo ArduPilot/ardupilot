@@ -173,6 +173,10 @@ public:
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
+    void input_thrust_vector_rate_heading(Vector3f thrust_vector, float heading_rate_cds);
+    void input_thrust_vector_heading(Vector3f thrust_vector, float heading, float heading_rate_cds);
+    void input_thrust_vector_heading(Vector3f thrust_vector, float heading) {input_thrust_vector_heading(thrust_vector, heading, 0.0f);}
+
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
 
@@ -283,7 +287,8 @@ public:
 
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
-    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float desired_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  smoothing_gain,  accel_max,  target_ang_vel,  0.0f,  dt); }
 
     // limits the acceleration and deceleration of a velocity request
     static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
