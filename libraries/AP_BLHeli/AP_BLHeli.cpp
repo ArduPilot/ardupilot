@@ -1395,9 +1395,9 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     TelemetryData t {
         .temperature_cdeg = int16_t(buf[0] * 100),
-        .voltage_cv = uint16_t((buf[1]<<8) | buf[2]),
-        .current_ca = uint16_t((buf[3]<<8) | buf[4]),
-        .consumption_mah = uint16_t((buf[5]<<8) | buf[6]),
+        .voltage = float(uint16_t((buf[1]<<8) | buf[2])) * 0.01,
+        .current = float(uint16_t((buf[3]<<8) | buf[4])) * 0.01,
+        .consumption_ah = float(uint16_t((buf[5]<<8) | buf[6])) * 0.001,
     };
 
     update_telem_data(last_telem_esc, t,
@@ -1414,12 +1414,12 @@ void AP_BLHeli::read_telemetry_packet(void)
                 trpm = trpm * 200 / motor_poles;
             }
         }
-        hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u e=%.1f t=%u\n",
+        hal.console->printf("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
                             t.temperature_cdeg,
-                            t.voltage_cv,
-                            t.current_ca,
-                            t.consumption_mah,
+                            t.voltage,
+                            t.current,
+                            t.consumption_ah,
                             trpm, hal.rcout->get_erpm_error_rate(last_telem_esc), (unsigned)AP_HAL::millis());
     }
 }
