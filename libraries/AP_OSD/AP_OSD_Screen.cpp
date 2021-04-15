@@ -1609,12 +1609,11 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
 {
-    uint16_t amps_ca;
+    float esc_amps;
     // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-    if (!AP::esc_telem().get_current_ca(0, amps_ca)) {
+    if (!AP::esc_telem().get_current(0, esc_amps)) {
         return;
     }
-    float esc_amps = amps_ca * 0.01;
     backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
 }
 #endif
