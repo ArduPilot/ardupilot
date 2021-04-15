@@ -111,6 +111,11 @@ void Plane::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // initialise precision landing
+    init_precland();
+#endif
+
 #if LANDING_GEAR_ENABLED == ENABLED
     // initialise landing gear position
     g2.landing_gear.init();
@@ -390,7 +395,7 @@ void Plane::startup_INS_ground(void)
     ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
     ahrs.set_wind_estimation(true);
 
-    ins.init(scheduler.get_loop_rate_hz());
+    ins.init(400);  // this must be the same number as in the scheduler table
     ahrs.reset();
 
     // read Baro pressure at ground

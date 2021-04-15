@@ -110,6 +110,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#endif
+
 #include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
 #if HAL_ADSB_ENABLED
@@ -1078,6 +1082,10 @@ private:
 #if HAL_SOARING_ENABLED
     void update_soaring();
 #endif
+    
+    // precision_landing.cpp
+    void init_precland();
+    void update_precland();
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;

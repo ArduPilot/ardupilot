@@ -138,6 +138,10 @@ private:
     };
     ObjectArray<inertial_data_frame_s> *_inertial_history;
 
+    // run different target position estimator types:
+    void run_estimator_raw(const struct inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid);
+    void run_estimator_kf(const struct inertial_data_frame_s *inertial_data_delayed, float rangefinder_alt_m, bool rangefinder_alt_valid);
+
     // backend state
     struct precland_state {
         bool    healthy;
