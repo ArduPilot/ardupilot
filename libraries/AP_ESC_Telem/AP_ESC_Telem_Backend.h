@@ -15,9 +15,9 @@ public:
 
     struct TelemetryData {
         int16_t  temperature_cdeg;  // centi-degrees C, negative values allowed
-        uint16_t voltage_cv;        // centi-Volt
-        uint16_t current_ca;        // centi-Ampere
-        uint16_t consumption_mah;   // mili-Ampere.hours
+        float voltage;              // Volt
+        float current;              // Ampere
+        float consumption_ah;       // Ampere.hours
         uint32_t usage_s;           // usage seconds
         int16_t  motor_temp_cdeg;   // centi-degrees C, negative values allowed
         uint32_t last_update_ms;    // last update time in miliseconds, determines whether active

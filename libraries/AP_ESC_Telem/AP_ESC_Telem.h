@@ -30,17 +30,17 @@ public:
     // get an individual motor's temperature in centi-degrees if available, returns true on success
     bool get_motor_temperature(uint8_t esc_index, int16_t& temp) const;
 
-    // get an individual ESC's current in centi-Ampere if available, returns true on success
-    bool get_current_ca(uint8_t esc_index, uint16_t& amps_ca) const;
+    // get an individual ESC's current in Ampere if available, returns true on success
+    bool get_current(uint8_t esc_index, float& amps) const;
 
     // get an individual ESC's usage time in seconds if available, returns true on success
     bool get_usage_seconds(uint8_t esc_index, uint32_t& usage_sec) const;
 
-    // get an individual ESC's voltage in centi-Volt if available, returns true on success
-    bool get_voltage_cv(uint8_t esc_index, uint16_t& volts_cv) const;
+    // get an individual ESC's voltage in Volt if available, returns true on success
+    bool get_voltage(uint8_t esc_index, float& volts) const;
 
-    // get an individual ESC's consumption in mili-Ampere.hour if available, returns true on success
-    bool get_consumption_mah(uint8_t esc_index, uint16_t& consumption) const;
+    // get an individual ESC's consumption in Ampere.hour if available, returns true on success
+    bool get_consumption_ah(uint8_t esc_index, float& consumption) const;
 
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz() const;
