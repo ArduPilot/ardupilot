@@ -1058,7 +1058,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         // check if the message's thrust field should be interpreted as a climb rate or as thrust
-        const bool use_thrust = copter.g2.dev_options.get() & DevOptionSetAttitudeTarget_ThrustAsThrust;
+        const bool use_thrust = copter.mode_guided.set_attitude_target_provides_thrust();
 
         float climb_rate_or_thrust;
         if (use_thrust) {
