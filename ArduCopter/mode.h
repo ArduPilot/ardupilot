@@ -837,6 +837,9 @@ public:
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
+    // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
+    bool set_attitude_target_provides_thrust() const;
+
     void limit_clear();
     void limit_init_time_and_pos();
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
@@ -875,6 +878,7 @@ private:
         AllowArmingFromTX = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
+        SetAttitudeTarget_ThrustAsThrust = (1U << 3),
     };
 
     void pos_control_start();
