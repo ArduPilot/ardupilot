@@ -330,8 +330,8 @@ void AP_ESC_Telem::update()
     if (logger && logger->logging_enabled()) {
 
         for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-            if (_telem_data[i].last_update_ms > _last_telem_log_ms[i]
-                || _rpm_data[i].last_update_us > _last_telem_log_ms[i] * 1000) {
+            if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
+                || _rpm_data[i].last_update_us != _last_rpm_log_us[i]) {
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
@@ -344,7 +344,8 @@ void AP_ESC_Telem::update()
                                 _telem_data[i].consumption_ah,
                                 _telem_data[i].motor_temp_cdeg,
                                 _rpm_data[i].error_rate);
-                _last_telem_log_ms[i] = AP_HAL::millis();
+                _last_telem_log_ms[i] = _telem_data[i].last_update_ms;
+                _last_rpm_log_us[i] = _rpm_data[i].last_update_us;
             }
         }
     }
@@ -356,7 +357,7 @@ bool AP_ESC_Telem::add_backend(AP_ESC_Telem_Backend *backend)
         return false;
     }
     if (_backend_count == ESC_MAX_BACKENDS) {
-        AP_HAL::panic("Too many ESC backends");
+        AP_BoardConfig::config_error("Too many ESC backends");
     }
     _backends[_backend_count++] = backend;
     return true;
