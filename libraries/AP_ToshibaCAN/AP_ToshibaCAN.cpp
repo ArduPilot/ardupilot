@@ -311,13 +311,13 @@ void AP_ToshibaCAN::loop()
                         const uint32_t now_ms = AP_HAL::native_millis();
                         const uint32_t diff_ms = now_ms - _telemetry[esc_id].last_update_ms;
                         TelemetryData t {};
-                        t.voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
-                        t.current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f); // milli-amps to centi-amps
+                        t.voltage = float(be16toh(reply_data.voltage_mv)) * 0.001f;  // millivolts to volts
+                        t.current = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.001f); // milli-amps to amps
                         if (diff_ms <= 1000) {
                             // convert centi-amps miliseconds to mAh
-                            _telemetry[esc_id].current_tot_mah += t.current_ca * diff_ms * centiamp_ms_to_mah;
+                            _telemetry[esc_id].current_tot_mah += t.current * diff_ms * amp_ms_to_mah;
                         }
-                        t.consumption_mah = uint16_t(_telemetry[esc_id].current_tot_mah);
+                        t.consumption_ah = _telemetry[esc_id].current_tot_mah * 0.001;
                         update_telem_data(esc_id, t,
                             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE

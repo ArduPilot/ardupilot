@@ -103,7 +103,7 @@ private:
     uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
     uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
     uint8_t _telemetry_usage_req_counter;   // counter used to trigger usage data requests from ESCs (100x slower than other telem data)
-    const float centiamp_ms_to_mah = 1.0f / 360000.0f;  // for converting centi-amps milliseconds to mAh
+    const float amp_ms_to_mah = 1.0f / 3600.0f;  // for converting amp milliseconds to mAh
 
     // variables for updating bitmask of responsive escs
     uint16_t _esc_present_bitmask;      // bitmask of which escs seem to be present
