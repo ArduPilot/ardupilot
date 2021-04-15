@@ -380,14 +380,13 @@ public:
 		k_param_payload_weight,
 		k_param_en_topple_sense,
 		k_param_rotor_timeout,
-
-
-
+		k_param_ch_output,
 
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
+
 
     AP_Int16        format_version;
 
@@ -486,6 +485,7 @@ public:
     AP_Float				payload_weight;
     AP_Int8					en_topple_sense;
     AP_Float				rotor_timeout;
+    AP_Int8					ch_output;
 
 
     // Note: keep initializers here in the same order as they are declared

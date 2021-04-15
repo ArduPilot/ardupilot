@@ -181,6 +181,14 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
 void AP_Mount_Backend::enable_RC_control(bool en)  { _RC_control_enable = en; }
 
 
+
+void AP_Mount_Backend::cam_button_pressed(bool en)  { _cam_button_pressed = en; }
+
+
+
+void AP_Mount_Backend::cam_button_output(int8_t output_type)  { _cam_button_output = output_type;  }
+
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount_Backend::enable_follow(bool en)
 {

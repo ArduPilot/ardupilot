@@ -29,6 +29,21 @@ void AP_Mount_ViewPro::init()
         _previous_mode = get_mode();
         _zooming_state_change = false;
 
+        if(_state._camera_speed_max <= 0 ){
+        	_camera_speed_zoom_out = CAM_SPD_MAX;
+        }else{
+
+        	_camera_speed_zoom_out = _state._camera_speed_max;
+        }
+
+
+        if(_state._camera_speed_min <= 0 ){
+        	_camera_speed_zoom_in = CAM_SPD_MIN;
+        }else{
+
+        	_camera_speed_zoom_in = _state._camera_speed_min;
+        }
+
     }
 
     // Initialize and reset commands
@@ -62,20 +77,26 @@ void AP_Mount_ViewPro::update()
 
     read_incoming(); // read the incoming messages from the gimbal
 
-//Center yaw if switched to manual flight (!_RC_control_enable) and you are not currently tracking a GPS point
-    if((get_mode() == MAV_MOUNT_MODE_RC_TARGETING) and !_RC_control_enable){
-    	//set command if we just switched from RC control and to RC_targeting with the gimbal
-    	if(yaw_center_reset_flag){
-    		command_flags.center_yaw = true;
-    		command_flags.zero_zoom = true;
-    		command_flags.default_pip_color = true;
-    	}
-    	//set reset flag false so we don't keep sending
-    	yaw_center_reset_flag = false;
 
-    }else{
-    	yaw_center_reset_flag = true;
-    }
+
+//Center yaw if switched to manual flight (!_RC_control_enable) and you are not currently tracking a GPS point
+
+	if(_cam_button_output ==0){
+
+		if((get_mode() == MAV_MOUNT_MODE_RC_TARGETING) and !_RC_control_enable){
+			//set command if we just switched from RC control and to RC_targeting with the gimbal
+			if(yaw_center_reset_flag){
+				command_flags.center_yaw = true;
+				command_flags.zero_zoom = true;
+				command_flags.default_pip_color = true;
+			}
+			//set reset flag false so we don't keep sending
+			yaw_center_reset_flag = false;
+
+		}else{
+			yaw_center_reset_flag = true;
+		}
+	}
 
     // update based on mount mode
     switch(get_mode()) {
@@ -595,23 +616,85 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 	//Always have scroll wheel availble for tilt control while in 'RC-Targeting' mode
 	const RC_Channel *tilt_wheel_ch = rc().channel(CH_6);
 
+	float spd_factor = (float)_camera_speed_zoom_out + ((float)_zoom_level * (((float)_camera_speed_zoom_in - (float)_camera_speed_zoom_out) / 16384));
+	spd_factor = constrain_float(spd_factor, (float)_camera_speed_zoom_in, (float)_camera_speed_zoom_out);
+
 	_speed_ef_target_deg.x = 0;
 
 	if(tilt_wheel_ch->get_radio_in() == 0 or is_zero(tilt_wheel_ch->norm_input_dz())){
+
 		_speed_ef_target_deg.y = 0;
 
 	}else{
-		_speed_ef_target_deg.y = -CAM_SPD_MAX + ((tilt_wheel_ch->norm_input_dz() + 1) * CAM_SPD_MAX);
-		_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+
+		if(_cam_button_pressed){
+
+			if(_cam_button_output == 1){
+
+				_speed_ef_target_deg.z = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+				_speed_ef_target_deg.z = -1.0f* _speed_ef_target_deg.y;
+
+			}else if(_cam_button_output == 2){
+
+				if(tilt_wheel_ch->norm_input_dz() > 0.25){
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_IN){
+						_zooming_state_change = true;
+					}
+					//Don't trigger _zooming_state_change again
+					current_zoom_state = ZOOM_IN;
+
+				}else if((tilt_wheel_ch->norm_input_dz() < -0.25)){
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_OUT){
+						_zooming_state_change = true;
+					}
+					//Don't trigger _zooming_state_change again
+					current_zoom_state = ZOOM_OUT;
+
+				}else{
+
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_STOP){
+						_zooming_state_change = true;
+					}
+
+					current_zoom_state = ZOOM_STOP;
+				}
+
+
+			}else{
+
+				_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+				_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+			}
+
+
+		}else{ //cam button not pressed, be normal
+
+
+			_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+		}
+
+
 	}
 
 	if(!_RC_control_enable){
+
+		if(_cam_button_output == 0){
 		_speed_ef_target_deg.z = 0;
+		}
+
 		return;
 	}
 
-	float spd_factor = CAM_SPD_MAX + ((float)_zoom_level * ((CAM_SPD_MIN - CAM_SPD_MAX) / 16384));
-	spd_factor = constrain_float(spd_factor, CAM_SPD_MIN, CAM_SPD_MAX);
+
 
 	const RC_Channel *pan_ch = rc().channel(CH_1);
 	const RC_Channel *tilt_ch = rc().channel(CH_2);

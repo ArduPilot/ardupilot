@@ -457,29 +457,51 @@ void Copter::Detect_Buttons(){
 
 
 	//CH7, CAM Button
-	if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1800){
-		if(!ch7_button_hold){
-			if(!ch7_button_pressed){
-				ch7_button_pressed = true;
-				ch7_timer = millis();
-			}else{
-				if( (millis() - ch7_timer) > 750 ){
-					long_press_flag_ch7 = true;  //these are reset in the 10Hz loop
-					function_counter = 0;
-					ch7_button_hold = true;
+
+	if(g.ch_output == 0){
+		if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1800){
+			if(!ch7_button_hold){
+				if(!ch7_button_pressed){
+					ch7_button_pressed = true;
+					ch7_timer = millis();
+				}else{
+					if( (millis() - ch7_timer) > 750 ){
+						long_press_flag_ch7 = true;  //these are reset in the 10Hz loop
+						function_counter = 0;
+						ch7_button_hold = true;
+					}
 				}
 			}
-		}
-	}else{
-		if(ch7_button_pressed){
-			if(!ch7_button_hold){  //if hold was active don't do a short_press
-				short_press_flag_ch7 = true;//these are reset in the 10Hz loop
-				function_counter = 0;
+		}else{
+			if(ch7_button_pressed){
+				if(!ch7_button_hold){  //if hold was active don't do a short_press
+					short_press_flag_ch7 = true;//these are reset in the 10Hz loop
+					function_counter = 0;
+				}
+				ch7_button_hold = false;
+				ch7_button_pressed = false; //reset button press flag
 			}
-			ch7_button_hold = false;
-			ch7_button_pressed = false; //reset button press flag
 		}
 	}
+
+
+
+
+	if(g.ch_output == 1 or g.ch_output == 2){
+
+		if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1800){
+
+			ch7_button_hold = true;
+
+		}else{
+
+			ch7_button_hold = false;
+
+		}
+
+	}
+
+
 
 
 
@@ -567,6 +589,7 @@ void Copter::Detect_Buttons(){
 
 void Copter::Decode_Buttons(){
 
+if(g.ch_output == 0){
 
 	if(short_press_flag_ch7){
 		camera_mount.toggle_record();
@@ -577,6 +600,32 @@ void Copter::Decode_Buttons(){
 		camera_mount.toggle_camera_state();
 		long_press_flag_ch7 = false;
 	}
+
+
+}else if(g.ch_output == 1){
+
+
+	if(ch7_button_hold){
+		camera_mount.cam_button_pressed(true);
+	}else{
+		camera_mount.cam_button_pressed(false);
+	}
+
+
+}else if(g.ch_output == 2){
+
+
+	if(ch7_button_hold){
+		camera_mount.cam_button_pressed(true);
+	}else{
+		camera_mount.cam_button_pressed(false);
+	}
+
+
+
+
+}
+
 
 
 

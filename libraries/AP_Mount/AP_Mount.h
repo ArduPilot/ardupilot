@@ -25,7 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 // maximum number of mounts
-#define AP_MOUNT_MAX_INSTANCES          1
+#define AP_MOUNT_MAX_INSTANCES          2
 
 // declare backend classes
 class AP_Mount_Backend;
@@ -113,6 +113,13 @@ public:
 
     void enable_RC_control(uint8_t instance, bool en);
     void enable_RC_control(bool en) { enable_RC_control(_primary, en); }
+
+    void cam_button_pressed(uint8_t instance, bool en);
+    void cam_button_pressed(bool en) { cam_button_pressed(_primary, en); }
+
+    void cam_button_output(uint8_t instance, int8_t output_type);
+    void cam_button_output(int8_t output_type) { cam_button_output(_primary, output_type); }
+
 
     void toggle_record(uint8_t instance);
     void toggle_record() { toggle_record(_primary); }
@@ -207,6 +214,9 @@ protected:
 
         AP_Float        _roll_stb_lead;     // roll lead control gain
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
+
+        AP_Int8			_camera_speed_max;
+        AP_Int8			_camera_speed_min;
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location

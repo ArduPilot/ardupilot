@@ -82,6 +82,8 @@ public:
 
     // Functions for ViewPro
     virtual void enable_RC_control(bool en);
+    virtual void cam_button_pressed(bool en);
+    virtual void cam_button_output(int8_t output_type);
     virtual void toggle_record();
 	virtual void toggle_camera_state();
 	virtual void turn_camera_off();
@@ -131,6 +133,8 @@ protected:
 
     bool _zoom_in, _zoom_out;
     bool _RC_control_enable;
+    bool _cam_button_pressed;
+    int8_t _cam_button_output;
 
     bool is_recording;
     bool is_video_mode;

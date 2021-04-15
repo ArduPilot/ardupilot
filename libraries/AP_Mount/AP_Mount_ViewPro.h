@@ -338,6 +338,9 @@ uint16_t _zoom_level;
 bool _zooming_state_change;
 bool _query_switch;
 
+uint8_t _camera_speed_zoom_out;
+uint8_t _camera_speed_zoom_in;
+
 
     // internal variables
     AP_HAL::UARTDriver *_port;

@@ -199,6 +199,26 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
+
+
+    // @Param: _TYPE
+    // @DisplayName: Mount Type
+    // @Description: Mount Type (None, Servo or MAVLink)
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_CM_SPD_MAX", 20, AP_Mount, state[0]._camera_speed_max, 30),
+
+
+
+    // @Param: _TYPE
+    // @DisplayName: Mount Type
+    // @Description: Mount Type (None, Servo or MAVLink)
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_CM_SPD_MIN", 21, AP_Mount, state[0]._camera_speed_min, 2),
+
     // 20 formerly _OFF_JNT
 
     // 21 formerly _OFF_ACC
@@ -576,6 +596,33 @@ void AP_Mount::enable_RC_control(uint8_t instance, bool en)
     // send command to backend
     _backends[instance]->enable_RC_control(en);
 }
+
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::cam_button_pressed(uint8_t instance, bool en)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->cam_button_pressed(en);
+}
+
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::cam_button_output(uint8_t instance, int8_t output_type)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->cam_button_output(output_type);
+}
+
+
+
 
 
 // set_angle_targets - sets angle targets in degrees
