@@ -19,15 +19,15 @@
 
 #ifdef HAL_WITH_ESC_TELEM
 
-#include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_ESC.h"
 
 extern const AP_HAL::HAL &hal;
 
-void AP_BattMonitor_BLHeliESC::init(void)
+void AP_BattMonitor_ESC::init(void)
 {
 }
 
-void AP_BattMonitor_BLHeliESC::read(void)
+void AP_BattMonitor_ESC::read(void)
 {
     AP_ESC_Telem& telem = AP::esc_telem();
 
