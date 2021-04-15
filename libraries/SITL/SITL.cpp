@@ -227,13 +227,39 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SITL, SITL::BaroParm),
 
     // user settable parameters for the 1st barometer
-    // @Param: BARO_RND, BAR2_RND, BAR3_RND
+    // @Param: BARO_RND
     // @DisplayName: Baro Noise
     // @Description: amount of (evenly-distributed) noise injected into the 1st baro
     // @Units: m
     // @User: Advanced
 
-    // @Param: BARO_GLITCH,BAR2_GLITCH, BAR3_GLITCH
+    // @Param: BARO_GLITCH
+    // @DisplayName: Baro Glitch
+    // @Description: user-settable 1st-barometer glitch
+    // @Units: m
+    // @User: Advanced
+    
+    // user settable parameters for the 1st barometer
+    // @Param: BAR2_RND
+    // @DisplayName: Baro Noise
+    // @Description: amount of (evenly-distributed) noise injected into the 1st baro
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: BAR2_GLITCH
+    // @DisplayName: Baro Glitch
+    // @Description: user-settable 1st-barometer glitch
+    // @Units: m
+    // @User: Advanced
+    
+    // user settable parameters for the 1st barometer
+    // @Param: BAR3_RND
+    // @DisplayName: Baro Noise
+    // @Description: amount of (evenly-distributed) noise injected into the 1st baro
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: BAR3_GLITCH
     // @DisplayName: Baro Glitch
     // @Description: user-settable 1st-barometer glitch
     // @Units: m
