@@ -503,6 +503,7 @@ uint16_t AP_Logger_File::find_last_log()
     }
     EXPECT_DELAY_MS(3000);
     FileData *fd = AP::FS().load_file(fname);
+    free(fname);
     if (fd != nullptr) {
         ret = strtol((const char *)fd->data, NULL, 10);
         delete fd;
