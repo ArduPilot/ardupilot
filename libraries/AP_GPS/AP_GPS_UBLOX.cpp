@@ -1351,10 +1351,23 @@ AP_GPS_UBLOX::_parse_gps(void)
             bool tilt_ok = true;
             const float min_dist = MIN(offset_dist, rel_dist);
 #ifndef HAL_BUILD_AP_PERIPH
-            // when ahrs is available use it to constrain vertical component
-            const Vector3f antenna_tilt = AP::ahrs().get_rotation_body_to_ned() * antenna_offset;
-            const float alt_error = _buffer.relposned.relPosD*0.01 + antenna_tilt.z;
-            tilt_ok = fabsf(alt_error) < strict_length_error_allowed * min_dist;
+            {
+                // when ahrs is available use it to constrain vertical component
+                // get lag
+                float lag = 0.1;
+                get_lag(lag);
+
+                // get vehicle rotation, projected back in time using the gyro
+                auto &ahrs = AP::ahrs();
+                const Vector3f &gyro = ahrs.get_gyro();
+                Matrix3f rot_body_to_ned = ahrs.get_rotation_body_to_ned();
+                rot_body_to_ned.rotate(gyro * (-lag));
+
+                // apply rotation to the offset to get the Z offset in NED
+                const Vector3f antenna_tilt = rot_body_to_ned * antenna_offset;
+                const float alt_error = _buffer.relposned.relPosD*0.01 + antenna_tilt.z;
+                tilt_ok = fabsf(alt_error) < strict_length_error_allowed * min_dist;
+            }
 #endif
 
             _check_new_itow(_buffer.relposned.iTOW);
