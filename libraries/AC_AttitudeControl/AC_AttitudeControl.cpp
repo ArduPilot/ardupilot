@@ -616,14 +616,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // ensure angular velocity does not go over configured limits
     ang_vel_limit(_rate_target_ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
-    // Add the angular velocity feedforward, rotated into vehicle frame
-    Quaternion attitude_target_ang_vel_quat = Quaternion(0.0f, _attitude_target_ang_vel.x, _attitude_target_ang_vel.y, _attitude_target_ang_vel.z);
+    // rotation from the target frame to the body frame
+    Quaternion rotation_target_to_body = attitude_vehicle_quat.inverse() * _attitude_target_quat;
 
-    // rotation from the target frame to the vehicle frame
-    Quaternion to_to_from_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
-
-    // target angle velocity vector in the vehicle frame
-    Quaternion desired_ang_vel_quat = to_to_from_quat * attitude_target_ang_vel_quat * to_to_from_quat.inverse();
+    // target angle velocity vector in the body frame
+    Vector3f ang_vel_body_feedforward = rotation_target_to_body * _attitude_target_ang_vel;
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
     _feedforward_scalar = 1.0f;
@@ -631,14 +628,12 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         _rate_target_ang_vel.z = _ahrs.get_gyro().z;
     } else if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE) {
         _feedforward_scalar = (1.0f - (_thrust_error_angle - AC_ATTITUDE_THRUST_ERROR_ANGLE) / AC_ATTITUDE_THRUST_ERROR_ANGLE);
-        _rate_target_ang_vel.x += desired_ang_vel_quat.q2 * _feedforward_scalar;
-        _rate_target_ang_vel.y += desired_ang_vel_quat.q3 * _feedforward_scalar;
-        _rate_target_ang_vel.z += desired_ang_vel_quat.q4;
+        _rate_target_ang_vel.x += ang_vel_body_feedforward.x * _feedforward_scalar;
+        _rate_target_ang_vel.y += ang_vel_body_feedforward.y * _feedforward_scalar;
+        _rate_target_ang_vel.z += ang_vel_body_feedforward.z;
         _rate_target_ang_vel.z = _ahrs.get_gyro().z * (1.0 - _feedforward_scalar) + _rate_target_ang_vel.z * _feedforward_scalar;
     } else {
-        _rate_target_ang_vel.x += desired_ang_vel_quat.q2;
-        _rate_target_ang_vel.y += desired_ang_vel_quat.q3;
-        _rate_target_ang_vel.z += desired_ang_vel_quat.q4;
+        _rate_target_ang_vel += ang_vel_body_feedforward;
     }
 
     if (_rate_bf_ff_enabled) {
@@ -680,13 +675,14 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_tar
 // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
 void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Quaternion& thrust_vec_correction_quat, Vector3f& attitude_error_vector, float& thrust_angle, float& thrust_error_angle)
 {
-    Matrix3f att_target_rot_matrix; // rotation from the inertial frame to the target body frame.
-    attitude_target_quat.rotation_matrix(att_target_rot_matrix);
-    Vector3f att_target_thrust_vec = att_target_rot_matrix * Vector3f(0.0f, 0.0f, -1.0f); // target thrust vector
+    // The direction of thrust is [0,0,-1] is any body-fixed frame, inc. body frame and target frame.
+    // attitude_target and attitute_body are passive rotations from target / body frames to the NED frame
+    
+    // Rotating [0,0,-1] by attitude_target expresses (gets a view of) the target thrust vector in the inertial frame
+    Vector3f att_target_thrust_vec = attitude_target_quat * Vector3f(0.0f, 0.0f, -1.0f); // target thrust vector
 
-    Matrix3f att_vehicle_rot_matrix; // rotation from the inertial frame to the vehicle body frame.
-    attitude_vehicle_quat.rotation_matrix(att_vehicle_rot_matrix);
-    Vector3f att_vehicle_thrust_vec = att_vehicle_rot_matrix * Vector3f(0.0f, 0.0f, -1.0f); // current thrust vector
+    // Rotating [0,0,-1] by attitude_target expresses (gets a view of) the current thrust vector in the inertial frame
+    Vector3f att_vehicle_thrust_vec = attitude_vehicle_quat * Vector3f(0.0f, 0.0f, -1.0f); // current thrust vector
 
     // the dot product is used to calculate the current lean angle for use of external functions
     thrust_angle = acosf(constrain_float(Vector3f(0.0f,0.0f,1.0f) * att_vehicle_thrust_vec,-1.0f,1.0f));
@@ -704,10 +700,11 @@ void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitud
     } else {
         thrust_vec_cross /= thrust_vector_length;
     }
-    thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_error_angle);
 
-    // Rotate thrust_vec_correction_quat to the att_vehicle frame
-    thrust_vec_correction_quat = attitude_vehicle_quat.inverse() * thrust_vec_correction_quat * attitude_vehicle_quat;
+    // thrust_vector_correction is defined relative to the body frame but its axis `thrust_vec_cross` was computed in
+    // the inertial frame. First rotate it by the inverse of attitude_body to express it back in the body frame
+    thrust_vec_cross = attitude_vehicle_quat.inverse() * thrust_vec_cross;
+    thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_error_angle);
 
     // calculate the angle error in x and y.
     Vector3f rotation;
