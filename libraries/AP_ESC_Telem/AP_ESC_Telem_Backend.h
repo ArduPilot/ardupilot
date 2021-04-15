@@ -50,8 +50,6 @@ public:
     AP_ESC_Telem_Backend &operator=(const AP_ESC_Telem_Backend&) = delete;
 
 protected:
-    AP_ESC_Telem* _frontend;
-
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
     void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate = 0.0f);
 
@@ -59,6 +57,7 @@ protected:
     void update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint16_t data_present_mask);
 
 private:
+    AP_ESC_Telem* _frontend;
 };
 
 #endif
