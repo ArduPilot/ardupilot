@@ -20,6 +20,8 @@
 
 #if HAL_WITH_ESC_TELEM
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_Common/AP_Common.h>
