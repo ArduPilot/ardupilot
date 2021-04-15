@@ -797,8 +797,8 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
 
     TelemetryData t {
         .temperature_cdeg = int16_t((cb.msg->temperature - C_TO_KELVIN) * 100),
-        .voltage_cv = uint16_t(cb.msg->voltage*100),
-        .current_ca = uint16_t(cb.msg->current*100),
+        .voltage = cb.msg->voltage,
+        .current = cb.msg->current,
     };
 
     ap_uavcan->update_rpm(esc_index, cb.msg->rpm);
