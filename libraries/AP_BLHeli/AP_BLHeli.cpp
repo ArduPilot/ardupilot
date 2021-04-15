@@ -1397,7 +1397,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         .temperature_cdeg = int16_t(buf[0] * 100),
         .voltage = float(uint16_t((buf[1]<<8) | buf[2])) * 0.01,
         .current = float(uint16_t((buf[3]<<8) | buf[4])) * 0.01,
-        .consumption_ah = float(uint16_t((buf[5]<<8) | buf[6])) * 0.001,
+        .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
     };
 
     update_telem_data(last_telem_esc, t,
@@ -1419,7 +1419,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                             t.temperature_cdeg,
                             t.voltage,
                             t.current,
-                            t.consumption_ah,
+                            t.consumption_mah,
                             trpm, hal.rcout->get_erpm_error_rate(last_telem_esc), (unsigned)AP_HAL::millis());
     }
 }
