@@ -16,7 +16,10 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "AP_BattMonitor_Backend.h"
+
+#if HAL_WITH_ESC_TELEM
 
 class AP_BattMonitor_ESC :public AP_BattMonitor_Backend
 {
@@ -40,3 +43,5 @@ public:
 private:
     bool have_current;
 };
+
+#endif

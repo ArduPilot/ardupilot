@@ -15,11 +15,9 @@
 
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_ESC_Telem/AP_ESC_Telem.h>
-
-#ifdef HAL_WITH_ESC_TELEM
-
 #include "AP_BattMonitor_ESC.h"
+
+#if HAL_WITH_ESC_TELEM
 
 extern const AP_HAL::HAL &hal;
 
