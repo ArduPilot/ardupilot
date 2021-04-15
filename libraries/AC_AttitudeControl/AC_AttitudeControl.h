@@ -173,6 +173,14 @@ public:
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
+    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
+
+    // Converts thrust vector and heading angle to quaternion rotation in the earth frame
+    Quaternion attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const;
+
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
 
@@ -283,7 +291,8 @@ public:
 
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
-    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  smoothing_gain,  accel_max,  target_ang_vel,  0.0f,  0.0f,  dt); }
 
     // limits the acceleration and deceleration of a velocity request
     static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
@@ -303,11 +312,11 @@ public:
 
     // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
     // The maximum error in the yaw axis is limited based on the angle yaw P value and acceleration.
-    void thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle);
+    void thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const;
 
     // thrust_vector_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
     // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-    void thrust_vector_rotation_angles(const Quaternion& attitude_target, const Quaternion& attitude_body, Quaternion& thrust_vector_correction, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle);
+    void thrust_vector_rotation_angles(const Quaternion& attitude_target, const Quaternion& attitude_body, Quaternion& thrust_vector_correction, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const;
 
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
