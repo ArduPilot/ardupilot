@@ -166,7 +166,7 @@ AP_BattMonitor::init()
 #endif
                 break;
             case Type::BLHeliESC:
-#if HAL_WITH_ESC_TELEM
+#if HAL_WITH_ESC_TELEM && !defined(HAL_BUILD_AP_PERIPH)
                 drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
 #endif
                 break;
