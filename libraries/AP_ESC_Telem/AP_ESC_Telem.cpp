@@ -154,15 +154,15 @@ bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
     return true;
 }
 
-// get an individual ESC's energy consumption in Ampere.hour if available, returns true on success
-bool AP_ESC_Telem::get_consumption_ah(uint8_t esc_index, float& consumption_ah) const
+// get an individual ESC's energy consumption in milli-Ampere.hour if available, returns true on success
+bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
         || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
         return false;
     }
-    consumption_ah = _telem_data[esc_index].consumption_ah;
+    consumption_mah = _telem_data[esc_index].consumption_mah;
     return true;
 }
 
@@ -214,7 +214,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
             temperature[j] = _telem_data[esc_id].temperature_cdeg;
             voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100, 0, UINT16_MAX);
             current[j] = constrain_float(_telem_data[esc_id].current * 100, 0, UINT16_MAX);
-            current_tot[j] = constrain_float(_telem_data[esc_id].consumption_ah * 1000, 0, UINT16_MAX);
+            current_tot[j] = constrain_float(_telem_data[esc_id].consumption_mah, 0, UINT16_MAX);
             float rpmf;
             if (get_rpm(esc_id, rpmf)) {
                 rpm[j] = constrain_float(rpmf, 0, UINT16_MAX);
@@ -268,7 +268,7 @@ void AP_ESC_Telem::update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backe
         _telem_data[esc_index].current = new_data.current;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION) {
-        _telem_data[esc_index].consumption_ah = new_data.consumption_ah;
+        _telem_data[esc_index].consumption_mah = new_data.consumption_mah;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::USAGE) {
         _telem_data[esc_index].usage_s = new_data.usage_s;
@@ -341,7 +341,7 @@ void AP_ESC_Telem::update()
                                 _telem_data[i].voltage,
                                 _telem_data[i].current,
                                 _telem_data[i].temperature_cdeg,
-                                _telem_data[i].consumption_ah,
+                                _telem_data[i].consumption_mah,
                                 _telem_data[i].motor_temp_cdeg,
                                 _rpm_data[i].error_rate);
                 _last_telem_log_ms[i] = _telem_data[i].last_update_ms;

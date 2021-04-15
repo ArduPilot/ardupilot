@@ -17,7 +17,7 @@ public:
         int16_t  temperature_cdeg;  // centi-degrees C, negative values allowed
         float voltage;              // Volt
         float current;              // Ampere
-        float consumption_ah;       // Ampere.hours
+        float consumption_mah;      // milli-Ampere.hours
         uint32_t usage_s;           // usage seconds
         int16_t  motor_temp_cdeg;   // centi-degrees C, negative values allowed
         uint32_t last_update_ms;    // last update time in miliseconds, determines whether active

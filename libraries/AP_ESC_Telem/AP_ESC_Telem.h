@@ -39,8 +39,8 @@ public:
     // get an individual ESC's voltage in Volt if available, returns true on success
     bool get_voltage(uint8_t esc_index, float& volts) const;
 
-    // get an individual ESC's consumption in Ampere.hour if available, returns true on success
-    bool get_consumption_ah(uint8_t esc_index, float& consumption) const;
+    // get an individual ESC's consumption in milli-Ampere.hour if available, returns true on success
+    bool get_consumption_mah(uint8_t esc_index, float& consumption_mah) const;
 
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz() const;
