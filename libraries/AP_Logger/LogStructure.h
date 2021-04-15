@@ -490,10 +490,10 @@ struct PACKED log_Esc {
     uint64_t time_us;
     uint8_t instance;
     int32_t rpm;
-    uint16_t voltage;
-    uint16_t current;
+    float voltage;
+    float current;
     int16_t esc_temp;
-    uint16_t current_tot;
+    float current_tot;
     int16_t motor_temp;
     float error_rate;
 };
