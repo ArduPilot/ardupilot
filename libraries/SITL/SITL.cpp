@@ -251,7 +251,6 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Units: m
     // @User: Advanced
     
-    // user settable parameters for the 1st barometer
     // @Param: BAR3_RND
     // @DisplayName: Baro Noise
     // @Description: amount of (evenly-distributed) noise injected into the 3rd baro
