@@ -367,6 +367,12 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
     return true;
 }
 
+// returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
+bool ModeGuided::set_attitude_target_provides_thrust() const
+{
+    return ((copter.g2.guided_options.get() & uint32_t(Options::SetAttitudeTarget_ThrustAsThrust)) != 0);
+}
+
 // set guided mode angle target and climbrate
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust)
 {
