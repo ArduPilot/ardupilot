@@ -317,7 +317,7 @@ void AP_ToshibaCAN::loop()
                             // convert centi-amps miliseconds to mAh
                             _telemetry[esc_id].current_tot_mah += t.current * diff_ms * amp_ms_to_mah;
                         }
-                        t.consumption_ah = _telemetry[esc_id].current_tot_mah * 0.001;
+                        t.consumption_mah = _telemetry[esc_id].current_tot_mah;
                         update_telem_data(esc_id, t,
                             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
