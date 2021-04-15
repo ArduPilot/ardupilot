@@ -40,22 +40,22 @@ void AP_BattMonitor_ESC::read(void)
 
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
         int16_t  temperature_deg;
-        uint16_t voltage_cv;
-        uint16_t current_ca;
-        uint16_t consumption_mah;
+        float voltage;
+        float current;
+        float consumption_ah;
 
-        if (telem.get_consumption_mah(i, consumption_mah)) {
+        if (telem.get_consumption_ah(i, consumption_ah)) {
             // accumulate consumed_sum regardless of age, to cope with ESC
             // dropping out
-            consumed_sum += consumption_mah;
+            consumed_sum += consumption_ah;
         }
 
-        if (telem.get_voltage_cv(i, voltage_cv)) {
-            voltage_sum += voltage_cv;
+        if (telem.get_voltage(i, voltage)) {
+            voltage_sum += voltage;
         }
 
-        if (telem.get_current_ca(i, current_ca)) {
-            current_ca += current_ca;
+        if (telem.get_current(i, current)) {
+            current_sum += current;
         }
 
         if (telem.get_temperature(i, temperature_deg)) {
@@ -70,7 +70,7 @@ void AP_BattMonitor_ESC::read(void)
     }
 
     if (num_escs > 0) {
-        _state.voltage = (voltage_sum / num_escs) * 0.01;
+        _state.voltage = (voltage_sum / num_escs);
         _state.temperature = temperature_sum / num_escs;
         _state.healthy = true;
     } else {
@@ -78,8 +78,8 @@ void AP_BattMonitor_ESC::read(void)
         _state.temperature = 0;
         _state.healthy = false;
     }
-    _state.current_amps = current_sum * 0.01;
-    _state.consumed_mah = consumed_sum;
+    _state.current_amps = current_sum;
+    _state.consumed_mah = consumed_sum * 0.001;
     _state.last_time_micros = highest_ms * 1000;
     _state.temperature_time = highest_ms;
 
