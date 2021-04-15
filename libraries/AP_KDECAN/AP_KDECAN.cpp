@@ -451,8 +451,8 @@ void AP_KDECAN::loop()
 
                             TelemetryData t {
                                 .temperature_cdeg = int16_t(frame.data[6] * 100),
-                                .voltage = float(uint16_t(frame.data[0] << 8 | frame.data[1])) * 0.01,
-                                .current = float(uint16_t(frame.data[2] << 8 | frame.data[3])) * 0.01,
+                                .voltage = float(uint16_t(frame.data[0] << 8 | frame.data[1])) * 0.01f,
+                                .current = float(uint16_t(frame.data[2] << 8 | frame.data[3])) * 0.01f,
                             };
                             update_telem_data(idx, t,
                                 AP_ESC_Telem_Backend::TelemetryType::CURRENT
