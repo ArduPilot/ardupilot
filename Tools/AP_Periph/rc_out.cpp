@@ -24,10 +24,6 @@
 #define SERVO_OUT_RCIN_MAX      16  // SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16
 #define SERVO_OUT_MOTOR_MAX     12  // SRV_Channel::k_motor1 ... SRV_Channel::k_motor8, SRV_Channel::k_motor9 ... SRV_Channel::k_motor12
 
-#if HAL_PWM_COUNT == 0
-    #error "You must define a PWM output in your hwdef.dat"
-#endif
-
 extern const AP_HAL::HAL &hal;
 
 void AP_Periph_FW::rcout_init()
@@ -35,9 +31,11 @@ void AP_Periph_FW::rcout_init()
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
 
+#if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
     }
+#endif
 
     for (uint8_t i=0; i<SERVO_OUT_RCIN_MAX; i++) {
         SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i), 1000);
@@ -89,6 +87,7 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 
 void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
 {
+#if HAL_PWM_COUNT > 0
     if ((actuator_id == 0) || (actuator_id > HAL_PWM_COUNT)) {
         // not supported or out of range
         return;
@@ -98,6 +97,7 @@ void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
     SRV_Channels::set_output_norm(function, command_value);
 
     rcout_has_new_data_to_update = true;
+#endif
 }
 
 void AP_Periph_FW::rcout_handle_safety_state(uint8_t safety_state)
