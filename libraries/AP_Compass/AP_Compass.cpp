@@ -1110,10 +1110,15 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 
-    // external i2c bus
+    // external i2c bus IST8308
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_IST8308, AP_Compass_IST8308::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8308_I2C_ADDR),
                     true, ROTATION_NONE));
+    }
+    // internal i2c bus IST8308
+    FOREACH_I2C_INTERNAL(i) {
+        ADD_BACKEND(DRIVER_IST8308, AP_Compass_IST8308::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8308_I2C_ADDR),
+                    all_external, ROTATION_NONE));
     }
 
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
