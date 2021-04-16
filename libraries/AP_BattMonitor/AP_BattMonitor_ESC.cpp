@@ -29,7 +29,8 @@ void AP_BattMonitor_ESC::read(void)
 {
     AP_ESC_Telem& telem = AP::esc_telem();
 
-    uint8_t num_escs = 0;
+    uint8_t voltage_escs = 0;     // number of ESCs with valid voltage
+    uint8_t temperature_escs = 0; // number of ESCs with valid temperature
     float voltage_sum = 0;
     float current_sum = 0;
     float consumed_sum = 0;
@@ -50,6 +51,7 @@ void AP_BattMonitor_ESC::read(void)
 
         if (telem.get_voltage(i, voltage)) {
             voltage_sum += voltage;
+            voltage_escs++;
         }
 
         if (telem.get_current(i, current)) {
@@ -58,24 +60,27 @@ void AP_BattMonitor_ESC::read(void)
 
         if (telem.get_temperature(i, temperature_deg)) {
             temperature_sum += temperature_deg;
+            temperature_escs++;
         }
-
-        num_escs++;
 
         if (telem.get_last_telem_data_ms(i) > highest_ms) {
             highest_ms = telem.get_last_telem_data_ms(i);
         }
     }
 
-    if (num_escs > 0) {
-        _state.voltage = (voltage_sum / num_escs);
-        _state.temperature = temperature_sum / num_escs;
+    if (voltage_escs > 0) {
+        _state.voltage = voltage_sum / voltage_escs;
         _state.healthy = true;
     } else {
         _state.voltage = 0;
-        _state.temperature = 0;
         _state.healthy = false;
     }
+    if (temperature_escs > 0) {
+        _state.temperature = temperature_sum / temperature_escs;
+    } else {
+        _state.temperature = 0;
+    }
+
     _state.current_amps = current_sum;
     _state.consumed_mah = consumed_sum;
     _state.last_time_micros = highest_ms * 1000;
