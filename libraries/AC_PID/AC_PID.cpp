@@ -70,10 +70,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
 // Constructor
 AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
                float dt, float initial_srmax, float initial_srtau):
-    _dt(dt),
-    _integrator(0.0f),
-    _error(0.0f),
-    _derivative(0.0f)
+    _dt(dt)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
