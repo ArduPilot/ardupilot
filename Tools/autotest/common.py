@@ -9160,6 +9160,20 @@ switch value'''
             self.context_pop()
             self.reboot_sitl()
 
+        if self.is_rover():
+            self.start_subtest("Testing using buttons for changing modes")
+            self.context_push()
+            if not self.mode_is('MANUAL'):
+                raise NotAchievedException("Bad mode")
+            self.set_parameter("BTN_FUNC%u" % btn, 53)  # steering mode
+            # press button:
+            self.set_parameter("SIM_PIN_MASK", mask)
+            self.wait_mode('STEERING')
+            # release button:
+            self.set_parameter("SIM_PIN_MASK", 0)
+            self.wait_mode('MANUAL')
+            self.context_pop()
+
     def compare_number_percent(self, num1, num2, percent):
         if num1 == 0 and num2 == 0:
             return True
