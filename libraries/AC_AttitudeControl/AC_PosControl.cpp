@@ -375,20 +375,24 @@ void AC_PosControl::set_max_accel_z(float accel_cmss)
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
 void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 {
-    float alt_change = alt_cm - _pos_target.z;
-    _vel_desired.z = 0.0f;
+    // calculated increased maximum acceleration if over speed
+    float accel_z_cms = _accel_z_cms;
+    if (_vel_desired.z < _speed_down_cms && !is_zero(_speed_down_cms)) {
+        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_down_cms;
+    }
+    if (_vel_desired.z > _speed_up_cms && !is_zero(_speed_up_cms)) {
+        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_up_cms;
+    }
+    shape_pos_vel_accel(alt_cm, 0.0f, 0.0f,
+        _pos_target.z, _vel_desired.z, _accel_desired.z,
+        0.0f, _speed_down_cms, _speed_up_cms,
+        -constrain_float(accel_z_cms, 0.0f, 750.0f), accel_z_cms,
+        POSCONTROL_Z_SHAPER_TC, dt);
 
     // adjust desired alt if motors have not hit their limits
-    if ((alt_change < 0 && !_motors.limit.throttle_lower) || (alt_change > 0 && !_motors.limit.throttle_upper)) {
-        if (!is_zero(dt)) {
-            float climb_rate_cms = constrain_float(alt_change / dt, _speed_down_cms, _speed_up_cms);
-            _pos_target.z += climb_rate_cms * dt;
-        }
-    }
-
-    // do not let target get too far from current altitude
-    float curr_alt = _inav.get_altitude();
-    _pos_target.z = constrain_float(_pos_target.z, curr_alt - _leash_down_z, curr_alt + _leash_up_z);
+    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, dt,
+        _motors.limit.throttle_lower, _motors.limit.throttle_upper,
+        _p_pos_z.get_error(), _pid_vel_z.get_error());
 }
 
 /// set_alt_target_from_climb_rate - adjusts target up or down using a climb rate in cm/s
@@ -422,34 +426,16 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     if (_vel_desired.z > _speed_up_cms && !is_zero(_speed_up_cms)) {
         accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_up_cms;
     }
-    accel_z_cms = constrain_float(accel_z_cms, 0.0f, 750.0f);
-
-    // jerk_z is calculated to reach full acceleration in 1000ms.
-    const float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
-
-    const float accel_z_max = MIN(accel_z_cms, safe_sqrt(2.0f * fabsf(climb_rate_cms - _vel_desired.z) * jerk_z));
-
-    // jerk limit the acceleration increase
-    _accel_last_z_cms += jerk_z * dt;
-    // jerk limit the decrease as zero error is approached
-    _accel_last_z_cms = MIN(_accel_last_z_cms, accel_z_max);
-    // remove overshoot during last time step
-    _accel_last_z_cms = MIN(_accel_last_z_cms, fabsf(climb_rate_cms - _vel_desired.z) / dt);
-
-    if (is_positive(climb_rate_cms - _vel_desired.z)){
-        _accel_desired.z = _accel_last_z_cms;
-    } else {
-        _accel_desired.z = -_accel_last_z_cms;
-    }
-
-    float vel_change_limit = _accel_last_z_cms * dt;
-    _vel_desired.z = constrain_float(climb_rate_cms, _vel_desired.z - vel_change_limit, _vel_desired.z + vel_change_limit);
+    shape_vel_accel(climb_rate_cms, 0.0f,
+        _vel_desired.z, _accel_desired.z,
+        _speed_down_cms, _speed_up_cms,
+        -constrain_float(accel_z_cms, 0.0f, 750.0f), accel_z_cms,
+        POSCONTROL_Z_SHAPER_TC, dt);
 
     // adjust desired alt if motors have not hit their limits
-    // To-Do: add check of _limit.pos_down?
-    if ((_vel_desired.z < 0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z > 0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
-        _pos_target.z += _vel_desired.z * dt;
-    }
+    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, dt,
+        (_motors.limit.throttle_lower && !force_descend), _motors.limit.throttle_upper,
+        _p_pos_z.get_error(), _pid_vel_z.get_error());
 }
 
 /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
