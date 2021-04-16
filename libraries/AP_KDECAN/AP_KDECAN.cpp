@@ -433,6 +433,7 @@ void AP_KDECAN::loop()
             int16_t res = _can_iface->receive(frame, rx_time, flags);
 
             if (res == 1) {
+#if HAL_WITH_ESC_TELEM
                 frame_id_t id { .value = frame.id & AP_HAL::CANFrame::MaskExtID };
 
                 // check if frame is valid: directed at autopilot, doesn't come from broadcast and ESC was detected before
@@ -466,6 +467,7 @@ void AP_KDECAN::loop()
                             break;
                     }
                 }
+#endif
             }
         }
 

@@ -19,7 +19,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANDriver.h>
-#include <AP_HAL/Semaphores.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
@@ -41,8 +40,12 @@
 #define PICCOLO_MSG_RATE_HZ_MAX 500
 #define PICCOLO_MSG_RATE_HZ_DEFAULT 50
 
-class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
+class AP_PiccoloCAN : public AP_CANDriver
+#if HAL_WITH_ESC_TELEM
+ , public AP_ESC_Telem_Backend
+#endif
 {
+
 public:
     AP_PiccoloCAN();
     ~AP_PiccoloCAN();

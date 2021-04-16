@@ -140,8 +140,10 @@ AP_BLHeli::AP_BLHeli(void)
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
     last_control_port = -1;
+#if HAL_WITH_ESC_TELEM
     // register as an ESC telemetry source
     AP::esc_telem().add_backend(this);
+#endif
 }
 
 /*
@@ -1372,6 +1374,7 @@ uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
  */
 void AP_BLHeli::read_telemetry_packet(void)
 {
+#if HAL_WITH_ESC_TELEM
     uint8_t buf[telem_packet_size];
     if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
         // short read, we should have 10 bytes ready when this function is called
@@ -1422,6 +1425,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                             t.consumption_mah,
                             trpm, hal.rcout->get_erpm_error_rate(last_telem_esc), (unsigned)AP_HAL::millis());
     }
+#endif
 }
 
 /*
