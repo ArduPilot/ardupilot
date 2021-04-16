@@ -429,7 +429,9 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 //   voltage is in Volt
 //   current is in Ampere
 //   temperature is in centi-degrees Celsius
-//   current_tot is in Ampere hours
+//   current_tot is in mili-Ampere hours
+//   motor_temp is in centi-degrees Celsius
+//   error_rate is in percentage
 void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, float voltage, float current, int16_t esc_temp, float current_tot, int16_t motor_temp, float error_rate)
 {
     const struct log_Esc pkt{
