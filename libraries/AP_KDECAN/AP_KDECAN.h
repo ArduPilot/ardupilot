@@ -34,7 +34,12 @@
 // there are 12 motor functions in SRV_Channel but CAN driver can't keep up
 #define KDECAN_MAX_NUM_ESCS 8
 
-class AP_KDECAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+class AP_KDECAN : public AP_CANDriver
+#if HAL_WITH_ESC_TELEM
+ , public AP_ESC_Telem_Backend
+#endif
+{
+
 public:
     AP_KDECAN();
     

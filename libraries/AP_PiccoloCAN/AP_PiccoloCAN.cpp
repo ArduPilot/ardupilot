@@ -348,6 +348,9 @@ void AP_PiccoloCAN::send_esc_messages(void)
 // interpret an ESC message received over CAN
 bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 {
+    bool result = true;
+
+#if HAL_WITH_ESC_TELEM
     uint64_t timestamp = AP_HAL::micros64();
 
     // The ESC address is the lower byte of the address
@@ -367,8 +370,6 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
     }
 
     PiccoloESC_Info_t &esc = _esc_info[addr];
-
-    bool result = true;
 
     /*
      * The STATUS_A packet has slight variations between Gen-1 and Gen-2 ESCs.
@@ -441,6 +442,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         // Reset the Rx timestamp
         esc.last_rx_msg_timestamp = timestamp;
     }
+#endif
 
     return result;
 }
