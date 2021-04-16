@@ -1417,6 +1417,7 @@ void AP_BLHeli::init(void)
  */
 void AP_BLHeli::read_telemetry_packet(void)
 {
+#if HAL_WITH_ESC_TELEM
     uint8_t buf[telem_packet_size];
     if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
         // short read, we should have 10 bytes ready when this function is called
@@ -1470,6 +1471,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                             t.consumption_mah,
                             trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
     }
+#endif // HAL_WITH_ESC_TELEM
 }
 
 /*
