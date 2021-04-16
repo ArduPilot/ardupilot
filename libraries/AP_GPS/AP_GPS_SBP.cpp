@@ -391,7 +391,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
 void
 AP_GPS_SBP::logging_log_full_update()
 {
-
+#ifndef HAL_NO_LOGGING
     if (!should_log()) {
         return;
     }
@@ -405,13 +405,16 @@ AP_GPS_SBP::logging_log_full_update()
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+#endif // HAL_NO_LOGGING
 };
 
 void
 AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
-        uint8_t *msg_buff) {
+        uint8_t *msg_buff)
+{
+#ifndef HAL_NO_LOGGING
     if (!should_log()) {
         return;
     }
@@ -453,6 +456,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
         AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
     }
+#endif // HAL_NO_LOGGING
 };
 
 #endif // SBP_HW_LOGGING
