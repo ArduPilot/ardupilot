@@ -97,6 +97,7 @@ void AP_FETtecOneWire::update()
         _telem_req_type = telem_type::TEMP;
     }
 
+#if HAL_WITH_ESC_TELEM
     if (_telem_avail != -1) {
         TelemetryData t {};
         uint16_t esc_mask = 1;
@@ -131,6 +132,7 @@ void AP_FETtecOneWire::update()
             esc_mask <<= 1;
         }
     }
+#endif
 }
 
 /**

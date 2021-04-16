@@ -34,7 +34,12 @@
 
 
 
-class AP_FETtecOneWire : public AP_ESC_Telem_Backend {
+class AP_FETtecOneWire
+#if HAL_WITH_ESC_TELEM
+ : public AP_ESC_Telem_Backend
+#endif
+{
+
 public:
     AP_FETtecOneWire();
 
@@ -58,7 +63,11 @@ private:
 
     uint32_t _last_send_us;
     static constexpr uint32_t DELAY_TIME_US = 700;
+#if HAL_WITH_ESC_TELEM
     static constexpr uint8_t MOTOR_COUNT_MAX = ESC_TELEM_MAX_ESCS; /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
+#else
+    static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
+#endif
     int8_t _telem_avail = -1;
     uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
