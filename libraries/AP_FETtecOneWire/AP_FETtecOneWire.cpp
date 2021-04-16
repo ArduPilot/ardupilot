@@ -117,12 +117,12 @@ void AP_FETtecOneWire::update()
                     break;
 
                 case telem_type::VOLT:
-                    t.voltage_cv = requestedTelemetry[i];
+                    t.voltage = float(requestedTelemetry[i] * 0.01f);  // centi-Volt to Volt
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
                     break;
 
                 case telem_type::CURRENT:
-                    t.current_ca = requestedTelemetry[i];
+                    t.current = float(requestedTelemetry[i] * 0.01f);  // centi-Ampere to Ampere
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
                     break;
 
@@ -134,7 +134,7 @@ void AP_FETtecOneWire::update()
                     break;
 
                 case telem_type::CONSUMPTION:
-                    t.consumption_mah = requestedTelemetry[i];
+                    t.consumption_mah = float(requestedTelemetry[i]);
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
                     break;
                 }
