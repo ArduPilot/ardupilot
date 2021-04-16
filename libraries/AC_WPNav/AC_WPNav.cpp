@@ -493,8 +493,12 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // input shape the terrain offset
-    shape_pos_vel(terr_offset, 0.0f, _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, 0.0f, 0.0f, _pos_control.get_max_accel_z(), 0.05f, _track_scalar_dt * dt);
-    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, _track_scalar_dt * dt);
+    shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
+        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
+        0.0f, _pos_control.get_max_speed_down(), _pos_control.get_max_speed_up(),
+        -_pos_control.get_max_accel_z(), _pos_control.get_max_accel_z(), 0.05f, dt);
+
+    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, false, false, 0.0f, 0.0f);
 
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_terrain_offset;
