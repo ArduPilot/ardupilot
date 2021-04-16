@@ -85,7 +85,12 @@ class DebugCb;
             DISABLE_W_CAST_FUNCTION_TYPE_POP \
     }
 
-class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+class AP_UAVCAN : public AP_CANDriver
+#if HAL_WITH_ESC_TELEM
+, public AP_ESC_Telem_Backend
+#endif
+{
+
 public:
     AP_UAVCAN();
     ~AP_UAVCAN();

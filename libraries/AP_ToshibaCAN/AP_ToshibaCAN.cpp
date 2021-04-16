@@ -297,6 +297,7 @@ void AP_ToshibaCAN::loop()
         if (send_stage == 8) {
             AP_HAL::CANFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
+#if HAL_WITH_ESC_TELEM
                 // decode rpm and voltage data
                 if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // copy contents to our structure
@@ -376,6 +377,7 @@ void AP_ToshibaCAN::loop()
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::USAGE);
                     }
                 }
+#endif
             }
 
             // update bitmask of escs that replied

@@ -17,13 +17,17 @@
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <AP_CANManager/AP_CANDriver.h>
-#include <AP_HAL/Semaphores.h>
 
 #define TOSHIBACAN_MAX_NUM_ESCS 12
 
 class CANTester;
 
-class AP_ToshibaCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+class AP_ToshibaCAN : public AP_CANDriver
+#if HAL_WITH_ESC_TELEM
+ , public AP_ESC_Telem_Backend
+#endif
+{
+
     friend class CANTester;
 public:
     AP_ToshibaCAN();
