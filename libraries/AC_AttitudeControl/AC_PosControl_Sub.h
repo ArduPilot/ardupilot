@@ -2,6 +2,8 @@
 
 #include "AC_PosControl.h"
 
+#define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
+
 class AC_PosControl_Sub : public AC_PosControl {
 public:
     AC_PosControl_Sub(AP_AHRS_View & ahrs, const AP_InertialNav& inav,
