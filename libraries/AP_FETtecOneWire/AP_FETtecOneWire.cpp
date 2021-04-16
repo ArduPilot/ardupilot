@@ -15,15 +15,12 @@
 
 /* Protocol implementation was provided by FETtec */
 
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_FETtecOneWire.h"
 #if HAL_AP_FETTECONEWIRE_ENABLED
-#include <stdio.h>
 
 const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @Param: MASK

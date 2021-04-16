@@ -18,8 +18,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #ifndef HAL_AP_FETTECONEWIRE_ENABLED
 #define HAL_AP_FETTECONEWIRE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH) && BOARD_FLASH_SIZE > 1024
@@ -31,6 +29,7 @@
 
 #if HAL_AP_FETTECONEWIRE_ENABLED
 
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Param/AP_Param.h>
 
 
@@ -60,7 +59,7 @@ private:
 
     uint32_t _last_send_us;
     static constexpr uint32_t DELAY_TIME_US = 700;
-    static constexpr uint8_t MOTOR_COUNT_MAX = 12; /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
+    static constexpr uint8_t MOTOR_COUNT_MAX = ESC_TELEM_MAX_ESCS; /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
     int8_t _telem_avail = -1;
     uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
