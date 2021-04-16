@@ -34,6 +34,7 @@ public:
     float get_i() const WARN_IF_UNUSED { return _integrator; }
     float get_d() const WARN_IF_UNUSED { return _derivative * _kd; }
     float get_ff() const WARN_IF_UNUSED { return _target * _kff; }
+    float get_error() const WARN_IF_UNUSED { return _error; }
 
     // reset the integrator
     void reset_I() { _integrator = 0.0f; }

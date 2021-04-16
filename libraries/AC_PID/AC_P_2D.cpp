@@ -26,16 +26,16 @@ AC_P_2D::AC_P_2D(float initial_p, float dt) :
 Vector2f AC_P_2D::update_all(float &target_x, float &target_y, const Vector2f &measurement, float error_max, float D2_max)
 {
     // calculate distance _error
-    Vector2f error = Vector2f(target_x, target_y) - measurement;
+    _error = Vector2f(target_x, target_y) - measurement;
 
     // Constrain _error and target position
     // Constrain the maximum length of _vel_target to the maximum position correction velocity
-    if (error.limit_length(error_max)) {
-        target_x = measurement.x + error.x;
-        target_y = measurement.y + error.y;
+    if (_error.limit_length(error_max)) {
+        target_x = measurement.x + _error.x;
+        target_y = measurement.y + _error.y;
     }
 
     // MIN(_Dmax, _D2max / _kp) limits the max accel to the point where max jerk is exceeded
     // return sqrt_controller(Vector2f(_error.x, _error.y), _kp, MIN(_D_max, _D2_max / _kp), _dt);
-    return sqrt_controller(error, _kp, D2_max, _dt);
+    return sqrt_controller(_error, _kp, D2_max, _dt);
 }

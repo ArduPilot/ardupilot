@@ -29,6 +29,7 @@ public:
     // get accessors
     AP_Float &kP() WARN_IF_UNUSED { return _kp; }
     const AP_Float &kP() const WARN_IF_UNUSED { return _kp; }
+    Vector2f get_error() const {return _error;}
 
     // set accessor
     void kP(float v) { _kp.set(v); }
@@ -42,4 +43,5 @@ private:
 
     // internal variables
     float _dt;          // time step in seconds
+    Vector2f _error;    // time step in seconds
 };

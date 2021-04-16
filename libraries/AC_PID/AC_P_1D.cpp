@@ -33,21 +33,21 @@ float AC_P_1D::update_all(float &target, float measurement, bool &limit_min, boo
     limit_max = false;
 
     // calculate distance _error
-    float error = target - measurement;
+    _error = target - measurement;
 
-    if (error < _lim_err_min) {
-        error = _lim_err_min;
-        target = measurement + error;
+    if (_error < _lim_err_min) {
+        _error = _lim_err_min;
+        target = measurement + _error;
         limit_min = true;
-    } else if (error > _lim_err_max) {
-        error = _lim_err_max;
-        target = measurement + error;
+    } else if (_error > _lim_err_max) {
+        _error = _lim_err_max;
+        target = measurement + _error;
         limit_max = true;
     }
 
     // ToDo: Replace sqrt_controller with optimal acceleration and jerk limited curve
     // MIN(_Dxy_max, _D2xy_max / _kxy_P) limits the max accel to the point where max jerk is exceeded
-    return sqrt_controller(error, _kp, _lim_D_Out, _dt);
+    return sqrt_controller(_error, _kp, _lim_D_Out, _dt);
 }
 
 // set limits on error, output and output from D term

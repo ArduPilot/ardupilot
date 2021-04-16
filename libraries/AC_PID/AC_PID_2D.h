@@ -36,6 +36,7 @@ public:
     Vector2f get_i() const;
     Vector2f get_d() const;
     Vector2f get_ff();
+    Vector2f get_error() const {return _error;}
 
     // reset the integrator
     void reset_I() { _integrator.zero(); };

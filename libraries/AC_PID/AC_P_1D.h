@@ -33,6 +33,7 @@ public:
     AP_Float &kP() WARN_IF_UNUSED { return _kp; }
     const AP_Float &kP() const WARN_IF_UNUSED { return _kp; }
     void kP(float v) { _kp.set(v); }
+    float get_error() const {return _error;}
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -44,6 +45,7 @@ private:
 
     // internal variables
     float _dt;          // time step in seconds
+    float _error;       // time step in seconds
     float _lim_err_min; // error limit in negative direction
     float _lim_err_max; // error limit in positive direction
     float _lim_D_Out;   // maximum first differential of output
