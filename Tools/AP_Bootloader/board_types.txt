@@ -113,6 +113,7 @@ AP_HW_MRO_CTRL_ZERO_OEM_H7           1024
 AP_HW_BEASTH7                        1025
 AP_HW_BEASTF7                        1026
 AP_HW_FlywooF745                     1027
+AP_HW_luminousbee5                   1029
 
 
 AP_HW_CUBEORANGE_PERIPH              1400
