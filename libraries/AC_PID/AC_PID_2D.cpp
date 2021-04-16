@@ -141,6 +141,28 @@ void AC_PID_2D::update_i(bool limit)
     }
 }
 
+Vector2f AC_PID_2D::get_p() const
+{
+    return _error * _kp;
+}
+
+Vector2f AC_PID_2D::get_i() const
+{
+    return _integrator;
+}
+
+Vector2f AC_PID_2D::get_d() const
+{
+    return _derivative * _kd;
+}
+
+Vector2f AC_PID_2D::get_ff()
+{
+    _pid_info_x.FF = _target.x * _kff;
+    _pid_info_y.FF = _target.y * _kff;
+    return _target * _kff;
+}
+
 // save_gains - save gains to eeprom
 void AC_PID_2D::save_gains()
 {
