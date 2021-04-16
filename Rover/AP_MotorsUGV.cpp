@@ -105,6 +105,13 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
 
+    // @Param: OPTIONS
+    // @DisplayName: Options bitmask
+    // @Description: 0:do not allow reversing the speed scaler, 1:do not apply speed scaling to sterring and roll pitch outputs
+    // @Bitmask: 0:no reverse, 1:no speed scaling
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 14, AP_MotorsUGV, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -191,7 +198,7 @@ void AP_MotorsUGV::setup_servo_output()
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
     _steering = steering;
-    _scale_steering = apply_scaling;
+    _scale_steering = apply_scaling & ((_options & MOT_OPTIONS_NO_SPEED_SCALING) == 0);
 }
 
 // set throttle as a value from -100 to 100
@@ -298,6 +305,10 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // output to sails
     output_sail();
+
+    // output roll and pitch stabilization
+    // uses the sacailing from output_regular(), must be called after that
+    output_roll_pitch();
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
@@ -610,6 +621,9 @@ void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
 // output to regular steering and throttle channels
 void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering, float throttle)
 {
+    const bool no_reverse = (_options & MOT_OPTIONS_NO_REVERSE) != 0;
+    _scaling = 1.0f;
+
     // output to throttle channels
     if (armed) {
         if (_scale_steering) {
@@ -662,7 +676,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
             } else {
                 // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
                 if (is_positive(_speed_scale_base) && (fabsf(ground_speed) > _speed_scale_base)) {
-                    steering *= (_speed_scale_base / fabsf(ground_speed));
+                    _scaling *= (_speed_scale_base / fabsf(ground_speed));
                 } else {
                     // regular steering rover at low speed so set limits to stop I-term build-up in controllers
                     if (!have_skid_steering()) {
@@ -671,16 +685,17 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                     }
                 }
                 // reverse steering direction when backing up
-                if (is_negative(ground_speed)) {
-                    steering *= -1.0f;
+                if (is_negative(ground_speed) & !no_reverse) {
+                    _scaling *= -1.0f;
                 }
             }
         } else {
             // reverse steering direction when backing up
-            if (is_negative(throttle)) {
-                steering *= -1.0f;
+            if (is_negative(throttle) & !no_reverse) {
+                _scaling *= -1.0f;
             }
         }
+        steering *= _scaling;
         output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
@@ -980,3 +995,40 @@ bool AP_MotorsUGV::active() const
 
     return false;
 }
+
+// set roll and pitch outputs and apply scaling
+void AP_MotorsUGV::set_roll_pitch(float roll, float pitch)
+{
+    _roll = constrain_float(roll * _scaling, -SERVO_MAX, SERVO_MAX);
+    _pitch = constrain_float(pitch * _scaling, -SERVO_MAX, SERVO_MAX);
+}
+
+// output to roll and pitch control surfaces
+void AP_MotorsUGV::output_roll_pitch()
+{
+    // output separate control surfaces
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, _roll);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _pitch);
+
+    // also mix
+    const float elevon_left = constrain_float(_pitch + _roll, -SERVO_MAX, SERVO_MAX);
+    const float elevon_right = constrain_float( _pitch - _roll, -SERVO_MAX, SERVO_MAX);
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, elevon_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, elevon_right);
+
+    // apply flap
+    float flap = 0.0f;
+    RC_Channel *flapin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FLAP);
+    if (flapin != nullptr) {
+        flap = flapin->norm_input() * SERVO_MAX;
+    }
+    
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flap, flap);
+
+    float flaperon_left  = constrain_float(_roll + flap, -4500, 4500);
+    float flaperon_right = constrain_float(_roll - flap, -4500, 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
+}
+

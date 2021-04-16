@@ -67,6 +67,7 @@ void ModeAuto::update()
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
                 calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
+                calc_and_set_roll_pitch();
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {

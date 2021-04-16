@@ -30,4 +30,6 @@ void ModeSimple::update()
     // run throttle and steering controllers
     calc_steering_to_heading(desired_heading_cd);
     calc_throttle(desired_speed, true);
+
+    calc_and_set_roll_pitch();
 }

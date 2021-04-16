@@ -95,6 +95,9 @@ public:
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_angle_max); }
 
+    // set roll pitch outputs
+    void set_roll_pitch(float roll, float pitch);
+
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
     // dt should be expected time between calls to this function
@@ -171,6 +174,9 @@ protected:
     // use rate controller to achieve desired throttle
     float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
 
+    // output roll and pitch stabilization
+    void output_roll_pitch();
+
     // external references
     AP_ServoRelayEvents &_relayEvents;
 
@@ -187,9 +193,16 @@ protected:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Int16 _options; // bitmask of options
+
+    enum mot_options {
+        MOT_OPTIONS_NO_REVERSE = (1 << 0),
+        MOT_OPTIONS_NO_SPEED_SCALING = (1 << 1),
+    };
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
+    float   _scaling;  // scaling factor used for steering
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle

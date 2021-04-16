@@ -21,6 +21,10 @@ void Rover::Log_Write_Attitude()
     // log steering rate controller
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
     logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
+    
+    // write roll and pitch controller PID logs
+    logger.Write_PID(LOG_ROLL_PID2, g2.attitude_control.get_roll_pid().get_pid_info());
+    logger.Write_PID(LOG_PITCH_PID2, g2.attitude_control.get_pitch_pid().get_pid_info());
 
     // log pitch control for balance bots
     if (is_balancebot()) {
@@ -329,6 +333,10 @@ const LogStructure Rover::log_structure[] = {
     
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+    { LOG_ROLL_PID2, sizeof(log_PID),
+      "PI2R", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PITCH_PID2, sizeof(log_PID),
+      "PI2P", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
 };
 
 void Rover::log_init(void)

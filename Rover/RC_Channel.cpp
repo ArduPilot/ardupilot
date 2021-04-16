@@ -35,6 +35,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     // the following functions do not need initialising:
     case AUX_FUNC::ACRO:
     case AUX_FUNC::AUTO:
+    case AUX_FUNC::FLAP:
     case AUX_FUNC::FOLLOW:
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::HOLD:
@@ -245,6 +246,7 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
+    case AUX_FUNC::FLAP:
         break;
 
     default:

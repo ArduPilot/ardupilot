@@ -59,6 +59,8 @@ void ModeLoiter::update()
     // run steering and throttle controllers
     calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(_desired_speed, true);
+
+    calc_and_set_roll_pitch();
 }
 
 // get desired location

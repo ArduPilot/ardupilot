@@ -27,6 +27,8 @@
 #define LOG_STARTUP_MSG         0x06
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
+#define LOG_ROLL_PID2           0x0F
+#define LOG_PITCH_PID2          0x10
 
 #define TYPE_GROUNDSTART_MSG    0x01
 
