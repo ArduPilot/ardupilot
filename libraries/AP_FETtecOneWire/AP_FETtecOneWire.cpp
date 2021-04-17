@@ -118,12 +118,12 @@ void AP_FETtecOneWire::update()
                     break;
 
                 case telem_type::VOLT:
-                    t.voltage = float(requestedTelemetry[i] * 0.01f);  // centi-Volt to Volt
+                    t.voltage = float(requestedTelemetry[i]) * 0.01f;  // centi-Volt to Volt
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
                     break;
 
                 case telem_type::CURRENT:
-                    t.current = float(requestedTelemetry[i] * 0.01f);  // centi-Ampere to Ampere
+                    t.current = float(requestedTelemetry[i]) * 0.01f;  // centi-Ampere to Ampere
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
                     break;
 
