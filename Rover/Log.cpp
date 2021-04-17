@@ -46,9 +46,7 @@ void Rover::Log_Write_Depth()
 
     // get position
     Location loc;
-    if (!ahrs.get_position(loc)) {
-        return;
-    }
+    IGNORE_RETURN(ahrs.get_position(loc));
 
     // check if new sensor reading has arrived
     uint32_t reading_ms = rangefinder.last_reading_ms(ROTATION_PITCH_270);
