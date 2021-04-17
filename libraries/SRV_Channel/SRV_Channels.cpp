@@ -200,7 +200,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 #if HAL_AP_FETTECONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
-    AP_SUBGROUPINFO(fetteconwire, "_FTW_",  23, SRV_Channels, AP_FETtecOneWire),
+    AP_SUBGROUPINFO(fetteconwire, "_FTW_",  24, SRV_Channels, AP_FETtecOneWire),
 #endif
 
 #endif // HAL_BUILD_AP_PERIPH
