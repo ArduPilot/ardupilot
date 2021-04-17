@@ -242,7 +242,7 @@ def process_library(vehicle, library, pathprefix=None):
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" %
                       (field[0], vehicle.name, vehicle.truename, field[1], str(only_for_vehicles)))
                 value = re.sub('@PREFIX@', library.name, field[2])
-                if field[0] == "Values":
+                if field[0] in ['Values', 'Bitmask']:
                     if vehicle.truename in only_for_vehicles:
                         this_vehicle_values_seen = True
                         this_vehicle_value = value
@@ -254,12 +254,12 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field[0], value)
                 else:
                     error("tagged param<: unknown parameter metadata field '%s'" % field[0])
-            if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
-                if this_vehicle_values_seen and field[0] == 'Values':
-                    setattr(p, field[0], this_vehicle_value)
-#                debug("Appending (non_vehicle_specific_values_seen=%u "
-#                      "other_vehicle_values_seen=%u this_vehicle_values_seen=%u)" %
-#                      (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
+                if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
+                    if this_vehicle_values_seen and field[0] in ['Values', 'Bitmask']:
+                        setattr(p, field[0], this_vehicle_value)
+    #                debug("Appending (non_vehicle_specific_values_seen=%u "
+    #                      "other_vehicle_values_seen=%u this_vehicle_values_seen=%u)" %
+    #                      (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
             p.path = path # Add path. Later deleted - only used for duplicates
             library.params.append(p)
 
