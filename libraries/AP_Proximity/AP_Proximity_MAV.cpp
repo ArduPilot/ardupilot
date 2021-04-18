@@ -23,7 +23,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAV_TIMEOUT_MS    500 // distance messages must arrive within this many milliseconds
-#define PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS  50  // boundary will be reset if mavlink message does not arrive within this many milliseconds
+#define PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS  50  // obstacles will be transferred from temp boundary to actual boundary if mavlink message does not arrive within this many milliseconds
 
 // update the state of the sensor
 void AP_Proximity_MAV::update(void)
@@ -85,8 +85,6 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         // we will add on to the last fence if the time stamp is the same
         // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
         if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
-            // cleared fence back to defaults since we have a new timestamp
-            boundary.reset();
             // push data from temp boundary to the main 3-D proximity boundary
             temp_boundary.update_3D_boundary(boundary);
             // clear temp boundary for new data
@@ -231,12 +229,8 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
         return;
     }
 
-    // we will add on to the last fence if the time stamp is the same
-    // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
     if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
-        // cleared fence back to defaults since we have a new timestamp
-        boundary.reset();
-        // push data from temp boundary to the main 3-D proximity boundary
+        // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
         temp_boundary.update_3D_boundary(boundary);
         // clear temp boundary for new data
         temp_boundary.reset();
