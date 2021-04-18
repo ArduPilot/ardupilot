@@ -22,7 +22,19 @@ void AP_Mount_ViewPro::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();
 
-    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ViewPro, 0);
+
+    if(_instance > 0){
+
+    	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ViewPro, 1);
+
+    }else{
+
+    	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ViewPro, 0);
+
+    }
+
+
+
     if (_port) {
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
@@ -527,6 +539,14 @@ void AP_Mount_ViewPro::parse_reply() {
 
 void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 
+	const RC_Channel *tilt_wheel_ch = rc().channel(CH_6);
+
+	if(!is_zero(tilt_wheel_ch->norm_input_dz()) and _cam_button_pressed and _cam_button_output !=0){
+
+		return;
+	}
+
+
 	if(!_RC_control_enable){
 
 		/*
@@ -544,7 +564,10 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 		}
 		*/
 
+
+		if(_cam_button_output == 0){
 		current_zoom_state = ZOOM_STOP;
+		}
 
 		return;
 	}
@@ -607,7 +630,6 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 
 
 
-
 }
 
 
@@ -624,29 +646,34 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 	if(tilt_wheel_ch->get_radio_in() == 0 or is_zero(tilt_wheel_ch->norm_input_dz())){
 
 		_speed_ef_target_deg.y = 0;
+		_speed_ef_target_deg.z = 0;
+
 
 	}else{
 
 
 		if(_cam_button_pressed){
 
+		//	hal.console->print("\n");
+		//	hal.console->print("cam pressed");
+			//hal.console->print("\n");
+
+
 			if(_cam_button_output == 1){
 
 				_speed_ef_target_deg.z = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
-				_speed_ef_target_deg.z = -1.0f* _speed_ef_target_deg.y;
+				_speed_ef_target_deg.z = -1.0f* _speed_ef_target_deg.z;
+
+				_speed_ef_target_deg.y = 0;
+
 
 			}else if(_cam_button_output == 2){
 
-				if(tilt_wheel_ch->norm_input_dz() > 0.25){
+			//	hal.console->print("\n");
+			//	hal.console->print("option 2");
+			//	hal.console->print("\n");
 
-					//Check if we've changed state
-					if(current_zoom_state != ZOOM_IN){
-						_zooming_state_change = true;
-					}
-					//Don't trigger _zooming_state_change again
-					current_zoom_state = ZOOM_IN;
-
-				}else if((tilt_wheel_ch->norm_input_dz() < -0.25)){
+				if(tilt_wheel_ch->norm_input_dz() > 0.10){
 
 					//Check if we've changed state
 					if(current_zoom_state != ZOOM_OUT){
@@ -654,6 +681,15 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 					}
 					//Don't trigger _zooming_state_change again
 					current_zoom_state = ZOOM_OUT;
+
+				}else if((tilt_wheel_ch->norm_input_dz() < -0.10)){
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_IN){
+						_zooming_state_change = true;
+					}
+					//Don't trigger _zooming_state_change again
+					current_zoom_state = ZOOM_IN;
 
 				}else{
 
@@ -676,9 +712,17 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 
 		}else{ //cam button not pressed, be normal
 
-
+			_speed_ef_target_deg.z = 0;
 			_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
 			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+
+			//Check if we've changed state
+			if(current_zoom_state != ZOOM_STOP){
+				_zooming_state_change = true;
+			}
+
+			current_zoom_state = ZOOM_STOP;
 
 		}
 
@@ -699,15 +743,91 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 	const RC_Channel *pan_ch = rc().channel(CH_1);
 	const RC_Channel *tilt_ch = rc().channel(CH_2);
 
-	// Pan speed
-	_speed_ef_target_deg.z = -spd_factor + ((pan_ch->norm_input_dz() + 1) * spd_factor);
 
 	//Keep scroll wheel available even in autonomous modes
 	if(is_zero(tilt_wheel_ch->norm_input_dz())){
+
 		_speed_ef_target_deg.y = -spd_factor + ((tilt_ch->norm_input_dz() + 1) * spd_factor);
+
+		// Pan speed
+		_speed_ef_target_deg.z = -spd_factor + ((pan_ch->norm_input_dz() + 1) * spd_factor);
+
 	}else{
-		_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
-		_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+
+		//_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+	//	_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+
+
+
+
+		if(_cam_button_pressed){
+
+			if(_cam_button_output == 1){
+
+				_speed_ef_target_deg.z = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+				_speed_ef_target_deg.z = -1.0f* _speed_ef_target_deg.z;
+
+				_speed_ef_target_deg.y = 0;
+
+			}else if(_cam_button_output == 2){
+
+				if(tilt_wheel_ch->norm_input_dz() > 0.25){
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_OUT){
+						_zooming_state_change = true;
+					}
+					//Don't trigger _zooming_state_change again
+					current_zoom_state = ZOOM_OUT;
+
+				}else if((tilt_wheel_ch->norm_input_dz() < -0.25)){
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_IN){
+						_zooming_state_change = true;
+					}
+					//Don't trigger _zooming_state_change again
+					current_zoom_state = ZOOM_IN;
+
+				}else{
+
+
+					//Check if we've changed state
+					if(current_zoom_state != ZOOM_STOP){
+						_zooming_state_change = true;
+					}
+
+					current_zoom_state = ZOOM_STOP;
+				}
+
+
+			}else{
+
+				_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+				_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+			}
+
+
+		}else{ //cam button not pressed, be normal
+
+			_speed_ef_target_deg.z = 0;
+			_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+
+
+			//Check if we've changed state
+			if(current_zoom_state != ZOOM_STOP){
+				_zooming_state_change = true;
+			}
+
+			current_zoom_state = ZOOM_STOP;
+
+		}
+
+
 	}
 
 }
@@ -889,13 +1009,15 @@ void AP_Mount_ViewPro::command_gimbal(){
 			cmd_set_data.Ya = (int)0;
 			cmd_set_data.crc = 0;
 
+
+			/*
 			// force follow mode by not giving a control mode to Yaw
 			if(!_RC_control_enable){
 				cmd_set_data.YM = 0x00;
 				cmd_set_data.Ys = (int)0;
 				cmd_set_data.Ya = (int)0;
 			}
-
+*/
 
 			break;
 

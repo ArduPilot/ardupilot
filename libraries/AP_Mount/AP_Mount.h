@@ -170,6 +170,8 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
+    uint8_t             _num_instances;
+
 protected:
 
     static AP_Mount *_singleton;
@@ -183,7 +185,7 @@ protected:
 
 
     // front end members
-    uint8_t             _num_instances;     // number of mounts instantiated
+   // uint8_t             _num_instances;     // number of mounts instantiated
     uint8_t             _primary;           // primary mount
     AP_Mount_Backend    *_backends[AP_MOUNT_MAX_INSTANCES];         // pointers to instantiated mounts
 

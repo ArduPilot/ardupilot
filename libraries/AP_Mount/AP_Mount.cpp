@@ -9,6 +9,8 @@
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_ViewPro.h"
 
+extern const AP_HAL::HAL& hal;
+
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
@@ -409,6 +411,32 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+
+
+
+    // @Param: _TYPE
+    // @DisplayName: Mount Type
+    // @Description: Mount Type (None, Servo or MAVLink)
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("2_CM_SPD_MAX", 43, AP_Mount, state[1]._camera_speed_max, 30),
+
+
+
+    // @Param: _TYPE
+    // @DisplayName: Mount Type
+    // @Description: Mount Type (None, Servo or MAVLink)
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("2_CM_SPD_MIN", 44, AP_Mount, state[1]._camera_speed_min, 2),
+
+
+
+
+
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
@@ -510,6 +538,20 @@ void AP_Mount::update()
             _backends[instance]->update();
         }
     }
+
+
+
+
+	//Debugging
+/*
+	hal.console->print("\n");
+	hal.console->print("\n");
+	hal.console->printf("Num: %u", _num_instances);
+	hal.console->print("\n");
+
+*/
+
+
 }
 
 // used for gimbals that need to read INS data at full rate

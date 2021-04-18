@@ -86,6 +86,8 @@ void Copter::userhook_init()
     	auto_config();
     }
 
+   camera_mount.cam_button_output(g.ch_output);
+
 
 }
 #endif
@@ -459,6 +461,7 @@ void Copter::Detect_Buttons(){
 	//CH7, CAM Button
 
 	if(g.ch_output == 0){
+
 		if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1800){
 			if(!ch7_button_hold){
 				if(!ch7_button_pressed){
@@ -482,6 +485,7 @@ void Copter::Detect_Buttons(){
 				ch7_button_pressed = false; //reset button press flag
 			}
 		}
+
 	}
 
 
@@ -605,6 +609,9 @@ if(g.ch_output == 0){
 }else if(g.ch_output == 1){
 
 
+	  camera_mount.cam_button_output(g.ch_output);
+
+
 	if(ch7_button_hold){
 		camera_mount.cam_button_pressed(true);
 	}else{
@@ -613,6 +620,8 @@ if(g.ch_output == 0){
 
 
 }else if(g.ch_output == 2){
+
+	  camera_mount.cam_button_output(g.ch_output);
 
 
 	if(ch7_button_hold){
