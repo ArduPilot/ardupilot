@@ -362,7 +362,10 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_REBOOT:
-        debug("MSP: ignoring reboot command");
+        debug("MSP: ignoring reboot command, end serial comms");
+        hal.rcout->serial_end();
+        blheli.connected[blheli.chan] = false;
+        serial_start_ms = 0;
         break;
 
     case MSP_UID:
@@ -590,6 +593,9 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
+    // 19200 baud is 52us per bit - wait for half a bit between sending and receiving to avoid reading
+    // the end of the last sent bit by accident
+    hal.scheduler->delay_microseconds(26);
     return true;
 }
 
