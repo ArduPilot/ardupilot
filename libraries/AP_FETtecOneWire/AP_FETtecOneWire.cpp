@@ -131,7 +131,13 @@ void AP_FETtecOneWire::update()
                     if (pole_count < 2) { // If Parameter is invalid use 14 Poles
                         pole_count = 14;
                     }
-                    update_rpm(i, requestedTelemetry[i]*100*2/pole_count.get());
+                    if (rpm_pkt_cnt[i] >= float(1 << 24)) {
+                        rpm_pkt_cnt[i] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
+                        crc_error_cnt[i] = 0.0f;
+                    } else {
+                        rpm_pkt_cnt[i]++;
+                    }
+                    update_rpm(i, requestedTelemetry[i]*100*2/pole_count.get(), 100.0f*crc_error_cnt[i]/rpm_pkt_cnt[i]);
                     break;
 
                 case telem_type::CONSUMPTION:
@@ -193,7 +199,7 @@ void AP_FETtecOneWire::Transmit(uint8_t ESC_id, uint8_t* Bytes, uint8_t Length)
     @param Bytes 8 bit byte array, where the received answer gets stored in
     @param Length the expected answer length
     @param returnFullFrame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
-    @return 1 if the expected answer frame was there, 0 if dont
+    @return 2 on CRC error, 1 if the expected answer frame was there, 0 if dont
 */
 uint8_t AP_FETtecOneWire::Receive(uint8_t* Bytes, uint8_t Length, uint8_t returnFullFrame)
 {
@@ -240,7 +246,7 @@ uint8_t AP_FETtecOneWire::Receive(uint8_t* Bytes, uint8_t Length, uint8_t return
                 }
                 return 1;
             } else {
-                return 0;
+                return 2;
             } // crc missmatch
         } else {
             return 0;
@@ -275,9 +281,17 @@ uint8_t AP_FETtecOneWire::PullCommand(uint8_t ESC_id, uint8_t* command, uint8_t*
         _PullSuccess = 0;
         Transmit(ESC_id, command, _RequestLength[command[0]]);
     } else {
-        if (Receive(response, _ResponseLength[command[0]], returnFullFrame)) {
-            _PullSuccess = 1;
-            _PullBusy = 0;
+        uint8_t recv_ret = Receive(response, _ResponseLength[command[0]], returnFullFrame);
+        switch (recv_ret) {
+            case 1:
+                _PullSuccess = 1;
+                _PullBusy = 0;
+                break;
+            case 2:
+                crc_error_cnt[ESC_id]++;
+                break;
+            default:
+                break;
         }
     }
     return _PullSuccess;
