@@ -158,6 +158,8 @@ private:
     } FETtecOneWireESC_t;
 
     uint8_t _activeESC_IDs[MOTOR_COUNT_MAX] = {0};
+    float rpm_pkt_cnt[MOTOR_COUNT_MAX] = {0};
+    float crc_error_cnt[MOTOR_COUNT_MAX] = {0};
     FETtecOneWireESC_t _foundESCs[MOTOR_COUNT_MAX];
     uint8_t _FoundESCs;
     uint8_t _ScanActive;
