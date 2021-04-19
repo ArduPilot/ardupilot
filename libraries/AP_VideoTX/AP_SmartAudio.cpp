@@ -57,7 +57,7 @@ bool AP_SmartAudio::init()
             | AP_HAL::UARTDriver::OPTION_HDPLEX | AP_HAL::UARTDriver::OPTION_PULLDOWN_TX | AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
-                                          512, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+                                          768, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
             return false;
         }
 
