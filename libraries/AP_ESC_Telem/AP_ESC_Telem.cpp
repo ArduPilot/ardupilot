@@ -213,7 +213,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         // fill in output arrays
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = i * 4 + j;
-            temperature[j] = _telem_data[esc_id].temperature_cdeg;
+            temperature[j] = _telem_data[esc_id].temperature_cdeg / 100;
             voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100.0f, 0, UINT16_MAX);
             current[j] = constrain_float(_telem_data[esc_id].current * 100.0f, 0, UINT16_MAX);
             current_tot[j] = constrain_float(_telem_data[esc_id].consumption_mah, 0, UINT16_MAX);
