@@ -295,6 +295,7 @@ void AP_ESC_Telem::update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_r
     rpmdata.rpm = new_rpm;
     rpmdata.update_rate_hz = 1.0e6f / (now - rpmdata.last_update_us);
     rpmdata.last_update_us = now;
+    rpmdata.error_rate = error_rate;
 
 #ifdef ESC_TELEM_DEBUG
     hal.console->printf("RPM: rate=%.1fhz, rpm=%d)\n", rpmdata.update_rate_hz, new_rpm);
