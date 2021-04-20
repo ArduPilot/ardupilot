@@ -126,7 +126,7 @@ int32_t AP_Filesystem_Mission::read(int fd, void *buf, uint32_t count)
     uint8_t *ubuf = (uint8_t *)buf;
 
     if (r.file_ofs < sizeof(struct header)) {
-        struct header hdr;
+        struct header hdr {};
         hdr.data_type = uint16_t(r.mtype);
         hdr.num_items = r.num_items;
         uint8_t n = MIN(sizeof(hdr) - r.file_ofs, count);
@@ -142,7 +142,7 @@ int32_t AP_Filesystem_Mission::read(int fd, void *buf, uint32_t count)
     }
 
     uint32_t data_ofs = r.file_ofs - sizeof(struct header);
-    mavlink_mission_item_int_t item;
+    mavlink_mission_item_int_t item {};
     const uint8_t item_size = MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN;
     uint32_t item_ofs = data_ofs % item_size;
     uint32_t total = 0;
@@ -224,7 +224,7 @@ bool AP_Filesystem_Mission::check_file_name(const char *name, enum MAV_MISSION_T
 /*
   get one item
  */
-bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, mavlink_mission_item_int_t &item)
+bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, mavlink_mission_item_int_t &item) const
 {
     switch (mtype) {
     case MAV_MISSION_TYPE_MISSION: {
@@ -304,6 +304,7 @@ int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
             if (flen > r.writebuf->get_length()) {
                 if (!r.writebuf->append(nullptr, flen - r.writebuf->get_length())) {
                     // not enough memory
+                    errno = ENOSPC;
                     return -1;
                 }
             }
@@ -311,6 +312,7 @@ int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
     }
     if (r.file_ofs + count > r.writebuf->get_length()) {
         if (!r.writebuf->append(nullptr, r.file_ofs + count - r.writebuf->get_length())) {
+            errno = ENOSPC;
             return -1;
         }
     }
@@ -371,7 +373,7 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
         mission->clear();
     }
     for (uint32_t i=0; i<nitems; i++) {
-        mavlink_mission_item_int_t m;
+        mavlink_mission_item_int_t m {};
         AP_Mission::Mission_Command cmd;
         memcpy(&m, &b[sizeof(hdr)+i*item_size], item_size);
         const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(m, cmd);

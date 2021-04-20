@@ -61,7 +61,7 @@ private:
     bool check_file_name(const char *fname, enum MAV_MISSION_TYPE &mtype);
 
     // get one item
-    bool get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, mavlink_mission_item_int_t &item);
+    bool get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, mavlink_mission_item_int_t &item) const;
 
     // get number of items
     uint32_t get_num_items(enum MAV_MISSION_TYPE mtype) const;
