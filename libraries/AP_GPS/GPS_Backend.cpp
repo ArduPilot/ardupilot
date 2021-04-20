@@ -358,7 +358,12 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg,
             get_lag(lag);
 
             // get vehicle rotation, projected back in time using the gyro
-            auto &ahrs = AP::ahrs();
+            // this is not 100% accurate, but it is good enough for
+            // this test. To do it completely accurately we'd need an
+            // interface into DCM, EKF2 and EKF3 to ask for a
+            // historical attitude. That is far too complex to justify
+            // for this use case
+            const auto &ahrs = AP::ahrs();
             const Vector3f &gyro = ahrs.get_gyro();
             Matrix3f rot_body_to_ned = ahrs.get_rotation_body_to_ned();
             rot_body_to_ned.rotate(gyro * (-lag));
