@@ -31,11 +31,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
-<<<<<<< HEAD
 #include <AP_BoardConfig/AP_BoardConfig.h>
-=======
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
->>>>>>> AP_BLHeli: generalise ESC telemetry to allow harmonic notch handling with other ESCs
 
 extern const AP_HAL::HAL& hal;
 
@@ -144,8 +141,6 @@ AP_BLHeli::AP_BLHeli(void)
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
     last_control_port = -1;
-    // register as an ESC telemetry source
-    AP::esc_telem().add_backend(this);
 }
 
 /*
@@ -1408,7 +1403,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     }
     // record the previous rpm so that we can slew to the new one
     uint16_t new_rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
-    const unit8_t motor_idx = motor_map[last_telem_esc]
+    const uint8_t motor_idx = motor_map[last_telem_esc];
     update_rpm(motor_idx, new_rpm);
 
     TelemetryData t {
@@ -1418,7 +1413,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
     };
 
-    update_telem_data(last_telem_esc, t,
+    update_telem_data(motor_idx, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
             | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
