@@ -319,7 +319,12 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
             interim_state.velocity = vel;
             interim_state.ground_speed = norm(vel.x, vel.y);
             interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-            interim_state.have_vertical_velocity = true;
+            if (uavcan::isNaN(cb.msg->ned_velocity[2])) {
+                interim_state.have_vertical_velocity = false;
+                interim_state.velocity.z = 0;
+            } else {
+                interim_state.have_vertical_velocity = true;
+            }
         } else {
             interim_state.have_vertical_velocity = false;
         }
