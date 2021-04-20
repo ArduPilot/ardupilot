@@ -112,7 +112,6 @@ main(int argc, char *argv[])
         uint8_t size;
         var = (struct Param_header *)&eeprom[index];
         if (var->key == _sentinal_key ||
-            var->group_element == _sentinal_group ||
             var->type == _sentinal_type) {
             printf("end sentinel at %u\n", index);
             break;
