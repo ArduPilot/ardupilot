@@ -119,10 +119,6 @@ void RCOutput::init()
     hal.gpio->pinMode(57, 1);
 #endif
 
-#ifdef HAL_WITH_BIDIR_DSHOT
-    AP::esc_telem().add_backend(this);
-#endif
-
     _initialised = true;
 }
 
