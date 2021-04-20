@@ -93,7 +93,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     // init flags
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;
-    _flags.segment_type = SEGMENT_STRAIGHT;
 
     // sanity check some parameters
     _wp_accel_cmss = MIN(_wp_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
