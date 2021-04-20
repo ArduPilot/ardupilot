@@ -140,8 +140,6 @@ AP_BLHeli::AP_BLHeli(void)
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
     last_control_port = -1;
-    // register as an ESC telemetry source
-    AP::esc_telem().add_backend(this);
 }
 
 /*
