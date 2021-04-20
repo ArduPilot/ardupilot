@@ -8996,7 +8996,7 @@ switch value'''
                 mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
                 mavproxy.send("\n")
-            mavproxy.expect("APM: Calibration successful", timeout=timeout)
+            mavproxy.expect(".*Calibration successful", timeout=timeout)
             self.drain_mav()
 
             self.progress("Checking results")
