@@ -31,6 +31,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1255,6 +1256,13 @@ void AP_BLHeli::update(void)
             }
         }
     }
+
+    // check the user hasn't goofed, this also prevents weird crashes on arming
+    if (!initialised && channel_mask.get() == 0 && channel_auto.get() == 0
+        && (channel_bidir_dshot_mask.get() != 0 || channel_reversible_mask.get())) {
+        AP_BoardConfig::config_error("DSHOT needs SERVO_BLH_AUTO or _MASK");
+    }
+
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
             run_connection_test(run_test.get() - 1);
@@ -1376,7 +1384,7 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     // average the rpm of each motor as reported by BLHeli and convert to Hz
     for (uint8_t i = 0; i < num_motors; i++) {
         if (has_bidir_dshot(i)) {
-            uint16_t erpm = hal.rcout->get_erpm(i);
+            uint16_t erpm = hal.rcout->get_erpm(motor_map[i]);
             if (erpm > 0 && erpm < 0xFFFF) {
                 valid_escs++;
                 motor_freq += (erpm * 200 / motor_poles) / 60.f;
@@ -1404,7 +1412,7 @@ uint8_t AP_BLHeli::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
     // average the rpm of each motor as reported by BLHeli and convert to Hz
     for (uint8_t i = 0; i < num_motors && i < nfreqs; i++) {
         if (has_bidir_dshot(i)) {
-            uint16_t erpm = hal.rcout->get_erpm(i);
+            uint16_t erpm = hal.rcout->get_erpm(motor_map[i]);
             if (erpm > 0 && erpm < 0xFFFF) {
                 freqs[valid_escs++] = (erpm * 200 / motor_poles) / 60.f;
             }
@@ -1474,16 +1482,18 @@ void AP_BLHeli::read_telemetry_packet(void)
     uint16_t trpm = td.rpm;
     float terr = 0.0f;
 
+    const uint8_t motor_idx = motor_map[last_telem_esc];
+
     if (logger && logger->logging_enabled()
         // log at 10Hz
         && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
 
         if (has_bidir_dshot(last_telem_esc)) {
-            const uint16_t erpm = hal.rcout->get_erpm(last_telem_esc);
+            const uint16_t erpm = hal.rcout->get_erpm(motor_idx);
             if (erpm != 0xFFFF) {   // don't log invalid values
                 trpm = erpm * 200 / motor_poles;
             }
-            terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+            terr = hal.rcout->get_erpm_error_rate(motor_idx);
         }
 
         logger->Write_ESC(uint8_t(last_telem_esc),
@@ -1500,11 +1510,11 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     if (debug_level >= 2) {
         if (has_bidir_dshot(last_telem_esc)) {
-            trpm = hal.rcout->get_erpm(last_telem_esc);
+            trpm = hal.rcout->get_erpm(motor_idx);
             if (trpm != 0xFFFF) {
                 trpm = trpm * 200 / motor_poles;
             }
-            terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+            terr = hal.rcout->get_erpm_error_rate(motor_idx);
         }
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
@@ -1530,8 +1540,9 @@ void AP_BLHeli::log_bidir_telemetry(void)
         && now - last_log_ms[last_telem_esc] > 100) {
 
         if (has_bidir_dshot(last_telem_esc)) {
-            uint16_t trpm = hal.rcout->get_erpm(last_telem_esc);
-            const float terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+            const uint8_t motor_idx = motor_map[last_telem_esc];
+            uint16_t trpm = hal.rcout->get_erpm(motor_idx);
+            const float terr = hal.rcout->get_erpm_error_rate(motor_idx);
             if (trpm != 0xFFFF) {    // don't log invalid values as they are never used
                 trpm = trpm * 200 / motor_poles;
 
