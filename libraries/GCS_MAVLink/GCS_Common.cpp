@@ -5059,7 +5059,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_ESC_TELEMETRY:
-#ifdef HAL_WITH_ESC_TELEM
+#if HAL_WITH_ESC_TELEM
         AP::esc_telem().send_esc_telemetry_mavlink(uint8_t(chan));
 #endif
         break;
