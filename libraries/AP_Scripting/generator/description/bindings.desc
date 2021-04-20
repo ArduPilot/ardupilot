@@ -247,7 +247,14 @@ singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 
 include AP_ESC_Telem/AP_ESC_Telem.h
+singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem alias esc_telem
+singleton AP_ESC_Telem method get_rpm boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
+singleton AP_ESC_Telem method get_motor_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
+singleton AP_ESC_Telem method get_current boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_voltage boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
 
 include AP_Param/AP_Param.h
