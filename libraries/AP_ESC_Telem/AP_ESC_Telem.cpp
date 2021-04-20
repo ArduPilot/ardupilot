@@ -22,15 +22,6 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-  #include <AP_CANManager/AP_CANManager.h>
-  #include <AP_Common/AP_Common.h>
-  #include <AP_Vehicle/AP_Vehicle.h>
-  #include <AP_UAVCAN/AP_UAVCAN.h>
-  #include <AP_KDECAN/AP_KDECAN.h>
-  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 AP_ESC_Telem::AP_ESC_Telem()
@@ -308,19 +299,6 @@ void AP_ESC_Telem::init(void)
         return;
     }
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    const uint8_t num_drivers = AP::can().get_num_drivers();
-    for (uint8_t i = 0; i < num_drivers; i++) {
-        if (AP::can().get_driver_type(i) == AP_CANManager::Driver_Type_ToshibaCAN) {
-            AP_ToshibaCAN *tcan = AP_ToshibaCAN::get_tcan(i);
-            if (tcan != nullptr) {
-                add_backend(tcan);
-                break;
-            }
-        }
-    }
-#endif
-
     _initialised = true;
 }
 
@@ -352,18 +330,6 @@ void AP_ESC_Telem::update()
             }
         }
     }
-}
-
-bool AP_ESC_Telem::add_backend(AP_ESC_Telem_Backend *backend)
-{
-    if (!backend) {
-        return false;
-    }
-    if (_backend_count == ESC_MAX_BACKENDS) {
-        AP_BoardConfig::config_error("Too many ESC backends");
-    }
-    _backends[_backend_count++] = backend;
-    return true;
 }
 
 AP_ESC_Telem *AP_ESC_Telem::_singleton = nullptr;

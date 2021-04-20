@@ -5,7 +5,6 @@
 
 #if HAL_WITH_ESC_TELEM
 
-#define ESC_MAX_BACKENDS 6
 #define ESC_TELEM_MAX_ESCS   12
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000
 
@@ -74,9 +73,6 @@ private:
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint16_t data_mask);
 
-    AP_ESC_Telem_Backend* _backends[ESC_MAX_BACKENDS];
-
-    uint8_t _backend_count;
     bool _initialised;
 
     // rpm data

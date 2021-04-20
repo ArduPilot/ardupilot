@@ -26,7 +26,6 @@ extern const AP_HAL::HAL& hal;
 
 AP_ESC_Telem_SITL::AP_ESC_Telem_SITL()
 {
-    AP::esc_telem().add_backend(this);
 }
 
 void AP_ESC_Telem_SITL::update()
