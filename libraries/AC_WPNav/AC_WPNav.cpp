@@ -455,14 +455,12 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     Vector3f curr_target_vel = _pos_control.get_desired_velocity();
     curr_target_vel.z -= _vel_terrain_offset;
 
-    float track_error = 0.0f;
-    float track_velocity = 0.0f;
     float track_scaler_dt = 1.0f;
     // check target velocity is non-zero
     if (is_positive(curr_target_vel.length())) {
         Vector3f track_direction = curr_target_vel.normalized();
-        track_error = _pos_control.get_pos_error().dot(track_direction);
-        track_velocity = _inav.get_velocity().dot(track_direction);
+        const float track_error = _pos_control.get_pos_error().dot(track_direction);
+        const float track_velocity = _inav.get_velocity().dot(track_direction);
         // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
         track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.1f, 1.0f);
         // set time scaler to not exceed the maximum vertical velocity during terrain following.
@@ -471,8 +469,6 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         } else if (is_negative(curr_target_vel.z)) {
             track_scaler_dt = MIN(track_scaler_dt, fabsf(_wp_speed_down_cms / curr_target_vel.z));
         }
-    } else {
-        track_scaler_dt = 1.0f;
     }
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
     float track_scaler_tc = 1.0f;
