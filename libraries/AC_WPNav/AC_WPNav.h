@@ -29,13 +29,6 @@ class AC_WPNav
 {
 public:
 
-    // spline segment end types enum
-    enum spline_segment_end_type {
-        SEGMENT_END_STOP = 0,
-        SEGMENT_END_STRAIGHT,
-        SEGMENT_END_SPLINE
-    };
-
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
@@ -221,17 +214,10 @@ public:
 
 protected:
 
-    // segment types, either straight or spine
-    enum SegmentType {
-        SEGMENT_STRAIGHT = 0,
-        SEGMENT_SPLINE = 1
-    };
-
     // flags structure
     struct wpnav_flags {
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
-        SegmentType segment_type        : 1;    // active segment is either straight or spline
         uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
     } _flags;
 
