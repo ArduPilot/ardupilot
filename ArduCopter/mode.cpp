@@ -328,24 +328,6 @@ void Copter::update_flight_mode()
 void Copter::exit_mode(Mode *&old_flightmode,
                        Mode *&new_flightmode)
 {
-#if AUTOTUNE_ENABLED == ENABLED
-    if (old_flightmode == &mode_autotune) {
-        mode_autotune.stop();
-    }
-#endif
-
-    // stop mission when we leave auto mode
-#if MODE_AUTO_ENABLED == ENABLED
-    if (old_flightmode == &mode_auto) {
-        if (mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
-            mode_auto.mission.stop();
-        }
-#if HAL_MOUNT_ENABLED
-        camera_mount.set_mode_to_default();
-#endif  // HAL_MOUNT_ENABLED
-    }
-#endif
-
     // smooth throttle transition when switching from manual to automatic flight modes
     if (old_flightmode->has_manual_throttle() && !new_flightmode->has_manual_throttle() && motors->armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
@@ -355,30 +337,8 @@ void Copter::exit_mode(Mode *&old_flightmode,
     // cancel any takeoffs in progress
     old_flightmode->takeoff_stop();
 
-#if MODE_SMARTRTL_ENABLED == ENABLED
-    // call smart_rtl cleanup
-    if (old_flightmode == &mode_smartrtl) {
-        mode_smartrtl.exit();
-    }
-#endif
-
-#if MODE_FOLLOW_ENABLED == ENABLED
-    if (old_flightmode == &mode_follow) {
-        mode_follow.exit();
-    }
-#endif
-
-#if MODE_ZIGZAG_ENABLED == ENABLED
-    if (old_flightmode == &mode_zigzag) {
-        mode_zigzag.exit();
-    }
-#endif
-
-#if MODE_ACRO_ENABLED == ENABLED
-    if (old_flightmode == &mode_acro) {
-        mode_acro.exit();
-    }
-#endif
+    // perform cleanup required for each flight mode
+    old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
