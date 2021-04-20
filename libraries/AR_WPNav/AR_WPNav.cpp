@@ -83,6 +83,15 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
 
+    // @Param: PIVOT_DELAY
+    // @DisplayName: Delay after pivot turn
+    // @Description: Waiting time after pivot turn
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("PIVOT_DELAY", 7, AR_WPNav, _pivot_delay, 0),
+
     AP_GROUPEND
 };
 
@@ -315,10 +324,17 @@ void AR_WPNav::update_pivot_active_flag()
         return;
     }
 
-    // if within 10 degrees of the target heading, exit pivot steering
-    if (yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY) {
+    uint32_t now = AP_HAL::millis();
+
+    // if within 10 degrees of the target heading, set start time of pivot steering
+    if (_pivot_active && yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY && _pivot_start_ms == 0) {
+        _pivot_start_ms = now;
+    }
+
+    // exit pivot steering after the time set by pivot_delay has elapsed
+    if (_pivot_start_ms > 0 && now - _pivot_start_ms >= constrain_float(_pivot_delay.get(), 0.0f, 60.0f) * 1000.0f) {
         _pivot_active = false;
-        return;
+        _pivot_start_ms = 0;
     }
 }
 

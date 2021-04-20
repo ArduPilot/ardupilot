@@ -123,6 +123,7 @@ private:
     AP_Float _overshoot;            // maximum horizontal overshoot in meters
     AP_Int16 _pivot_angle;          // angle error that leads to pivot turn
     AP_Int16 _pivot_rate;           // desired turn rate during pivot turns in deg/sec
+    AP_Float _pivot_delay;          // waiting time after pivot turn
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
@@ -135,6 +136,7 @@ private:
 
     // variables for navigation
     uint32_t _last_update_ms;       // system time of last call to update
+    uint32_t _pivot_start_ms;       // system time when pivot turn started
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
