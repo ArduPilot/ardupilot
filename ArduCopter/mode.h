@@ -52,6 +52,7 @@ public:
     virtual bool init(bool ignore_checks) {
         return true;
     }
+    virtual void exit() {};
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
@@ -275,7 +276,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
@@ -350,6 +351,7 @@ public:
     Number mode_number() const override { return Number::AUTO; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -567,6 +569,7 @@ public:
     Number mode_number() const override { return Number::AUTOTUNE; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -575,7 +578,6 @@ public:
     bool is_autopilot() const override { return false; }
 
     void save_tuning_gains();
-    void stop();
     void reset();
 
 protected:
@@ -1217,7 +1219,7 @@ public:
     bool is_autopilot() const override { return true; }
 
     void save_position();
-    void exit();
+    void exit() override;
 
     bool is_landing() const override;
 
@@ -1478,7 +1480,7 @@ public:
     Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1521,7 +1523,7 @@ public:
     } zigzag_direction;
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     // auto control methods.  copter flies grid pattern

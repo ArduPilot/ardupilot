@@ -139,7 +139,7 @@ void ModeAutoTune::save_tuning_gains()
     autotune.save_tuning_gains();
 }
 
-void ModeAutoTune::stop()
+void ModeAutoTune::exit()
 {
     autotune.stop();
 }

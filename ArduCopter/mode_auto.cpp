@@ -55,6 +55,17 @@ bool ModeAuto::init(bool ignore_checks)
     }
 }
 
+// stop mission when we leave auto mode
+void ModeAuto::exit()
+{
+    if (copter.mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
+        copter.mode_auto.mission.stop();
+    }
+#if HAL_MOUNT_ENABLED
+    copter.camera_mount.set_mode_to_default();
+#endif  // HAL_MOUNT_ENABLED
+}
+
 // auto_run - runs the auto controller
 //      should be called at 100hz or more
 void ModeAuto::run()
