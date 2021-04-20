@@ -696,11 +696,11 @@ void AP_Param::set_key(Param_header &phdr, uint16_t key)
  */
 bool AP_Param::is_sentinal(const Param_header &phdr)
 {
-    // note that this is an ||, not an &&, as this makes us more
-    // robust to power off while adding a variable to EEPROM
+    // note that this is an ||, not an && on the key and group, as
+    // this makes us more robust to power off while adding a variable
+    // to EEPROM
     if (phdr.type == _sentinal_type ||
-        get_key(phdr) == _sentinal_key ||
-        phdr.group_element == _sentinal_group) {
+        get_key(phdr) == _sentinal_key) {
         return true;
     }
     // also check for 0xFFFFFFFF and 0x00000000, which are the fill
