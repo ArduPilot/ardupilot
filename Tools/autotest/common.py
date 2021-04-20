@@ -4984,6 +4984,15 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def wait_distance_to_waypoint(self, wp_num, distance_min, distance_max, **kwargs):
+        # TODO: use mission_request_partial_list_send
+        wps = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        m = wps[wp_num]
+        self.progress("m: %s" % str(m))
+        loc = mavutil.location(m.x / 1.0e7, m.y / 1.0e7, 0, 0)
+        self.progress("loc: %s" % str(loc))
+        self.wait_distance_to_location(loc, distance_min, distance_max, **kwargs)
+
     def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         assert distance_min <= distance_max, "Distance min should be less than distance max."
