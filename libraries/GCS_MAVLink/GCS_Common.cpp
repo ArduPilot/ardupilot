@@ -47,6 +47,7 @@
 #include <AP_Winch/AP_Winch.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
+#include <AP_Parachute/AP_Parachute.h>
 
 #include <stdio.h>
 
@@ -3334,6 +3335,19 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
     }
 }
 
+MAV_RESULT GCS_MAVLINK::handle_user_cmd(const mavlink_command_long_t &packet)
+{
+#if HAL_PARACHUTE_ENABLED
+    AP_Parachute *parachute = AP::parachute();
+    if (parachute == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    return parachute->handle_cmd(packet);
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif // HAL_PARACHUTE_ENABLED
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -4247,7 +4261,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_FIXED_MAG_CAL_YAW:
         result = handle_fixed_mag_cal_yaw(packet);
         break;
-        
+
+    case MAV_CMD_USER_1:
+        result = handle_user_cmd(packet);
+        break;
+
     default:
         result = MAV_RESULT_UNSUPPORTED;
         break;

@@ -503,6 +503,7 @@ protected:
     void handle_optical_flow(const mavlink_message_t &msg);
 
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_user_cmd(const mavlink_command_long_t &packet);
 
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
