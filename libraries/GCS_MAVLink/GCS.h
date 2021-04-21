@@ -449,6 +449,10 @@ public:
     void send_flight_information();
 #endif
 
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    void send_component_information() const;
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
