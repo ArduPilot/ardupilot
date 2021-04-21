@@ -51,6 +51,13 @@ private:
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
+
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    void general_metadata(ExpandingString &str);
+#endif
+#if AP_FILESYSTEM_SYS_EVENTS_METADATA_ENABLED
+    void events_metadata(ExpandingString &str);
+#endif
 };
 
 #endif  // AP_FILESYSTEM_SYS_ENABLED
