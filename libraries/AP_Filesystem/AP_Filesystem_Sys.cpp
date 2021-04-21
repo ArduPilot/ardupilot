@@ -36,6 +36,7 @@ static const SysFileList sysfs_file_list[] = {
     {"dma.txt"},
     {"memory.txt"},
     {"uarts.txt"},
+    {"general_metadata.json"},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt"},
     {"can0_stats.txt"},
@@ -53,6 +54,33 @@ int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
         }
     }
     return -1;
+}
+
+void AP_Filesystem_Sys::general_metadata(ExpandingString &str)
+{
+    const struct MetaDataInfo {
+        int type_id;
+        const char * uri;
+    }  metadata[] = {
+        3,  // COMP_METADATA_TYPE_EVENTS
+        "mftp:/@SYS/events_metadata.json"
+    };
+    // a header to allow for machine parsers to determine format
+    str.printf(
+        "{"
+        "  \"version\": 1,"
+        "  \"metadataTypes\": ["
+        );
+    for (const MetaDataInfo &info : metadata) {
+        str.printf("[ {\"type\": %d, \"uri\": \"%s\", \"fileCrc\": 133761337} ],",
+                   info.type_id,
+                   info.uri);
+    }
+
+    str.printf(
+        "   ]"
+        );
+
 }
 
 int AP_Filesystem_Sys::open(const char *fname, int flags)
@@ -101,6 +129,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     }
     if (strcmp(fname, "uarts.txt") == 0) {
         hal.util->uart_info(*r.str);
+    }
+    if (strcmp(fname, "general_metadata.json") == 0) {
+        general_metadata(*r.str);
     }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     int8_t can_stats_num = -1;

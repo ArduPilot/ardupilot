@@ -47,4 +47,6 @@ private:
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
+
+    void general_metadata(ExpandingString &str);
 };
