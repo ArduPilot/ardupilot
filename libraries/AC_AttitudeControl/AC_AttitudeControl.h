@@ -400,7 +400,7 @@ protected:
 
     // This represents a 321-intrinsic rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller, in radians.
-    Vector3f            _euler_angle_target; // _euler_angle_target
+    Vector3f            _euler_angle_target;
 
     // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per

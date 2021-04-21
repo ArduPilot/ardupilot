@@ -75,10 +75,10 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
     const float spitch = fabsf(sinf(euler_pitch));
 
     // Compute attitude error
-    Quaternion attitude_vehicle_quat;
+    Quaternion attitude_body;
     Quaternion error_quat;
-    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
-    error_quat = attitude_vehicle_quat.inverse() * _attitude_target;
+    _ahrs.get_quat_body_to_ned(attitude_body);
+    error_quat = attitude_body.inverse() * _attitude_target;
     Vector3f att_error;
     error_quat.to_axis_angle(att_error);
 
@@ -124,7 +124,7 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
     _ang_vel_target.zero();
 
     // Compute attitude error
-    error_quat = attitude_vehicle_quat.inverse() * _attitude_target;
+    error_quat = attitude_body.inverse() * _attitude_target;
     error_quat.to_axis_angle(att_error);
 
     // Compute the angular velocity target from the attitude error
