@@ -11,11 +11,6 @@ bool ModeAuto::_enter()
         return false;
     }
 
-    // init location target
-    if (!g2.wp_nav.set_desired_location(rover.current_loc)) {
-        return false;
-    }
-
     // initialise waypoint speed
     g2.wp_nav.set_desired_speed_to_default();
 
@@ -24,6 +19,15 @@ bool ModeAuto::_enter()
 
     // clear guided limits
     rover.mode_guided.limit_clear();
+
+    // initialise submode to stop or loiter
+    if (rover.is_boat()) {
+        if (!start_loiter()) {
+            start_stop();
+        }
+    } else {
+        start_stop();
+    }
 
     // restart mission processing
     mission.start_or_resume();
