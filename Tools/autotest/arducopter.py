@@ -4614,7 +4614,7 @@ class AutoTestCopter(AutoTest):
 
         ex = None
         # we are dealing with probabalistic scenarios involving threads, have two bites at the cherry
-        for loop in ["first" "second"]:
+        for loop in ["first", "second"]:
             try:
                 self.set_rc_default()
                 # magic tridge EKF type that dramatically speeds up the test
@@ -4743,6 +4743,7 @@ class AutoTestCopter(AutoTest):
                 self.reboot_sitl()
 
             except Exception as e:
+                self.print_exception_caught(e)
                 self.progress("Exception caught in %s loop" % (loop, ))
                 if loop != "second":
                     continue
