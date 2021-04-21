@@ -25,6 +25,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
@@ -33,6 +34,10 @@ struct SysFileList {
     const char* name;
 };
 
+#ifndef HAL_LOG_EVENT_METADATA
+#define HAL_LOG_EVENT_METADATA 1
+#endif
+
 static const SysFileList sysfs_file_list[] = {
     {"threads.txt"},
     {"tasks.txt"},
@@ -40,6 +45,10 @@ static const SysFileList sysfs_file_list[] = {
     {"memory.txt"},
     {"uarts.txt"},
     {"timers.txt"},
+    {"general_metadata.json"},
+#if HAL_LOG_EVENT_METADATA
+    {"events_metadata.json"},
+#endif
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt"},
 #endif
@@ -65,6 +74,118 @@ int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
     }
     return -1;
 }
+
+void AP_Filesystem_Sys::general_metadata(ExpandingString &str)
+{
+    const struct MetaDataInfo {
+        int type_id;
+        const char * uri;
+    }  metadata[] = {
+        3,  // COMP_METADATA_TYPE_EVENTS
+#if HAL_LOG_EVENT_METADATA
+        "mftp:/@SYS/events_metadata.json"
+#else
+        "https://firmware.ardupilot.org/GITHASH/events_metadata.json"
+#endif
+    };
+    // a header to allow for machine parsers to determine format
+    str.printf(
+        "{"
+        "  \"version\": 1,"
+        "  \"metadataTypes\": ["
+        );
+
+    // FIXME: too many [?
+    const char *joiner = "";
+    for (const MetaDataInfo &info : metadata) {
+        str.printf("%s{\"type\": %d, \"uri\": \"%s\", \"fileCrc\": 133761337}",
+                   joiner,
+                   info.type_id,
+                   info.uri);
+        joiner = ",";
+    }
+
+    str.printf(
+        "   ]}"
+        );
+
+}
+
+#if HAL_LOG_EVENT_METADATA
+
+void AP_Filesystem_Sys::events_metadata(ExpandingString &str)
+{
+    static const struct {
+        LogEvent value;
+        const char *name;
+        const char *description;
+    } logevent_metadata[] {
+        { LogEvent::ARMED, "Armed", "Vehicle was armed" },
+        { LogEvent::DISARMED, "Disarmed", "Vehicle was disarmed" },
+        { LogEvent::SET_HOME, "SetHome", "Vehicle home location was set" },
+    };
+
+    // FIXME: this is really the wrong schema for the LogError stuff.
+    static const struct {
+        LogErrorSubsystem value;
+        const char *name;
+        const char *description;
+    } logerror_metadata[] {
+        { LogErrorSubsystem::MAIN, "Main", "Bogus generic bucket for everything unclassified elsewhere" },
+    };
+
+    // a header to allow for machine parsers to determine format
+    str.printf(
+        "{                                       "
+        "    \"version\": 1,                     "
+        "    \"components\": [                   "
+        "        {                               "
+        "            \"component_id\": %u,       "
+        "            \"namespace\": \"common\",  "
+        "            \"enums\": [                "
+        "                {                       "
+        "                     \"name\": \"ardupilot_event\",    "
+        "                     \"type\": \"uint8_t\",            "
+        "                     \"description\": \"Generic ArduPilot events from AP_Logger::LogEvent\",              "
+        "                     \"entries\": [                    ",
+        1);  // FIXME: should be mavlink component ID of autopilot
+
+    const char *joiner = "";
+    for (auto &x : logevent_metadata) {
+        str.printf(
+            "%s{\"value\":%u, \"name\":\"%s\", \"description\":\"%s\"}\n",
+            joiner,
+            (unsigned)x.value,
+            x.name,
+            x.description
+            );
+        joiner = ",";
+    }
+    str.printf("]}, [{");
+    str.printf(
+        "                     \"name\": \"ardupilot_errors\",    "
+        "                     \"type\": \"uint8_t\",            "
+        "                     \"description\": \"Generic ArduPilot errors from AP_Logger::LogErrorSubsystem\",              "
+        "                     \"entries\": [                    "
+        );
+
+    joiner = "";
+    for (auto &x : logerror_metadata) {
+        str.printf(
+            "%s{\"value\":%u, \"name\":\"%s\", \"description\":\"%s\"}\n",
+            joiner,
+            (unsigned)x.value,
+            x.name,
+            x.description
+            );
+        joiner = ",";
+    }
+
+    str.printf("]}]");
+    str.printf("]}]}");
+}
+
+#endif
 
 int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_paths)
 {
@@ -120,6 +241,14 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     if (strcmp(fname, "timers.txt") == 0) {
         hal.util->timer_info(*r.str);
     }
+    if (strcmp(fname, "general_metadata.json") == 0) {
+        general_metadata(*r.str);
+    }
+#if HAL_LOG_EVENT_METADATA
+    if (strcmp(fname, "events_metadata.json") == 0) {
+        events_metadata(*r.str);
+    }
+#endif
 #if HAL_CANMANAGER_ENABLED
     if (strcmp(fname, "can_log.txt") == 0) {
         AP::can().log_retrieve(*r.str);
