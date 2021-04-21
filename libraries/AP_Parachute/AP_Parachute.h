@@ -5,6 +5,8 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Relay/AP_Relay.h>
+#include <GCS_MAVLink/GCS.h>
+
 
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_0       0
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_1       1
@@ -57,6 +59,8 @@ public:
 
     /// enabled - returns true if parachute release is enabled
     bool enabled() const { return _enabled; }
+
+    MAV_RESULT handle_cmd(const mavlink_command_long_t &packet);
 
     enum release_reason {
         SINK_RATE,
@@ -126,6 +130,7 @@ private:
     AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
     AP_Float    _min_accel;          // critical earth frame Z acceleration
     AP_Int32    _options;            // bitmask of options
+    AP_Int32    _cancel_delay;
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
@@ -137,6 +142,8 @@ private:
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
     uint32_t    _fall_time_ms;           // system time that the vehicle stated falling lower faster _min_accel
+    uint8_t     _release_reasons;        // bitmask of the current reasons to release
+    uint32_t    _cancel_timeout_ms;
 };
 
 namespace AP {

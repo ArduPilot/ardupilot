@@ -9,7 +9,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Arming/AP_Arming.h>
 
@@ -91,6 +90,11 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 8, AP_Parachute, _options, 0),
 
+    // @Param: CANCEL_MS
+    // @DisplayName: Cancel time in milli seconds
+    // @Description: Amount of time in milli seconds to receve a cancel message
+    // @User: Standard
+    AP_GROUPINFO("CANCEL_MS", 9, AP_Parachute, _cancel_delay, 0),
 
     AP_GROUPEND
 };
@@ -102,6 +106,8 @@ void AP_Parachute::enabled(bool on_off)
 
     // clear release_time
     _release_time = 0;
+    _release_reasons = 0;
+    _cancel_timeout_ms = 0;
 
     AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
@@ -114,20 +120,88 @@ void AP_Parachute::release(release_reason reason)
         return;
     }
 
+    // only take action if there is a change in release reason
+    if ((_release_reasons && (1U <<reason)) == 0) {
+        return;
+    }
+
+    // add the current release reason to the bitmask
+    _release_reasons |= 1U << reason;
+
+    const uint32_t now = AP_HAL::millis();
+    if (_cancel_timeout_ms == 0) {
+        // set the system time when the deploy will trigger
+        _cancel_timeout_ms = now + _cancel_delay;
+    }
+
+    // send user command long for deploy reason and time
+    mavlink_command_long_t cmd_msg{};
+    cmd_msg.command = MAV_CMD_USER_1;
+    cmd_msg.param1 = reason; // bitmask of reason to release, see release_reason enum
+    cmd_msg.param2 = _cancel_timeout_ms - now; // ms until release
+    // might also want to get standby states, we would have to ask AP_Vehicle
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg);
+
     const char *string = string_for_release(reason);
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released %s", string);
+    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Releaseing in %i ms - %s", _cancel_timeout_ms - now, string);
+}
+
+MAV_RESULT AP_Parachute::handle_cmd(const mavlink_command_long_t &packet)
+{
+    if (_enabled <= 0) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    if (_release_reasons == 0 && _cancel_timeout_ms == 0) {
+        // nothing to cancel
+        return MAV_RESULT_DENIED;
+    }
+
+    if (packet.param2 > 0) {
+        // reset the timer
+        _cancel_timeout_ms = AP_HAL::millis() + _cancel_delay;
+    }
+
+    // Clear the release reasons given in the message
+    _release_reasons = _release_reasons ^ uint8_t(packet.param1);
+
+
+    if (_release_reasons == 0) {
+        // release is completely canceled
+        _cancel_timeout_ms = 0;
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+/// update - shuts off the trigger should be called at about 10hz
+void AP_Parachute::update()
+{
+    // exit immediately if not enabled or parachute not to be released
+    if (_enabled <= 0 || _cancel_timeout_ms == 0) {
+        return;
+    }
+    const uint32_t now = AP_HAL::millis();
+
+    // wait for a possible cancel
+    if (now < _cancel_timeout_ms) {
+        return;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
     AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
 
     if (_options & NOTIFY_ONLY) {
         // just send text and write to log, do not actually do anything
         // usefull for testing thresholds are not exceeded in normal flight
+        _cancel_timeout_ms = 0;
         return;
     }
 
     // set release time to current system time
     if (_release_time == 0) {
-        _release_time = AP_HAL::millis();
+        _release_time = now;
         _release_setup = false;
     }
 
@@ -135,18 +209,9 @@ void AP_Parachute::release(release_reason reason)
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
-}
-
-/// update - shuts off the trigger should be called at about 10hz
-void AP_Parachute::update()
-{
-    // exit immediately if not enabled or parachute not to be released
-    if (_enabled <= 0) {
-        return;
-    }
 
     // calc time since release
-    uint32_t time_diff = AP_HAL::millis() - _release_time;
+    uint32_t time_diff = now - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
 
     // check if we should release parachute
@@ -224,6 +289,7 @@ void AP_Parachute::check()
 {
     // return immediately if parachute is being released or vehicle is not flying
     if (_release_initiated || !_is_flying) {
+        _release_reasons = 0;
         return;
     }
 
@@ -231,7 +297,6 @@ void AP_Parachute::check()
     uint32_t now = AP_HAL::millis();
     if ((_sink_time_ms > 0) && ((now - _sink_time_ms) > 1000)) {
         release(release_reason::SINK_RATE);
-        return;
     }
     if ((_fall_time_ms > 0) && ((now - _fall_time_ms) > 1000)) {
         release(release_reason::ACCEL_FALLING);
