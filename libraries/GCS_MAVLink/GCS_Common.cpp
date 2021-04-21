@@ -1203,6 +1203,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+        { MAVLINK_MSG_ID_COMPONENT_INFORMATION, MSG_COMPONENT_INFORMATION},
+#endif  // AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -6593,6 +6596,21 @@ bool GCS_MAVLINK::send_available_mode_monitor()
     return true;
 }
 
+void GCS_MAVLINK::send_component_information() const
+{
+    const char *general_metadata_url = "mftp:/@SYS/general_metadata.json";
+    const uint32_t general_metadata_checksum = 133761337;
+
+    mavlink_msg_component_information_send(
+        chan,
+        AP_HAL::millis(),
+        general_metadata_checksum,
+        general_metadata_url,
+        0,  // -1?
+        ""
+        );
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -6997,6 +7015,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
     }
 #endif
+
+    case MSG_COMPONENT_INFORMATION:
+        CHECK_PAYLOAD_SIZE(COMPONENT_INFORMATION);
+        send_component_information();
+        break;
 
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
