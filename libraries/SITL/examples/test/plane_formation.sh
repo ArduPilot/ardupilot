@@ -1,5 +1,3 @@
-#Author:Shreya Kulsh
-#This program tests a formation between three planes
 #!/bin/bash
 
 # three plane swarm 
