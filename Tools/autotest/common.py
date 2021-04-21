@@ -5621,14 +5621,14 @@ Also, ignores heartbeats not from our target system'''
         buildlogs directory'''
         to_dir = self.logs_dir
         # move binary log files
-        for log in self.bin_logs():
+        for log in sorted(self.bin_logs()):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
             print("Renaming %s to %s" % (log, newname))
             shutil.move(log, newname)
         # move core files
         save_binaries = False
-        for log in glob.glob("core*"):
+        for log in sorted(glob.glob("core*")):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (bname, self.log_name(), name))
             print("Renaming %s to %s" % (log, newname))
