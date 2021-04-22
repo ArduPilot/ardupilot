@@ -13,6 +13,7 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_MPPT_PacketDigital.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -195,6 +196,11 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
                 break;
 #endif // GENERATOR_ENABLED
+#if HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
+            case Type::MPPT_PacketDigital:
+                drivers[instance] = new AP_BattMonitor_MPPT_PacketDigital(*this, state[instance], _params[instance]);
+                break;
+#endif // HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
             case Type::NONE:
             default:
                 break;
