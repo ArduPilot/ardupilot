@@ -36,6 +36,9 @@ public:
     // handler for incoming frames
     virtual void handle_frame(AP_HAL::CANFrame &frame) = 0;
 
+    // handler for outgoing frames
+    bool write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us);
+
 private:
     void loop();
 
