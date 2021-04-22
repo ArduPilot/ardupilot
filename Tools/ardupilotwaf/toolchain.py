@@ -143,7 +143,7 @@ def configure(cfg):
         return
 
     _set_pkgconfig_crosscompilation_wrapper(cfg)
-    if sys.platform.startswith("cygwin") or True:
+    if sys.platform.startswith("cygwin"):
         # on cygwin arm-none-eabi-ar doesn't support the @FILE syntax for splitting long lines
         cfg.find_program('ar', var='AR', quiet=True)
     else:
