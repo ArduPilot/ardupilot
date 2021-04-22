@@ -236,10 +236,6 @@ enum class LogErrorCode : uint8_t {
     GPS_GLITCH = 2,
 };
 
-// fwd declarations to avoid include errors
-class AC_AttitudeControl;
-class AC_PosControl;
-
 class AP_Logger
 {
     friend class AP_Logger_Backend; // for _num_types
