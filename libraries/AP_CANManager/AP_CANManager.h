@@ -60,6 +60,7 @@ public:
         Driver_Type_EFI_NWPMU = 6,
         Driver_Type_USD1 = 7,
         Driver_Type_KDECAN = 8,
+        Driver_Type_MPPT_PacketDigital = 9,
     };
 
     void init(void);
