@@ -405,6 +405,18 @@ void fill_nanf(float *f, uint16_t count)
 }
 #endif
 
+// Convert 16-bit fixed-point to float
+float fixed2float(const uint16_t input, const uint8_t fractional_bits)
+{
+    return ((float)input / (float)(1U << fractional_bits));
+}
+
+// Convert float to 16-bit fixed-point
+uint16_t float2fixed(const float input, const uint8_t fractional_bits)
+{
+    return (uint16_t)(roundf(input * (1U << fractional_bits)));
+}
+
 /*
   calculate turn rate in deg/sec given a bank angle and airspeed for a
   fixed wing aircraft
