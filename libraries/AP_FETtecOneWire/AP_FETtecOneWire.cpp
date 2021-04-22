@@ -77,20 +77,23 @@ void AP_FETtecOneWire::update()
         return;
     }
 
-    const uint16_t mask = uint16_t(motor_mask.get());
-
     // tell SRV_Channels about ESC capabilities
+    const uint16_t mask = uint16_t(motor_mask.get());
     SRV_Channels::set_digital_mask(mask);
+
+    // get ESC set points, stop as soon as there is a gap
+    uint8_t nr_escs = 0;
     for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
         SRV_Channel* c = SRV_Channels::srv_channel(i);
         if (c == nullptr) {
-            continue;
+            break;
         }
+        nr_escs++;
         _motorpwm[i] = c->get_output_pwm();
     }
 
     uint16_t requestedTelemetry[MOTOR_COUNT_MAX] = {0};
-    _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, MOTOR_COUNT_MAX, _telem_req_type);
+    _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, nr_escs, _telem_req_type);
 
     if (++_telem_req_type == telem_type::DEBUG1) {
         // telem_type::DEBUG1, telem_type::DEBUG2, telem_type::DEBUG3 are ignored
@@ -101,7 +104,7 @@ void AP_FETtecOneWire::update()
     if (_telem_avail != -1) {
         TelemetryData t {};
         uint16_t esc_mask = 1;
-        for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
+        for (uint8_t i = 0; i < nr_escs; i++) {
             if (mask & esc_mask) { // only update telemetry of enabled ESCs
                 switch(_telem_avail) {
                 case telem_type::TEMP:
