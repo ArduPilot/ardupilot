@@ -76,6 +76,7 @@ void AP_BattMonitor_ESC::read(void)
     }
     if (temperature_escs > 0) {
         _state.temperature = temperature_sum / temperature_escs;
+        have_temperature = true;
     } else {
         _state.temperature = 0;
     }

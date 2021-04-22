@@ -37,11 +37,15 @@ public:
     // read the latest battery voltage
     void read() override;
 
-    // BLHeliESC provides current info
+    // ESC_Telem provides current info
     bool has_current() const override { return have_current; };
+
+    // ESC_Telem provides temperature info
+    bool has_temperature() const override { return have_temperature; };
 
 private:
     bool have_current;
+    bool have_temperature;
 };
 
 #endif
