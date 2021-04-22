@@ -29,7 +29,7 @@ public:
     virtual ~AP_BattMonitor_Backend(void) {}
 
     // initialise
-    virtual void init() = 0;
+    virtual void init() {};
 
     // read the latest battery voltage
     virtual void read() = 0;

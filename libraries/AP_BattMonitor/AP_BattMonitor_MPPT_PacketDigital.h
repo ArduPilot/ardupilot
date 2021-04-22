@@ -29,9 +29,6 @@ public:
     /// returns true if battery monitor provides current info
     bool has_current() const override { return true; }
 
-    void init(void) override {}
-
-
 protected:
     // handler for incoming frames
     void handle_frame(AP_HAL::CANFrame &frame) override;
