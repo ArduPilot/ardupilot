@@ -2725,6 +2725,16 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_terrain_spline_mission(self):
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.set_parameter("TERRAIN_ENABLE", 0)
+        self.load_mission("wp.txt")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(4, 4)
+        self.wait_disarmed()
+
     def test_surface_tracking(self):
         ex = None
         self.context_push()
@@ -6656,6 +6666,10 @@ class AutoTestCopter(AutoTest):
             ("SetpointGlobalVel",
              "Test setpoint global velocity",
              self.test_set_velocity_global_int),
+
+            ("SplineTerrain",
+             "Test Splines and Terrain",
+             self.test_terrain_spline_mission),
 
         ])
         return ret
