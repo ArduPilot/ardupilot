@@ -33,7 +33,6 @@ void AP_BattMonitor_ESC::read(void)
     uint8_t temperature_escs = 0; // number of ESCs with valid temperature
     float voltage_sum = 0;
     float current_sum = 0;
-    float consumed_sum = 0;
     float temperature_sum = 0;
     uint32_t highest_ms = 0;
 
@@ -46,7 +45,7 @@ void AP_BattMonitor_ESC::read(void)
         if (telem.get_consumption_mah(i, consumption_mah)) {
             // accumulate consumed_sum regardless of age, to cope with ESC
             // dropping out
-            consumed_sum += consumption_mah;
+            _state.consumed_mah += consumption_mah;
         }
 
         if (telem.get_voltage(i, voltage)) {
@@ -82,7 +81,6 @@ void AP_BattMonitor_ESC::read(void)
     }
 
     _state.current_amps = current_sum;
-    _state.consumed_mah = consumed_sum;
     _state.last_time_micros = highest_ms * 1000;
     _state.temperature_time = highest_ms;
 
