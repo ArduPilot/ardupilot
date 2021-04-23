@@ -269,10 +269,22 @@ public:
     ///     throttle targets will be sent directly to the motors
     void update_vel_controller_xyz();
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
+    /// get desired roll and pitch to be passed to the attitude controller
     float get_roll() const { return _roll_target; }
     float get_pitch() const { return _pitch_target; }
+
+    /// get desired yaw to be passed to the attitude controller
+    float get_yaw_cd() const { return _yaw_target; }
+
+    /// get desired yaw rate to be passed to the attitude controller
+    float get_yaw_rate_cds() const { return _yaw_rate_target; }
+
+
+    /// get desired roll and pitch to be passed to the attitude controller
     Vector3f get_thrust_vector() const;
+
+    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    bool calculate_yaw_and_rate_yaw();
 
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
@@ -406,6 +418,8 @@ protected:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    float       _yaw_target;               // desired yaw in centi-degrees calculated by position controller
+    float       _yaw_rate_target;          // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
