@@ -59,9 +59,6 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // load backend drivers
-    bool add_backend(AP_ESC_Telem_Backend *backend);
-
     // udpate at 10Hz to log telemetry
     void update();
 
