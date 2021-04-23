@@ -343,11 +343,6 @@ void AP_Proximity::detect_instance(uint8_t instance)
         drivers[instance] = new AP_Proximity_SITL(*this, state[instance]);
         return;
 
-    case Type::MorseSITL:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_MorseSITL(*this, state[instance]);
-        return;
-
     case Type::AirSimSITL:
         state[instance].instance = instance;
         drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance]);

@@ -185,7 +185,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             // looking for 0x52 at start of buffer; the 62 following
             // bytes are "information"
             //All you have to do is to wait 2.1s after reset and you can start scan mode with S1, 2ms is wrong in documentation
-            if ( (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) {
+            if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) {
                 //Any input in resetted state come from scan before reset, must discard
                     _uart->discard_input();
                if ((AP_HAL::millis() - _last_reset_ms) > RESET_S1_WAIT_MS ) { 
