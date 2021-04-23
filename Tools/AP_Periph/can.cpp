@@ -1536,7 +1536,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Vector3f &vel = gps.velocity();
 
         pkt.timestamp.usec = AP_HAL::native_micros64();
-        pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+        pkt.gnss_timestamp.usec = gps.time_epoch_usec(0, false);
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
         } else {
@@ -1620,7 +1620,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Vector3f &vel = gps.velocity();
 
         pkt.timestamp.usec = AP_HAL::native_micros64();
-        pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+        pkt.gnss_timestamp.usec = gps.time_epoch_usec(0, false);
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
         } else {
