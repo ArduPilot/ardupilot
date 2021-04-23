@@ -816,6 +816,8 @@ void AC_PosControl::init_xy_controller()
     const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
     _roll_target = att_target_euler_cd.x;
     _pitch_target = att_target_euler_cd.y;
+    _yaw_target = att_target_euler_cd.z;
+    _yaw_rate_target = 0.0f;
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
@@ -901,6 +903,8 @@ void AC_PosControl::init_vel_controller_xyz()
     // set roll, pitch lean angle targets to current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
+    _yaw_target = _ahrs.yaw_sensor; // todo: this should be thrust vector heading, not yaw.
+    _yaw_rate_target = 0.0f;
 
     _pid_vel_xy.reset_filter();
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
@@ -1054,6 +1058,7 @@ void AC_PosControl::run_xy_controller(float dt)
 
     // update angle targets that will be passed to stabilize controller
     accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
+    calculate_yaw_and_rate_yaw();
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
@@ -1091,6 +1096,33 @@ Vector3f AC_PosControl::get_thrust_vector() const
     Vector3f accel_target = get_accel_target();
     accel_target.z = -GRAVITY_MSS * 100.0f;
     return accel_target;
+}
+
+// get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+bool AC_PosControl::calculate_yaw_and_rate_yaw()
+{
+    // Calculate the turn rate
+    float turn_rate = 0.0f;
+    const Vector2f vel_desired_xy(_vel_desired.x, _vel_desired.y);
+    const Vector2f accel_desired_xy(_accel_desired.x, _accel_desired.y);
+    const float vel_desired_xy_len = vel_desired_xy.length();
+    if (is_positive(vel_desired_xy_len)) {
+        const float accel_forward = (accel_desired_xy.x * vel_desired_xy.x + accel_desired_xy.y * vel_desired_xy.y)/vel_desired_xy_len;
+        const Vector2f accel_turn = accel_desired_xy - vel_desired_xy * accel_forward / vel_desired_xy_len;
+        const float accel_turn_xy_len = accel_turn.length();
+        turn_rate = accel_turn_xy_len / vel_desired_xy_len;
+        if ((accel_turn.y * vel_desired_xy.x - accel_turn.x * vel_desired_xy.y) < 0.0) {
+            turn_rate = -turn_rate;
+        }
+    }
+
+    // update the target yaw if origin and destination are at least 2m apart horizontally
+    if (vel_desired_xy_len > _speed_cms * 0.05f) {
+        _yaw_target = degrees(vel_desired_xy.angle()) * 100.0f;
+        _yaw_rate_target = turn_rate*degrees(100.0f);
+        return true;
+    }
+    return false;
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
