@@ -493,22 +493,25 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
  */
 uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 {
-    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * AP_MSEC_PER_WEEK + gps_ms;
+    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + uint64_t(gps_week) * AP_MSEC_PER_WEEK + uint64_t(gps_ms);
     return fix_time_ms;
 }
 
 /**
    calculate current time since the unix epoch in microseconds
  */
-uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
+uint64_t AP_GPS::time_epoch_usec(uint8_t instance, bool corrected) const
 {
     const GPS_State &istate = state[instance];
     if (istate.last_gps_time_ms == 0 || istate.time_week == 0) {
         return 0;
     }
     uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
-    // add in the milliseconds since the last fix
-    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
+    if (corrected) {
+        // add in the milliseconds since the last fix
+        fix_time_ms += (AP_HAL::millis() - istate.last_gps_time_ms);
+    }
+    return fix_time_ms * 1000ULL;
 }
 
 /*

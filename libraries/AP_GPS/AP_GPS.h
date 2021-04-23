@@ -476,7 +476,8 @@ public:
     void send_blob_update(uint8_t instance);
 
     // return last fix time since the 1/1/1970 in microseconds
-    uint64_t time_epoch_usec(uint8_t instance) const;
+    // if corrected=true then add in time since last fix msg
+    uint64_t time_epoch_usec(uint8_t instance, bool corrected=true) const;
     uint64_t time_epoch_usec(void) const {
         return time_epoch_usec(primary_instance);
     }
