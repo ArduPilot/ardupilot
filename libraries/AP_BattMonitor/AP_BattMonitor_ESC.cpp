@@ -37,7 +37,7 @@ void AP_BattMonitor_ESC::read(void)
     uint32_t highest_ms = 0;
 
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
-        int16_t  temperature_deg;
+        int16_t  temperature_cdeg;
         float voltage;
         float current;
         float consumption_mah;
@@ -57,8 +57,8 @@ void AP_BattMonitor_ESC::read(void)
             current_sum += current;
         }
 
-        if (telem.get_temperature(i, temperature_deg)) {
-            temperature_sum += temperature_deg;
+        if (telem.get_temperature(i, temperature_cdeg)) {
+            temperature_sum += float(temperature_cdeg) * 0.01f;
             temperature_escs++;
         }
 
