@@ -198,14 +198,20 @@ void AP_Proximity_RPLidarA2::get_readings()
                 //Any input in resetted state come from scan before reset, must discard
                     _uart->discard_input();
                if ((AP_HAL::millis() - _last_reset_ms) > RESET_S1_WAIT_MS ) { 
-                         set_scan_mode();
+                         if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
+                              return;
+                         }
+                         if (_byte_count < 63) {
+                              return;
+                         }
                }
-            }
-            if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
-                return;
-            }
-            if (_byte_count < 63) {
-                return;
+            } else {
+                if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
+                    return;
+                }
+                if (_byte_count < 63) {
+                    return;
+                }
             }
 #if RP_DEBUG_LEVEL
             // optionally spit out via mavlink the 63-bytes of cruft
