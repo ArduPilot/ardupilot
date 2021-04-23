@@ -184,41 +184,38 @@ void AP_Proximity_RPLidarA2::get_readings()
         case State::RESET: {
             // looking for 0x52 at start of buffer; the 62 following
             // bytes are "information"
-            //All you have to do is to wait 2.1s after reset and you can start scan mode with S1, 2ms is wrong in documentation
-            if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) {
-                //Any input in resetted state come from scan before reset, must discard
-                    _uart->discard_input();
-               if ((AP_HAL::millis() - _last_reset_ms) > RESET_S1_WAIT_MS ) { 
-                         if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
-                              return;
-                         }
-                         if (_byte_count < 63) {
-                              return;
-                         }
-               }
-            } else {
-                if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
-                    return;
-                }
-                if (_byte_count < 63) {
-                    return;
-                }
+            if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
+                return;
             }
-#if RP_DEBUG_LEVEL
+            if (_byte_count < 63) {
+                return;
+            }
+        #if RP_DEBUG_LEVEL
             // optionally spit out via mavlink the 63-bytes of cruft
             // that is spat out on device reset
             Debug(1, "Got RPLidar Information");
             char xbuffer[64]{};
             memcpy((void*)xbuffer, (void*)&_payload.information, 63);
             gcs().send_text(MAV_SEVERITY_INFO, "RPLidar: (%s)", xbuffer);
-#endif
+        #endif
             // 63 is the magic number of bytes in the spewed-out
             // reset data ... so now we'll just drop that stuff on
             // the floor.
             consume_bytes(63);
-            send_command(RPLIDAR_CMD_SCAN);
-            _state = State::AWAITING_RESPONSE;
-            continue;
+            //wait 2.1s before sending scan command
+            if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) {
+                 //Any input in resetted state come from scan before reset, must discard
+                 uart->discard_input();
+                 if ((AP_HAL::millis() - _last_reset_ms) > RESET_S1_WAIT_MS ) { 
+                      send_command(RPLIDAR_CMD_SCAN);
+                      _state = State::AWAITING_RESPONSE;
+                      continue;
+                 }
+            }else{
+                send_command(RPLIDAR_CMD_SCAN);
+                _state = State::AWAITING_RESPONSE;
+                continue;
+            }
         }
         case State::AWAITING_RESPONSE:
             if (_payload[0] != RPLIDAR_PREAMBLE) {
