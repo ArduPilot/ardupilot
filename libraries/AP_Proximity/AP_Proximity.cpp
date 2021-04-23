@@ -25,7 +25,6 @@
 #include "AP_Proximity_LightWareSF40C.h"
 #include "AP_Proximity_LightWareSF45B.h"
 #include "AP_Proximity_SITL.h"
-#include "AP_Proximity_MorseSITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 
 extern const AP_HAL::HAL &hal;

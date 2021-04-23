@@ -104,15 +104,6 @@ void AP_Proximity_RPLidarA2::update(void)
     }
 }
 
-// get maximum distance (in meters) of sensor
-float AP_Proximity_RPLidarA2::distance_max() const
-{
-    if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1)
-        return 40.0f;  //This is the max range of S1, but it's usually overstated 
-    else
-        return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
-}
-
 void AP_Proximity_RPLidarA2::send_command(const uint8_t command)
 {
     const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, command};
