@@ -165,10 +165,6 @@ void AP_Vehicle::setup()
     generator.init();
 #endif
 
-#if HAL_WITH_ESC_TELEM
-    // initialise ESC Telemetry right before we start pushing to the motors
-    esc_telem.init();
-#endif
 }
 
 void AP_Vehicle::loop()
