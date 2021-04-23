@@ -301,6 +301,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
             if (epoch_ms != 0) {
                 epoch_ms /= 1000;
                 uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
+                check_new_itow(uint32_t(gps_ms), sizeof(cb.msg));
                 interim_state.time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
                 interim_state.time_week_ms = (uint32_t)(gps_ms - (interim_state.time_week) * AP_MSEC_PER_WEEK);
             }
@@ -413,6 +414,7 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
             if (epoch_ms != 0) {
                 epoch_ms /= 1000;
                 uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
+                check_new_itow(uint32_t(gps_ms), sizeof(cb.msg));
                 interim_state.time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
                 interim_state.time_week_ms = (uint32_t)(gps_ms - (interim_state.time_week) * AP_MSEC_PER_WEEK);
             }
