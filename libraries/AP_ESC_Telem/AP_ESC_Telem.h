@@ -72,6 +72,8 @@ private:
     void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate);
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint16_t data_mask);
+    // Write ESC status messages to log
+    void Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, float voltage, float current, int16_t esc_temp, float current_tot, int16_t motor_temp, float error_rate = 0.0f);
 
     bool _initialised;
 
