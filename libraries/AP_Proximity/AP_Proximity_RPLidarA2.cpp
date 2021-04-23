@@ -55,6 +55,9 @@ reboot
 #endif
 
 #define COMM_ACTIVITY_TIMEOUT_MS        200
+#define RESET_RPA2_WAIT_MS              8
+#define RESET_S1_WAIT_MS                2100
+#define RESYNC_TIMEOUT                  10000
 
 // Commands
 //-----------------------------------------
@@ -75,6 +78,7 @@ reboot
 
 extern const AP_HAL::HAL& hal;
 
+// update the _rp_state of the sensor
 void AP_Proximity_RPLidarA2::update(void)
 {
     if (_uart == nullptr) {
@@ -91,13 +95,22 @@ void AP_Proximity_RPLidarA2::update(void)
         if (now - _last_reset_ms > 10000) {
             Debug(1, "LIDAR timeout");
             send_command(RPLIDAR_CMD_RESET);
-            // To-Do: ensure delay of 8m after sending reset request
+            // To-Do: ensure appropriate delay after sending reset request
             _last_reset_ms =  AP_HAL::millis();
             reset();
         }
     } else {
         set_status(AP_Proximity::Status::Good);
     }
+}
+
+// get maximum distance (in meters) of sensor
+float AP_Proximity_RPLidarA2::distance_max() const
+{
+    if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1)
+        return 40.0f;  //This is the max range of S1, but it's usually overstated 
+    else
+        return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
 }
 
 void AP_Proximity_RPLidarA2::send_command(const uint8_t command)
@@ -180,6 +193,14 @@ void AP_Proximity_RPLidarA2::get_readings()
         case State::RESET: {
             // looking for 0x52 at start of buffer; the 62 following
             // bytes are "information"
+            //All you have to do is to wait 2.1s after reset and you can start scan mode with S1, 2ms is wrong in documentation
+            if ( (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) {
+                //Any input in resetted state come from scan before reset, must discard
+                    _uart->discard_input();
+               if ((AP_HAL::millis() - _last_reset_ms) > RESET_S1_WAIT_MS ) { 
+                         set_scan_mode();
+               }
+            }
             if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
                 return;
             }

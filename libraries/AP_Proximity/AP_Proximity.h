@@ -56,6 +56,7 @@ public:
         TRTOWEREVO = 6,
         SF40C = 7,
         SF45B = 8,
+        RPLidarS1 = 9,
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         SITL    = 10,
         AirSimSITL = 12,
