@@ -520,26 +520,6 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         }
     }
 
-    // Calculate the turn rate
-    float turn_rate = 0.0f;
-    const float target_vel_xy_len = Vector2f(target_vel.x, target_vel.y).length();
-    if (is_positive(target_vel_xy_len)) {
-        const float accel_forward = (target_accel.x * target_vel.x + target_accel.y * target_vel.y + target_accel.z * target_vel.z)/target_vel.length();
-        const Vector3f accel_turn = target_accel - target_vel * accel_forward / target_vel.length();
-        const float accel_turn_xy_len = Vector2f(accel_turn.x, accel_turn.y).length();
-        turn_rate = accel_turn_xy_len / target_vel_xy_len;
-        if ((accel_turn.y * target_vel.x - accel_turn.x * target_vel.y) < 0.0) {
-            turn_rate = -turn_rate;
-        }
-    }
-
-    // update the target yaw if origin and destination are at least 2m apart horizontally
-    const Vector2f target_vel_xy(target_vel.x, target_vel.y);
-    if (target_vel_xy.length() > WPNAV_YAW_VEL_MIN) {
-        set_yaw_cd(degrees(target_vel_xy.angle()) * 100.0f);
-        set_yaw_rate_cds(turn_rate*degrees(100.0f));
-    }
-
     // successfully advanced along track
     return true;
 }
@@ -608,41 +588,6 @@ bool AC_WPNav::update_wpnav()
 bool AC_WPNav::is_active() const
 {
     return (AP_HAL::millis() - _wp_last_update) < 200;
-}
-
-// returns target yaw in centi-degrees (used for wp and spline navigation)
-float AC_WPNav::get_yaw() const
-{
-    if (_flags.wp_yaw_set) {
-        return _yaw;
-    } else {
-        // if yaw has not been set return attitude controller's current target
-        return _attitude_control.get_att_target_euler_cd().z;
-    }
-}
-
-// returns target yaw rate in centi-degrees / second (used for wp and spline navigation)
-float AC_WPNav::get_yaw_rate_cds() const
-{
-    if (_flags.wp_yaw_set) {
-        return _yaw_rate_cds;
-    }
-
-    // if yaw has not been set return zero turn rate
-    return 0.0f;
-}
-
-// set heading used for spline and waypoint navigation
-void AC_WPNav::set_yaw_cd(float heading_cd)
-{
-    _yaw = heading_cd;
-    _flags.wp_yaw_set = true;
-}
-
-// set yaw rate used for spline and waypoint navigation
-void AC_WPNav::set_yaw_rate_cds(float yaw_rate_cds)
-{
-    _yaw_rate_cds = yaw_rate_cds;
 }
 
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
