@@ -317,45 +317,33 @@ void AP_ESC_Telem::update()
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
 
-                Write_ESC(i, AP_HAL::micros64(),
-                                (int32_t) rpm * 100,
-                                _telem_data[i].voltage,
-                                _telem_data[i].current,
-                                _telem_data[i].temperature_cdeg,
-                                _telem_data[i].consumption_mah,
-                                _telem_data[i].motor_temp_cdeg,
-                                _rpm_data[i].error_rate);
+                // Write ESC status messages
+                //   id starts from 0
+                //   rpm is eRPM (rpm * 100)
+                //   voltage is in Volt
+                //   current is in Ampere
+                //   temperature is in centi-degrees Celsius
+                //   current_tot is in mili-Ampere hours
+                //   motor_temp is in centi-degrees Celsius
+                //   error_rate is in percentage
+                const struct log_Esc pkt{
+                    LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
+                    time_us     : AP_HAL::micros64(),
+                    instance    : i,
+                    rpm         : (int32_t) rpm * 100,
+                    voltage     : _telem_data[i].voltage,
+                    current     : _telem_data[i].current,
+                    esc_temp    : _telem_data[i].temperature_cdeg,
+                    current_tot : _telem_data[i].consumption_mah,
+                    motor_temp  : _telem_data[i].motor_temp_cdeg,
+                    error_rate  : _rpm_data[i].error_rate
+                };
+                AP::logger().WriteBlock(&pkt, sizeof(pkt));
                 _last_telem_log_ms[i] = _telem_data[i].last_update_ms;
                 _last_rpm_log_us[i] = _rpm_data[i].last_update_us;
             }
         }
     }
-}
-
-// Write ESC status messages
-//   id starts from 0
-//   rpm is eRPM (rpm * 100)
-//   voltage is in Volt
-//   current is in Ampere
-//   temperature is in centi-degrees Celsius
-//   current_tot is in mili-Ampere hours
-//   motor_temp is in centi-degrees Celsius
-//   error_rate is in percentage
-void AP_ESC_Telem::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, float voltage, float current, int16_t esc_temp, float current_tot, int16_t motor_temp, float error_rate)
-{
-    const struct log_Esc pkt{
-        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
-        time_us     : time_us,
-        instance    : instance,
-        rpm         : rpm,
-        voltage     : voltage,
-        current     : current,
-        esc_temp    : esc_temp,
-        current_tot : current_tot,
-        motor_temp  : motor_temp,
-        error_rate  : error_rate
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 AP_ESC_Telem *AP_ESC_Telem::_singleton = nullptr;
