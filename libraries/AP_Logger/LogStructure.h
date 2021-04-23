@@ -129,6 +129,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Baro/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
+#include <AP_ESC_Telem/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -485,19 +486,6 @@ struct PACKED log_TERRAIN {
     uint16_t loaded;
 };
 
-struct PACKED log_Esc {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    int32_t rpm;
-    float voltage;
-    float current;
-    int16_t esc_temp;
-    float current_tot;
-    int16_t motor_temp;
-    float error_rate;
-};
-
 struct PACKED log_CSRV {
     LOG_PACKET_HEADER;
     uint64_t time_us;     
@@ -505,18 +493,6 @@ struct PACKED log_CSRV {
     float position;
     float force;
     float speed;
-    uint8_t power_pct;
-};
-
-struct PACKED log_CESC {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;     
-    uint8_t id;
-    uint32_t error_count;
-    float voltage;
-    float current;
-    float temperature;
-    int32_t rpm;
     uint8_t power_pct;
 };
 
@@ -909,17 +885,6 @@ struct PACKED log_PSCZ {
 // @Field: PosY: Calculated beacon position, y-axis
 // @Field: PosZ: Calculated beacon position, z-axis
 
-// @LoggerMessage: CESC
-// @Description: CAN ESC data
-// @Field: TimeUS: Time since system startup
-// @Field: Id: ESC identifier
-// @Field: ECnt: Error count
-// @Field: Voltage: Battery voltage measurement
-// @Field: Curr: Battery current measurement
-// @Field: Temp: Temperature
-// @Field: RPM: Measured RPM
-// @Field: Pow: Rated power output
-
 // @LoggerMessage: CMD
 // @Description: Executed mission command information
 // @Field: TimeUS: Time since system startup
@@ -993,18 +958,6 @@ struct PACKED log_PSCZ {
 // @Field: TimeUS: Time since system startup
 // @Field: Subsys: Subsystem in which the error occurred
 // @Field: ECode: Subsystem-specific error code
-
-// @LoggerMessage: ESC
-// @Description: Feedback received from ESCs
-// @Field: TimeUS: microseconds since system startup
-// @Field: Instance: ESC instance number
-// @Field: RPM: reported motor rotation rate
-// @Field: Volt: Perceived input voltage for the ESC
-// @Field: Curr: Perceived current through the ESC
-// @Field: Temp: ESC temperature
-// @Field: CTot: current consumed total mAh
-// @Field: MotTemp: measured motor temperature
-// @Field: Err: error rate
 
 // @LoggerMessage: EV
 // @Description: Specifically coded event messages
@@ -1513,12 +1466,9 @@ LOG_STRUCTURE_FROM_CAMERA \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
-    { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBeffcfcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-B--BCB-" }, \
+    LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
-    { LOG_CESC_MSG, sizeof(log_CESC), \
-      "CESC","QBIfffiB","TimeUS,Id,ECnt,Voltage,Curr,Temp,RPM,Pow", "s#-vAOq%", "F-000000" }, \
     { LOG_ACC_MSG, sizeof(log_ACC), \
       "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
     { LOG_GYR_MSG, sizeof(log_GYR), \
@@ -1631,10 +1581,9 @@ enum LogMessages : uint8_t {
     LOG_ATRP_MSG,
     LOG_IDS_FROM_CAMERA,
     LOG_TERRAIN_MSG,
-    LOG_ESC_MSG,
     LOG_CSRV_MSG,
-    LOG_CESC_MSG,
     LOG_ARSP_MSG,
+    LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
     LOG_MAG_MSG,
 
