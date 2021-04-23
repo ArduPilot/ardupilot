@@ -293,15 +293,6 @@ void AP_ESC_Telem::update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_r
 #endif
 }
 
-void AP_ESC_Telem::init(void)
-{
-    if (_initialised) {
-        return;
-    }
-
-    _initialised = true;
-}
-
 // log ESC telemetry at 10Hz
 void AP_ESC_Telem::update()
 {
