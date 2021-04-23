@@ -21,6 +21,8 @@
 
 #include "SIM_SerialDevice.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -93,9 +95,15 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
     return ret;
 }
 
-ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) const
+ssize_t SerialDevice::write_to_autopilot(const char *buffer, size_t size) const
 {
-    const ssize_t ret = write(fd_my_end, buffer, size);
+    bool dropped_now = false;
+    if ((AP_HAL::millis() % 1024) == 0) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Dropped one");
+        size--;
+        dropped_now = true;
+    }
+    ssize_t ret = write(fd_my_end, buffer, size);
     // ::fprintf(stderr, "write to autopilot: (");
     // for (ssize_t i=0; i<ret; i++) {
     //     ::fprintf(stderr, "%02X", (uint8_t)buffer[i]);
@@ -105,5 +113,8 @@ ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) 
     //     ::fprintf(stderr, "%c", (uint8_t)buffer[i]);
     // }
     // ::fprintf(stderr, ")\n");
+    if (dropped_now) {
+        return size+1;
+    }
     return ret;
 }
