@@ -108,7 +108,7 @@ struct PACKED log_POS {
 };
 
 // @LoggerMessage: RATE
-// @Description: Desired and achieved vehicle attitude rates
+// @Description: Desired and achieved vehicle attitude rates. Not logged in Fixed Wing Plane modes.
 // @Field: TimeUS: Time since system startup
 // @Field: RDes: vehicle desired roll rate
 // @Field: R: achieved vehicle roll rate
