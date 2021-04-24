@@ -12,6 +12,8 @@
 #include "AP_Logger_MAVLink.h"
 #include "LoggerMessageWriter.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -271,7 +273,11 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
 bool AP_Logger_Backend::Write_EntireMission()
 {
     // kick off asynchronous write:
-    return _startup_messagewriter->writeentiremission();
+    if (!complete_iothread_request(LoggerThreadRequest::Type::StartWriteEntireMission)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "StartWriteEntireMission failed");
+        return false;
+    }
+    return true;
 }
 #endif
 

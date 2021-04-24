@@ -10,6 +10,7 @@
 #endif
 
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
+#define HAL_LOGGING_DATAFLASH_ENABLED 0
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
 #define HAL_LOGGING_DATAFLASH_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
@@ -226,10 +227,109 @@ enum class LogErrorCode : uint8_t {
     GPS_GLITCH = 2,
 };
 
+#include "AP_LoggerThreadRequest.h"
+
+class LoggerThread {
+public:
+
+    // requests to the logger thread to do things:
+    LoggerThreadRequest requests[5];
+    // the number of valid requests in requests (optimisation to avoid
+    // the thread looking through requests all the time):
+    uint8_t requests_count;
+
+    // this semaphore protects requests - should only be held to
+    // change the state in requests and must not be held while request
+    // is processed.
+    HAL_Semaphore requests_semaphore;
+
+    HAL_Semaphore _log_send_sem;  // FIXME: not needed now?
+
+
+    void PrepForArming();
+    void vehicle_was_disarmed();
+
+    void timer(void);
+
+protected:
+
+    // convert between log numbering in storage and normalized numbering
+    uint16_t log_num_from_list_entry(const uint16_t list_entry);
+
+    uint16_t _cached_oldest_log;
+
+private:
+    void check_message_queue();
+    void process_request(LoggerThreadRequest &request);
+
+    void handle_log_request_list(class GCS_MAVLINK &, uint16_t start, uint16_t end);
+    void handle_log_request_data(class GCS_MAVLINK &, uint16_t id, uint32_t ofs, uint32_t count);
+    void handle_log_request_erase(class GCS_MAVLINK &);
+    void handle_log_request_end(class GCS_MAVLINK &);
+    void handle_log_send_listing(); // handle LISTING state
+    void handle_log_sending(); // handle SENDING state
+    bool handle_log_send_data(); // send data chunk to client
+    void handle_log_send();
+
+    void handle_log_request_message(LoggerThreadRequest &request);
+
+    // erase handling
+    void EraseAll();
+
+    // bool logging_started() const;
+
+    // uint16_t find_last_log();
+    uint16_t get_num_logs();
+    // uint16_t find_oldest_log();
+    // int64_t disk_space_avail();
+    // int64_t disk_space();
+    void start_new_log() { }
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+
+    void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
+
+    GCS_MAVLINK *_log_sending_link;
+
+    // next log list entry to send
+    uint16_t _log_next_list_entry;
+
+    // last log list entry to send
+    uint16_t _log_last_list_entry;
+
+    // number of log files
+    uint16_t _log_num_logs;
+
+    // log number for data send
+    uint16_t _log_num_data;
+
+    // offset in log
+    uint32_t _log_data_offset;
+
+    // size of log file
+    uint32_t _log_data_size;
+
+    // number of bytes left to send
+    uint32_t _log_data_remaining;
+
+    // start page of log data
+    uint32_t _log_data_page;
+
+    enum class TransferActivity {
+        IDLE,    // not doing anything, all file descriptors closed
+        LISTING, // actively sending log_entry packets
+        SENDING, // actively sending log_sending packets
+    } transfer_activity = TransferActivity::IDLE;
+
+};
+
 class AP_Logger
 {
     friend class AP_Logger_Backend; // for _num_types
     friend class AP_Logger_RateLimiter;
+    friend class LoggerThread;
+    friend class LoggerBackendThread;
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
@@ -266,9 +366,13 @@ public:
     /* Write a block of replay data at current offset */
     bool WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size);
 
+    // FIXME: find another way to get this into the backend logger thread?
+    bool disarm_rotate() const {
+        return _params.file_disarm_rot;
+    }
+
     // high level interface
     uint16_t find_last_log() const;
-    void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
     uint16_t get_num_logs(void);
 
     void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
@@ -410,9 +514,6 @@ public:
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
 
-    void handle_log_send();
-    bool in_log_download() const;
-
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
 
@@ -437,6 +538,12 @@ public:
         const char *units;
         const char *mults;
     } *log_write_fmts;
+
+    // protects all of the sent_mask entries in log_write_fmts.
+    // Starting a new log (a backend's thread's prerogative) may take
+    // this semaphore to clear the bits in the mask corresponding the
+    // backend
+    HAL_Semaphore sent_mask_sem;
 
     // return (possibly allocating) a log_write_fmt for a name
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false);
@@ -504,7 +611,7 @@ private:
 
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
-    void backend_starting_new_log(const AP_Logger_Backend *backend);
+    void backend_starting_new_log(const class LoggerBackendThread *backend_thread);
 
     static AP_Logger *_singleton;
 
@@ -566,45 +673,20 @@ private:
     void prepare_at_arming_sys_file_logging();
 
 #endif
-    
-    /* support for retrieving logs via mavlink: */
 
-    enum class TransferActivity {
-        IDLE,    // not doing anything, all file descriptors closed
-        LISTING, // actively sending log_entry packets
-        SENDING, // actively sending log_sending packets
-    } transfer_activity = TransferActivity::IDLE;
+    LoggerThread loggerthread;
+
+    bool complete_iothread_request(LoggerThreadRequest *request);
+    LoggerThreadRequest * claim_free_request();
+    bool complete_simple_iothread_request(LoggerThreadRequest::Type type, const char *name);
+    LoggerThreadRequest *make_simple_iothread_request(LoggerThreadRequest::Type type);
+    bool async_simple_iothread_request(LoggerThreadRequest::Type type, const char *name);
+
+    /* support for retrieving logs via mavlink: */
 
     // last time we handled a log-transfer-over-mavlink message:
     uint32_t _last_mavlink_log_transfer_message_handled_ms;
     bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
-
-    // next log list entry to send
-    uint16_t _log_next_list_entry;
-
-    // last log list entry to send
-    uint16_t _log_last_list_entry;
-
-    // number of log files
-    uint16_t _log_num_logs;
-
-    // log number for data send
-    uint16_t _log_num_data;
-
-    // offset in log
-    uint32_t _log_data_offset;
-
-    // size of log file
-    uint32_t _log_data_size;
-
-    // number of bytes left to send
-    uint32_t _log_data_remaining;
-
-    // start page of log data
-    uint32_t _log_data_page;
-
-    GCS_MAVLINK *_log_sending_link;
-    HAL_Semaphore _log_send_sem;
 
     // last time arming failed, for backends
     uint32_t _last_arming_failure_ms;
@@ -614,18 +696,6 @@ private:
     uint8_t _log_start_count;
 
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
-
-    void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_data(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_erase(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_request_end(class GCS_MAVLINK &, const mavlink_message_t &msg);
-    void handle_log_send_listing(); // handle LISTING state
-    void handle_log_sending(); // handle SENDING state
-    bool handle_log_send_data(); // send data chunk to client
-
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
-
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
 
     /* end support for retrieving logs via mavlink: */
 

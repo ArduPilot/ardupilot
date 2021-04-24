@@ -2,6 +2,8 @@
 
 #include "AP_Logger.h"
 
+#include "AP_LoggerThreadRequest.h"
+
 class LoggerMessageWriter_DFLogStart;
 
 #define MAX_LOG_FILES 500
@@ -36,21 +38,83 @@ private:
     Bitmask<256> last_return;
 };
 
+class LoggerBackendThread
+{
+    friend class AP_Logger_Backend;
+public:
+    virtual bool logging_started() const = 0;
+    virtual void timer(void) = 0;
+
+    virtual uint16_t find_last_log() = 0;
+    virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
+    virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
+    virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
+    virtual uint16_t get_num_logs() = 0;
+    virtual uint16_t find_oldest_log();
+    virtual int64_t disk_space_avail() = 0;
+    virtual int64_t disk_space() = 0;
+    virtual void start_new_log() { }
+    virtual void stop_logging(void) = 0;
+
+    // erase handling
+    virtual void EraseAll() = 0;
+
+    // currently only AP_Logger_File support this:
+    virtual void flush(void) { }
+
+    ObjectBuffer_TS<LoggerThreadRequest*> requests{5};
+
+    LoggerMessageWriter_DFLogStart *startup_messagewriter;
+    bool writing_startup_messages;
+
+    virtual void PrepForArming();
+
+    uint32_t dropped;  // FIXME: scope
+
+    virtual void vehicle_was_disarmed();
+
+protected:
+
+    // must be called when a new log is being started:
+    virtual void start_new_log_reset_variables();
+
+    // convert between log numbering in storage and normalized numbering
+    uint16_t log_num_from_list_entry(const uint16_t list_entry);
+
+    uint16_t _cached_oldest_log;
+
+    virtual void handle_request(LoggerThreadRequest &request);
+
+    uint32_t log_file_size_bytes;
+    // should we rotate when we next stop logging
+
+    // returns true if we should currently we writing data
+    bool should_be_logging() const;
+
+private:
+    void check_message_queue();
+
+    // we continue to log for some period of time after the vehicle is
+    // disarmed.  _rotate_pending is true while we are in this state.
+    bool _rotate_pending;
+
+};
+
 class AP_Logger_Backend
 {
+    friend class LoggerThread;
+    friend class AP_Logger;  // FIXME
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
     AP_Logger_Backend(AP_Logger &front,
+                      class LoggerBackendThread &loggerthread,
                       class LoggerMessageWriter_DFLogStart *writer);
 
     vehicle_startup_message_Writer vehicle_message_writer() const;
 
     virtual bool CardInserted(void) const = 0;
-
-    // erase handling
-    virtual void EraseAll() = 0;
 
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size) {
@@ -63,23 +127,9 @@ public:
 
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming=false);
 
-    // high level interface, indexed by the position in the list of logs
-    virtual uint16_t find_last_log() = 0;
-    virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
-    virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
-    virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
-    virtual uint16_t get_num_logs() = 0;
-    virtual uint16_t find_oldest_log();
-
-    virtual bool logging_started(void) const = 0;
-
     virtual void Init() = 0;
 
     virtual uint32_t bufferspace_available() = 0;
-
-    virtual void PrepForArming();
-
-    virtual void start_new_log() { }
 
     /* stop logging - close output files etc etc.
      *
@@ -93,11 +143,6 @@ public:
 
     void Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only AP_Logger_File support this:
-    virtual void flush(void) { }
-#endif
 
      // for Logger_MAVlink
     virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
@@ -133,7 +178,7 @@ public:
     bool Write_VER();
 
     uint32_t num_dropped(void) const {
-        return _dropped;
+        return _iothread->dropped;
     }
 
     /*
@@ -155,13 +200,9 @@ public:
     // EKF; when allow_start_ekf we should be able to log that data
     bool allow_start_ekf() const;
 
-    virtual void vehicle_was_disarmed();
-
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
-
-    virtual void io_timer(void) {}
 
 protected:
 
@@ -186,21 +227,6 @@ protected:
     virtual bool WriteBlockCheckStartupMessages();
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();
-
-    LoggerMessageWriter_DFLogStart *_startup_messagewriter;
-    bool _writing_startup_messages;
-
-    uint16_t _cached_oldest_log;
-
-    uint32_t _dropped;
-    uint32_t _log_file_size_bytes;
-    // should we rotate when we next stop logging
-    bool _rotate_pending;
-
-    // must be called when a new log is being started:
-    virtual void start_new_log_reset_variables();
-    // convert between log numbering in storage and normalized numbering
-    uint16_t log_num_from_list_entry(const uint16_t list_entry);
 
     uint32_t critical_message_reserved_space(uint32_t bufsize) const {
         // possibly make this a proportional to buffer size?
@@ -233,6 +259,17 @@ protected:
 
     AP_Logger_RateLimiter *rate_limiter;
 
+    bool logging_started(void) const {
+        return _iothread->logging_started();
+    }
+    void io_timer(void) {
+        _iothread->timer();
+    }
+
+    bool complete_iothread_request(LoggerThreadRequest::Type request, void *data=nullptr);
+
+    LoggerBackendThread *_iothread;
+
 private:
     // statistics support
     struct df_stats {
@@ -250,4 +287,5 @@ private:
 
     void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
+
 };

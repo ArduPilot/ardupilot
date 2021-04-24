@@ -15,6 +15,92 @@ extern const AP_HAL::HAL& hal;
 
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
+// not actually a thread, but called by the thread created in AP_Logger
+class LoggerThread_MAVLink : LoggerThread {
+public:
+
+    void timer(void) override;
+    // do we have a recent open error?
+    bool recent_open_error(void) const;
+    bool logging_started() const override { return _write_fd != -1; }
+
+    void EraseAll();
+    void stop_logging(void);
+
+    /* construct a file name given a log number. Caller must free. */
+    char *_log_file_name(const uint16_t log_num) const;
+    char *_log_file_name_long(const uint16_t log_num) const;
+    char *_log_file_name_short(const uint16_t log_num) const;
+    char *_lastlog_file_name() const;
+
+    uint16_t find_last_log() override;
+    uint16_t find_oldest_log() override;
+    int64_t disk_space_avail() override;
+    int64_t disk_space() override;
+    void start_new_log(void) override;
+    bool WritesOK() const;
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
+    uint16_t get_num_logs() override;
+
+    const char *_log_directory;
+    int64_t min_bytes_free;
+    class AP_Logger_File *_backend;
+
+    uint32_t _heartbeat;
+    bool _last_write_failed;
+
+    void PrepForArming() override {}
+
+private:
+
+    // log-writing state:
+    int _write_fd = -1;
+    char *_write_filename;
+    uint32_t _write_offset;
+    uint32_t _last_write_ms;
+    uint32_t _last_write_time;
+
+    // log-reading state:
+    int _read_fd = -1;
+    uint16_t _read_fd_log_num;
+    uint32_t _read_offset;
+    void get_log_boundaries(const uint16_t list_entry,
+                            uint32_t & start_page,
+                            uint32_t & end_page) override;
+
+    uint16_t log_num_from_list_entry(const uint16_t list_entry);
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
+
+    volatile uint32_t _open_error_ms;
+
+    bool file_exists(const char *filename) const;
+    bool log_exists(const uint16_t lognum) const;
+
+    void ensure_log_directory_exists();
+
+    uint32_t _get_log_size(const uint16_t log_num);
+    uint32_t _get_log_time(const uint16_t log_num);
+
+    // possibly time-consuming preparations handling
+    void Prep_MinSpace();
+    bool space_cleared;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    void flush(void);
+#endif
+
+    void check_message_queue();
+    void retry_logging_open();
+
+    // free-space checks; filling up SD cards under NuttX leads to
+    // corrupt filesystems which cause loss of data, failure to gather
+    // data and failures-to-boot.
+    uint32_t _free_space_last_check_time; // milliseconds
+    const uint32_t _free_space_check_interval = 1000UL; // milliseconds
+    const uint32_t _free_space_min_avail = 8388608; // bytes
+};
+
+
 class AP_Logger_MAVLink : public AP_Logger_Backend
 {
 public:
@@ -51,14 +137,12 @@ public:
     // erase handling
     void EraseAll() override {}
 
-    void PrepForArming() override {}
-
     // high level interface
-    uint16_t find_last_log(void) override { return 0; }
-    void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override {}
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
-    uint16_t get_num_logs(void) override { return 0; }
+    // uint16_t find_last_log(void) override { return 0; }
+    // void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override {}
+    // void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
+    // int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
+    // uint16_t get_num_logs(void) override { return 0; }
 
     void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
     void vehicle_was_disarmed() override {}

@@ -10,6 +10,14 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+// make sure we know what size the Request object is - TODO, work out
+// why this is different on SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+assert_storage_size<LoggerThreadRequest, 21> _assert_storage_size_LoggerThreadRequest;
+#else
+assert_storage_size<LoggerThreadRequest, 17> _assert_storage_size_LoggerThreadRequest;
+#endif
+
 AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
@@ -566,12 +574,13 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
     Write_Message(msg);
 }
 
-void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
+void AP_Logger::backend_starting_new_log(const LoggerBackendThread *backend_thread)
 {
     _log_start_count++;
 
+    WITH_SEMAPHORE(sent_mask_sem);
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i] == backend) { // pointer comparison!
+        if (backends[i]->_iothread == backend_thread) { // pointer comparison!
             // reset sent masks
             for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
                 f->sent_mask &= ~(1<<i);
@@ -589,9 +598,6 @@ bool AP_Logger::should_log(const uint32_t mask) const
         return false;
     }
     if (!armed && !log_while_disarmed()) {
-        return false;
-    }
-    if (in_log_download()) {
         return false;
     }
     if (_next_backend == 0) {
@@ -623,6 +629,14 @@ const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
     return &log_Multipliers[num];
 }
 
+// FIXME: stop calling AP::logger() here
+#define FOR_EACH_BACKEND_THREAD(methodcall)              \
+    do {                                          \
+        for (uint8_t i=0; i<AP::logger()._next_backend; i++) {  \
+            AP::logger().backends[i]->_iothread->methodcall;          \
+        }                                         \
+    } while (0)
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
@@ -632,7 +646,7 @@ const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
 
 void AP_Logger::PrepForArming()
 {
-    FOR_EACH_BACKEND(PrepForArming());
+    async_simple_iothread_request(LoggerThreadRequest::Type::PrepForArming, "PrepForArming");
 }
 
 void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
@@ -656,7 +670,7 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
 #endif
     } else {
         // went from armed to disarmed
-        FOR_EACH_BACKEND(vehicle_was_disarmed());
+        async_simple_iothread_request(LoggerThreadRequest::Type::VehicleWasDisarmed, "VehicleWasDisarmed");
     }
 }
 
@@ -739,10 +753,204 @@ void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool i
     FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
-// change me to "DoTimeConsumingPreparations"?
 void AP_Logger::EraseAll() {
-    FOR_EACH_BACKEND(EraseAll());
+    complete_simple_iothread_request(LoggerThreadRequest::Type::EraseAll, "EraseAll");
 }
+
+// find a freee request slot.  *MUST* be called with the
+// loggerthreadrequest.requests_semaphore held!
+LoggerThreadRequest * AP_Logger::claim_free_request()
+{
+    for (LoggerThreadRequest &r : loggerthread.requests) {
+        if (r.state == LoggerThreadRequest::State::FREE) {
+            return &r;
+        }
+    }
+    // no free slot
+    return nullptr;
+}
+
+// reserve a request slot and fill it in a bit
+LoggerThreadRequest *AP_Logger::make_simple_iothread_request(LoggerThreadRequest::Type type)
+{
+    LoggerThreadRequest *request = claim_free_request();
+    if (request == nullptr) {
+        return nullptr;
+    }
+    request->state = LoggerThreadRequest::State::PENDING;
+    request->type = type;
+    loggerthread.requests_count++;
+    return request;
+}
+
+bool AP_Logger::async_simple_iothread_request(LoggerThreadRequest::Type type, const char *name)
+{
+    WITH_SEMAPHORE(loggerthread.requests_semaphore);
+    LoggerThreadRequest *request = make_simple_iothread_request(type);
+    if (request == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", name);
+        return false;
+    }
+    request->free_after_processing = true;
+    return true;
+}
+
+bool AP_Logger::complete_simple_iothread_request(LoggerThreadRequest::Type type, const char *name)
+{
+    LoggerThreadRequest *request;
+    {
+        WITH_SEMAPHORE(loggerthread.requests_semaphore);
+        request = make_simple_iothread_request(type);
+        if (request == nullptr) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", name);
+            return false;
+        }
+    }
+    if (!complete_iothread_request(request)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", name);
+    }
+    return true;
+}
+
+bool AP_Logger::complete_iothread_request(LoggerThreadRequest *request)
+{
+
+    uint32_t tstart = AP_HAL::micros();
+    while (true) {
+        {
+            WITH_SEMAPHORE(loggerthread.requests_semaphore);
+            if (AP_HAL::micros() - tstart > 100000) {
+                // too slow!  Abandon the request.  Thread must free!
+                request->state = LoggerThreadRequest::State::ABANDONED;
+                break;
+            }
+            if (request->state == LoggerThreadRequest::State::PROCESSED) {
+                // pulled one down, passed it around, 98 bottles of
+                // request on the wall
+                request->state = LoggerThreadRequest::State::FREE;
+                loggerthread.requests_count--;
+                return true;
+            }
+        }
+        hal.scheduler->delay_microseconds(100);
+    }
+
+    return false;
+}
+
+void LoggerThread::timer(void)
+{
+    check_message_queue();
+
+    handle_log_send();
+
+    FOR_EACH_BACKEND_THREAD(timer());
+}
+
+void LoggerThread::EraseAll(void)
+{
+    FOR_EACH_BACKEND_THREAD(EraseAll());
+}
+
+void LoggerThread::PrepForArming()
+{
+    FOR_EACH_BACKEND_THREAD(PrepForArming());
+}
+
+void LoggerThread::vehicle_was_disarmed()
+{
+    FOR_EACH_BACKEND_THREAD(vehicle_was_disarmed());
+}
+
+void LoggerThread::check_message_queue(void)
+{
+    // optimise for the no-requests case (don't take/release semaphore):
+    if (requests_count == 0) {
+        return;
+    }
+
+    // keep track of how many requests we turn from pending to
+    // processed to avoid looping over all requests.
+    uint8_t pending = 0;
+
+    {  // take ownership of any pending requests / handle abandoned requests
+        // FIXME: should we only do a single message queue entry per iteration?
+        // FIXME: semaphore per request?!
+        WITH_SEMAPHORE(requests_semaphore);
+        for (uint8_t i=0; i<ARRAY_SIZE(requests) && pending < requests_count; i++) {
+            switch (requests[i].state) {
+            case LoggerThreadRequest::State::ABANDONED:
+                requests[i].state = LoggerThreadRequest::State::FREE;
+                requests_count--;
+                break;
+            case LoggerThreadRequest::State::PENDING:
+                requests[i].state = LoggerThreadRequest::State::PROCESSING;
+                pending++;
+                break;
+            case LoggerThreadRequest::State::FREE:
+            case LoggerThreadRequest::State::PROCESSING:
+            case LoggerThreadRequest::State::PROCESSED:
+                break;
+            }
+        }
+    }
+
+    // process pending request:
+    uint8_t processed = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(requests) && processed < pending; i++) {
+        if (requests[i].state != LoggerThreadRequest::State::PROCESSING) {
+            continue;
+        }
+        process_request(requests[i]);
+
+        // mark request has having been processed:
+        WITH_SEMAPHORE(requests_semaphore);
+        if (requests[i].free_after_processing) {
+            requests[i].state = LoggerThreadRequest::State::FREE;
+            requests_count--;
+        } else {
+            requests[i].state = LoggerThreadRequest::State::PROCESSED;
+        }
+    }
+}
+
+// should this be a method on the request?
+void LoggerThread::process_request(LoggerThreadRequest &request)
+{
+    gcs().send_text(MAV_SEVERITY_WARNING, "Processing type=%u", (unsigned)(request.type));
+
+    switch (request.type) {
+    case LoggerThreadRequest::Type::HandleLogRequest_List:
+    case LoggerThreadRequest::Type::HandleLogRequest_Data:
+    case LoggerThreadRequest::Type::HandleLogRequest_Erase:
+    case LoggerThreadRequest::Type::HandleLogRequest_End:
+        handle_log_request_message(request);
+        break;
+    case LoggerThreadRequest::Type::EraseAll:
+        EraseAll();
+        break;
+    case LoggerThreadRequest::Type::VehicleWasDisarmed:
+        vehicle_was_disarmed();
+        break;
+    case LoggerThreadRequest::Type::PrepForArming:
+        PrepForArming();
+        break;
+    case LoggerThreadRequest::Type::Flush: {
+        FOR_EACH_BACKEND_THREAD(flush());
+        break;
+    }
+    case LoggerThreadRequest::Type::StopLogging: {
+        FOR_EACH_BACKEND_THREAD(stop_logging());
+        break;
+    }
+    case LoggerThreadRequest::Type::KillWriteFD:
+    case LoggerThreadRequest::Type::StartWriteEntireMission:
+    case LoggerThreadRequest::Type::StartWriteEntireRally:
+        // backend requests
+        break;
+    }
+}
+
 // change me to "LoggingAvailable"?
 bool AP_Logger::CardInserted(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
@@ -758,44 +966,38 @@ void AP_Logger::StopLogging()
     FOR_EACH_BACKEND(stop_logging());
 }
 
-uint16_t AP_Logger::find_last_log() const {
-    if (_next_backend == 0) {
-        return 0;
-    }
-    return backends[0]->find_last_log();
-}
-void AP_Logger::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
-    if (_next_backend == 0) {
+void LoggerThread::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
+    if (AP::logger()._next_backend == 0) {
         return;
     }
-    backends[0]->get_log_boundaries(log_num, start_page, end_page);
+    AP::logger().backends[0]->_iothread->get_log_boundaries(log_num, start_page, end_page);
 }
-void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
-    if (_next_backend == 0) {
+void LoggerThread::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
+    if (AP::logger()._next_backend == 0) {
         return;
     }
-    backends[0]->get_log_info(log_num, size, time_utc);
+    AP::logger().backends[0]->_iothread->get_log_info(log_num, size, time_utc);
 }
-int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
-    if (_next_backend == 0) {
+int16_t LoggerThread::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
+    if (AP::logger()._next_backend == 0) {
         return 0;
     }
-    return backends[0]->get_log_data(log_num, page, offset, len, data);
+    return AP::logger().backends[0]->_iothread->get_log_data(log_num, page, offset, len, data);
 }
-uint16_t AP_Logger::get_num_logs(void) {
-    if (_next_backend == 0) {
+uint16_t LoggerThread::get_num_logs(void) {
+    if (AP::logger()._next_backend == 0) {
         return 0;
     }
-    return backends[0]->get_num_logs();
+    return AP::logger().backends[0]->_iothread->get_num_logs();
 }
 
 /* we're started if any of the backends are started */
 bool AP_Logger::logging_started(void) {
-    for (uint8_t i=0; i< _next_backend; i++) {
-        if (backends[i]->logging_started()) {
+    for (uint8_t i=0; i<AP::logger()._next_backend; i++) {
+        if (AP::logger().backends[i]->_iothread->logging_started()) {
             return true;
         }
-    }
+    }                                           \
     return false;
 }
 
@@ -818,19 +1020,17 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 }
 
 void AP_Logger::periodic_tasks() {
-#ifndef HAL_BUILD_AP_PERIPH
-    handle_log_send();
-#endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
 void AP_Logger::flush(void) {
-     FOR_EACH_BACKEND(flush());
+    FOR_EACH_BACKEND_THREAD(flush());
 }
 #endif
 
+#undef FOR_EACH_BACKEND_THREAD
 
 void AP_Logger::Write_EntireMission()
 {
@@ -875,6 +1075,7 @@ void AP_Logger::Write_Rally()
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
+    WITH_SEMAPHORE(sent_mask_sem);
     for (uint8_t i=0; i<_next_backend; i++) {
         if (!(f->sent_mask & (1U<<i))) {
             if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
@@ -966,6 +1167,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         return;
     }
 
+    WITH_SEMAPHORE(sent_mask_sem);
     for (uint8_t i=0; i<_next_backend; i++) {
         if (!(f->sent_mask & (1U<<i))) {
             if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
@@ -1309,7 +1511,7 @@ void AP_Logger::io_thread(void)
 
         last_run_us = AP_HAL::micros();
 
-        FOR_EACH_BACKEND(io_timer());
+        loggerthread.timer();
 
         if (now - last_stack_us > 100000U) {
             last_stack_us = now;
@@ -1324,7 +1526,7 @@ void AP_Logger::io_thread(void)
 // start the update thread
 void AP_Logger::start_io_thread(void)
 {
-    WITH_SEMAPHORE(_log_send_sem);
+    WITH_SEMAPHORE(loggerthread._log_send_sem);  // FIXME: not needed now?
 
     if (_io_thread_started) {
         return;

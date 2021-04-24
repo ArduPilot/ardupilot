@@ -94,12 +94,12 @@ void AP_Logger_Block::FinishWrite(void)
     // when starting a new sector, erase it
     if ((df_PageAdr-1) % df_PagePerBlock == 0) {
         // if we have wrapped over an existing log, force the oldest to be recalculated
-        if (_cached_oldest_log > 0) {
-            uint16_t log_num = StartRead(df_PageAdr);
-            if (log_num != 0xFFFF && log_num >= _cached_oldest_log) {
-                _cached_oldest_log = 0;
-            }
-        }
+        // if (_cached_oldest_log > 0) { // FIXME
+        //     uint16_t log_num = StartRead(df_PageAdr);
+        //     if (log_num != 0xFFFF && log_num >= _cached_oldest_log) {
+        //         _cached_oldest_log = 0;
+        //     }
+        // }
         // are we about to erase a sector with our own headers in it?
         if (df_Write_FilePage > df_NumPages - df_PagePerBlock) {
             chip_full = true;
