@@ -308,7 +308,10 @@ private:
 
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
-    
+
+    // Ride along instances via JSON SITL backend
+    SITL::JSON_Master ride_along;
+
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     

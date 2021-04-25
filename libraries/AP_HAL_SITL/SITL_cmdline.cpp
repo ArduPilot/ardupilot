@@ -111,6 +111,7 @@ void SITL_State::_usage(void)
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--slave number           set the number of JSON slaves\n"
         );
 }
 
@@ -258,6 +259,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_IRLOCK_PORT,
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
+        CMDLINE_SLAVE,
     };
 
     const struct GetOptLong::option options[] = {
@@ -305,6 +307,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
+        {"slave",           true,   0, CMDLINE_SLAVE},
         {0, false, 0, 0}
     };
 
@@ -460,6 +463,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'h':
             _usage();
             exit(0);
+        case CMDLINE_SLAVE: {
+            const int32_t slaves = atoi(gopt.optarg);
+            if (slaves > 0) {
+                ride_along.init(slaves);
+            }
+            break;
+        }
         default:
             _usage();
             exit(1);
