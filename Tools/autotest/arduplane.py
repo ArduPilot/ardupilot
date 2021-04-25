@@ -528,7 +528,7 @@ class AutoTestPlane(AutoTest):
         num_wp = self.load_mission(filename, strict=strict)-1
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode('AUTO')
-        self.wait_waypoint(1, num_wp, max_dist=60)
+        self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
