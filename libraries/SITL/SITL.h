@@ -475,6 +475,9 @@ public:
     // Sailboat sim only
     AP_Int8 sail_type;
 
+    // Master instance to use servos from with slave instances
+    AP_Int8 ride_along_master;
+
 };
 
 } // namespace SITL

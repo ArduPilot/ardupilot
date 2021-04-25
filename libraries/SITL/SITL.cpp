@@ -437,6 +437,10 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     // @Description: 0: mainsail with sheet, 1: directly actuated wing
     AP_GROUPINFO("SAIL_TYPE",     26, SITL, sail_type, 0),
 
+    // @Param: JSON_MASTER
+    // @DisplayName: JSON master instance
+    // @Description: the instance number to  take servos from
+    AP_GROUPINFO("JSON_MASTER",     27, SITL, ride_along_master, 0),
 
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
