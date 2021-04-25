@@ -529,7 +529,7 @@ class AutoTestPlane(AutoTest):
         num_wp = self.load_mission(filename, strict=strict)-1
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode('AUTO')
-        self.wait_waypoint(1, num_wp, max_dist=60)
+        self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         if quadplane:
             self.wait_statustext("Throttle disarmed", timeout=70)
@@ -2928,7 +2928,7 @@ class AutoTestPlane(AutoTest):
                 mission_file = "basic-quadplane.txt"
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.fly_mission(mission_file, strict=False, quadplane=quadplane)
+            self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
             self.wait_disarmed()
 
     def RCDisableAirspeedUse(self):
