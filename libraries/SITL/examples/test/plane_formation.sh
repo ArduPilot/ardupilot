@@ -41,5 +41,5 @@ FOLL_SYSID 1
 FOLL_DIST_MAX 1000
 EOF
 
-(cd swarm/plane3 && $PLANE --model plane --home -35.3627272,149.1651212,584.872916847261,0 --uartA $UARTA --instance 2 --defaults $PLANE_DEFAULTS,follow.parm) &
+(cd swarm/plane3 && $PLANE --model plane --home -35.3630421,149.1651642,584.872916847261,0 --uartA $UARTA --instance 2 --defaults $PLANE_DEFAULTS,follow.parm) &
 wait
