@@ -11,6 +11,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -139,6 +140,7 @@ void AP_Parachute::release(release_reason reason)
     cmd_msg.command = MAV_CMD_USER_1;
     cmd_msg.param1 = reason; // bitmask of reason to release, see release_reason enum
     cmd_msg.param2 = _cancel_timeout_ms - now; // ms until release
+    cmd_msg.param3 = AP::vehicle()->get_standby(); // standby states
     // might also want to get standby states, we would have to ask AP_Vehicle
     gcs().send_to_active_channels(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg);
 

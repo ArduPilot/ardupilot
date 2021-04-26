@@ -63,11 +63,11 @@ public:
     MAV_RESULT handle_cmd(const mavlink_command_long_t &packet);
 
     enum release_reason {
-        SINK_RATE,
-        ACCEL_FALLING,
-        CONTROL_LOSS,
-        MISSION_ITEM,
-        MANUAL,
+        SINK_RATE = 0,
+        ACCEL_FALLING = 1,
+        CONTROL_LOSS = 2,
+        MISSION_ITEM = 3,
+        MANUAL = 4,
     };
 
     /// release - release parachute
