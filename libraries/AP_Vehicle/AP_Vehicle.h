@@ -254,6 +254,9 @@ public:
     AP_Frsky_Parameters frsky_parameters;
 #endif
 
+    // get standby status
+    virtual bool get_standby() const { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
