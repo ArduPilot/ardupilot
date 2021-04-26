@@ -112,12 +112,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("POLES",  9, AP_BLHeli, motor_poles, 14),
 
-    // @Param: REMASK
-    // @DisplayName: BLHeli bitmask of reversible channels
-    // @Description: Mask of channels which are reversible. This is used for ESCs which have been configured in '3D' mode, allowing for the motor to spin in either direction
+    // @Param: 3DMASK
+    // @DisplayName: BLHeli bitmask of 3D channels
+    // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
     // @User: Advanced
-    AP_GROUPINFO("REMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
+    AP_GROUPINFO("3DMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
+
 #ifdef HAL_WITH_BIDIR_DSHOT
     // @Param: BDMASK
     // @DisplayName: BLHeli bitmask of bi-directional dshot channels
@@ -126,6 +127,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BDMASK",  11, AP_BLHeli, channel_bidir_dshot_mask, 0),
 #endif
+    // @Param: RVMASK
+    // @DisplayName: BLHeli bitmask of reversed channels
+    // @Description: Mask of channels which are reversed. This is used to configure ESCs in reversed mode
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @User: Advanced
+    AP_GROUPINFO("RVMASK",  12, AP_BLHeli, channel_reversed_mask, 0),
+
     AP_GROUPEND
 };
 
@@ -1259,7 +1267,9 @@ void AP_BLHeli::update(void)
 
     // check the user hasn't goofed, this also prevents weird crashes on arming
     if (!initialised && channel_mask.get() == 0 && channel_auto.get() == 0
-        && (channel_bidir_dshot_mask.get() != 0 || channel_reversible_mask.get())) {
+        && (channel_bidir_dshot_mask.get() != 0
+            || channel_reversible_mask.get() != 0
+            || channel_reversed_mask.get() != 0)) {
         AP_BoardConfig::config_error("DSHOT needs SERVO_BLH_AUTO or _MASK");
     }
 
@@ -1335,7 +1345,10 @@ void AP_BLHeli::update(void)
     // tell SRV_Channels about ESC capabilities
     SRV_Channels::set_digital_mask(mask);
     SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
+    // the dshot ESC type is required in order to set the reversed/reversible mask correctly
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
     hal.rcout->set_reversible_mask(channel_reversible_mask.get() & mask);
+    hal.rcout->set_reversed_mask(channel_reversed_mask.get() & mask);
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
     hal.rcout->set_bidir_dshot_mask(channel_bidir_dshot_mask.get() & mask);
@@ -1483,6 +1496,8 @@ void AP_BLHeli::read_telemetry_packet(void)
     float terr = 0.0f;
 
     const uint8_t motor_idx = motor_map[last_telem_esc];
+    // we have received valid data, mark the ESC as now active
+    hal.rcout->set_active_escs_mask(1<<motor_idx);
 
     if (logger && logger->logging_enabled()
         // log at 10Hz
