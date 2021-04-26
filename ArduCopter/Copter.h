@@ -912,7 +912,8 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-#if MODE_ACRO_ENABLED == ENABLED
+    bool get_standby() const override { return standby_active; }
+
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;
 #else
