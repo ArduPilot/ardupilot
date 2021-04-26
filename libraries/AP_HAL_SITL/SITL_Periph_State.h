@@ -54,7 +54,7 @@ public:
     uint16_t voltage2_pin_value;  // pin 15
     uint16_t current2_pin_value;  // pin 14
     // paths for UART devices
-    const char *_uart_path[7] {
+    const char *_uart_path[9] {
         "none:0",
         "fifo:gps",
         "none:1",
@@ -62,6 +62,8 @@ public:
         "none:3",
         "none:4",
         "none:5",
+        "none:6",
+        "none:7",
     };
 
     uint8_t get_instance() const { return _instance; }
