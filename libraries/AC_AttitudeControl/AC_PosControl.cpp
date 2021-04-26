@@ -271,6 +271,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ANGLE_MAX", 7, AC_PosControl, _lean_angle_max, 0.0f),
 
+    // @Param: _MAX_LEASH
+    // @DisplayName: Position Control Leash Length Max
+    // @Description: Maximum position correction for velocity command.  Set to zero to use default calculate _leash value
+    // @Units: cm
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_MAX_LEASH", 8, AC_PosControl, _max_leash_length, POSCONTROL_MAX_LEASH),
+
     AP_GROUPEND
 };
 
@@ -948,8 +957,23 @@ void AC_PosControl::update_vel_controller_xyz()
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
 ///     should be called whenever the speed, acceleration or position kP is modified
+///     this also applies the PSC_MAX_LEASH parameter if it is present
 void AC_PosControl::calc_leash_length_xy()
 {
+    // Check if PSC_MAX_LEASH (_max_leash_length) agrees with _current_max_leash_length
+    if (std::abs(_current_max_leash_length - _max_leash_length) > 0){
+        // If _max_leash_length == 0 (or less) perform the calculation to automatically set the 
+        //     _leash variable
+        if (_max_leash_length <= 0.0f){
+            _flags.recalc_leash_xy = true;
+            _current_max_leash_length = _max_leash_length;
+        // else set _leash equal to _max_leash_length
+        } else {
+            set_leash_length_xy(_max_leash_length);
+            _current_max_leash_length = _max_leash_length;
+        }
+    }
+
     // todo: remove _flags.recalc_leash_xy or don't call this function after each variable change.
     if (_flags.recalc_leash_xy) {
         _leash = calc_leash_length(_speed_cms, _accel_cms, _p_pos_xy.kP());

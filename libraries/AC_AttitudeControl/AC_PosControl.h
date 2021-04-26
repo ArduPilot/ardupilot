@@ -42,6 +42,7 @@
 #define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
+#define POSCONTROL_MAX_LEASH                    0.0f    // default max leash length (value of 0 keeps the calculated _leash value)
 
 class AC_PosControl
 {
@@ -381,6 +382,7 @@ protected:
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
     AP_Float    _lean_angle_max;        // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
+    AP_Float    _max_leash_length;      // Max leash length for position control
     AC_P_2D     _p_pos_xy;              // XY axis position controller to convert distance error to desired velocity
     AC_P_1D     _p_pos_z;               // Z axis position controller to convert altitude error to desired climb rate
     AC_PID_2D   _pid_vel_xy;            // XY axis velocity controller to convert velocity error to desired acceleration
@@ -401,6 +403,7 @@ protected:
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
     float       _vel_z_control_ratio = 2.0f;   // confidence that we have control in the vertical axis
+    float       _current_max_leash_length; // current maximum leash length. This is used to keep track of parameter changes
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
