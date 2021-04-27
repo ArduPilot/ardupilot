@@ -646,9 +646,6 @@ private:
 
     /* support for retrieving logs via mavlink: */
 
-    // last time we handled a log-transfer-over-mavlink message:
-    uint32_t _last_mavlink_log_transfer_message_handled_ms;
-
     // last time arming failed, for backends
     uint32_t _last_arming_failure_ms;
 
