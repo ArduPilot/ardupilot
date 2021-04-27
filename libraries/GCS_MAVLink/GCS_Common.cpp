@@ -858,6 +858,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_COMPONENT_INFORMATION, MSG_COMPONENT_INFORMATION},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3406,6 +3407,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+     case MAVLINK_MSG_ID_REQUEST_EVENT:
         AP::logger().handle_mavlink_msg(*this, msg);
         break;
 
@@ -4774,6 +4776,21 @@ void GCS_MAVLINK::send_generator_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_component_information() const
+{
+    const char *general_metadata_url = "mftp:/@SYS/general_metadata.json";
+    const uint32_t general_metadata_checksum = 133761337;
+
+    mavlink_msg_component_information_send(
+        chan,
+        AP_HAL::millis(),
+        general_metadata_checksum,
+        general_metadata_url,
+        0,  // -1?
+        ""
+        );
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5127,6 +5144,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
+        break;
+
+    case MSG_COMPONENT_INFORMATION:
+        CHECK_PAYLOAD_SIZE(COMPONENT_INFORMATION);
+        send_component_information();
         break;
 
     default:
