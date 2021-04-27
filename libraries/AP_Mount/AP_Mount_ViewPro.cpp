@@ -73,9 +73,14 @@ void AP_Mount_ViewPro::init()
 	command_flags.stop_video = false;
 	command_flags.flip_image_IR = false;
 	command_flags.flip_image_EO = false;
+	command_flags.zero_zoom = false;
+	command_flags.full_zoom = false;
+	command_flags.turn_camera_on = false;
+	command_flags.turn_camera_off = false;
 	yaw_center_reset_flag = false;
 	query_state_flag = false;
 	image_flip_toggle =false;
+
 
 }
 
@@ -92,7 +97,7 @@ void AP_Mount_ViewPro::update()
 
 
 //Center yaw if switched to manual flight (!_RC_control_enable) and you are not currently tracking a GPS point
-
+/*
 	if(_cam_button_output ==0){
 
 		if((get_mode() == MAV_MOUNT_MODE_RC_TARGETING) and !_RC_control_enable){
@@ -109,6 +114,7 @@ void AP_Mount_ViewPro::update()
 			yaw_center_reset_flag = true;
 		}
 	}
+	*/
 
     // update based on mount mode
     switch(get_mode()) {
@@ -316,6 +322,13 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		_last_send = AP_HAL::millis();
 		return;
 
+	}else if(command_flags.full_zoom){
+
+		full_zoom();
+		command_flags.full_zoom = false;
+		_last_send = AP_HAL::millis();
+		return;
+
 	}else if(command_flags.default_pip_color){
 
 		default_pip_color();
@@ -500,6 +513,14 @@ void AP_Mount_ViewPro::parse_reply() {
 
         	_zoom_level =  (_buffer.zoom_data.byte3<<12 | _buffer.zoom_data.byte4<<8 | _buffer.zoom_data.byte5<<4 | _buffer.zoom_data.byte6);
 
+/*
+         	hal.console->print("\n");
+        	hal.console->printf("%u", _zoom_level);
+        	hal.console->print("\n");
+        	hal.console->print("\n");
+        	*/
+
+
             break;
 
         case ReplyType_angle_DATA:
@@ -638,8 +659,11 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 	//Always have scroll wheel availble for tilt control while in 'RC-Targeting' mode
 	const RC_Channel *tilt_wheel_ch = rc().channel(CH_6);
 
-	float spd_factor = (float)_camera_speed_zoom_out + ((float)_zoom_level * (((float)_camera_speed_zoom_in - (float)_camera_speed_zoom_out) / 16384));
-	spd_factor = constrain_float(spd_factor, (float)_camera_speed_zoom_in, (float)_camera_speed_zoom_out);
+	//float spd_factor = (float)_camera_speed_zoom_out + ((float)_zoom_level * (((float)_camera_speed_zoom_in - (float)_camera_speed_zoom_out) / 16384));
+	//spd_factor = constrain_float(spd_factor, (float)_camera_speed_zoom_in, (float)_camera_speed_zoom_out);
+
+	float spd_factor = (float)_state._camera_speed_max + ((float)_zoom_level * (((float)_state._camera_speed_min - (float)_state._camera_speed_max) / 16384));
+	spd_factor = constrain_float(spd_factor, (float)_state._camera_speed_min, (float)_state._camera_speed_max);
 
 	_speed_ef_target_deg.x = 0;
 
@@ -1170,6 +1194,48 @@ void AP_Mount_ViewPro::zero_zoom(){
 	_zoom_level = 0;
 
 }
+
+
+
+
+
+
+
+void AP_Mount_ViewPro::full_zoom(){
+
+	static cmd_9_byte_struct cmd_set_zoom_zero_data;
+	cmd_set_zoom_zero_data.byte1 = 0x81;
+	cmd_set_zoom_zero_data.byte2 = 0x01;
+	cmd_set_zoom_zero_data.byte3 = 0x04;
+	cmd_set_zoom_zero_data.byte4 = 0x47;
+	cmd_set_zoom_zero_data.byte5 = 0x04;
+	cmd_set_zoom_zero_data.byte6 = 0x00;
+	cmd_set_zoom_zero_data.byte7 = 0x00;
+	cmd_set_zoom_zero_data.byte8 = 0x00;
+	cmd_set_zoom_zero_data.byte9 = 0xFF;
+
+	if ((size_t)_port->txspace() <= sizeof(cmd_set_zoom_zero_data)) {
+		return;
+	}
+
+	uint8_t* buf_zoom = (uint8_t*)&cmd_set_zoom_zero_data;
+
+	for (uint8_t i = 0;  i != sizeof(cmd_set_zoom_zero_data) ; i++) {
+		_port->write(buf_zoom[i]);
+	}
+
+	_zoom_level = 16384;
+
+}
+
+
+
+
+
+
+
+
+
 
 
 void AP_Mount_ViewPro::camera_state(int camera_cmd){

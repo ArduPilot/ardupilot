@@ -87,7 +87,9 @@ public:
     virtual void toggle_record();
 	virtual void toggle_camera_state();
 	virtual void turn_camera_off();
+	virtual void turn_camera_on();
 	virtual void set_camera_point_ROI(float yaw);
+	virtual void set_camera_zoom(bool zoom);
 	virtual void enable_follow(bool en);
 	virtual void center_yaw();
 	virtual void look_down();
@@ -150,7 +152,9 @@ protected:
     	bool toggle_rec;
     	bool stop_video;
     	bool turn_camera_off;
+    	bool turn_camera_on;
     	bool zero_zoom;
+    	bool full_zoom;
     	bool toggle_pip;
 		bool toggle_color;
 		bool default_pip_color;

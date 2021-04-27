@@ -70,6 +70,7 @@ private:
     void cmd_look_down();
     void zoom_camera();
     void zero_zoom();
+    void full_zoom();
     void camera_state(int camera_state_cmd);
 
     void toggle_pip();

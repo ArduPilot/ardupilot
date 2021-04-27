@@ -59,6 +59,14 @@ void Copter::arm_motors_check()
         	AP_Notify::flags.arming = false;
     		hal.gpio->write(52, false);
     		hal.gpio->write(53, true);
+
+
+
+    		if(g.ch_output != 0){
+    				camera_mount.toggle_record();
+    			}
+
+
 /*
         	if(!copter.ap.turn_on_critical_systems){
         		hal.gpio->write(52, false);

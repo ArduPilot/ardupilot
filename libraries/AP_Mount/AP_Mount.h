@@ -25,7 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 // maximum number of mounts
-#define AP_MOUNT_MAX_INSTANCES          2
+#define AP_MOUNT_MAX_INSTANCES          1
 
 // declare backend classes
 class AP_Mount_Backend;
@@ -133,8 +133,16 @@ public:
     void set_camera_point_ROI(float yaw) { set_camera_point_ROI(_primary, yaw); }
 
 
+    void set_camera_zoom(uint8_t instance, bool zoom);
+    void set_camera_zoom(bool zoom) { set_camera_zoom(_primary, zoom); }
+
+
     void turn_camera_off(uint8_t instance);
     void turn_camera_off() { turn_camera_off(_primary); }
+
+
+    void turn_camera_on(uint8_t instance);
+    void turn_camera_on() { turn_camera_on(_primary); }
 
 
     void center_yaw(uint8_t instance);

@@ -705,6 +705,20 @@ void AP_Mount::set_camera_point_ROI(uint8_t instance, float yaw)
 
 
 
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::set_camera_zoom(uint8_t instance, bool zoom)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->set_camera_zoom(zoom);
+}
+
+
+
+
 void AP_Mount::center_yaw(uint8_t instance)
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
@@ -728,6 +742,8 @@ void AP_Mount::look_down(uint8_t instance)
 
 
 
+
+
 void AP_Mount::turn_camera_off(uint8_t instance)
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
@@ -737,6 +753,21 @@ void AP_Mount::turn_camera_off(uint8_t instance)
     // send command to backend
     _backends[instance]->turn_camera_off();
 }
+
+
+
+void AP_Mount::turn_camera_on(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->turn_camera_on();
+}
+
+
+
 
 
 // set_angle_targets - sets angle targets in degrees

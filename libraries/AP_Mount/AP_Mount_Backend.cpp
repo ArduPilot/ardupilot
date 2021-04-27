@@ -246,6 +246,17 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 }
 
 
+void AP_Mount_Backend::set_camera_zoom(bool zoom){
+
+	if(!zoom){
+		command_flags.zero_zoom = true;
+	}else{
+		command_flags.full_zoom = true;
+	}
+
+}
+
+
 //Functions to control gimbal/camera from higher levels
 
 void AP_Mount_Backend::toggle_record(){	command_flags.toggle_rec = true; }
@@ -260,6 +271,8 @@ void AP_Mount_Backend::flip_image(){ command_flags.flip_image_IR = true; }
 
 
 void AP_Mount_Backend::turn_camera_off(){command_flags.turn_camera_off = true; }
+
+void AP_Mount_Backend::turn_camera_on(){command_flags.turn_camera_on = true; }
 
 
 

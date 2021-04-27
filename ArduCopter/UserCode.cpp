@@ -88,6 +88,8 @@ void Copter::userhook_init()
 
    camera_mount.cam_button_output(g.ch_output);
 
+   zoom_out = true;
+
 
 }
 #endif
@@ -649,10 +651,25 @@ if(g.ch_output == 0){
 		long_press_flag_ch9 = false;
 	}
 
-
-
 	if(short_press_flag_ch10){
+
+		if(g.ch_B_output != 1){
+
 		camera_mount.set_mode(MAV_MOUNT_MODE_GPS_POINT);
+
+		}else{
+
+			if(zoom_out){
+				zoom_out = false;
+				camera_mount.set_camera_zoom(true);
+			}else{
+				zoom_out = true;
+				camera_mount.set_camera_zoom(false);
+			}
+
+		}
+
+
 		short_press_flag_ch10 = false;
 	}
 

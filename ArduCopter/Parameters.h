@@ -381,6 +381,7 @@ public:
 		k_param_en_topple_sense,
 		k_param_rotor_timeout,
 		k_param_ch_output,
+		k_param_ch_B_output,
 
 
         // the k_param_* space is 9-bits in size
@@ -486,6 +487,7 @@ public:
     AP_Int8					en_topple_sense;
     AP_Float				rotor_timeout;
     AP_Int8					ch_output;
+    AP_Int8					ch_B_output;
 
 
     // Note: keep initializers here in the same order as they are declared
