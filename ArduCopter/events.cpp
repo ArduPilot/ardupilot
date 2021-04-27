@@ -414,6 +414,7 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
             arming.disarm();
 #endif
             break;
+        }
         case Failsafe_Action_Planck_Track_Land:
             set_mode_planck_RTB_or_planck_land(reason);
             break;
