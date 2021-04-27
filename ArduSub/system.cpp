@@ -94,8 +94,6 @@ void Sub::init_ardupilot()
     wp_nav.set_terrain(&terrain);
 #endif
 
-    pos_control.set_dt(MAIN_LOOP_SECONDS);
-
     // init the optical flow sensor
 #if OPTFLOW == ENABLED
     init_optflow();
