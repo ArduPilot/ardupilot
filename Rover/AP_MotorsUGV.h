@@ -84,6 +84,10 @@ public:
     void set_wingsail(float wingsail);
     float get_wingsail() const { return _wingsail; }
 
+    // set or get mast rotation input as a value from -100 to 100
+    void set_mast_rotation(float mast_rotation);
+    float get_mast_rotation() const { return _mast_rotation; }
+
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
     // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -199,6 +203,7 @@ protected:
     float   _walking_height; // requested height as a value from -1 to +1   
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
+    float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
 
     // omni variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];

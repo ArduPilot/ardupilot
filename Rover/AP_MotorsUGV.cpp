@@ -182,6 +182,8 @@ void AP_MotorsUGV::setup_servo_output()
     SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
     // wing sail -100 to 100
     SRV_Channels::set_angle(SRV_Channel::k_wingsail_elevator, 100);
+    // mast rotation -100 to 100
+    SRV_Channels::set_angle(SRV_Channel::k_mast_rotation, 100);
 
 }
 
@@ -242,6 +244,12 @@ void AP_MotorsUGV::set_wingsail(float wingsail)
     _wingsail = constrain_float(wingsail, -100.0f, 100.0f);
 }
 
+// set mast rotation input as a value from -100 to 100
+void AP_MotorsUGV::set_mast_rotation(float mast_rotation)
+{
+    _mast_rotation = constrain_float(mast_rotation, -100.0f, 100.0f);
+}
+
 // get slew limited throttle
 // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
 // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -270,7 +278,7 @@ bool AP_MotorsUGV::have_skid_steering() const
 // true if the vehicle has a mainsail
 bool AP_MotorsUGV::has_sail() const
 {
-    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet) || SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator);
+    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet) || SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator) || SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation);
 }
 
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
@@ -360,6 +368,9 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             if (SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator)) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_wingsail_elevator, pct);
             }
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation)) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_mast_rotation, pct);
+            }
             break;
         }
         case MOTOR_TEST_LAST:
@@ -422,6 +433,9 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_wingsail_elevator)) {
                 SRV_Channels::set_output_pwm(SRV_Channel::k_wingsail_elevator, pwm);
+            }
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mast_rotation)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_mast_rotation, pwm);
             }
             break;
         }
@@ -885,6 +899,7 @@ void AP_MotorsUGV::output_sail()
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, _mainsail);
     SRV_Channels::set_output_scaled(SRV_Channel::k_wingsail_elevator, _wingsail);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_mast_rotation, _mast_rotation);
 }
 
 // slew limit throttle for one iteration
