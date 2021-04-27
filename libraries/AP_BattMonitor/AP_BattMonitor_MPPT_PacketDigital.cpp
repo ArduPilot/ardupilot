@@ -34,6 +34,7 @@ void AP_BattMonitor_MPPT_PacketDigital::read()
 
 void AP_BattMonitor_MPPT_PacketDigital::perform_logging() const
 {
+#ifndef HAL_BUILD_AP_PERIPH
     if (device_count == 0) {
         // nothing to log
         return;
@@ -77,6 +78,7 @@ void AP_BattMonitor_MPPT_PacketDigital::perform_logging() const
                            (double)MPPT_devices[i].output.current,
                            (double)MPPT_devices[i].output.power);
     }
+#endif
 }
 
 // parse inbound frames
@@ -102,7 +104,7 @@ void AP_BattMonitor_MPPT_PacketDigital::handle_frame(AP_HAL::CANFrame &frame)
         device_count++;
         MPPT_devices[index].serialnumber = serialnumber;
         MPPT_devices[index].sequence = frame.data[0];
-        gcs().send_text(MAV_SEVERITY_DEBUG, "PDCAN: %u New device", serialnumber);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "PDCAN: %u New device", serialnumber);
 
         send_command(PacketType::VOLTAGE_GET, serialnumber);
         send_command(PacketType::ALGORITHM_GET, serialnumber);
@@ -138,7 +140,7 @@ void AP_BattMonitor_MPPT_PacketDigital::handle_frame(AP_HAL::CANFrame &frame)
         const uint8_t prev_faults = (uint8_t)MPPT_devices[index].faults;
         const uint8_t new_single_fault = (~prev_faults & all_current_faults);
         if (new_single_fault != 0) {
-            gcs().send_text(MAV_SEVERITY_DEBUG, "PDCAN: %u New Fault! %d: %s", serialnumber, (int)new_single_fault, get_fault_code_string((FaultFlags)new_single_fault));
+            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "PDCAN: %u New Fault! %d: %s", serialnumber, (int)new_single_fault, get_fault_code_string((FaultFlags)new_single_fault));
         }
         MPPT_devices[index].faults = (FaultFlags)frame.data[2];
         }
@@ -147,7 +149,7 @@ void AP_BattMonitor_MPPT_PacketDigital::handle_frame(AP_HAL::CANFrame &frame)
     case PacketType::ACK:
         break;
     case PacketType::NACK:
-        //gcs().send_text(MAV_SEVERITY_INFO, "PDCAN: %u NACK 0x%2X", serialnumber, (unsigned)packet_sent_prev);
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PDCAN: %u NACK 0x%2X", serialnumber, (unsigned)packet_sent_prev);
         break;
 
     case PacketType::ALGORITHM_SET:
