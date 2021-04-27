@@ -921,19 +921,67 @@ void LoggerBackendThread_File::timer(void)
     handle_write_buffer();
 }
 
+// write a scrap file out (and delete it) to get a rough idea on
+// whether we could start logging if we needed to:
+bool LoggerBackendThread_File::update_check_writability()
+{
+    const uint32_t now = AP_HAL::millis();
+
+    if (now - last_writable_check_time_ms > 1000) {
+        last_writable_check_time_ms = now;
+        _writable = check_writability();
+    }
+
+    return _writable;
+}
+
+bool LoggerBackendThread_File::check_writability()
+{
+    ensure_log_directory_exists();
+
+    bool ret = false;
+
+    char *_filename = nullptr;
+    int fd;
+    if (asprintf(&_filename, "%s/PROBE.TXT", _log_directory) == -1) {
+        goto out;
+    }
+
+    AP::FS().unlink(_filename);
+
+    fd = AP::FS().open(_filename, O_WRONLY|O_CREAT|O_TRUNC);
+    if (fd == -1) {
+        goto out;
+    }
+    AP::FS().close(fd);
+
+    if (AP::FS().unlink(_filename) == -1) {
+        goto out;
+    }
+
+    ret = true;
+
+out:
+    free(_filename);
+
+    return ret;
+}
+
 void LoggerBackendThread_File::retry_logging_open()
 {
     if (_write_fd != -1) {
         // already logging....
         return;
     }
-    if (!should_be_logging()) {
-        return;
-    }
     if (recent_open_error()) {
         return;
     }
-
+    if (!should_be_logging()) {
+        // make sure we could log if we wanted to:
+        if (!check_writability()) {
+            _open_error_ms = AP_HAL::millis();
+        }
+    }
     // retry logging open. This allows for booting with
     // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
     // card is inserted then logging starts
