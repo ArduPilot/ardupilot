@@ -253,7 +253,7 @@ void Blimp::ten_hz_logging_loop()
         logger.Write_RCOUT();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        logger.Write_Vibration();
+        AP::ins().Write_Vibration();
     }
 }
 
@@ -272,7 +272,7 @@ void Blimp::twentyfive_hz_logging()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
 #endif
 
