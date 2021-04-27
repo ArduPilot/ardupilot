@@ -43,7 +43,6 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
         return;
     }
     _warned_log_disarm = false;
-    _last_mavlink_log_transfer_message_handled_ms = AP_HAL::millis();
 
     const bool synchronous = false;
 

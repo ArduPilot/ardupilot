@@ -684,8 +684,6 @@ private:
 
     /* support for retrieving logs via mavlink: */
 
-    // last time we handled a log-transfer-over-mavlink message:
-    uint32_t _last_mavlink_log_transfer_message_handled_ms;
     bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
 
     // last time arming failed, for backends
