@@ -687,14 +687,16 @@ bool AC_WPNav::set_spline_destination(const Vector3f& destination, bool terrain_
 
     // calculate origin and origin velocity vector
     Vector3f origin_vector;
-    if (terrain_alt == _terrain_alt && _flags.fast_waypoint) {
-        // calculate origin vector
-        if (_this_leg_is_spline) {
-            // if previous leg was a spline we can use destination velocity vector for origin velocity vector
-            origin_vector = _spline_this_leg.get_destination_vel();
-        } else {
-            // use direction of the previous straight line segment
-            origin_vector = _destination - _origin;
+    if (terrain_alt == _terrain_alt) {
+        if (_flags.fast_waypoint) {
+            // calculate origin vector
+            if (_this_leg_is_spline) {
+                // if previous leg was a spline we can use destination velocity vector for origin velocity vector
+                origin_vector = _spline_this_leg.get_destination_vel();
+            } else {
+                // use direction of the previous straight line segment
+                origin_vector = _destination - _origin;
+            }
         }
 
         // use previous destination as origin
