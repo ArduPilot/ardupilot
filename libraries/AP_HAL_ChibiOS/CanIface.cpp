@@ -509,7 +509,7 @@ void CANIface::handleTxInterrupt(const uint64_t utc_usec)
         handleTxMailboxInterrupt(2, txok, utc_usec);
     }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
     if (event_handle_ != nullptr) {
         PERF_STATS(stats.num_events);
         evt_src_.signalI(1 << self_index_);
@@ -577,7 +577,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
 
     had_activity_ = true;
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
     if (event_handle_ != nullptr) {
         PERF_STATS(stats.num_events);
         evt_src_.signalI(1 << self_index_);
@@ -687,6 +687,9 @@ uint32_t CANIface::getErrorCount() const
            stats.tx_timedout;
 }
 
+#endif // #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+
+#if CH_CFG_USE_EVENTS == TRUE
 ChibiOS::EventSource CANIface::evt_src_;
 bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
 {
@@ -696,7 +699,7 @@ bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
     return event_handle_->register_event(1 << self_index_);
 }
 
-#endif // #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#endif // #if CH_CFG_USE_EVENTS == TRUE
 
 void CANIface::checkAvailable(bool& read, bool& write, const AP_HAL::CANFrame* pending_tx) const
 {
@@ -729,7 +732,7 @@ bool CANIface::select(bool &read, bool &write,
         return true;
     }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
     // we don't support blocking select in AP_Periph and bootloader
     while (time < blocking_deadline) {
         if (event_handle_ == nullptr) {
