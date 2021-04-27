@@ -49,4 +49,5 @@ private:
     } file[max_open_file];
 
     void general_metadata(ExpandingString &str);
+    void events_metadata(ExpandingString &str);
 };
