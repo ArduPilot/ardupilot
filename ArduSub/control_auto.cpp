@@ -514,9 +514,9 @@ float Sub::get_auto_heading()
         float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        const Vector2f target_vel_xy{pos_control.get_vel_target().x, pos_control.get_vel_target().y};
+        const Vector2f target_vel_xy{pos_control.get_vel_target_cms().x, pos_control.get_vel_target_cms().y};
         float angle_error = 0.0f;
-        if (target_vel_xy.length() >= pos_control.get_max_speed_xy() * 0.1f) {
+        if (target_vel_xy.length() >= pos_control.get_max_speed_xy_cms() * 0.1f) {
             const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;
             angle_error = wrap_180_cd(desired_angle_cd - track_bearing);
         }
@@ -565,15 +565,10 @@ bool Sub::auto_terrain_recover_start()
     loiter_nav.init_target();
 
     // Reset z axis controller
-    pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+    pos_control.relax_z_controller(motors.get_throttle_hover());
 
-    // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
-    pos_control.set_max_accel_z(wp_nav.get_accel_z());
-
-    // Reset vertical position and velocity targets
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    // initialize vertical maximum speeds and acceleration
+    pos_control.set_max_speed_accel_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up(), wp_nav.get_accel_z());
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
@@ -616,7 +611,7 @@ void Sub::auto_terrain_recover_run()
             // Start timer as soon as rangefinder is healthy
             if (rangefinder_recovery_ms == 0) {
                 rangefinder_recovery_ms = AP_HAL::millis();
-                pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // Reset alt hold targets
+                pos_control.relax_z_controller(motors.get_throttle_hover()); // Reset alt hold targets
             }
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
@@ -663,7 +658,7 @@ void Sub::auto_terrain_recover_run()
 
     /////////////////////
     // update z target //
-    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, true);
+    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate, true);
     pos_control.update_z_controller();
 
     ////////////////////////////
