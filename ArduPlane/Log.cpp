@@ -323,7 +323,6 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: XT: the vehicle's current distance from the current travel segment
 // @Field: XTi: integration of the vehicle's crosstrack error
 // @Field: AspdE: difference between vehicle's airspeed and desired airspeed
-// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
 // @Field: TLat: target latitude
 // @Field: TLng: target longitude
 // @Field: TAlt: target altitude
