@@ -462,6 +462,9 @@ public:
     AP_Int8 gyro_fail_mask;
     AP_Int8 accel_fail_mask;
 
+    // Sailboat sim only
+    AP_Int8 sail_type;
+
 };
 
 } // namespace SITL

@@ -426,6 +426,12 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
     AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
 
+    // @Param: SAIL_TYPE
+    // @DisplayName: Sailboat simulation sail type
+    // @Description: 0: mainsail with sheet, 1: directly actuated wing
+    AP_GROUPINFO("SAIL_TYPE",     26, SITL, sail_type, 0),
+
+
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
