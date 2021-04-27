@@ -71,6 +71,12 @@ private:
     uint32_t _last_write_ms;
     uint32_t _last_write_time;
 
+    // methods and state for checking we're likely to be able to open files:
+    bool check_writability();
+    bool update_check_writability();
+    bool _writable;
+    uint32_t last_writable_check_time_ms;
+
     // log-reading state:
     int _read_fd = -1;
     uint16_t _read_fd_log_num;
