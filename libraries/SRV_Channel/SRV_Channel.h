@@ -168,6 +168,7 @@ public:
         k_min                   = 134,  // always outputs SERVOn_MIN
         k_trim                  = 135,  // always outputs SERVOn_TRIM
         k_max                   = 136,  // always outputs SERVOn_MAX
+        k_mast_rotation         = 137,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
