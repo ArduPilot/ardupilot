@@ -76,7 +76,11 @@ class VehicleInfo(object):
             },
             "octa-dji": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-octa.parm",
+                    "default_params/copter-octa-dji.parm"
+                ],
             },
             "deca": {
                 "waf_target": "bin/arducopter",
