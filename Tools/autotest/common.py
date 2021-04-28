@@ -7897,7 +7897,7 @@ Also, ignores heartbeats not from our target system'''
 
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
-            self.start_test("Testing Set Position in %s" % frame_name)
+            self.start_subtest("Testing Set Position in %s" % frame_name)
             self.start_subtest("Changing Latitude")
             targetpos.lat += 0.0001
             if test_alt:
@@ -7935,8 +7935,8 @@ Also, ignores heartbeats not from our target system'''
                                height_accuracy=2, minimum_duration=2)
 
             if test_heading:
-                self.start_test("Testing Yaw targetting in %s" % frame_name)
-                self.start_subtest("Changing Latitude and Heading")
+                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
+                self.progress("Changing Latitude and Heading")
                 targetpos.lat += 0.0001
                 if test_alt:
                     targetpos.alt += 5
@@ -7997,7 +7997,7 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_heading(0, minimum_duration=5, timeout=timeout)
 
             if test_yaw_rate:
-                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
 
                 def send_yaw_rate(rate, target=None):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8053,7 +8053,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.stop_mavproxy(mavproxy)
 
-        self.start_test("Getting back to home and disarm")
+        self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
@@ -8119,8 +8119,8 @@ Also, ignores heartbeats not from our target system'''
 
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
-            self.start_test("Testing Set Velocity in %s" % frame_name)
-            self.start_subtest("Changing Vx speed")
+            self.start_subtest("Testing Set Velocity in %s" % frame_name)
+            self.progress("Changing Vx speed")
             self.wait_speed_vector(
                 target_speed,
                 timeout=timeout,
@@ -8189,7 +8189,7 @@ Also, ignores heartbeats not from our target system'''
             )
 
             if test_heading:
-                self.start_test("Testing Yaw targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
 
                 def send_yaw_target(yaw, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8288,7 +8288,7 @@ Also, ignores heartbeats not from our target system'''
                 )
 
             if test_yaw_rate:
-                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
 
                 def send_yaw_rate(rate, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8425,7 +8425,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.stop_mavproxy(mavproxy)
 
-        self.start_test("Getting back to home and disarm")
+        self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
