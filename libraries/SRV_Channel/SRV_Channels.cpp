@@ -202,6 +202,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_RATE",  23, SRV_Channels, dshot_rate, 0),
 
+    // @Param: _DSHOT_ESC
+    // @DisplayName: Servo DShot ESC type
+    // @Description: This sets the DShot ESC type for all outputs. The ESC type affects the range of DShot commands available. None means that no dshot commands will be executed.
+    // @Values: 0:None,1:BLHeli32/BLHeli_S/Kiss
+    // @User: Advanced
+    AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
+
     AP_GROUPEND
 };
 
@@ -229,7 +236,6 @@ SRV_Channels::SRV_Channels(void)
     blheli_ptr = &blheli;
 #endif
 #endif // HAL_BUILD_AP_PERIPH
-
 }
 
 // SRV_Channels initialization
