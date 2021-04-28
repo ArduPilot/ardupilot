@@ -6494,7 +6494,6 @@ class AutoTestCopter(AutoTest):
             'hexa-cwx': "does not take off",
             'hexa-dji': "does not take off",
             'octa-cwx': "does not take off",
-            'octa-dji': "does not take off",
             'octa-quad-cwx': "does not take off",
             'tri': "does not take off",
         }
