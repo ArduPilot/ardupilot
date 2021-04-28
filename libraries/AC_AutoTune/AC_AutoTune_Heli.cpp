@@ -72,7 +72,11 @@ void AC_AutoTune_Heli::test_init()
         }
         // reset determine_gain function whenever test is initialized
         determine_gain(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
-        dwell_test_init(curr_test_freq);
+        if (freq_sweep) {
+            dwell_test_init(80.0f);
+        } else {
+            dwell_test_init(curr_test_freq);
+        }
         if (!is_zero(curr_test_freq)) {
             // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
             step_time_limit_ms = (uint32_t)(4000 + (float)(AUTOTUNE_DWELL_CYCLES + 2) * 1000.0f * 6.28f / curr_test_freq);
@@ -106,9 +110,17 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
     } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
         rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS, dir_sign);
     } else if (tune_type == RP_UP || tune_type == RD_UP) {
-        dwell_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        if (freq_sweep) {
+            sweep_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        } else {
+            dwell_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        }
     } else if (tune_type == MAX_GAINS) {
-        dwell_test_run(0, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        if (freq_sweep) {
+            sweep_test_run(0, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        } else {
+            dwell_test_run(0, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        }
     } else if (tune_type == TUNE_COMPLETE) {
         return;
     } else {
@@ -693,7 +705,7 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
     static bool found_max_p = false;
     static bool found_max_d = false;
     static bool find_middle = false;
-    if (frq_cnt < 12) {
+    if (frq_cnt < 12 && !freq_sweep) {
         if (frq_cnt > 1 && phase[frq_cnt] > 161.0f && phase[frq_cnt] < 200.0f &&
             !find_middle && !found_max_p) {
             find_middle = true;
@@ -794,6 +806,11 @@ void AC_AutoTune_Heli::Log_AutoTuneDetails()
     Log_Write_AutoTuneDetails(command_out, filt_target_rate, rotation_rate);
 }
 
+void AC_AutoTune_Heli::Log_AutoTuneSweep()
+{
+    Log_Write_AutoTuneSweep(curr_test_freq, curr_test_gain, curr_test_phase);
+}
+
 // @LoggerMessage: ATNH
 // @Description: Heli AutoTune
 // @Vehicles: Copter
@@ -849,8 +866,30 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate
         "Qfff",
         AP_HAL::micros64(),
         motor_cmd,
-        tgt_rate_rads*57.3f,
+        tgt_rate_rads*57.3,
         rate_rads*57.3f);
+}
+
+// Write an Autotune data packet
+void AC_AutoTune_Heli::Log_Write_AutoTuneSweep(float freq, float gain, float phase)
+{
+    // @LoggerMessage: ATSH
+    // @Description: Heli AutoTune Sweep packet
+    // @Vehicles: Copter
+    // @Field: TimeUS: Time since system startup
+    // @Field: freq: current frequency
+    // @Field: gain: current response gain
+    // @Field: phase: current response phase
+    AP::logger().Write(
+        "ATSH",
+        "TimeUS,freq,gain,phase",
+        "s---",
+        "F000",
+        "Qfff",
+        AP_HAL::micros64(),
+        freq,
+        gain,
+        phase);
 }
 
 // get intra test rate I gain for the specified axis

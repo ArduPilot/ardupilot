@@ -86,9 +86,10 @@ protected:
 
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
+    void Log_AutoTuneSweep() override;
     void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
     void Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads);
-
+    void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
     // returns true if rate P gain of zero is acceptable for this vehicle
     bool allow_zero_rate_p() override { return true; }
 

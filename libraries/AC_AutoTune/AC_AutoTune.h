@@ -40,6 +40,7 @@
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
 #define AUTOTUNE_DWELL_CYCLES                6
+//#define AUTOTUNE_DWELL_CYCLES                500
 
 class AC_AutoTune
 {
@@ -195,6 +196,7 @@ protected:
 
     virtual void Log_AutoTune() = 0;
     virtual void Log_AutoTuneDetails() = 0;
+    virtual void Log_AutoTuneSweep() = 0;
 
     // send message with high level status (e.g. Started, Stopped)
     void update_gcs(uint8_t message_id) const;
@@ -362,11 +364,17 @@ protected:
     void angle_dwell_test_init(float filt_freq);
     void angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase);
 
+    // dwell test used to perform frequency dwells for rate gains
+    void sweep_test_init(float filt_freq);
+    void sweep_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase);
+
     // determines the gain and phase for a dwell
     void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
 
     // determines the gain and phase for a dwell
     void determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset);
+
+    float waveform(float time, float time_record, float waveform_magnitude);
 
     uint8_t  ff_test_phase;                         // phase of feedforward test
     float    test_command_filt;                     // filtered commanded output
@@ -382,13 +390,32 @@ protected:
     uint8_t  freq_cnt;
     uint8_t  freq_cnt_max;
     float    curr_test_freq;
+    float    curr_test_gain;
+    float    curr_test_phase;
     bool     dwell_complete;
     Vector3f start_angles;
     uint32_t settle_time;
     uint32_t phase_out_time;
+    bool     freq_sweep;
+    float    waveform_freq_rads;  //current frequency for chirp waveform
+
 
     LowPassFilterFloat  command_filt;               // filtered command
     LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
+
+    struct sweep_data {
+        float    maxgain_freq;
+        float    maxgain_gain;
+        float    maxgain_phase;
+        float    ph180_freq;
+        float    ph180_gain;
+        float    ph180_phase;
+        float    ph270_freq;
+        float    ph270_gain;
+        float    ph270_phase;
+    };
+
+    sweep_data sweep;
 
     struct max_gain_data {
         float freq;
