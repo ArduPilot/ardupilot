@@ -238,11 +238,20 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
+    enum class AuxFuncTriggerSource : uint8_t {
+        INIT,
+        RC,
+        BUTTON,
+        MAVLINK,
+        MISSION,
+    };
+
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
-    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    // wrapper function around do_aux_function which allows us to log
+    bool run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -265,6 +274,9 @@ public:
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
+
+    // virtual function to be overridden my subclasses
+    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
     virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -483,8 +495,10 @@ public:
 
     uint32_t last_input_ms() const { return last_update_ms; };
 
-    bool do_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos) {
-        return rc_channel(0)->do_aux_function(ch_option, pos);
+    // method for other parts of the system (e.g. Button and mavlink)
+    // to trigger auxillary functions
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
+        return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
 
 protected:
