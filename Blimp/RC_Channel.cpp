@@ -93,16 +93,6 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
     }
 }
 
-void RC_Channel_Blimp::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
-{
-    RC_Channel::do_aux_function_armdisarm(ch_flag);
-    if (blimp.arming.is_armed()) {
-        // remember that we are using an arming switch, for use by
-        // set_throttle_zero_flag
-        blimp.ap.armed_with_switch = true;
-    }
-}
-
 // do_aux_function - implement the function invoked by auxiliary switches
 bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
