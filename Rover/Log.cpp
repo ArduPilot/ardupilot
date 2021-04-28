@@ -154,15 +154,17 @@ void Rover::Log_Write_Sail()
 // @Field: TackThr: Apparent wind angle used for tack threshold
 // @Field: MainOut: Normalized mainsail output
 // @Field: WingOut: Normalized wingsail output
+// @Field: MastRotOut: Normalized direct-rotation mast output
 // @Field: VMG: Velocity made good (speed at which vehicle is making progress directly towards destination)
 
-    logger.Write("SAIL", "TimeUS,Tack,TackThr,MainOut,WingOut,VMG",
-                        "s-d%%n", "F00000", "QBffff",
+    logger.Write("SAIL", "TimeUS,Tack,TackThr,MainOut,WingOut,MastRotOut,VMG",
+                        "s-d%%%n", "F000000", "QBfffff",
                         AP_HAL::micros64(),
                         current_tack,
                         (double)wind_dir_tack,
                         (double)g2.motors.get_mainsail(),
                         (double)g2.motors.get_wingsail(),
+                        (double)g2.motors.get_mast_rotation(),
                         (double)g2.sailboat.get_VMG());
 }
 
