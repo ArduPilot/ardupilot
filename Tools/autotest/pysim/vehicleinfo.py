@@ -58,7 +58,11 @@ class VehicleInfo(object):
             },
              "octa-cwx": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-octa.parm",
+                    "default_params/copter-octa-cwx.parm"
+                ],
             },
             "octa-quad-cwx": {
                 "waf_target": "bin/arducopter",
