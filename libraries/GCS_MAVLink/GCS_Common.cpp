@@ -2525,7 +2525,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_lon
     }
     const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
     const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
-    if (!rc().do_aux_function(aux_func, position)) {
+    if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTriggerSource::MAVLINK)) {
         // note that this is not quite right; we could be more nuanced
         // about our return code here.
         return MAV_RESULT_FAILED;
