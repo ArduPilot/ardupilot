@@ -4525,7 +4525,7 @@ class AutoTest(ABC):
                 return mode_map.get(mode)
         if mode in mode_map.values():
             return mode
-        self.progress("Available modes '%s'" % mode_map)
+        self.progress("No mode (%s); available modes '%s'" % (mode, mode_map))
         raise ErrorException("Unknown mode '%s'" % mode)
 
     def run_cmd_do_set_mode(self,
