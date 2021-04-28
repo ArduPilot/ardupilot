@@ -13,6 +13,7 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Bitmask.h>
@@ -470,6 +471,9 @@ public:
     // calculate PWM for all channels
     static void calc_pwm(void);
 
+    // return the ESC type for dshot commands
+    static AP_HAL::RCOutput::DshotEscType get_dshot_esc_type() { return AP_HAL::RCOutput::DshotEscType(_singleton->dshot_esc_type.get()); }
+
     static SRV_Channel *srv_channel(uint8_t i) {
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
     }
@@ -578,6 +582,7 @@ private:
     AP_Int8 auto_trim;
     AP_Int16 default_rate;
     AP_Int8 dshot_rate;
+    AP_Int8 dshot_esc_type;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
