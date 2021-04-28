@@ -671,6 +671,12 @@ def run_tests(steps):
     """Run a list of steps."""
     global results
 
+    corefiles = glob.glob("core*")
+    if corefiles:
+        print('Removing corefiles: %s' % str(corefiles))
+        for f in corefiles:
+            os.unlink(f)
+
     passed = True
     failed = []
     failed_testinstances = dict()
