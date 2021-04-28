@@ -893,6 +893,32 @@ void RC_Channel::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
     mission->reset();
 }
 
+bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
+{
+    const bool ret = do_aux_function(ch_option, pos);
+
+    // @LoggerMessage: AUXF
+    // @Description: Auixillary function invocation information
+    // @Field: TimeUS: Time since system startup
+    // @Field: function: ID of triggered function
+    // @Field: pos: switch position when function triggered
+    // @Field: source: source of auxillary function invocation
+    // @Field: result: true if function was successful
+    AP::logger().Write(
+        "AUXF",
+        "TimeUS,function,pos,source,result",
+        "s----",
+        "F----",
+        "QHBBB",
+        AP_HAL::micros64(),
+        uint16_t(ch_option),
+        uint8_t(pos),
+        uint8_t(source),
+        uint8_t(ret)
+        );
+    return ret;
+}
+
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
