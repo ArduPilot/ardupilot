@@ -6493,7 +6493,6 @@ class AutoTestCopter(AutoTest):
             'heli': "wrong binary, different takeoff regime",
             'hexa-cwx': "does not take off",
             'hexa-dji': "does not take off",
-            'octa-cwx': "does not take off",
             'octa-quad-cwx': "does not take off",
             'tri': "does not take off",
         }
