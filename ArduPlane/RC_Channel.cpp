@@ -169,7 +169,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     case AUX_FUNC::ARSPD_CALIBRATE:
 #endif
-        do_aux_function(ch_option, ch_flag);
+    case AUX_FUNC::TER_DISABLE:
+    case AUX_FUNC::CROW_SELECT:
+        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
@@ -181,14 +183,6 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         }
         // note that we don't call do_aux_function() here as we don't
         // want to startup with reverse thrust
-        break;
-
-    case AUX_FUNC::TER_DISABLE:
-        do_aux_function(ch_option, ch_flag);
-        break;
-
-    case AUX_FUNC::CROW_SELECT:
-        do_aux_function(ch_option, ch_flag);
         break;
 
     default:
