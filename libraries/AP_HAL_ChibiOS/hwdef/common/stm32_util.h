@@ -55,7 +55,10 @@ uint64_t stm32_get_utc_usec(void);
 uint32_t get_fattime(void);
 
 // one-time programmable area
-#if defined(STM32F4)
+#if defined(FLASH_OTP_BASE)
+#define OTP_BASE FLASH_OTP_BASE
+#define OTP_SIZE (FLASH_OTP_END-FLASH_OTP_BASE)
+#elif defined(STM32F4)
 #define OTP_BASE 0x1fff7800
 #define OTP_SIZE 512
 #elif defined(STM32F7)
