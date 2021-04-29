@@ -11,9 +11,6 @@ build = {
 
 # MCU parameters
 mcu = {
-    # location of MCU serial number
-    'UDID_START' : 0x1FF1E800,
-
     # DMA peripheral capabilities:
     # - can't use ITCM or DTCM for any DMA
     # - SPI1 to SPI5 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
