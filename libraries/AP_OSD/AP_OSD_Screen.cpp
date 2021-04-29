@@ -46,6 +46,7 @@
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AC_Fence/AC_Fence.h>
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
@@ -961,6 +962,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(restvolt, "RESTVOLT", 58, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: FENCE_EN
+    // @DisplayName: FENCE_EN
+    // @Description: Displays indication of fence enable and breach
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: FENCE_X
+    // @DisplayName: FENCE_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: FENCE_Y
+    // @DisplayName: FENCE_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(fence, "FENCE", 59, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
@@ -1057,6 +1074,8 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_CLK       0xBC
 #define SYM_KILO      0x4B
 #define SYM_TERALT 0xEF
+#define SYM_FENCE_ENABLED 0xF5
+#define SYM_FENCE_DISABLED 0xF6
 
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
@@ -1949,6 +1968,21 @@ void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 }
 #endif
 
+
+void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
+{
+    AC_Fence *fenceptr = AP::fence();
+    if (fenceptr == nullptr) {
+       return;
+    }
+    if (fenceptr->enabled() && fenceptr->present()) {
+        backend->write(x, y, fenceptr->get_breaches(), "%c", SYM_FENCE_ENABLED);
+    } else {
+        backend->write(x, y, false, "%c", SYM_FENCE_DISABLED);
+    }
+}
+
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1991,6 +2025,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+    DRAW_SETTING(fence);
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
