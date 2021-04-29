@@ -966,7 +966,6 @@ void AC_PosControl::calc_leash_length_xy()
         //     _leash variable
         if (_max_leash_length <= 0.0f){
             _flags.recalc_leash_xy = true;
-            _current_max_leash_length = _max_leash_length;
         // else set _leash equal to _max_leash_length
         } else {
             set_leash_length_xy(_max_leash_length);
