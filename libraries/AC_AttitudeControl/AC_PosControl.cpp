@@ -273,7 +273,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _MAX_LEASH
     // @DisplayName: Position Control Leash Length Max
-    // @Description: Maximum position correction for velocity command.  Set to zero to use default calculate _leash value
+    // @Description: Maximum position correction for velocity command.  Set to zero to use default calculated leash value
     // @Units: cm
     // @Range: 0 1000
     // @Increment: 1
