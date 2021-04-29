@@ -5024,7 +5024,7 @@ class AutoTestCopter(AutoTest):
 
             # make sure we haven't already reached alt:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_initial_alt = 500
+            max_initial_alt = 1000
             if abs(m.relative_alt) > max_initial_alt:
                 raise NotAchievedException("Took off too fast (%f > %f" %
                                            (abs(m.relative_alt), max_initial_alt))
