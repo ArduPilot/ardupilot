@@ -2706,8 +2706,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Enable fence and initiate fence action")
         self.do_fence_enable()
         self.assert_fence_enabled()
-        self.wait_mode("GUIDED") # We should RTL because of fence breach
-        self.delay_sim_time(30)
+        self.wait_mode("GUIDED", timeout=120) # We should RTL because of fence breach
+        self.delay_sim_time(60)
 
         items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(items) != 4:
@@ -2744,6 +2744,62 @@ class AutoTestPlane(AutoTest):
         # Wait for guided return to vehicle calculated fence return location
         self.wait_distance_to_location(ret_loc, 90, 110)
         self.wait_circling_point_with_radius(ret_loc, 92)
+
+        self.progress("Test complete, disable fence and come home")
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+
+    def test_fence_breach_no_return_point_no_inclusion(self):
+        """ Test result when a breach occurs and No fence return point is present and
+            no inclusion fence is present and exclusion fence is present """
+        want_radius = 100 # Fence Return Radius
+
+        self.set_parameter("FENCE_ACTION", 6)
+        self.set_parameter("FENCE_TYPE", 4)
+        self.set_parameter("RTL_RADIUS", want_radius)
+        self.set_parameter("NAVL1_LIM_BANK", 60)
+
+        # Generate an exclusion fence just north of takeoff point
+        home_loc = self.mav.location()
+        locs = [
+            mavutil.location(home_loc.lat + 0.010, home_loc.lng - 0.003, 0, 0),
+            mavutil.location(home_loc.lat + 0.010, home_loc.lng + 0.003, 0, 0),
+            mavutil.location(home_loc.lat + 0.008, home_loc.lng + 0.003, 0, 0),
+            mavutil.location(home_loc.lat + 0.008, home_loc.lng - 0.003, 0, 0),
+        ]
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+            [
+                locs
+            ]
+        )
+        self.delay_sim_time(1)
+        self.wait_ready_to_arm()
+        self.takeoff(alt=50)
+        self.change_mode("CRUISE")
+        self.wait_distance(150, accuracy=20)
+
+        self.progress("Enable fence and initiate fence action")
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+        self.wait_mode("GUIDED") # We should RTL because of fence breach
+        self.delay_sim_time(30)
+
+        items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if len(items) != 4:
+            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (4, len(items)))
+
+        # Check there are no fence return points specified still
+        for fence_loc in items:
+            if fence_loc.command == mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT:
+                raise NotAchievedException(
+                    "Unexpected fence return point found (%u) got %u" %
+                    (fence_loc.command,
+                     mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT))
+
+        # Wait for guided return to vehicle calculated fence return location
+        self.wait_distance_to_location(home_loc, 90, 110)
+        self.wait_circling_point_with_radius(home_loc, 92)
 
         self.progress("Test complete, disable fence and come home")
         self.do_fence_disable()
@@ -2894,6 +2950,10 @@ class AutoTestPlane(AutoTest):
             ("FenceNoFenceReturnPoint",
              "Tests calculated return point during fence breach when no fence return point present",
              self.test_fence_breach_no_return_point),
+
+            ("FenceNoFenceReturnPointInclusion",
+             "Tests using home as fence return point when none is present, and no inclusion fence is uploadedg",
+             self.test_fence_breach_no_return_point_no_inclusion),
 
             ("FenceDisableUnderAction",
              "Tests Disabling fence while undergoing action caused by breach",
