@@ -146,7 +146,7 @@ void Mode::auto_takeoff_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !copter.ap.auto_armed) {
         make_safe_spool_down();
-        wp_nav->shift_wp_origin_to_current_pos();
+        wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         return;
     }
 
@@ -165,7 +165,7 @@ void Mode::auto_takeoff_run()
         set_land_complete(false);
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
-        wp_nav->shift_wp_origin_to_current_pos();
+        wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
         attitude_control->set_yaw_target_to_current_heading();
