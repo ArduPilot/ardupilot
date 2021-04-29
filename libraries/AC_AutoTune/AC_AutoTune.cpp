@@ -450,7 +450,7 @@ bool AC_AutoTune::currently_level()
     // display warning if vehicle fails to level
     if ((now_ms - level_start_time_ms > AUTOTUNE_LEVEL_WARNING_INTERVAL_MS) &&
         (now_ms - level_fail_warning_time_ms > AUTOTUNE_LEVEL_WARNING_INTERVAL_MS)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: failing to level, manual tune may be required");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: failing to level, please tune manually");
         level_fail_warning_time_ms = now_ms;
     }
 
