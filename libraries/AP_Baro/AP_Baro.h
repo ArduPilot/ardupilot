@@ -12,7 +12,9 @@
 #endif
 
 // maximum number of sensor instances
+#ifndef BARO_MAX_INSTANCES
 #define BARO_MAX_INSTANCES 3
+#endif
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
