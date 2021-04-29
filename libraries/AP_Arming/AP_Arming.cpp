@@ -1175,6 +1175,11 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
+    // enable any pending dshot commands to be flushed before sending actual throttle values
+    if (!hal.rcout->prepare_for_arming()) {
+        return false;
+    }
+
 #if HAL_GYROFFT_ENABLED
     // make sure the FFT subsystem is enabled if arming checks have been disabled
     AP_GyroFFT *fft = AP::fft();
