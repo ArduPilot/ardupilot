@@ -116,11 +116,6 @@ public:
     bool set_wp_destination_NED(const Vector3f& destination_NED);
     bool set_wp_destination_next_NED(const Vector3f& destination_NED);
 
-    /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
-    ///     used to reset the position just before takeoff
-    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_to_current_pos();
-
     /// shifts the origin and destination horizontally to the current position
     ///     used to reset the track when taking off without horizontal position control
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
