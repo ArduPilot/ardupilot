@@ -22,10 +22,14 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
-#if !defined(NUM_SERVO_CHANNELS) && defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT) && (HAL_PWM_COUNT >= 1)
+#ifndef NUM_SERVO_CHANNELS
+#if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
     #define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#elif defined(HAL_BUILD_AP_PERIPH)
+    #define NUM_SERVO_CHANNELS 0
 #else
     #define NUM_SERVO_CHANNELS 16
+#endif
 #endif
 
 class SRV_Channels;
@@ -475,7 +479,11 @@ public:
     static AP_HAL::RCOutput::DshotEscType get_dshot_esc_type() { return AP_HAL::RCOutput::DshotEscType(_singleton->dshot_esc_type.get()); }
 
     static SRV_Channel *srv_channel(uint8_t i) {
+#if NUM_SERVO_CHANNELS > 0
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
+#else
+        return nullptr;
+#endif
     }
 
     // SERVO* parameters

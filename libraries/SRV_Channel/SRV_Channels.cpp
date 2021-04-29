@@ -34,6 +34,10 @@
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
+#if NUM_SERVO_CHANNELS == 0
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
