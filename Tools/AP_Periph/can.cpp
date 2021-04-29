@@ -1182,6 +1182,10 @@ static void can_wait_node_id(void)
                 led_idx = (led_idx+1) % 32;
                 last_led_change = now;
             }
+
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
+            periph.check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
         }
 
 
