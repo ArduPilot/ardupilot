@@ -654,6 +654,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         c = ["-I" + str(i)]
         if spawns is not None:
             c.extend(["--home", spawns[i]])
+        if opts.auto_sysid and opts.sysid is None and 0 <= i <= 254:
+            c.extend(["--sysid", str(i + 1)])
         os.chdir(i_dir)
         run_in_terminal_window(cmd_name, cmd + c)
     os.chdir(old_dir)
@@ -1055,6 +1057,10 @@ group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
                      help="Set SYSID_THISMAV")
+group_sim.add_option("", "--auto-sysid",
+                     default=False,
+                     action='store_true',
+                     help="Set SYSID_THISMAV based upon instance number")
 parser.add_option_group(group_sim)
 
 
