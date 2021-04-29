@@ -477,7 +477,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
     if (!initialised) {
         initialised = true;
         hal.rcout->init();
-        hal.util->toneAlarm_init();
+        hal.util->toneAlarm_init(AP_HAL::Util::ALARM_BUZZER);
     }
     fix_float16(req.frequency);
     fix_float16(req.duration);
