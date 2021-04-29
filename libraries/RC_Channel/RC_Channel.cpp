@@ -521,7 +521,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT:
 #endif
-        do_aux_function(ch_option, ch_flag);
+        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to init: RC%u_OPTION: %u\n",
@@ -638,7 +638,7 @@ bool RC_Channel::read_aux()
 #endif
 
     // debounced; undertake the action:
-    do_aux_function(_option, new_position);
+    run_aux_function(_option, new_position, AuxFuncTriggerSource::RC);
     return true;
 }
 
