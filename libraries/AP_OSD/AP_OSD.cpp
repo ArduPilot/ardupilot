@@ -173,8 +173,8 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
 #if AP_TERRAIN_AVAILABLE
     // @Param: _W_TERR
     // @DisplayName: Terrain warn level
-    // @Description: Set level below which TER_HGT item will flash.
-    // @Range: 1 3000
+    // @Description: Set level below which TER_HGT item will flash. -1 disables.
+    // @Range: -1 3000
     // @Units: m
     // @User: Standard
     AP_GROUPINFO("_W_TERR", 23, AP_OSD, warn_terr, -1),
