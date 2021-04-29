@@ -961,7 +961,7 @@ void AC_PosControl::update_vel_controller_xyz()
 void AC_PosControl::calc_leash_length_xy()
 {
     // Check if PSC_MAX_LEASH (_max_leash_length) agrees with _current_max_leash_length
-    if (!is_equal(_current_max_leash_length, _max_leash_length)) {
+    if (!is_equal(_current_max_leash_length, static_cast<float>(_max_leash_length))) {
         // If _max_leash_length == 0 (or less) perform the calculation to automatically set the 
         //     _leash variable
         _current_max_leash_length = _max_leash_length;
