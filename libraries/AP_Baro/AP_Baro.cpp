@@ -78,6 +78,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // NOTE: Index numbers 0 and 1 were for the old integer
     // ground temperature and pressure
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: 1_GND_PRESS
     // @DisplayName: Ground Pressure
     // @Description: calibrated ground pressure in Pascals
@@ -114,6 +115,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 6, AP_Baro, _primary_baro, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _EXT_BUS
     // @DisplayName: External baro bus
