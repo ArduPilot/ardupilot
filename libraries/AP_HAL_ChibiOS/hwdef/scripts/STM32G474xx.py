@@ -11,9 +11,6 @@ build = {
 
 # MCU parameters
 mcu = {
-    # location of MCU serial number
-    'UDID_START' : 0x1FFF7590,
-
     # ram map, as list of (address, size-kb, flags)
     # flags of 1 means DMA-capable (DMA and BDMA)
     # flags of 2 means faster memory for CPU intensive work
