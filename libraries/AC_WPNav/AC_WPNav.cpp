@@ -365,26 +365,6 @@ bool AC_WPNav::set_wp_destination_next_NED(const Vector3f& destination_NED)
     return set_wp_destination_next(Vector3f(destination_NED.x * 100.0f, destination_NED.y * 100.0f, -destination_NED.z * 100.0f), false);
 }
 
-/// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
-///     used to reset the position just before takeoff
-///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-void AC_WPNav::shift_wp_origin_to_current_pos()
-{
-    // get current and target locations
-    const Vector3f &curr_pos = _inav.get_position();
-    const Vector3f pos_target = _pos_control.get_pos_target();
-
-    // calculate difference between current position and target
-    Vector3f pos_diff = curr_pos - pos_target;
-
-    // shift origin and destination
-    _origin += pos_diff;
-    _destination += pos_diff;
-
-    // move pos controller target and disable feed forward
-    _pos_control.set_pos_target(curr_pos);
-}
-
 /// shifts the origin and destination horizontally to the current position
 ///     used to reset the track when taking off without horizontal position control
 ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
