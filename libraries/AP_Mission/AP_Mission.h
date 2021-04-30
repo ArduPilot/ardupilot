@@ -154,8 +154,8 @@ public:
 
     // AUX_FUNCTION command structure
     struct PACKED AuxFunction {
-        uint16_t function;  // from RC_Channel::AUX_FUNC
-        uint8_t switchpos;  // from RC_Channel::AuxSwitchPos
+        uint16_t function;  // from AP_AuxFunc::Function
+        uint8_t switchpos;  // from AP_AuxFunc::SwitchPos
     };
 
     // high altitude balloon altitude wait

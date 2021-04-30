@@ -10,20 +10,20 @@
 
 bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command& cmd)
 {
-    const RC_Channel::AUX_FUNC function = (RC_Channel::AUX_FUNC)cmd.content.auxfunction.function;
-    const RC_Channel::AuxSwitchPos pos = (RC_Channel::AuxSwitchPos)cmd.content.auxfunction.switchpos;
+    const AP_AuxFunc::Function function = (AP_AuxFunc::Function)cmd.content.auxfunction.function;
+    const AP_AuxFunc::SwitchPos pos = (AP_AuxFunc::SwitchPos)cmd.content.auxfunction.switchpos;
 
     // sanity check the switch position.  Could map from the mavlink
     // enumeration if we were really keen
     switch (pos) {
-    case RC_Channel::AuxSwitchPos::HIGH:
-    case RC_Channel::AuxSwitchPos::MIDDLE:
-    case RC_Channel::AuxSwitchPos::LOW:
+    case AP_AuxFunc::SwitchPos::HIGH:
+    case AP_AuxFunc::SwitchPos::MIDDLE:
+    case AP_AuxFunc::SwitchPos::LOW:
         break;
     default:
         return false;
     }
-    rc().run_aux_function(function, pos, RC_Channel::AuxFuncTriggerSource::MISSION);
+    AP::auxfunc().run_function(function, pos, AP_AuxFunc::TriggerSource::MISSION);
     return true;
 }
 
