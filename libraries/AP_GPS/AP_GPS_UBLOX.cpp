@@ -1351,7 +1351,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                 MB_Debug("RELPOSNED ITOW %u %u\n", unsigned(_buffer.relposned.iTOW), unsigned(_last_relposned_itow));
             }
             _last_relposned_itow = _buffer.relposned.iTOW;
-            _last_relposned_ms = AP_HAL::millis();
 
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
                 ((_buffer.relposned.flags & invalid_mask) == 0) &&
@@ -1360,6 +1359,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                                           _buffer.relposned.relPosD*0.01)) {
                 state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
                 state.have_gps_yaw_accuracy = true;
+                _last_relposned_ms = AP_HAL::millis();
             } else {
                 state.have_gps_yaw_accuracy = false;
             }
@@ -1527,7 +1527,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         // PVT and the new RELPOSNED message so that we give a
         // consistent view
         if (AP_HAL::millis() - _last_relposned_ms > 400) {
-            // we have stopped receiving RELPOSNED messages, disable yaw reporting
+            // we have stopped receiving valid RELPOSNED messages, disable yaw reporting
             state.have_gps_yaw = false;
         } else if (_last_relposned_itow != _last_pvt_itow) {
             // wait until ITOW matches
