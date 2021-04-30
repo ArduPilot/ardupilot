@@ -268,7 +268,7 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
 //         break;
 //     }
 
-//     // pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+//     // pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
 //     // pos_control->update_z_controller();
 //     // we may need to move this out
 //     // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
