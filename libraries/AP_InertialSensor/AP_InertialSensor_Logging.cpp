@@ -3,6 +3,38 @@
 
 #include <AP_Logger/AP_Logger.h>
 
+// Write ACC data packet: raw accel data
+void AP_InertialSensor_Backend::Write_ACC(const uint8_t instance, const uint64_t sample_us, const Vector3f &accel) const
+{
+        const uint64_t now = AP_HAL::micros64();
+        const struct log_ACC pkt {
+            LOG_PACKET_HEADER_INIT(LOG_ACC_MSG),
+            time_us   : now,
+            instance  : instance,
+            sample_us : sample_us?sample_us:now,
+            AccX      : accel.x,
+            AccY      : accel.y,
+            AccZ      : accel.z
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write GYR data packet: raw gyro data
+void AP_InertialSensor_Backend::Write_GYR(const uint8_t instance, const uint64_t sample_us, const Vector3f &gyro) const
+{
+        const uint64_t now = AP_HAL::micros64();
+        const struct log_GYR pkt{
+            LOG_PACKET_HEADER_INIT(LOG_GYR_MSG),
+            time_us   : now,
+            instance  : instance,
+            sample_us : sample_us?sample_us:now,
+            GyrX      : gyro.x,
+            GyrY      : gyro.y,
+            GyrZ      : gyro.z
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write IMU data packet: raw accel/gyro data
 void AP_InertialSensor::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const
 {
