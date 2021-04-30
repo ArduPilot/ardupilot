@@ -491,22 +491,6 @@ struct PACKED log_ARSP {
     uint8_t primary;
 };
 
-struct PACKED log_ACC {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    uint64_t sample_us;
-    float AccX, AccY, AccZ;
-};
-
-struct PACKED log_GYR {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    uint64_t sample_us;
-    float GyrX, GyrY, GyrZ;
-};
-
 struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint64_t timestamp;
@@ -799,15 +783,6 @@ struct PACKED log_PSCZ {
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
 
-// @LoggerMessage: ACC
-// @Description: IMU accelerometer data
-// @Field: TimeUS: Time since system startup
-// @Field: I: accelerometer sensor instance number
-// @Field: SampleUS: time since system startup this sample was taken
-// @Field: AccX: acceleration along X axis
-// @Field: AccY: acceleration along Y axis
-// @Field: AccZ: acceleration along Z axis
-
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information
 // @Field: TimeUS: Time since system startup
@@ -972,16 +947,6 @@ struct PACKED log_PSCZ {
 // @Field: FmtType: numeric reference to associated FMT message
 // @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
 // @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
-
-
-// @LoggerMessage: GYR
-// @Description: IMU gyroscope data
-// @Field: TimeUS: Time since system startup
-// @Field: I: gyroscope sensor instance number
-// @Field: SampleUS: time since system startup this sample was taken
-// @Field: GyrX: measured rotation rate about X axis
-// @Field: GyrY: measured rotation rate about Y axis
-// @Field: GyrZ: measured rotation rate about Z axis
 
 // @LoggerMessage: LGR
 // @Description: Landing gear information
@@ -1436,10 +1401,6 @@ LOG_STRUCTURE_FROM_CAMERA \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
       "CESC","QBIfffiB","TimeUS,Id,ECnt,Voltage,Curr,Temp,RPM,Pow", "s#-vAOq%", "F-000000" }, \
-    { LOG_ACC_MSG, sizeof(log_ACC), \
-      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
-    { LOG_GYR_MSG, sizeof(log_GYR), \
-      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -1559,8 +1520,6 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_DAL,
     LOG_IDS_FROM_INERTIALSENSOR,
 
-    LOG_ACC_MSG,
-    LOG_GYR_MSG,
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,
     LOG_PIDY_MSG,
