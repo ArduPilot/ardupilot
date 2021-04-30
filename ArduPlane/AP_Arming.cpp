@@ -200,7 +200,7 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 
     if ((method == Method::AUXSWITCH) && (plane.quadplane.options & QuadPlane::OPTION_AIRMODE)) {
         // if no airmode switch assigned, honour the QuadPlane option bit:
-        if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+        if (rc().find_channel_for_option(AP_AuxFunc::Function::AIRMODE) == nullptr) {
             plane.quadplane.air_mode = AirMode::ON;
         }
     }
@@ -246,7 +246,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     plane.throttle_suppressed = plane.control_mode->does_auto_throttle();
 
     // if no airmode switch assigned, ensure airmode is off:
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+    if (rc().find_channel_for_option(AP_AuxFunc::Function::AIRMODE) == nullptr) {
         plane.quadplane.air_mode = AirMode::OFF;
     }
 
