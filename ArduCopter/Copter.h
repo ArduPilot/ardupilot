@@ -90,6 +90,7 @@
 #endif
 
 #include "RC_Channel.h"         // RC Channel Library
+#include "AP_AuxFunc.h"
 
 #include "GCS_Mavlink.h"
 #include "GCS_Copter.h"
@@ -189,6 +190,7 @@ public:
 #endif
     friend class AP_Arming_Copter;
     friend class ToyMode;
+    friend class AP_AuxFunc_Copter;
     friend class RC_Channel_Copter;
     friend class RC_Channels_Copter;
 
@@ -240,6 +242,8 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
+
+    AP_AuxFunc_Copter auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 

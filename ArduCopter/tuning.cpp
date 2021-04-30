@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#include "AP_AuxFunc.h"
+
 /*
  * Function to update various parameters in flight using the ch6 tuning knob
  * This should not be confused with the AutoTune feature which can bve found in control_autotune.cpp
@@ -22,7 +24,7 @@ void Copter::tuning()
     }
 
     // exit immediately if a function is assigned to channel 6
-    if ((RC_Channel::aux_func_t)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
+    if ((AP_AuxFunc::Function)rc6->option.get() != AP_AuxFunc::Function::DO_NOTHING) {
         return;
     }
 

@@ -11,6 +11,8 @@
  # include <AP_Follow/AP_Follow.h>
 #endif
 
+#include "mode.h"
+
 // Global parameter class.
 //
 class Parameters {
