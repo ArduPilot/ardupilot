@@ -618,7 +618,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                     check_passed = false;
                 }
             }
-            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+            c = rc().find_channel_for_option(AP_AuxFunc::Function::FWD_THR);
             if (c != nullptr) {
                 uint8_t fwd_thr = c->percent_input();
                 // require channel input within 2% of minimum
@@ -1363,9 +1363,9 @@ bool AP_Arming::visodom_checks(bool display_failure) const
 // check disarm switch is asserted
 bool AP_Arming::disarm_switch_checks(bool display_failure) const
 {
-    const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM);
+    const RC_Channel *chan = rc().find_channel_for_option(AP_AuxFunc::Function::DISARM);
     if (chan != nullptr &&
-        chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
+        chan->get_aux_switch_pos() == AP_AuxFunc::SwitchPos::HIGH &&
         (checks_to_perform & ARMING_CHECK_ALL)) {
         check_failed(display_failure, "Disarm Switch on");
         return false;
