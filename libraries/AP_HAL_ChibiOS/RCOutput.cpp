@@ -119,6 +119,7 @@ void RCOutput::init()
     hal.gpio->pinMode(57, 1);
 #endif
 
+    hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &RCOutput::safety_update, void));
     _initialised = true;
 }
 
@@ -1149,8 +1150,6 @@ void RCOutput::trigger_groups(void)
  */
 void RCOutput::timer_tick(uint32_t time_out_us)
 {
-    safety_update();
-
     if (serial_group) {
         return;
     }
