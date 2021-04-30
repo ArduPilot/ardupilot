@@ -20,6 +20,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_AuxFunc/AP_AuxFunc.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
@@ -2501,9 +2502,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_lon
     if (packet.param2 > 2) {
         return MAV_RESULT_DENIED;
     }
-    const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
-    const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
-    if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTriggerSource::MAVLINK)) {
+    const AP_AuxFunc::Function aux_func = (AP_AuxFunc::Function)packet.param1;
+    const AP_AuxFunc::SwitchPos position = (AP_AuxFunc::SwitchPos)packet.param2;
+    if (!AP::auxfunc().run_function(aux_func, position, AP_AuxFunc::TriggerSource::MAVLINK)) {
         // note that this is not quite right; we could be more nuanced
         // about our return code here.
         return MAV_RESULT_FAILED;
