@@ -388,7 +388,7 @@ private:
     void modify_configured_parameter(uint8_t number, Event ev);
 
     Event map_rc_input_to_event() const;
-    RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
+    AP_AuxFunc::SwitchPos get_channel_pos(uint8_t rcmapchan) const;
 
     uint8_t _selected_param = 1;
     MenuState _menu_state = MenuState::PARAM_SELECT;
