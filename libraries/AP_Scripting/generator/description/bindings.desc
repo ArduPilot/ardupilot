@@ -239,8 +239,10 @@ include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
 singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
-singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
-singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
+singleton RC_Channels method find_channel_for_option RC_Channel AP_AuxFunc::Function'enum 0 UINT16_MAX
+
+singleton AP_AuxFunc alias auxfunc
+singleton AP_AuxFunc method run_function boolean AP_AuxFunc::Function'enum 0 UINT16_MAX AP_AuxFunc::SwitchPos'enum AP_AuxFunc::SwitchPos::LOW AP_AuxFunc::SwitchPos::HIGH AP_AuxFunc::TriggerSource::SCRIPTING'literal
 
 include AP_SerialManager/AP_SerialManager.h
 
