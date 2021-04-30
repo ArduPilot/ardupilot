@@ -1506,6 +1506,11 @@ void AP_Periph_FW::can_battery_update(void)
 #endif
 }
 
+#ifndef HAL_PERIPH_ENABLE_OLD_FIX
+// save some bandwidth by default
+#define HAL_PERIPH_ENABLE_OLD_FIX 0
+#endif
+
 /*
   update CAN GPS
  */
@@ -1521,6 +1526,7 @@ void AP_Periph_FW::can_gps_update(void)
     }
     last_gps_update_ms = gps.last_message_time_ms();
 
+#if HAL_PERIPH_ENABLE_OLD_FIX
     {
         /*
           send Fix packet
@@ -1603,6 +1609,7 @@ void AP_Periph_FW::can_gps_update(void)
                         &buffer[0],
                         total_size);
     }
+#endif // HAL_PERIPH_ENABLE_OLD_FIX
 
     {
         /*
