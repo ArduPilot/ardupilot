@@ -1306,17 +1306,17 @@ static const AP_Param::ConversionInfo conversion_table[] = {
 struct RCConversionInfo {
     uint16_t old_key; // k_param_*
     uint32_t old_group_element; // index in old object
-    RC_Channel::AUX_FUNC fun; // new function
+    AP_AuxFunc::Function fun; // new function
 };
 
 static const RCConversionInfo rc_option_conversion[] = {
-    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
-    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
-    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
-    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
-    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
-    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
-    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
+    { Parameters::k_param_flapin_channel_old, 0, AP_AuxFunc::Function::FLAP},
+    { Parameters::k_param_g2, 968, AP_AuxFunc::Function::SOARING},
+    { Parameters::k_param_fence_channel, 0, AP_AuxFunc::Function::FENCE},
+    { Parameters::k_param_reset_mission_chan, 0, AP_AuxFunc::Function::MISSION_RESET},
+    { Parameters::k_param_parachute_channel, 0, AP_AuxFunc::Function::PARACHUTE_RELEASE},
+    { Parameters::k_param_fbwa_tdrag_chan, 0, AP_AuxFunc::Function::FBWA_TAILDRAGGER},
+    { Parameters::k_param_reset_switch_chan, 0, AP_AuxFunc::Function::MODE_SWITCH_RESET},
 };
 
 void Plane::load_parameters(void)
