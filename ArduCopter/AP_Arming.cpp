@@ -37,8 +37,8 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)){
+    if (rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_INTERLOCK) &&
+        rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_ESTOP)){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
         return false;
     }
@@ -201,12 +201,12 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
         // Inverted flight feature disabled for Heli Single and Dual frames
         if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
-            rc().find_channel_for_option(RC_Channel::aux_func_t::INVERTED) != nullptr) {
+            rc().find_channel_for_option(AP_AuxFunc::Function::INVERTED) != nullptr) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Inverted flight option not supported");
             return false;
         }
         // Ensure an Aux Channel is configured for motor interlock
-        if (rc().find_channel_for_option(RC_Channel::aux_func_t::MOTOR_INTERLOCK) == nullptr) {
+        if (rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_INTERLOCK) == nullptr) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Motor Interlock not configured");
             return false;
         }
@@ -678,7 +678,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
-    if (!rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)){
+    if (!rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_ESTOP)){
         SRV_Channels::set_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
     } else if (SRV_Channels::get_emergency_stop()){

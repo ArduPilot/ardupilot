@@ -188,7 +188,7 @@ void Copter::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::LOST_VEHICLE_SOUND)) {
+    if (rc().find_channel_for_option(AP_AuxFunc::Function::LOST_VEHICLE_SOUND)) {
         return;
     }
 
