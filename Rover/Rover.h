@@ -94,6 +94,7 @@
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #include "RC_Channel.h"                  // RC Channel Library
+#include "AP_AuxFunc.h"
 
 class Rover : public AP_Vehicle {
 public:
@@ -119,6 +120,7 @@ public:
     friend class ModeFollow;
     friend class ModeSimple;
 
+    friend class AP_AuxFunc_Rover;
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
 
@@ -147,6 +149,8 @@ private:
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
+
+    AP_AuxFunc_Rover auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 
