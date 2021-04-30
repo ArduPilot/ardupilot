@@ -125,6 +125,12 @@ private:
 */
     uint8_t InitESCs();
 
+
+/**
+    sets the telemetry mode to alternative mode, where one ESC answers with all telem values including CRC Error count and a CRC
+    @return returns the response code
+*/
+    uint8_t SetAltTlm(uint8_t active);
 /**
     checks if the requested telemetry is available.
     @param Telemetry 16bit array where the read Telemetry will be stored in.
@@ -164,6 +170,8 @@ private:
     uint8_t _FoundESCs;
     uint8_t _ScanActive;
     uint8_t _SetupActive;
+    uint8_t _SetAltTelemActive = 0; //Helper to set alternative TLM for every ESC
+    uint8_t _AltTelemRetryCount = 0; 
     uint8_t _IgnoreOwnBytes;
     int8_t _minID = MOTOR_COUNT_MAX;
     int8_t _maxID;
@@ -193,6 +201,7 @@ private:
       OW_BEEP = 13,
       OW_SET_FAST_COM_LENGTH = 26,
       OW_SET_LED_TMP_COLOR = 51,
+      OW_SET_TLM_TYPE = 27, //1 for alternative Telemetry. ESC sens full telem per ESC: Temp, Volt, Current, ERPM, Consumption, CrcErrCount
     };
 
     enum telem_type

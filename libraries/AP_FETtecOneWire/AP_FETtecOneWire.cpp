@@ -54,6 +54,7 @@ AP_FETtecOneWire::AP_FETtecOneWire()
     _ResponseLength[OW_REQ_SN] = 12;
     _ResponseLength[OW_REQ_SW_VER] = 2;
     _ResponseLength[OW_SET_FAST_COM_LENGTH] = 1;
+    _ResponseLength[OW_SET_TLM_TYPE] = 2;
 
     _RequestLength[OW_OK] = 1;
     _RequestLength[OW_BL_START_FW] = 1;       // BL only
@@ -61,6 +62,7 @@ AP_FETtecOneWire::AP_FETtecOneWire()
     _RequestLength[OW_REQ_SN] = 1;
     _RequestLength[OW_REQ_SW_VER] = 1;
     _RequestLength[OW_SET_FAST_COM_LENGTH] = 4;
+    _RequestLength[OW_SET_TLM_TYPE] = 2;
 }
 
 void AP_FETtecOneWire::init()
@@ -221,7 +223,7 @@ uint8_t AP_FETtecOneWire::Receive(uint8_t* Bytes, uint8_t Length, uint8_t return
         _IgnoreOwnBytes--;
         _uart->read();
     }
-    // look for the real answer
+    // look for the real answerOW_SET_TLM_TYPE
     if (_uart->available() >= Length + 6u) {
         // sync to frame starte byte
         uint8_t testFrameStart = 0;
@@ -393,6 +395,35 @@ uint8_t AP_FETtecOneWire::ScanESCs()
 }
 
 /**
+    scans for ESCs in bus. should be called until _ScanActive >= MOTOR_COUNT_MAX
+    @return the current scanned ID
+*/
+uint8_t AP_FETtecOneWire::SetAltTlm(uint8_t active)
+{
+    if (_activeESC_IDs[_SetAltTelemActive]==1){ //If ESC is detected at this ID
+        uint8_t response[1] = {0};
+        uint8_t request[2] = {0};
+        request[0] = OW_SET_TLM_TYPE;
+        request[1] = active; //Alternative Tlm => 1, normal TLM => 0
+        
+        if(PullCommand(_SetAltTelemActive, request, response, OW_RETURN_RESPONSE)){
+            if(response[0] == OW_OK || _AltTelemRetryCount > 14){//Ok received or max retrys reached.
+                _SetAltTelemActive++;   //If answer from ESC is OK, increase ID.
+                _AltTelemRetryCount=0; //Reset retry count for new ESC ID
+            }
+            else {
+                _AltTelemRetryCount++; //No OK received, increase retry count
+            }
+        }
+    }
+    else{ //If there is no ESC detected skip it.
+        _SetAltTelemActive++;
+    }
+    return _SetAltTelemActive;
+}
+
+
+/**
     starts all ESCs in bus and prepares them for receiving the fast throttle command should be called until _SetupActive >= MOTOR_COUNT_MAX
     @return the current used ID
 */
@@ -530,6 +561,7 @@ int8_t AP_FETtecOneWire::CheckForTLM(uint16_t* Telemetry)
         if (_uart->available() == (_IDcount * 2) + 1u) {
             // look if first byte in buffer is equal to last byte of throttle command (crc)
             if (_uart->read() == _lastCRC) {
+                
                 for (uint8_t i = 0; i < _IDcount; i++) {
                     Telemetry[i] = _uart->read() << 8;
                     Telemetry[i] |= _uart->read();
@@ -564,7 +596,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
     int8_t return_TLM_request = -2;
 
     // init should not be done too fast. as at last the bootloader has some timing requirements with messages. so loop delays must fit more or less
-    if (_ScanActive < MOTOR_COUNT_MAX || _SetupActive < MOTOR_COUNT_MAX) {
+    if (_ScanActive < MOTOR_COUNT_MAX || _SetupActive < MOTOR_COUNT_MAX || _SetAltTelemActive < MOTOR_COUNT_MAX ) {
         const uint32_t now = AP_HAL::micros();
         if (now - _last_send_us < DELAY_TIME_US) {
             return 0;
@@ -583,10 +615,12 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
                 _SetupActive = InitESCs();
             }
         }
+        else if (_SetAltTelemActive < MOTOR_COUNT_MAX) { //Set telemetry to alternative mode
+               _SetAltTelemActive = SetAltTlm(1);
+        }
     } else {
         //send fast throttle signals
         if (_IDcount > 0) {
-
             // check for telemetry
             return_TLM_request = CheckForTLM(Telemetry);
             _TLM_request = tlmRequest;
