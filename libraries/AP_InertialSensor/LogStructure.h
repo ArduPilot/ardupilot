@@ -3,10 +3,44 @@
 #include <AP_Logger/LogStructure.h>
 
 #define LOG_IDS_FROM_INERTIALSENSOR \
+    LOG_ACC_MSG, \
+    LOG_GYR_MSG, \
     LOG_IMU_MSG, \
     LOG_ISBH_MSG, \
     LOG_ISBD_MSG, \
     LOG_VIBE_MSG
+
+// @LoggerMessage: ACC
+// @Description: IMU accelerometer data
+// @Field: TimeUS: Time since system startup
+// @Field: I: accelerometer sensor instance number
+// @Field: SampleUS: time since system startup this sample was taken
+// @Field: AccX: acceleration along X axis
+// @Field: AccY: acceleration along Y axis
+// @Field: AccZ: acceleration along Z axis
+struct PACKED log_ACC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    uint64_t sample_us;
+    float AccX, AccY, AccZ;
+};
+
+// @LoggerMessage: GYR
+// @Description: IMU gyroscope data
+// @Field: TimeUS: Time since system startup
+// @Field: I: gyroscope sensor instance number
+// @Field: SampleUS: time since system startup this sample was taken
+// @Field: GyrX: measured rotation rate about X axis
+// @Field: GyrY: measured rotation rate about Y axis
+// @Field: GyrZ: measured rotation rate about Z axis
+struct PACKED log_GYR {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    uint64_t sample_us;
+    float GyrX, GyrY, GyrZ;
+};
 
 // @LoggerMessage: IMU
 // @Description: Inertial Measurement Unit data
@@ -78,6 +112,10 @@ struct PACKED log_Vibe {
 };
 
 #define LOG_STRUCTURE_FROM_INERTIALSENSOR        \
+    { LOG_ACC_MSG, sizeof(log_ACC), \
+      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
+    { LOG_GYR_MSG, sizeof(log_GYR), \
+      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QBffffffIIfBBHH", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
