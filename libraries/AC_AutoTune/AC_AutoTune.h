@@ -61,9 +61,6 @@ protected:
 
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
-    
-    // start tune - virtual so that vehicle code can add additional pre-conditions
-    virtual bool start(void);
 
     // return true if we have a good position estimate
     virtual bool position_ok();
@@ -74,6 +71,9 @@ protected:
                         AC_PosControl *pos_control,
                         AP_AHRS_View *ahrs_view,
                         AP_InertialNav *inertial_nav);
+
+    // initialise position controller
+    bool init_position_controller();
 
 private:
     void control_attitude();
