@@ -145,6 +145,13 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
     // initialise position controller
     init_position_controller();
 
+    if (meas_peak_info_buffer == nullptr) {
+        meas_peak_info_buffer = new ObjectBuffer<peak_info>(AUTOTUNE_DWELL_CYCLES);
+    }
+    if (tgt_peak_info_buffer == nullptr) {
+        tgt_peak_info_buffer = new ObjectBuffer<peak_info>(AUTOTUNE_DWELL_CYCLES);
+    }
+
     switch (mode) {
     case FAILED:
         // fall through to restart the tuning
@@ -1848,12 +1855,12 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
 void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
 {
     static float max_target, max_meas, prev_target, prev_meas, sum_tgt_rate, sum_meas_rate;
-    static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES + 1], input_ampl[AUTOTUNE_DWELL_CYCLES + 1];
+    static float min_target, min_meas, temp_meas_ampl, temp_tgt_ampl;
     static float temp_max_target, temp_min_target;
     static float temp_max_meas, temp_min_meas;
-    static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES + 1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES + 1];
+    static uint32_t temp_max_tgt_time, temp_max_meas_time;
     static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
-    static uint8_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
+    static uint16_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
     static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
@@ -1876,6 +1883,8 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         phase = 0.0f;
         cycles_complete = false;
         funct_reset = false;
+        meas_peak_info_buffer->clear();
+        tgt_peak_info_buffer->clear();
         return;
     }
 
@@ -1917,16 +1926,36 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         float sum_gain = 0.0f;
         uint8_t cnt = 0;
         uint8_t gcnt = 0;
-        for (int i = 0;  i < 5; i++) {
-            if (input_ampl[AUTOTUNE_DWELL_CYCLES - i] > 0) {
-                sum_gain += output_ampl[AUTOTUNE_DWELL_CYCLES - i] / input_ampl[AUTOTUNE_DWELL_CYCLES - i];
-                gcnt++;
-            }
-            float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
-            if (d_time  < 2.0f * (float)cycle_time_ms) {
-                delta_time += d_time;
-                cnt++;
-            }
+        uint16_t meas_cnt, tgt_cnt;
+        float meas_ampl, tgt_ampl;
+        uint32_t meas_time, tgt_time;
+        for (int i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
+            meas_cnt=0;
+            tgt_cnt=0;
+            pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
+            pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
+            push_to_meas_buffer(0, 0.0f, 0);
+            push_to_tgt_buffer(0, 0.0f, 0);
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
+
+            if (meas_cnt == tgt_cnt && meas_cnt != 0) {
+                if (tgt_ampl > 0.0f) {
+                    sum_gain += meas_ampl / tgt_ampl;
+                    gcnt++;
+                }
+                float d_time = (float)(meas_time - tgt_time);
+                if (d_time < 2.0f * (float)cycle_time_ms) {
+                    delta_time += d_time;
+                    cnt++;
+                }
+            } else if (meas_cnt > tgt_cnt) {
+                pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
+                push_to_tgt_buffer(0, 0.0f, 0);
+            } else if (meas_cnt < tgt_cnt) {
+                pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
+                push_to_meas_buffer(0, 0.0f, 0);
+            }                
+
         }
         if (gcnt > 0) {
             gain = sum_gain / gcnt;
@@ -1952,9 +1981,10 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         max_target_cnt++;
         temp_min_target = min_target;
         if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
+            temp_tgt_ampl = temp_max_target - temp_min_target;
+            push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
         }
-        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
+//                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
 
     } else if (is_positive(prev_target) && !is_positive(tgt_rate) && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
         new_target = false;
@@ -1962,7 +1992,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         min_target_cnt++;
         temp_max_target = max_target;
         if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_tgt_time[min_target_cnt] = max_tgt_time;
+            temp_max_tgt_time = max_tgt_time;
         }
         min_target = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
@@ -1977,10 +2007,11 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         max_meas_cnt++;
         temp_min_meas = min_meas;
         if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
+            temp_meas_ampl = temp_max_meas - temp_min_meas;
+            push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
         }
 
-        if (freq_sweep) {
+/*        if (freq_sweep) {
             float tgt_period = 0.001f * (temp_max_tgt_time[max_meas_cnt - 1] - temp_max_tgt_time[max_meas_cnt - 2]);
             if (!is_zero(tgt_period)) {
                 curr_test_freq = 6.28f / tgt_period;
@@ -1995,15 +2026,15 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
             curr_test_phase = curr_test_freq * (float)(temp_max_meas_time[max_meas_cnt - 2] - temp_max_tgt_time[max_meas_cnt - 2]) * 0.001f * 360.0f / 6.28f;
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f sweepgain=%f", (double)(freq), (double)(curr_test_freq));
             Log_AutoTuneSweep();
-        }
-        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
+        } */
+//                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     } else if (is_positive(prev_meas) && !is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
         new_meas = false;
         new_meas_time_ms = now + half_cycle_time_ms;
         min_meas_cnt++;
         temp_max_meas = max_meas;
         if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_meas_time[min_meas_cnt] = max_meas_time;
+            temp_max_meas_time = max_meas_time;
         }
         min_meas = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
@@ -2037,12 +2068,12 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
 void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset)
 {
     static float max_target, max_meas, prev_target, prev_meas, sum_tgt_angle, sum_meas_angle, prev_tgt_angle, prev_meas_angle;
-    static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES+1], input_ampl[AUTOTUNE_DWELL_CYCLES+1];
+    static float min_target, min_meas, temp_meas_ampl, temp_tgt_ampl;
     static float temp_max_target, temp_min_target, tgt_rate, meas_rate, max_meas_rate, max_command;
     static float temp_max_meas, temp_min_meas;
-    static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES+1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES+1];
+    static uint32_t temp_max_tgt_time, temp_max_meas_time;
     static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
-    static uint8_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
+    static uint16_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
     static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
@@ -2068,6 +2099,8 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         funct_reset = false;
         max_meas_rate = 0.0f;
         max_command = 0.0f;
+        meas_peak_info_buffer->clear();
+        tgt_peak_info_buffer->clear();
         return;
     }
 
@@ -2114,16 +2147,34 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         float sum_gain = 0.0f;
         uint8_t cnt = 0;
         uint8_t gcnt = 0;
+        uint16_t meas_cnt, tgt_cnt;
+        float meas_ampl, tgt_ampl;
+        uint32_t meas_time, tgt_time;
         for (int i = 0;  i < 5; i++) {
-            if (input_ampl[AUTOTUNE_DWELL_CYCLES - i] > 0) {
-                sum_gain += output_ampl[AUTOTUNE_DWELL_CYCLES - i] / input_ampl[AUTOTUNE_DWELL_CYCLES - i];
-                gcnt++;
-            }
-            float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
-            if (d_time < 2.0f * (float)cycle_time_ms) {
-                delta_time += d_time;
-                cnt++;
-            }
+            pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
+            pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
+            push_to_meas_buffer(0, 0.0f, 0);
+            push_to_tgt_buffer(0, 0.0f, 0);
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
+
+            if (meas_cnt == tgt_cnt && meas_cnt != 0) {
+                if (tgt_ampl > 0.0f) {
+                    sum_gain += meas_ampl / tgt_ampl;
+                    gcnt++;
+                }
+                float d_time = (float)(meas_time - tgt_time);
+                if (d_time < 2.0f * (float)cycle_time_ms) {
+                    delta_time += d_time;
+                    cnt++;
+                }
+            } else if (meas_cnt > tgt_cnt) {
+                pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
+                push_to_tgt_buffer(0, 0.0f, 0);
+            } else if (meas_cnt < tgt_cnt) {
+                pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
+                push_to_meas_buffer(0, 0.0f, 0);
+            }                
+
         }
         if (gcnt > 0) {
             gain = sum_gain / gcnt;
@@ -2157,7 +2208,8 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         max_target_cnt++;
         temp_min_target = min_target;
         if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
+            temp_tgt_ampl = temp_max_target - temp_min_target;
+            push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
         }
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
 
@@ -2167,7 +2219,7 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         min_target_cnt++;
         temp_max_target = max_target;
         if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_tgt_time[min_target_cnt] = max_tgt_time;
+            temp_max_tgt_time = max_tgt_time;
         }
         min_target = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
@@ -2182,7 +2234,8 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         max_meas_cnt++;
         temp_min_meas = min_meas;
         if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
+            temp_meas_ampl = temp_max_meas - temp_min_meas;
+            push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
         }
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
     } else if (!is_positive(prev_meas) && is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
@@ -2191,7 +2244,7 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         min_meas_cnt++;
         temp_max_meas = max_meas;
         if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_meas_time[min_meas_cnt] = max_meas_time;
+            temp_max_meas_time = max_meas_time;
         }
         min_meas = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
@@ -2403,3 +2456,49 @@ float AC_AutoTune::waveform(float time, float time_record, float waveform_magnit
     return output;
 }
 
+// push to peak info buffer
+void AC_AutoTune::push_to_meas_buffer(uint16_t count, float amplitude, uint32_t time_ms)
+{
+    peak_info sample;
+    sample.curr_count = count;
+    sample.amplitude = amplitude;
+    sample.time_ms = time_ms;
+    meas_peak_info_buffer->push(sample);
+}
+
+// pull from peak info buffer
+void AC_AutoTune::pull_from_meas_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms)
+{
+    peak_info sample;
+    if (!meas_peak_info_buffer->pop(sample)) {
+        // no sample
+        return;
+    }
+    count = sample.curr_count;
+    amplitude = sample.amplitude;
+    time_ms = sample.time_ms;
+}
+
+// push to peak info buffer
+void AC_AutoTune::push_to_tgt_buffer(uint16_t count, float amplitude, uint32_t time_ms)
+{
+    peak_info sample;
+    sample.curr_count = count;
+    sample.amplitude = amplitude;
+    sample.time_ms = time_ms;
+    tgt_peak_info_buffer->push(sample);
+
+}
+
+// pull from peak info buffer
+void AC_AutoTune::pull_from_tgt_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms)
+{
+    peak_info sample;
+    if (!tgt_peak_info_buffer->pop(sample)) {
+        // no sample
+        return;
+    }
+    count = sample.curr_count;
+    amplitude = sample.amplitude;
+    time_ms = sample.time_ms;
+}

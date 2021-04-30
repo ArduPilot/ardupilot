@@ -426,4 +426,18 @@ protected:
 
     max_gain_data max_rate_p;
     max_gain_data max_rate_d;
+
+    //store determine gain data in ring buffer
+    struct peak_info {
+        uint16_t curr_count;
+        float amplitude;
+        uint32_t time_ms; 
+
+    };
+    ObjectBuffer<peak_info> *meas_peak_info_buffer;
+    ObjectBuffer<peak_info> *tgt_peak_info_buffer;
+    void push_to_meas_buffer(uint16_t count, float amplitude, uint32_t time_ms);
+    void pull_from_meas_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms);
+    void push_to_tgt_buffer(uint16_t count, float amplitude, uint32_t time_ms);
+    void pull_from_tgt_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms);
 };
