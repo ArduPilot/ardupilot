@@ -50,11 +50,19 @@ class VehicleInfo(object):
             },
             "hexa-cwx": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexa.parm",
+                    "default_params/copter-hexa-cwx.parm"
+                ],
             },
             "hexa-dji": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexa.parm",
+                    "default_params/copter-hexa-dji.parm"
+                ],
             },
              "octa-cwx": {
                 "waf_target": "bin/arducopter",
@@ -66,7 +74,11 @@ class VehicleInfo(object):
             },
             "octa-quad-cwx": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-octaquad.parm",
+                    "default_params/copter-octaquad-cwx.parm"
+                ],
             },
             "octa-quad": {
                 "waf_target": "bin/arducopter",
