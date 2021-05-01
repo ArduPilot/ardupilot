@@ -407,9 +407,7 @@ public:
     bool vehicle_is_armed() const { return _armed; }
 
     void handle_log_send();
-    bool in_log_download() const {
-        return transfer_activity != TransferActivity::IDLE;
-    }
+    bool in_log_download() const;
 
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
