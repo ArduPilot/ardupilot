@@ -505,14 +505,13 @@ public:
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
 
     // add to mask of outputs which can do reverse thrust using digital controls
-    static void set_reversible_mask(uint16_t mask) {
-        reversible_mask |= mask;
-    }
+    static void set_reversible_mask(uint16_t mask);
 
     // add to mask of outputs which use digital (non-PWM) output, such as DShot
-    static void set_digital_mask(uint16_t mask) {
-        digital_mask |= mask;
-    }
+    static void set_digital_mask(uint16_t mask);
+
+    // return true if all of the outputs in mask are digital
+    static bool have_digital_outputs(uint16_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
 
     // Set E - stop
     static void set_emergency_stop(bool state) {

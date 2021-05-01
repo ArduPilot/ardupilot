@@ -219,17 +219,39 @@ void SRV_Channels::enable_aux_servos()
             c.set_output_pwm(c.servo_max);
             c.output_ch();
         }
+    }
 
-        /*
-          for channels which have been marked as digital output then the
-          MIN/MAX/TRIM values have no meaning for controlling output, as
-          the HAL handles the scaling. We still need to cope with places
-          in the code that may try to set a PWM value however, so to
-          ensure consistency we force the MIN/MAX/TRIM to be consistent
-          across all digital channels. We use a MIN/MAX of 1000/2000, and
-          set TRIM to either 1000 or 1500 depending on whether the channel
-          is reversible
-        */
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr->update();
+#endif
+}
+
+// add to mask of outputs which can do reverse thrust using digital controls
+// digital mask must have been set first
+void SRV_Channels::set_reversible_mask(uint16_t mask) {
+    reversible_mask |= mask;
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
+        if ((digital_mask & (1U<<i)) && (reversible_mask & (1U<<i))) {
+            c.servo_trim.set(1500);
+        }
+    }
+}
+
+/*
+    for channels which have been marked as digital output then the
+    MIN/MAX/TRIM values have no meaning for controlling output, as
+    the HAL handles the scaling. We still need to cope with places
+    in the code that may try to set a PWM value however, so to
+    ensure consistency we force the MIN/MAX/TRIM to be consistent
+    across all digital channels. We use a MIN/MAX of 1000/2000, and
+    set TRIM to either 1000 or 1500 depending on whether the channel
+    is reversible
+*/
+void SRV_Channels::set_digital_mask(uint16_t mask) {
+    digital_mask |= mask;
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
         if (digital_mask & (1U<<i)) {
             c.servo_min.set(1000);
             c.servo_max.set(2000);
@@ -240,10 +262,6 @@ void SRV_Channels::enable_aux_servos()
             }
         }
     }
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->update();
-#endif
 }
 
 /// enable output channels using a channel mask
