@@ -701,10 +701,21 @@ void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float
 // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
 void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d)
 {
-    float test_freq_incr = 1.0f * 3.14159f * 2.0f;
+    float test_freq_incr = 1.0f * M_PI * 2.0f;
     static bool found_max_p = false;
     static bool found_max_d = false;
     static bool find_middle = false;
+
+    if (freq_sweep) {
+        freq_sweep = false;
+        frq_cnt = 2;
+        if (!is_zero(sweep.ph180_freq)) {
+            freq[frq_cnt] = sweep.ph180_freq - 0.5f * test_freq_incr;
+        } else {
+            freq[frq_cnt] = 4.0f * M_PI;
+        }
+        curr_test_freq = freq[frq_cnt];
+    }
     if (frq_cnt < 12 && !freq_sweep) {
         if (frq_cnt > 1 && phase[frq_cnt] > 161.0f && phase[frq_cnt] < 200.0f &&
             !find_middle && !found_max_p) {
@@ -723,6 +734,12 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
             max_gain_p.max_allowed = powf(10.0f,-1 * (log10f(max_gain_p.gain) * 20.0f + 2.42) / 20.0f);
             found_max_p = true;
             find_middle = false;
+            // increment to separate d gain from p gain
+            frq_cnt++;
+            if (!is_zero(sweep.ph270_freq)) {
+                // set frequency back at least one test_freq_incr as it will be added
+                freq[frq_cnt] = sweep.ph270_freq - test_freq_incr;
+            }
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max rate P freq=%f gain=%f ph=%f rate_p=%f", (double)(max_gain_p.freq), (double)(max_gain_p.gain), (double)(max_gain_p.phase), (double)(max_gain_p.max_allowed));
         }
         if (frq_cnt > 1 && phase[frq_cnt] > 251.0f && phase[frq_cnt] < 330.0f &&
@@ -757,6 +774,7 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
             found_max_p = false;
             found_max_d = false;
             find_middle = false;
+            freq_sweep = true;
 //            tune_p = 0.35f * max_gain_p.max_allowed;
             tune_d = 0.25f * max_gain_d.max_allowed;
         } else {

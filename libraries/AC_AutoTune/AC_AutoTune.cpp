@@ -2386,13 +2386,13 @@ void AC_AutoTune::sweep_test_run(uint8_t freq_resp_input, float dwell_freq, floa
         }
     }
 
-    if (curr_test_phase <= 180.0f && curr_test_phase >= 160.0f) {
+    if (curr_test_phase <= 160.0f && curr_test_phase >= 150.0f) {
         sweep.ph180_freq = curr_test_freq;
         sweep.ph180_gain = curr_test_gain;
         sweep.ph180_phase = curr_test_phase;
     }
 
-    if (curr_test_phase <= 270.0f && curr_test_phase >= 250.0f) {
+    if (curr_test_phase <= 250.0f && curr_test_phase >= 240.0f) {
         sweep.ph270_freq = curr_test_freq;
         sweep.ph270_gain = curr_test_gain;
         sweep.ph270_phase = curr_test_phase;
