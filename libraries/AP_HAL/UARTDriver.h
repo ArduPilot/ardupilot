@@ -119,4 +119,9 @@ public:
     virtual uint32_t bw_in_kilobytes_per_second() const {
         return 57;
     }
+
+    /*
+      return true if this UART has DMA enabled on both RX and TX
+     */
+    virtual bool is_dma_enabled() const { return false; }
 };
