@@ -6615,9 +6615,6 @@ class AutoTestCopter(AutoTest):
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
             'heli': "wrong binary, different takeoff regime",
-            'hexa-cwx': "does not take off",
-            'hexa-dji': "does not take off",
-            'octa-quad-cwx': "does not take off",
             'tri': "does not take off",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
