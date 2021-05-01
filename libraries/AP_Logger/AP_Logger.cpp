@@ -620,6 +620,19 @@ bool AP_Logger::should_log(const uint32_t mask) const
     return true;
 }
 
+/*
+  return true if in log download which should prevent logging
+ */
+bool AP_Logger::in_log_download() const
+{
+    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+        // when we have a BLOCK backend then listing completely prevents logging
+        return transfer_activity != TransferActivity::IDLE;
+    }
+    // for other backends listing does not interfere with logging
+    return transfer_activity == TransferActivity::SENDING;
+}
+
 const struct UnitStructure *AP_Logger::unit(uint16_t num) const
 {
     return &_units[num];
