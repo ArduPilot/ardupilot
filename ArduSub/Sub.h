@@ -67,6 +67,7 @@
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_AuxFunc/AP_AuxFunc.h>
 
 // Local modules
 #include "defines.h"
@@ -145,6 +146,8 @@ private:
     RC_Channel *channel_yaw;
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
+
+    AP_AuxFunc auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 
