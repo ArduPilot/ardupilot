@@ -4155,6 +4155,9 @@ class AutoTest(ABC):
     def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
+        if dead.sitl_commandline_customised and len(self.contexts):
+            self.contexts[-1].sitl_commandline_customised = True
+
         dead_parameters_dict = {}
         for p in dead.parameters:
             dead_parameters_dict[p[0]] = p[1]
