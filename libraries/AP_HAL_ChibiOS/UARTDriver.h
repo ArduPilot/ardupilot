@@ -131,6 +131,11 @@ public:
     // request information on uart I/O
     static void uart_info(ExpandingString &str);
 
+    /*
+      return true if this UART has DMA enabled on both RX and TX
+     */
+    bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
+
 private:
     const SerialDef &sdef;
     bool rx_dma_enabled;
