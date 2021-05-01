@@ -1229,7 +1229,6 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
 
 /*
   update BLHeli
-  Used to install protocol handler
  */
 void AP_BLHeli::update(void)
 {
@@ -1280,6 +1279,14 @@ void AP_BLHeli::update(void)
         }
         return;
     }
+}
+
+/*
+  Initialize BLHeli, called by SRV_Channels::init()
+  Used to install protocol handler
+ */
+void AP_BLHeli::init(void)
+{
     initialised = true;
 
     run_test.set_and_notify(0);
@@ -1302,7 +1309,9 @@ void AP_BLHeli::update(void)
       rovers and subs, plus for quadplane fwd motors
      */
     AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
-    switch (AP_Motors::pwm_type(output_type.get())) {
+    AP_Motors::pwm_type otype = AP_Motors::pwm_type(output_type.get());
+
+    switch (otype) {
     case AP_Motors::PWM_TYPE_ONESHOT:
         mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
         break;
@@ -1331,6 +1340,13 @@ void AP_BLHeli::update(void)
         hal.rcout->set_output_mode(mask, mode);
     }
 
+    // setting the digital mask changes the min/max PWM values
+    // it's important that this is NOT done for non-digital channels as otherwise
+    // PWM min can result in motors turning. set for individual overrides first
+    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+        SRV_Channels::set_digital_mask(mask);
+    }
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /*
       plane and copter can use AP_Motors to get an automatic mask
@@ -1338,13 +1354,18 @@ void AP_BLHeli::update(void)
     if (channel_auto.get() == 1) {
         AP_Motors *motors = AP_Motors::get_singleton();
         if (motors) {
-            mask |= motors->get_motor_mask();
+            uint16_t motormask = motors->get_motor_mask();
+            mask |= motormask;
+            // set the rest of the digital channels
+            if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+                SRV_Channels::set_digital_mask(motormask);
+            }
+
         }
     }
 #endif
 
     // tell SRV_Channels about ESC capabilities
-    SRV_Channels::set_digital_mask(mask);
     SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
     // the dshot ESC type is required in order to set the reversed/reversible mask correctly
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
@@ -1374,7 +1395,6 @@ void AP_BLHeli::update(void)
             telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
         }
     }
-
 }
 
 /*
@@ -1473,7 +1493,17 @@ void AP_BLHeli::log_bidir_telemetry(void)
         }
     }
 
-    last_telem_esc = (last_telem_esc + 1) % num_motors;
+    // ask the next ESC for telemetry
+    uint8_t idx_pos = last_telem_esc;
+    for (uint8_t idx = (idx_pos + 1) % num_motors;
+        idx != idx_pos;
+        idx = (idx_pos + 1) % num_motors) {
+        uint16_t mask = 1U << motor_map[idx];
+        if (SRV_Channels::have_digital_outputs(mask)) {
+            last_telem_esc = idx;
+            break;
+        }
+    }
 }
 
 /*
@@ -1533,10 +1563,18 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (now - last_telem_request_us >= telem_rate_us) {
         // ask the next ESC for telemetry
-        last_telem_esc = (last_telem_esc + 1) % num_motors;
-        uint16_t mask = 1U << motor_map[last_telem_esc];
-        hal.rcout->set_telem_request_mask(mask);
-        last_telem_request_us = now;
+        uint8_t idx_pos = last_telem_esc;
+        for (uint8_t idx = (idx_pos + 1) % num_motors;
+            idx != idx_pos;
+            idx = (idx_pos + 1) % num_motors) {
+            uint16_t mask = 1U << motor_map[idx];
+            if (SRV_Channels::have_digital_outputs(mask)) {
+                hal.rcout->set_telem_request_mask(mask);
+                last_telem_esc = idx;
+                last_telem_request_us = now;
+                break;
+            }
+        }
     }
 }
 

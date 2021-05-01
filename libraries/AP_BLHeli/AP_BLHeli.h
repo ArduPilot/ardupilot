@@ -46,6 +46,7 @@ public:
     AP_BLHeli();
     
     void update(void);
+    void init(void);
     void update_telemetry(void);
     bool process_input(uint8_t b);
 
