@@ -75,11 +75,21 @@ static int lua_mission_receive(lua_State *L) {
     return 5;
 }
 
+static int lua_load_singleton(lua_State *L) {
+    check_arguments(L, 1, "load_singleton");
+    const char * name = luaL_checkstring(L, 1);
+    if (!load_singleton_fun(L,name)) {
+        return luaL_error(L, "failed to load singleton: %s",name);
+    }
+    return 1;
+}
+
 static const luaL_Reg global_functions[] =
 {
     {"millis", lua_millis},
     {"micros", lua_micros},
     {"mission_receive", lua_mission_receive},
+    {"load_singleton", lua_load_singleton},
     {NULL, NULL}
 };
 

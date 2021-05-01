@@ -24,6 +24,7 @@ char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
 char keyword_literal[]             = "literal";
+char keyword_dont_load[]           = "dont_load";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -351,6 +352,7 @@ enum userdata_flags {
   UD_FLAG_SCHEDULER_SEMAPHORE = (1U << 1),
   UD_FLAG_LITERAL = (1U << 2),
   UD_FLAG_SEMAPHORE_POINTER = (1U << 3),
+  UD_FLAG_DONT_LOAD = (1U << 4),
 };
 
 struct userdata_enum {
@@ -874,6 +876,8 @@ void handle_singleton(void) {
     node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_semaphore_pointer) == 0) {
     node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
+  } else if (strcmp(type, keyword_dont_load) == 0) {
+    node->flags |= UD_FLAG_DONT_LOAD;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
   } else if (strcmp(type, keyword_enum) == 0) {
@@ -1858,10 +1862,16 @@ void emit_metas(struct userdata * data, char * meta_name) {
   while (data) {
     start_dependency(source, data->dependency);
     if (data->enums) {
-      fprintf(source, "    {\"%s\", %s_meta, %s_enums},\n", data->alias ? data->alias : data->name, data->name, data->sanatized_name);
+      fprintf(source, "    {\"%s\", %s_meta, %s_enums, ", data->alias ? data->alias : data->name, data->name, data->sanatized_name);
     } else {
-      fprintf(source, "    {\"%s\", %s_meta, NULL},\n", data->alias ? data->alias : data->name, data->sanatized_name);
+      fprintf(source, "    {\"%s\", %s_meta, NULL, ", data->alias ? data->alias : data->name, data->sanatized_name);
     }
+    if ((data->flags & UD_FLAG_DONT_LOAD) == 0) {
+      fprintf(source, "true},\n");
+    } else {
+      fprintf(source, "false},\n");
+    }
+
     end_dependency(source, data->dependency);
     data = data->next;
   }
@@ -1882,6 +1892,7 @@ void emit_loaders(void) {
   fprintf(source, "    const char *name;\n");
   fprintf(source, "    const luaL_Reg *reg;\n");
   fprintf(source, "    const struct userdata_enum *enums;\n");
+  fprintf(source, "    const bool load;\n");
   fprintf(source, "};\n\n");
   emit_metas(parsed_userdata, "userdata");
   emit_metas(parsed_singletons, "singleton");
@@ -1913,6 +1924,9 @@ void emit_loaders(void) {
 
   fprintf(source, "    // singleton metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        if (!singleton_fun[i].load) {\n");
+  fprintf(source, "           continue;\n");
+  fprintf(source, "        }\n");
   fprintf(source, "        luaL_newmetatable(L, singleton_fun[i].name);\n");
   fprintf(source, "        luaL_setfuncs(L, singleton_fun[i].reg, 0);\n");
   fprintf(source, "        lua_pushstring(L, \"__index\");\n");
@@ -1940,17 +1954,20 @@ void emit_loaders(void) {
   fprintf(source, "    load_boxed_numerics(L);\n");
 
   fprintf(source, "}\n\n");
+
+  // load function table for given name
+  fprintf(source, "bool load_singleton_fun(lua_State *L, const char * name) {\n");
+  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        if (strcmp(singleton_fun[i].name,name) == 0) {\n");
+  fprintf(source, "            luaL_newlib(L, singleton_fun[i].reg);\n");
+  fprintf(source, "            return true;\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    return false;\n");
+  fprintf(source, "}\n\n");
 }
 
 void emit_sandbox(void) {
-  struct userdata *single = parsed_singletons;
-  fprintf(source, "const char *singletons[] = {\n");
-  while (single) {
-    fprintf(source, "    \"%s\",\n", single->alias ? single->alias : single->sanatized_name);
-    single = single->next;
-  }
-  fprintf(source, "};\n\n");
-
   struct userdata *data = parsed_userdata;
   fprintf(source, "const struct userdata {\n");
   fprintf(source, "    const char *name;\n");
@@ -1971,9 +1988,12 @@ void emit_sandbox(void) {
 
   fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
   // load the singletons
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singletons); i++) {\n");
-  fprintf(source, "        lua_pushstring(L, singletons[i]);\n");
-  fprintf(source, "        lua_getglobal(L, singletons[i]);\n");
+  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        if (!singleton_fun[i].load) {\n");
+  fprintf(source, "           continue;\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "        lua_pushstring(L, singleton_fun[i].name);\n");
+  fprintf(source, "        lua_getglobal(L, singleton_fun[i].name);\n");
   fprintf(source, "        lua_settable(L, -3);\n");
   fprintf(source, "    }\n");
 
@@ -2148,6 +2168,7 @@ int main(int argc, char **argv) {
 
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
+  fprintf(header, "bool load_singleton_fun(lua_State *L, const char * name);\n");
 
   fclose(header);
   header = NULL;
