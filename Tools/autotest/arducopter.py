@@ -6486,7 +6486,13 @@ class AutoTestCopter(AutoTest):
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
             'cwx': "missing defaults file",
-            'deca-cwx': "doesn't take off",
+            # the following can be removed once
+            # https://github.com/ArduPilot/mavlink/pull/205 and and
+            # associated PR against ardupilot for the mavlink
+            # submodule have been merged:
+            'deca': "pymavlink reference out-of-date in ArduPilot's mavlink",
+            'deca-cwx': "pymavlink reference out-of-date in ArduPilot's mavlink",
+            'dodeca-hexa': "pymavlink reference out-of-date in ArduPilot's mavlink",
             'djix': "missing defaults file",
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
