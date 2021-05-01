@@ -403,6 +403,7 @@ protected:
     LowPassFilterFloat  command_filt;               // filtered command
     LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
 
+    // sweep_data tracks the overall characteristics in the response to the frequency sweep
     struct sweep_data {
         float    maxgain_freq;
         float    maxgain_gain;
@@ -414,8 +415,16 @@ protected:
         float    ph270_gain;
         float    ph270_phase;
     };
-
     sweep_data sweep;
+
+    // sweep_peak_finding_data tracks the peak data
+    struct sweep_peak_finding_data {
+        uint16_t count_m1;
+        float amplitude_m1;
+        float max_time_m1;
+    };
+    sweep_peak_finding_data sweep_meas;
+    sweep_peak_finding_data sweep_tgt;
 
     struct max_gain_data {
         float freq;

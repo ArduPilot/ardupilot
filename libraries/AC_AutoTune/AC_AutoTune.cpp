@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AC_AutoTune::var_info[] = {
 
 AC_AutoTune::AC_AutoTune()
 {
-    freq_sweep = false;
+    freq_sweep = true;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -1980,7 +1980,11 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         max_target = 0.0f;
         max_target_cnt++;
         temp_min_target = min_target;
-        if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+        if (min_target_cnt > 0) {
+            sweep_tgt.max_time_m1 = temp_max_tgt_time;
+            temp_max_tgt_time = max_tgt_time;
+            sweep_tgt.count_m1 = min_target_cnt - 1;
+            sweep_tgt.amplitude_m1 = temp_tgt_ampl;
             temp_tgt_ampl = temp_max_target - temp_min_target;
             push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
         }
@@ -1991,9 +1995,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         new_tgt_time_ms = now + half_cycle_time_ms;
         min_target_cnt++;
         temp_max_target = max_target;
-        if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_tgt_time = max_tgt_time;
-        }
         min_target = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
     }
@@ -2006,36 +2007,37 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         max_meas = 0.0f;
         max_meas_cnt++;
         temp_min_meas = min_meas;
-        if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+        if (min_meas_cnt > 0 && min_target_cnt > 0) {
+            sweep_meas.max_time_m1 = temp_max_meas_time;
+            temp_max_meas_time = max_meas_time;
+            sweep_meas.count_m1 = min_meas_cnt - 1;
+            sweep_meas.amplitude_m1 = temp_meas_ampl;
             temp_meas_ampl = temp_max_meas - temp_min_meas;
             push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
         }
 
-/*        if (freq_sweep) {
-            float tgt_period = 0.001f * (temp_max_tgt_time[max_meas_cnt - 1] - temp_max_tgt_time[max_meas_cnt - 2]);
+        if (freq_sweep) {
+            float tgt_period = 0.001f * (temp_max_tgt_time - sweep_tgt.max_time_m1);
             if (!is_zero(tgt_period)) {
                 curr_test_freq = 6.28f / tgt_period;
             } else {
                 curr_test_freq = 0.0f;
             }
-            if (!is_zero(input_ampl[max_meas_cnt - 2])) {
-                curr_test_gain = output_ampl[max_meas_cnt - 2]/input_ampl[max_meas_cnt - 2];
+            if (!is_zero(sweep_tgt.amplitude_m1)) {
+                curr_test_gain = sweep_meas.amplitude_m1/sweep_tgt.amplitude_m1;
             } else {
                 curr_test_gain = 0.0f;
             }
-            curr_test_phase = curr_test_freq * (float)(temp_max_meas_time[max_meas_cnt - 2] - temp_max_tgt_time[max_meas_cnt - 2]) * 0.001f * 360.0f / 6.28f;
+            curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / 6.28f;
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f sweepgain=%f", (double)(freq), (double)(curr_test_freq));
             Log_AutoTuneSweep();
-        } */
+        } 
 //                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     } else if (is_positive(prev_meas) && !is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
         new_meas = false;
         new_meas_time_ms = now + half_cycle_time_ms;
         min_meas_cnt++;
         temp_max_meas = max_meas;
-        if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_meas_time = max_meas_time;
-        }
         min_meas = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     }
@@ -2207,7 +2209,8 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         max_target = 0.0f;
         max_target_cnt++;
         temp_min_target = min_target;
-        if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+        if (min_target_cnt > 0) {
+            temp_max_tgt_time = max_tgt_time;
             temp_tgt_ampl = temp_max_target - temp_min_target;
             push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
         }
@@ -2218,9 +2221,6 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         new_tgt_time_ms = now + half_cycle_time_ms;
         min_target_cnt++;
         temp_max_target = max_target;
-        if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_tgt_time = max_tgt_time;
-        }
         min_target = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
     }
@@ -2233,7 +2233,8 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         max_meas = 0.0f;
         max_meas_cnt++;
         temp_min_meas = min_meas;
-        if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+        if (min_meas_cnt > 0 && min_target_cnt > 0) {
+            temp_max_meas_time = max_meas_time;
             temp_meas_ampl = temp_max_meas - temp_min_meas;
             push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
         }
@@ -2243,9 +2244,6 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         new_meas_time_ms = now + half_cycle_time_ms;
         min_meas_cnt++;
         temp_max_meas = max_meas;
-        if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
-            temp_max_meas_time = max_meas_time;
-        }
         min_meas = 0.0f;
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     }
