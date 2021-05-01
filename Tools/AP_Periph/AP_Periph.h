@@ -15,6 +15,13 @@
 #include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
+#include <AP_CANManager/AP_CANManager.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/CANIface.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/CANSocketIface.h>
+#endif
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
@@ -55,6 +62,16 @@ class AP_Periph_FW {
 public:
     AP_Periph_FW();
 
+    CLASS_NO_COPY(AP_Periph_FW);
+
+    static AP_Periph_FW* get_singleton()
+    {
+        if (_singleton == nullptr) {
+            AP_HAL::panic("AP_Periph_FW used before allocation.");
+        }
+        return _singleton;
+    }
+
     void init();
     void update();
 
@@ -74,6 +91,12 @@ public:
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static ChibiOS::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
     AP_SerialManager serial_manager;
@@ -100,6 +123,12 @@ public:
     } battery;
 #endif
 
+#if HAL_NUM_CAN_IFACES >= 2
+    // This allows you to change the protocol and it continues to use the one at boot.
+    // Without this, changing away from UAVCAN causes loss of comms and you can't
+    // change the rest of your params or veryofy it suceeded.
+    AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
     struct {
@@ -191,9 +220,16 @@ public:
     uint32_t last_baro_update_ms;
     uint32_t last_airspeed_update_ms;
 
+    static AP_Periph_FW *_singleton;
+
     // show stack as DEBUG msgs
     void show_stack_free();
 };
+
+namespace AP
+{
+    AP_Periph_FW& periph();
+}
 
 extern AP_Periph_FW periph;
 
