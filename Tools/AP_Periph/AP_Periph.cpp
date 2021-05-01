@@ -68,7 +68,12 @@ AP_Periph_FW::AP_Periph_FW()
 #if HAL_LOGGING_ENABLED
     : logger(g.log_bitmask)
 #endif
-{}
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Periph_FW must be singleton");
+    }
+    _singleton = this;
+}
 
 #if HAL_LOGGING_ENABLED
 const struct LogStructure AP_Periph_FW::log_structure[] = {
@@ -448,6 +453,13 @@ void AP_Periph_FW::prepare_reboot()
         // delay to give the ACK a chance to get out, the LEDs to flash,
         // the IO board safety to be forced on, the parameters to flush,
         hal.scheduler->delay(40);
+}
+
+AP_Periph_FW *AP_Periph_FW::_singleton;
+
+AP_Periph_FW& AP::periph()
+{
+    return *AP_Periph_FW::get_singleton();
 }
 
 AP_HAL_MAIN();
