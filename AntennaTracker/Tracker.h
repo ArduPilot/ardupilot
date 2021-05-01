@@ -42,6 +42,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
+#include <AP_AuxFunc/AP_AuxFunc.h>
 
 // Configuration
 #include "config.h"
@@ -82,6 +83,8 @@ private:
     Parameters g;
 
     uint32_t start_time_ms = 0;
+
+    AP_AuxFunc auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 
