@@ -92,6 +92,9 @@ public:
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
+    /// check for a change in the radius params
+    void check_param_change();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -149,6 +152,7 @@ private:
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec
     uint32_t    _last_update_ms;    // system time of last update
+    float       _last_radius_param; // last value of radius param, used to update radius on param change
 
     // terrain following variables
     bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin
