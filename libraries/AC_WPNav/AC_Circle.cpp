@@ -81,9 +81,11 @@ void AC_Circle::init(const Vector3f& center, bool terrain_alt)
 /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
-{   
-    //initialize radius from params
-    _radius =_radius_parm;
+{
+    // initialize radius from params
+    _radius = _radius_parm;
+    _last_radius_param = _radius_parm;
+
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.set_desired_velocity_xy(0.0f,0.0f);
@@ -381,4 +383,12 @@ bool AC_Circle::get_terrain_offset(float& offset_cm)
 
     // we should never get here but just in case
     return false;
+}
+
+void AC_Circle::check_param_change()
+{
+    if (!is_equal(_last_radius_param,_radius_parm.get())) {
+        _radius = _radius_parm;
+        _last_radius_param = _radius_parm;
+    }
 }
