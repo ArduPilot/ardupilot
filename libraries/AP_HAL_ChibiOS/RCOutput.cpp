@@ -128,32 +128,10 @@ void RCOutput::rcout_thread()
         hal.scheduler->delay_microseconds(1000);
     }
 
-    chEvtWaitOne(EVT_PWM_START);
-
-    // it takes BLHeli32 about 30ms to calibrate frames on startup, in which it must see 10 good frames
-    // experiments show that this is quite fragile at lower rates, so run a calibration phase at a
-    // higher rate (2Khz) for 5s to get the motors armed before dropping the rate to the configured value
-    uint32_t cal_cycles = 5000000UL / 300UL;
-    _dshot_calibrating = true;
-    const uint32_t cycle_time_us = _dshot_period_us;
-    // while calibrating run at 2.5Khz to allow arming, this is the fastest rate that dshot150 can manage
-    _dshot_period_us = 400;
-
-    // prime the pump for calibration
-    chEvtSignal(rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
-
-    // don't start calibrating until everything else is ready
-    chEvtWaitOne(EVT_PWM_SEND);
-
     // dshot is quite sensitive to timing, it's important to output pulses as
     // regularly as possible at the correct bitrate
     while (true) {
-        // while calibrating ignore all push-based requests and stick closely to the dshot period
-        if (_dshot_calibrating) {
-            chEvtWaitOne(EVT_PWM_SYNTHETIC_SEND);
-        } else {
-            chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
-        }
+        chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
 
         // start the clock
         last_thread_run_us = AP_HAL::micros();
@@ -162,7 +140,7 @@ void RCOutput::rcout_thread()
         if (_dshot_cycle == 0) {
             last_cycle_run_us = AP_HAL::micros();
             // register a timer for the next tick if push() will not be providing it
-            if (_dshot_rate != 1 || _dshot_calibrating) {
+            if (_dshot_rate != 1) {
                 chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
             }
         }
@@ -189,15 +167,6 @@ void RCOutput::rcout_thread()
 
         // process any pending RC output requests
         timer_tick(time_out_us);
-
-        if (_dshot_calibrating) {
-                cal_cycles--;
-                if (cal_cycles == 0) {
-                    // calibration is done re-instate the desired rate
-                    _dshot_calibrating = false;
-                    _dshot_period_us = cycle_time_us;
-                }
-        }
     }
 }
 
@@ -206,7 +175,7 @@ void RCOutput::dshot_update_tick(void* p)
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
 
-    if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate || rcout->_dshot_calibrating) {
+    if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate) {
         chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
     chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
@@ -420,7 +389,6 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
     if (loop_rate_hz <= 100 || dshot_rate == 0) {
         _dshot_period_us = 1000UL;
         _dshot_rate = 0;
-        chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
         return;
     }
     // if there are non-dshot channels then do likewise
@@ -430,7 +398,6 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
             group.current_mode == MODE_PWM_BRUSHED) {
             _dshot_period_us = 1000UL;
             _dshot_rate = 0;
-            chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
             return;
         }
     }
@@ -450,8 +417,6 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
         drate = _dshot_rate * loop_rate_hz;
     }
     _dshot_period_us = 1000000UL / drate;
-
-    chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
 }
 
 /*
@@ -1186,20 +1151,29 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
         return;
     }
 
+    bool command_sent = false;
+    // queue up a command if there is one
+    if (!hal.util->get_soft_armed()
+        && _dshot_current_command.cycle == 0
+        && _dshot_command_queue.pop(_dshot_current_command)) {
+        // got a new command
+    }
+
     for (auto &group : pwm_group_list) {
         // send a dshot command
-        if (!_dshot_calibrating
-            && !hal.util->get_soft_armed()
+        if (!hal.util->get_soft_armed()
             && is_dshot_protocol(group.current_mode)
             && group_escs_active(group) // only send when someone is listening
-            && (dshot_command_is_active(group)
-                || (_dshot_command_queue.pop(_dshot_current_command) && dshot_command_is_active(group)))) {
-            dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
-            _dshot_current_command.cycle--;
+            && dshot_command_is_active(group)) {
+            command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
         } else if (group.can_send_dshot_pulse()) {
             dshot_send(group, time_out_us);
         }
+    }
+
+    if (command_sent) {
+        _dshot_current_command.cycle--;
     }
 #endif //#ifndef DISABLE_DSHOT
 }
@@ -1411,7 +1385,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
-            bool request_telemetry = (telem_request_mask & chan_mask) ? !_dshot_calibrating : false;
+            bool request_telemetry = (telem_request_mask & chan_mask) || group.bdshot.enabled;
             uint16_t packet = create_dshot_packet(value, request_telemetry, group.bdshot.enabled);
             if (request_telemetry) {
                 telem_request_mask &= ~chan_mask;

@@ -25,15 +25,15 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
-void RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t chan)
+bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t chan)
 {
     if (!group.can_send_dshot_pulse()) {
-        return;
+        return false;
     }
 
     if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
         // doing serial output or DMAR input, don't send DShot pulses
-        return;
+        return false;
     }
 
     TOGGLE_PIN_DEBUG(81);
@@ -77,21 +77,22 @@ void RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     // start sending the pulses out
     send_pulses_DMAR(group, DSHOT_BUFFER_LENGTH);
     TOGGLE_PIN_DEBUG(81);
+
+    return true;
 }
 
 // Send a dshot command, if command timout is 0 then 10 commands are sent
 // chan is the servo channel to send the command to
 void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
 {
-    // don't accept any LED or BEEP commands while initializing
-    if ((_dshot_period_us == 0 || _dshot_calibrating) && !priority) {
+    if (!_active_escs_mask && !priority) {
         return;
     }
 
     DshotCommandPacket pkt;
     pkt.command = command;
     pkt.chan = chan;
-    if (_dshot_period_us == 0 || _dshot_calibrating || command_timeout_ms == 0) {
+    if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
         pkt.cycle = MAX(command_timeout_ms * 1000 / _dshot_period_us, repeat_count);
