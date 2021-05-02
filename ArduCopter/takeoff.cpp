@@ -116,6 +116,11 @@ void Mode::auto_takeoff_run()
         }
     }
 
+    // if set and no pilot input for 2 sec weathervane copter into wind
+    if (allows_weathervaning_auto()) {
+        auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
+    }
+
     // aircraft stays in landed state until rotor speed runup has finished
     if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         set_land_complete(false);
@@ -160,7 +165,7 @@ void Mode::auto_takeoff_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from position controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(thrustvector, target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
         // roll & pitch from position controller, yaw rate from mavlink command or mission item
         attitude_control->input_thrust_vector_rate_heading(thrustvector, auto_yaw.rate_cds());
     } else {

@@ -166,6 +166,15 @@ bool ModeAuto::allows_arming(AP_Arming::Method method) const
     return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
 };
 
+bool ModeAuto::allows_weathervaning(void) const
+{
+#if WEATHERVANE_ENABLED == ENABLED
+    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning);
+#else
+    return false;
+#endif
+}
+
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
@@ -865,6 +874,11 @@ void ModeAuto::wp_run()
         }
     }
 
+    // if set and no pilot input for 2 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
+    }
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
@@ -886,6 +900,8 @@ void ModeAuto::wp_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
@@ -975,6 +991,12 @@ void ModeAuto::loiter_run()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+    }
+
+    // if set and no pilot input for 2 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
+        target_yaw_rate += auto_yaw.rate_cds();
     }
 
     // set motors to full range

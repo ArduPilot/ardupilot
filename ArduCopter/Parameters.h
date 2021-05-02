@@ -4,6 +4,9 @@
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
 
+#if WEATHERVANE_ENABLED == ENABLED
+ #include <AC_AttitudeControl/AC_WeatherVane.h>
+#endif
 #if GRIPPER_ENABLED == ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
@@ -667,6 +670,11 @@ public:
     AP_Float                pilot_y_rate;
     AP_Float                pilot_y_expo;
     AP_Int8                 surftrak_mode;
+
+#if WEATHERVANE_ENABLED == ENABLED
+    AC_WeatherVane weathervane;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
