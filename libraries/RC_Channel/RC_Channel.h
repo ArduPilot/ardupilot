@@ -244,6 +244,7 @@ public:
         BUTTON,
         MAVLINK,
         MISSION,
+        SCRIPTING,
     };
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
