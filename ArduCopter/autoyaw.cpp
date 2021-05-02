@@ -56,10 +56,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     if (_mode == yaw_mode) {
         return;
     }
-    _mode = yaw_mode;
 
     // perform initialisation
-    switch (_mode) {
+    switch (yaw_mode) {
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called
@@ -91,7 +90,16 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     case AUTO_YAW_CIRCLE:
         // no initialisation required
         break;
+
+    case AUTO_YAW_WEATHERVANE:
+        break;
+
+    default:
+        // no initialisation
+        break;
     }
+    _last_mode = (autopilot_yaw_mode)_mode;
+    _mode = yaw_mode;
 }
 
 // set_fixed_yaw - sets the yaw look at heading for auto mode
@@ -226,6 +234,7 @@ float Mode::AutoYaw::rate_cds() const
         return 0.0f;
 
     case AUTO_YAW_RATE:
+    case AUTO_YAW_WEATHERVANE:
         return _rate_cds;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
@@ -234,4 +243,31 @@ float Mode::AutoYaw::rate_cds() const
 
     // return zero turn rate (this should never happen)
     return 0.0f;
+}
+
+void Mode::AutoYaw::update_weathervane(const int16_t pilot_yaw, const int16_t roll_cdeg, const int16_t pitch_cdeg)
+{
+#if !HAL_MINIMIZE_FEATURES
+    if (copter.g2.weathervane.should_weathervane(pilot_yaw, roll_cdeg, pitch_cdeg)) {
+        if (mode() != AUTO_YAW_WEATHERVANE) {
+                set_mode(AUTO_YAW_WEATHERVANE);
+            }
+
+            // force weathervane controller to relax on landing, in case min height is not set
+            copter.g2.weathervane.set_relax(copter.ap.land_complete || copter.ap.land_complete_maybe);
+
+            // set yaw rate 
+            _rate_cds = copter.g2.weathervane.get_yaw_rate_cds(roll_cdeg, pitch_cdeg);
+
+    } else if (mode() == AUTO_YAW_WEATHERVANE) {
+        // if the weathervane controller has previously been activated we need to ensure we return control back to what was previously set
+        if (_last_mode == AUTO_YAW_HOLD) {
+            set_mode_to_default(false);
+        } else {
+            set_mode(_last_mode);
+        }
+
+        _rate_cds = 0.0f;
+    }
+#endif
 }

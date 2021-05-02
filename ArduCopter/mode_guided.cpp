@@ -95,7 +95,12 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
 
     // optionally allow arming from the transmitter
     return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
-};
+}
+
+bool ModeGuided::allows_weathervaning(void) const
+{
+    return (copter.g2.guided_options.get() & (uint32_t)Options::AllowWeatherVaning);
+}
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
@@ -443,6 +448,11 @@ void ModeGuided::pos_control_run()
         return;
     }
 
+    // if set and no pilot input for 3 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(target_yaw_rate, wp_nav->get_roll(), wp_nav->get_pitch());
+    }
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -456,7 +466,7 @@ void ModeGuided::pos_control_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
         // roll & pitch from waypoint controller, yaw rate from mavlink command or mission item
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
@@ -477,6 +487,11 @@ void ModeGuided::vel_control_run()
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
+    }
+
+    // if set and no pilot input for 3 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(target_yaw_rate, wp_nav->get_roll(), wp_nav->get_pitch());
     }
 
     // landed with positive desired climb rate, initiate takeoff
@@ -519,7 +534,7 @@ void ModeGuided::vel_control_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
         // roll & pitch from velocity controller, yaw rate from mavlink command or mission item
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
@@ -547,6 +562,11 @@ void ModeGuided::posvel_control_run()
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
+    }
+
+    // if set and no pilot input for 3 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(target_yaw_rate, wp_nav->get_roll(), wp_nav->get_pitch());
     }
 
     // set motors to full range
@@ -584,7 +604,7 @@ void ModeGuided::posvel_control_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
         // roll & pitch from position-velocity controller, yaw rate from mavlink command or mission item
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
