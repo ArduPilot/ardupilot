@@ -512,10 +512,10 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
     _throttle_radio_min = radio_min;
     _throttle_radio_max = radio_max;
 
-    if (_pwm_type >= PWM_TYPE_DSHOT150 && _pwm_type <= PWM_TYPE_DSHOT1200) {
-        // force PWM range for DShot ESCs
-        _pwm_min.set(1000);
-        _pwm_max.set(2000);
+    // if all outputs are digital adjust the range
+    if (SRV_Channels::have_digital_outputs(get_motor_mask())) {
+        _pwm_min = 1000;
+        _pwm_max = 2000;
     }
 
     hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());
