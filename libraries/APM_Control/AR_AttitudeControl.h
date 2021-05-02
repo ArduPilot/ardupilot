@@ -86,6 +86,9 @@ public:
     // calculate the turn rate in rad/sec given a lateral acceleration (in m/s/s) and speed (in m/s)
     float get_turn_rate_from_lat_accel(float lat_accel, float speed) const;
 
+    // get the G limit lateral acceleration ( m/s/s), returning at least 0.1G
+    float get_turn_lat_accel_max() const { return MAX(_turn_lateral_G_max, 0.1f) * GRAVITY_MSS; }
+
     //
     // throttle / speed controller
     //
@@ -167,6 +170,7 @@ private:
     AP_Float _stop_speed;           // speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
     AP_Float _steer_accel_max;      // steering angle acceleration max in deg/s/s
     AP_Float _steer_rate_max;       // steering rate control maximum rate in deg/s
+    AP_Float _turn_lateral_G_max;   // sterring maximum lateral acceleration limit in 'G'
 
     // steering control
     uint32_t _steer_lat_accel_last_ms;  // system time of last call to lateral acceleration controller (i.e. get_steering_out_lat_accel)
