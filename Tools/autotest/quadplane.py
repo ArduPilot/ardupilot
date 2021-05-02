@@ -610,6 +610,28 @@ class AutoTestQuadPlane(AutoTest):
         self.set_rc(4, 1500)
         self.do_RTL()
 
+    def weathervane_test(self):
+        # We test nose into wind code paths and yaw direction in copter autotest,
+        # so we shall test the side into wind yaw direction and plane code paths here.
+        self.set_parameter("SIM_WIND_SPD", 10)
+        self.set_parameter("SIM_WIND_DIR", 240)
+        # WVANE_ENABLE = 3 gives direction of side into wind
+        self.set_parameter("Q_WVANE_ENABLE", 3)
+        self.set_parameter("Q_WVANE_GAIN", 3)
+        self.set_parameter("STICK_MIXING", 0)
+
+        self.takeoff(10, mode="QLOITER")
+
+        # Turn aircraft to heading 90 deg
+        self.set_rc(4, 1700)
+        self.wait_heading(90)
+        self.set_rc(4, 1500)
+
+        # Now wait for weathervaning to activate and turn side-on to wind at 240 deg therefore heading 150 deg
+        self.wait_heading(150, accuracy=5, timeout=180)
+
+        self.do_RTL()
+
     def CPUFailsafe(self):
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
@@ -711,6 +733,10 @@ class AutoTestQuadPlane(AutoTest):
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission("Dalby-OBC2016.txt", "Dalby-OBC2016-fence.txt")),
+
+            ("Weathervane",
+             "Test Weathervane Functionality",
+             self.weathervane_test),
 
             ("QAssist",
              "QuadPlane Assist tests",
