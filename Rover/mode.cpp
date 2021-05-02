@@ -456,7 +456,7 @@ void Mode::calc_steering_from_turn_rate(float turn_rate)
 void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reversed)
 {
     // constrain to max G force
-    lat_accel = constrain_float(lat_accel, -g.turn_max_g * GRAVITY_MSS, g.turn_max_g * GRAVITY_MSS);
+    lat_accel = constrain_float(lat_accel, -attitude_control.get_turn_lat_accel_max(), attitude_control.get_turn_lat_accel_max());
 
     // send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
