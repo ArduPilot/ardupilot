@@ -139,6 +139,14 @@ private:
     int8_t CheckForTLM(uint16_t *Telemetry);
 
 /**
+    checks if the requested telemetry is available.
+    @param Telemetry 16bit array where the read Telemetry will be stored in.
+    @param return the esc id request number or -1 if unavailable
+*/
+    int8_t CheckForAltTLM(uint16_t *Telemetry);
+
+
+/**
     does almost all of the job.
     scans for ESCs if not already done.
     initializes the ESCs if not already done.
@@ -170,7 +178,9 @@ private:
     uint8_t _FoundESCs;
     uint8_t _ScanActive;
     uint8_t _SetupActive;
-    uint8_t _SetAltTelemActive = 0; //Helper to set alternative TLM for every ESC
+    
+    uint8_t useAlternativeTlm = 1; //Set to 1 to use alternative, set to 0 to use standard TLM
+    uint8_t _SetAltTelemActive = 1; //Helper to set alternative TLM for every ESC
     uint8_t _AltTelemRetryCount = 0; 
     uint8_t _IgnoreOwnBytes;
     int8_t _minID = MOTOR_COUNT_MAX;

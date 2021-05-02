@@ -18,6 +18,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_FETtecOneWire.h"
 #if HAL_AP_FETTECONEWIRE_ENABLED
@@ -103,58 +104,111 @@ void AP_FETtecOneWire::update()
     }
 
     uint16_t requestedTelemetry[MOTOR_COUNT_MAX] = {0};
+   
     _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, nr_escs, _telem_req_type);
 
+
+if (useAlternativeTlm==0){ //normal telemetry
     if (++_telem_req_type == telem_type::DEBUG1) {
         // telem_type::DEBUG1, telem_type::DEBUG2, telem_type::DEBUG3 are ignored
         _telem_req_type = telem_type::TEMP;
     }
+}
+
 
 #if HAL_WITH_ESC_TELEM
+if (useAlternativeTlm){ 
     if (_telem_avail != -1) {
-        TelemetryData t {};
-        uint16_t esc_mask = 1;
-        for (uint8_t i = 0; i < nr_escs; i++) {
-            if (mask & esc_mask) { // only update telemetry of enabled ESCs
-                switch(_telem_avail) {
-                case telem_type::TEMP:
-                    t.temperature_cdeg = int16_t(requestedTelemetry[i] * 100);
-                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
-                    break;
+        if (mask & _telem_req_type) {
+            TelemetryData t {};
+            t.temperature_cdeg = int16_t(requestedTelemetry[0] * 100);
+            update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
-                case telem_type::VOLT:
-                    t.voltage = float(requestedTelemetry[i]) * 0.01f;  // centi-Volt to Volt
-                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
-                    break;
+            t.voltage = float(requestedTelemetry[1] * 0.01f);
+            update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
 
-                case telem_type::CURRENT:
-                    t.current = float(requestedTelemetry[i]) * 0.01f;  // centi-Ampere to Ampere
-                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
-                    break;
+            t.current = float(requestedTelemetry[2] * 0.01f);
+            update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
 
-                case telem_type::ERPM:
-                    if (pole_count < 2) { // If Parameter is invalid use 14 Poles
-                        pole_count = 14;
+            
+            if (pole_count < 2) { // If Parameter is invalid use 14 Poles
+                                pole_count = 14;
+                            }
+                            if (rpm_pkt_cnt[_telem_req_type-1] >= float(1 << 24)) {
+                                rpm_pkt_cnt[_telem_req_type-1] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
+                                crc_error_cnt[_telem_req_type-1] = 0.0f;
+                            } else {
+                                rpm_pkt_cnt[_telem_req_type-1]++;
+                            }
+                            update_rpm(_telem_req_type-1, requestedTelemetry[3]*100*2/pole_count.get(), 100.0f*crc_error_cnt[_telem_req_type-1]/rpm_pkt_cnt[_telem_req_type-1]);
+            
+
+            t.consumption_mah = float(requestedTelemetry[4]);
+            update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+
+           // if (_telem_req_type==1){
+            //    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRC Error %i",  int16_t(requestedTelemetry[5]));
+           // }
+        }
+    }
+}
+else{
+        if (_telem_avail != -1) {
+            TelemetryData t {};
+            uint16_t esc_mask = 1;
+            for (uint8_t i = 0; i < nr_escs; i++) {
+                if (mask & esc_mask) { // only update telemetry of enabled ESCs
+                    switch(_telem_avail) {
+                    case telem_type::TEMP:
+                        t.temperature_cdeg = int16_t(requestedTelemetry[i] * 100);
+                        update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+                        break;
+
+                    case telem_type::VOLT:
+                        t.voltage = float(requestedTelemetry[i]) * 0.01f;  // centi-Volt to Volt
+                        update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+                        break;
+
+                    case telem_type::CURRENT:
+                        t.current = float(requestedTelemetry[i]) * 0.01f;  // centi-Ampere to Ampere
+                        update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+                        break;
+
+                    case telem_type::ERPM:
+                        if (pole_count < 2) { // If Parameter is invalid use 14 Poles
+                            pole_count = 14;
+                        }
+                        if (rpm_pkt_cnt[i] >= float(1 << 24)) {
+                            rpm_pkt_cnt[i] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
+                            crc_error_cnt[i] = 0.0f;
+                        } else {
+                            rpm_pkt_cnt[i]++;
+                        }
+                        update_rpm(i, requestedTelemetry[i]*100*2/pole_count.get(), 100.0f*crc_error_cnt[i]/rpm_pkt_cnt[i]);
+                        break;
+
+                    case telem_type::CONSUMPTION:
+                        t.consumption_mah = float(requestedTelemetry[i]);
+                        update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+                        break;
                     }
-                    if (rpm_pkt_cnt[i] >= float(1 << 24)) {
-                        rpm_pkt_cnt[i] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
-                        crc_error_cnt[i] = 0.0f;
-                    } else {
-                        rpm_pkt_cnt[i]++;
-                    }
-                    update_rpm(i, requestedTelemetry[i]*100*2/pole_count.get(), 100.0f*crc_error_cnt[i]/rpm_pkt_cnt[i]);
-                    break;
-
-                case telem_type::CONSUMPTION:
-                    t.consumption_mah = float(requestedTelemetry[i]);
-                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
-                    break;
                 }
+                esc_mask <<= 1;
             }
-            esc_mask <<= 1;
         }
     }
 #endif
+    if (useAlternativeTlm==1){ //Alternativ telemetry
+        if (_telem_req_type<MOTOR_COUNT_MAX){
+            _telem_req_type++;
+            if (_activeESC_IDs[_telem_req_type]==0){ //If ESC with ID was detected ask for telemetry
+                _telem_req_type=1;
+            }
+        }
+        else{ //If its at 12 go back to 1
+            _telem_req_type=1;
+        }
+    }
 }
 
 /**
@@ -400,23 +454,34 @@ uint8_t AP_FETtecOneWire::ScanESCs()
 */
 uint8_t AP_FETtecOneWire::SetAltTlm(uint8_t active)
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Alt Telem for ESC: %i", _SetAltTelemActive);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC active state %i", _activeESC_IDs[_SetAltTelemActive]);
     if (_activeESC_IDs[_SetAltTelemActive]==1){ //If ESC is detected at this ID
         uint8_t response[1] = {0};
         uint8_t request[2] = {0};
         request[0] = OW_SET_TLM_TYPE;
         request[1] = active; //Alternative Tlm => 1, normal TLM => 0
-        
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PullCommand");
         if(PullCommand(_SetAltTelemActive, request, response, OW_RETURN_RESPONSE)){
             if(response[0] == OW_OK || _AltTelemRetryCount > 14){//Ok received or max retrys reached.
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK");
                 _SetAltTelemActive++;   //If answer from ESC is OK, increase ID.
                 _AltTelemRetryCount=0; //Reset retry count for new ESC ID
             }
             else {
+                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW Fail");
                 _AltTelemRetryCount++; //No OK received, increase retry count
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_AltTelemRetryCount);
             }
+        }
+        else{ //If there is no ESC detected skip it.
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PullCommand Fail");
+            _AltTelemRetryCount++;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_AltTelemRetryCount);
         }
     }
     else{ //If there is no ESC detected skip it.
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ESC at ID: %i",_SetAltTelemActive);
         _SetAltTelemActive++;
     }
     return _SetAltTelemActive;
@@ -547,6 +612,33 @@ uint8_t AP_FETtecOneWire::InitESCs()
     @param Telemetry 16bit array where the read Telemetry will be stored in.
     @return the telemetry request number or -1 if unavailable
 */
+int8_t AP_FETtecOneWire::CheckForAltTLM(uint16_t* Telemetry)
+{
+   int8_t return_TLM_request = 0;
+    if (_IDcount > 0) {
+       
+        uint8_t telem[11] = {0};
+        return_TLM_request= Receive((uint8_t *) telem,11,0);
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Temp: %u \t Volt %u \t Current: %u \t ERPM: %u \t Consumption: %u \t CRCerr: %u", telem[0],(telem[1]<<8)|telem[2]);
+        Telemetry[0]= telem[0]; //Temp
+        Telemetry[1]=(telem[1]<<8)|telem[2];//Volt
+        Telemetry[2]=(telem[3]<<8)|telem[4];//Current
+        Telemetry[3]=(telem[5]<<8)|telem[6];//ERPM
+        Telemetry[4]=(telem[7]<<8)|telem[8];//Consumption
+        Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
+
+
+    } else {
+        return_TLM_request = -1;
+    }
+    return return_TLM_request;
+}
+
+/**
+    checks if the requested telemetry is available.
+    @param Telemetry 16bit array where the read Telemetry will be stored in.
+    @return the telemetry request number or -1 if unavailable
+*/
 int8_t AP_FETtecOneWire::CheckForTLM(uint16_t* Telemetry)
 {
     int8_t return_TLM_request = 0;
@@ -616,13 +708,18 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             }
         }
         else if (_SetAltTelemActive < MOTOR_COUNT_MAX) { //Set telemetry to alternative mode
-               _SetAltTelemActive = SetAltTlm(1);
+               _SetAltTelemActive = SetAltTlm(useAlternativeTlm);
         }
     } else {
         //send fast throttle signals
         if (_IDcount > 0) {
             // check for telemetry
-            return_TLM_request = CheckForTLM(Telemetry);
+            if (useAlternativeTlm){
+                return_TLM_request = CheckForAltTLM(Telemetry);
+            }
+            else{
+                return_TLM_request = CheckForTLM(Telemetry);
+            }
             _TLM_request = tlmRequest;
 
             //prepare fast throttle signals
@@ -637,6 +734,18 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
 
             uint8_t actThrottleCommand = 0;
 
+            if (useAlternativeTlm){
+            // byte 1:
+            // bit 0,1,2,3 = ESC ID, Bit 4 = first bit of first ESC (11bit)signal, bit 5,6,7 = frame header
+            // so AAAABCCC
+            // A = ESC ID, telemetry is requested from. ESC ID == 0 means no request. 
+            // B = first bit from first throttle signal
+            // C = frame header
+            fast_throttle_command[0] = (_TLM_request << 4);
+            fast_throttle_command[0] |= ((useSignals[actThrottleCommand] >> 10) & 0x01) << 3;
+            fast_throttle_command[0] |= 0x01;
+            }
+            else{
             // byte 1:
             // bit 0 = TLMrequest, bit 1,2,3 = TLM type, bit 4 = first bit of first ESC (11bit)signal, bit 5,6,7 = frame header
             // so ABBBCDDD
@@ -647,7 +756,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             fast_throttle_command[0] = 128 | (_TLM_request << 4);
             fast_throttle_command[0] |= ((useSignals[actThrottleCommand] >> 10) & 0x01) << 3;
             fast_throttle_command[0] |= 0x01;
-
+            }
             // byte 2:
             // AAABBBBB
             // A = next 3 bits from (11bit)throttle signal
