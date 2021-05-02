@@ -56,6 +56,7 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     if (_mode == yaw_mode) {
         return;
     }
+    _last_mode = (autopilot_yaw_mode)_mode;
     _mode = yaw_mode;
 
     // perform initialisation
@@ -89,6 +90,10 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
         break;
 
     case AUTO_YAW_CIRCLE:
+        // no initialisation required
+        break;
+
+    case AUTO_YAW_WEATHERVANE:
         // no initialisation required
         break;
     }
@@ -255,6 +260,7 @@ float Mode::AutoYaw::rate_cds() const
 
     case AUTO_YAW_ANGLE_RATE:
     case AUTO_YAW_RATE:
+    case AUTO_YAW_WEATHERVANE:
         return _yaw_rate_cds;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
@@ -263,4 +269,33 @@ float Mode::AutoYaw::rate_cds() const
 
     // return zero turn rate (this should never happen)
     return 0.0f;
+}
+
+// handle the interface to the weathervane library
+// pilot_yaw can be an angle or a rate or rcin from yaw channel. It just needs to represent a pilot's request to yaw the vehicle to enbale pilot overrides.
+void Mode::AutoYaw::update_weathervane(const int16_t roll_cdeg, const int16_t pitch_cdeg, const int16_t pilot_yaw, const int32_t hgt_cm)
+{
+#if WEATHERVANE_ENABLED == ENABLED
+    if (copter.g2.weathervane.should_weathervane(roll_cdeg, pitch_cdeg, pilot_yaw, (float)hgt_cm*0.01)) {
+        if (mode() != AUTO_YAW_WEATHERVANE) {
+            set_mode(AUTO_YAW_WEATHERVANE);
+        }
+
+        // force weathervane controller to relax on landing, in case min height is not set
+        copter.g2.weathervane.set_relax(copter.ap.land_complete || copter.ap.land_complete_maybe);
+
+        // set yaw rate 
+        _yaw_rate_cds = copter.g2.weathervane.get_yaw_rate_cds(roll_cdeg, pitch_cdeg);
+
+    } else if (mode() == AUTO_YAW_WEATHERVANE) {
+        // if the weathervane controller has previously been activated we need to ensure we return control back to what was previously set
+        if (_last_mode == AUTO_YAW_HOLD) {
+            set_mode_to_default(false);
+        } else {
+            set_mode(_last_mode);
+        }
+
+        _yaw_rate_cds = 0.0;
+    }
+#endif
 }

@@ -870,6 +870,11 @@ void ModeAuto::wp_run()
         }
     }
 
+    // if set and no pilot input for 2 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
+    }
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
@@ -891,6 +896,8 @@ void ModeAuto::wp_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
@@ -980,6 +987,12 @@ void ModeAuto::loiter_run()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    }
+
+    // if set and no pilot input for 2 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
+        target_yaw_rate += auto_yaw.rate_cds();
     }
 
     // set motors to full range

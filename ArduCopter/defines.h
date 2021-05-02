@@ -21,6 +21,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
     AUTO_YAW_RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
     AUTO_YAW_CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+    AUTO_YAW_WEATHERVANE =      9,  // yaw into wind
 };
 
 // Frame types

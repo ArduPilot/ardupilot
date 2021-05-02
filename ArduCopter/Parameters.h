@@ -4,6 +4,9 @@
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
 
+#if WEATHERVANE_ENABLED == ENABLED
+ #include <AC_AttitudeControl/AC_WeatherVane.h>
+#endif
 #if GRIPPER_ENABLED == ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
@@ -652,6 +655,11 @@ public:
 #if MODE_AUTO_ENABLED == ENABLED
     AP_Int8 auto_rtl_type;
 #endif
+
+#if WEATHERVANE_ENABLED == ENABLED
+    AC_WeatherVane weathervane;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

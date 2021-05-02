@@ -834,3 +834,12 @@ uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }
+
+bool Mode::allows_weathervaning_auto(void) const
+{
+#if WEATHERVANE_ENABLED == ENABLED
+    return (copter.g2.auto_options & (uint32_t)ModeAuto::Options::AllowWeatherVaning);
+#else
+    return false;
+#endif
+}
