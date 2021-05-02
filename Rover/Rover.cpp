@@ -371,7 +371,7 @@ void Rover::one_second_loop(void)
     set_likely_flying(hal.util->get_soft_armed());
 
     // send latest param values to wp_nav
-    g2.wp_nav.set_turn_params(g.turn_max_g, g2.turn_radius, g2.motors.have_skid_steering());
+    g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
 }
 
 void Rover::update_current_mode(void)
