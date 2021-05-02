@@ -40,6 +40,9 @@ void ModeCircle::run()
         pilot_yaw_override = true;
     }
 
+    // Check for any change in params and update in real time
+    copter.circle_nav->check_param_change();
+
     // pilot changes to circle rate and radius
     // skip if in radio failsafe
     if (!copter.failsafe.radio && copter.circle_nav->pilot_control_enabled()) {
