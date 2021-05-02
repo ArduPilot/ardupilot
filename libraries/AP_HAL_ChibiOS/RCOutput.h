@@ -462,13 +462,11 @@ private:
     } _bdshot;
 
     // dshot period
-    uint32_t _dshot_period_us;
+    uint32_t _dshot_period_us = 400;
     // dshot rate as a multiple of loop rate or 0 for 1Khz
     uint8_t _dshot_rate;
     // dshot periods since the last push()
     uint8_t _dshot_cycle;
-    // in the very even pulse calibration step
-    bool _dshot_calibrating;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
 
@@ -571,7 +569,7 @@ private:
 
     void dshot_send_groups(uint32_t time_out_us);
     void dshot_send(pwm_group &group, uint32_t time_out_us);
-    void dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
+    bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
