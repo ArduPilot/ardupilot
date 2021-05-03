@@ -32,7 +32,7 @@ struct AP_HAL::CANFrame {
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
-    static const uint8_t MaxDataLen = 8;
+    static const uint8_t MaxDataLen = 64;
 
     uint32_t id;                ///< CAN ID with flags (above)
     union {
@@ -40,22 +40,49 @@ struct AP_HAL::CANFrame {
         uint32_t data_32[MaxDataLen/4];
     };
     uint8_t dlc;                ///< Data Length Code
+    bool canfd;
 
     CANFrame() :
         id(0),
-        dlc(0)
+        dlc(0),
+        canfd(false)
     {
         memset(data,0, MaxDataLen);
     }
 
-    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len) :
+    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len, bool canfd_frame = false) :
         id(can_id),
-        dlc((data_len > MaxDataLen) ? MaxDataLen : data_len)
+        canfd(canfd_frame)
     {
-        if ((can_data == nullptr) || (data_len != dlc) || (dlc == 0)) {
+        if ((can_data == nullptr) || (data_len == 0) || (data_len > MaxDataLen)) {
             return;
         }
-        memcpy(this->data, can_data, dlc);
+        memcpy(this->data, can_data, data_len);
+        if (data_len <= 8) {
+            dlc = data_len;
+        } else if (!canfd) {
+            dlc = 8;
+        } else {
+            /*
+            Data Length Code      9  10  11  12  13  14  15
+            Number of data bytes 12  16  20  24  32  48  64
+            */
+           if (data_len <= 12) {
+               dlc = 9;
+           } else if (data_len <= 16) {
+               dlc = 10;
+           } else if (data_len <= 20) {
+               dlc = 11;
+           } else if  (data_len <= 24) {
+               dlc = 12;
+           } else if (data_len <= 32) {
+               dlc = 13;
+           } else if (data_len <= 48) {
+               dlc = 14;
+           } else if (data_len <= 64) {
+               dlc = 15;
+           }
+        }
     }
 
     bool operator!=(const CANFrame& rhs) const
@@ -79,7 +106,56 @@ struct AP_HAL::CANFrame {
     {
         return id & FlagERR;
     }
+    void setCanFD(bool canfd_frame)
+    {
+        canfd = canfd_frame;
+    }
 
+    bool isCanFDFrame() const
+    {
+        return canfd;
+    }
+
+    static uint8_t dlcToDataLength(uint8_t dlc) {
+        /*
+        Data Length Code      9  10  11  12  13  14  15
+        Number of data bytes 12  16  20  24  32  48  64
+        */
+        if (dlc <= 8) {
+            return dlc;
+        } else if (dlc == 9) {
+            return 12;
+        } else if (dlc == 10) {
+            return 16;
+        } else if (dlc == 11) {
+            return 20;
+        } else if (dlc == 12) {
+            return 24;
+        } else if (dlc == 13) {
+            return 32;
+        } else if (dlc == 14) {
+            return 48;
+        }
+        return 64;
+    }
+    static uint8_t dataLengthToDlc(uint8_t data_length) {
+        if (data_length <= 8) {
+            return data_length;
+        } else if (data_length <= 12) {
+            return 9;
+        } else if (data_length <= 16) {
+            return 10;
+        } else if (data_length <= 20) {
+            return 11;
+        } else if (data_length <= 24) {
+            return 12;
+        } else if (data_length <= 32) {
+            return 13;
+        } else if (data_length <= 48) {
+            return 14;
+        }
+        return 15;
+    }
     /**
      * CAN frame arbitration rules, particularly STD vs EXT:
      *     Marco Di Natale - "Understanding and using the Controller Area Network"
@@ -127,6 +203,7 @@ public:
         bool aborted:1;
         bool pushed:1;
         bool setup:1;
+        bool canfd_frame:1;
 
         bool operator<(const CanTxItem& rhs) const
         {
