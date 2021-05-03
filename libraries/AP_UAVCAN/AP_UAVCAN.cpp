@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
@@ -271,6 +271,13 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         }
         _node->setHardwareVersion(hw_version);
     }
+
+#if UAVCAN_SUPPORT_CANFD
+    if (option_is_set(Options::CANFD_ENABLED)) {
+        _node->enableCanFd();
+    }
+#endif
+
     int start_res = _node->start();
     if (start_res < 0) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node start problem, error %d\n\r", start_res);
@@ -369,7 +376,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 
     snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, UAVCAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         _node->setModeOfflineAndPublish();
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
         return;

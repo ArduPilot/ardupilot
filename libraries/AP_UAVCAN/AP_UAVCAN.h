@@ -34,11 +34,25 @@
 
 
 #ifndef UAVCAN_NODE_POOL_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_SIZE 16384
+#else
 #define UAVCAN_NODE_POOL_SIZE 8192
+#endif
+#endif
+
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_STACK_SIZE     8192
+#else
+#define UAVCAN_STACK_SIZE     4096
 #endif
 
 #ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 128
+#else
 #define UAVCAN_NODE_POOL_BLOCK_SIZE 64
+#endif
 #endif
 
 #ifndef UAVCAN_SRV_NUMBER
@@ -116,7 +130,7 @@ public:
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
-    
+
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
 
@@ -206,6 +220,7 @@ public:
     enum class Options : uint16_t {
         DNA_CLEAR_DATABASE        = (1U<<0),
         DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
+        CANFD_ENABLED             = (1U<<2),
     };
 
     // check if a option is set
