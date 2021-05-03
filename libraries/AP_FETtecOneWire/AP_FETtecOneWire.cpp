@@ -94,20 +94,21 @@ void AP_FETtecOneWire::update()
 
     // get ESC set points, stop as soon as there is a gap
     uint8_t nr_escs = 0;
+    uint16_t motorpwm[MOTOR_COUNT_MAX] = {1000};
     for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
         SRV_Channel* c = SRV_Channels::srv_channel(i);
         if (c == nullptr) {
             break;
         }
         nr_escs++;
-        _motorpwm[i] = c->get_output_pwm();
+        motorpwm[i] = constrain_int16(c->get_output_pwm(), 0, 2000);
     }
 
     uint16_t requested_telemetry[6] = {0};
-    _telem_avail = ESCsSetValues(_motorpwm, requested_telemetry, nr_escs, _telem_req_type);
+    _telem_avail = ESCsSetValues(motorpwm, requested_telemetry, nr_escs, _telem_req_type);
 
 #if HAL_WITH_ESC_TELEM
-if (use_full_telemetry){
+if (use_full_telemetry) {
     if (_telem_avail == 1) {
         if (mask & _telem_req_type) {
             TelemetryData t {};
@@ -129,17 +130,17 @@ if (use_full_telemetry){
 
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
 
-            //if (uint16_t(requested_telemetry[5])>0){
+            //if (uint16_t(requested_telemetry[5])>0) {
             //    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  uint16_t(requested_telemetry[5]));
             //}
         }
     }
 }
 #endif
-    if (use_full_telemetry==1){ //Alternativ telemetry
-        if (_telem_req_type<MOTOR_COUNT_MAX){
+    if (use_full_telemetry==1) { //Alternative telemetry
+        if (_telem_req_type<MOTOR_COUNT_MAX) {
             _telem_req_type++;
-            if (_activeESC_IDs[_telem_req_type]==0){ //If ID of ESC is requested, that is not available go to ID 1
+            if (_activeESC_IDs[_telem_req_type]==0) { //If ESC requested ID is not available, go to ID 1
                 _telem_req_type=1;
             }
         }
@@ -393,36 +394,33 @@ uint8_t AP_FETtecOneWire::ScanESCs()
 uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC active state %i", _activeESC_IDs[_set_full_telemetry_active]);
-    if (_activeESC_IDs[_set_full_telemetry_active]==1){ //If ESC is detected at this ID
+    if (_activeESC_IDs[_set_full_telemetry_active]==1) { //If ESC is detected at this ID
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Setting full telemetry for ESC: %i", _set_full_telemetry_active);
         uint8_t response[1] = {0};
         uint8_t request[2] = {0};
         request[0] = OW_SET_TLM_TYPE;
         request[1] = active; //Alternative Tlm => 1, normal TLM => 0
         uint8_t pull_response = PullCommand(_set_full_telemetry_active, request, response, OW_RETURN_RESPONSE);
-        if(pull_response){
-            if(response[0] == OW_OK){//Ok received or max retrys reached.
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK");
+        if(pull_response) {
+            if(response[0] == OW_OK) {//Ok received or max retrys reached.
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK");
                 _set_full_telemetry_active++;   //If answer from ESC is OK, increase ID.
                 _set_full_telemetry_retry_count=0; //Reset retry count for new ESC ID
-            }
-            else {
-                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW Fail");
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW Fail");
                 _set_full_telemetry_retry_count++; //No OK received, increase retry count
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_set_full_telemetry_retry_count);
             }
-        }
-        else{ 
+        } else {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PullCommand Fail %i",pull_response);
             _set_full_telemetry_retry_count++;
-            if (_set_full_telemetry_retry_count>128){ //It is important to have the correct telemetry set so start over if there is something wrong.
+            if (_set_full_telemetry_retry_count>128) { //It is important to have the correct telemetry set so start over if there is something wrong.
                 _PullBusy=0;
                 _set_full_telemetry_active=1;
             }
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_set_full_telemetry_retry_count);
         }
-    }
-    else{ //If there is no ESC detected skip it.
+    } else { //If there is no ESC detected skip it.
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ESC at ID: %i",_set_full_telemetry_active);
         _set_full_telemetry_active++;
     }
@@ -556,20 +554,19 @@ uint8_t AP_FETtecOneWire::InitESCs()
 */
 int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* Telemetry)
 {
-   int8_t return_TLM_request = 0;
+    int8_t return_TLM_request = 0;
     if (_IDcount > 0) {
-       
         uint8_t telem[11] = {0};
-       return_TLM_request= Receive((uint8_t *) telem,11,0); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
-       if (return_TLM_request==1){
-        Telemetry[0]= telem[0]; //Temp
-        Telemetry[1]=(telem[1]<<8)|telem[2];//Volt
-        Telemetry[2]=(telem[3]<<8)|telem[4];//Current
-        Telemetry[3]=(telem[5]<<8)|telem[6];//ERPM
-        Telemetry[4]=(telem[7]<<8)|telem[8];//Consumption
-        Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
-       // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  Telemetry[5]);
-       }
+        return_TLM_request= Receive((uint8_t *) telem,11,0); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
+        if (return_TLM_request == 1) {
+            Telemetry[0]= telem[0];              //Temperature
+            Telemetry[1]=(telem[1]<<8)|telem[2]; //Voltage
+            Telemetry[2]=(telem[3]<<8)|telem[4]; //Current
+            Telemetry[3]=(telem[5]<<8)|telem[6]; //ERPM
+            Telemetry[4]=(telem[7]<<8)|telem[8]; //Energy consumption
+            Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
+            // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  Telemetry[5]);
+        }
     } else {
         return_TLM_request = -1;
     }
@@ -656,7 +653,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
         //send fast throttle signals
         if (_IDcount > 0) {
             // check for telemetry
-            if (use_full_telemetry){
+            if (use_full_telemetry) {
                 return_TLM_request = check_for_full_telemetry(Telemetry);
             }
             //else{
@@ -664,19 +661,14 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             //}
             _TLM_request = tlmRequest;
 
-            //prepare fast throttle signals
-            uint16_t useSignals[24] = {0};
             uint8_t fast_throttle_command[36] = {0};
             if (motorCount > _IDcount) {
                 motorCount = _IDcount;
             }
-            for (uint8_t i = 0; i < motorCount; i++) {
-                useSignals[i] = constrain_int16(motorValues[i], 0, 2000);
-            }
 
             uint8_t actThrottleCommand = 0;
 
-            if (use_full_telemetry){
+            if (use_full_telemetry) {
             // byte 1:
             // bit 0,1,2,3 = ESC ID, Bit 4 = first bit of first ESC (11bit)signal, bit 5,6,7 = frame header
             // so AAAABCCC
@@ -684,14 +676,14 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             // B = first bit from first throttle signal
             // C = frame header
             fast_throttle_command[0] = (_TLM_request << 4);
-            fast_throttle_command[0] |= ((useSignals[actThrottleCommand] >> 10) & 0x01) << 3;
+            fast_throttle_command[0] |= ((motorValues[actThrottleCommand] >> 10) & 0x01) << 3;
             fast_throttle_command[0] |= 0x01;
             }
             // byte 2:
             // AAABBBBB
             // A = next 3 bits from (11bit)throttle signal
             // B = 5bit target ID
-            fast_throttle_command[1] = (((useSignals[actThrottleCommand] >> 7) & 0x07)) << 5;
+            fast_throttle_command[1] = (((motorValues[actThrottleCommand] >> 7) & 0x07)) << 5;
             fast_throttle_command[1] |= ALL_ID;
 
             // following bytes are the rest 7 bit of the first (11bit) throttle signal, and all bit from all other signals, followed by the CRC byte
@@ -702,7 +694,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             while (bitsToAddLeft > 0) {
                 if (bitsFromByteLeft >= BitsLeftFromCommand) {
                     fast_throttle_command[actByte] |=
-                            (useSignals[actThrottleCommand] & ((1 << BitsLeftFromCommand) - 1))
+                            (motorValues[actThrottleCommand] & ((1 << BitsLeftFromCommand) - 1))
                                     << (bitsFromByteLeft - BitsLeftFromCommand);
                     bitsToAddLeft -= BitsLeftFromCommand;
                     bitsFromByteLeft -= BitsLeftFromCommand;
@@ -714,7 +706,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
                     }
                 } else {
                     fast_throttle_command[actByte] |=
-                            (useSignals[actThrottleCommand] >> (BitsLeftFromCommand - bitsFromByteLeft))
+                            (motorValues[actThrottleCommand] >> (BitsLeftFromCommand - bitsFromByteLeft))
                                     & ((1 << bitsFromByteLeft) - 1);
                     bitsToAddLeft -= bitsFromByteLeft;
                     BitsLeftFromCommand -= bitsFromByteLeft;
