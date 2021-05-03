@@ -61,6 +61,9 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     static constexpr unsigned long EXID_MASK = (0x1FFFFFFFU); // Extended Identifier Mask
     static constexpr unsigned long RTR       = (0x20000000U); // Remote Transmission Request
     static constexpr unsigned long DLC_MASK  = (0x000F0000U); // Data Length Code
+    static constexpr unsigned long FDF       = (0x00200000U); // CAN FD Frame
+    static constexpr unsigned long BRS       = (0x00100000U); // Bit Rate Switching
+    
 
     /**
      * CANx register sets
@@ -151,6 +154,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     struct {
         uint32_t tx_requests;
         uint32_t tx_rejected;
+        uint32_t tx_overflow;
         uint32_t tx_success;
         uint32_t tx_timedout;
         uint32_t tx_abort;
@@ -160,6 +164,9 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
         uint32_t num_busoff_err;
         uint32_t num_events;
         uint32_t ecr;
+        uint32_t fdf_tx_requests;
+        uint32_t fdf_tx_success;
+        uint32_t fdf_rx_received;
     } stats;
 
 public:
