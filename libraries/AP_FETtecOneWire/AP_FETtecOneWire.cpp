@@ -117,8 +117,8 @@ if (useAlternativeTlm==0){ //normal telemetry
 
 
 #if HAL_WITH_ESC_TELEM
-if (useAlternativeTlm){ 
-    if (_telem_avail != -1) {
+if (useAlternativeTlm){
+    if (_telem_avail == 1) {
         if (mask & _telem_req_type) {
             TelemetryData t {};
             t.temperature_cdeg = int16_t(requestedTelemetry[0] * 100);
@@ -146,9 +146,9 @@ if (useAlternativeTlm){
             t.consumption_mah = float(requestedTelemetry[4]);
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
 
-           // if (_telem_req_type==1){
-            //    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRC Error %i",  int16_t(requestedTelemetry[5]));
-           // }
+            //if (uint16_t(requestedTelemetry[5])>0){
+            //    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  uint16_t(requestedTelemetry[5]));
+            //}
         }
     }
 }
@@ -201,7 +201,7 @@ else{
     if (useAlternativeTlm==1){ //Alternativ telemetry
         if (_telem_req_type<MOTOR_COUNT_MAX){
             _telem_req_type++;
-            if (_activeESC_IDs[_telem_req_type]==0){ //If ESC with ID was detected ask for telemetry
+            if (_activeESC_IDs[_telem_req_type]==0){ //If ID of ESC is requested, that is not available go to ID 1
                 _telem_req_type=1;
             }
         }
@@ -303,16 +303,16 @@ uint8_t AP_FETtecOneWire::Receive(uint8_t* Bytes, uint8_t Length, uint8_t return
                         Bytes[i] = ReceiveBuf[i];
                     }
                 }
-                return 1;
+                return 1; //correct CRC
             } else {
-                return 2;
-            } // crc missmatch
+                return 2;// crc missmatch
+            } 
         } else {
-            return 0;
-        } // no answer yet
+            return 0; // no answer yet
+        } 
     } else {
-        return 0;
-    } // no answer yet
+        return 0; // no answer yet
+    } 
 }
 
 /**
@@ -618,15 +618,18 @@ int8_t AP_FETtecOneWire::CheckForAltTLM(uint16_t* Telemetry)
     if (_IDcount > 0) {
        
         uint8_t telem[11] = {0};
-        return_TLM_request= Receive((uint8_t *) telem,11,0);
-        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Temp: %u \t Volt %u \t Current: %u \t ERPM: %u \t Consumption: %u \t CRCerr: %u", telem[0],(telem[1]<<8)|telem[2]);
+       return_TLM_request= Receive((uint8_t *) telem,11,0);
+       if (return_TLM_request==1){
         Telemetry[0]= telem[0]; //Temp
         Telemetry[1]=(telem[1]<<8)|telem[2];//Volt
         Telemetry[2]=(telem[3]<<8)|telem[4];//Current
         Telemetry[3]=(telem[5]<<8)|telem[6];//ERPM
         Telemetry[4]=(telem[7]<<8)|telem[8];//Consumption
         Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
-
+       }
+       else {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TLM REC CRC ERROR %i",return_TLM_request);
+       }
 
     } else {
         return_TLM_request = -1;
