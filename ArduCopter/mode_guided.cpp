@@ -117,6 +117,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     }
     target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = frame;
+
     if (!wp_nav->set_wp_destination_loc(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
@@ -375,9 +378,24 @@ bool ModeGuided::get_wp(Location& destination) const
 {
     switch (guided_mode) {
     case SubMode::WP:
-        return wp_nav->get_oa_wp_destination(destination);
+        if (!wp_nav->get_oa_wp_destination(destination)) {
+            return false;
+        }
+
+        // change altitude frame to the original command frame: only returns false if terrain data is unavailabe
+        if (!destination.change_alt_frame(command_altframe)) {
+            return false;
+        }
+
+        return true;
     case SubMode::Pos:
         destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+
+        // change altitude frame to the original command frame: only returns false if terrain data is unavailabe
+        if (!destination.change_alt_frame(command_altframe)) {
+            return false;
+        }
+
         return true;
     default:
         return false;
@@ -432,6 +450,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest_loc.get_alt_frame();
 
     // set position target and zero velocity and acceleration
     Vector3f pos_target_f;
