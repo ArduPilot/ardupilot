@@ -105,11 +105,11 @@ void AP_FETtecOneWire::update()
     }
 
     uint16_t requested_telemetry[6] = {0};
-    _telem_avail = ESCsSetValues(motorpwm, requested_telemetry, nr_escs, _telem_req_type);
+    int8_t telem_avail = ESCsSetValues(motorpwm, requested_telemetry, nr_escs, _telem_req_type);
 
 #if HAL_WITH_ESC_TELEM
 if (use_full_telemetry) {
-    if (_telem_avail == 1) {
+    if (telem_avail == 1) {
         if (mask & _telem_req_type) {
             TelemetryData t {};
             t.temperature_cdeg = int16_t(requested_telemetry[0] * 100);
@@ -118,8 +118,8 @@ if (use_full_telemetry) {
             t.consumption_mah = float(requested_telemetry[4]);
 
             if (pole_count < 2) { // If Parameter is invalid use 14 Poles
-                                pole_count = 14;
-                            }
+                pole_count = 14;
+            }
             if (rpm_pkt_cnt[_telem_req_type-1] >= float(1 << 24)) {
                 rpm_pkt_cnt[_telem_req_type-1] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
                 crc_error_cnt[_telem_req_type-1] = 0.0f;
@@ -557,7 +557,7 @@ int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* Telemetry)
     int8_t return_TLM_request = 0;
     if (_IDcount > 0) {
         uint8_t telem[11] = {0};
-        return_TLM_request= Receive((uint8_t *) telem,11,0); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
+        return_TLM_request = Receive((uint8_t *) telem, 11, 0); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
         if (return_TLM_request == 1) {
             Telemetry[0]= telem[0];              //Temperature
             Telemetry[1]=(telem[1]<<8)|telem[2]; //Voltage

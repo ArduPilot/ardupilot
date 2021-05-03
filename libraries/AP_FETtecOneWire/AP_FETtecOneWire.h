@@ -69,7 +69,6 @@ private:
 #else
     static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #endif
-    int8_t _telem_avail = -1;
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
 
 /**
@@ -124,12 +123,12 @@ private:
 */
     uint8_t InitESCs();
 
-
 /**
     sets the telemetry mode to full mode, where one ESC answers with all telem values including CRC Error count and a CRC
     @return returns the response code
 */
     uint8_t set_full_telemetry(uint8_t active);
+
 /**
     checks if the requested telemetry is available.
     @param Telemetry 16bit array where the read Telemetry will be stored in.
@@ -143,7 +142,6 @@ private:
     @param return the esc id request number or -1 if unavailable
 */
     int8_t check_for_full_telemetry(uint16_t *Telemetry);
-
 
 /**
     does almost all of the job.
@@ -177,8 +175,8 @@ private:
     uint8_t _FoundESCs;
     uint8_t _ScanActive;
     uint8_t _SetupActive;
-    
-    uint8_t use_full_telemetry = 1; //Set to 1 to use alternative, set to 0 to use standard TLM
+
+    static constexpr uint8_t use_full_telemetry = 1; //Set to 1 to use alternative, set to 0 to use standard TLM
     uint8_t _set_full_telemetry_active = 1; //Helper to set alternative TLM for every ESC
     uint8_t _set_full_telemetry_retry_count = 0; 
     uint8_t _IgnoreOwnBytes;
