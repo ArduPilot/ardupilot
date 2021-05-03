@@ -48,7 +48,7 @@ int16_t CanIface::send(const CanFrame& frame, MonotonicTime tx_deadline, CanIOFl
     if (can_iface_ == UAVCAN_NULLPTR) {
         return -1;
     }
-    return can_iface_->send(AP_HAL::CANFrame(frame.id, frame.data, frame.dlc), tx_deadline.toUSec(), flags);
+    return can_iface_->send(AP_HAL::CANFrame(frame.id, frame.data, AP_HAL::CANFrame::dlcToDataLength(frame.dlc), frame.isCanFDFrame()), tx_deadline.toUSec(), flags);
 }
 
 /**
@@ -83,7 +83,7 @@ int16_t CanIface::receive(CanFrame& out_frame, MonotonicTime& out_ts_monotonic, 
     if (ret < 0) {
         return ret;
     }
-    out_frame = CanFrame(frame.id, (const uint8_t*)frame.data, frame.dlc);
+    out_frame = CanFrame(frame.id, (const uint8_t*)frame.data, AP_HAL::CANFrame::dlcToDataLength(frame.dlc), frame.canfd);
     out_flags = flags;
     if (rx_timestamp != 0) {
         out_ts_utc = uavcan::UtcTime::fromUSec(SystemClock::instance().getAdjustUsec() + rx_timestamp);
@@ -185,7 +185,7 @@ CanSelectMasks CanIfaceMgr::makeSelectMasks(const CanSelectMasks in_mask, const 
                 msk.write |= (write ? 1 : 0) << i;
             }
         } else {
-            AP_HAL::CANFrame frame {pending_tx[i]->id, pending_tx[i]->data, pending_tx[i]->dlc};
+            AP_HAL::CANFrame frame {pending_tx[i]->id, pending_tx[i]->data, AP_HAL::CANFrame::dlcToDataLength(pending_tx[i]->dlc)};
             if (iface->can_iface_->select(read, write, &frame, 0)) {
                 msk.read  |= (read ? 1 : 0) << i;
                 msk.write |= (write ? 1 : 0) << i;
