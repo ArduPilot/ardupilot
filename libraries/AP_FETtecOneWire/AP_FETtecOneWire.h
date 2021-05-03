@@ -210,8 +210,8 @@ private:
       OW_REQ_SW_VER,
       OW_BEEP = 13,
       OW_SET_FAST_COM_LENGTH = 26,
-      OW_SET_LED_TMP_COLOR = 51,
       OW_SET_TLM_TYPE = 27, //1 for alternative Telemetry. ESC sens full telem per ESC: Temp, Volt, Current, ERPM, Consumption, CrcErrCount
+      OW_SET_LED_TMP_COLOR = 51,
     };
 
     enum telem_type
