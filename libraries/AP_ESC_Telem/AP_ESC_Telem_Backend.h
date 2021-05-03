@@ -52,13 +52,13 @@ public:
 
 protected:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
-    void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate = 0.0f);
+    void update_rpm(const uint8_t esc_index, const uint16_t new_rpm);
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
-    void update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint16_t data_present_mask);
+    void update_telem_data(const uint8_t esc_index, const TelemetryData& new_data, const uint16_t data_present_mask);
 
     // callback to increment the CRC error counter data in the frontend, should be called by the driver when a CRC error occurs
-    void increment_CRC_error_counter(uint8_t esc_index);
+    void increment_CRC_error_counter(const uint8_t esc_index);
 
 private:
     AP_ESC_Telem* _frontend;
