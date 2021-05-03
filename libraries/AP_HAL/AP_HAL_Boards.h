@@ -282,6 +282,10 @@
 // plus one static notch with one harmonic
 #define HAL_HNF_MAX_FILTERS 18
 #endif
+#endif // HAL_HNF_MAX_FILTERS
+
+#ifndef HAL_CANFD_SUPPORTED
+#define HAL_CANFD_SUPPORTED 0
 #endif
 
 #ifndef __RAMFUNC__
