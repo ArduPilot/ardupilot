@@ -120,13 +120,7 @@ if (use_full_telemetry) {
             if (pole_count < 2) { // If Parameter is invalid use 14 Poles
                 pole_count = 14;
             }
-            if (rpm_pkt_cnt[_telem_req_type-1] >= float(1 << 24)) {
-                rpm_pkt_cnt[_telem_req_type-1] = 1.0f; // floating point quantization error is bigger than 1.0, so restart the counters
-                crc_error_cnt[_telem_req_type-1] = 0.0f;
-            } else {
-                rpm_pkt_cnt[_telem_req_type-1]++;
-            }
-            update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get(), 100.0f*crc_error_cnt[_telem_req_type-1]/rpm_pkt_cnt[_telem_req_type-1]);
+            update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get());
 
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
 
@@ -244,7 +238,7 @@ uint8_t AP_FETtecOneWire::Receive(uint8_t* Bytes, uint8_t Length, uint8_t return
                 }
                 return 1; //correct CRC
             } else {
-                return 2;// crc missmatch
+                return 2; // crc missmatch
             } 
         } else {
             return 0; // no answer yet
@@ -284,9 +278,6 @@ uint8_t AP_FETtecOneWire::PullCommand(uint8_t ESC_id, uint8_t* command, uint8_t*
             case 1:
                 _PullSuccess = 1;
                 _PullBusy = 0;
-                break;
-            case 2:
-                crc_error_cnt[ESC_id]++;
                 break;
             default:
                 break;
@@ -566,6 +557,9 @@ int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* Telemetry)
             Telemetry[4]=(telem[7]<<8)|telem[8]; //Energy consumption
             Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
             // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  Telemetry[5]);
+        }
+        if (return_TLM_request == 2) {
+            increment_CRC_error_counter(_telem_req_type-1);
         }
     } else {
         return_TLM_request = -1;
