@@ -23,6 +23,7 @@ public:
         uint32_t last_update_ms;    // last update time in miliseconds, determines whether active
         uint16_t types;             // telemetry types present
         uint16_t count;             // number of times updated
+        uint16_t CRC_error_counter; // number of times a CRC error was detected in the telemetry data from this ESC
     };
 
     struct RpmData {
@@ -55,6 +56,9 @@ protected:
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint16_t data_present_mask);
+
+    // callback to increment the CRC error counter data in the frontend, should be called by the driver when a CRC error occurs
+    void increment_CRC_error_counter(uint8_t esc_index);
 
 private:
     AP_ESC_Telem* _frontend;

@@ -67,6 +67,8 @@ private:
     void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate);
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint16_t data_mask);
+    // callback to increment the CRC error counter data in the frontend, should be called by the driver when a CRC error occurs
+    void increment_CRC_error_counter(uint8_t esc_index);
 
     // rpm data
     volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];

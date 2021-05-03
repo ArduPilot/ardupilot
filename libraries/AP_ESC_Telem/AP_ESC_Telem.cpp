@@ -272,6 +272,15 @@ void AP_ESC_Telem::update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backe
     _telem_data[esc_index].last_update_ms = AP_HAL::millis();
 }
 
+// callback to increment the CRC error counter data in the frontend, should be called by the driver when a CRC error occurs
+void AP_ESC_Telem::increment_CRC_error_counter(uint8_t esc_index)
+{
+    if (esc_index > ESC_TELEM_MAX_ESCS) {
+        return;
+    }
+    _telem_data[esc_index].CRC_error_counter++;
+}
+
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
 // this should be called by backends when new telemetry values are available
 void AP_ESC_Telem::update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate)
