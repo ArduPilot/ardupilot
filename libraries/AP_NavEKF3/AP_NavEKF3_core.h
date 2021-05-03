@@ -1435,7 +1435,8 @@ private:
     */
     bool learnMagBiasFromGPS(void);
 
-    uint32_t last_gps_yaw_fusion_ms;
+    uint32_t last_gps_yaw_ms; // last time the EKF attempted to use the GPS yaw
+    uint32_t last_gps_yaw_fuse_ms; // last time the EKF successfully fused the GPS yaw
     bool gps_yaw_mag_fallback_ok;
     bool gps_yaw_mag_fallback_active;
     uint8_t gps_yaw_fallback_good_counter;
