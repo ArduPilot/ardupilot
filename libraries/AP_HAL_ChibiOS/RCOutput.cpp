@@ -485,7 +485,11 @@ bool RCOutput::prepare_for_arming()
     // force all the ESCs to be active, in the future consider returning false
     // if ESCs are not active that we require
     _active_escs_mask = (en_mask << chan_offset);
+#ifdef DISABLE_DSHOT
     return true;
+#else
+    return _dshot_command_queue.is_empty();
+#endif
 }
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
