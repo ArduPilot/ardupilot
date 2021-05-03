@@ -22,8 +22,8 @@ template <class T>
 void NotchFilter<T>::calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q) {
     A = powf(10, -attenuation_dB / 40.0f);
     if (center_freq_hz > 0.5 * bandwidth_hz) {
-        const float octaves = log2f(center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0f)) * 2.0f;
-        Q = sqrtf(powf(2, octaves)) / (powf(2, octaves) - 1.0f);
+        const float freq_ratio = center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0f);
+        Q = freq_ratio / (freq_ratio * freq_ratio - 1.0f);
     } else {
         Q = 0.0;
     }
