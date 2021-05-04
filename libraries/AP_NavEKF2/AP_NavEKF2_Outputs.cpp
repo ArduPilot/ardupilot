@@ -25,8 +25,8 @@ bool NavEKF2_core::healthy(void) const
         return false;
     }
     // position and height innovations must be within limits when on-ground and in a static mode of operation
-    float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsf(hgtInnovFiltState) > 1.0f))) {
+    ftype horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
+    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsF(hgtInnovFiltState) > 1.0f))) {
         return false;
     }
 
@@ -36,16 +36,16 @@ bool NavEKF2_core::healthy(void) const
 
 // Return a consolidated error score where higher numbers represent larger errors
 // Intended to be used by the front-end to determine which is the primary EKF
-float NavEKF2_core::errorScore() const
+ftype NavEKF2_core::errorScore() const
 {
-    float score = 0.0f;
+    ftype score = 0.0f;
     if (tiltAlignComplete && yawAlignComplete) {
         // Check GPS fusion performance
         score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
         // Check altimeter fusion performance
         score = MAX(score, hgtTestRatio);
         // Check attitude corrections
-        const float tiltErrThreshold = 0.05f;
+        const ftype tiltErrThreshold = 0.05f;
         score = MAX(score, tiltErrFilt / tiltErrThreshold);
     }
     return score;
@@ -90,7 +90,7 @@ void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
         gyroBias.zero();
         return;
     }
-    gyroBias = stateStruct.gyro_bias / dtEkfAvg;
+    gyroBias = stateStruct.gyro_bias.tofloat() / dtEkfAvg;
 }
 
 // return body axis gyro scale factor error as a percentage
@@ -115,7 +115,7 @@ void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 // return the quaternions defining the rotation from NED to XYZ (body) axes
 void NavEKF2_core::getQuaternion(Quaternion& ret) const
 {
-    ret = outputDataNew.quat;
+    ret = outputDataNew.quat.tofloat();
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
@@ -130,7 +130,7 @@ uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng) const
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
 {
-    pos = posResetNE;
+    pos = posResetNE.tofloat();
     return lastPosReset_ms;
 }
 
@@ -146,7 +146,7 @@ uint32_t NavEKF2_core::getLastPosDownReset(float &posD) const
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t NavEKF2_core::getLastVelNorthEastReset(Vector2f &vel) const
 {
-    vel = velResetNE;
+    vel = velResetNE.tofloat();
     return lastVelReset_ms;
 }
 
@@ -164,7 +164,7 @@ void NavEKF2_core::getWind(Vector3f &wind) const
 void NavEKF2_core::getVelNED(Vector3f &vel) const
 {
     // correct for the IMU position offset (EKF calculations are at the IMU)
-    vel = outputDataNew.velocity + velOffsetNED;
+    vel = (outputDataNew.velocity + velOffsetNED).tofloat();
 }
 
 // return estimate of true airspeed vector in body frame in m/s
@@ -174,7 +174,7 @@ bool NavEKF2_core::getAirSpdVec(Vector3f &vel) const
     if (inhibitWindStates || PV_AidingMode == AID_NONE) {
         return false;
     }
-    vel = outputDataNew.velocity + velOffsetNED;
+    vel = (outputDataNew.velocity + velOffsetNED).tofloat();
     vel.x -= stateStruct.wind_vel.x;
     vel.y -= stateStruct.wind_vel.y;
     Matrix3f Tnb; // rotation from nav to body frame
@@ -218,7 +218,7 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
             if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = dal.gps().location();
-                const Vector2f tempPosNE = EKF_origin.get_distance_NE(gpsloc);
+                const Vector2F tempPosNE = EKF_origin.get_distance_NE_ftype(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
                 return false;
@@ -364,13 +364,13 @@ bool NavEKF2_core::getOriginLLH(struct Location &loc) const
 // return earth magnetic field estimates in measurement units / 1000
 void NavEKF2_core::getMagNED(Vector3f &magNED) const
 {
-    magNED = stateStruct.earth_magfield * 1000.0f;
+    magNED = (stateStruct.earth_magfield * 1000.0).tofloat();
 }
 
 // return body magnetic field estimates in measurement units / 1000
 void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 {
-    magXYZ = stateStruct.body_magfield*1000.0f;
+    magXYZ = (stateStruct.body_magfield*1000.0).tofloat();
 }
 
 // return magnetometer offsets
@@ -383,14 +383,14 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 
     // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
     // primary compass is valid and state variances have converged
-    const float maxMagVar = 5E-6f;
+    const ftype maxMagVar = 5E-6f;
     bool variancesConverged = (P[19][19] < maxMagVar) && (P[20][20] < maxMagVar) && (P[21][21] < maxMagVar);
     if ((mag_idx == magSelectIndex) &&
             finalInflightMagInit &&
             !inhibitMagStates &&
             dal.get_compass()->healthy(magSelectIndex) &&
             variancesConverged) {
-        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - (stateStruct.body_magfield*1000.0).tofloat();
         return true;
     } else {
         magOffsets = dal.get_compass()->get_offsets(magSelectIndex);
@@ -419,15 +419,15 @@ void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 // also return the delta in position due to the last position reset
 void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    velVar   = sqrtf(velTestRatio);
-    posVar   = sqrtf(posTestRatio);
-    hgtVar   = sqrtf(hgtTestRatio);
+    velVar   = sqrtF(velTestRatio);
+    posVar   = sqrtF(posTestRatio);
+    hgtVar   = sqrtF(hgtTestRatio);
     // If we are using simple compass yaw fusion, populate all three components with the yaw test ratio to provide an equivalent output
-    magVar.x = sqrtf(MAX(magTestRatio.x,yawTestRatio));
-    magVar.y = sqrtf(MAX(magTestRatio.y,yawTestRatio));
-    magVar.z = sqrtf(MAX(magTestRatio.z,yawTestRatio));
-    tasVar   = sqrtf(tasTestRatio);
-    offset   = posResetNE;
+    magVar.x = sqrtF(MAX(magTestRatio.x,yawTestRatio));
+    magVar.y = sqrtF(MAX(magTestRatio.y,yawTestRatio));
+    magVar.z = sqrtF(MAX(magTestRatio.z,yawTestRatio));
+    tasVar   = sqrtF(tasTestRatio);
+    offset   = posResetNE.tofloat();
 }
 
 
@@ -537,14 +537,14 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 
-    const float mag_max = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
+    const float mag_max = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
 
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
     float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
-        temp = sqrtf(auxRngTestRatio);
+        temp = sqrtF(auxRngTestRatio);
     } else {
         temp = 0.0f;
     }
