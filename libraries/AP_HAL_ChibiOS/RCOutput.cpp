@@ -1389,7 +1389,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
-            bool request_telemetry = (telem_request_mask & chan_mask) || group.bdshot.enabled;
+            bool request_telemetry = telem_request_mask & chan_mask;
             uint16_t packet = create_dshot_packet(value, request_telemetry, group.bdshot.enabled);
             if (request_telemetry) {
                 telem_request_mask &= ~chan_mask;
