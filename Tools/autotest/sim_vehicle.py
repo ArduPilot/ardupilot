@@ -330,6 +330,12 @@ def do_build(opts, frame_options):
     if opts.postype_single:
         cmd_configure.append("--postype-single")
 
+    if opts.ekf_double:
+        cmd_configure.append("--ekf-double")
+
+    if opts.ekf_single:
+        cmd_configure.append("--ekf-single")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -1102,6 +1108,12 @@ group_sim.add_option("", "--sysid",
 group_sim.add_option("--postype-single",
                      action='store_true',
                      help="force single precision postype_t")
+group_sim.add_option("--ekf-double",
+                     action='store_true',
+                     help="use double precision in EKF")
+group_sim.add_option("--ekf-single",
+                     action='store_true',
+                     help="use single precision in EKF")
 parser.add_option_group(group_sim)
 
 
