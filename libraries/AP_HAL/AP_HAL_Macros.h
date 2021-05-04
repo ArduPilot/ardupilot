@@ -6,7 +6,7 @@
   macros to allow code to build on multiple platforms more easily
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_WITH_EKF_DOUBLE
 /*
   allow double maths on Linux and SITL to avoid problems with system headers
  */
