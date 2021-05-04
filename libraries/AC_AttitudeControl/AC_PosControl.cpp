@@ -405,6 +405,8 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 
     // do not use z-axis desired velocity feed forward
     _vel_desired.z = 0.0f;
+
+    clear_ekf_z_reset();
 }
 
 /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
@@ -450,6 +452,8 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     if ((_vel_desired.z < 0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z > 0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
         _pos_target.z += _vel_desired.z * dt;
     }
+
+    clear_ekf_z_reset();
 }
 
 /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
@@ -478,6 +482,7 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
     _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
     _pid_accel_z.reset_filter();
+    clear_ekf_z_reset();
 }
 
 // get_alt_error - returns altitude error in cm
@@ -598,7 +603,9 @@ void AC_PosControl::run_z_controller()
     // define maximum position error and maximum first and second differential limits
     _p_pos_z.set_limits_error(-fabsf(_leash_down_z), _leash_up_z, -fabsf(_speed_down_cms), _speed_up_cms);
     // calculate the target velocity correction
-    _vel_target.z = _p_pos_z.update_all(_pos_target.z, curr_alt, _limit.pos_down, _limit.pos_up);
+    float target = _pos_target.z + _ekf_z_reset;
+    _vel_target.z = _p_pos_z.update_all(target, curr_alt, _limit.pos_down, _limit.pos_up);
+    _pos_target.z = target - _ekf_z_reset;
     // add feed forward component
     _vel_target.z += constrain_float(_vel_desired.z, -fabsf(_speed_down_cms), _speed_up_cms);
 
@@ -864,7 +871,7 @@ void AC_PosControl::update_xy_controller()
     }
 
     // check for ekf xy position reset
-    check_for_ekf_xy_reset();
+    check_for_ekf_xy_reset(dt);
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
@@ -1008,7 +1015,12 @@ void AC_PosControl::run_xy_controller(float dt)
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position();
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos, _leash, _accel_cms);
+    Vector2f target {_pos_target.x, _pos_target.y};
+    target += _ekf_xy_reset;
+    Vector2f vel_target = _p_pos_xy.update_all(target.x, target.y, curr_pos, _leash, _accel_cms);
+    _pos_target.x = target.x - _ekf_xy_reset.x;
+    _pos_target.y = target.y - _ekf_xy_reset.y;
+
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ekfNavVelGainScaler;
@@ -1162,18 +1174,36 @@ void AC_PosControl::init_ekf_xy_reset()
 {
     Vector2f pos_shift;
     _ekf_xy_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    _ekf_xy_reset.zero();
 }
 
-/// check for ekf position reset and adjust loiter or brake target position
-void AC_PosControl::check_for_ekf_xy_reset()
+/// check for ekf position reset and adjust target position to remove offset with a given slewrate
+void AC_PosControl::check_for_ekf_xy_reset(float dt)
 {
     // check for position shift
     Vector2f pos_shift;
     uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-    if (reset_ms != _ekf_xy_reset_ms) {
-        shift_pos_xy_target(pos_shift.x * 100.0f, pos_shift.y * 100.0f);
+    if (reset_ms != 0 && reset_ms != _ekf_xy_reset_ms) {
+        _ekf_xy_reset.x += pos_shift.x * 100.0f;
+        _ekf_xy_reset.y += pos_shift.y * 100.0f;
         _ekf_xy_reset_ms = reset_ms;
     }
+
+    // decay the EKF offset to zero using slew limit
+    const float dist = _ekf_xy_reset.length();
+    if (is_positive(dist)) {
+        // slew at 5% of max speed
+        _ekf_xy_reset *= MAX(0,dist - dt*(_speed_cms * 0.05f)) / dist;
+    }
+
+}
+
+/// Directly apply the curent xy offset to the target position and clear
+void AC_PosControl::clear_ekf_xy_reset()
+{
+    _pos_target.x += _ekf_xy_reset.x;
+    _pos_target.y += _ekf_xy_reset.y;
+    _ekf_xy_reset.zero();
 }
 
 /// initialise ekf z axis reset check
@@ -1181,6 +1211,7 @@ void AC_PosControl::init_ekf_z_reset()
 {
     float alt_shift;
     _ekf_z_reset_ms = _ahrs.getLastPosDownReset(alt_shift);
+    _ekf_z_reset = 0.0f;
 }
 
 /// check for ekf position reset and adjust loiter or brake target position
@@ -1190,9 +1221,25 @@ void AC_PosControl::check_for_ekf_z_reset()
     float alt_shift;
     uint32_t reset_ms = _ahrs.getLastPosDownReset(alt_shift);
     if (reset_ms != 0 && reset_ms != _ekf_z_reset_ms) {
-        shift_alt_target(-alt_shift * 100.0f);
+        _ekf_z_reset += -alt_shift * 100.0f;
         _ekf_z_reset_ms = reset_ms;
     }
+
+    // decay the EKF offset to zero using slew limit
+    if (is_positive(_ekf_z_reset)) {
+        // slew at 5% of max speed down
+        _ekf_z_reset = MAX(0,_ekf_z_reset - _dt*(_speed_down_cms * 0.05f));
+    } else if (is_negative(_ekf_z_reset)) {
+        // slew at 5% of max speed up
+        _ekf_z_reset = MIN(0,_ekf_z_reset + _dt*(_speed_up_cms * 0.05f));
+    }
+}
+
+/// Directly apply the curent z offset to the target altitude and clear
+void AC_PosControl::clear_ekf_z_reset()
+{
+    shift_alt_target(_ekf_z_reset);
+    _ekf_z_reset = 0.0f;
 }
 
 bool AC_PosControl::pre_arm_checks(const char *param_prefix,

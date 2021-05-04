@@ -319,6 +319,9 @@ public:
     // enable or disable high vibration compensation
     void set_vibe_comp(bool on_off) { _vibe_comp_enabled = on_off; }
 
+    // Directly apply the curent xy offset to the target position and clear
+    void clear_ekf_xy_reset();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -381,9 +384,10 @@ protected:
 
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
-    void check_for_ekf_xy_reset();
+    void check_for_ekf_xy_reset(float dt);
     void init_ekf_z_reset();
     void check_for_ekf_z_reset();
+    void clear_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
     AP_AHRS_View &        _ahrs;
@@ -437,6 +441,8 @@ protected:
     // ekf reset handling
     uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
     uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
+    Vector2f    _ekf_xy_reset;         // the size of the current xy reset, this is decayed to zero
+    float       _ekf_z_reset;          // the size of the current z reset, this is decayed to zero
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
