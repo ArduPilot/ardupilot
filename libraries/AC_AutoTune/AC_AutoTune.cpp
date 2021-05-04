@@ -157,8 +157,6 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
 
     switch (mode) {
     case FAILED:
-        // autotune has been run but failed so reset state to uninitialized
-        mode = UNINITIALISED;
         // fall through to restart the tuning
         FALLTHROUGH;
 
