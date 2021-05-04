@@ -46,8 +46,8 @@ public:
     // returns true if battery monitor provides temperature
     virtual bool has_temperature() const { return false; }
 
-    /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-    virtual uint8_t capacity_remaining_pct() const;
+    /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+    bool capacity_remaining_pct(int8_t &percentage) const WARN_IF_UNUSED;
 
     // return true if cycle count can be provided and fills in cycles argument
     virtual bool get_cycle_count(uint16_t &cycles) const { return false; }

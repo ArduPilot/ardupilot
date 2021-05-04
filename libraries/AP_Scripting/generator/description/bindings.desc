@@ -65,7 +65,7 @@ singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 ud->num
 singleton AP_BattMonitor method current_amps boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method consumed_mah boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method consumed_wh boolean float'Null uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method capacity_remaining_pct boolean int8_t'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method has_failsafed boolean
 singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()

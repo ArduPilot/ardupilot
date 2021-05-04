@@ -1190,9 +1190,14 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
-    uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
+    int8_t pct = -1;
+    if (!battery.capacity_remaining_pct(pct)) {
+        // Do not show battery percentage
+        backend->write(x,y, v < osd->warn_batvolt, "%2.1f%c", (double)v, SYM_VOLT);
+        return;
+    }
+    uint8_t p = (100 - pct) / 16.6;
     backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYM_BATT_FULL + p, (double)v, SYM_VOLT);
 }
 
@@ -1825,9 +1830,14 @@ void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct2 = battery.capacity_remaining_pct(1);
-    uint8_t p2 = (100 - pct2) / 16.6;
+    int8_t pct2 = -1;
     float v2 = battery.voltage(1);
+    if (!battery.capacity_remaining_pct(pct2, 1)) {
+        // Do not show battery percentage
+        backend->write(x,y, v2 < osd->warn_bat2volt, "%2.1f%c", (double)v2, SYM_VOLT);
+        return;
+    }
+    uint8_t p2 = (100 - pct2) / 16.6;
     backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYM_BATT_FULL + p2, (double)v2, SYM_VOLT);
 }
 

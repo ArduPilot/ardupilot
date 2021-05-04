@@ -525,8 +525,12 @@ void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
+    int8_t pct = -1;
+    if (battery.capacity_remaining_pct(pct)) {
+        snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
+    } else {
+        snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV --%% ", (double)battery.voltage()) ;
+    }
     draw_text(COLUMN(0), ROW(r), msg);
  }
 

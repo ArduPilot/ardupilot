@@ -24,8 +24,8 @@ public:
     /// Read the battery voltage and current.  Should be called at 10hz
     void read() override;
 
-    /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-    uint8_t capacity_remaining_pct() const override;
+    /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+    bool capacity_remaining_pct(int8_t &percentage) const;
 
     bool has_current() const override {
         return true;
