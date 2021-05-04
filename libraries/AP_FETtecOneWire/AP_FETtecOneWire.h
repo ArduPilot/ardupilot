@@ -179,7 +179,7 @@ private:
     uint8_t _set_full_telemetry_retry_count = 0; 
     uint8_t _ignore_own_bytes;
     int8_t _min_id = MOTOR_COUNT_MAX;
-    int8_t max_id;
+    int8_t _max_id;
     uint8_t _id_count;
     uint8_t _fast_throttle_byte_count;
     uint8_t _pull_success;

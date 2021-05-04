@@ -450,7 +450,7 @@ uint8_t AP_FETtecOneWire::init_escs()
         _is.timeout = 0;
 
         _min_id = MOTOR_COUNT_MAX;
-        max_id = 0;
+        _max_id = 0;
         _id_count = 0;
         for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
             if (active_esc_ids[i] != 0) {
@@ -458,14 +458,14 @@ uint8_t AP_FETtecOneWire::init_escs()
                 if (i < _min_id) {
                     _min_id = i;
                 }
-                if (i > max_id) {
-                    max_id = i;
+                if (i > _max_id) {
+                    _max_id = i;
                 }
             }
         }
 
         if (_id_count == 0
-                || max_id - _min_id > _id_count - 1) { // loop forever
+                || _max_id - _min_id > _id_count - 1) { // loop forever
             _is.wake_from_bl = 1;
             return _is.active_id;
         }
@@ -685,7 +685,7 @@ int8_t AP_FETtecOneWire::escs_set_values(uint16_t* motor_values, uint16_t* Telem
             uint8_t bits_left_from_command = 7;
             uint8_t act_byte = 2;
             uint8_t bits_from_byte_left = 8;
-            uint8_t bits_to_add_left = (12 + (((max_id - _min_id) + 1) * 11)) - 16;
+            uint8_t bits_to_add_left = (12 + (((_max_id - _min_id) + 1) * 11)) - 16;
             while (bits_to_add_left > 0) {
                 if (bits_from_byte_left >= bits_left_from_command) {
                     fast_throttle_command[act_byte] |=
