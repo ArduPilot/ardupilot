@@ -2725,26 +2725,16 @@ class AutoTestPlane(AutoTest):
         want_radius = 100 # Fence Return Radius
 
         self.set_parameter("FENCE_ACTION", 6)
-        self.set_parameter("FENCE_TYPE", 4)
+        self.set_parameter("FENCE_TYPE", 2)
+        self.set_parameter("FENCE_RADIUS", 300)
         self.set_parameter("RTL_RADIUS", want_radius)
         self.set_parameter("NAVL1_LIM_BANK", 60)
 
-        # Generate an exclusion fence just north of takeoff point
-        home_loc = self.mav.location()
-        locs = [
-            mavutil.location(home_loc.lat + 0.010, home_loc.lng - 0.003, 0, 0),
-            mavutil.location(home_loc.lat + 0.010, home_loc.lng + 0.003, 0, 0),
-            mavutil.location(home_loc.lat + 0.008, home_loc.lng + 0.003, 0, 0),
-            mavutil.location(home_loc.lat + 0.008, home_loc.lng - 0.003, 0, 0),
-        ]
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                locs
-            ]
-        )
+        self.clear_fence()
+
         self.delay_sim_time(1)
         self.wait_ready_to_arm()
+        home_loc = self.mav.location()
         self.takeoff(alt=50)
         self.change_mode("CRUISE")
         self.wait_distance(150, accuracy=20)
@@ -2756,8 +2746,8 @@ class AutoTestPlane(AutoTest):
         self.delay_sim_time(30)
 
         items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        if len(items) != 4:
-            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (4, len(items)))
+        if len(items) != 0:
+            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (0, len(items)))
 
         # Check there are no fence return points specified still
         for fence_loc in items:
@@ -2922,7 +2912,7 @@ class AutoTestPlane(AutoTest):
              self.test_fence_breach_no_return_point),
 
             ("FenceNoFenceReturnPointInclusion",
-             "Tests using home as fence return point when none is present, and no inclusion fence is uploadedg",
+             "Tests using home as fence return point when none is present, and no inclusion fence is uploaded",
              self.test_fence_breach_no_return_point_no_inclusion),
 
             ("FenceDisableUnderAction",
