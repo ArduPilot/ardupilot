@@ -297,6 +297,7 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 }
 
 template float constrain_value_line<float>(const float amt, const float low, const float high, uint32_t line);
+template double constrain_value_line<double>(const double amt, const double low, const double high, uint32_t line);
 
 template <typename T>
 T constrain_value(const T amt, const T low, const T high)
@@ -386,15 +387,15 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2)
  * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
  * angular_rate is rad/sec
  */
-Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate)
+Vector3F get_vel_correction_for_sensor_offset(const Vector3F &sensor_offset_bf, const Matrix3F &rot_ef_to_bf, const Vector3F &angular_rate)
 {
     if (sensor_offset_bf.is_zero()) {
-        return Vector3f();
+        return Vector3F();
     }
 
     // correct velocity
-    const Vector3f vel_offset_body = angular_rate % sensor_offset_bf;
-    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
+    const Vector3F vel_offset_body = angular_rate % sensor_offset_bf;
+    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0;
 }
 
 /*
@@ -416,6 +417,13 @@ void fill_nanf(float *f, uint16_t count)
     const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
         *f++ = n;
+    }
+}
+
+void fill_nanf(double *f, uint16_t count)
+{
+    while (count--) {
+        *f++ = 0;
     }
 }
 #endif
