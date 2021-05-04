@@ -5060,6 +5060,19 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def wait_parameter_value(self, parameter, value, timeout=10):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("%s never got value %f" %
+                                           (parameter, value))
+            v = self.get_parameter(parameter, verbose=False)
+            self.progress("Got parameter value (%s=%f)" %
+                          (parameter, v))
+            if v == value:
+                return
+            self.delay_sim_time(0.1)
+
     def get_servo_channel_value(self, channel, timeout=2):
         channel_field = "servo%u_raw" % channel
         tstart = self.get_sim_time()
