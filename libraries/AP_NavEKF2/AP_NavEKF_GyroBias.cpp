@@ -16,7 +16,7 @@ void NavEKF2_core::resetGyroBias(void)
     zeroRows(P,9,11);
     zeroCols(P,9,11);
 
-    P[9][9] = sq(radians(0.5f * dtIMUavg));
+    P[9][9] = sq(radians(0.5 * dtIMUavg));
     P[10][10] = P[9][9];
     P[11][11] = P[9][9];
 }
@@ -24,8 +24,8 @@ void NavEKF2_core::resetGyroBias(void)
 /*
    vehicle specific initial gyro bias uncertainty in deg/sec
  */
-float NavEKF2_core::InitialGyroBiasUncertainty(void) const
+ftype NavEKF2_core::InitialGyroBiasUncertainty(void) const
 {
-    return 2.5f;
+    return 2.5;
 }
 
