@@ -277,7 +277,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     _telem_data[esc_index].last_update_ms = AP_HAL::millis();
 }
 
-// callback to increment the CRC error counter data in the frontend, should be called by the driver when a CRC error occurs
+// callback to increment the CRC error counter data in the frontend, should be called by the driver when a RX CRC error occurs
 void AP_ESC_Telem::increment_CRC_error_counter(const uint8_t esc_index)
 {
     if (esc_index > ESC_TELEM_MAX_ESCS) {
@@ -288,7 +288,7 @@ void AP_ESC_Telem::increment_CRC_error_counter(const uint8_t esc_index)
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
 // this should be called by backends when new telemetry values are available
-void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm)
+void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate)
 {
     if (esc_index > ESC_TELEM_MAX_ESCS) {
         return;
@@ -300,6 +300,7 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm)
     rpmdata.rpm = new_rpm;
     rpmdata.update_rate_hz = 1.0e6f / (now - rpmdata.last_update_us);
     rpmdata.last_update_us = now;
+    rpmdata.error_rate = error_rate;
 
 #ifdef ESC_TELEM_DEBUG
     hal.console->printf("RPM: rate=%.1fhz, rpm=%d)\n", rpmdata.update_rate_hz, new_rpm);
@@ -327,10 +328,11 @@ void AP_ESC_Telem::update()
                 //   rpm is eRPM (rpm * 100)
                 //   voltage is in Volt
                 //   current is in Ampere
-                //   temperature is in centi-degrees Celsius
+                //   esc_temp is in centi-degrees Celsius
                 //   current_tot is in mili-Ampere hours
                 //   motor_temp is in centi-degrees Celsius
                 //   error_rate is in percentage
+                //   rx_err_rate is in percentage
                 const struct log_Esc pkt{
                     LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
                     time_us     : AP_HAL::micros64(),
@@ -341,7 +343,8 @@ void AP_ESC_Telem::update()
                     esc_temp    : _telem_data[i].temperature_cdeg,
                     current_tot : _telem_data[i].consumption_mah,
                     motor_temp  : _telem_data[i].motor_temp_cdeg,
-                    error_rate  : error_rate
+                    error_rate  : _rpm_data[i].error_rate,
+                    rx_err_rate : error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
                 _last_telem_log_ms[i] = _telem_data[i].last_update_ms;
