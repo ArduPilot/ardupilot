@@ -224,9 +224,9 @@ TEST(MathTest, NormDouble)
     double norm_5 = norm(3,4);
     double norm_6 = norm(4.0,3.0,12.0);
 
-    EXPECT_DOUBLE_EQ(norm_1, 4.317406177520752);
+    EXPECT_DOUBLE_EQ(norm_1, 4.3174066289845809);
     EXPECT_DOUBLE_EQ(norm_2, 4.0);
-    EXPECT_DOUBLE_EQ(norm_3, 5.3000001907348633);
+    EXPECT_DOUBLE_EQ(norm_3, 5.2999999999999998);
     EXPECT_DOUBLE_EQ(norm_4, 0.0);
     EXPECT_DOUBLE_EQ(norm_5, 5.0);
     EXPECT_DOUBLE_EQ(norm_6, 13.0);
