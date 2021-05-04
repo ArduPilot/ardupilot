@@ -71,7 +71,7 @@ Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scri
 void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 {
     // horizontal velocity squared
-    float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
+    ftype velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
 
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
@@ -92,34 +92,34 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
-        float distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
+        ftype distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
         distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = stateStruct.position[0];
         prevPosE = stateStruct.position[1];
 
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
-        float timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
+        ftype timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
+        ftype Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
         // fuse range finder data
         if (rangeDataToFuse) {
             // predict range
-            float predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
+            ftype predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
 
             // Copy required states to local variable names
-            float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
-            float q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
-            float q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
-            float q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
+            ftype q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
+            ftype q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
+            ftype q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
+            ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            float R_RNG = frontend->_rngNoise;
+            ftype R_RNG = frontend->_rngNoise;
 
             // calculate Kalman gain
-            float SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
-            float K_RNG = Popt/(SK_RNG*(R_RNG + Popt/sq(SK_RNG)));
+            ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
+            ftype K_RNG = Popt/(SK_RNG*(R_RNG + Popt/sq(SK_RNG)));
 
             // Calculate the innovation variance for data logging
             varInnovRng = (R_RNG + Popt/sq(SK_RNG));
@@ -131,7 +131,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             innovRng = predRngMeas - rangeDataDelayed.rng;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
+            auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
             // Check the innovation test ratio and don't fuse if too large
             if (auxRngTestRatio < 1.0f) {
@@ -152,18 +152,18 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
         if (!cantFuseFlowData) {
 
-            Vector3f relVelSensor;          // velocity of sensor relative to ground in sensor axes
-            Vector2f losPred;               // predicted optical flow angular rate measurement
-            float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
-            float q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
-            float q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
-            float q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
-            float K_OPT;
-            float H_OPT;
-            Vector2f auxFlowObsInnovVar;
+            Vector3F relVelSensor;          // velocity of sensor relative to ground in sensor axes
+            Vector2F losPred;               // predicted optical flow angular rate measurement
+            ftype q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
+            ftype q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
+            ftype q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
+            ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
+            ftype K_OPT;
+            ftype H_OPT;
+            Vector2F auxFlowObsInnovVar;
 
             // predict range to centre of image
-            float flowRngPred = MAX((terrainState - stateStruct.position.z),rngOnGnd) / prevTnb.c.z;
+            ftype flowRngPred = MAX((terrainState - stateStruct.position.z),rngOnGnd) / prevTnb.c.z;
 
             // constrain terrain height to be below the vehicle
             terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
@@ -180,20 +180,20 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             auxFlowObsInnov = losPred - ofDataDelayed.flowRadXYcomp;
 
             // calculate observation jacobians 
-            float t2 = q0*q0;
-            float t3 = q1*q1;
-            float t4 = q2*q2;
-            float t5 = q3*q3;
-            float t6 = stateStruct.position.z - terrainState;
-            float t7 = 1.0f / (t6*t6);
-            float t8 = q0*q3*2.0f;
-            float t9 = t2-t3-t4+t5;
+            ftype t2 = q0*q0;
+            ftype t3 = q1*q1;
+            ftype t4 = q2*q2;
+            ftype t5 = q3*q3;
+            ftype t6 = stateStruct.position.z - terrainState;
+            ftype t7 = 1.0f / (t6*t6);
+            ftype t8 = q0*q3*2.0f;
+            ftype t9 = t2-t3-t4+t5;
 
             // prevent the state variances from becoming badly conditioned
             Popt = MAX(Popt,1E-6f);
 
             // calculate observation noise variance from parameter
-            float flow_noise_variance = sq(MAX(frontend->_flowNoise, 0.05f));
+            ftype flow_noise_variance = sq(MAX(frontend->_flowNoise, 0.05f));
 
             // Fuse Y axis data
 
@@ -207,7 +207,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = Popt * H_OPT / auxFlowObsInnovVar.y;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio.y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
+            auxFlowTestRatio.y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
 
             // don't fuse if optical flow data is outside valid range
             if (auxFlowTestRatio.y < 1.0f) {
@@ -239,7 +239,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = Popt * H_OPT / auxFlowObsInnovVar.x;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio.x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
+            auxFlowTestRatio.x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
 
             // don't fuse if optical flow data is outside valid range
             if (auxFlowTestRatio.x < 1.0f) {
@@ -269,23 +269,23 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 {
     Vector24 H_LOS;
-    Vector3f relVelSensor;
+    Vector3F relVelSensor;
     Vector14 SH_LOS;
     Vector2 losPred;
 
     // Copy required states to local variable names
-    float q0  = stateStruct.quat[0];
-    float q1 = stateStruct.quat[1];
-    float q2 = stateStruct.quat[2];
-    float q3 = stateStruct.quat[3];
-    float vn = stateStruct.velocity.x;
-    float ve = stateStruct.velocity.y;
-    float vd = stateStruct.velocity.z;
-    float pd = stateStruct.position.z;
+    ftype q0  = stateStruct.quat[0];
+    ftype q1 = stateStruct.quat[1];
+    ftype q2 = stateStruct.quat[2];
+    ftype q3 = stateStruct.quat[3];
+    ftype vn = stateStruct.velocity.x;
+    ftype ve = stateStruct.velocity.y;
+    ftype vd = stateStruct.velocity.z;
+    ftype pd = stateStruct.position.z;
 
     // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
-    float ptd = pd + heightAboveGndEst;
+    ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
+    ftype ptd = pd + heightAboveGndEst;
 
     // Calculate common expressions for observation jacobians
     SH_LOS[0] = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -306,14 +306,14 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
         // calculate range from ground plain to centre of sensor fov assuming flat earth
-        float range = constrain_float((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
+        ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
 
         // correct range for flow sensor offset body frame position offset
         // the corrected value is the predicted range from the sensor focal point to the
         // centre of the image on the ground assuming flat terrain
-        Vector3f posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
+        Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
-            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+            Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             range -= posOffsetEarth.z / prevTnb.c.z;
         }
 
@@ -328,7 +328,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
         memset(&H_LOS[0], 0, sizeof(H_LOS));
         if (obsIndex == 0) {
             // calculate X axis observation Jacobian
-            float t2 = 1.0f / range;
+            ftype t2 = 1.0f / range;
             H_LOS[0] = t2*(q1*vd*2.0f+q0*ve*2.0f-q3*vn*2.0f);
             H_LOS[1] = t2*(q0*vd*2.0f-q1*ve*2.0f+q2*vn*2.0f);
             H_LOS[2] = t2*(q3*vd*2.0f+q2*ve*2.0f+q1*vn*2.0f);
@@ -338,98 +338,98 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
             H_LOS[6] = t2*(q0*q1*2.0f+q2*q3*2.0f);
 
             // calculate intermediate variables for the X observation innovation variance and Kalman gains
-            float t3 = q1*vd*2.0f;
-            float t4 = q0*ve*2.0f;
-            float t11 = q3*vn*2.0f;
-            float t5 = t3+t4-t11;
-            float t6 = q0*q3*2.0f;
-            float t29 = q1*q2*2.0f;
-            float t7 = t6-t29;
-            float t8 = q0*q1*2.0f;
-            float t9 = q2*q3*2.0f;
-            float t10 = t8+t9;
-            float t12 = P[0][0]*t2*t5;
-            float t13 = q0*vd*2.0f;
-            float t14 = q2*vn*2.0f;
-            float t28 = q1*ve*2.0f;
-            float t15 = t13+t14-t28;
-            float t16 = q3*vd*2.0f;
-            float t17 = q2*ve*2.0f;
-            float t18 = q1*vn*2.0f;
-            float t19 = t16+t17+t18;
-            float t20 = q3*ve*2.0f;
-            float t21 = q0*vn*2.0f;
-            float t30 = q2*vd*2.0f;
-            float t22 = t20+t21-t30;
-            float t23 = q0*q0;
-            float t24 = q1*q1;
-            float t25 = q2*q2;
-            float t26 = q3*q3;
-            float t27 = t23-t24+t25-t26;
-            float t31 = P[1][1]*t2*t15;
-            float t32 = P[6][0]*t2*t10;
-            float t33 = P[1][0]*t2*t15;
-            float t34 = P[2][0]*t2*t19;
-            float t35 = P[5][0]*t2*t27;
-            float t79 = P[4][0]*t2*t7;
-            float t80 = P[3][0]*t2*t22;
-            float t36 = t12+t32+t33+t34+t35-t79-t80;
-            float t37 = t2*t5*t36;
-            float t38 = P[6][1]*t2*t10;
-            float t39 = P[0][1]*t2*t5;
-            float t40 = P[2][1]*t2*t19;
-            float t41 = P[5][1]*t2*t27;
-            float t81 = P[4][1]*t2*t7;
-            float t82 = P[3][1]*t2*t22;
-            float t42 = t31+t38+t39+t40+t41-t81-t82;
-            float t43 = t2*t15*t42;
-            float t44 = P[6][2]*t2*t10;
-            float t45 = P[0][2]*t2*t5;
-            float t46 = P[1][2]*t2*t15;
-            float t47 = P[2][2]*t2*t19;
-            float t48 = P[5][2]*t2*t27;
-            float t83 = P[4][2]*t2*t7;
-            float t84 = P[3][2]*t2*t22;
-            float t49 = t44+t45+t46+t47+t48-t83-t84;
-            float t50 = t2*t19*t49;
-            float t51 = P[6][3]*t2*t10;
-            float t52 = P[0][3]*t2*t5;
-            float t53 = P[1][3]*t2*t15;
-            float t54 = P[2][3]*t2*t19;
-            float t55 = P[5][3]*t2*t27;
-            float t85 = P[4][3]*t2*t7;
-            float t86 = P[3][3]*t2*t22;
-            float t56 = t51+t52+t53+t54+t55-t85-t86;
-            float t57 = P[6][5]*t2*t10;
-            float t58 = P[0][5]*t2*t5;
-            float t59 = P[1][5]*t2*t15;
-            float t60 = P[2][5]*t2*t19;
-            float t61 = P[5][5]*t2*t27;
-            float t88 = P[4][5]*t2*t7;
-            float t89 = P[3][5]*t2*t22;
-            float t62 = t57+t58+t59+t60+t61-t88-t89;
-            float t63 = t2*t27*t62;
-            float t64 = P[6][4]*t2*t10;
-            float t65 = P[0][4]*t2*t5;
-            float t66 = P[1][4]*t2*t15;
-            float t67 = P[2][4]*t2*t19;
-            float t68 = P[5][4]*t2*t27;
-            float t90 = P[4][4]*t2*t7;
-            float t91 = P[3][4]*t2*t22;
-            float t69 = t64+t65+t66+t67+t68-t90-t91;
-            float t70 = P[6][6]*t2*t10;
-            float t71 = P[0][6]*t2*t5;
-            float t72 = P[1][6]*t2*t15;
-            float t73 = P[2][6]*t2*t19;
-            float t74 = P[5][6]*t2*t27;
-            float t93 = P[4][6]*t2*t7;
-            float t94 = P[3][6]*t2*t22;
-            float t75 = t70+t71+t72+t73+t74-t93-t94;
-            float t76 = t2*t10*t75;
-            float t87 = t2*t22*t56;
-            float t92 = t2*t7*t69;
-            float t77 = R_LOS+t37+t43+t50+t63+t76-t87-t92;
-            float t78;
+            ftype t3 = q1*vd*2.0f;
+            ftype t4 = q0*ve*2.0f;
+            ftype t11 = q3*vn*2.0f;
+            ftype t5 = t3+t4-t11;
+            ftype t6 = q0*q3*2.0f;
+            ftype t29 = q1*q2*2.0f;
+            ftype t7 = t6-t29;
+            ftype t8 = q0*q1*2.0f;
+            ftype t9 = q2*q3*2.0f;
+            ftype t10 = t8+t9;
+            ftype t12 = P[0][0]*t2*t5;
+            ftype t13 = q0*vd*2.0f;
+            ftype t14 = q2*vn*2.0f;
+            ftype t28 = q1*ve*2.0f;
+            ftype t15 = t13+t14-t28;
+            ftype t16 = q3*vd*2.0f;
+            ftype t17 = q2*ve*2.0f;
+            ftype t18 = q1*vn*2.0f;
+            ftype t19 = t16+t17+t18;
+            ftype t20 = q3*ve*2.0f;
+            ftype t21 = q0*vn*2.0f;
+            ftype t30 = q2*vd*2.0f;
+            ftype t22 = t20+t21-t30;
+            ftype t23 = q0*q0;
+            ftype t24 = q1*q1;
+            ftype t25 = q2*q2;
+            ftype t26 = q3*q3;
+            ftype t27 = t23-t24+t25-t26;
+            ftype t31 = P[1][1]*t2*t15;
+            ftype t32 = P[6][0]*t2*t10;
+            ftype t33 = P[1][0]*t2*t15;
+            ftype t34 = P[2][0]*t2*t19;
+            ftype t35 = P[5][0]*t2*t27;
+            ftype t79 = P[4][0]*t2*t7;
+            ftype t80 = P[3][0]*t2*t22;
+            ftype t36 = t12+t32+t33+t34+t35-t79-t80;
+            ftype t37 = t2*t5*t36;
+            ftype t38 = P[6][1]*t2*t10;
+            ftype t39 = P[0][1]*t2*t5;
+            ftype t40 = P[2][1]*t2*t19;
+            ftype t41 = P[5][1]*t2*t27;
+            ftype t81 = P[4][1]*t2*t7;
+            ftype t82 = P[3][1]*t2*t22;
+            ftype t42 = t31+t38+t39+t40+t41-t81-t82;
+            ftype t43 = t2*t15*t42;
+            ftype t44 = P[6][2]*t2*t10;
+            ftype t45 = P[0][2]*t2*t5;
+            ftype t46 = P[1][2]*t2*t15;
+            ftype t47 = P[2][2]*t2*t19;
+            ftype t48 = P[5][2]*t2*t27;
+            ftype t83 = P[4][2]*t2*t7;
+            ftype t84 = P[3][2]*t2*t22;
+            ftype t49 = t44+t45+t46+t47+t48-t83-t84;
+            ftype t50 = t2*t19*t49;
+            ftype t51 = P[6][3]*t2*t10;
+            ftype t52 = P[0][3]*t2*t5;
+            ftype t53 = P[1][3]*t2*t15;
+            ftype t54 = P[2][3]*t2*t19;
+            ftype t55 = P[5][3]*t2*t27;
+            ftype t85 = P[4][3]*t2*t7;
+            ftype t86 = P[3][3]*t2*t22;
+            ftype t56 = t51+t52+t53+t54+t55-t85-t86;
+            ftype t57 = P[6][5]*t2*t10;
+            ftype t58 = P[0][5]*t2*t5;
+            ftype t59 = P[1][5]*t2*t15;
+            ftype t60 = P[2][5]*t2*t19;
+            ftype t61 = P[5][5]*t2*t27;
+            ftype t88 = P[4][5]*t2*t7;
+            ftype t89 = P[3][5]*t2*t22;
+            ftype t62 = t57+t58+t59+t60+t61-t88-t89;
+            ftype t63 = t2*t27*t62;
+            ftype t64 = P[6][4]*t2*t10;
+            ftype t65 = P[0][4]*t2*t5;
+            ftype t66 = P[1][4]*t2*t15;
+            ftype t67 = P[2][4]*t2*t19;
+            ftype t68 = P[5][4]*t2*t27;
+            ftype t90 = P[4][4]*t2*t7;
+            ftype t91 = P[3][4]*t2*t22;
+            ftype t69 = t64+t65+t66+t67+t68-t90-t91;
+            ftype t70 = P[6][6]*t2*t10;
+            ftype t71 = P[0][6]*t2*t5;
+            ftype t72 = P[1][6]*t2*t15;
+            ftype t73 = P[2][6]*t2*t19;
+            ftype t74 = P[5][6]*t2*t27;
+            ftype t93 = P[4][6]*t2*t7;
+            ftype t94 = P[3][6]*t2*t22;
+            ftype t75 = t70+t71+t72+t73+t74-t93-t94;
+            ftype t76 = t2*t10*t75;
+            ftype t87 = t2*t22*t56;
+            ftype t92 = t2*t7*t69;
+            ftype t77 = R_LOS+t37+t43+t50+t63+t76-t87-t92;
+            ftype t78;
 
             // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
             if (t77 > R_LOS) {
@@ -463,8 +463,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 Kfusion[11] = t78*(P[11][0]*t2*t5-P[11][4]*t2*t7+P[11][1]*t2*t15+P[11][6]*t2*t10+P[11][2]*t2*t19-P[11][3]*t2*t22+P[11][5]*t2*t27);
                 Kfusion[12] = t78*(P[12][0]*t2*t5-P[12][4]*t2*t7+P[12][1]*t2*t15+P[12][6]*t2*t10+P[12][2]*t2*t19-P[12][3]*t2*t22+P[12][5]*t2*t27);
             } else {
-                // zero indexes 10 to 12 = 3*4 bytes
-                memset(&Kfusion[10], 0, 12);
+                // zero indexes 10 to 12
+                zero_range(&Kfusion[0], 10, 12);
             }
 
             if (!inhibitDelVelBiasStates) {
@@ -477,8 +477,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                     }
                 }
             } else {
-                // zero indexes 13 to 15 = 3*4 bytes
-                memset(&Kfusion[13], 0, 12);
+                // zero indexes 13 to 15
+                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
@@ -489,22 +489,22 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 Kfusion[20] = t78*(P[20][0]*t2*t5-P[20][4]*t2*t7+P[20][1]*t2*t15+P[20][6]*t2*t10+P[20][2]*t2*t19-P[20][3]*t2*t22+P[20][5]*t2*t27);
                 Kfusion[21] = t78*(P[21][0]*t2*t5-P[21][4]*t2*t7+P[21][1]*t2*t15+P[21][6]*t2*t10+P[21][2]*t2*t19-P[21][3]*t2*t22+P[21][5]*t2*t27);
             } else {
-                // zero indexes 16 to 21 = 6*4 bytes
-                memset(&Kfusion[16], 0, 24);
+                // zero indexes 16 to 21
+                zero_range(&Kfusion[0], 16, 21);
             }
 
             if (!inhibitWindStates) {
                 Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
                 Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
             } else {
-                // zero indexes 22 to 23 = 2*4 bytes
-                memset(&Kfusion[22], 0, 8);
+                // zero indexes 22 to 23
+                zero_range(&Kfusion[0], 22, 23);
             }
 
         } else {
 
             // calculate Y axis observation Jacobian
-            float t2 = 1.0f / range;
+            ftype t2 = 1.0f / range;
             H_LOS[0] = -t2*(q2*vd*-2.0f+q3*ve*2.0f+q0*vn*2.0f);
             H_LOS[1] = -t2*(q3*vd*2.0f+q2*ve*2.0f+q1*vn*2.0f);
             H_LOS[2] = t2*(q0*vd*2.0f-q1*ve*2.0f+q2*vn*2.0f);
@@ -514,98 +514,98 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
             H_LOS[6] = t2*(q0*q2*2.0f-q1*q3*2.0f);
 
             // calculate intermediate variables for the Y observation innovation variance and Kalman gains
-            float t3 = q3*ve*2.0f;
-            float t4 = q0*vn*2.0f;
-            float t11 = q2*vd*2.0f;
-            float t5 = t3+t4-t11;
-            float t6 = q0*q3*2.0f;
-            float t7 = q1*q2*2.0f;
-            float t8 = t6+t7;
-            float t9 = q0*q2*2.0f;
-            float t28 = q1*q3*2.0f;
-            float t10 = t9-t28;
-            float t12 = P[0][0]*t2*t5;
-            float t13 = q3*vd*2.0f;
-            float t14 = q2*ve*2.0f;
-            float t15 = q1*vn*2.0f;
-            float t16 = t13+t14+t15;
-            float t17 = q0*vd*2.0f;
-            float t18 = q2*vn*2.0f;
-            float t29 = q1*ve*2.0f;
-            float t19 = t17+t18-t29;
-            float t20 = q1*vd*2.0f;
-            float t21 = q0*ve*2.0f;
-            float t30 = q3*vn*2.0f;
-            float t22 = t20+t21-t30;
-            float t23 = q0*q0;
-            float t24 = q1*q1;
-            float t25 = q2*q2;
-            float t26 = q3*q3;
-            float t27 = t23+t24-t25-t26;
-            float t31 = P[1][1]*t2*t16;
-            float t32 = P[5][0]*t2*t8;
-            float t33 = P[1][0]*t2*t16;
-            float t34 = P[3][0]*t2*t22;
-            float t35 = P[4][0]*t2*t27;
-            float t80 = P[6][0]*t2*t10;
-            float t81 = P[2][0]*t2*t19;
-            float t36 = t12+t32+t33+t34+t35-t80-t81;
-            float t37 = t2*t5*t36;
-            float t38 = P[5][1]*t2*t8;
-            float t39 = P[0][1]*t2*t5;
-            float t40 = P[3][1]*t2*t22;
-            float t41 = P[4][1]*t2*t27;
-            float t82 = P[6][1]*t2*t10;
-            float t83 = P[2][1]*t2*t19;
-            float t42 = t31+t38+t39+t40+t41-t82-t83;
-            float t43 = t2*t16*t42;
-            float t44 = P[5][2]*t2*t8;
-            float t45 = P[0][2]*t2*t5;
-            float t46 = P[1][2]*t2*t16;
-            float t47 = P[3][2]*t2*t22;
-            float t48 = P[4][2]*t2*t27;
-            float t79 = P[2][2]*t2*t19;
-            float t84 = P[6][2]*t2*t10;
-            float t49 = t44+t45+t46+t47+t48-t79-t84;
-            float t50 = P[5][3]*t2*t8;
-            float t51 = P[0][3]*t2*t5;
-            float t52 = P[1][3]*t2*t16;
-            float t53 = P[3][3]*t2*t22;
-            float t54 = P[4][3]*t2*t27;
-            float t86 = P[6][3]*t2*t10;
-            float t87 = P[2][3]*t2*t19;
-            float t55 = t50+t51+t52+t53+t54-t86-t87;
-            float t56 = t2*t22*t55;
-            float t57 = P[5][4]*t2*t8;
-            float t58 = P[0][4]*t2*t5;
-            float t59 = P[1][4]*t2*t16;
-            float t60 = P[3][4]*t2*t22;
-            float t61 = P[4][4]*t2*t27;
-            float t88 = P[6][4]*t2*t10;
-            float t89 = P[2][4]*t2*t19;
-            float t62 = t57+t58+t59+t60+t61-t88-t89;
-            float t63 = t2*t27*t62;
-            float t64 = P[5][5]*t2*t8;
-            float t65 = P[0][5]*t2*t5;
-            float t66 = P[1][5]*t2*t16;
-            float t67 = P[3][5]*t2*t22;
-            float t68 = P[4][5]*t2*t27;
-            float t90 = P[6][5]*t2*t10;
-            float t91 = P[2][5]*t2*t19;
-            float t69 = t64+t65+t66+t67+t68-t90-t91;
-            float t70 = t2*t8*t69;
-            float t71 = P[5][6]*t2*t8;
-            float t72 = P[0][6]*t2*t5;
-            float t73 = P[1][6]*t2*t16;
-            float t74 = P[3][6]*t2*t22;
-            float t75 = P[4][6]*t2*t27;
-            float t92 = P[6][6]*t2*t10;
-            float t93 = P[2][6]*t2*t19;
-            float t76 = t71+t72+t73+t74+t75-t92-t93;
-            float t85 = t2*t19*t49;
-            float t94 = t2*t10*t76;
-            float t77 = R_LOS+t37+t43+t56+t63+t70-t85-t94;
-            float t78;
+            ftype t3 = q3*ve*2.0f;
+            ftype t4 = q0*vn*2.0f;
+            ftype t11 = q2*vd*2.0f;
+            ftype t5 = t3+t4-t11;
+            ftype t6 = q0*q3*2.0f;
+            ftype t7 = q1*q2*2.0f;
+            ftype t8 = t6+t7;
+            ftype t9 = q0*q2*2.0f;
+            ftype t28 = q1*q3*2.0f;
+            ftype t10 = t9-t28;
+            ftype t12 = P[0][0]*t2*t5;
+            ftype t13 = q3*vd*2.0f;
+            ftype t14 = q2*ve*2.0f;
+            ftype t15 = q1*vn*2.0f;
+            ftype t16 = t13+t14+t15;
+            ftype t17 = q0*vd*2.0f;
+            ftype t18 = q2*vn*2.0f;
+            ftype t29 = q1*ve*2.0f;
+            ftype t19 = t17+t18-t29;
+            ftype t20 = q1*vd*2.0f;
+            ftype t21 = q0*ve*2.0f;
+            ftype t30 = q3*vn*2.0f;
+            ftype t22 = t20+t21-t30;
+            ftype t23 = q0*q0;
+            ftype t24 = q1*q1;
+            ftype t25 = q2*q2;
+            ftype t26 = q3*q3;
+            ftype t27 = t23+t24-t25-t26;
+            ftype t31 = P[1][1]*t2*t16;
+            ftype t32 = P[5][0]*t2*t8;
+            ftype t33 = P[1][0]*t2*t16;
+            ftype t34 = P[3][0]*t2*t22;
+            ftype t35 = P[4][0]*t2*t27;
+            ftype t80 = P[6][0]*t2*t10;
+            ftype t81 = P[2][0]*t2*t19;
+            ftype t36 = t12+t32+t33+t34+t35-t80-t81;
+            ftype t37 = t2*t5*t36;
+            ftype t38 = P[5][1]*t2*t8;
+            ftype t39 = P[0][1]*t2*t5;
+            ftype t40 = P[3][1]*t2*t22;
+            ftype t41 = P[4][1]*t2*t27;
+            ftype t82 = P[6][1]*t2*t10;
+            ftype t83 = P[2][1]*t2*t19;
+            ftype t42 = t31+t38+t39+t40+t41-t82-t83;
+            ftype t43 = t2*t16*t42;
+            ftype t44 = P[5][2]*t2*t8;
+            ftype t45 = P[0][2]*t2*t5;
+            ftype t46 = P[1][2]*t2*t16;
+            ftype t47 = P[3][2]*t2*t22;
+            ftype t48 = P[4][2]*t2*t27;
+            ftype t79 = P[2][2]*t2*t19;
+            ftype t84 = P[6][2]*t2*t10;
+            ftype t49 = t44+t45+t46+t47+t48-t79-t84;
+            ftype t50 = P[5][3]*t2*t8;
+            ftype t51 = P[0][3]*t2*t5;
+            ftype t52 = P[1][3]*t2*t16;
+            ftype t53 = P[3][3]*t2*t22;
+            ftype t54 = P[4][3]*t2*t27;
+            ftype t86 = P[6][3]*t2*t10;
+            ftype t87 = P[2][3]*t2*t19;
+            ftype t55 = t50+t51+t52+t53+t54-t86-t87;
+            ftype t56 = t2*t22*t55;
+            ftype t57 = P[5][4]*t2*t8;
+            ftype t58 = P[0][4]*t2*t5;
+            ftype t59 = P[1][4]*t2*t16;
+            ftype t60 = P[3][4]*t2*t22;
+            ftype t61 = P[4][4]*t2*t27;
+            ftype t88 = P[6][4]*t2*t10;
+            ftype t89 = P[2][4]*t2*t19;
+            ftype t62 = t57+t58+t59+t60+t61-t88-t89;
+            ftype t63 = t2*t27*t62;
+            ftype t64 = P[5][5]*t2*t8;
+            ftype t65 = P[0][5]*t2*t5;
+            ftype t66 = P[1][5]*t2*t16;
+            ftype t67 = P[3][5]*t2*t22;
+            ftype t68 = P[4][5]*t2*t27;
+            ftype t90 = P[6][5]*t2*t10;
+            ftype t91 = P[2][5]*t2*t19;
+            ftype t69 = t64+t65+t66+t67+t68-t90-t91;
+            ftype t70 = t2*t8*t69;
+            ftype t71 = P[5][6]*t2*t8;
+            ftype t72 = P[0][6]*t2*t5;
+            ftype t73 = P[1][6]*t2*t16;
+            ftype t74 = P[3][6]*t2*t22;
+            ftype t75 = P[4][6]*t2*t27;
+            ftype t92 = P[6][6]*t2*t10;
+            ftype t93 = P[2][6]*t2*t19;
+            ftype t76 = t71+t72+t73+t74+t75-t92-t93;
+            ftype t85 = t2*t19*t49;
+            ftype t94 = t2*t10*t76;
+            ftype t77 = R_LOS+t37+t43+t56+t63+t70-t85-t94;
+            ftype t78;
 
             // calculate innovation variance for Y axis observation and protect against a badly conditioned calculation
             if (t77 > R_LOS) {
@@ -639,8 +639,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 Kfusion[11] = -t78*(P[11][0]*t2*t5+P[11][5]*t2*t8-P[11][6]*t2*t10+P[11][1]*t2*t16-P[11][2]*t2*t19+P[11][3]*t2*t22+P[11][4]*t2*t27);
                 Kfusion[12] = -t78*(P[12][0]*t2*t5+P[12][5]*t2*t8-P[12][6]*t2*t10+P[12][1]*t2*t16-P[12][2]*t2*t19+P[12][3]*t2*t22+P[12][4]*t2*t27);
             } else {
-                // zero indexes 10 to 12 = 3*4 bytes
-                memset(&Kfusion[10], 0, 12);
+                // zero indexes 10 to 12
+                zero_range(&Kfusion[0], 10, 12);
             }
 
             if (!inhibitDelVelBiasStates) {
@@ -653,8 +653,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                     }
                 }
             } else {
-                // zero indexes 13 to 15 = 3*4 bytes
-                memset(&Kfusion[13], 0, 12);
+                // zero indexes 13 to 15
+                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
@@ -665,21 +665,21 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 Kfusion[20] = -t78*(P[20][0]*t2*t5+P[20][5]*t2*t8-P[20][6]*t2*t10+P[20][1]*t2*t16-P[20][2]*t2*t19+P[20][3]*t2*t22+P[20][4]*t2*t27);
                 Kfusion[21] = -t78*(P[21][0]*t2*t5+P[21][5]*t2*t8-P[21][6]*t2*t10+P[21][1]*t2*t16-P[21][2]*t2*t19+P[21][3]*t2*t22+P[21][4]*t2*t27);
             } else {
-                // zero indexes 16 to 21 = 6*4 bytes
-                memset(&Kfusion[16], 0, 24);
+                // zero indexes 16 to 21
+                zero_range(&Kfusion[0], 16, 21);
             }
 
             if (!inhibitWindStates) {
                 Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
                 Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
             } else {
-                // zero indexes 22 to 23 = 2*4 bytes
-                memset(&Kfusion[22], 0, 8);
+                // zero indexes 22 to 23
+                zero_range(&Kfusion[0], 22, 23);
             }
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
         if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {

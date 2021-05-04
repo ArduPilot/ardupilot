@@ -17,7 +17,7 @@ void NavEKF3_core::resetGyroBias(void)
 /*
    vehicle specific initial gyro bias uncertainty in deg/sec
  */
-float NavEKF3_core::InitialGyroBiasUncertainty(void) const
+ftype NavEKF3_core::InitialGyroBiasUncertainty(void) const
 {
     return 2.5f;
 }

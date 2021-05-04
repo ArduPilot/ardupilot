@@ -71,15 +71,15 @@ void NavEKF3_core::setWindMagStateLearningMode()
         if (yawAlignComplete && useAirspeed()) {
             // if we have airspeed and a valid heading, set the wind states to the reciprocal of the vehicle heading
             // which assumes the vehicle has launched into the wind
-             Vector3f tempEuler;
+            Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
-            float windSpeed =  sqrtf(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
-            stateStruct.wind_vel.x = windSpeed * cosf(tempEuler.z);
-            stateStruct.wind_vel.y = windSpeed * sinf(tempEuler.z);
+            ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+            stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
+            stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
 
             // set the wind state variances to the measurement uncertainty
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(dal.get_EAS2TAS(), 0.9f, 10.0f));
+                P[index][index] = sq(constrain_ftype(frontend->_easNoise, 0.5f, 5.0f) * constrain_ftype(dal.get_EAS2TAS(), 0.9f, 10.0f));
             }
         } else {
             // set the variances using a typical wind speed
@@ -232,7 +232,7 @@ void NavEKF3_core::setAidingMode()
             }
         }
         // keep the IMU bias state variances, but zero the covariances
-        float oldBiasVariance[6];
+        ftype oldBiasVariance[6];
         for (uint8_t row=0; row<6; row++) {
             oldBiasVariance[row] = P[row+10][row+10];
         }
@@ -407,7 +407,7 @@ void NavEKF3_core::setAidingMode()
                 }
                 // handle height reset as special case
                 hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
                 ResetHeight();
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
@@ -438,7 +438,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
     // Once the tilt variances have reduced, re-set the yaw and magnetic field states
     // and declare the tilt alignment complete
     if (!tiltAlignComplete) {
-        if (tiltErrorVariance < sq(radians(5.0f))) {
+        if (tiltErrorVariance < sq(radians(5.0))) {
             tiltAlignComplete = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete",(unsigned)imu_index);
         }
@@ -631,16 +631,16 @@ void NavEKF3_core::recordYawReset()
 void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
-    const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
+    const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
-        Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
-        Vector3f temp = prevTnb * delAngBiasVarVec;
-        delAngBiasLearned = (fabsf(temp.x) < delAngBiasVarMax) &&
-                            (fabsf(temp.y) < delAngBiasVarMax);
+        Vector3F delAngBiasVarVec = Vector3F(P[10][10],P[11][11],P[12][12]);
+        Vector3F temp = prevTnb * delAngBiasVarVec;
+        delAngBiasLearned = (fabsF(temp.x) < delAngBiasVarMax) &&
+                            (fabsF(temp.y) < delAngBiasVarMax);
     } else {
         delAngBiasLearned = (P[10][10] <= delAngBiasVarMax) &&
                             (P[11][11] <= delAngBiasVarMax) &&
@@ -697,7 +697,7 @@ void NavEKF3_core::runYawEstimatorPrediction()
         return;
     }
 
-    float trueAirspeed;
+    ftype trueAirspeed;
     if (assume_zero_sideslip()) {
         trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
     } else {
@@ -720,13 +720,13 @@ void NavEKF3_core::runYawEstimatorCorrection()
 
     if (EKFGSF_run_filterbank) {
         if (gpsDataToFuse) {
-            Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
-            float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
+            Vector2F gpsVelNE = Vector2F(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
+            ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));
             yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
 
             // after velocity data has been fused the yaw variance estimate will have been refreshed and
             // is used maintain a history of validity
-            float gsfYaw, gsfYawVariance;
+            ftype gsfYaw, gsfYawVariance;
             if (EKFGSF_getYaw(gsfYaw, gsfYawVariance)) {
                 if (EKFGSF_yaw_valid_count <  GSF_YAW_VALID_HISTORY_THRESHOLD) {
                     EKFGSF_yaw_valid_count++;
