@@ -290,7 +290,7 @@ void NavEKF3_core::SelectMagFusion()
                 lastSynthYawTime_ms = imuSampleTime_ms;
             }
         } else if (tiltAlignComplete && yawAlignComplete && onGround && imuSampleTime_ms - last_gps_yaw_fuse_ms > 10000) {
-            // handle scenario where were were using GPS yaw previously, but the yaw fusion has timed out.
+            // handle scenario where we were using GPS yaw previously, but the yaw fusion has timed out.
             yaw_source_reset = true;
         }
 
