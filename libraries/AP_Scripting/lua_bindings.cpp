@@ -75,11 +75,58 @@ static int lua_mission_receive(lua_State *L) {
     return 5;
 }
 
+static int lua_load_script(lua_State *L) {
+    check_arguments(L, 1, "load_script");
+    const char * name = luaL_checkstring(L, 1);
+
+    // load the libary file
+    if (int error = luaL_loadfile(L, name)) {
+        switch (error) {
+            case LUA_ERRSYNTAX:
+                return luaL_error(L, "Lua: %s error: %s", name, lua_tostring(L, -1));
+            case LUA_ERRMEM:
+                return luaL_error(L, "Lua: Insufficent memory loading %s", name);
+            case LUA_ERRFILE:
+                return luaL_error(L, "Lua: Unable to load the file: %s", lua_tostring(L, -1));
+            default:
+                return luaL_error(L, "Lua: Unknown error (%d) loading %s", error, name);
+        }
+    }
+
+    // load the sandbox for the lib, this allows it to 'see' the same bindings as the main script
+    lua_newtable(L);
+    luaopen_base_sandbox(L);
+    lua_pushstring(L, "math");
+    luaopen_math(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "table");
+    luaopen_table(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "string");
+    luaopen_string(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "io");
+    luaopen_io(L);
+    lua_settable(L, -3);
+    lua_pushstring(L, "utf8");
+    luaopen_utf8(L);
+    lua_settable(L, -3);
+    load_lua_bindings(L);
+    load_generated_sandbox(L);
+    lua_setupvalue(L, -2, 1);
+
+    // run the libary, it should return a table to its varables and functions
+    lua_pcall(L, 0, 1, 0);
+
+    return 1;
+}
+
 static const luaL_Reg global_functions[] =
 {
     {"millis", lua_millis},
     {"micros", lua_micros},
     {"mission_receive", lua_mission_receive},
+    {"load_script", lua_load_script},
     {NULL, NULL}
 };
 
