@@ -120,7 +120,8 @@ if (use_full_telemetry) {
             if (pole_count < 2) { // If Parameter is invalid use 14 Poles
                 pole_count = 14;
             }
-            update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get());
+            const float tx_err_rate = 0.0f; // _frontend->_telem_data[i].count == 0 ? 0.0f : requested_telemetry[5] / _frontend->_telem_data[i].count * 100.0f;
+            update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get(), tx_err_rate);
 
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
 
