@@ -31,9 +31,9 @@ void NavEKF_core_common::fill_scratch_variables(void)
     // SITL where they are used without initialisation. These are all
     // supposed to be scratch variables that are not used between
     // iterations
-    fill_nanf(&KH[0][0], sizeof(KH)/sizeof(float));
-    fill_nanf(&KHP[0][0], sizeof(KHP)/sizeof(float));
-    fill_nanf(&nextP[0][0], sizeof(nextP)/sizeof(float));
-    fill_nanf(&Kfusion[0], sizeof(Kfusion)/sizeof(float));
+    fill_nanf(&KH[0][0], sizeof(KH)/sizeof(ftype));
+    fill_nanf(&KHP[0][0], sizeof(KHP)/sizeof(ftype));
+    fill_nanf(&nextP[0][0], sizeof(nextP)/sizeof(ftype));
+    fill_nanf(&Kfusion[0], sizeof(Kfusion)/sizeof(ftype));
 #endif
 }
