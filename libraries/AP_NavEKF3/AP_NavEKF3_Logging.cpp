@@ -6,6 +6,8 @@
 
 #include <AP_DAL/AP_DAL.h>
 
+#pragma GCC diagnostic ignored "-Wnarrowing"
+
 void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
 {
     // Write first EKF packet
@@ -147,7 +149,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
 
     nav_filter_status solutionStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
+    float tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
     const struct log_NKF4 pkt4{
@@ -159,7 +161,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : sqrtf(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
+        tiltErr : sqrtF(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : offset.x,
         offsetEast : offset.y,
         faults : _faultStatus,
@@ -191,7 +193,7 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         offset : (int16_t)(100*terrainState),           // filter ground offset state error
         RI : (int16_t)(100*innovRng),                   // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
-        errHAGL : (uint16_t)(100*sqrtf(Popt)),          // note Popt is constrained to be non-negative in EstimateTerrainOffset()
+        errHAGL : (uint16_t)(100*sqrtF(Popt)),          // note Popt is constrained to be non-negative in EstimateTerrainOffset()
         angErr : (float)outputTrackError.x,             // output predictor angle error
         velErr : (float)outputTrackError.y,             // output predictor velocity error
         posErr : (float)outputTrackError.z              // output predictor position tracking error
@@ -248,8 +250,8 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         ID : rngBcnFuseDataReportIndex,
         rng : (int16_t)(100*report.rng),
         innov : (int16_t)(100*report.innov),
-        sqrtInnovVar : (uint16_t)(100*sqrtf(report.innovVar)),
-        testRatio : (uint16_t)(100*constrain_float(report.testRatio,0.0f,650.0f)),
+        sqrtInnovVar : (uint16_t)(100*sqrtF(report.innovVar)),
+        testRatio : (uint16_t)(100*constrain_ftype(report.testRatio,0.0f,650.0f)),
         beaconPosN : (int16_t)(100*report.beaconPosNED.x),
         beaconPosE : (int16_t)(100*report.beaconPosNED.y),
         beaconPosD : (int16_t)(100*report.beaconPosNED.z),
