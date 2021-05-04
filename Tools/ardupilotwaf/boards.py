@@ -361,10 +361,10 @@ class Board:
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         if cfg.options.ekf_double:
-            env.CXXFLAGS += ['-DHAL_EKF_DOUBLE=1']
+            env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=1']
 
         if cfg.options.ekf_single:
-            env.CXXFLAGS += ['-DHAL_EKF_DOUBLE=0']
+            env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
