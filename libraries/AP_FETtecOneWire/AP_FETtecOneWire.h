@@ -72,6 +72,15 @@ private:
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
 
 /**
+    calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
+    @param esc_id id of ESC, that the error is calculated for
+    @param esc_error_count the error count given by the esc
+    @param increment_only if this is set to 1 it only increases the message count and returns 0. If set to 1 it does not increment but gives back the error count.
+    @return the error in percent
+*/
+float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t increment_only);
+
+/**
     generates used 8 bit CRC for arrays
     @param buf 8 bit byte array
     @param buf_len count of bytes that should be used for CRC calculation

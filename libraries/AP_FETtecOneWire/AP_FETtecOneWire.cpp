@@ -106,6 +106,7 @@ void AP_FETtecOneWire::update()
 
     uint16_t requested_telemetry[6] = {0};
     int8_t telem_avail = escs_set_values(motor_pwm, requested_telemetry, nr_escs, _telem_req_type);
+    //calc_tx_crc_error_perc(0,0,1); //Just incrementing package count for every ESC. ID does not matter if increment only is set.
 
 #if HAL_WITH_ESC_TELEM
 if (use_full_telemetry) {
@@ -120,7 +121,8 @@ if (use_full_telemetry) {
             if (pole_count < 2) { // If Parameter is invalid use 14 Poles
                 pole_count = 14;
             }
-            const float tx_err_rate = 0.0f; // _frontend->_telem_data[i].count == 0 ? 0.0f : requested_telemetry[5] / _frontend->_telem_data[i].count * 100.0f;
+           // calc_tx_crc_error_perc(_telem_req_type,requested_telemetry[5],0);
+            const float tx_err_rate = 0.0f;//calc_tx_crc_error_perc(_telem_req_type,requested_telemetry[5],0); // _frontend->_telem_data[i].count == 0 ? 0.0f : requested_telemetry[5] / _frontend->_telem_data[i].count * 100.0f;
             update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get(), tx_err_rate);
 
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
@@ -540,24 +542,51 @@ uint8_t AP_FETtecOneWire::init_escs()
 }
 
 /**
+    calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
+    @param esc_id id of ESC, that the error is calculated for
+    @param esc_error_count the error count given by the esc
+    @param increment_only if this is set to 1 it only increases the message count and returns 0. If set to 1 it does not increment but gives back the error count.
+    @return the error in percent
+*/
+float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t increment_only){
+
+    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX] = {0};
+    static uint16_t send_msg_count = 0;
+    if (increment_only){ //Only increment
+        send_msg_count++;
+        if (send_msg_count>65500){ //Error Count resets every 162.5 Seconds at 400Hz
+            send_msg_count=0;
+            error_count_since_overflow[esc_id-1]=esc_error_count;
+        }
+        return 0;
+    }
+    else{ //Calculate the percentage
+        uint16_t error_count = (uint16_t)((uint16_t)esc_error_count - (uint16_t)error_count_since_overflow[esc_id-1]);
+        float error_count_percentage = error_count*100/send_msg_count;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC %i CRC Errors %f", esc_id,  error_count_percentage);
+    return error_count_percentage;
+    }
+}
+
+/**
     checks if the requested telemetry is available.
-    @param Telemetry 16bit array where the read Telemetry will be stored in.
+    @param telemetry 16bit array where the read telemetry will be stored in.
     @return the telemetry request number or -1 if unavailable
 */
-int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* Telemetry)
+int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* telemetry)
 {
     int8_t return_TLM_request = 0;
     if (_id_count > 0) {
         uint8_t telem[11] = {0};
         return_TLM_request = receive((uint8_t *) telem, 11, 0); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
         if (return_TLM_request == 1) {
-            Telemetry[0]= telem[0];              //Temperature
-            Telemetry[1]=(telem[1]<<8)|telem[2]; //Voltage
-            Telemetry[2]=(telem[3]<<8)|telem[4]; //Current
-            Telemetry[3]=(telem[5]<<8)|telem[6]; //ERPM
-            Telemetry[4]=(telem[7]<<8)|telem[8]; //Energy consumption
-            Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
-            // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  Telemetry[5]);
+            telemetry[0]= telem[0];              //Temperature
+            telemetry[1]=(telem[1]<<8)|telem[2]; //Voltage
+            telemetry[2]=(telem[3]<<8)|telem[4]; //Current
+            telemetry[3]=(telem[5]<<8)|telem[6]; //ERPM
+            telemetry[4]=(telem[7]<<8)|telem[8]; //Energy consumption
+            telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
+            // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  telemetry[5]);
         }
         if (return_TLM_request == 2) {
             increment_CRC_error_counter(_telem_req_type-1);
@@ -570,10 +599,10 @@ int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* Telemetry)
 
 /**
     checks if the requested telemetry is available.
-    @param Telemetry 16bit array where the read Telemetry will be stored in.
+    @param telemetry 16bit array where the read telemetry will be stored in.
     @return the telemetry request number or -1 if unavailable
 */
-int8_t AP_FETtecOneWire::check_for_tlm(uint16_t* Telemetry)
+int8_t AP_FETtecOneWire::check_for_tlm(uint16_t* telemetry)
 {
     int8_t return_TLM_request = 0;
     if (_id_count > 0) {
@@ -583,14 +612,14 @@ int8_t AP_FETtecOneWire::check_for_tlm(uint16_t* Telemetry)
             _ignore_own_bytes--;
         }
 
-        // first two byte are the ESC Telemetry of the first ESC. next two byte of the second....
+        // first two byte are the ESC telemetry of the first ESC. next two byte of the second....
         if (_uart->available() == (_id_count * 2) + 1u) {
             // look if first byte in buffer is equal to last byte of throttle command (crc)
             if (_uart->read() == _last_crc) {
                 
                 for (uint8_t i = 0; i < _id_count; i++) {
-                    Telemetry[i] = _uart->read() << 8;
-                    Telemetry[i] |= _uart->read();
+                    telemetry[i] = _uart->read() << 8;
+                    telemetry[i] |= _uart->read();
                 }
                 return_TLM_request = _tlm_request;
             } else {
@@ -611,14 +640,14 @@ int8_t AP_FETtecOneWire::check_for_tlm(uint16_t* Telemetry)
     initializes the ESCs if not already done.
     sends fast throttle signals if init is complete.
     @param motor_values a 16bit array containing the throttle signals that should be sent to the motors. 0-2000 where 1001-2000 is positive rotation and 999-0 reversed rotation
-    @param Telemetry 16bit array where the read telemetry will be stored in.
+    @param telemetry 16bit array where the read telemetry will be stored in.
     @param motorCount the count of motors that should get values send
     @param tlm_request the requested telemetry type (telem_type::XXXXX)
     @return the telemetry request if telemetry was available, -1 if dont
 */
-int8_t AP_FETtecOneWire::escs_set_values(uint16_t* motor_values, uint16_t* Telemetry, uint8_t motorCount,
+int8_t AP_FETtecOneWire::escs_set_values(uint16_t* motor_values, uint16_t* telemetry, uint8_t motorCount,
         uint8_t tlm_request)
-{
+{   
     int8_t return_TLM_request = -2;
 
     // init should not be done too fast. as at last the bootloader has some timing requirements with messages. so loop delays must fit more or less
@@ -649,12 +678,12 @@ int8_t AP_FETtecOneWire::escs_set_values(uint16_t* motor_values, uint16_t* Telem
         if (_id_count > 0) {
             // check for telemetry
             if (use_full_telemetry) {
-                return_TLM_request = check_for_full_telemetry(Telemetry);
+                return_TLM_request = check_for_full_telemetry(telemetry);
             }
             //else{
-            //    return_TLM_request = check_for_tlm(Telemetry);
+            //    return_TLM_request = check_for_tlm(telemetry);
             //}
-            //_tlm_request = tlmRequest;
+            _tlm_request = tlm_request;
 
             uint8_t fast_throttle_command[36] = {0};
             if (motorCount > _id_count) {
