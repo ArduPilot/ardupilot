@@ -128,6 +128,8 @@ if (use_full_telemetry) {
         }
     }
 }
+#else
+    (void)telem_avail; // suppress a compiler warning
 #endif
     if (use_full_telemetry == 1) { //Alternative telemetry
         if (_telem_req_type<MOTOR_COUNT_MAX) {
@@ -590,9 +592,11 @@ int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* telemetry)
             telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
             // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  telemetry[5]);
         }
+#if HAL_WITH_ESC_TELEM
         if (return_TLM_request == 2) {
             increment_CRC_error_counter(_telem_req_type-1);
         }
+#endif
     } else {
         return_TLM_request = -1;
     }
