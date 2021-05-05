@@ -554,28 +554,29 @@ float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_
     static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX] = {0}; //saves the error counter from the ESCs to pass the overflow
     static uint16_t send_msg_count = 0; //counts the messages that are send by fc
     float error_count_percentage = 0;
+    #define PERCENTAGE_DEVIDER 100/400; //to save the division in loop precalculate by the motor loops 100%/400Hz
+
     if (increment_only==1){ //Only increment
         send_msg_count++;
-        if (send_msg_count>1200){     //if 1200 Packets are send          
+        if (send_msg_count>400){ //with 400hz its resets every second      
             send_msg_count=0; //reset the counter
-            for (int i =0;i<MOTOR_COUNT_MAX;i++){
+            for (int i=0;i<MOTOR_COUNT_MAX;i++){
                 error_count_since_overflow[i]=error_count[i]; //save the current error state from thge ESCs
             }
         }
-        return 0;
     }
     else{ //Calculate the percentage
         error_count[esc_id] = current_error_count; //Save the error count to the esc
         uint16_t corrected_error_count = (uint16_t)((uint16_t)error_count[esc_id] - (uint16_t)error_count_since_overflow[esc_id]); //calculates error difference since last overflow.
-        error_count_percentage = ((float)corrected_error_count*100.0f)/(float)send_msg_count; //calculates percentage
-
-       // if (send_msg_count==1100 || send_msg_count==1101 || send_msg_count==1102 ||send_msg_count==1103){ //Debug
-       //     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i p %f, msgs %i, errorDiff %i, escErr %i", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id]);
-       // }
-
+        error_count_percentage = (float)corrected_error_count*(float)PERCENTAGE_DEVIDER; //calculates percentage
+       
+        //Debug or Info
+        //if (send_msg_count==395 || send_msg_count==396 || send_msg_count==397 ||send_msg_count==398){ 
+        //   GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%i: p: %f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
+        //}
+    }
     return error_count_percentage;
     }
-}
 
 /**
     checks if the requested telemetry is available.
