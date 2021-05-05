@@ -126,7 +126,6 @@ protected:
     static const uint8_t SENSOR_ID_GPS             = 0x83; // Sensor ID  3
     static const uint8_t SENSOR_ID_RPM             = 0xE4; // Sensor ID  4
     static const uint8_t SENSOR_ID_SP2UR           = 0xC6; // Sensor ID  6
-    static const uint8_t SENSOR_ID_27              = 0x1B; // Sensor ID 27
 
 private:
 
