@@ -62,7 +62,8 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
-
+// for terrain data
+#define TERRAIN_UNHEALTHY_OFFSET    13
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_SPort_Passthrough *AP_Frsky_SPort_Passthrough::singleton;
@@ -656,6 +657,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_terrain(void)
         // vehicle height above terrain
         value |= prep_number(roundf(height_above_terrain * 10), 3, 2);
     }
+    // terrain unhealthy flag
+    value |= (uint8_t)(terrain->status() == AP_Terrain::TerrainStatus::TerrainStatusUnhealthy) << TERRAIN_UNHEALTHY_OFFSET;
 #endif
     return value;
 }
