@@ -1131,6 +1131,9 @@ if __name__ == "__main__":
 
     try:
         if not run_tests(steps_to_run):
+            if os.environ.get("COVERAGE", False):
+                # Don't report failure on coverage test
+                sys.exit(0)
             sys.exit(1)
     except KeyboardInterrupt:
         print("KeyboardInterrupt caught; closing pexpect connections")
