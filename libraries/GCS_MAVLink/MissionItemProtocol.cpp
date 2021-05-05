@@ -316,7 +316,7 @@ void MissionItemProtocol::queued_request_send()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
-    mavlink_msg_mission_request_send(
+    mavlink_msg_mission_request_int_send(
         link->get_chan(),
         dest_sysid,
         dest_compid,
