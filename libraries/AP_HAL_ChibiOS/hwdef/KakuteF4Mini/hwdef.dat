@@ -14,7 +14,7 @@ undef HAL_SERIAL2_PROTOCOL
 APJ_BOARD_ID 146
 
 # use natural UART order to align with docs
-SERIAL_ORDER OTG1 USART1 EMPTY EMPTY USART3 UART4 UART5 USART6
+SERIAL_ORDER OTG1 USART1 EMPTY USART3 UART4 UART5 USART6
 
 # RC input defaults to UART to allow for bi-dir dshot
 # also frees up 32-bit TIM2 for system timer
@@ -23,7 +23,8 @@ PB10 USART3_TX USART3
 
 define HAL_SERIAL3_PROTOCOL SerialProtocol_RCIN
 define HAL_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
-q
+define HAL_SERIAL5_BAUD 115
+
 # UART5 (ESC telemetry sensor), SERIAL5, NODMA for bi-dir dshot
 PD2 UART5_RX UART5 NODMA
 
