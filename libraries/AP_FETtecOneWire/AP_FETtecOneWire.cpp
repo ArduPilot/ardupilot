@@ -106,7 +106,7 @@ void AP_FETtecOneWire::update()
 
     uint16_t requested_telemetry[6] = {0};
     int8_t telem_avail = escs_set_values(motor_pwm, requested_telemetry, nr_escs, _telem_req_type);
-    //calc_tx_crc_error_perc(0,0,1); //Just incrementing package count for every ESC. ID does not matter if increment only is set.
+    calc_tx_crc_error_perc(0,0,1); //Just incrementing package count for every ESC. ID does not matter if increment only is set.
 
 #if HAL_WITH_ESC_TELEM
 if (use_full_telemetry) {
@@ -121,27 +121,21 @@ if (use_full_telemetry) {
             if (pole_count < 2) { // If Parameter is invalid use 14 Poles
                 pole_count = 14;
             }
-           // calc_tx_crc_error_perc(_telem_req_type,requested_telemetry[5],0);
-            const float tx_err_rate = 0.0f;//calc_tx_crc_error_perc(_telem_req_type,requested_telemetry[5],0); // _frontend->_telem_data[i].count == 0 ? 0.0f : requested_telemetry[5] / _frontend->_telem_data[i].count * 100.0f;
+            const float tx_err_rate = calc_tx_crc_error_perc(_telem_req_type-1,requested_telemetry[5],0);
             update_rpm(_telem_req_type-1, requested_telemetry[3]*100*2/pole_count.get(), tx_err_rate);
 
             update_telem_data(_telem_req_type-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
-
-            //if (uint16_t(requested_telemetry[5])>0) {
-            //    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i CRC Errors %i", _telem_req_type,  uint16_t(requested_telemetry[5]));
-            //}
         }
     }
 }
 #endif
-    if (use_full_telemetry==1) { //Alternative telemetry
+    if (use_full_telemetry == 1) { //Alternative telemetry
         if (_telem_req_type<MOTOR_COUNT_MAX) {
             _telem_req_type++;
-            if (active_esc_ids[_telem_req_type]==0) { //If ESC requested ID is not available, go to ID 1
+            if (active_esc_ids[_telem_req_type] == 0) { //If ESC requested ID is not available, go to ID 1
                 _telem_req_type=1;
             }
-        }
-        else{ //If its at 12 go back to 1
+        } else { //If its at 12 go back to 1
             _telem_req_type=1;
         }
     }
@@ -544,27 +538,35 @@ uint8_t AP_FETtecOneWire::init_escs()
 /**
     calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
     @param esc_id id of ESC, that the error is calculated for
-    @param esc_error_count the error count given by the esc
+    @param current_error_count the error count given by the esc
     @param increment_only if this is set to 1 it only increases the message count and returns 0. If set to 1 it does not increment but gives back the error count.
     @return the error in percent
 */
-float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t increment_only){
+float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_error_count, uint8_t increment_only){
 
-    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX] = {0};
-    static uint16_t send_msg_count = 0;
-    if (increment_only){ //Only increment
+    static uint16_t error_count[MOTOR_COUNT_MAX] = {0}; //saves the error counter from the ESCs
+    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX] = {0}; //saves the error counter from the ESCs to pass the overflow
+    static uint16_t send_msg_count = 0; //counts the messages that are send by fc
+    float error_count_percentage = 0;
+    if (increment_only == 1) { //Only increment
         send_msg_count++;
-        if (send_msg_count>65500){ //Error Count resets every 162.5 Seconds at 400Hz
-            send_msg_count=0;
-            error_count_since_overflow[esc_id-1]=esc_error_count;
+        if (send_msg_count > 1200) {
+            send_msg_count = 0; //reset the counter
+            for (int i=0; i<MOTOR_COUNT_MAX; i++) {
+                error_count_since_overflow[i] = error_count[i]; //save the current ESC error state
+            }
         }
         return 0;
-    }
-    else{ //Calculate the percentage
-        uint16_t error_count = (uint16_t)((uint16_t)esc_error_count - (uint16_t)error_count_since_overflow[esc_id-1]);
-        float error_count_percentage = error_count*100/send_msg_count;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC %i CRC Errors %f", esc_id,  error_count_percentage);
-    return error_count_percentage;
+    } else { //Calculate the percentage
+        error_count[esc_id] = current_error_count; //Save the error count to the esc
+        uint16_t corrected_error_count = (uint16_t)((uint16_t)error_count[esc_id] - (uint16_t)error_count_since_overflow[esc_id]); //calculates error difference since last overflow.
+        error_count_percentage = ((float)corrected_error_count*100.0f)/(float)send_msg_count; //calculates percentage
+
+       // if (send_msg_count==1100 || send_msg_count==1101 || send_msg_count==1102 ||send_msg_count==1103){ //Debug
+       //     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ESC %i p %f, msgs %i, errorDiff %i, escErr %i", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id]);
+       // }
+
+        return error_count_percentage;
     }
 }
 
@@ -647,7 +649,7 @@ int8_t AP_FETtecOneWire::check_for_tlm(uint16_t* telemetry)
 */
 int8_t AP_FETtecOneWire::escs_set_values(uint16_t* motor_values, uint16_t* telemetry, uint8_t motorCount,
         uint8_t tlm_request)
-{   
+{
     int8_t return_TLM_request = -2;
 
     // init should not be done too fast. as at last the bootloader has some timing requirements with messages. so loop delays must fit more or less
