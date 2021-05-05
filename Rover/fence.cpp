@@ -7,7 +7,7 @@ void Rover::fence_check()
     const uint8_t orig_breaches = g2.fence.get_breaches();
 
     // check for a breach
-    new_breaches = g2.fence.check();
+    new_breaches = g2.fence.check(ekf_position_ok());
 
     // return immediately if motors are not armed
     if (!arming.is_armed()) {
