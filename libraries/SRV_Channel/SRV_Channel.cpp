@@ -126,7 +126,7 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     } else {
         pwm = pwm_from_range(output_scaled);
     }
-    set_output_pwm(pwm,force);
+    set_output_pwm(-pwm,force);
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
