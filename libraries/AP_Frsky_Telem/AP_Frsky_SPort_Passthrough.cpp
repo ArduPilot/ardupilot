@@ -44,6 +44,7 @@ for FrSky SPort Passthrough
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
+#define AP_FS_OFFSET                12
 #define AP_FENCE_PRESENT_OFFSET     13
 #define AP_FENCE_BREACH_OFFSET      14
 #define AP_IMU_TEMP_MIN             19.0f
@@ -524,6 +525,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
     // bad ekf flag
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
+    // generic failsafe
+    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio)<<AP_FS_OFFSET;
     // fence status
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
