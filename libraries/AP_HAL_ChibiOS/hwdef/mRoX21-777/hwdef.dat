@@ -392,7 +392,7 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1

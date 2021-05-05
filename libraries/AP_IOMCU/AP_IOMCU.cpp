@@ -50,6 +50,7 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
 #define IOMCU_DEBUG_ENABLE 0
 
 #if IOMCU_DEBUG_ENABLE
+#include <stdio.h>
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)
@@ -84,11 +85,11 @@ void AP_IOMCU::init(void)
 /*
   handle event failure
  */
-void AP_IOMCU::event_failed(uint8_t event)
+void AP_IOMCU::event_failed(uint32_t event_mask)
 {
     // wait 0.5ms then retry
     hal.scheduler->delay_microseconds(500);
-    trigger_event(event);
+    chEvtSignal(thread_ctx, event_mask);
 }
 
 /*
@@ -112,11 +113,12 @@ void AP_IOMCU::thread_main(void)
         if (mask & EVENT_MASK(IOEVENT_SEND_PWM_OUT)) {
             send_servo_out();
         }
+        mask &= ~EVENT_MASK(IOEVENT_SEND_PWM_OUT);
 
         if (mask & EVENT_MASK(IOEVENT_INIT)) {
             // get protocol version
             if (!read_registers(PAGE_CONFIG, 0, sizeof(config)/2, (uint16_t *)&config)) {
-                event_failed(IOEVENT_INIT);
+                event_failed(mask);
                 continue;
             }
             is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
@@ -127,84 +129,94 @@ void AP_IOMCU::thread_main(void)
                                  P_SETUP_ARMING_IO_ARM_OK |
                                  P_SETUP_ARMING_FMU_ARMED |
                                  P_SETUP_ARMING_RC_HANDLING_DISABLED)) {
-                event_failed(IOEVENT_INIT);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_INIT);
 
         if (mask & EVENT_MASK(IOEVENT_MIXING)) {
             if (!write_registers(PAGE_MIXING, 0, sizeof(mixing)/2, (const uint16_t *)&mixing)) {
-                event_failed(IOEVENT_MIXING);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_MIXING);
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC)) {
-                event_failed(IOEVENT_FORCE_SAFETY_OFF);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF);
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_ON)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_ON, FORCE_SAFETY_MAGIC)) {
-                event_failed(IOEVENT_FORCE_SAFETY_ON);
+                event_failed(mask);
                 continue;
             }
         }
-
+        mask &= ~EVENT_MASK(IOEVENT_FORCE_SAFETY_ON);
 
         if (mask & EVENT_MASK(IOEVENT_SET_RATES)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_ALTRATE, rate.freq) ||
                 !write_register(PAGE_SETUP, PAGE_REG_SETUP_PWM_RATE_MASK, rate.chmask)) {
-                event_failed(IOEVENT_SET_RATES);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_RATES);
 
         if (mask & EVENT_MASK(IOEVENT_ENABLE_SBUS)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_SBUS_RATE, rate.sbus_rate_hz) ||
                 !modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
                                  P_SETUP_FEATURES_SBUS1_OUT)) {
-                event_failed(IOEVENT_ENABLE_SBUS);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_ENABLE_SBUS);
 
         if (mask & EVENT_MASK(IOEVENT_SET_HEATER_TARGET)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_HEATER_DUTY_CYCLE, heater_duty_cycle)) {
-                event_failed(IOEVENT_SET_HEATER_TARGET);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_HEATER_TARGET);
 
         if (mask & EVENT_MASK(IOEVENT_SET_DEFAULT_RATE)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_DEFAULTRATE, rate.default_freq)) {
-                event_failed(IOEVENT_SET_DEFAULT_RATE);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_DEFAULT_RATE);
 
         if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT_ON)) {
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT)) {
-                event_failed(IOEVENT_SET_ONESHOT_ON);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_ONESHOT_ON);
 
         if (mask & EVENT_MASK(IOEVENT_SET_BRUSHED_ON)) {
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_BRUSHED)) {
-                event_failed(IOEVENT_SET_BRUSHED_ON);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_BRUSHED_ON);
 
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
-                event_failed(IOEVENT_SET_SAFETY_MASK);
+                event_failed(mask);
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_SAFETY_MASK);
 
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -361,9 +373,10 @@ void AP_IOMCU::read_status()
         static uint32_t last_io_print;
         if (now - last_io_print >= 5000) {
             last_io_print = now;
-            debug("t=%u num=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
+            debug("t=%u num=%u mem=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
                   now,
                   reg_status.total_pkts,
+                  reg_status.freemem,
                   total_errors,
                   reg_status.num_errors,
                   reg_status.err_crc,
@@ -737,12 +750,14 @@ void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 void AP_IOMCU::set_oneshot_mode(void)
 {
     trigger_event(IOEVENT_SET_ONESHOT_ON);
+    rate.oneshot_enabled = true;
 }
 
 // setup for brushed mode
 void AP_IOMCU::set_brushed_mode(void)
 {
     trigger_event(IOEVENT_SET_BRUSHED_ON);
+    rate.brushed_enabled = true;
 }
 
 // handling of BRD_SAFETYOPTION parameter
@@ -1043,6 +1058,18 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    if (rate.oneshot_enabled) {
+        trigger_event(IOEVENT_SET_ONESHOT_ON);
+    }
+    if (rate.brushed_enabled) {
+        trigger_event(IOEVENT_SET_BRUSHED_ON);
+    }
+    if (rate.sbus_rate_hz) {
+        trigger_event(IOEVENT_ENABLE_SBUS);
+    }
+    if (pwm_out.safety_mask) {
+        trigger_event(IOEVENT_SET_SAFETY_MASK);
+    }
     last_rc_protocols = 0;
 }
 

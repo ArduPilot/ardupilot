@@ -88,15 +88,8 @@
 # define AVOIDANCE_ENABLED DISABLED
 #endif
 
-#if AVOIDANCE_ENABLED == ENABLED // Avoidance Library relies on Proximity and Fence
-# define PROXIMITY_ENABLED ENABLED
+#if AVOIDANCE_ENABLED == ENABLED // Avoidance Library relies on Fence
 # define FENCE_ENABLED ENABLED
-#endif
-
-// Proximity sensor
-//
-#ifndef PROXIMITY_ENABLED
-# define PROXIMITY_ENABLED DISABLED
 #endif
 
 #ifndef MAV_SYSTEM_ID

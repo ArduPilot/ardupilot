@@ -46,7 +46,12 @@ public:
         MOTOR_FRAME_HELI_QUAD = 13,
         MOTOR_FRAME_DECA = 14,
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
+        MOTOR_FRAME_6DOF_SCRIPTING = 16,
     };
+
+    // return string corresponding to frame_class
+    virtual const char* get_frame_string() const = 0;
+
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
         MOTOR_FRAME_TYPE_X = 1,
@@ -65,6 +70,9 @@ public:
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
     };
+
+    // return string corresponding to frame_type
+    virtual const char* get_type_string() const { return ""; }
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
@@ -99,10 +107,16 @@ public:
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
     void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
 
+    // for 6DoF vehicles, sets the roll and pitch offset, this rotates the thrust vector in body frame
+    virtual void        set_roll_pitch(float roll_deg, float pitch_deg) {};
+
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
+    float               get_roll_ff() const { return _roll_in_ff; }
     float               get_pitch() const { return _pitch_in; }
+    float               get_pitch_ff() const { return _pitch_in_ff; }
     float               get_yaw() const { return _yaw_in; }
+    float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }

@@ -42,7 +42,7 @@ public:
         logger_logwrite_missingfmt  = (1U <<  2),  // 0x00004  4
         logger_too_many_deletions   = (1U <<  3),  // 0x00008  8
         logger_bad_getfilename      = (1U <<  4),  // 0x00010  16
-        unused1                     = (1U <<  5),  // 0x00020  32
+        panic                       = (1U <<  5),  // 0x00020  32
         logger_flushing_without_sem = (1U <<  6),  // 0x00040  64
         logger_bad_current_block    = (1U <<  7),  // 0x00080  128
         logger_blockcount_mismatch  = (1U <<  8),  // 0x00100  256
@@ -66,7 +66,8 @@ public:
         mem_guard                   = (1U << 26),  //0x4000000 67108864
         dma_fail                    = (1U << 27),  //0x8000000 134217728
         params_restored             = (1U << 28),  //0x10000000 268435456
-        __LAST__                    = (1U << 29),  // used only for sanity check
+        invalid_arg_or_result       = (1U << 29),  //0x20000000 536870912
+        __LAST__                    = (1U << 30),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to

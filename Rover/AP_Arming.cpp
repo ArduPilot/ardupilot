@@ -19,11 +19,11 @@ bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
-        if (channel->get_radio_min() > 1300) {
+        if (channel->get_radio_min() > RC_Channel::RC_CALIB_MIN_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             return false;
         }
-        if (channel->get_radio_max() < 1700) {
+        if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             return false;
         }
@@ -37,6 +37,11 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
     if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
         // we don't care!
         return true;
+    }
+
+    // call parent gps checks
+    if (!AP_Arming::gps_checks(display_failure)) {
+        return false;
     }
 
     const AP_AHRS &ahrs = AP::ahrs();
@@ -61,8 +66,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
-    // call parent gps checks
-    return AP_Arming::gps_checks(display_failure);
+    return true;
 }
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
@@ -83,7 +87,6 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
-            & fence_checks(report)
             & oa_check(report)
             & parameter_checks(report)
             & mode_checks(report));

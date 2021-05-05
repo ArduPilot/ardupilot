@@ -148,6 +148,12 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    // AUX_FUNCTION command structure
+    struct PACKED AuxFunction {
+        uint16_t function;  // from RC_Channel::AUX_FUNC
+        uint8_t switchpos;  // from RC_Channel::AuxSwitchPos
+    };
+
     // high altitude balloon altitude wait
     struct PACKED Altitude_Wait {
         float altitude; // meters
@@ -198,6 +204,13 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
+    // Scripting command structure
+    struct PACKED scripting_Command {
+        float p1;
+        float p2;
+        float p3;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -241,6 +254,9 @@ public:
         // do-gripper
         Gripper_Command gripper;
 
+        // arbitrary aux function
+        AuxFunction auxfunction;
+
         // do-guided-limits
         Guided_Limits_Command guided_limits;
 
@@ -262,6 +278,9 @@ public:
         // do-winch
         Winch_Command winch;
 
+        // do scripting
+        scripting_Command scripting;
+
         // location
         Location location{};      // Waypoint location
     };
@@ -275,6 +294,10 @@ public:
 
         // return a human-readable interpretation of the ID stored in this command
         const char *type() const;
+
+        // comparison operator (relies on all bytes in the structure even if they may not be used)
+        bool operator ==(const Mission_Command &b) const { return (memcmp(this, &b, sizeof(Mission_Command)) == 0); }
+        bool operator !=(const Mission_Command &b) const { return !operator==(b); }
     };
 
 
@@ -471,6 +494,10 @@ public:
     // set_current_cmd - jumps to command specified by index
     bool set_current_cmd(uint16_t index, bool rewind = false);
 
+    // restart current navigation command.  Used to handle external changes to mission
+    // returns true on success, false if current nav command has been deleted
+    bool restart_current_nav_cmd();
+
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;
@@ -510,7 +537,7 @@ public:
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
-    uint16_t get_landing_sequence_start();
+    uint16_t get_landing_sequence_start() const;
 
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // switch to that mission item.  Returns false if no DO_LAND_START
@@ -566,7 +593,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // allow lua to get/set any WP items in any order in a mavlink-ish kinda way.
-    bool get_item(uint16_t index, mavlink_mission_item_int_t& result) ;
+    bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
 private:
@@ -582,7 +609,7 @@ private:
         uint8_t do_cmd_loaded     : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
         uint8_t do_cmd_all_done   : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence  : 1; // true if the mission has jumped to a landing
-        bool resuming_mission     : 1; // true if the mission is resuming and set false once the aircraft attains the interupted WP
+        bool resuming_mission     : 1; // true if the mission is resuming and set false once the aircraft attains the interrupted WP
     } _flags;
 
     // mission WP resume history
@@ -691,11 +718,16 @@ private:
     static HAL_Semaphore _rsem;
 
     // mission items common to all vehicles:
+    bool start_command_do_aux_function(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
     bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
     bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
+
+    bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
+
 };
 
 namespace AP

@@ -51,6 +51,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
 #endif
+#ifndef HAL_NO_RCOUT_THREAD
+THD_WORKING_AREA(_rcout_thread_wa, RCOUT_THD_WA_SIZE);
+#endif
 #ifndef HAL_NO_RCIN_THREAD
 THD_WORKING_AREA(_rcin_thread_wa, RCIN_THD_WA_SIZE);
 #endif
@@ -91,6 +94,15 @@ void Scheduler::init()
                      this);                     /* Thread parameter.    */
 #endif
 
+#ifndef HAL_NO_RCOUT_THREAD
+    // setup the RCOUT thread - this will call tasks at 1kHz
+    _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
+                     sizeof(_rcout_thread_wa),
+                     APM_RCOUT_PRIORITY,        /* Initial priority.    */
+                     _rcout_thread,             /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+#endif
+
 #ifndef HAL_NO_RCIN_THREAD
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
@@ -118,7 +130,6 @@ void Scheduler::init()
 #endif
 
 }
-
 
 void Scheduler::delay_microseconds(uint16_t usec)
 {
@@ -320,13 +331,26 @@ void Scheduler::_timer_thread(void *arg)
         // run registered timers
         sched->_run_timers();
 
-        // process any pending RC output requests
-        hal.rcout->timer_tick();
-
         if (sched->in_expected_delay()) {
             sched->watchdog_pat();
         }
     }
+}
+
+void Scheduler::_rcout_thread(void *arg)
+{
+#ifndef HAL_NO_RCOUT_THREAD
+    Scheduler *sched = (Scheduler *)arg;
+    chRegSetThreadName("rcout");
+
+    while (!sched->_hal_initialized) {
+        sched->delay_microseconds(1000);
+    }
+#if HAL_USE_PWM == TRUE
+    // trampoline into the rcout thread
+    ((RCOutput*)hal.rcout)->rcout_thread();
+#endif
+#endif
 }
 
 /*
@@ -602,18 +626,9 @@ void Scheduler::thread_create_trampoline(void *ctx)
     free(t);
 }
 
-/*
-  create a new thread
-*/
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+// calculates an integer to be used as the priority for a newly-created thread
+uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
-    // take a copy of the MemberProc, it is freed after thread exits
-    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
-    if (!tproc) {
-        return false;
-    }
-    *tproc = proc;
-
     uint8_t thread_priority = APM_IO_PRIORITY;
     static const struct {
         priority_base base;
@@ -625,6 +640,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_I2C, APM_I2C_PRIORITY},
         { PRIORITY_CAN, APM_CAN_PRIORITY},
         { PRIORITY_TIMER, APM_TIMER_PRIORITY},
+        { PRIORITY_RCOUT, APM_RCOUT_PRIORITY},
         { PRIORITY_RCIN, APM_RCIN_PRIORITY},
         { PRIORITY_IO, APM_IO_PRIORITY},
         { PRIORITY_UART, APM_UART_PRIORITY},
@@ -637,6 +653,23 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
+    return thread_priority;
+}
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
     thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
                                                name,
                                                thread_priority,
@@ -737,7 +770,7 @@ void Scheduler::check_stack_free(void)
         if (stack_free(tp->wabase) < min_stack) {
             // use task priority for line number. This allows us to
             // identify the task fairly reliably
-            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->prio);
+            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->realprio);
         }
     }
 }

@@ -47,7 +47,7 @@ void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us,
     attitude.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), posErr, angErr, reset_counter, false);
+    Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), degrees(yaw), posErr, angErr, reset_counter, false);
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
@@ -61,7 +61,7 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
-    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel, _frontend.get_vel_noise(), reset_counter, false);
+    Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter, false);
 }
 
 #endif

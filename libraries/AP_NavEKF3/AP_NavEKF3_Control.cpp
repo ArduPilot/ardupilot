@@ -90,11 +90,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
     }
 
     // determine if the vehicle is manoeuvring
-    if (accNavMagHoriz > 0.5f) {
-        manoeuvring = true;
-    } else {
-        manoeuvring = false;
-    }
+    manoeuvring = accNavMagHoriz > 0.5f;
 
     // Determine if learning of magnetic field states has been requested by the user
     bool magCalRequested =
@@ -210,6 +206,43 @@ void NavEKF3_core::setAidingMode()
     // Check that the gyro bias variance has converged
     checkGyroCalStatus();
 
+    // Handle the special case where we are on ground and disarmed without a yaw measurement
+    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
+    // during the previous flight.
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
+        !motorsArmed &&
+        onGround &&
+        PV_AidingMode != AID_NONE)
+    {
+        PV_AidingMode = AID_NONE;
+        yawAlignComplete = false;
+        finalInflightYawInit = false;
+        ResetVelocity(resetDataSource::DEFAULT);
+        ResetPosition(resetDataSource::DEFAULT);
+        ResetHeight();
+        // preserve quaternion 4x4 covariances, but zero the other rows and columns
+        for (uint8_t row=0; row<4; row++) {
+            for (uint8_t col=4; col<24; col++) {
+                P[row][col] = 0.0f;
+            }
+        }
+        for (uint8_t col=0; col<4; col++) {
+            for (uint8_t row=4; row<24; row++) {
+                P[row][col] = 0.0f;
+            }
+        }
+        // keep the IMU bias state variances, but zero the covariances
+        float oldBiasVariance[6];
+        for (uint8_t row=0; row<6; row++) {
+            oldBiasVariance[row] = P[row+10][row+10];
+        }
+        zeroCols(P,10,15);
+        zeroRows(P,10,15);
+        for (uint8_t row=0; row<6; row++) {
+            P[row+10][row+10] = oldBiasVariance[row];
+        }
+    }
+
     // Determine if we should change aiding mode
     switch (PV_AidingMode) {
         case AID_NONE: {
@@ -288,15 +321,6 @@ void NavEKF3_core::setAidingMode()
                 }
                 posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                                      (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-            }
-
-            // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
-            // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
-            // and declare attitude aiding loss so that we fall back into a non-aiding mode
-            if (assume_zero_sideslip() && onGround && !use_compass() && !using_external_yaw()) {
-                yawAlignComplete = false;
-                finalInflightYawInit = false;
-                attAidLossCritical = true;
             }
 
             if (attAidLossCritical) {
@@ -537,16 +561,16 @@ bool NavEKF3_core::use_compass(void) const
 // are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-#if EK3_FEATURE_EXTERNAL_NAV
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-        yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
-        return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
-    }
+#if EK3_FEATURE_EXTERNAL_NAV
     if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+        yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
+        return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
+    }
     return false;
 }
 
@@ -676,16 +700,11 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     float trueAirspeed;
-    if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
-        if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
-            trueAirspeed = tasDataDelayed.tas;
-        } else {
-            trueAirspeed = defaultAirSpeed * dal.get_EAS2TAS();
-        }
+    if (assume_zero_sideslip()) {
+        trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
     } else {
         trueAirspeed = 0.0f;
     }
-
     yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
 }
 

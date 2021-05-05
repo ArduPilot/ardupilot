@@ -45,6 +45,7 @@
 #define AP_FLASHSTORAGE_TYPE_F1  1 // F1 and F3
 #define AP_FLASHSTORAGE_TYPE_F4  2 // F4 and F7
 #define AP_FLASHSTORAGE_TYPE_H7  3 // H7
+#define AP_FLASHSTORAGE_TYPE_G4  4 // G4
 
 #ifndef AP_FLASHSTORAGE_TYPE
 #if defined(STM32F1) || defined(STM32F3)
@@ -58,7 +59,12 @@
   STM32H7 can only write in 32 byte chunks, and must only write when all bits are 1
  */
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_H7
-#else
+#elif defined(STM32G4)
+/*
+  STM32G4 can only write in 8 byte chunks, and must only write when all bits are 1
+ */
+#define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_G4
+#else // F4, F7
 /*
   STM32HF4 and STM32H7 can update bits from 1 to 0
  */
@@ -74,6 +80,10 @@ private:
 #if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
     // need to write in 32 byte chunks, with 2 byte header
     static const uint8_t block_size = 30;
+    static const uint8_t max_write = block_size;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+    // write in 8 byte chunks, with 2 byte header
+    static const uint8_t block_size = 6;
     static const uint8_t max_write = block_size;
 #else
     static const uint8_t block_size = 8;
@@ -143,6 +153,8 @@ private:
     static const uint32_t signature = 0x51;
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
     static const uint32_t signature = 0x51685B62;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+    static const uint32_t signature = 0x1586B562;
 #else
 #error "Unknown AP_FLASHSTORAGE_TYPE"
 #endif
@@ -174,6 +186,14 @@ private:
         uint32_t state3;
         uint32_t signature3;
         uint32_t pad3[6];
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+        // needs to be 24 bytes on G4 to support 3 states
+        uint32_t state1;
+        uint32_t signature1;
+        uint32_t state2;
+        uint32_t signature2;
+        uint32_t state3;
+        uint32_t signature3;
 #endif
         bool signature_ok(void) const;
         SectorState get_state() const;

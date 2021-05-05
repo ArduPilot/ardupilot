@@ -18,7 +18,7 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
     }
 
     if (!initialised) {
-        reset(sample);
+        reset(sample, params);
         initialised = true;
     }
 
@@ -38,8 +38,8 @@ void DigitalBiquadFilter<T>::reset() {
 }
 
 template <class T>
-void DigitalBiquadFilter<T>::reset(const T &value) {
-    _delay_element_1 = _delay_element_2 = value;
+void DigitalBiquadFilter<T>::reset(const T &value, const struct biquad_params &params) {
+    _delay_element_1 = _delay_element_2 = value * (1.0 / (1 + params.a1 + params.a2));
     initialised = true;
 }
 
@@ -113,7 +113,7 @@ void LowPassFilter2p<T>::reset(void) {
 
 template <class T>
 void LowPassFilter2p<T>::reset(const T &value) {
-    return _filter.reset(value);
+    return _filter.reset(value, _params);
 }
 
 /* 

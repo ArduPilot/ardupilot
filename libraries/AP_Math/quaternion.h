@@ -89,7 +89,7 @@ public:
 
     // convert this quaternion to a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
-    void        to_axis_angle(Vector3f &v);
+    void        to_axis_angle(Vector3f &v) const;
 
     // create a quaternion from a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
@@ -164,6 +164,8 @@ public:
     }
 
     Quaternion operator*(const Quaternion &v) const;
+
+    Vector3f operator*(const Vector3f &v) const;
     Quaternion &operator*=(const Quaternion &v);
     Quaternion operator/(const Quaternion &v) const;
 

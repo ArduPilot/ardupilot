@@ -101,7 +101,7 @@ public:
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
     uavcan::Node<0>* get_node() { return _node; }
-    uint8_t get_driver_index() { return _driver_index; }
+    uint8_t get_driver_index() const { return _driver_index; }
 
 
     ///// SRV output /////

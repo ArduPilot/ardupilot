@@ -10,7 +10,6 @@ bool ModeGuided::_enter()
     */
     plane.guided_WP_loc = plane.current_loc;
     plane.set_guided_WP();
-
     return true;
 }
 
@@ -30,4 +29,3 @@ void ModeGuided::navigate()
     // Zero indicates to use WP_LOITER_RAD
     plane.update_loiter(0);
 }
-

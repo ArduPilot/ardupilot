@@ -3,7 +3,7 @@ import random
 import time
 import util
 
-from rotmat import Vector3, Matrix3
+from pymavlink.rotmat import Vector3, Matrix3
 
 
 class Aircraft(object):

@@ -49,8 +49,8 @@ end
 states(1:3) = 0;
 states = states - Kfusion * innovation;
 
-% the first 3 states represent the angular misalignment vector. This is
-% is used to correct the estimate quaternion
+% the first 3 states represent the angular misalignment vector.
+% This is used to correct the estimate quaternion
 % Convert the error rotation vector to its equivalent quaternion
 % error = truth - estimate
 rotationMag = sqrt(states(1)^2 + states(2)^2 + states(3)^2);

@@ -308,14 +308,20 @@ void Sub::failsafe_gcs_check()
 {
     // return immediately if we have never had contact with a gcs, or if gcs failsafe action is disabled
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if (failsafe.last_heartbeat_ms == 0 || (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED)) {
+    if (!g.failsafe_gcs && g.failsafe_gcs == FS_GCS_DISABLED) {
+        return;
+    }
+
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    if (gcs_last_seen_ms == 0) {
+        // we've never seen a GCS, so we don't failsafe if we stop seeing it
         return;
     }
 
     uint32_t tnow = AP_HAL::millis();
 
     // Check if we have gotten a GCS heartbeat recently (GCS sysid must match SYSID_MYGCS parameter)
-    if (tnow - failsafe.last_heartbeat_ms < FS_GCS_TIMEOUT_MS) {
+    if (tnow - gcs_last_seen_ms < FS_GCS_TIMEOUT_MS) {
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);

@@ -7,7 +7,7 @@
 /  FatFs - FAT file system module configuration file
 /---------------------------------------------------------------------------*/
 
-#define FFCONF_DEF 87030   /* Revision ID */
+#define FFCONF_DEF 80196   /* Revision ID */
 
 /*---------------------------------------------------------------------------/
 / Function Configurations
@@ -126,6 +126,12 @@
 /  To use Unicode string for the path name, enable LFN and set _LFN_UNICODE = 1.
 /  This option also affects behavior of string I/O functions. */
 
+#define FF_LFN_BUF              255
+#define FF_SFN_BUF              12
+/* This set of options defines size of file name members in the FILINFO structure
+/  which is used to read out directory items. These values should be suffcient for
+/  the file names to read. The maximum possible length of the read file name depends
+/  on character encoding. When LFN is not enabled, these options have no effect. */
 
 #define FF_STRF_ENCODE    3
 /* When _LFN_UNICODE == 1, this option selects the character encoding ON THE FILE to
@@ -183,6 +189,14 @@
 /  to variable sector size and GET_SECTOR_SIZE command must be implemented to the
 /  disk_ioctl() function. */
 
+#define FF_LBA64               0
+/* This option switches support for 64-bit LBA. (0:Disable or 1:Enable)
+/  To enable the 64-bit LBA, also exFAT needs to be enabled. (FF_FS_EXFAT == 1) */
+
+
+#define FF_MIN_GPT             0x100000000
+/* Minimum number of sectors to switch GPT format to create partition in f_mkfs and
+/  f_fdisk function. 0x100000000 max. This option has no effect when FF_LBA64 == 0. */
 
 #define FF_USE_TRIM       0
 /* This option switches support of ATA-TRIM. (0:Disable or 1:Enable)

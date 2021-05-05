@@ -5,6 +5,7 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
+#include <AP_Logger/LogStructure.h>
 
 #define IMU_DT_MIN_SEC 0.001f // Minimum delta time between IMU samples (sec)
 
@@ -30,10 +31,6 @@ public:
     // set the gyro bias in rad/sec
     void setGyroBias(Vector3f &gyroBias);
 
-    // get solution data for logging
-    // return false if yaw estimation is inactive
-    bool getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
-
     // get yaw estimated and corresponding variance
     // return false if yaw estimation is inactive
     bool getYawData(float &yaw, float &yawVariance) const;
@@ -41,6 +38,10 @@ public:
     // get the length of the weighted average velocity innovation vector
     // return false if not available
     bool getVelInnovLength(float &velInnovLength) const;
+
+    // log EKFGSF data on behalf of an EKF caller.  id0 and id1 are the
+    // IDs of the messages to log, e.g. LOG_NKY0_MSG, LOG_NKY1_MSG
+    void Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, uint8_t core_index);
 
 private:
 

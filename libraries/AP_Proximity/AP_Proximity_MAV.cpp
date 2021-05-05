@@ -13,14 +13,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_MAV.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAV_TIMEOUT_MS    500 // distance messages must arrive within this many milliseconds
+#define PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS  50  // obstacles will be transferred from temp boundary to actual boundary if mavlink message does not arrive within this many milliseconds
 
 // update the state of the sensor
 void AP_Proximity_MAV::update(void)
@@ -44,132 +47,228 @@ bool AP_Proximity_MAV::get_upward_distance(float &distance) const
     return false;
 }
 
-// handle mavlink DISTANCE_SENSOR messages
+// handle mavlink messages
 void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
+{   
+    switch (msg.msgid) {
+        case (MAVLINK_MSG_ID_DISTANCE_SENSOR):
+            handle_distance_sensor_msg(msg);
+            break;
+
+        case (MAVLINK_MSG_ID_OBSTACLE_DISTANCE):
+            handle_obstacle_distance_msg(msg);
+            break;
+
+        case (MAVLINK_MSG_ID_OBSTACLE_DISTANCE_3D):
+            handle_obstacle_distance_3d_msg(msg);
+            break;    
+    }
+}
+
+// handle mavlink DISTANCE_SENSOR messages
+void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
 {
-    if (msg.msgid == MAVLINK_MSG_ID_DISTANCE_SENSOR) {
-        mavlink_distance_sensor_t packet;
-        mavlink_msg_distance_sensor_decode(&msg, &packet);
+    mavlink_distance_sensor_t packet;
+    mavlink_msg_distance_sensor_decode(&msg, &packet);
 
-        // store distance to appropriate sector based on orientation field
-        if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
-            uint8_t sector = packet.orientation;
-            _angle[sector] = sector * 45;
-            _distance[sector] = packet.current_distance * 0.01f;
-            _distance_min = packet.min_distance * 0.01f;
-            _distance_max = packet.max_distance * 0.01f;
-            _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
-            _last_update_ms = AP_HAL::millis();
-            update_boundary_for_sector(sector, true);
-        }
+    // store distance to appropriate sector based on orientation field
+    if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
+        const uint32_t previous_sys_time = _last_update_ms;
+        _last_update_ms = AP_HAL::millis();
 
-        // store upward distance
-        if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_90) {
-            _distance_upward = packet.current_distance * 0.01f;
-            _last_upward_update_ms = AP_HAL::millis();
+        // time_diff will check if the new message arrived significantly later than the last message
+        const uint32_t time_diff = _last_update_ms - previous_sys_time;
+
+        const uint32_t previous_msg_timestamp = _last_msg_update_timestamp_ms;
+        _last_msg_update_timestamp_ms = packet.time_boot_ms;
+
+        // we will add on to the last fence if the time stamp is the same
+        // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
+        if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
+            // push data from temp boundary to the main 3-D proximity boundary
+            temp_boundary.update_3D_boundary(boundary);
+            // clear temp boundary for new data
+            temp_boundary.reset();
         }
+        // store in meters
+        const float distance = packet.current_distance * 0.01f;
+        const uint8_t sector = packet.orientation;
+        // get the face for this sector
+        const float yaw_angle_deg = sector * 45;
+        const AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+        _distance_min = packet.min_distance * 0.01f;
+        _distance_max = packet.max_distance * 0.01f;
+        const bool in_range = distance <= _distance_max && distance >= _distance_min;
+        if (in_range && !check_obstacle_near_ground(yaw_angle_deg, distance)) {
+            temp_boundary.add_distance(face, yaw_angle_deg, distance);
+            // update OA database
+            database_push(yaw_angle_deg, distance);
+        }
+    }
+
+    // store upward distance
+    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_90) {
+        _distance_upward = packet.current_distance * 0.01f;
+        _last_upward_update_ms = AP_HAL::millis();
+    }
+    return;
+}
+
+// handle mavlink OBSTACLE_DISTANCE messages
+void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg)
+{
+    mavlink_obstacle_distance_t packet;
+    mavlink_msg_obstacle_distance_decode(&msg, &packet);
+
+    // check increment (message's sector width)
+    float increment;
+    if (!is_zero(packet.increment_f)) {
+        // use increment float
+        increment = packet.increment_f;
+    } else if (packet.increment != 0) {
+        // use increment uint8_t
+        increment = packet.increment;
+    } else {
+        // invalid increment
         return;
     }
 
-    if (msg.msgid == MAVLINK_MSG_ID_OBSTACLE_DISTANCE) {
-        mavlink_obstacle_distance_t packet;
-        mavlink_msg_obstacle_distance_decode(&msg, &packet);
+    const uint8_t total_distances = MIN(((360.0f / fabsf(increment)) + 0.5f), MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
 
-        // check increment (message's sector width)
-        float increment;
-        if (!is_zero(packet.increment_f)) {
-            // use increment float
-            increment = packet.increment_f;
-        } else if (packet.increment != 0) {
-            // use increment uint8_t
-            increment = packet.increment;
-        } else {
-            // invalid increment
-            return;
+    // set distance min and max
+    _distance_min = packet.min_distance * 0.01f;
+    _distance_max = packet.max_distance * 0.01f;
+    _last_update_ms = AP_HAL::millis();
+
+    // get user configured yaw correction from front end
+    const float param_yaw_offset = constrain_float(frontend.get_yaw_correction(state.instance), -360.0f, +360.0f);
+    const float yaw_correction = wrap_360(param_yaw_offset + packet.angle_offset);
+    if (frontend.get_orientation(state.instance) != 0) {
+        increment *= -1;
+    }
+
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+    const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
+
+    // variables to calculate closest angle and distance for each face
+    AP_Proximity_Boundary_3D::Face face;
+    float face_distance = FLT_MAX;
+    float face_yaw_deg = 0.0f;
+    bool face_distance_valid = false;
+
+    // reset this  boundary to fill with new data
+    boundary.reset();
+
+    // iterate over message's sectors
+    for (uint8_t j = 0; j < total_distances; j++) {
+        const uint16_t distance_cm = packet.distances[j];
+        const float packet_distance_m = distance_cm * 0.01f;
+        const float mid_angle = wrap_360((float)j * increment + yaw_correction);
+
+        const bool range_check = distance_cm == 0 || distance_cm == 65535 || distance_cm < packet.min_distance ||
+                                 distance_cm > packet.max_distance;
+        if (range_check || check_obstacle_near_ground(mid_angle, packet_distance_m)) {
+            // sanity check failed, ignore this distance value
+            continue;
         }
 
-        const float MAX_DISTANCE = 9999.0f;
-        const uint8_t total_distances = MIN(((360.0f / fabsf(increment)) + 0.5f), MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
-
-        // set distance min and max
-        _distance_min = packet.min_distance * 0.01f;
-        _distance_max = packet.max_distance * 0.01f;
-        _last_update_ms = AP_HAL::millis();
-
-        // get user configured yaw correction from front end
-        const float param_yaw_offset = constrain_float(frontend.get_yaw_correction(state.instance), -360.0f, +360.0f);
-        const float yaw_correction = wrap_360(param_yaw_offset + packet.angle_offset);
-        if (frontend.get_orientation(state.instance) != 0) {
-            increment *= -1;
+        // get face for this latest reading
+        AP_Proximity_Boundary_3D::Face latest_face = boundary.get_face(mid_angle);
+        if (latest_face != face) {
+            // store previous face
+            if (face_distance_valid) {
+                boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+            } else {
+                boundary.reset_face(face);
+            }
+            // init for latest face
+            face = latest_face;
+            face_distance_valid = false;
         }
 
-        Vector3f current_pos;
-        Matrix3f body_to_ned;
-        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
-
-        // initialise updated array and proximity sector angles (to closest object) and distances
-        bool sector_updated[PROXIMITY_NUM_SECTORS];
-        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-            sector_updated[i] = false;
-            _angle[i] = _sector_middle_deg[i];
-            _distance[i] = MAX_DISTANCE;
+        // update minimum distance found so far
+        if (!face_distance_valid || (packet_distance_m < face_distance)) {
+            face_yaw_deg = mid_angle;
+            face_distance = packet_distance_m;
+            face_distance_valid = true;
         }
 
-        // iterate over message's sectors
-        for (uint8_t j = 0; j < total_distances; j++) {
-            const uint16_t distance_cm = packet.distances[j];
-            if (distance_cm == 0 ||
-                distance_cm == 65535 ||
-                distance_cm < packet.min_distance ||
-                distance_cm > packet.max_distance)
-            {
-                // sanity check failed, ignore this distance value
-                continue;
-            }
-
-            const float packet_distance_m = distance_cm * 0.01f;
-            const float mid_angle = wrap_360((float)j * increment + yaw_correction);
-
-            // iterate over proximity sectors
-            for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-                // update distance array sector with shortest distance from message
-                const float angle_diff = wrap_180(_sector_middle_deg[i] - mid_angle);
-                if (fabsf(angle_diff) > PROXIMITY_SECTOR_WIDTH_DEG*0.5f) {
-                    // not even in this sector
-                    continue;
-                }
-                if (is_equal(angle_diff, -PROXIMITY_SECTOR_WIDTH_DEG*0.5f)) {
-                    // on the upper boundary is *out* to avoid
-                    // ambiguity.  The distance is considered to be in
-                    // the next sector.  We should never be within an
-                    // epsilon of the boundary, so is_equal should be
-                    // safe.
-                    continue;
-                }
-                if (packet_distance_m >= _distance[i]) {
-                    // this is no closer than a previous distance
-                    // found from the pakcet
-                    continue;
-                }
-
-                // this is the shortest distance we've found in the packet so far
-                _distance[i] = packet_distance_m;
-                _angle[i] = mid_angle;
-                sector_updated[i] = true;
-            }
-
-            // update Object Avoidance database with Earth-frame point
-            if (database_ready) {
-                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
-            }
-        }
-
-        // update proximity sectors validity and boundary point
-        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-            _distance_valid[i] = (_distance[i] >= _distance_min) && (_distance[i] <= _distance_max);
-            if (sector_updated[i]) {
-                update_boundary_for_sector(i, false);
-            }
+        // update Object Avoidance database with Earth-frame point
+        if (database_ready) {
+            database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
         }
     }
+
+    // process the last face
+    if (face_distance_valid) {
+        boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+    } else {
+        boundary.reset_face(face);
+    }
+    return;
 }
+
+// handle mavlink OBSTACLE_DISTANCE_3D messages
+void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &msg)
+{
+    mavlink_obstacle_distance_3d_t packet;
+    mavlink_msg_obstacle_distance_3d_decode(&msg, &packet);
+
+    const uint32_t previous_sys_time = _last_update_ms;
+    _last_update_ms = AP_HAL::millis();
+
+    // time_diff will check if the new message arrived significantly later than the last message
+    const uint32_t time_diff = _last_update_ms - previous_sys_time;
+
+    const uint32_t previous_msg_timestamp = _last_msg_update_timestamp_ms;
+    _last_msg_update_timestamp_ms = packet.time_boot_ms;
+
+    if (packet.frame != MAV_FRAME_BODY_FRD) {
+        // we do not support this frame of reference yet
+        return;
+    }
+
+    if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
+        // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
+        temp_boundary.update_3D_boundary(boundary);
+        // clear temp boundary for new data
+        temp_boundary.reset();
+    }
+
+    _distance_min = packet.min_distance;
+    _distance_max = packet.max_distance;
+
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+    const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
+
+    const Vector3f obstacle_FRD(packet.x, packet.y, packet.z);
+    const float obstacle_distance = obstacle_FRD.length();
+    if (obstacle_distance < _distance_min || obstacle_distance > _distance_max || is_zero(obstacle_distance)) {
+        // message isn't healthy
+        return;
+    }
+    if (check_obstacle_near_ground(obstacle_FRD)) {
+        // obstacle is probably near ground
+        return;
+    }
+
+    // convert to FRU
+    const Vector3f obstacle(obstacle_FRD.x, obstacle_FRD.y, obstacle_FRD.z * -1.0f);
+
+    // extract yaw and pitch from Obstacle Vector
+    const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
+    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(norm(obstacle.x, obstacle.y), obstacle.z))); 
+
+    // allot to correct layer and sector based on calculated pitch and yaw
+    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);
+    temp_boundary.add_distance(face, pitch, yaw, obstacle.length());
+
+    if (database_ready) {
+        database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned);
+    }
+    return;
+}
+
+#endif // HAL_PROXIMITY_ENABLED

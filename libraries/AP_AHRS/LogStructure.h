@@ -108,7 +108,7 @@ struct PACKED log_POS {
 };
 
 // @LoggerMessage: RATE
-// @Description: Desired and achieved vehicle attitude rates
+// @Description: Desired and achieved vehicle attitude rates. Not logged in Fixed Wing Plane modes.
 // @Field: TimeUS: Time since system startup
 // @Field: RDes: vehicle desired roll rate
 // @Field: R: achieved vehicle roll rate
@@ -116,11 +116,9 @@ struct PACKED log_POS {
 // @Field: PDes: vehicle desired pitch rate
 // @Field: P: vehicle pitch rate
 // @Field: POut: normalized output for Pitch
-// @Field: YDes: vehicle desired yaw rate
 // @Field: Y: achieved vehicle yaw rate
 // @Field: YOut: normalized output for Yaw
 // @Field: YDes: vehicle desired yaw rate
-// @Field: Y: achieved vehicle yaw rate
 // @Field: ADes: desired vehicle vertical acceleration
 // @Field: A: achieved vehicle vertical acceleration
 // @Field: AOut: percentage of vertical thrust output current being used

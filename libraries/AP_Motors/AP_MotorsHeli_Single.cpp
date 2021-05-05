@@ -307,10 +307,10 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     if (_main_rotor._ext_gov_arot_pct.get() > 0) {
         // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
         if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
-            _main_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
+            _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         }
         if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-            _tail_rotor.set_autorotaion_flag(_heliflags.in_autorotation);
+            _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         }
     }
 

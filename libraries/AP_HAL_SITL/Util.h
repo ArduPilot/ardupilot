@@ -51,7 +51,7 @@ public:
 #endif // ENABLE_HEAP
 
 #ifdef WITH_SITL_TONEALARM
-    bool toneAlarm_init() override { return _toneAlarm.init(); }
+    bool toneAlarm_init(uint8_t types) override { return _toneAlarm.init(); }
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {
         _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
     }

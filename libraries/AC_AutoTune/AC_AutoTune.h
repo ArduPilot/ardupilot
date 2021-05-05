@@ -61,9 +61,6 @@ protected:
 
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
-    
-    // start tune - virtual so that vehicle code can add additional pre-conditions
-    virtual bool start(void);
 
     // return true if we have a good position estimate
     virtual bool position_ok();
@@ -75,6 +72,9 @@ protected:
                         AP_AHRS_View *ahrs_view,
                         AP_InertialNav *inertial_nav);
 
+    // initialise position controller
+    bool init_position_controller();
+
 private:
     void control_attitude();
     void backup_gains_and_initialise();
@@ -82,14 +82,14 @@ private:
     void load_tuned_gains();
     void load_intra_test_gains();
     void load_twitch_gains();
-    void update_gcs(uint8_t message_id);
+    void update_gcs(uint8_t message_id) const;
     bool roll_enabled();
     bool pitch_enabled();
     bool yaw_enabled();
     void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
     void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
-    void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
+    void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
     void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
     void updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
     void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
@@ -179,6 +179,7 @@ private:
     float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t level_start_time_ms;                   // start time of waiting for level
+    uint32_t level_fail_warning_time_ms;            // last time level failure warning message was sent to GCS
     uint32_t step_time_limit_ms;                    // time limit of current autotune process
     int8_t   counter;                               // counter for tuning gains
     float    target_rate, start_rate;               // target and start rate

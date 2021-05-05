@@ -310,7 +310,7 @@ private:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_RTL();
+    bool verify_RTL() const;
     bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
@@ -430,7 +430,7 @@ protected:
     bool have_attitude_target;  // true if we have a valid attitude target
     uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
-    bool sent_notification;     // used to send one time notification to ground station
+    bool send_notification;     // used to send one time notification to ground station
     float _desired_speed;       // desired speed used only in HeadingAndSpeed submode
 
     // direct steering and throttle control
@@ -553,7 +553,7 @@ protected:
 
     bool _enter() override;
 
-    bool sent_notification; // used to send one time notification to ground station
+    bool send_notification; // used to send one time notification to ground station
     bool _loitering;        // true if loitering at end of RTL
 
 };

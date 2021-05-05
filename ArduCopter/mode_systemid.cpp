@@ -69,7 +69,7 @@ ModeSystemId::ModeSystemId(void) : Mode()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#define SYSTEM_ID_DELAY     1.0f      // speed below which it is always safe to switch to loiter
+#define SYSTEM_ID_DELAY     1.0f      // time in seconds waited after system id mode change for frequency sweep injection
 
 // systemId_init - initialise systemId controller
 bool ModeSystemId::init(bool ignore_checks)
@@ -273,17 +273,15 @@ void ModeSystemId::run()
 }
 
 // log system id and attitude
-void ModeSystemId::log_data()
+void ModeSystemId::log_data() const
 {
-    uint8_t index = copter.ahrs.get_primary_gyro_index();
     Vector3f delta_angle;
-    copter.ins.get_delta_angle(index, delta_angle);
-    float delta_angle_dt = copter.ins.get_delta_angle_dt(index);
+    float delta_angle_dt;
+    copter.ins.get_delta_angle(delta_angle, delta_angle_dt);
 
-    index = copter.ahrs.get_primary_accel_index();
     Vector3f delta_velocity;
-    copter.ins.get_delta_velocity(index, delta_velocity);
-    float delta_velocity_dt = copter.ins.get_delta_velocity_dt(index);
+    float delta_velocity_dt;
+    copter.ins.get_delta_velocity(delta_velocity, delta_velocity_dt);
 
     if (is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)) {
         copter.Log_Write_SysID_Data(waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI), degrees(delta_angle.x / delta_angle_dt), degrees(delta_angle.y / delta_angle_dt), degrees(delta_angle.z / delta_angle_dt), delta_velocity.x / delta_velocity_dt, delta_velocity.y / delta_velocity_dt, delta_velocity.z / delta_velocity_dt);

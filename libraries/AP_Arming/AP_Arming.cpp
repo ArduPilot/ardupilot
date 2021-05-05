@@ -414,6 +414,12 @@ bool AP_Arming::compass_checks(bool report)
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
 
+        // check for first compass being disabled but 2nd or 3rd being enabled
+        if (!_compass.use_for_yaw(0) && (_compass.get_num_enabled() > 0)) {
+            check_failed(ARMING_CHECK_COMPASS, report, "Compass1 disabled but others enabled");
+            return false;
+        }
+
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
         if (!_compass.use_for_yaw(0)) {
@@ -462,6 +468,18 @@ bool AP_Arming::gps_checks(bool report)
 {
     const AP_GPS &gps = AP::gps();
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
+
+        // Any failure messages from GPS backends
+        if ((checks_to_perform & ARMING_CHECK_ALL) ||
+            (checks_to_perform & ARMING_CHECK_GPS)) {
+            char failure_msg[50] = {};
+            if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+                if (failure_msg[0] != '\0') {
+                    check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
+                }
+                return false;
+            }
+        }
 
         //GPS OK?
         if (!AP::ahrs().home_is_set() ||
@@ -831,6 +849,7 @@ bool AP_Arming::system_checks(bool report)
 // check nothing is too close to vehicle
 bool AP_Arming::proximity_checks(bool report) const
 {
+#if HAL_PROXIMITY_ENABLED
     const AP_Proximity *proximity = AP::proximity();
     // return true immediately if no sensor present
     if (proximity == nullptr) {
@@ -845,6 +864,7 @@ bool AP_Arming::proximity_checks(bool report) const
         check_failed(report, "check proximity sensor");
         return false;
     }
+#endif
 
     return true;
 }
@@ -906,6 +926,7 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_CANManager::Driver_Type_EFI_NWPMU:
                 case AP_CANManager::Driver_Type_USD1:
+                case AP_CANManager::Driver_Type_MPPT_PacketDigital:
                 case AP_CANManager::Driver_Type_None:
                     break;
             }
@@ -1141,7 +1162,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  osd_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
-        &  disarm_switch_checks(report);
+        &  disarm_switch_checks(report)
+        &  fence_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1151,6 +1173,11 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         if (!rc_arm_checks(method)) {
             return false;
         }
+    }
+
+    // enable any pending dshot commands to be flushed before sending actual throttle values
+    if (!hal.rcout->prepare_for_arming()) {
+        return false;
     }
 
 #if HAL_GYROFFT_ENABLED
@@ -1165,6 +1192,14 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         if (!AP::gps().prepare_for_arming()) {
             return false;
+        }
+    }
+
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        // If a fence is set to auto-enable, turn on the fence
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(true);
         }
     }
     
@@ -1235,6 +1270,13 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     }
 #endif
 
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(false);
+        }
+    }
+
     return true;
 }
 
@@ -1260,11 +1302,11 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
-        if (channel->get_radio_min() > 1300) {
+        if (channel->get_radio_min() > RC_Channel::RC_CALIB_MIN_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             ret = false;
         }
-        if (channel->get_radio_max() < 1700) {
+        if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             ret = false;
         }

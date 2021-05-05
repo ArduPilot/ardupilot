@@ -24,6 +24,11 @@
 *****************************************/
 void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
+    if (!(control_mode->does_auto_throttle() || quadplane.in_assisted_flight() || quadplane.in_vtol_mode())) {
+        // only do throttle slew limiting in modes where throttle control is automatic
+        return;
+    }
+
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
@@ -142,7 +147,7 @@ bool Plane::suppress_throttle(void)
   SERVOn_* parameters
  */
 void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
-                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out)
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const
 {
     // the order is setup so that non-reversed servos go "up", and
     // func1 is the "left" channel. Users can adjust with channel
@@ -378,7 +383,7 @@ void Plane::set_servos_manual_passthrough(void)
 /*
   Scale the throttle to conpensate for battery voltage drop
  */
-void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle)
+void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const
 {
     // return if not enabled, or setup incorrectly
     if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
@@ -556,8 +561,13 @@ void Plane::set_servos_controlled(void)
 
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
     const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (!is_flying() && arming.is_armed()) {
-        bool throw_detected = sq(ahrs.get_accel_ef().x) + sq(ahrs.get_accel_ef().y) > sq(g.takeoff_throttle_min_accel);
+    if (arming.is_armed()) {
+        // Check if rate of change of velocity along X axis exceeds 1-g which normally indicates a throw.
+        // Tests with hand carriage of micro UAS indicates that a 1-g threshold does not false trigger prior
+        // to the throw, but there is margin to increase this threshold if false triggering becomes problematic.
+        const float accel_x_due_to_gravity = GRAVITY_MSS * ahrs.sin_pitch();
+        const float accel_x_due_to_throw = ahrs.get_accel().x - accel_x_due_to_gravity;
+        bool throw_detected = accel_x_due_to_throw > GRAVITY_MSS;
         bool throttle_up_detected = throttle > aparm.throttle_cruise;
         if (throw_detected || throttle_up_detected) {
             plane.ahrs.setTakeoffExpected(true);
@@ -831,13 +841,8 @@ void Plane::set_servos(void)
     // set airbrake outputs
     airbrake_update();
 
-    if (control_mode->does_auto_throttle() ||
-        quadplane.in_assisted_flight() ||
-        quadplane.in_vtol_mode()) {
-        /* only do throttle slew limiting in modes where throttle
-         *  control is automatic */
-        throttle_slew_limit(SRV_Channel::k_throttle);
-    }
+    // slew rate limit throttle
+    throttle_slew_limit(SRV_Channel::k_throttle);
 
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.

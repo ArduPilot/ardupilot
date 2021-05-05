@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Filter/Filter.h>
-#include "AP_Proximity.h"
 #include "AP_Proximity_LightWareSerial.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <Filter/Filter.h>
 
 class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
 {
@@ -80,11 +81,11 @@ private:
     bool _init_complete;                    // true once sensor initialisation is complete
     ModeFilterInt16_Size5 _distance_filt{2};// mode filter to reduce glitches
 
-    // sector (45 degrees) angles and distances (used to build mini fence for simple avoidance)
-    uint8_t _sector = UINT8_MAX;            // sector number (from 0 to 7) of most recently received distance
-    float _sector_distance;                 // shortest distance (in meters) in sector
-    float _sector_angle;                    // angle (in degrees) of shortest distance in sector
-    bool _sector_distance_valid;            // true if sector has at least one valid distance
+    // 3D boundary face and distance for latest readings
+    AP_Proximity_Boundary_3D::Face _face;   // face of most recently received distance
+    float _face_distance;                   // shortest distance (in meters) on face
+    float _face_yaw_deg;                    // yaw angle (in degrees) of shortest distance on face
+    bool _face_distance_valid;              // true if face has at least one valid distance
 
     // mini sector (5 degrees) angles and distances (used to populate obstacle database for path planning)
     uint8_t _minisector = UINT8_MAX;        // mini sector number (from 0 to 71) of most recently received distance
@@ -100,3 +101,5 @@ private:
     } _sensor_state;
 
 };
+
+#endif // HAL_PROXIMITY_ENABLED

@@ -15,10 +15,10 @@ public:
     // returns false if unable to convert from target vector to global coordinates
     bool get_oa_wp_destination(Location& destination) const override;
 
-    /// set origin and destination waypoints using position vectors (distance from ekf origin in cm)
-    ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
+    /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
+    ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     ///     returns false on failure (likely caused by missing terrain data)
-    bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false) override;
+    bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false) override;
 
     /// get horizontal distance to destination in cm
     /// always returns distance to final destination (i.e. does not use oa adjusted destination)
@@ -40,5 +40,6 @@ protected:
     AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
     Vector3f    _origin_oabak;          // backup of _origin so it can be restored when oa completes
     Vector3f    _destination_oabak;     // backup of _destination so it can be restored when oa completes
+    bool        _terrain_alt_oabak;     // true if backup origin and destination z-axis are terrain altitudes
     Location    _oa_destination;        // intermediate destination during avoidance
 };

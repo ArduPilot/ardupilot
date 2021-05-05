@@ -150,12 +150,12 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
     }
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     {
-        { 1, { 232, 0, 1 }, OSD_PARAM_NONE },               // RLL2SRV_P
-        { 2, { 232, 0, 3 }, OSD_PARAM_NONE },               // RLL2SRV_I
-        { 3, { 232, 0, 2 }, OSD_PARAM_NONE },               // RLL2SRV_D
-        { 4, { 233, 0, 1 }, OSD_PARAM_NONE },               // PTCH2SRV_P
-        { 5, { 233, 0, 3 }, OSD_PARAM_NONE },               // PTCH2SRV_I
-        { 6, { 233, 0, 2 }, OSD_PARAM_NONE },               // PTCH2SRV_D
+        { 1, { 232, 0, 265 }, OSD_PARAM_NONE },             // RLL_RATE_FF
+        { 2, { 232, 0, 4041 }, OSD_PARAM_NONE },            // RLL_RATE_P
+        { 3, { 232, 0, 73 }, OSD_PARAM_NONE },              // RLL_RATE_I
+        { 4, { 233, 0, 267 }, OSD_PARAM_NONE },             // PTCH_RATE_FF
+        { 5, { 233, 0, 4043 }, OSD_PARAM_NONE },            // PTCH_RATE_P
+        { 6, { 233, 0, 75 }, OSD_PARAM_NONE },              // PTCH_RATE_I
         { 7, { 233, 0, 6 }, OSD_PARAM_NONE },               // PTCH2SRV_RLL
         { 8, { 199, 0, 1 }, OSD_PARAM_NONE },               // TUNE_PARAM
         { 9, { 199, 0, 320 }, OSD_PARAM_NONE }              // TUNE_RANGE
@@ -406,9 +406,9 @@ RC_Channel::AuxSwitchPos AP_OSD_ParamScreen::get_channel_pos(uint8_t rcmapchan) 
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
     bool switch_reversed = chan->get_reverse() && rc().switch_reverse_allowed();
 
-    if (in < 1300) {
+    if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
         return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
-    } else if (in > 1700) {
+    } else if (in > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
         return switch_reversed ? RC_Channel::AuxSwitchPos::LOW : RC_Channel::AuxSwitchPos::HIGH;
     } else {
         return RC_Channel::AuxSwitchPos::MIDDLE;

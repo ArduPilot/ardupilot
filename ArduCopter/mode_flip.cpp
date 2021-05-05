@@ -35,16 +35,13 @@
 // flip_init - initialise flip controller
 bool ModeFlip::init(bool ignore_checks)
 {
-    // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
-    if (copter.control_mode != Mode::Number::ACRO &&
-        copter.control_mode != Mode::Number::STABILIZE &&
-        copter.control_mode != Mode::Number::ALT_HOLD &&
-        copter.control_mode != Mode::Number::FLOWHOLD) {
+    // only allow flip from some flight modes, for example ACRO, Stabilize, AltHold or FlowHold flight modes
+    if (!copter.flightmode->allows_flip()) {
         return false;
     }
 
     // if in acro or stabilize ensure throttle is above zero
-    if (copter.ap.throttle_zero && (copter.control_mode == Mode::Number::ACRO || copter.control_mode == Mode::Number::STABILIZE)) {
+    if (copter.ap.throttle_zero && (copter.flightmode->mode_number() == Mode::Number::ACRO || copter.flightmode->mode_number() == Mode::Number::STABILIZE)) {
         return false;
     }
 
@@ -59,7 +56,7 @@ bool ModeFlip::init(bool ignore_checks)
     }
 
     // capture original flight mode so that we can return to it after completion
-    orig_control_mode = copter.control_mode;
+    orig_control_mode = copter.flightmode->mode_number();
 
     // initialise state
     _state = FlipState::Start;

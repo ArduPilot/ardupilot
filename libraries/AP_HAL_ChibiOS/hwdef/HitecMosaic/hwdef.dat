@@ -172,4 +172,5 @@ define HAL_PERIPH_ENABLE_BARO
 define HAL_GPS_TYPE_DEFAULT 10
 define HAL_GPS_COM_PORT_DEFAULT 3
 define GPS_SBF_STREAM_NUMBER 3
+define GPS_SBF_EXTRA_CONFIG "sdfa, DSK1, DeleteOldest", "sfn, DSK1, Incremental, Mosaic", "sfno, off"
 

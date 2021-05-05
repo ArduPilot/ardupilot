@@ -318,7 +318,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan)
+void AP_Camera::send_feedback(mavlink_channel_t chan) const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
@@ -461,9 +461,9 @@ void AP_Camera::log_picture()
     }
 
     if (!using_feedback_pin()) {
-        logger->Write_Camera(current_loc);
+        Write_Camera();
     } else {
-        logger->Write_Trigger(current_loc);
+        Write_Trigger();
     }
 }
 
@@ -499,7 +499,7 @@ void AP_Camera::update_trigger()
             if (logger->should_log(log_camera_bit)) {
                 uint32_t tdiff = AP_HAL::micros() - timestamp32;
                 uint64_t timestamp = AP_HAL::micros64();
-                logger->Write_Camera(current_loc, timestamp - tdiff);
+                Write_Camera(timestamp - tdiff);
             }
         }
     }

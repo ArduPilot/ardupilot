@@ -973,8 +973,11 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_build_info(sbuf_t *dst)
 {
     const AP_FWVersion &fwver = AP::fwversion();
 
-    sbuf_write_data(dst, __DATE__, BUILD_DATE_LENGTH);
-    sbuf_write_data(dst, __TIME__, BUILD_TIME_LENGTH);
+    // we don't use real dates here as that would mean we don't get
+    // consistent builds. Being able to reproduce the exact build at a
+    // later date is a valuable property of the code
+    sbuf_write_data(dst, "Jan 01 1980", BUILD_DATE_LENGTH);
+    sbuf_write_data(dst, "00:00:00", BUILD_TIME_LENGTH);
     sbuf_write_data(dst, fwver.fw_hash_str, GIT_SHORT_REVISION_LENGTH);
     return MSP_RESULT_ACK;
 }

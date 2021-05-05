@@ -25,6 +25,7 @@
 #include "AP_Compass_UAVCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
+#include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass_RM3100.h"
 #if HAL_MSP_COMPASS_ENABLED
@@ -1140,6 +1141,10 @@ void Compass::_probe_external_i2c_compasses(void)
         ADD_BACKEND(DRIVER_IST8308, AP_Compass_IST8308::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8308_I2C_ADDR),
                     true, ROTATION_NONE));
     }
+    FOREACH_I2C_INTERNAL(i) {
+        ADD_BACKEND(DRIVER_IST8308, AP_Compass_IST8308::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8308_I2C_ADDR),
+                    all_external, ROTATION_NONE));
+    }
 #endif
 
 #if !defined(HAL_DISABLE_I2C_MAGS_BY_DEFAULT) || defined(HAL_USE_I2C_MAG_RM3100)
@@ -1246,17 +1251,18 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_BMM150,
                     AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
         break;
-    case AP_BoardConfig::VRX_BOARD_BRAIN54: {
+    case AP_BoardConfig::VRX_BOARD_BRAIN54:
+    case AP_BoardConfig::VRX_BOARD_BRAIN51: {
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                     true, ROTATION_ROLL_180));
-    }
+
         // internal i2c bus
-    ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
-                false, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    false, ROTATION_YAW_270));
+    }
     break;
 
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
     case AP_BoardConfig::VRX_BOARD_BRAIN52:
     case AP_BoardConfig::VRX_BOARD_BRAIN52E:
     case AP_BoardConfig::VRX_BOARD_CORE10:
@@ -1724,12 +1730,6 @@ uint8_t Compass::get_num_enabled(void) const
 }
 
 void
-Compass::set_use_for_yaw(uint8_t i, bool use)
-{
-    _use_for_yaw[Priority(i)].set(use);
-}
-
-void
 Compass::set_declination(float radians, bool save_to_eeprom)
 {
     if (save_to_eeprom) {
@@ -2018,6 +2018,17 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
+
+// force save of current calibration as valid
+void Compass::force_save_calibration(void)
+{
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state[i].dev_id != 0) {
+            _state[i].dev_id.save();
+        }
+    }
+}
+
 
 // singleton instance
 Compass *Compass::_singleton;

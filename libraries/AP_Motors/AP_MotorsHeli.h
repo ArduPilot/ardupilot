@@ -125,7 +125,7 @@ public:
 
     // update estimated throttle required to hover
     void update_throttle_hover(float dt);
-    float get_throttle_hover() const override { return _collective_hover; }
+    float get_throttle_hover() const override { return constrain_float(_collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_MIN, AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX); }
 
     // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
     bool get_takeoff_collective() const { return _heliflags.takeoff_collective; }
@@ -158,6 +158,8 @@ public:
     
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+
+    const char* get_frame_string() const override { return "HELI"; }
 
 protected:
 

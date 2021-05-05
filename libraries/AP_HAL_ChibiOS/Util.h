@@ -27,7 +27,7 @@ class ExpandingString;
 // on F7 and H7 we will try to save key persistent parameters at the
 // end of the bootloader sector. This enables temperature calibration
 // data to be saved persistently in the factory
-#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_BUILD_AP_PERIPH) && (defined(STM32F7) || defined(STM32H7))
 #endif
 
 class ChibiOS::Util : public AP_HAL::Util {
@@ -59,9 +59,10 @@ public:
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
-#ifdef HAL_PWM_ALARM
-    bool toneAlarm_init() override;
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
+    bool toneAlarm_init(uint8_t types) override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
+    static uint8_t _toneAlarm_types;
 #endif
 
     // return true if the reason for the reboot was a watchdog reset
@@ -75,6 +76,9 @@ public:
     // request information on dma contention
     void dma_info(ExpandingString &str) override;
 #endif
+#if CH_CFG_USE_HEAP == TRUE
+    void mem_info(ExpandingString &str) override;
+#endif
 
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // apply persistent parameters to current parameters
@@ -85,6 +89,8 @@ public:
     // save/load key persistent parameters in bootloader sector
     bool load_persistent_params(ExpandingString &str) const override;
 #endif
+    // request information on uart I/O
+    virtual void uart_info(ExpandingString &str) override;
     
 private:
 #ifdef HAL_PWM_ALARM

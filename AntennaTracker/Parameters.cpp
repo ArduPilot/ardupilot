@@ -299,9 +299,9 @@ const AP_Param::Info Tracker::var_info[] = {
 #endif
 
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp

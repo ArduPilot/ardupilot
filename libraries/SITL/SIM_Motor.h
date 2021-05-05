@@ -79,7 +79,7 @@ public:
                           float effective_prop_area,
                           float voltage);
 
-    uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
+    uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value) const;
 
     // get current
     float get_current(void) const;

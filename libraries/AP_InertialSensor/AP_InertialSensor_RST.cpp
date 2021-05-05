@@ -336,8 +336,10 @@ bool AP_InertialSensor_RST::_init_sensor(void)
  */
 void AP_InertialSensor_RST::start(void)
 {
-    _gyro_instance = _imu.register_gyro(800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D));
-    _accel_instance = _imu.register_accel(1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ));
+    if (!_imu.register_gyro(_gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_I3G4250D)) ||
+        !_imu.register_accel(_accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_IIS328DQ))) {
+        return;
+    }
 
     set_gyro_orientation(_gyro_instance, _rotation_g);
     set_accel_orientation(_accel_instance, _rotation_a);

@@ -58,6 +58,7 @@ protected:
 
     void calc_nav_alt(void);
     void calc_gps_position(void);
+    bool calc_rpm(const uint8_t instance, int32_t &value) const;
 
     float get_vspeed_ms(void);
 
@@ -108,6 +109,8 @@ protected:
     static const uint8_t BYTESTUFF_D               = 0x5D;
 
     // FrSky data IDs;
+    static const uint16_t RPM1_ID                   = 0x050E;
+    static const uint16_t RPM2_ID                   = 0x050F;
     static const uint16_t GPS_LONG_LATI_FIRST_ID    = 0x0800;
     static const uint16_t DIY_FIRST_ID              = 0x5000;
 
@@ -121,6 +124,7 @@ protected:
     static const uint8_t SENSOR_ID_VARIO           = 0x00; // Sensor ID  0
     static const uint8_t SENSOR_ID_FAS             = 0x22; // Sensor ID  2
     static const uint8_t SENSOR_ID_GPS             = 0x83; // Sensor ID  3
+    static const uint8_t SENSOR_ID_RPM             = 0xE4; // Sensor ID  4
     static const uint8_t SENSOR_ID_SP2UR           = 0xC6; // Sensor ID  6
     static const uint8_t SENSOR_ID_27              = 0x1B; // Sensor ID 27
 

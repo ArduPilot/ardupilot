@@ -26,9 +26,6 @@ class RGBLed: public NotifyDevice {
 public:
     RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 
-    // init - initialised the LED
-    virtual bool init(void) override;
-
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
@@ -45,7 +42,6 @@ public:
 
 protected:
     // methods implemented in hardware specific classes
-    virtual bool hw_init(void) = 0;
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) = 0;
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15

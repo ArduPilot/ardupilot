@@ -13,6 +13,15 @@
 #include <AP_Math/location.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
+
+    // @Param: _TYPE
+    // @DisplayName: Mount Type
+    // @Description: Mount Type (None, Servo or MAVLink)
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
+
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
@@ -194,13 +203,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 18, AP_Mount, state[0]._pitch_stb_lead, 0.0f),
 
-    // @Param: _TYPE
-    // @DisplayName: Mount Type
-    // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
-    // @RebootRequired: True
-    // @User: Standard
-    AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
+    // 19 _TYPE, now at top with enable flag
 
     // 20 formerly _OFF_JNT
 

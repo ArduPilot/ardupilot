@@ -4,10 +4,15 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_RPM/AP_RPM.h>
 
 #include "AP_Frsky_SPortParser.h"
 
 #include <string.h>
+
+extern const AP_HAL::HAL& hal;
+
+AP_Frsky_SPort *AP_Frsky_SPort::singleton;
 
 /*
  * send telemetry data
@@ -112,6 +117,27 @@ void AP_Frsky_SPort::send(void)
                     _SPort.gps_call = 0;
                 }
                 break;
+            case SENSOR_ID_RPM: // Sensor ID 4
+                {
+                    const AP_RPM* rpm = AP::rpm();
+                    if (rpm == nullptr) {
+                        break;
+                    }
+                    int32_t value;
+                    if (calc_rpm(_SPort.rpm_call, value)) {
+                        // use high numbered frsky sensor ids to leave low numbered free for externally attached physical frsky sensors
+                        uint16_t id = RPM1_ID;
+                        if (_SPort.rpm_call != 0) {
+                            // only two sensors are currently supported
+                            id = RPM2_ID;
+                        }
+                        send_sport_frame(SPORT_DATA_FRAME, id, value);
+                    }
+                    if (++_SPort.rpm_call > MIN(rpm->num_sensors()-1, 1)) {
+                        _SPort.rpm_call = 0;
+                    }
+                }
+                break;
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
                 case 0 :
@@ -123,6 +149,16 @@ void AP_Frsky_SPort::send(void)
                 }
                 if (++_SPort.various_call > 1) {
                     _SPort.various_call = 0;
+                }
+                break;
+            default:
+                {
+                    // respond to custom user data polling
+                    WITH_SEMAPHORE(_sport_push_buffer.sem);
+                    if (_sport_push_buffer.pending && readbyte == _sport_push_buffer.packet.sensor) {
+                        send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                        _sport_push_buffer.pending = false;
+                    }
                 }
                 break;
             }
@@ -343,3 +379,93 @@ uint8_t AP_Frsky_SPort::calc_sensor_id(const uint8_t physical_id)
     result += (BIT(physical_id, 0) ^ BIT(physical_id, 2) ^ BIT(physical_id, 4)) << 7;
     return result;
 }
+
+/*
+ * prepare value for transmission through FrSky link
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t power)
+{
+    uint16_t res = 0;
+    uint32_t abs_number = abs(number);
+
+    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
+        if (abs_number < 100) {
+            res = abs_number<<1;
+        } else if (abs_number < 1270) {
+            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
+        } else { // transmit max possible value (0x7F x 10^1 = 1270)
+            res = 0xFF;
+        }
+        if (number < 0) { // if number is negative, add sign bit in front
+            res |= 0x1<<8;
+        }
+    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
+        if (abs_number < 100) {
+            res = abs_number<<2;
+        } else if (abs_number < 1000) {
+            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
+        } else if (abs_number < 10000) {
+            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
+        } else if (abs_number < 127000) {
+            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
+        } else { // transmit max possible value (0x7F x 10^3 = 127000)
+            res = 0x1FF;
+        }
+        if (number < 0) { // if number is negative, add sign bit in front
+            res |= 0x1<<9;
+        }
+    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
+        if (abs_number < 1000) {
+            res = abs_number<<1;
+        } else if (abs_number < 10240) {
+            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
+        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
+            res = 0x7FF;
+        }
+        if (number < 0) { // if number is negative, add sign bit in front
+            res |= 0x1<<11;
+        }
+    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
+        if (abs_number < 1000) {
+            res = abs_number<<2;
+        } else if (abs_number < 10000) {
+            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
+        } else if (abs_number < 100000) {
+            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
+        } else if (abs_number < 1024000) {
+            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
+        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
+            res = 0xFFF;
+        }
+        if (number < 0) { // if number is negative, add sign bit in front
+            res |= 0x1<<12;
+        }
+    }
+    return res;
+}
+
+/*
+ * Push user data down the telemetry link by responding to sensor polling (sport)
+ * or by using dedicated slots in the scheduler (fport)
+ * for SPort and FPort protocols (X-receivers)
+ */
+bool AP_Frsky_SPort::sport_telemetry_push(uint8_t sensor, uint8_t frame, uint16_t appid, int32_t data)
+{
+    WITH_SEMAPHORE(_sport_push_buffer.sem);
+    if (_sport_push_buffer.pending) {
+        return false;
+    }
+    _sport_push_buffer.packet.sensor = sensor;
+    _sport_push_buffer.packet.frame = frame;
+    _sport_push_buffer.packet.appid = appid;
+    _sport_push_buffer.packet.data = static_cast<uint32_t>(data);
+    _sport_push_buffer.pending = true;
+    return true;
+}
+
+namespace AP {
+    AP_Frsky_SPort *frsky_sport() {
+        return AP_Frsky_SPort::get_singleton();
+    }
+};

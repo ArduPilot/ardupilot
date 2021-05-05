@@ -20,7 +20,7 @@
   code to handle sharing of DMA channels between peripherals
  */
 
-#if CH_CFG_USE_SEMAPHORES == TRUE
+#if CH_CFG_USE_MUTEXES == TRUE && !defined(HAL_NO_SHARED_DMA)
 
 #include <AP_Common/ExpandingString.h>
 
@@ -33,7 +33,7 @@ volatile Shared_DMA::dma_stats* Shared_DMA::_contention_stats;
 void Shared_DMA::init(void)
 {
     for (uint8_t i=0; i<SHARED_DMA_MAX_STREAM_ID; i++) {
-        chBSemObjectInit(&locks[i].semaphore, false);
+        chMtxObjectInit(&locks[i].mutex);
     }
 }
 
@@ -45,6 +45,10 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
 {
     stream_id1 = _stream_id1;
     stream_id2 = _stream_id2;
+    if (stream_id2 < stream_id1) {
+        stream_id1 = _stream_id2;
+        stream_id2 = _stream_id1;
+    }
     allocate = _allocate;
     deallocate = _deallocate;
 }
@@ -66,26 +70,25 @@ void Shared_DMA::unregister()
 }
 
 // lock one stream
-void Shared_DMA::lock_stream(uint8_t stream_id)
+bool Shared_DMA::lock_stream(uint8_t stream_id)
 {
+    bool cont = false;
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
-        chBSemWait(&locks[stream_id].semaphore);
+        const thread_t* curr_owner = locks[stream_id].mutex.owner;
+        chMtxLock(&locks[stream_id].mutex);
+        cont = curr_owner != nullptr && curr_owner != locks[stream_id].mutex.owner;
     }
+    return cont;
 }
 
 // unlock one stream
-void Shared_DMA::unlock_stream(uint8_t stream_id)
+void Shared_DMA::unlock_stream(uint8_t stream_id, bool success)
 {
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
-        chBSemSignal(&locks[stream_id].semaphore);
-    }
-}
-
-// unlock one stream from an IRQ handler
-void Shared_DMA::unlock_stream_from_IRQ(uint8_t stream_id)
-{
-    if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
-        chBSemSignalI(&locks[stream_id].semaphore);
+        chMtxUnlock(&locks[stream_id].mutex);
+        if (success && _contention_stats != nullptr) {
+            _contention_stats[stream_id1].transactions++;
+        }
     }
 }
 
@@ -93,7 +96,7 @@ void Shared_DMA::unlock_stream_from_IRQ(uint8_t stream_id)
 bool Shared_DMA::lock_stream_nonblocking(uint8_t stream_id)
 {
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
-        return chBSemWaitTimeout(&locks[stream_id].semaphore, 1) == MSG_OK;
+        return chMtxTryLock(&locks[stream_id].mutex);
     }
     return true;
 }
@@ -134,14 +137,32 @@ void Shared_DMA::lock_core(void)
         allocate(this);
     }
 #endif
+    // update contention stats
+    if (_contention_stats != nullptr) {
+        if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
+            if (contention) {
+                _contention_stats[stream_id1].contended_locks++;
+            } else {
+                _contention_stats[stream_id1].uncontended_locks++;
+            }
+        }
+        if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
+            if (contention) {
+                _contention_stats[stream_id2].contended_locks++;
+            } else {
+                _contention_stats[stream_id2].uncontended_locks++;
+            }
+        }
+    }
     have_lock = true;
 }
 
 // lock the DMA channels, blocking method
 void Shared_DMA::lock(void)
 {
-    lock_stream(stream_id1);
-    lock_stream(stream_id2);
+    bool c1 = lock_stream(stream_id1);
+    bool c2 = lock_stream(stream_id2);
+    contention = c1 || c2;
     lock_core();
 }
 
@@ -161,12 +182,12 @@ bool Shared_DMA::lock_nonblock(void)
         return false;
     }
 
-    if (_contention_stats != nullptr) {
+    if (_contention_stats != nullptr && stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
         _contention_stats[stream_id1].uncontended_locks++;
     }
 
     if (!lock_stream_nonblocking(stream_id2)) {
-        unlock_stream(stream_id1);
+        unlock_stream(stream_id1, false);
         chSysDisable();
         if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
             locks[stream_id2].obj->contention = true;
@@ -179,44 +200,23 @@ bool Shared_DMA::lock_nonblock(void)
         return false;
     }
     lock_core();
-    if (_contention_stats != nullptr) {
+    if (_contention_stats != nullptr && stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
         _contention_stats[stream_id2].uncontended_locks++;
     }
     return true;
 }
 
 // unlock the DMA channels
-void Shared_DMA::unlock(void)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wframe-larger-than=128"
+void Shared_DMA::unlock(bool success)
 {
     osalDbgAssert(have_lock, "must have lock");
-    unlock_stream(stream_id2);
-    unlock_stream(stream_id1);
     have_lock = false;
+    unlock_stream(stream_id2, success);
+    unlock_stream(stream_id1, success);
 }
-
-// unlock the DMA channels from a lock zone
-void Shared_DMA::unlock_from_lockzone(void)
-{
-    osalDbgAssert(have_lock, "must have lock");
-    if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
-        unlock_stream_from_IRQ(stream_id2);
-        chSchRescheduleS();
-    }
-    if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
-        unlock_stream_from_IRQ(stream_id1);
-        chSchRescheduleS();
-    }
-    have_lock = false;
-}
-
-// unlock the DMA channels from an IRQ
-void Shared_DMA::unlock_from_IRQ(void)
-{
-    osalDbgAssert(have_lock, "must have lock");
-    unlock_stream_from_IRQ(stream_id2);
-    unlock_stream_from_IRQ(stream_id1);
-    have_lock = false;
-}
+#pragma GCC diagnostic pop
 
 /*
   lock all channels - used on reboot to ensure no sensor DMA is in
@@ -241,19 +241,30 @@ void Shared_DMA::dma_info(ExpandingString &str)
     // a header to allow for machine parsers to determine format
     str.printf("DMAV1\n");
 
-    for (uint8_t i = 0; i < SHARED_DMA_MAX_STREAM_ID + 1; i++) {
-        if (locks[i].obj == nullptr) {
+    for (uint8_t i = 0; i < SHARED_DMA_MAX_STREAM_ID; i++) {
+        // ignore locks not in use
+        if (_contention_stats[i].contended_locks == 0
+            && _contention_stats[i].uncontended_locks == 0
+            && _contention_stats[i].transactions == 0) {
             continue;
         }
-
-        const char* fmt = "DMA=%1u STRM=%1u ULCK=%8u CLCK=%8u CONT=%4.1f%%\n";
+#if STM32_DMA_ADVANCED
+#define STREAM_MUX 8
+#define STREAM_OFFSET 0
+#else
+#define STREAM_MUX 7
+#define STREAM_OFFSET 1
+#endif
+        const char* fmt = "DMA=%1u:%1u TX=%8u ULCK=%8u CLCK=%8u CONT=%4.1f%%\n";
         float cond_per = 100.0f * float(_contention_stats[i].contended_locks)
             / (1 + _contention_stats[i].contended_locks + _contention_stats[i].uncontended_locks);
-        str.printf(fmt, i / 8 + 1, i % 8,
-                   _contention_stats[i].uncontended_locks, _contention_stats[i].contended_locks, cond_per);
+        str.printf(fmt, i / STREAM_MUX + 1, i % STREAM_MUX + STREAM_OFFSET,  _contention_stats[i].transactions,
+            _contention_stats[i].uncontended_locks, _contention_stats[i].contended_locks, cond_per);
+
         _contention_stats[i].contended_locks = 0;
         _contention_stats[i].uncontended_locks = 0;
     }
 }
 
 #endif // CH_CFG_USE_SEMAPHORES
+

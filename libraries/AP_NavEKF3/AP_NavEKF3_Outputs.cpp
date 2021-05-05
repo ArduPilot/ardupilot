@@ -171,13 +171,14 @@ uint32_t NavEKF3_core::getLastVelNorthEastReset(Vector2f &vel) const
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3_core::getWind(Vector3f &wind) const
+// returns true if wind state estimation is active
+bool NavEKF3_core::getWind(Vector3f &wind) const
 {
     wind.x = stateStruct.wind_vel.x;
     wind.y = stateStruct.wind_vel.y;
     wind.z = 0.0f; // currently don't estimate this
+    return !inhibitWindStates;
 }
-
 
 // return the NED velocity of the body frame origin in m/s
 //
@@ -291,57 +292,58 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(struct Location &loc) const
 {
-    const auto &gps = dal.gps();
-
     Location origin;
-    float posD;
-
-    if(getPosD(posD) && getOriginLLH(origin)) {
-        // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt = origin.alt - posD*100;
-        loc.relative_alt = 0;
-        loc.terrain_alt = 0;
-
-        // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
-        if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
-            loc.lat = EKF_origin.lat;
-            loc.lng = EKF_origin.lng;
-            loc.offset(outputDataNew.position.x, outputDataNew.position.y);
-            return true;
-        } else {
-            // we could be in constant position mode because the vehicle has taken off without GPS, or has lost GPS
-            // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
-                // we have a GPS position fix to return
-                const struct Location &gpsloc = gps.location(selected_gps);
-                loc.lat = gpsloc.lat;
-                loc.lng = gpsloc.lng;
-                return true;
-            } else {
-                // if no GPS fix, provide last known position before entering the mode
+    if (getOriginLLH(origin)) {
+        float posD;
+        if(getPosD(posD) && PV_AidingMode != AID_NONE) {
+            // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
+            loc.alt = origin.alt - posD*100;
+            loc.relative_alt = 0;
+            loc.terrain_alt = 0;
+            if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
+                // The EKF is able to provide a position estimate
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                if (PV_AidingMode == AID_NONE) {
-                    loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                return true;
+            } else {
+                // We have been be doing inertial dead reckoning for too long so use raw GPS if available
+                if (getGPSLLH(loc)) {
+                    return true;
                 } else {
+                    // Return the EKF estimate but mark it as invalid
+                    loc.lat = EKF_origin.lat;
+                    loc.lng = EKF_origin.lng;
                     loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                    return false;
                 }
+            }
+        } else {
+            // Return a raw GPS reading if available and the last recorded positon if not
+            if (getGPSLLH(loc)) {
+                return true;
+            } else {
+                loc.lat = EKF_origin.lat;
+                loc.lng = EKF_origin.lng;
+                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
                 return false;
             }
         }
     } else {
-        // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
-        // GPS reading if available and return false
-        if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
-            const struct Location &gpsloc = gps.location(selected_gps);
-            loc = gpsloc;
-            loc.relative_alt = 0;
-            loc.terrain_alt = 0;
-        }
-        return false;
+        // The EKF is not navigating so use raw GPS if available
+        return getGPSLLH(loc);
     }
 }
 
+bool NavEKF3_core::getGPSLLH(struct Location &loc) const
+{
+    const auto &gps = dal.gps();
+    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+        loc = gps.location(selected_gps);
+        return true;
+    }
+    return false;
+}
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow

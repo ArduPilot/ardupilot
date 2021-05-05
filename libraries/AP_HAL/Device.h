@@ -78,9 +78,7 @@ public:
 
 
     virtual ~Device() {
-        if (_checked.regs != nullptr) {
-            delete[] _checked.regs;
-        }
+        delete[] _checked.regs;
     }
 
     /*
@@ -203,6 +201,20 @@ public:
      */
     bool check_next_register(void);
 
+    // checked registers
+    struct checkreg {
+        uint8_t bank;
+        uint8_t regnum;
+        uint8_t value;
+    };
+    
+    /**
+     * check next register value for correctness, with return of
+     * failure value. Return false if value is incorrect or register
+     * checking has not been setup
+     */
+    bool check_next_register(struct checkreg &fail);
+    
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -321,7 +333,7 @@ public:
     /**
      * return bus ID with a new devtype
      */
-    uint32_t get_bus_id_devtype(uint8_t devtype) {
+    uint32_t get_bus_id_devtype(uint8_t devtype) const {
         return change_bus_id(get_bus_id(), devtype);
     }
 
@@ -392,18 +404,13 @@ protected:
 private:
     BankSelectCb _bank_select;
 
-    // checked registers
-    struct checkreg {
-        uint8_t bank;
-        uint8_t regnum;
-        uint8_t value;
-    };
     struct {
         uint8_t n_allocated;
         uint8_t n_set;
         uint8_t next;
         uint8_t frequency;
         uint8_t counter;
+        struct checkreg last_reg_fail;
         struct checkreg *regs;
     } _checked;
 };

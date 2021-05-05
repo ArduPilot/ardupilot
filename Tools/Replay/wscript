@@ -18,6 +18,7 @@ def build(bld):
             'AP_Arming',
             'AP_RCMapper',
             'AP_OSD',
+            'AP_Avoidance',
         ],
     )
 

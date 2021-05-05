@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-# Drive balancebot in SITL
+'''
+Drive a BalanceBot in SITL
+
+AP_FLAKE8_CLEAN
+
+'''
+
 from __future__ import print_function
 
 import os
@@ -13,8 +19,10 @@ from common import NotAchievedException
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
+
 def log_name(self):
     return "BalanceBot"
+
 
 class AutoTestBalanceBot(AutoTestRover):
 
@@ -48,7 +56,7 @@ class AutoTestBalanceBot(AutoTestRover):
         # indefinitely at ~1m/s, hence we set to Acro
         self.set_parameter("MIS_DONE_BEHAVE", 2)
         super(AutoTestBalanceBot, self).drive_rtl_mission()
-    
+
     def test_wheelencoders(self):
         '''make sure wheel encoders are generally working'''
         ex = None
@@ -107,7 +115,7 @@ inherit Rover's tests!'''
 
             ("DriveMission",
              "Drive Mission %s" % "balancebot1.txt",
-             lambda: self.drive_mission("balancebot1.txt")),
+             lambda: self.drive_mission("balancebot1.txt", strict=False)),
 
             ("TestWheelEncoder",
              "Test wheel encoders",
@@ -131,4 +139,3 @@ inherit Rover's tests!'''
 
     def default_mode(self):
         return 'MANUAL'
-

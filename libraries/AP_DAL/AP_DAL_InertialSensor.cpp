@@ -32,15 +32,13 @@ void AP_DAL_InertialSensor::start_frame()
         // accel data
         RISI.use_accel = ins.use_accel(i);
         if (RISI.use_accel) {
-            RISI.get_delta_velocity_ret = ins.get_delta_velocity(i, RISI.delta_velocity);
-            RISI.delta_velocity_dt = ins.get_delta_velocity_dt(i);
+            RISI.get_delta_velocity_ret = ins.get_delta_velocity(i, RISI.delta_velocity, RISI.delta_velocity_dt);
         }
 
         // gryo data
         RISI.use_gyro = ins.use_gyro(i);
         if (RISI.use_gyro) {
-            RISI.delta_angle_dt = ins.get_delta_angle_dt(i);
-            RISI.get_delta_angle_ret = ins.get_delta_angle(i, RISI.delta_angle);
+            RISI.get_delta_angle_ret = ins.get_delta_angle(i, RISI.delta_angle, RISI.delta_angle_dt);
         }
 
         update_filtered(i);

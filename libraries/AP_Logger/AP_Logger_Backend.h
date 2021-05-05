@@ -15,7 +15,7 @@ public:
     AP_Logger_Backend(AP_Logger &front,
                       class LoggerMessageWriter_DFLogStart *writer);
 
-    vehicle_startup_message_Writer vehicle_message_writer();
+    vehicle_startup_message_Writer vehicle_message_writer() const;
 
     virtual bool CardInserted(void) const = 0;
 

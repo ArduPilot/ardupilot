@@ -83,7 +83,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
         case 4:
             _parsed.err_code = strtoul(_term, nullptr, 16);
             // Sentence only declared valid when we have the expected number of terms
-            _sentence_valid = true && _data_valid;
+            _sentence_valid = _data_valid;
             break;
 
         default:

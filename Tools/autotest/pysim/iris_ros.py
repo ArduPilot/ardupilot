@@ -13,7 +13,7 @@ import rospy
 import sensor_msgs.msg as sensor_msgs
 
 from aircraft import Aircraft
-from rotmat import Vector3, Matrix3
+from pymavlink.rotmat import Vector3, Matrix3
 
 
 def quat_to_dcm(q1, q2, q3, q4):

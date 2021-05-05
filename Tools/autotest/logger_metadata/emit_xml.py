@@ -45,7 +45,7 @@ class XMLEmitter(emitter.Emitter):
         self.stop()
 
     def stop(self):
-        etree.indent(self.loggermessagefile)
+        # etree.indent(self.loggermessagefile)  # not available on thor, Ubuntu 16.04
         pretty_xml = etree.tostring(self.loggermessagefile, pretty_print=True, encoding='unicode')
         self.fh.write(pretty_xml)
         self.fh.close()

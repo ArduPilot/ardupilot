@@ -676,11 +676,11 @@ AP_InertialSensor *AP_InertialSensor::get_singleton()
 /*
   register a new gyro instance
  */
-uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
-                                         uint32_t id)
+bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
-        AP_HAL::panic("Too many gyros");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to register gyro id %u", unsigned(id));
+        return false;
     }
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
@@ -704,17 +704,19 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
     }
 #endif
 
-    return _gyro_count++;
+    instance = _gyro_count++;
+
+    return true;
 }
 
 /*
   register a new accel instance
  */
-uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
-                                          uint32_t id)
+bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
-        AP_HAL::panic("Too many accels");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
+        return false;
     }
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
@@ -742,7 +744,8 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
         _accel_id[_accel_count].save();
 #endif
 
-    return _accel_count++;
+    instance = _accel_count++;
+    return true;
 }
 
 /*
@@ -774,7 +777,6 @@ void AP_InertialSensor::_start_backends()
 /* Find the N instance of the backend that has already been successfully detected */
 AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, uint8_t instance)
 {
-    assert(_backends_detected);
     uint8_t found = 0;
 
     for (uint8_t i = 0; i < _backend_count; i++) {
@@ -1748,8 +1750,15 @@ check_sample:
 /*
   get delta angles
  */
-bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
+bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle, float &delta_angle_dt) const
 {
+    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
+        delta_angle_dt = _delta_angle_dt[i];
+    } else {
+        delta_angle_dt = get_delta_time();
+    }
+    delta_angle_dt = MIN(delta_angle_dt, _loop_delta_t_max);
+
     if (_delta_angle_valid[i]) {
         delta_angle = _delta_angle[i];
         return true;
@@ -1765,8 +1774,15 @@ bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
 /*
   get delta velocity if available
 */
-bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const
+bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const
 {
+    if (_delta_velocity_valid[i]) {
+        delta_velocity_dt = _delta_velocity_dt[i];
+    } else {
+        delta_velocity_dt = get_delta_time();
+    }
+    delta_velocity_dt = MIN(delta_velocity_dt, _loop_delta_t_max);
+
     if (_delta_velocity_valid[i]) {
         delta_velocity = _delta_velocity[i];
         return true;
@@ -1776,37 +1792,6 @@ bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) 
     }
     return false;
 }
-
-/*
-  return delta_time for the delta_velocity
- */
-float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
-{
-    float ret;
-    if (_delta_velocity_valid[i]) {
-        ret = _delta_velocity_dt[i];
-    } else {
-        ret = get_delta_time();
-    }
-    ret = MIN(ret, _loop_delta_t_max);
-    return ret;
-}
-
-/*
-  return delta_time for the delta_angle
- */
-float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
-{
-    float ret;
-    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
-        ret = _delta_angle_dt[i];
-    } else {
-        ret = get_delta_time();
-    }
-    ret = MIN(ret, _loop_delta_t_max);
-    return ret;
-}
-
 
 /*
   support for setting accel and gyro vectors, for use by HIL
@@ -2381,6 +2366,20 @@ void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
+
+// force save of current calibration as valid
+void AP_InertialSensor::force_save_calibration(void)
+{
+    for (uint8_t i=0; i<_accel_count; i++) {
+        if (_accel_id[i] != 0) {
+            _accel_id[i].save();
+            // we also save the scale as the default of 1.0 may be
+            // over a stored value of 0.0
+            _accel_scale[i].save();
+            _accel_id_ok[i] = true;
+        }
+    }
+}
 
 namespace AP {
 

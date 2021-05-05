@@ -40,7 +40,7 @@ private:
 
     float skid_turn_rate;
 
-    float calc_yaw_rate(float steering);
+    float calc_yaw_rate(float steering) const;
 };
 
 } // namespace SITL

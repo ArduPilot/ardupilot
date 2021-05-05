@@ -250,7 +250,7 @@ void ModeFlowHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = copter.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
@@ -369,7 +369,8 @@ void ModeFlowHold::update_height_estimate(void)
 
     // get delta velocity in body frame
     Vector3f delta_vel;
-    if (!copter.ins.get_delta_velocity(delta_vel)) {
+    float delta_vel_dt;
+    if (!copter.ins.get_delta_velocity(delta_vel, delta_vel_dt)) {
         return;
     }
 

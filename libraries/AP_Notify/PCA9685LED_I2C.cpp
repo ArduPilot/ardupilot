@@ -37,7 +37,7 @@ PCA9685LED_I2C::PCA9685LED_I2C() :
 {
 }
 
-bool PCA9685LED_I2C::hw_init()
+bool PCA9685LED_I2C::init()
 {
     _dev = hal.i2c_mgr->get_device(1, PCA9685_ADDRESS);
 

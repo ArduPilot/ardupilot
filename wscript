@@ -106,6 +106,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable malloc guard regions.')
+
+    g.add_option('--enable-stats',
+        action='store_true',
+        default=False,
+        help='enable OS level thread statistics.')
     
     g.add_option('--bootloader',
         action='store_true',
@@ -289,6 +294,7 @@ def configure(cfg):
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
+    cfg.env.ENABLE_STATS = cfg.options.enable_stats
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
@@ -636,7 +642,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware','AP_Periph','replay'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'blimp', 'bootloader','iofirmware','AP_Periph','replay'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

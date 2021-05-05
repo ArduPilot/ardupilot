@@ -30,7 +30,7 @@ Led_Sysfs::Led_Sysfs(const char *red, const char *green, const char *blue,
 {
 }
 
-bool Led_Sysfs::hw_init()
+bool Led_Sysfs::init()
 {
     if (red_led.init() && green_led.init() && blue_led.init()) {
         return true;

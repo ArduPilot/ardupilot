@@ -346,7 +346,6 @@ void Sub::log_init()
 #else // LOGGING_ENABLED
 
 void Sub::Log_Write_Control_Tuning() {}
-void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
 void Sub::Log_Write_Data(LogDataID id, int32_t value) {}

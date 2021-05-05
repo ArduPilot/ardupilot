@@ -1,4 +1,13 @@
+#!/usr/bin/env python
+
+"""
+Contains functions used to test the ArduPilot examples
+
+AP_FLAKE8_CLEAN
+"""
+
 from __future__ import print_function
+
 
 import os
 import pexpect
@@ -7,6 +16,7 @@ import subprocess
 import time
 
 from pysim import util
+
 
 def run_example(filepath, valgrind=False, gdb=False):
     cmd = []
@@ -41,6 +51,7 @@ def run_example(filepath, valgrind=False, gdb=False):
 
     print("Ran: (%s)" % str(cmd))
 
+
 def run_examples(debug=False, valgrind=False, gdb=False):
     dirpath = util.reltopdir(os.path.join('build', 'linux', 'examples'))
 
@@ -63,6 +74,8 @@ def run_examples(debug=False, valgrind=False, gdb=False):
     skip = {
         "BARO_generic": "Most linux computers don't have baros...",
         "RCProtocolDecoder": "This assumes specific hardware is connected",
+        "FlashTest": "https://github.com/ArduPilot/ardupilot/issues/14168",
+        "UART_chargen": "This nuke the term",
     }
     for afile in os.listdir(dirpath):
         if afile in skip:

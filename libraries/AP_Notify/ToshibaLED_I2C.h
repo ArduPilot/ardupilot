@@ -23,8 +23,8 @@ class ToshibaLED_I2C : public RGBLed
 {
 public:
     ToshibaLED_I2C(uint8_t bus);
+    bool init(void) override;
 protected:
-    bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:

@@ -112,11 +112,7 @@ bool Rover::ekf_over_threshold()
         return true;
     }
 
-    if (ekf_position_ok()) {
-        return false;
-    }
-
-    return true;
+    return !ekf_position_ok();
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set

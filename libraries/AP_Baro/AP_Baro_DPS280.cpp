@@ -47,18 +47,28 @@ AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _de
 }
 
 AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev, bool _is_dps310)
 {
     if (!_dev) {
         return nullptr;
     }
 
     AP_Baro_DPS280 *sensor = new AP_Baro_DPS280(baro, std::move(_dev));
+    if (sensor) {
+        sensor->is_dps310 = _is_dps310;
+    }
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
     }
     return sensor;
+}
+
+AP_Baro_Backend *AP_Baro_DPS310::probe(AP_Baro &baro,
+                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+{
+    // same as DPS280 but with is_dps310 set for temperature fix
+    return AP_Baro_DPS280::probe(baro, std::move(_dev), true);
 }
 
 /*
@@ -127,6 +137,17 @@ void AP_Baro_DPS280::set_config_registers(void)
     dev->write_register(DPS280_REG_PCONF, 0x54, true); // 32 Hz, 16x oversample
     dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source, true); // 32 Hz, 16x oversample
     dev->write_register(DPS280_REG_MCONF, 0x07); // continuous temp and pressure.
+
+    if (is_dps310) {
+        // work around broken temperature handling on some sensors
+        // using undocumented register writes
+        // see https://github.com/infineon/DPS310-Pressure-Sensor/blob/dps310/src/DpsClass.cpp#L442
+        dev->write_register(0x0E, 0xA5);
+        dev->write_register(0x0F, 0x96);
+        dev->write_register(0x62, 0x02);
+        dev->write_register(0x0E, 0x00);
+        dev->write_register(0x0F, 0x00);
+    }
 }
 
 bool AP_Baro_DPS280::init()
@@ -142,6 +163,12 @@ bool AP_Baro_DPS280::init()
     }
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+    // the DPS310 can get into a state on boot where the whoami is not
+    // read correctly at startup. Toggling the CS line gets its out of
+    // this state
+    dev->set_chip_select(true);
+    dev->set_chip_select(false);
 
     uint8_t whoami=0;
     if (!dev->read_registers(DPS280_REG_PID, &whoami, 1) ||

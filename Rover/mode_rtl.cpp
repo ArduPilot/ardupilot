@@ -27,7 +27,7 @@ bool ModeRTL::_enter()
         g2.wp_nav.set_desired_speed_to_default();
     }
 
-    sent_notification = false;
+    send_notification = true;
     _loitering = false;
     return true;
 }
@@ -40,8 +40,8 @@ void ModeRTL::update()
         navigate_to_waypoint();
     } else {
         // send notification
-        if (!sent_notification) {
-            sent_notification = true;
+        if (send_notification) {
+            send_notification = false;
             gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
         }
 

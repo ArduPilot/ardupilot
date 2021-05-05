@@ -29,19 +29,11 @@ extern const AP_HAL::HAL& hal;
 #if RCOU_DSHOT_TIMING_DEBUG
 #define DEBUG_CHANNEL 1
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do { if (channel == DEBUG_CHANNEL) palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
-#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
 #else
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
-#define TOGGLE_PIN_DEBUG(pin) do {} while (0)
 #endif
 
 #define TELEM_IC_SAMPLE 16
-
-// marker for a disabled channel
-#define CHAN_DISABLED 255
-
-// #pragma GCC optimize("Og")
-
 
 /*
  * enable bi-directional telemetry request for a mask of channels. This is used
@@ -63,10 +55,15 @@ void RCOutput::set_bidir_dshot_mask(uint16_t mask)
 
 bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 {
+    // check if already allocated
+    if (group.has_ic_dma()) {
+        return true;
+    }
+
     bool set_curr_chan = false;
 
     for (uint8_t i = 0; i < 4; i++) {
-        if (group.chan[i] == CHAN_DISABLED ||
+        if (!group.is_chan_enabled(i) ||
             !group.dma_ch[i].have_dma || !(_bdshot.mask & (1 << group.chan[i]))) {
             continue;
         }
@@ -100,7 +97,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
     // We might need to do sharing of timers for telemetry feedback
     // due to lack of available DMA channels
     for (uint8_t i = 0; i < 4; i++) {
-        if (group.chan[i] == CHAN_DISABLED || !(_bdshot.mask & (1 << group.chan[i]))) {
+        if (!group.is_chan_enabled(i) || !(_bdshot.mask & (1 << group.chan[i]))) {
             continue;
         }
         uint8_t curr_chan = i;
@@ -138,6 +135,10 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             group.bdshot.telem_tim_ch[i] = curr_chan;
             group.dma_ch[i] = group.dma_ch[curr_chan];
         }
+        // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
+        // when switching from output to input
+        palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
+            | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_MID1);
     }
 
     return true;
@@ -185,6 +186,8 @@ void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
 
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625
 // called from the interrupt
+#pragma GCC push_options
+#pragma GCC optimize("O2")
 void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
 {
     // make sure the transaction finishes or times out, this function takes a little time to run so the most
@@ -194,14 +197,14 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
         bdshot_finish_dshot_gcr_transaction, group);
     uint8_t curr_ch = group->bdshot.curr_telem_chan;
 
+    group->pwm_drv->tim->CR1 = 0;
+    group->pwm_drv->tim->CCER = 0;
+
     // Configure Timer
     group->pwm_drv->tim->SR = 0;
-    group->pwm_drv->tim->CCER = 0;
     group->pwm_drv->tim->CCMR1 = 0;
     group->pwm_drv->tim->CCMR2 = 0;
-    group->pwm_drv->tim->CCER = 0;
     group->pwm_drv->tim->DIER = 0;
-    group->pwm_drv->tim->CR1 = 0;
     group->pwm_drv->tim->CR2 = 0;
     group->pwm_drv->tim->PSC = group->bdshot.telempsc;
 
@@ -358,6 +361,8 @@ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
 #endif
     uint8_t curr_telem_chan = group->bdshot.curr_telem_chan;
 
+    // the DMA buffer is either the regular outbound one because we are sharing UP and CH
+    // or the input channel buffer
     const stm32_dma_stream_t *dma =
         group->has_shared_ic_up_dma() ? group->dma : group->bdshot.ic_dma[curr_telem_chan];
     // record the transaction size before the stream is released
@@ -369,12 +374,10 @@ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
 
     group->dshot_state = DshotState::RECV_COMPLETE;
 
-    // if using input capture DMA then clean up
-    if (group->ic_dma_enabled()) {
-        group->bdshot.ic_dma_handle[curr_telem_chan]->unlock_from_IRQ();
-    }
+    // if using input capture DMA and sharing the UP and CH channels then clean up
+    // by assigning the source back to UP
 #if STM32_DMA_SUPPORTS_DMAMUX
-    else if (group->has_shared_ic_up_dma()) {
+    if (group->has_shared_ic_up_dma()) {
         dmaSetRequestSource(group->dma, group->dma_up_channel);
     }
 #endif
@@ -382,7 +385,8 @@ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
     // rotate to the next input channel
     group->bdshot.prev_telem_chan = group->bdshot.curr_telem_chan;
     group->bdshot.curr_telem_chan = bdshot_find_next_ic_channel(*group);
-    group->dma_handle->unlock_from_IRQ();
+    // tell the waiting process we've done the DMA
+    chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
@@ -394,7 +398,7 @@ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
  */
 bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
 {
-    if (group.chan[chan] == CHAN_DISABLED) {
+    if (!group.is_chan_enabled(chan)) {
         return true;
     }
 
@@ -441,7 +445,7 @@ uint8_t RCOutput::bdshot_find_next_ic_channel(const pwm_group& group)
     uint8_t chan = group.bdshot.curr_telem_chan;
     for (uint8_t i = 1; i < 4; i++) {
         const uint8_t next_chan = (chan + i) % 4;
-        if (group.chan[next_chan] != CHAN_DISABLED &&
+        if (group.is_chan_enabled(next_chan) &&
             group.bdshot.ic_dma_handle[next_chan] != nullptr) {
             return next_chan;
         }
@@ -475,12 +479,17 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
         // sending is done, in 30us the ESC will send telemetry
-        TOGGLE_PIN_DEBUG(55);
         bdshot_receive_pulses_DMAR(group);
-        TOGGLE_PIN_DEBUG(55);
     } else {
-        // non-bidir case
-        chVTSetI(&group->dma_timeout, chTimeUS2I(group->dshot_pulse_time_us + 40), dma_unlock, p);
+        // non-bidir case, this prevents us ever having two dshot pulses too close together
+        if (is_dshot_protocol(group->current_mode)) {
+            // since we could be sending a dshot command, wait the full telemetry pulse width
+            // dshot mandates a minimum pulse separation of 40us
+            chVTSetI(&group->dma_timeout, chTimeUS2I(group->dshot_pulse_send_time_us + 30U + 40U), dma_unlock, p);
+        } else {
+            // WS2812 mandates a minimum pulse separation of 50us
+            chVTSetI(&group->dma_timeout, chTimeUS2I(50U), dma_unlock, p);
+        }
     }
 
     chSysUnlockFromISR();
@@ -576,6 +585,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t cou
     uint32_t ret = (1000000 * 60 / 100 + decodedValue / 2) / decodedValue;
     return ret;
 }
+#pragma GCC pop_options
 
 
 #endif // HAL_WITH_BIDIR_DSHOT

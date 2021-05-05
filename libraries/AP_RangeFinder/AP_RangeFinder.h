@@ -181,6 +181,9 @@ public:
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
 
+    // get temperature reading in C.  returns true on success and populates temp argument
+    bool get_temp(enum Rotation orientation, float &temp);
+
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.
@@ -212,7 +215,7 @@ private:
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
 
     uint32_t _log_rfnd_bit = -1;
-    void Log_RFND();
+    void Log_RFND() const;
 };
 
 namespace AP {

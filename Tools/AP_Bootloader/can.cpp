@@ -54,7 +54,7 @@ static CANConfig cancfg = {
     0 // filled in below
 };
 #else
-static ChibiOS::CANIface can_iface(0);
+static ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifndef CAN_APP_VERSION_MAJOR
@@ -310,7 +310,6 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
     uint8_t received_unique_id[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH];
     uint8_t received_unique_id_len = 0;
     for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++) {
-        assert(received_unique_id_len < UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH);
         const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
         (void) canardDecodeScalar(transfer, bit_offset, 8, false, &received_unique_id[received_unique_id_len]);
     }
@@ -333,7 +332,6 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         // Allocation complete - copying the allocated node ID from the message
         uint8_t allocated_node_id = 0;
         (void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
-        assert(allocated_node_id <= 127);
 
         canardSetLocalNodeID(ins, allocated_node_id);
     }
@@ -483,7 +481,11 @@ static void processTx(void)
         memcpy(txmsg.data, txf->data, 8);
         txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
         // push message with 1s timeout
-        if (can_iface.send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0) {
+        bool send_ok = false;
+        for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+            send_ok |= (can_iface[i].send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0);
+        }
+        if (send_ok) {
             canardPopTxQueue(&canard);
             fail_count = 0;
         } else {
@@ -503,25 +505,32 @@ static void processRx(void)
 {
     AP_HAL::CANFrame rxmsg;
     while (true) {
-        bool read_select = true;
-        bool write_select = false;
-        can_iface.select(read_select, write_select, nullptr, 0);
-        if (!read_select) {
+        bool got_pkt = false;
+        for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+            bool read_select = true;
+            bool write_select = false;
+            can_iface[i].select(read_select, write_select, nullptr, 0);
+            if (!read_select) {
+                continue;
+            }
+#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
+            palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
+#endif
+            CanardCANFrame rx_frame {};
+
+            //palToggleLine(HAL_GPIO_PIN_LED);
+            uint64_t timestamp;
+            AP_HAL::CANIface::CanIOFlags flags;
+            can_iface[i].receive(rxmsg, timestamp, flags);
+            memcpy(rx_frame.data, rxmsg.data, 8);
+            rx_frame.data_len = rxmsg.dlc;
+            rx_frame.id = rxmsg.id;
+            canardHandleRxFrame(&canard, &rx_frame, timestamp);
+            got_pkt = true;
+        }
+        if (!got_pkt) {
             break;
         }
-#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
-        palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
-#endif
-        CanardCANFrame rx_frame {};
-
-        //palToggleLine(HAL_GPIO_PIN_LED);
-        uint64_t timestamp;
-        AP_HAL::CANIface::CanIOFlags flags;
-        can_iface.receive(rxmsg, timestamp, flags);
-        memcpy(rx_frame.data, rxmsg.data, 8);
-        rx_frame.data_len = rxmsg.dlc;
-        rx_frame.id = rxmsg.id;
-        canardHandleRxFrame(&canard, &rx_frame, timestamp);
     }
 }
 #endif //#if HAL_USE_CAN
@@ -695,7 +704,9 @@ void can_start()
         CAN_BTR_BRP(timings.bit_rate_prescaler-1);
     canStart(&CAND1, &cancfg);
 #else
-    can_iface.init(baudrate, AP_HAL::CANIface::NormalMode);
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+        can_iface[i].init(baudrate, AP_HAL::CANIface::NormalMode);
+    }
 #endif
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
                onTransferReceived, shouldAcceptTransfer, NULL);

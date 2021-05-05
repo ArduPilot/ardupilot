@@ -51,6 +51,7 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
             *p = 0;
         }
         len = strnlen(cbuf, len);
+        buf[0] += sitlState->get_instance();
         return true;
     }
 
@@ -58,7 +59,10 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
     if (gethostname(cbuf, len) != 0) {
         // use a default name so this always succeeds. Without it we can't
         // implement some features (such as UAVCAN)
-        strncpy(cbuf, "sitl-unknown", len);
+        snprintf(cbuf, len, "sitl-unknown-%d", sitlState->get_instance());
+    } else {
+        // To ensure separate ids for each instance
+        cbuf[0] += sitlState->get_instance();
     }
     len = strnlen(cbuf, len);
     return true;

@@ -14,7 +14,9 @@
 /Tools/autotest/jsbsim_start_0.xml
 /Tools/autotest/rover-ch7_mission.txt
 /tmp/*
+# Exclude all bins but allow font bins
 *.bin
+!font*.bin
 *.d
 *.dfu
 *.dll
@@ -125,11 +127,17 @@ way.txt
 *.wbproj
 segv_*out
 /scripts/
+/repl/
 /Rover/scripts/
+/Rover/repl/
 /AntennaTracker/scripts/
+/AntennaTracker/repl/
 /ArduCopter/scripts/
+/ArduCopter/repl/
 /ArduPlane/scripts/
+/ArduPlane/repl/
 /ArduSub/scripts/
+/ArduSub/repl/
 persistent.dat
 dumpstack_*out
 build.tmp.binaries/

@@ -13,6 +13,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 void setup();
 void loop();
@@ -38,25 +39,31 @@ const struct AP_Param::Info var_info[] = {
     AP_VAREND
 };
 
-static AP_BoardConfig board_config;
-static AP_InertialSensor ins;
-static Compass compass;
+
 static AP_Param param{var_info};
-static AP_GPS gps;
-static AP_Baro barometer;
+
+
 AP_Int32 logger_bitmask;
 static AP_Logger logger{logger_bitmask};
 
-class DummyVehicle {
+class DummyVehicle : public AP_Vehicle {
 public:
     AP_AHRS_NavEKF ahrs{AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; };
+    uint8_t get_mode() const override { return 1; };
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) override {};
+    void init_ardupilot() override {};
+    void load_parameters() override {};
+    void init() {
+        BoardConfig.init();
+    }
 };
 
 static DummyVehicle vehicle;
 
 void setup(void)
 {
-    board_config.init();
+    vehicle.init();
     if (!AP_Param::setup()) {
         hal.console->printf("Failed to call setup\n");
         while(true);
@@ -65,19 +72,19 @@ void setup(void)
         hal.console->printf("Failed to set SERIAL0_PROTOCOL\n");
         while(true);
     }
-    ins.init(100);
+    AP::ins().init(100);
     serial_manager.init_console();
     serial_manager.init();
     vehicle.ahrs.init();
 
-    compass.init();
-    if(compass.read()) {
+    AP::compass().init();
+    if(AP::compass().read()) {
         hal.console->printf("Enabling compass\n");
-        vehicle.ahrs.set_compass(&compass);
+        vehicle.ahrs.set_compass(&AP::compass());
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(serial_manager);
+    AP::gps().init(serial_manager);
     AP::rtc().set_utc_usec(1546300800000, AP_RTC::source_type::SOURCE_GPS);
 }
 
@@ -88,7 +95,7 @@ void loop(void)
 
     // read compass at 10Hz
     if (now - last_compass > 100 * 1000UL &&
-        compass.read()) {
+        AP::compass().read()) {
         last_compass = now;
     }
 

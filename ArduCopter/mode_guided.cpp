@@ -44,6 +44,7 @@ bool ModeGuided::init(bool ignore_checks)
 {
     // start in position control mode
     pos_control_start();
+    send_notification = false;
     return true;
 }
 
@@ -54,37 +55,41 @@ void ModeGuided::run()
     // call the correct auto controller
     switch (guided_mode) {
 
-    case Guided_TakeOff:
+    case SubMode::TakeOff:
         // run takeoff controller
         takeoff_run();
         break;
 
-    case Guided_WP:
+    case SubMode::WP:
         // run position controller
         pos_control_run();
+        if (send_notification && wp_nav->reached_wp_destination()) {
+            send_notification = false;
+            gcs().send_mission_item_reached_message(0);
+        }
         break;
 
-    case Guided_Velocity:
+    case SubMode::Velocity:
         // run velocity controller
         vel_control_run();
         break;
 
-    case Guided_PosVel:
+    case SubMode::PosVel:
         // run position-velocity controller
         posvel_control_run();
         break;
 
-    case Guided_Angle:
+    case SubMode::Angle:
         // run angle controller
         angle_control_run();
         break;
     }
  }
 
-bool ModeGuided::allows_arming(bool from_gcs) const
+bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station
-    if (from_gcs) {
+    if (method == AP_Arming::Method::MAVLINK) {
         return true;
     }
 
@@ -95,7 +100,7 @@ bool ModeGuided::allows_arming(bool from_gcs) const
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
-    guided_mode = Guided_TakeOff;
+    guided_mode = SubMode::TakeOff;
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
@@ -111,7 +116,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     }
     target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
-    if (!wp_nav->set_wp_destination(target_loc)) {
+    if (!wp_nav->set_wp_destination_loc(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -134,7 +139,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 void ModeGuided::pos_control_start()
 {
     // set to position control mode
-    guided_mode = Guided_WP;
+    guided_mode = SubMode::WP;
 
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
@@ -154,7 +159,7 @@ void ModeGuided::pos_control_start()
 void ModeGuided::vel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Velocity;
+    guided_mode = SubMode::Velocity;
 
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
@@ -172,7 +177,7 @@ void ModeGuided::vel_control_start()
 void ModeGuided::posvel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_PosVel;
+    guided_mode = SubMode::PosVel;
 
     pos_control->init_xy_controller();
 
@@ -197,14 +202,14 @@ void ModeGuided::posvel_control_start()
 
 bool ModeGuided::is_taking_off() const
 {
-    return guided_mode == Guided_TakeOff;
+    return guided_mode == SubMode::TakeOff;
 }
 
 // initialise guided mode's angle controller
 void ModeGuided::angle_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Angle;
+    guided_mode = SubMode::Angle;
 
     // set vertical speed and acceleration
     pos_control->set_max_speed_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
@@ -236,7 +241,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 {
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -245,7 +250,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 #endif
 
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         pos_control_start();
     }
 
@@ -257,12 +262,15 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+
+    send_notification = true;
+
     return true;
 }
 
 bool ModeGuided::get_wp(Location& destination)
 {
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         return false;
     }
     return wp_nav->get_oa_wp_destination(destination);
@@ -284,11 +292,11 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 #endif
 
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         pos_control_start();
     }
 
-    if (!wp_nav->set_wp_destination(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -300,6 +308,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+
+    send_notification = true;
+
     return true;
 }
 
@@ -307,7 +318,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Velocity) {
+    if (guided_mode != SubMode::Velocity) {
         vel_control_start();
     }
 
@@ -329,7 +340,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 {
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination);
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -338,7 +349,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 #endif
 
     // check we are in velocity control mode
-    if (guided_mode != Guided_PosVel) {
+    if (guided_mode != SubMode::PosVel) {
         posvel_control_start();
     }
 
@@ -356,11 +367,17 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
     return true;
 }
 
+// returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
+bool ModeGuided::set_attitude_target_provides_thrust() const
+{
+    return ((copter.g2.guided_options.get() & uint32_t(Options::SetAttitudeTarget_ThrustAsThrust)) != 0);
+}
+
 // set guided mode angle target and climbrate
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Angle) {
+    if (guided_mode != SubMode::Angle) {
         angle_control_start();
     }
 
@@ -395,8 +412,10 @@ void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
     if (wp_nav->reached_wp_destination()) {
+#if LANDING_GEAR_ENABLED == ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
+#endif
 
         // switch to position control mode but maintain current target
         const Vector3f target = wp_nav->get_wp_destination();
@@ -436,13 +455,13 @@ void ModeGuided::pos_control_run()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
     } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from waypoint controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.rate_cds());
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -499,13 +518,13 @@ void ModeGuided::vel_control_run()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
     } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from velocity controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -564,13 +583,13 @@ void ModeGuided::posvel_control_run()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
     } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from position-velocity controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -591,7 +610,7 @@ void ModeGuided::angle_control_run()
 
     // wrap yaw request
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
-    float yaw_rate_in = wrap_180_cd(guided_angle_state.yaw_rate_cds);
+    float yaw_rate_in = guided_angle_state.yaw_rate_cds;
 
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {
@@ -679,10 +698,8 @@ void ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const Vector3f
     curr_vel_des.z += constrain_float(vel_delta.z, -vel_delta_z_max, vel_delta_z_max);
 
 #if AC_AVOID_ENABLED
-    // limit the velocity to prevent fence violations
-    copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), curr_vel_des, G_Dt);
-    // get avoidance adjusted climb rate
-    curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);
+    // limit the velocity for obstacle/fence avoidance
+    copter.avoid.adjust_velocity(curr_vel_des, pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
 #endif
 
     // update position controller with new target
@@ -773,12 +790,12 @@ bool ModeGuided::limit_check()
 
 uint32_t ModeGuided::wp_distance() const
 {
-    switch(mode()) {
-    case Guided_WP:
+    switch(guided_mode) {
+    case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination();
         break;
-    case Guided_PosVel:
-        return pos_control->get_distance_to_target();
+    case SubMode::PosVel:
+        return pos_control->get_pos_error_xy();
         break;
     default:
         return 0;
@@ -787,25 +804,37 @@ uint32_t ModeGuided::wp_distance() const
 
 int32_t ModeGuided::wp_bearing() const
 {
-    switch(mode()) {
-    case Guided_WP:
+    switch(guided_mode) {
+    case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
         break;
-    case Guided_PosVel:
+    case SubMode::PosVel:
         return pos_control->get_bearing_to_target();
         break;
-    default:
+    case SubMode::TakeOff:
+    case SubMode::Velocity:
+    case SubMode::Angle:
+        // these do not have bearings
         return 0;
     }
+    // compiler guarantees we don't get here
+    return 0.0;
 }
 
 float ModeGuided::crosstrack_error() const
 {
-    if (mode() == Guided_WP) {
+    switch (guided_mode) {
+    case SubMode::WP:
         return wp_nav->crosstrack_error();
-    } else {
+    case SubMode::TakeOff:
+    case SubMode::Velocity:
+    case SubMode::PosVel:
+    case SubMode::Angle:
+        // no track to have a crosstrack to
         return 0;
     }
+    // compiler guarantees we don't get here
+    return 0;
 }
 
 #endif

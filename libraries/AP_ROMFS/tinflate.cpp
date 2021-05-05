@@ -353,7 +353,7 @@ static int tinf_decode_trees(TINF_DATA *d, TINF_TREE *lt, TINF_TREE *dt)
 
       /* special code length 16-18 are handled here */
       length = tinf_read_bits(d, lbits, lbase);
-      if (num + length >= hlimit) return TINF_DATA_ERROR;
+      if (num + length > hlimit) return TINF_DATA_ERROR;
       for (; length; --length)
       {
          lengths[num++] = fill_value;

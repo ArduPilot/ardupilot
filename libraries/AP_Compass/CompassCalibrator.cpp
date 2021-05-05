@@ -459,7 +459,7 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
     };
 }
 
-bool CompassCalibrator::fit_acceptable()
+bool CompassCalibrator::fit_acceptable() const
 {
     if (!isnan(_fitness) &&
         _params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX &&
@@ -845,7 +845,7 @@ void CompassCalibrator::AttitudeSample::set_from_ahrs(void)
     yaw = constrain_int16(127 * (yaw_rad / M_PI), -127, 127);
 }
 
-Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void)
+Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) const
 {
     float roll_rad, pitch_rad, yaw_rad;
     roll_rad = roll * (M_PI / 127);

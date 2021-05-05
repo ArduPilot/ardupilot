@@ -46,6 +46,11 @@ float Plane::get_speed_scaler(void)
         // no speed estimate and not armed, use a unit scaling
         speed_scaler = 1;
     }
+    if (!plane.ahrs.airspeed_sensor_enabled()  && 
+        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        return MIN(speed_scaler, 1.0f) ;
+    }
     return speed_scaler;
 }
 
@@ -54,11 +59,16 @@ float Plane::get_speed_scaler(void)
  */
 bool Plane::stick_mixing_enabled(void)
 {
+#if AC_FENCE == ENABLED
+    const bool stickmixing = fence_stickmixing();
+#else
+    const bool stickmixing = true;
+#endif
     if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             g.stick_mixing != STICK_MIXING_VTOL_YAW &&
-            geofence_stickmixing() &&
+            stickmixing &&
             failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
             // we're in an auto mode, and haven't triggered failsafe
@@ -358,10 +368,17 @@ void Plane::stabilize_acro(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
-    /*
-      manual rudder for now
-     */
-    steering_control.steering = steering_control.rudder = rudder_input();
+    steering_control.steering = rudder_input();
+
+    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+        // use yaw controller
+        calc_nav_yaw_coordinated(speed_scaler);
+    } else {
+        /*
+          manual rudder
+        */
+        steering_control.rudder = steering_control.steering;
+    }
 }
 
 /*
@@ -381,9 +398,11 @@ void Plane::stabilize()
     if (quadplane.in_tailsitter_vtol_transition(now)) {
         /*
           during transition to vtol in a tailsitter try to raise the
-          nose rapidly while keeping the wings level
+          nose while keeping the wings level
          */
-        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        uint32_t dt = now - quadplane.transition_start_ms;
+        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+        nav_pitch_cd = constrain_float(quadplane.transition_initial_pitch + (quadplane.tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
         nav_roll_cd = 0;
     }
 
@@ -431,7 +450,7 @@ void Plane::stabilize()
     if (get_throttle_input() == 0 &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
-        gps.ground_speed() < 3) {
+        ahrs.groundspeed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
@@ -440,7 +459,7 @@ void Plane::stabilize()
         yawController.reset_I();
 
         // if moving very slowly also zero the steering integrator
-        if (gps.ground_speed() < 1) {
+        if (ahrs.groundspeed() < 1) {
             steerController.reset_I();            
         }
     }

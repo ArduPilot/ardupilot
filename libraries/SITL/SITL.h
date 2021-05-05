@@ -138,6 +138,12 @@ public:
         GPS_TYPE_SBP2   = 9,
     };
 
+    enum GPSHeading {
+        GPS_HEADING_NONE = 0,
+        GPS_HEADING_HDT  = 1,
+        GPS_HEADING_THS  = 2,
+    };
+
     struct sitl_fdm state;
 
     // loop update rate in Hz
@@ -376,8 +382,8 @@ public:
 
     time_t start_time_UTC;
 
-    void simstate_send(mavlink_channel_t chan);
-    void sim_state_send(mavlink_channel_t chan);
+    void simstate_send(mavlink_channel_t chan) const;
+    void sim_state_send(mavlink_channel_t chan) const;
 
     void Log_Write_SIMSTATE();
 
@@ -434,8 +440,8 @@ public:
     float get_rangefinder(uint8_t instance);
 
     // get the apparent wind speed and direction as set by external physics backend
-    float get_apparent_wind_dir(){return state.wind_vane_apparent.direction;}
-    float get_apparent_wind_spd(){return state.wind_vane_apparent.speed;}
+    float get_apparent_wind_dir() const{return state.wind_vane_apparent.direction;}
+    float get_apparent_wind_spd() const{return state.wind_vane_apparent.speed;}
 
     // IMU temperature calibration params
     AP_Float imu_temp_start;
@@ -455,6 +461,9 @@ public:
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
     AP_Int8 accel_fail_mask;
+
+    // Sailboat sim only
+    AP_Int8 sail_type;
 
 };
 

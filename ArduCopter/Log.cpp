@@ -76,6 +76,10 @@ void Copter::Log_Write_Attitude()
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
         logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
+        if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
+            logger.Write_PID(LOG_PIDN_MSG, pos_control->get_vel_xy_pid().get_pid_info_x());
+            logger.Write_PID(LOG_PIDE_MSG, pos_control->get_vel_xy_pid().get_pid_info_y());
+        }
     }
 }
 
@@ -362,60 +366,6 @@ void Copter::Log_Write_Heli()
 }
 #endif
 
-// precision landing logging
-struct PACKED log_Precland {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t healthy;
-    uint8_t target_acquired;
-    float pos_x;
-    float pos_y;
-    float vel_x;
-    float vel_y;
-    float meas_x;
-    float meas_y;
-    float meas_z;
-    uint32_t last_meas;
-    uint32_t ekf_outcount;
-    uint8_t estimator;
-};
-
-// Write a precision landing entry
-void Copter::Log_Write_Precland()
-{
- #if PRECISION_LANDING == ENABLED
-    // exit immediately if not enabled
-    if (!precland.enabled()) {
-        return;
-    }
-
-    Vector3f target_pos_meas = Vector3f(0.0f,0.0f,0.0f);
-    Vector2f target_pos_rel = Vector2f(0.0f,0.0f);
-    Vector2f target_vel_rel = Vector2f(0.0f,0.0f);
-    precland.get_target_position_relative_cm(target_pos_rel);
-    precland.get_target_velocity_relative_cms(target_vel_rel);
-    precland.get_target_position_measurement_cm(target_pos_meas);
-
-    struct log_Precland pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
-        time_us         : AP_HAL::micros64(),
-        healthy         : precland.healthy(),
-        target_acquired : precland.target_acquired(),
-        pos_x           : target_pos_rel.x,
-        pos_y           : target_pos_rel.y,
-        vel_x           : target_vel_rel.x,
-        vel_y           : target_vel_rel.y,
-        meas_x          : target_pos_meas.x,
-        meas_y          : target_pos_meas.y,
-        meas_z          : target_pos_meas.z,
-        last_meas       : precland.last_backend_los_meas_ms(),
-        ekf_outcount    : precland.ekf_outlier_count(),
-        estimator       : precland.estimator_type()
-    };
-    logger.WriteBlock(&pkt, sizeof(pkt));
- #endif     // PRECISION_LANDING == ENABLED
-}
-
 // guided target logging
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
@@ -432,12 +382,12 @@ struct PACKED log_GuidedTarget {
 // Write a Guided mode target
 // pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
 // vel_target is cm/s
-void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, const Vector3f& vel_target)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
         time_us         : AP_HAL::micros64(),
-        type            : target_type,
+        type            : (uint8_t)target_type,
         pos_target_x    : pos_target.x,
         pos_target_y    : pos_target.y,
         pos_target_z    : pos_target.z,
@@ -548,26 +498,6 @@ const struct LogStructure Copter::log_structure[] = {
       "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" },
 #endif
 
-// @LoggerMessage: PL
-// @Description: Precision Landing messages
-// @Field: TimeUS: Time since system startup
-// @Field: Heal: True if Precision Landing is healthy
-// @Field: TAcq: True if landing target is detected
-// @Field: pX: Target position relative to vehicle, X-Axis (0 if target not found)
-// @Field: pY: Target position relative to vehicle, Y-Axis (0 if target not found)
-// @Field: vX: Target velocity relative to vehicle, X-Axis (0 if target not found)
-// @Field: vY: Target velocity relative to vehicle, Y-Axis (0 if target not found)
-// @Field: mX: Target's relative to origin position as 3-D Vector, X-Axis
-// @Field: mY: Target's relative to origin position as 3-D Vector, Y-Axis
-// @Field: mZ: Target's relative to origin position as 3-D Vector, Z-Axis
-// @Field: LastMeasMS: Time when target was last detected
-// @Field: EKFOutl: EKF's outlier count
-// @Field: Est: Type of estimator used
-#if PRECISION_LANDING == ENABLED
-    { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" },
-#endif
-
 // @LoggerMessage: SIDD
 // @Description: System ID data
 // @Field: TimeUS: Time since system startup
@@ -617,8 +547,8 @@ const struct LogStructure Copter::log_structure[] = {
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Write_MessageF("Frame: %s", get_frame_string());
-    logger.Write_Mode((uint8_t)control_mode, control_mode_reason);
+    logger.Write_MessageF("Frame: %s/%s", motors->get_frame_string(), motors->get_type_string());
+    logger.Write_Mode((uint8_t)flightmode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
@@ -631,7 +561,6 @@ void Copter::log_init(void)
 #else // LOGGING_ENABLED
 
 void Copter::Log_Write_Control_Tuning() {}
-void Copter::Log_Write_Performance() {}
 void Copter::Log_Write_Attitude(void) {}
 void Copter::Log_Write_EKF_POS() {}
 void Copter::Log_Write_MotBatt() {}
@@ -642,8 +571,7 @@ void Copter::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Copter::Log_Write_Data(LogDataID id, float value) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Copter::Log_Sensor_Health() {}
-void Copter::Log_Write_Precland() {}
-void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
+void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode&, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}

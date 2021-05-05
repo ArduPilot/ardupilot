@@ -39,7 +39,7 @@ public:
 
     T apply(const T &sample, const struct biquad_params &params);
     void reset();
-    void reset(const T &value);
+    void reset(const T &value, const struct biquad_params &params);
     static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret);
     
 private:

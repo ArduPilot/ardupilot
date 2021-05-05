@@ -572,7 +572,7 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
 }
 
 // return true when external nav data is also being used as a yaw observation
-bool NavEKF2_core::isExtNavUsedForYaw()
+bool NavEKF2_core::isExtNavUsedForYaw() const
 {
     return extNavUsedForYaw;
 }

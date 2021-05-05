@@ -1,4 +1,4 @@
-name: test unit tests
+name: test unit tests and Python cleanliness
 
 on: [push, pull_request, workflow_dispatch]
 # paths:
@@ -8,7 +8,9 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container:
+      image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+      options: --user 1001
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -17,7 +19,9 @@ jobs:
             clang,
         ]
         config: [
-            unit-tests
+            unit-tests,
+            python-cleanliness,
+            # examples,
         ]
     steps:
       # git checkout the PR
@@ -48,7 +52,7 @@ jobs:
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
-        shell: bash
+        shell: 'script -q -e -c "bash {0}"'
         run: |
           if [[ ${{ matrix.toolchain }} = "clang" ]]; then
             export CC=clang-7
@@ -59,7 +63,8 @@ jobs:
 
       - name: Archive buildlog artifacts
         uses: actions/upload-artifact@v2
+        if: failure()
         with:
-           name: buildlogs-for-${{ matrix.toolchain }}-${{matrix.config}}
+           name: fail-${{ matrix.toolchain }}-${{matrix.config}}
            path: /tmp/buildlogs
            retention-days: 14

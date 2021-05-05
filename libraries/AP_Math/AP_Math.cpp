@@ -404,3 +404,25 @@ void fill_nanf(float *f, uint16_t count)
     }
 }
 #endif
+
+// Convert 16-bit fixed-point to float
+float fixed2float(const uint16_t input, const uint8_t fractional_bits)
+{
+    return ((float)input / (float)(1U << fractional_bits));
+}
+
+// Convert float to 16-bit fixed-point
+uint16_t float2fixed(const float input, const uint8_t fractional_bits)
+{
+    return (uint16_t)(roundf(input * (1U << fractional_bits)));
+}
+
+/*
+  calculate turn rate in deg/sec given a bank angle and airspeed for a
+  fixed wing aircraft
+ */
+float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
+{
+    bank_angle_deg = constrain_float(bank_angle_deg, -80, 80);
+    return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
+}

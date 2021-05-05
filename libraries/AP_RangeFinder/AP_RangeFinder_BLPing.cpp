@@ -55,7 +55,7 @@ bool AP_RangeFinder_BLPing::get_reading(uint16_t &reading_cm)
     struct {
         float sum_cm = 0;
         uint16_t count = 0;
-        float mean() { return sum_cm / count; };
+        float mean() const { return sum_cm / count; };
     } averageStruct;
 
     // read any available lines from the lidar

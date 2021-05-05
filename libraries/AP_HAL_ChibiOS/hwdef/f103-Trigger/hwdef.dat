@@ -2,6 +2,9 @@
 
 include ../f103-periph/hwdef.dat
 
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
@@ -15,7 +18,6 @@ define HAL_PWM_HARDPOINT_ID_DEFAULT 101
 # we need 10us resolution for PWM capture
 undef CH_CFG_ST_FREQUENCY
 define CH_CFG_ST_FREQUENCY 100000
-define CH_CFG_ST_RESOLUTION 16
 
 # use USART1_RX as input for PWM trigger
 undef PA10

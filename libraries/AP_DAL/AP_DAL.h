@@ -75,11 +75,11 @@ public:
 
     void log_event2(Event event);
     void log_SetOriginLLH2(const Location &loc);
-    void log_writeDefaultAirSpeed2(float aspeed);
+    void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
 
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
-    void log_writeDefaultAirSpeed3(float aspeed);
+    void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
     enum class StateMask {

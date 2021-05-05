@@ -266,7 +266,6 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->configure_parity(0);
             added.uart->set_stop_bits(1);
             added.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-            added.uart->set_unbuffered_writes(true);
             added.uart->set_blocking_writes(false);
             added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
             break;

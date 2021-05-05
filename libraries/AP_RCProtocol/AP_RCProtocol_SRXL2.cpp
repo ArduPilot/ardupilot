@@ -23,7 +23,7 @@
 #include <AP_RCTelemetry/AP_Spektrum_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_RCTelemetry/AP_VideoTX.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include "spm_srxl.h"
 

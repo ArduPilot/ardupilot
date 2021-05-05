@@ -18,13 +18,38 @@
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
 #include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
 void SITL_State::init(int argc, char * const argv[]) {
+    int opt;
+    const struct GetOptLong::option options[] = {
+        {"help",            false,  0, 'h'},
+        {"instance",        true,   0, 'I'},
+    };
 
+    setvbuf(stdout, (char *)0, _IONBF, 0);
+    setvbuf(stderr, (char *)0, _IONBF, 0);
+
+    GetOptLong gopt(argc, argv, "hI:",
+                    options);
+
+    while((opt = gopt.getoption()) != -1) {
+        switch (opt) {
+            case 'I':
+                _instance = atoi(gopt.optarg);
+                break;
+            default:
+                printf("Options:\n"
+                    "\t--help|-h                display this help information\n"
+                    "\t--instance|-I N          set instance of SITL Periph\n");
+                exit(1);
+        }
+    }
+    printf("Running Instance: %d\n", _instance);
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec) {

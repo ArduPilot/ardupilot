@@ -61,7 +61,7 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
  */
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
 {
-    switch (copter.control_mode) {
+    switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
     case Mode::Number::GUIDED:
     case Mode::Number::RTL:

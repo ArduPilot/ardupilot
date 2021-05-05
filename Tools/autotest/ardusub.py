@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 
-# Dive ArduSub in SITL
+'''
+Dive ArduSub in SITL
+
+AP_FLAKE8_CLEAN
+'''
+
 from __future__ import print_function
 import os
+import sys
+import time
 
 from pymavlink import mavutil
 
 from common import AutoTest
 from common import NotAchievedException
+from common import AutoTestTimeoutException
+
+if sys.version_info[0] < 3:
+    ConnectionResetError = AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -48,8 +59,12 @@ class AutoTestSub(AutoTest):
     def log_name(self):
         return "ArduSub"
 
+    def default_speedup(self):
+        '''Sub seems to be race-free'''
+        return 100
+
     def test_filepath(self):
-         return os.path.realpath(__file__)
+        return os.path.realpath(__file__)
 
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduSub_Tests/" + name + "/"
@@ -86,15 +101,16 @@ class AutoTestSub(AutoTest):
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
             if abs(m.alt - previous_altitude) > delta:
-                raise NotAchievedException("Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" % (previous_altitude, delta, m.alt))
+                raise NotAchievedException(
+                    "Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" %
+                    (previous_altitude, delta, m.alt))
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
         """
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.send('mode ALT_HOLD\n')
-        self.wait_mode('ALT_HOLD')
+        self.change_mode('ALT_HOLD')
 
         msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
         if msg is None:
@@ -147,10 +163,9 @@ class AutoTestSub(AutoTest):
         self.arm_vehicle()
         # point North
         self.reach_heading_manual(0)
-        self.mavproxy.send('mode POSHOLD\n')
-        self.wait_mode('POSHOLD')
+        self.change_mode('POSHOLD')
 
-        #dive a little 
+        # dive a little
         self.set_rc(Joystick.Throttle, 1300)
         self.delay_sim_time(3)
         self.set_rc(Joystick.Throttle, 1500)
@@ -166,7 +181,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(10)
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
-            raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+            raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
 
         # Hold in 1 m/s current
         self.progress("Testing position hold in current")
@@ -175,7 +190,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(10)
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
-            raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+            raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
 
         # Move forward slowly in 1 m/s current
         start_pos = self.mav.location()
@@ -185,7 +200,7 @@ class AutoTestSub(AutoTest):
         distance_m = self.get_distance(start_pos, self.mav.location())
         bearing = self.get_bearing(start_pos, self.mav.location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
-            raise NotAchievedException("Position Hold was unable to move north 2 meters, moved {} at {} degrees instead".format(distance_m, bearing))
+            raise NotAchievedException("Position Hold was unable to move north 2 meters, moved {} at {} degrees instead".format(distance_m, bearing))  # noqa
         self.disarm_vehicle()
 
     def test_mot_thst_hover_ignore(self):
@@ -201,7 +216,6 @@ class AutoTestSub(AutoTest):
         for value in [0.25, 0.75]:
             self.set_parameter("MOT_THST_HOVER", value)
             self.test_alt_hold()
-
 
     def dive_manual(self):
         self.wait_ready_to_arm()
@@ -253,31 +267,19 @@ class AutoTestSub(AutoTest):
         self.progress("Mission OK")
 
     def test_gripper_mission(self):
-        with self.Context(self):
-            self.test_gripper_body()
-
-    def test_gripper_body(self):
-        ex = None
         try:
-            try:
-                self.get_parameter("GRIP_ENABLE", timeout=5)
-            except NotAchievedException as e:
-                self.progress("Skipping; Gripper not enabled in config?")
-                return
+            self.get_parameter("GRIP_ENABLE", timeout=5)
+        except NotAchievedException:
+            self.progress("Skipping; Gripper not enabled in config?")
+            return
 
-            self.load_mission("sub-gripper-mission.txt")
-            self.mavproxy.send('mode loiter\n')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.change_mode('AUTO')
-            self.mavproxy.expect("Gripper Grabbed")
-            self.mavproxy.expect("Gripper Released")
-        except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
-            ex = e
-        if ex is not None:
-            raise ex
+        self.load_mission("sub-gripper-mission.txt")
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_statustext("Gripper Grabbed", timeout=60)
+        self.wait_statustext("Gripper Released", timeout=60)
 
     def dive_set_position_target(self):
         self.change_mode('GUIDED')
@@ -326,27 +328,54 @@ class AutoTestSub(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        self.context_push()
-        self.context_collect("STATUSTEXT")
-        self.send_reboot_command()
-        # "Init ArduSub" comes out as raw text, not a statustext
-        for i in range(2):
+        # out battery is reset to full on reboot.  So reduce it to 10%
+        # and wait for it to go above 50.
+        self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                     255,  # battery mask
+                     10,  # percentage
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+        self.run_cmd_reboot()
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException("Did not detect reboot")
+            # ask for the message:
+            batt = None
             try:
-                self.wait_statustext("ArduPilot Ready", check_context=True, wallclock_timeout=True)
-            except ConnectionResetError as e:
+                self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                              mavutil.mavlink.MAVLINK_MSG_ID_BATTERY_STATUS,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0)
+                batt = self.mav.recv_match(type='BATTERY_STATUS',
+                                           blocking=True,
+                                           timeout=1)
+            except ConnectionResetError:
                 pass
-        self.context_pop()
+            self.progress("Battery: %s" % str(batt))
+            if batt is None:
+                continue
+            if batt.battery_remaining > 50:
+                break
         self.initialise_after_reboot_sitl()
 
-    def apply_defaultfile_parameters(self):
-        super(AutoTestSub, self).apply_defaultfile_parameters()
-        # FIXME:
-        self.set_parameter("FS_GCS_ENABLE", 0)
+    def default_parameter_list(self):
+        ret = super(AutoTestSub, self).default_parameter_list()
+        ret["FS_GCS_ENABLE"] = 0  # FIXME
+        return ret
 
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
-            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
         })
         return ret
 

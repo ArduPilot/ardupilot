@@ -32,7 +32,7 @@ public:
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
-    uint8_t num_channels();
+    uint8_t num_channels() const;
 
     // support for receivers that have FC initiated bind support
     virtual void start_bind(void) {}

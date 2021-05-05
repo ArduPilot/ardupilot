@@ -162,8 +162,8 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
         tiltErr : sqrtf(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
+        offsetNorth : offset.x,
+        offsetEast : offset.y,
         faults : _faultStatus,
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
@@ -423,51 +423,5 @@ void NavEKF3_core::Log_Write_GSF(uint64_t time_us)
     if (yawEstimator == nullptr) {
         return;
     }
-
-    float yaw_composite;
-    float yaw_composite_variance;
-    float yaw[N_MODELS_EKFGSF];
-    float ivn[N_MODELS_EKFGSF];
-    float ive[N_MODELS_EKFGSF];
-    float wgt[N_MODELS_EKFGSF];
-
-    if (!yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, ivn, ive, wgt)) {
-        return;
-    }
-
-    const struct log_XKY0 xky0{
-        LOG_PACKET_HEADER_INIT(LOG_XKY0_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        yaw_composite           : yaw_composite,
-        yaw_composite_variance  : sqrtf(MAX(yaw_composite_variance, 0.0f)),
-        yaw0                    : yaw[0],
-        yaw1                    : yaw[1],
-        yaw2                    : yaw[2],
-        yaw3                    : yaw[3],
-        yaw4                    : yaw[4],
-        wgt0                    : wgt[0],
-        wgt1                    : wgt[1],
-        wgt2                    : wgt[2],
-        wgt3                    : wgt[3],
-        wgt4                    : wgt[4],
-    };
-    AP::logger().WriteBlock(&xky0, sizeof(xky0));
-
-    const struct log_XKY1 xky1{
-        LOG_PACKET_HEADER_INIT(LOG_XKY1_MSG),
-        time_us                 : time_us,
-        core                    : DAL_CORE(core_index),
-        ivn0                    : ivn[0],
-        ivn1                    : ivn[1],
-        ivn2                    : ivn[2],
-        ivn3                    : ivn[3],
-        ivn4                    : ivn[4],
-        ive0                    : ive[0],
-        ive1                    : ive[1],
-        ive2                    : ive[2],
-        ive3                    : ive[3],
-        ive4                    : ive[4],
-    };
-    AP::logger().WriteBlock(&xky1, sizeof(xky1));
+    yawEstimator->Log_Write(time_us, LOG_XKY0_MSG, LOG_XKY1_MSG, DAL_CORE(core_index));
 }

@@ -20,6 +20,7 @@
 #include "Util.h"
 #include <ch.h>
 #include "RCOutput.h"
+#include "UARTDriver.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
@@ -152,17 +153,24 @@ Util::safety_state Util::safety_switch_state(void)
 
 #ifdef HAL_PWM_ALARM
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
+#endif
 
-bool Util::toneAlarm_init()
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
+uint8_t  Util::_toneAlarm_types = 0;
+
+bool Util::toneAlarm_init(uint8_t types)
 {
+#ifdef HAL_PWM_ALARM
     _toneAlarm_pwm_group.pwm_cfg.period = 1000;
     pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
-
+#endif
+    _toneAlarm_types = types;
     return true;
 }
 
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
+#ifdef HAL_PWM_ALARM
     if (is_zero(frequency) || is_zero(volume)) {
         pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
     } else {
@@ -171,8 +179,29 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 
         pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
     }
-}
+#endif
+#if HAL_DSHOT_ALARM
+    // don't play the motors while flying
+    if (!(_toneAlarm_types & ALARM_DSHOT) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+        return;
+    }
+
+    if (is_zero(frequency)) {   // silence
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_RESET, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1047) { // C
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP1, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1175) {  // D
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP2, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1319) {  // E
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP3, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1397) {  // F
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP4, RCOutput::ALL_CHANNELS, duration_ms);
+    } else {  // G+
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
+    }
 #endif // HAL_PWM_ALARM
+}
+#endif
 
 /*
   set HW RTC in UTC microseconds
@@ -337,36 +366,66 @@ bool Util::was_watchdog_reset() const
  */
 void Util::thread_info(ExpandingString &str)
 {
-  // a header to allow for machine parsers to determine format
-  const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
-  str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
-             &__main_stack_base__,
-             unsigned(stack_free(&__main_stack_base__)),
-             unsigned(isr_stack_size));
-
-  for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
-      uint32_t total_stack;
-      if (tp->wabase == (void*)&__main_thread_stack_base__) {
-          // main thread has its stack separated from the thread context
-          total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
-      } else {
-          // all other threads have their thread context pointer
-          // above the stack top
-          total_stack = uint32_t(tp) - uint32_t(tp->wabase);
-      }
 #if HAL_ENABLE_THREAD_STATISTICS
-      str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
-                 tp->name, unsigned(tp->prio), tp->wabase,
-                 stack_free(tp->wabase), total_stack, RTC2US(STM32_HSECLK, tp->stats.best),
-                 RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n))),
-                 RTC2US(STM32_HSECLK, tp->stats.worst));
-      chTMObjectInit(&tp->stats); // reset counters to zero
-#else
-      str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
-                 tp->name, unsigned(tp->prio), tp->wabase,
-                 unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+    uint64_t cumulative_cycles = ch.kernel_stats.m_crit_isr.cumulative;
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (tp->stats.best > 0) { // not run
+            cumulative_cycles += (uint64_t)tp->stats.cumulative;
+        }
+    }
 #endif
-  }
+    // a header to allow for machine parsers to determine format
+    const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#if HAL_ENABLE_THREAD_STATISTICS
+    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+                &__main_stack_base__,
+                unsigned(stack_free(&__main_stack_base__)),
+                unsigned(isr_stack_size), 100.0f * float(ch.kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
+    ch.kernel_stats.m_crit_isr.cumulative = 0U;
+#else
+    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+                &__main_stack_base__,
+                unsigned(stack_free(&__main_stack_base__)),
+                unsigned(isr_stack_size));
+#endif
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        uint32_t total_stack;
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            total_stack = uint32_t(tp) - uint32_t(tp->wabase);
+        }
+#if HAL_ENABLE_THREAD_STATISTICS
+        time_measurement_t stats = tp->stats;
+        if (tp->stats.best > 0) { // not run
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack),
+                        100.0f * float(stats.cumulative) / float(cumulative_cycles),
+                        // more than a loop slice is bad for everyone else, warn on
+                        // more than a 200Hz slice so that only the worst offenders are identified
+                        // also don't do this for the main or idle threads
+                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
+        } else {
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+        }
+        // Giovanni thinks this is dangerous, but we can't get useable data without it
+        if (tp != chThdGetSelfX()) {
+            chTMObjectInit(&tp->stats); // reset counters to zero
+        } else {
+            tp->stats.cumulative = 0U;
+        }
+#else
+        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+                    tp->name, unsigned(tp->realprio), tp->wabase,
+                    unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+#endif
+    }
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
@@ -374,7 +433,31 @@ void Util::thread_info(ExpandingString &str)
 // request information on dma contention
 void Util::dma_info(ExpandingString &str)
 {
+#ifndef HAL_NO_SHARED_DMA
     ChibiOS::Shared_DMA::dma_info(str);
+#endif
+}
+#endif
+
+#if CH_CFG_USE_HEAP == TRUE
+/*
+  return information on heap usage
+ */
+void Util::mem_info(ExpandingString &str)
+{
+    memory_heap_t *heaps;
+    const struct memory_region *regions;
+    uint8_t num_heaps = malloc_get_heaps(&heaps, &regions);
+
+    str.printf("MemInfoV1\n");
+    for (uint8_t i=0; i<num_heaps; i++) {
+        size_t totalp=0, largest=0;
+        // get memory available on main heap
+        chHeapStatus(i == 0 ? nullptr : &heaps[i], &totalp, &largest);
+        str.printf("START=0x%08x LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
+                   unsigned(regions[i].address), unsigned(regions[i].size/1024),
+                   unsigned(totalp), unsigned(largest), unsigned(regions[i].flags));
+    }
 }
 #endif
 
@@ -485,6 +568,12 @@ void Util::apply_persistent_params(void) const
                       unsigned(count), unsigned(errors));
     }
 }
-
 #endif // HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 
+// request information on uart I/O
+void Util::uart_info(ExpandingString &str)
+{
+#if !defined(HAL_NO_UARTDRIVER)    
+    ChibiOS::UARTDriver::uart_info(str);
+#endif
+}

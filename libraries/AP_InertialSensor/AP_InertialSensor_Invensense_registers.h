@@ -146,6 +146,17 @@
 #define MPUREG_FIFO_R_W                             0x74
 #define MPUREG_WHOAMI                               0x75
 
+// accelerometer offsets, valid on ICM-2xxxx and MPU-9250. These hold
+// factory calibrated offsets. We need to ensure these do not change
+// in flight. There is a bug in at least the ICM-26002 that can cause
+// these to change value in flight.
+#define MPUREG_ACC_OFF_X_H            0x77
+#define MPUREG_ACC_OFF_X_L            0x78
+#define MPUREG_ACC_OFF_Y_H            0x7a
+#define MPUREG_ACC_OFF_Y_L            0x7b
+#define MPUREG_ACC_OFF_Z_H            0x7d
+#define MPUREG_ACC_OFF_Z_L            0x7e
+
 // ICM20608 specific registers
 #define ICMREG_ACCEL_CONFIG2          0x1D
 #define ICM_ACC_DLPF_CFG_1046HZ_NOLPF 0x00

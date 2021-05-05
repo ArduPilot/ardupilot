@@ -175,8 +175,8 @@ struct PACKED log_NKF3 {
 // @Field: SM: Magnetic field variance
 // @Field: SVT: tilt error convergence metric
 // @Field: errRP: Filtered error in roll/pitch estimate
-// @Field: OFN: Most recent position recent magnitude (North component)
-// @Field: OFE: Most recent position recent magnitude (East component)
+// @Field: OFN: Most recent position reset (North component)
+// @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
 // @Field: SS: Filter solution status
@@ -192,8 +192,8 @@ struct PACKED log_NKF4 {
     int16_t sqrtvarM;
     int16_t sqrtvarVT;
     float   tiltErr;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
+    float  offsetNorth;
+    float  offsetEast;
     uint16_t faults;
     uint8_t timeouts;
     uint32_t solution;
@@ -283,73 +283,6 @@ struct PACKED log_NKT {
     float delVelDT_max;
 };
 
-
-// @LoggerMessage: NKY0
-// @Description: EKF2 Yaw Estimator States
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: YC: GSF yaw estimate (rad)
-// @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
-// @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
-// @Field: Y1: Yaw estimate from individual EKF filter 1 (rad)
-// @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
-// @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
-// @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
-// @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0
-// @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1
-// @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2
-// @Field: W3: Weighting applied to yaw estimate from individual EKF filter 3
-// @Field: W4: Weighting applied to yaw estimate from individual EKF filter 4
-struct PACKED log_NKY0 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float yaw_composite;
-    float yaw_composite_variance;
-    float yaw0;
-    float yaw1;
-    float yaw2;
-    float yaw3;
-    float yaw4;
-    float wgt0;
-    float wgt1;
-    float wgt2;
-    float wgt3;
-    float wgt4;
-};
-
-
-// @LoggerMessage: NKY1
-// @Description: EKF2 Yaw Estimator Innovations
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: IVN0: North velocity innovation from individual EKF filter 0 (m/s)
-// @Field: IVN1: North velocity innovation from individual EKF filter 1 (m/s)
-// @Field: IVN2: North velocity innovation from individual EKF filter 2 (m/s)
-// @Field: IVN3: North velocity innovation from individual EKF filter 3 (m/s)
-// @Field: IVN4: North velocity innovation from individual EKF filter 4 (m/s)
-// @Field: IVE0: East velocity innovation from individual EKF filter 0 (m/s)
-// @Field: IVE1: East velocity innovation from individual EKF filter 1 (m/s)
-// @Field: IVE2: East velocity innovation from individual EKF filter 2 (m/s)
-// @Field: IVE3: East velocity innovation from individual EKF filter 3 (m/s)
-// @Field: IVE4: East velocity innovation from individual EKF filter 4 (m/s)
-struct PACKED log_NKY1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float ivn0;
-    float ivn1;
-    float ivn2;
-    float ivn3;
-    float ivn4;
-    float ive0;
-    float ive1;
-    float ive2;
-    float ive3;
-    float ive4;
-};
-
-
 #define LOG_STRUCTURE_FROM_NAVEKF2        \
     { LOG_NKF0_MSG, sizeof(log_NKF0), \
       "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
@@ -360,13 +293,9 @@ struct PACKED log_NKY1 {
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
+      "NKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
     { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \
     { LOG_NKT_MSG, sizeof(log_NKT),   \
-      "NKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000"}, \
-    { LOG_NKY0_MSG, sizeof(log_NKY0),                         \
-      "NKY0", "QBffffffffffff", "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4", "s#rrrrrrr-----", "F-000000000000"}, \
-    { LOG_NKY1_MSG, sizeof(log_NKY1),                         \
-      "NKY1", "QBffffffffff", "TimeUS,C,IVN0,IVN1,IVN2,IVN3,IVN4,IVE0,IVE1,IVE2,IVE3,IVE4", "s#nnnnnnnnnn", "F-0000000000"},
+      "NKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000"},

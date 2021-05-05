@@ -33,6 +33,8 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask() override;
 
+    const char* get_frame_string() const override { return "TAILSITTER"; }
+
 protected:
     // calculate motor outputs
     void output_armed_stabilizing() override;

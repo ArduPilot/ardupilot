@@ -10,7 +10,6 @@ from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
-from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
@@ -30,15 +29,21 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
+parser.add_argument("--sitl",
+                    dest='emit_sitl',
+                    action='store_true',
+                    default=False,
+                    help="true to only emit sitl parameters, false to not emit sitl parameters")
+
 args = parser.parse_args()
 
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
-prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\r\n]*)")
+prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
 # match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
@@ -46,10 +51,8 @@ prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
-extension = 'cpp'
-if len(vehicle_paths) == 0:
-    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % args.vehicle)
-    extension = 'pde'
+apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
+vehicle_paths += glob.glob(apm_tools_path + "%s/Parameters.cpp" % args.vehicle)
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
@@ -89,6 +92,7 @@ truename_map = {
     "ArduCopter": "Copter",
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
+    "AP_Periph": "AP_Periph",
 }
 valid_truenames = frozenset(truename_map.values())
 
@@ -104,12 +108,11 @@ if len(vehicles) > 1 or len(vehicles) == 0:
 
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
-    current_file = vehicle.path+'/Parameters.' + extension
+    current_file = vehicle.path+'/Parameters.cpp'
 
     f = open(current_file)
     p_text = f.read()
     f.close()
-    param_matches = prog_param.findall(p_text)
     group_matches = prog_groups.findall(p_text)
 
     debug(group_matches)
@@ -123,6 +126,11 @@ for vehicle in vehicles:
                 error("group: unknown parameter metadata field '%s'" % field[0])
         if not any(lib.name == parsed_l.name for parsed_l in libraries):
             libraries.append(lib)
+
+    param_matches = []
+    if not args.emit_sitl:
+        param_matches = prog_param.findall(p_text)
+
 
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
@@ -157,10 +165,16 @@ for vehicle in vehicles:
 
 debug("Found %u documented libraries" % len(libraries))
 
+if args.emit_sitl:
+    libraries = filter(lambda x : x.name == 'SIM_', libraries)
+else:
+    libraries = filter(lambda x : x.name != 'SIM_', libraries)
+
+libraries = list(libraries)
+
 alllibs = libraries[:]
 
 vehicle = vehicles[0]
-
 
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
@@ -228,7 +242,7 @@ def process_library(vehicle, library, pathprefix=None):
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" %
                       (field[0], vehicle.name, vehicle.truename, field[1], str(only_for_vehicles)))
                 value = re.sub('@PREFIX@', library.name, field[2])
-                if field[0] == "Values":
+                if field[0] in ['Values', 'Bitmask']:
                     if vehicle.truename in only_for_vehicles:
                         this_vehicle_values_seen = True
                         this_vehicle_value = value
@@ -240,12 +254,12 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field[0], value)
                 else:
                     error("tagged param<: unknown parameter metadata field '%s'" % field[0])
-            if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
-                if this_vehicle_values_seen and field[0] == 'Values':
-                    setattr(p, field[0], this_vehicle_value)
-#                debug("Appending (non_vehicle_specific_values_seen=%u "
-#                      "other_vehicle_values_seen=%u this_vehicle_values_seen=%u)" %
-#                      (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
+                if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
+                    if this_vehicle_values_seen and field[0] in ['Values', 'Bitmask']:
+                        setattr(p, field[0], this_vehicle_value)
+    #                debug("Appending (non_vehicle_specific_values_seen=%u "
+    #                      "other_vehicle_values_seen=%u this_vehicle_values_seen=%u)" %
+    #                      (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
             p.path = path # Add path. Later deleted - only used for duplicates
             library.params.append(p)
 
@@ -363,6 +377,10 @@ def validate(param):
         if param.User.strip() not in ["Standard", "Advanced"]:
             error("unknown user (%s)" % param.User.strip())
 
+    if (hasattr(param, "Description")):
+        if not param.Description or not param.Description.strip():
+            error("Empty Description (%s)" % param)
+
 for vehicle in vehicles:
     for param in vehicle.params:
         clean_param(param)
@@ -396,11 +414,46 @@ for library in libraries:
     for param in library.params:
         validate(param)
 
+if not args.emit_params:
+    sys.exit(error_count)
 
-def do_emit(emit):
-    emit.set_annotate_with_vehicle(len(vehicles) > 1)
-    for vehicle in vehicles:
-        emit.emit(vehicle)
+all_emitters = {
+    'json': JSONEmit,
+    'xml': XmlEmit,
+    'html': HtmlEmit,
+    'rst': RSTEmit,
+    'md': MDEmit,
+    'xml_mp': XmlEmitMP,
+}
+
+try:
+    from ednemit import EDNEmit
+    all_emitters['edn'] = EDNEmit
+except ImportError:
+    # if the user wanted edn only then don't hide any errors
+    if args.output_format == 'edn':
+        raise
+
+    if args.verbose:
+        print("Unable to emit EDN, install edn_format and pytz if edn is desired")
+
+# filter to just the ones we want to emit:
+emitters_to_use = []
+for emitter_name in all_emitters.keys():
+    if args.output_format == 'all' or args.output_format == emitter_name:
+        emitters_to_use.append(emitter_name)
+
+if args.emit_sitl:
+    # only generate rst for SITL for now:
+    emitters_to_use = ['rst']
+
+# actually invoke each emiiter:
+for emitter_name in emitters_to_use:
+    emit = all_emitters[emitter_name](sitl=args.emit_sitl)
+
+    if not args.emit_sitl:
+        for vehicle in vehicles:
+            emit.emit(vehicle)
 
     emit.start_libraries()
 
@@ -409,33 +462,5 @@ def do_emit(emit):
             emit.emit(library)
 
     emit.close()
-
-
-if args.emit_params:
-    if args.output_format == 'all' or args.output_format == 'json':
-        do_emit(JSONEmit())
-    if args.output_format == 'all' or args.output_format == 'xml':
-        do_emit(XmlEmit())
-    if args.output_format == 'all' or args.output_format == 'wiki':
-        do_emit(WikiEmit())
-    if args.output_format == 'all' or args.output_format == 'html':
-        do_emit(HtmlEmit())
-    if args.output_format == 'all' or args.output_format == 'rst':
-        do_emit(RSTEmit())
-    if args.output_format == 'all' or args.output_format == 'md':
-        do_emit(MDEmit())
-    if args.output_format == 'all' or args.output_format == 'xml_mp':
-        do_emit(XmlEmitMP())
-    if args.output_format == 'all' or args.output_format == 'edn':
-        try:
-            from ednemit import EDNEmit
-            do_emit(EDNEmit())
-        except ImportError:
-            # if the user wanted edn only then don't hide any errors
-            if args.output_format == 'edn':
-                raise
-
-            if args.verbose:
-                print("Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)

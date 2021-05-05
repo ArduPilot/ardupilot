@@ -126,6 +126,13 @@ private:
     // bad fd
     HAL_Semaphore write_fd_semaphore;
 
+    // async erase state
+    struct {
+        bool was_logging;
+        uint16_t log_num;
+    } erase;
+    void erase_next(void);
+
     const char *last_io_operation = "";
 };
 

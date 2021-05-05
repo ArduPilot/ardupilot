@@ -149,9 +149,14 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         if (!inhibitDelVelBiasStates) {
-            Kfusion[13] = -t26*(P[13][7]*t4*t9+P[13][8]*t3*t9+P[13][9]*t2*t9);
-            Kfusion[14] = -t26*(P[14][7]*t4*t9+P[14][8]*t3*t9+P[14][9]*t2*t9);
-            Kfusion[15] = -t26*(P[15][7]*t4*t9+P[15][8]*t3*t9+P[15][9]*t2*t9);
+            for (uint8_t index = 0; index < 3; index++) {
+                const uint8_t stateIndex = index + 13;
+                if (!dvelBiasAxisInhibit[index]) {
+                    Kfusion[stateIndex] = -t26*(P[stateIndex][7]*t4*t9+P[stateIndex][8]*t3*t9+P[stateIndex][9]*t2*t9);
+                } else {
+                    Kfusion[stateIndex] = 0.0f;
+                }
+            }
         } else {
             // zero indexes 13 to 15 = 3*4 bytes
             memset(&Kfusion[13], 0, 12);

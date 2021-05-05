@@ -216,7 +216,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, float ne
         } else {
             // calculate maximum speed that keeps overshoot within bounds
             const float radius_m = fabsf(_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
-            _desired_speed_final = MIN(_desired_speed, safe_sqrt(_turn_max_mss * radius_m));
+            _desired_speed_final = MIN(_desired_speed, safe_sqrt(_atc.get_turn_lat_accel_max() * radius_m));
             // ensure speed does not fall below minimum
             apply_speed_min(_desired_speed_final);
         }
@@ -374,7 +374,7 @@ void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
         _nav_controller.update_waypoint(_reached_destination ? current_loc : _oa_origin, _oa_destination, _radius);
 
         // retrieve lateral acceleration, heading back towards line and crosstrack error
-        _desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_turn_max_mss, _turn_max_mss);
+        _desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_atc.get_turn_lat_accel_max(), _atc.get_turn_lat_accel_max());
         _desired_heading_cd = wrap_360_cd(_nav_controller.nav_bearing_cd());
         if (_reversed) {
             _desired_lat_accel *= -1.0f;
@@ -422,7 +422,7 @@ void AR_WPNav::update_desired_speed(float dt)
 
     // calculate and limit speed to allow vehicle to stay on circle
     // ensure limit does not force speed below minimum
-    float overshoot_speed_max = safe_sqrt(_turn_max_mss * MAX(_turn_radius, radius_m));
+    float overshoot_speed_max = safe_sqrt(_atc.get_turn_lat_accel_max() * MAX(_turn_radius, radius_m));
     apply_speed_min(overshoot_speed_max);
     des_speed_lim = constrain_float(des_speed_lim, -overshoot_speed_max, overshoot_speed_max);
 
@@ -436,9 +436,8 @@ void AR_WPNav::update_desired_speed(float dt)
 }
 
 // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
-void AR_WPNav::set_turn_params(float turn_max_g, float turn_radius, bool pivot_possible)
+void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 {
-    _turn_max_mss = turn_max_g * GRAVITY_MSS;
     _turn_radius = turn_radius;
     _pivot_possible = pivot_possible;
 }

@@ -34,7 +34,7 @@ public:
     float    get_filtered_time() const;
     void set_loop_rate(uint16_t rate_hz);
 
-    void update_logging();
+    void update_logging() const;
 
     // allocate the array of task statistics for use by @SYS/tasks.txt
     void allocate_task_info(uint8_t num_tasks);

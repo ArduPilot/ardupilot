@@ -18,30 +18,56 @@
  */
 #pragma once
 
+// we want to cope with both revision XY chips and newer chips
+#define STM32_ENFORCE_H7_REV_XY
 
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
 #endif
-
 #ifndef STM32_LSEDRV
-#define STM32_LSEDRV (3U << 3U)
+#define STM32_LSEDRV                (3U << 3U)
 #endif
+
+/*
+ * STM32H7xx drivers configuration.
+ * The following settings override the default settings present in
+ * the various device driver implementation headers.
+ * Note that the settings for each driver only have effect if the whole
+ * driver is enabled in halconf.h.
+ *
+ * IRQ priorities:
+ * 15...0       Lowest...Highest.
+ *
+ * DMA priorities:
+ * 0...3        Lowest...Highest.
+ */
+
+#define STM32H7xx_MCUCONF
+#define STM32H742_MCUCONF
+#define STM32H743_MCUCONF
+#define STM32H753_MCUCONF
+#define STM32H745_MCUCONF
+#define STM32H755_MCUCONF
+#define STM32H747_MCUCONF
+#define STM32H757_MCUCONF
 
 /*
  * General settings.
  */
 #define STM32_NO_INIT                       FALSE
-#define STM32_SYS_CK_ENFORCED_VALUE         STM32_HSICLK
+#define STM32_TARGET_CORE                   1
 
 /*
  * Memory attributes settings.
  */
+#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
 #define STM32_NOCACHE_SRAM1_SRAM2           FALSE
-#define STM32_NOCACHE_SRAM3                 TRUE
+#define STM32_NOCACHE_SRAM3                 FALSE
 
 /*
  * PWR system settings.
- * Reading STM32 Reference Manual is required.
+ * Reading STM32 Reference Manual is required, settings in PWR_CR3 are
+ * very critical.
  * Register constants are taken from the ST header.
  */
 #define STM32_VOS                           STM32_VOS_SCALE1
@@ -136,7 +162,7 @@
 #define STM32_PLL2_DIVN_VALUE               25
 #define STM32_PLL2_DIVP_VALUE               2
 #define STM32_PLL2_DIVQ_VALUE               4
-#define STM32_PLL2_DIVR_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               4
 
 #define STM32_PLL3_DIVN_VALUE               72
 #define STM32_PLL3_DIVP_VALUE               3
@@ -152,7 +178,7 @@
 #define STM32_PLL2_DIVN_VALUE               12
 #define STM32_PLL2_DIVP_VALUE               1
 #define STM32_PLL2_DIVQ_VALUE               2
-#define STM32_PLL2_DIVR_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               3
 
 #define STM32_PLL3_DIVN_VALUE               48
 #define STM32_PLL3_DIVP_VALUE               3
@@ -219,7 +245,7 @@
 #ifndef STM32_CKPERSEL
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #endif
-#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
+#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL2_R_CK
 #define STM32_QSPISEL                       STM32_QSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
@@ -245,7 +271,6 @@
 #define STM32_LPTIM2SEL                     STM32_LPTIM2SEL_PCLK4
 #define STM32_I2C4SEL                       STM32_I2C4SEL_PLL3_R_CK
 #define STM32_LPUART1SEL                    STM32_LPUART1SEL_PCLK4
-#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 
 /*
  * IRQ system settings.
@@ -261,9 +286,42 @@
 #define STM32_IRQ_EXTI17_PRIORITY           15
 #define STM32_IRQ_EXTI18_PRIORITY           6
 #define STM32_IRQ_EXTI19_PRIORITY           6
-#define STM32_IRQ_EXTI20_PRIORITY           6
-#define STM32_IRQ_EXTI21_PRIORITY           15
-#define STM32_IRQ_EXTI22_PRIORITY           15
+#define STM32_IRQ_EXTI20_21_PRIORITY        6
+
+#define STM32_IRQ_FDCAN1_PRIORITY           10
+#define STM32_IRQ_FDCAN2_PRIORITY           10
+
+#define STM32_IRQ_MDMA_PRIORITY             9
+
+#define STM32_IRQ_QUADSPI1_PRIORITY         10
+
+#define STM32_IRQ_SDMMC1_PRIORITY           9
+#define STM32_IRQ_SDMMC2_PRIORITY           9
+
+#define STM32_IRQ_TIM1_UP_PRIORITY          7
+#define STM32_IRQ_TIM1_CC_PRIORITY          7
+#define STM32_IRQ_TIM2_PRIORITY             7
+#define STM32_IRQ_TIM3_PRIORITY             7
+#define STM32_IRQ_TIM4_PRIORITY             7
+#define STM32_IRQ_TIM5_PRIORITY             7
+#define STM32_IRQ_TIM6_PRIORITY             7
+#define STM32_IRQ_TIM7_PRIORITY             7
+#define STM32_IRQ_TIM8_BRK_TIM12_PRIORITY   7
+#define STM32_IRQ_TIM8_UP_TIM13_PRIORITY    7
+#define STM32_IRQ_TIM8_TRGCO_TIM14_PRIORITY 7
+#define STM32_IRQ_TIM8_CC_PRIORITY          7
+#define STM32_IRQ_TIM15_PRIORITY            7
+#define STM32_IRQ_TIM16_PRIORITY            7
+#define STM32_IRQ_TIM17_PRIORITY            7
+
+#define STM32_IRQ_USART1_PRIORITY           12
+#define STM32_IRQ_USART2_PRIORITY           12
+#define STM32_IRQ_USART3_PRIORITY           12
+#define STM32_IRQ_UART4_PRIORITY            12
+#define STM32_IRQ_UART5_PRIORITY            12
+#define STM32_IRQ_USART6_PRIORITY           12
+#define STM32_IRQ_UART7_PRIORITY            12
+#define STM32_IRQ_UART8_PRIORITY            12
 
 /*
  * ADC driver system settings.
@@ -286,12 +344,8 @@
 /*
  * CAN driver system settings.
  */
-#define STM32_CAN_USE_CAN1                  FALSE
-#define STM32_CAN_USE_CAN2                  FALSE
-#define STM32_CAN_USE_CAN3                  FALSE
-#define STM32_CAN_CAN1_IRQ_PRIORITY         11
-#define STM32_CAN_CAN2_IRQ_PRIORITY         11
-#define STM32_CAN_CAN3_IRQ_PRIORITY         11
+#define STM32_CAN_USE_FDCAN1                FALSE
+#define STM32_CAN_USE_FDCAN2                FALSE
 
 /*
  * DAC driver system settings.
@@ -315,22 +369,12 @@
 #define STM32_GPT_USE_TIM6                  FALSE
 #define STM32_GPT_USE_TIM7                  FALSE
 #define STM32_GPT_USE_TIM8                  FALSE
-#define STM32_GPT_USE_TIM9                  FALSE
-#define STM32_GPT_USE_TIM11                 FALSE
 #define STM32_GPT_USE_TIM12                 FALSE
+#define STM32_GPT_USE_TIM13                 FALSE
 #define STM32_GPT_USE_TIM14                 FALSE
-#define STM32_GPT_TIM1_IRQ_PRIORITY         7
-#define STM32_GPT_TIM2_IRQ_PRIORITY         7
-#define STM32_GPT_TIM3_IRQ_PRIORITY         7
-#define STM32_GPT_TIM4_IRQ_PRIORITY         7
-#define STM32_GPT_TIM5_IRQ_PRIORITY         7
-#define STM32_GPT_TIM6_IRQ_PRIORITY         7
-#define STM32_GPT_TIM7_IRQ_PRIORITY         7
-#define STM32_GPT_TIM8_IRQ_PRIORITY         7
-#define STM32_GPT_TIM9_IRQ_PRIORITY         7
-#define STM32_GPT_TIM11_IRQ_PRIORITY        7
-#define STM32_GPT_TIM12_IRQ_PRIORITY        7
-#define STM32_GPT_TIM14_IRQ_PRIORITY        7
+#define STM32_GPT_USE_TIM15                 FALSE
+#define STM32_GPT_USE_TIM16                 FALSE
+#define STM32_GPT_USE_TIM17                 FALSE
 
 /*
  * I2C driver system settings.
@@ -378,13 +422,6 @@
 /*
  * PWM driver system settings.
  */
-#define STM32_PWM_TIM1_IRQ_PRIORITY         7
-#define STM32_PWM_TIM2_IRQ_PRIORITY         7
-#define STM32_PWM_TIM3_IRQ_PRIORITY         7
-#define STM32_PWM_TIM4_IRQ_PRIORITY         7
-#define STM32_PWM_TIM5_IRQ_PRIORITY         7
-#define STM32_PWM_TIM8_IRQ_PRIORITY         7
-#define STM32_PWM_TIM9_IRQ_PRIORITY         7
 
 /*
  * RTC driver system settings.
@@ -487,6 +524,8 @@
 #define STM32_UART_UART8_DMA_PRIORITY       0
 #define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
 
+#define STM32_IRQ_LPUART1_PRIORITY          12
+
 /*
  * USB driver system settings.
  */
@@ -507,3 +546,10 @@
 
 // limit ISR count per byte
 #define STM32_I2C_ISR_LIMIT                 6
+
+// limit SDMMC clock to 12.5MHz by default. This increases
+// reliability
+#ifndef STM32_SDC_MAX_CLOCK
+#define STM32_SDC_MAX_CLOCK                 12500000
+#endif
+

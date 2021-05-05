@@ -183,7 +183,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
     
     while (length > 0) {
         uint8_t n = max_write;
-#if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7
+#if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7 && AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_G4
         if (length < n) {
             n = length;
         }
@@ -232,7 +232,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
         if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + block_nbytes)) {
             return false;
         }
-#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7 || AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
         blk.header.state = BLOCK_STATE_VALID;
         if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + max_write)) {
             return false;
@@ -313,6 +313,9 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
 #if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
         // offsets must be advanced to a multiple of 32 on H7
         ofs = (ofs + 31U) & ~31U;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+        // offsets must be advanced to a multiple of 8 on G4
+        ofs = (ofs + 7U) & ~7U;
 #endif
     }
     write_offset = ofs;
@@ -505,6 +508,76 @@ void AP_FlashStorage::sector_header::set_state(SectorState state)
     memset(pad1, 0xff, sizeof(pad1));
     memset(pad2, 0xff, sizeof(pad2));
     memset(pad3, 0xff, sizeof(pad3));
+    switch (state) {
+    case SECTOR_STATE_AVAILABLE:
+        signature1 = signature;
+        signature2 = 0xFFFFFFFF;
+        signature3 = 0xFFFFFFFF;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFFF;
+        state3 = 0xFFFFFFFF;
+        break;
+    case SECTOR_STATE_IN_USE:
+        signature1 = signature;
+        signature2 = signature;
+        signature3 = 0xFFFFFFFF;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFF2;
+        state3 = 0xFFFFFFFF;
+        break;
+    case SECTOR_STATE_FULL:
+        signature1 = signature;
+        signature2 = signature;
+        signature3 = signature;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFF2;
+        state3 = 0xFFFFFFF3;
+        break;
+    default:
+        break;
+    }
+}
+
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+/*
+  G4 specific sector header functions
+ */
+bool AP_FlashStorage::sector_header::signature_ok(void) const
+{
+    return signature1 == signature;
+}
+
+AP_FlashStorage::SectorState AP_FlashStorage::sector_header::get_state(void) const
+{
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFFF &&
+        state3 == 0xFFFFFFFF &&
+        signature1 == signature &&
+        signature2 == 0xFFFFFFFF &&
+        signature3 == 0xFFFFFFFF) {
+        return SECTOR_STATE_AVAILABLE;
+    }
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFF2 &&
+        state3 == 0xFFFFFFFF &&
+        signature1 == signature &&
+        signature2 == signature &&
+        signature3 == 0xFFFFFFFF) {
+        return SECTOR_STATE_IN_USE;
+    }
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFF2 &&
+        state3 == 0xFFFFFFF3 &&
+        signature1 == signature &&
+        signature2 == signature &&
+        signature3 == signature) {
+        return SECTOR_STATE_FULL;
+    }
+    return SECTOR_STATE_INVALID;
+}
+
+void AP_FlashStorage::sector_header::set_state(SectorState state)
+{
     switch (state) {
     case SECTOR_STATE_AVAILABLE:
         signature1 = signature;

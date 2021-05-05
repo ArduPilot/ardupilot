@@ -416,10 +416,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
-    // 36 was LOG_MASK, used for specifying which IMUs/cores to log
-    // replay data for
+    // @Param: BETA_MASK
+    // @DisplayName: Bitmask controlling sidelip angle fusion
+    // @Description: 1 byte bitmap controlling use of sideslip angle fusion for estimation of non wind states during operation of 'fly forward' vehicle types such as fixed wing planes. By assuming that the angle of sideslip is small, the wind velocity state estimates are corrected  whenever the EKF is not dead reckoning (e.g. has an independent velocity or position sensor such as GPS). This behaviour is on by default and cannot be disabled. When the EKF is dead reckoning, the wind states are used as a reference, enabling use of the small angle of sideslip assumption to correct non wind velocity states (eg attitude, velocity, position, etc) and improve navigation accuracy. This behaviour is on by default and cannot be disabled. The behaviour controlled by this parameter is the use of the small angle of sideslip assumption to correct non wind velocity states when the EKF is NOT dead reckoning. This is primarily of benefit to reduce the buildup of yaw angle errors during straight and level flight without a yaw sensor (e.g. magnetometer or dual antenna GPS yaw) provided aerobatic flight maneuvers with large sideslip angles are not performed. The 'always' option might be used where the yaw sensor is intentionally not fitted or disabled. The 'WhenNoYawSensor' option might be used if a yaw sensor is fitted, but protection against in-flight failure and continual rejection by the EKF is desired. For vehicles operated within visual range of the operator performing frequent turning maneuvers, setting this parameter is unnecessary.
+    // @Bitmask: 0:Always,1:WhenNoYawSensor
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("BETA_MASK", 36, NavEKF3, _betaMask, 0),
 
-    // control of magentic yaw angle fusion
+    // control of magnetic yaw angle fusion
 
     // @Param: YAW_M_NSE
     // @DisplayName: Yaw measurement noise (rad)
@@ -642,6 +647,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
     // @RebootRequired: True
+
     AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
 
     AP_SUBGROUPEXTENSION("", 63, NavEKF3, var_info2),
@@ -683,12 +689,20 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_MCOEF
     // @DisplayName: Momentum coefficient for propeller drag
-    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. It represents the ratio of rotor drag induced acceleration to airspeed. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on an will change with different propellers. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEFto a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
+    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
     // @Units: 1/s
     // @User: Advanced
     AP_GROUPINFO("DRAG_MCOEF", 5, NavEKF3, _momentumDragCoef, 0.0f),
+
+    // @Param: OGNM_TEST_SF
+    // @DisplayName: On ground not moving test scale factor
+    // @Description: This parameter is adjust the sensitivity of the on ground not moving test which is used to assist with learning the yaw gyro bias and stopping yaw drift before flight when operating without a yaw sensor. Bigger values allow the detection of a not moving condition with noiser IMU data. Check the XKFM data logged when the vehicle is on ground not moving and adjust the value of OGNM_TEST_SF to be slightly higher than the maximum value of the XKFM.ADR, XKFM.ALR, XKFM.GDR and XKFM.GLR test levels.
+    // @Range: 1.0 10.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("OGNM_TEST_SF", 6, NavEKF3, _ognmTestScaleFactor, 2.0f),
 
     AP_GROUPEND
 };
@@ -914,6 +928,11 @@ void NavEKF3::UpdateFilter(void)
                     // if this core has a significantly lower relative error to the active primary, we consider it as a 
                     // better core and would like to switch to it even if the current primary is healthy
                     betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
+                    // handle the case where the secondary core is faster to complete yaw alignment which can happen
+                    // in flight when oeprating without a magnetomer
+                    const NavEKF3_core &newCore = core[coreIndex];
+                    const NavEKF3_core &oldCore = core[primary];
+                    betterCore |= newCore.have_aligned_yaw() && !oldCore.have_aligned_yaw();
                     newPrimaryIndex = coreIndex;
                 }
             }
@@ -1236,12 +1255,15 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3::getWind(int8_t instance, Vector3f &wind) const
+// returns true if wind state estimation is active
+bool NavEKF3::getWind(int8_t instance, Vector3f &wind) const
 {
+    bool ret = false;
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getWind(wind);
+        ret = core[instance].getWind(wind);
     }
+    return ret;
 }
 
 // return earth magnetic field estimates in measurement units / 1000
@@ -1813,7 +1835,7 @@ uint32_t NavEKF3::getLastYawResetAngle(float &yawAngDelta)
     uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
 
     // There has been a change notification in the primary core that the controller has not consumed
-    // or this is a repeated acce
+    // or this is a repeated access
     if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
         yawAngDelta = yaw_reset_data.core_delta;
         yaw_reset_data.core_changed = false;
@@ -1997,14 +2019,23 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
-    AP::dal().log_writeDefaultAirSpeed3(airspeed);
+    AP::dal().log_writeDefaultAirSpeed3(airspeed, uncertainty);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeDefaultAirSpeed(airspeed);
+            core[i].writeDefaultAirSpeed(airspeed, uncertainty);
         }
     }
+}
+
+// returns true when the yaw angle has been aligned
+bool NavEKF3::yawAlignmentComplete(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].have_aligned_yaw();
 }

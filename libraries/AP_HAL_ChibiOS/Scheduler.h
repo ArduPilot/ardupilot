@@ -25,8 +25,10 @@
 #define APM_MONITOR_PRIORITY    183
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
+#define APM_RCOUT_PRIORITY      181
 #define APM_RCIN_PRIORITY       177
 #define APM_UART_PRIORITY        60
+#define APM_UART_UNBUFFERED_PRIORITY 181
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
 #define APM_STARTUP_PRIORITY     10
@@ -57,8 +59,12 @@
 #define TIMER_THD_WA_SIZE   1536
 #endif
 
+#ifndef RCOUT_THD_WA_SIZE
+#define RCOUT_THD_WA_SIZE    512
+#endif
+
 #ifndef RCIN_THD_WA_SIZE
-#define RCIN_THD_WA_SIZE    768
+#define RCIN_THD_WA_SIZE    1024
 #endif
 
 #ifndef IO_THD_WA_SIZE
@@ -66,11 +72,11 @@
 #endif
 
 #ifndef STORAGE_THD_WA_SIZE
-#define STORAGE_THD_WA_SIZE 1536
+#define STORAGE_THD_WA_SIZE 1024
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#define MONITOR_THD_WA_SIZE 768
+#define MONITOR_THD_WA_SIZE 512
 #endif
 
 /* Scheduler implementation: */
@@ -154,6 +160,7 @@ private:
     uint32_t last_watchdog_pat_ms;
 
     thread_t* _timer_thread_ctx;
+    thread_t* _rcout_thread_ctx;
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
@@ -163,7 +170,12 @@ private:
     binary_semaphore_t _timer_semaphore;
     binary_semaphore_t _io_semaphore;
 #endif
+
+    // calculates an integer to be used as the priority for a newly-created thread
+    uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
+
     static void _timer_thread(void *arg);
+    static void _rcout_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);

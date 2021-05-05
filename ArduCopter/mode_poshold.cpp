@@ -42,7 +42,7 @@ bool ModePosHold::init(bool ignore_checks)
     pilot_pitch = 0.0f;
 
     // compute brake_gain
-    brake_gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) / 100.0f;
+    brake.gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) / 100.0f;
 
     if (copter.ap.land_complete) {
         // if landed begin in loiter mode
@@ -69,7 +69,6 @@ bool ModePosHold::init(bool ignore_checks)
 void ModePosHold::run()
 {
     float takeoff_climb_rate = 0.0f;
-    float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     const Vector3f& vel = inertial_nav.get_velocity();
@@ -110,7 +109,7 @@ void ModePosHold::run()
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -135,7 +134,7 @@ void ModePosHold::run()
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
 
         // set position controller targets
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -149,7 +148,7 @@ void ModePosHold::run()
     case AltHold_Landed_Ground_Idle:
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
         attitude_control->set_yaw_target_to_current_heading();
         init_wind_comp_estimate();
         FALLTHROUGH;
@@ -165,11 +164,6 @@ void ModePosHold::run()
 
     case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-#if AC_AVOID_ENABLED == ENABLED
-        // apply avoidance
-        copter.avoid.adjust_roll_pitch(target_roll, target_pitch, copter.aparm.angle_max);
-#endif
 
         // adjust climb rate using rangefinder
         if (copter.rangefinder_alt_ok()) {
@@ -211,10 +205,10 @@ void ModePosHold::run()
             if (is_zero(target_roll) && (fabsf(pilot_roll) < 2 * g.poshold_brake_rate)) {
                 // initialise BRAKE mode
                 roll_mode = RPMode::BRAKE;        // Set brake roll mode
-                brake_roll = 0.0f;                  // initialise braking angle to zero
-                brake_angle_max_roll = 0.0f;        // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
-                brake_timeout_roll = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
-                braking_time_updated_roll = false;   // flag the braking time can be re-estimated
+                brake.roll = 0.0f;                  // initialise braking angle to zero
+                brake.angle_max_roll = 0.0f;        // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
+                brake.timeout_roll = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
+                brake.time_updated_roll = false;   // flag the braking time can be re-estimated
             }
 
             // final lean angle should be pilot input plus wind compensation
@@ -223,29 +217,29 @@ void ModePosHold::run()
 
         case RPMode::BRAKE:
         case RPMode::BRAKE_READY_TO_LOITER:
-            // calculate brake_roll angle to counter-act velocity
-            update_brake_angle_from_velocity(brake_roll, vel_right);
+            // calculate brake.roll angle to counter-act velocity
+            update_brake_angle_from_velocity(brake.roll, vel_right);
 
             // update braking time estimate
-            if (!braking_time_updated_roll) {
+            if (!brake.time_updated_roll) {
                 // check if brake angle is increasing
-                if (fabsf(brake_roll) >= brake_angle_max_roll) {
-                    brake_angle_max_roll = fabsf(brake_roll);
+                if (fabsf(brake.roll) >= brake.angle_max_roll) {
+                    brake.angle_max_roll = fabsf(brake.roll);
                 } else {
                     // braking angle has started decreasing so re-estimate braking time
-                    brake_timeout_roll = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake_roll))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
-                    braking_time_updated_roll = true;
+                    brake.timeout_roll = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.roll))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                    brake.time_updated_roll = true;
                 }
             }
 
             // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (brake_timeout_roll > 50*LOOP_RATE_FACTOR)) {
-                brake_timeout_roll = 50*LOOP_RATE_FACTOR;
+            if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (brake.timeout_roll > 50*LOOP_RATE_FACTOR)) {
+                brake.timeout_roll = 50*LOOP_RATE_FACTOR;
             }
 
             // reduce braking timer
-            if (brake_timeout_roll > 0) {
-                brake_timeout_roll--;
+            if (brake.timeout_roll > 0) {
+                brake.timeout_roll--;
             } else {
                 // indicate that we are ready to move to Loiter.
                 // Loiter will only actually be engaged once both roll_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
@@ -254,7 +248,7 @@ void ModePosHold::run()
             }
 
             // final lean angle is braking angle + wind compensation angle
-            roll = brake_roll + wind_comp_roll;
+            roll = brake.roll + wind_comp_roll;
 
             // check for pilot input
             if (!is_zero(target_roll)) {
@@ -305,10 +299,10 @@ void ModePosHold::run()
             if (is_zero(target_pitch) && (fabsf(pilot_pitch) < 2 * g.poshold_brake_rate)) {
                 // initialise BRAKE mode
                 pitch_mode = RPMode::BRAKE;       // set brake pitch mode
-                brake_pitch = 0.0f;                 // initialise braking angle to zero
-                brake_angle_max_pitch = 0.0f;       // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
-                brake_timeout_pitch = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
-                braking_time_updated_pitch = false;   // flag the braking time can be re-estimated
+                brake.pitch = 0.0f;                 // initialise braking angle to zero
+                brake.angle_max_pitch = 0.0f;       // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
+                brake.timeout_pitch = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
+                brake.time_updated_pitch = false;   // flag the braking time can be re-estimated
             }
 
             // final lean angle should be pilot input plus wind compensation
@@ -318,28 +312,28 @@ void ModePosHold::run()
         case RPMode::BRAKE:
         case RPMode::BRAKE_READY_TO_LOITER:
             // calculate brake_pitch angle to counter-act velocity
-            update_brake_angle_from_velocity(brake_pitch, -vel_fw);
+            update_brake_angle_from_velocity(brake.pitch, -vel_fw);
 
             // update braking time estimate
-            if (!braking_time_updated_pitch) {
+            if (!brake.time_updated_pitch) {
                 // check if brake angle is increasing
-                if (fabsf(brake_pitch) >= brake_angle_max_pitch) {
-                    brake_angle_max_pitch = fabsf(brake_pitch);
+                if (fabsf(brake.pitch) >= brake.angle_max_pitch) {
+                    brake.angle_max_pitch = fabsf(brake.pitch);
                 } else {
                     // braking angle has started decreasing so re-estimate braking time
-                    brake_timeout_pitch = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake_pitch))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
-                    braking_time_updated_pitch = true;
+                    brake.timeout_pitch = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.pitch))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                    brake.time_updated_pitch = true;
                 }
             }
 
             // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (brake_timeout_pitch > 50*LOOP_RATE_FACTOR)) {
-                brake_timeout_pitch = 50*LOOP_RATE_FACTOR;
+            if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (brake.timeout_pitch > 50*LOOP_RATE_FACTOR)) {
+                brake.timeout_pitch = 50*LOOP_RATE_FACTOR;
             }
 
             // reduce braking timer
-            if (brake_timeout_pitch > 0) {
-                brake_timeout_pitch--;
+            if (brake.timeout_pitch > 0) {
+                brake.timeout_pitch--;
             } else {
                 // indicate that we are ready to move to Loiter.
                 // Loiter will only actually be engaged once both pitch_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
@@ -348,7 +342,7 @@ void ModePosHold::run()
             }
 
             // final lean angle is braking angle + wind compensation angle
-            pitch = brake_pitch + wind_comp_pitch;
+            pitch = brake.pitch + wind_comp_pitch;
 
             // check for pilot input
             if (!is_zero(target_pitch)) {
@@ -391,7 +385,7 @@ void ModePosHold::run()
     if (roll_mode == RPMode::BRAKE_READY_TO_LOITER && pitch_mode == RPMode::BRAKE_READY_TO_LOITER) {
         roll_mode = RPMode::BRAKE_TO_LOITER;
         pitch_mode = RPMode::BRAKE_TO_LOITER;
-        brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
+        brake.to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
         loiter_nav->init_target(inertial_nav.get_position());
         // set delay to start of wind compensation estimate updates
@@ -406,29 +400,30 @@ void ModePosHold::run()
 
         // handle combined roll+pitch mode
         switch (roll_mode) {
-            case RPMode::BRAKE_TO_LOITER:
+            case RPMode::BRAKE_TO_LOITER: {
                 // reduce brake_to_loiter timer
-                if (brake_to_loiter_timer > 0) {
-                    brake_to_loiter_timer--;
+                if (brake.to_loiter_timer > 0) {
+                    brake.to_loiter_timer--;
                 } else {
                     // progress to full loiter on next iteration
                     roll_mode = RPMode::LOITER;
                     pitch_mode = RPMode::LOITER;
                 }
 
-                // calculate percentage mix of loiter and brake control
-                brake_to_loiter_mix = (float)brake_to_loiter_timer / (float)POSHOLD_BRAKE_TO_LOITER_TIMER;
+                // mix of brake and loiter controls.  0 = fully brake
+                // controls, 1 = fully loiter controls
+                const float brake_to_loiter_mix = (float)brake.to_loiter_timer / (float)POSHOLD_BRAKE_TO_LOITER_TIMER;
 
-                // calculate brake_roll and pitch angles to counter-act velocity
-                update_brake_angle_from_velocity(brake_roll, vel_right);
-                update_brake_angle_from_velocity(brake_pitch, -vel_fw);
+                // calculate brake.roll and pitch angles to counter-act velocity
+                update_brake_angle_from_velocity(brake.roll, vel_right);
+                update_brake_angle_from_velocity(brake.pitch, -vel_fw);
 
                 // run loiter controller
-                loiter_nav->update();
+                loiter_nav->update(false);
 
                 // calculate final roll and pitch output by mixing loiter and brake controls
-                roll = mix_controls(brake_to_loiter_mix, brake_roll + wind_comp_roll, loiter_nav->get_roll());
-                pitch = mix_controls(brake_to_loiter_mix, brake_pitch + wind_comp_pitch, loiter_nav->get_pitch());
+                roll = mix_controls(brake_to_loiter_mix, brake.roll + wind_comp_roll, loiter_nav->get_roll());
+                pitch = mix_controls(brake_to_loiter_mix, brake.pitch + wind_comp_pitch, loiter_nav->get_pitch());
 
                 // check for pilot input
                 if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -437,7 +432,7 @@ void ModePosHold::run()
                         // init transition to pilot override
                         roll_controller_to_pilot_override();
                         // switch pitch-mode to brake (but ready to go back to loiter anytime)
-                        // no need to reset brake_pitch here as wind comp has not been updated since last brake_pitch computation
+                        // no need to reset brake.pitch here as wind comp has not been updated since last brake.pitch computation
                         pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
                     }
                     // if pitch input switch to pilot override for pitch
@@ -446,16 +441,16 @@ void ModePosHold::run()
                         pitch_controller_to_pilot_override();
                         if (is_zero(target_roll)) {
                             // switch roll-mode to brake (but ready to go back to loiter anytime)
-                            // no need to reset brake_roll here as wind comp has not been updated since last brake_roll computation
+                            // no need to reset brake.roll here as wind comp has not been updated since last brake.roll computation
                             roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                         }
                     }
                 }
                 break;
-
+            }
             case RPMode::LOITER:
                 // run loiter controller
-                loiter_nav->update();
+                loiter_nav->update(false);
 
                 // set roll angle based on loiter controller outputs
                 roll = loiter_nav->get_roll();
@@ -472,8 +467,8 @@ void ModePosHold::run()
                         roll_controller_to_pilot_override();
                         // switch pitch-mode to brake (but ready to go back to loiter anytime)
                         pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
-                        // reset brake_pitch because wind_comp is now different and should give the compensation of the whole previous loiter angle
-                        brake_pitch = 0.0f;
+                        // reset brake.pitch because wind_comp is now different and should give the compensation of the whole previous loiter angle
+                        brake.pitch = 0.0f;
                     }
                     // if pitch input switch to pilot override for pitch
                     if (!is_zero(target_pitch)) {
@@ -482,7 +477,7 @@ void ModePosHold::run()
                         // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
                         if (is_zero(target_roll)) {
                             roll_mode = RPMode::BRAKE_READY_TO_LOITER;
-                            brake_roll = 0.0f;
+                            brake.roll = 0.0f;
                         }
                             // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
                     }
@@ -551,9 +546,9 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
 
     // calculate velocity-only based lean angle
     if (velocity >= 0) {
-        lean_angle = -brake_gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
+        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
     } else {
-        lean_angle = -brake_gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
+        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
     }
 
     // do not let lean_angle be too far from brake_angle

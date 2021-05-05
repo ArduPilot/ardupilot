@@ -27,6 +27,12 @@ export BUILDLOGS=/tmp/buildlogs
 DOT_PROFILE=/home/$VAGRANT_USER/.profile
 
 echo "$PROFILE_TEXT" | sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
+# adjust environment for every login shell:
+BASHRC_GIT="/vagrant/Tools/vagrant/bashrc_git"
+echo "source $BASHRC_GIT" |
+    sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <AP_InertialSensor/AP_InertialSensor_Invensensev2.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -288,6 +289,19 @@ void AP_Compass_AK09916::_update()
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK09916_MILLIGAUSS_SCALE;
 
+#ifdef HAL_AK09916_HEATER_OFFSET
+    /*
+      the internal AK09916 can be impacted by the magnetic field from
+      a heater. We use the heater duty cycle to correct for the error
+     */
+    if (AP_HAL::Device::devid_get_bus_type(_bus->get_bus_id()) == AP_HAL::Device::BUS_TYPE_SPI) {
+        auto *bc = AP::boardConfig();
+        if (bc) {
+            raw_field += HAL_AK09916_HEATER_OFFSET * bc->get_heater_duty_cycle() * 0.01;
+        }
+    }
+#endif
+
     accumulate_sample(raw_field, _compass_instance, 10);
 }
 
@@ -377,7 +391,9 @@ bool AP_AK09916_BusDriver_Auxiliary::block_read(uint8_t reg, uint8_t *buf, uint3
          * We can only read a block when reading the block of sample values -
          * calling with any other value is a mistake
          */
-        assert(reg == REG_ST1);
+        if (reg != REG_ST1) {
+            return false;
+        }
 
         int n = _slave->read(buf);
         return n == static_cast<int>(size);

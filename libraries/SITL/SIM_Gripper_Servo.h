@@ -58,7 +58,7 @@ private:
 
     uint64_t last_update_us;
 
-    bool should_report();
+    bool should_report() const;
 
     // dangle load from a string:
     const float string_length = 2.0f; // metres

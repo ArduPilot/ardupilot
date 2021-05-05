@@ -96,8 +96,8 @@ public:
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
-    uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
-    uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
+    bool register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
+    bool register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
 
     // a function called by the main thread at the main loop rate:
     void periodic();
@@ -132,18 +132,16 @@ public:
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
     //get delta angle if available
-    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const;
-    bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
-
-    float get_delta_angle_dt(uint8_t i) const;
-    float get_delta_angle_dt() const { return get_delta_angle_dt(_primary_gyro); }
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle, float &delta_angle_dt) const;
+    bool get_delta_angle(Vector3f &delta_angle, float &delta_angle_dt) const {
+        return get_delta_angle(_primary_gyro, delta_angle, delta_angle_dt);
+    }
 
     //get delta velocity if available
-    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
-    bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
-
-    float get_delta_velocity_dt(uint8_t i) const;
-    float get_delta_velocity_dt() const { return get_delta_velocity_dt(_primary_accel); }
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const;
+    bool get_delta_velocity(Vector3f &delta_velocity, float &delta_velocity_dt) const {
+        return get_delta_velocity(_primary_accel, delta_velocity, delta_velocity_dt);
+    }
 
     /// Fetch the current accelerometer values
     ///
@@ -283,6 +281,10 @@ public:
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
 
+    // Logging Functions
+    void Write_IMU() const;
+    void Write_Vibration() const;
+
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
@@ -405,6 +407,10 @@ public:
         bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
         void push_data_to_log();
 
+        // Logging functions
+        bool Write_ISBH(const float sample_rate_hz) const;
+        bool Write_ISBD() const;
+
         uint64_t measurement_started_us;
 
         bool initialised : 1;
@@ -441,6 +447,9 @@ public:
     void get_persistent_params(ExpandingString &str) const;
 #endif
 
+    // force save of current calibration as valid
+    void force_save_calibration(void);
+
 private:
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
@@ -459,6 +468,9 @@ private:
     // save gyro calibration values to eeprom
     void _save_gyro_calibration();
 
+    // Logging function
+    void Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const;
+    
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 

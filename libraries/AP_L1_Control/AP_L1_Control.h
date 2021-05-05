@@ -127,6 +127,6 @@ private:
     AP_Float _loiter_bank_limit;
 
     bool _reverse = false;
-    float get_yaw();
+    float get_yaw() const;
     int32_t get_yaw_sensor() const;
 };

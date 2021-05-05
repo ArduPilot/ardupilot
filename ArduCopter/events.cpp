@@ -54,7 +54,7 @@ void Copter::failsafe_radio_on_event()
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
         desired_action = Failsafe_Action_Land;
 
-    } else if (control_mode == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
+    } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Auto Mode");       
         desired_action = Failsafe_Action_None;
@@ -112,13 +112,18 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 void Copter::failsafe_gcs_check()
 {
     // Bypass GCS failsafe checks if disabled or GCS never connected
-    if (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0) {
+    if (g.failsafe_gcs == FS_GCS_DISABLED) {
+        return;
+    }
+
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    if (gcs_last_seen_ms == 0) {
         return;
     }
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
-    const uint32_t last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
+    const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
     // Determine which event to trigger
@@ -190,7 +195,7 @@ void Copter::failsafe_gcs_on_event(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Landing");
         desired_action = Failsafe_Action_Land;
 
-    } else if (control_mode == Mode::Number::AUTO && failsafe_option(FailsafeOption::GCS_CONTINUE_IF_AUTO)) {
+    } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::GCS_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Auto Mode");
         desired_action = Failsafe_Action_None;
@@ -262,7 +267,7 @@ void Copter::failsafe_terrain_on_event()
     if (should_disarm_on_failsafe()) {
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
 #if MODE_RTL_ENABLED == ENABLED
-    } else if (control_mode == Mode::Number::RTL) {
+    } else if (flightmode->mode_number() == Mode::Number::RTL) {
         mode_rtl.restart_without_terrain();
 #endif
     } else {
@@ -336,7 +341,7 @@ bool Copter::should_disarm_on_failsafe() {
         return true;
     }
 
-    switch (control_mode) {
+    switch (flightmode->mode_number()) {
         case Mode::Number::STABILIZE:
         case Mode::Number::ACRO:
             // if throttle is zero OR vehicle is landed disarm motors

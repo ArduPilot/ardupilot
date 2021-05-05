@@ -58,7 +58,11 @@ class VehicleInfo(object):
             },
              "octa-cwx": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-octa.parm",
+                    "default_params/copter-octa-cwx.parm"
+                ],
             },
             "octa-quad-cwx": {
                 "waf_target": "bin/arducopter",
@@ -76,7 +80,11 @@ class VehicleInfo(object):
             },
             "octa-dji": {
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-octa.parm",
+                    "default_params/copter-octa-dji.parm"
+                ],
             },
             "deca": {
                 "waf_target": "bin/arducopter",
@@ -106,16 +114,19 @@ class VehicleInfo(object):
             "IrisRos": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
+                "external": True,
             },
             "gazebo-iris": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/gazebo-iris.parm"],
+                "external": True,
             },
             "airsim-copter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/airsim-quadX.parm"],
+                "external": True,
             },
             # HELICOPTER
             "heli": {
@@ -142,15 +153,28 @@ class VehicleInfo(object):
             "scrimmage-copter" : {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
+                "external": True,
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
+                "external": True,  # lies!  OTOH, hard to take off with this
             },
             "Callisto": {
                 "model": "octa-quad:@ROMFS/models/Callisto.json",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
+            },
+        },
+    },
+    "Blimp": {
+        "default_frame": "quad",
+        "frames": {
+            # BLIMP
+            "quad": {
+                "model": "+",
+                "waf_target": "bin/blimp",
+                "default_params_filename": "default_params/blimp.parm",
             },
         },
     },
@@ -249,6 +273,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
+            },
+            "rover-vectored": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-vectored.parm"],
             },
             "balancebot": {
                 "waf_target": "bin/ardurover",

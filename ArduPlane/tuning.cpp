@@ -155,7 +155,7 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
         return &plane.quadplane.pos_control->get_vel_xy_pid().kI();
 
     case TUNING_VZ_P:
-        return &plane.quadplane.pos_control->get_vel_z_p().kP();
+        return &plane.quadplane.pos_control->get_vel_z_pid().kP();
 
     case TUNING_AZ_P:
         return &plane.quadplane.pos_control->get_accel_z_pid().kP();

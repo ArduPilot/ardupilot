@@ -37,7 +37,7 @@ bool AP_RCProtocol_Backend::new_input()
     return ret;
 }
 
-uint8_t AP_RCProtocol_Backend::num_channels()
+uint8_t AP_RCProtocol_Backend::num_channels() const
 {
     return _num_channels;
 }

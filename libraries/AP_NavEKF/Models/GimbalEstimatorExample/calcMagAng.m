@@ -11,7 +11,7 @@ Tms = calcTms(gPhi,gPsi,gTheta);
 Tsn = Quat2Tbn([q0;q1;q2;q3]);
 % Define rotation from magnetometer to NED axes
 Tmn = Tsn*Tms;
-% rotate magentic field measured at top plate into nav axes
+% rotate magnetic field measured at top plate into nav axes
 magMeasNED = Tmn*[magX;magY;magZ]; 
 % the predicted measurement is the angle wrt magnetic north of the horizontal
 % component of the measured field

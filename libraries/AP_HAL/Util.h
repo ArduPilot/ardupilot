@@ -128,7 +128,13 @@ public:
     /*
         ToneAlarm Driver
     */
-    virtual bool toneAlarm_init() { return false;}
+    enum ToneAlarmType {
+        ALARM_NONE=0,
+        ALARM_BUZZER=1<<0,
+        ALARM_DSHOT=1<<1
+    };
+
+    virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
     /*
@@ -190,8 +196,14 @@ public:
     // request information on dma contention
     virtual void dma_info(ExpandingString &str) {}
 
+    // request information on memory allocation
+    virtual void mem_info(ExpandingString &str) {}
+
     // load persistent parameters from bootloader sector
     virtual bool load_persistent_params(ExpandingString &str) const { return false; }
+
+    // request information on uart I/O
+    virtual void uart_info(ExpandingString &str) {}
 
 protected:
     // we start soft_armed false, so that actuators don't send any

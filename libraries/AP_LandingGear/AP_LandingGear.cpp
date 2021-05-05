@@ -164,7 +164,7 @@ bool AP_LandingGear::deployed()
     if (_pin_deployed == -1) {
         return _deployed;
     } else {
-        return hal.gpio->read(_pin_deployed) == _pin_deployed_polarity ? true : false;
+        return hal.gpio->read(_pin_deployed) == _pin_deployed_polarity;
     }
 }
 
@@ -178,7 +178,7 @@ AP_LandingGear::LG_LandingGear_State AP_LandingGear::get_state()
     return gear_state_current;
 }
 
-uint32_t AP_LandingGear::get_gear_state_duration_ms()
+uint32_t AP_LandingGear::get_gear_state_duration_ms() const
 {
     if (last_gear_event_ms == 0) {
         return 0;
@@ -187,7 +187,7 @@ uint32_t AP_LandingGear::get_gear_state_duration_ms()
     return AP_HAL::millis() - last_gear_event_ms;
 }
 
-uint32_t AP_LandingGear::get_wow_state_duration_ms()
+uint32_t AP_LandingGear::get_wow_state_duration_ms() const
 {
     if (last_wow_event_ms == 0) {
         return 0;

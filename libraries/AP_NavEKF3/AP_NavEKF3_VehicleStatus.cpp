@@ -305,7 +305,7 @@ void NavEKF3_core::detectFlight()
 
     if (assume_zero_sideslip()) {
         // To be confident we are in the air we use a criteria which combines arm status, ground speed, airspeed and height change
-        float gndSpdSq = sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y);
+        float gndSpdSq = sq(gpsDataNew.vel.x) + sq(gpsDataNew.vel.y);
         bool highGndSpd = false;
         bool highAirSpd = false;
         bool largeHgtChange = false;
@@ -318,8 +318,9 @@ void NavEKF3_core::detectFlight()
             }
         }
 
-        // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
-        if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
+        // trigger on ground speed
+        const float gndSpdThresholdSq = sq(5.0f);
+        if (gndSpdSq > gndSpdThresholdSq + sq(gpsSpdAccuracy)) {
             highGndSpd = true;
         }
 
@@ -330,7 +331,7 @@ void NavEKF3_core::detectFlight()
 
         if (motorsArmed) {
             onGround = false;
-            if (highGndSpd && (highAirSpd || largeHgtChange)) {
+            if (highGndSpd && (expectTakeoff || highAirSpd || largeHgtChange)) {
                 // to a high certainty we are flying
                 inFlight = true;
             }
@@ -392,10 +393,10 @@ void NavEKF3_core::detectFlight()
     updateTouchdownExpected();
 
     // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
-    if ((!prevOnGround && onGround) || !gpsAccuracyGood) {
+    if ((!prevOnGround && onGround) || !gpsSpdAccPass) {
         // disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || expectTakeoff) && gpsAccuracyGood) {
+    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || expectTakeoff) && gpsSpdAccPass) {
         // flying or about to fly so reset counters and enable filter bank when GPS is good
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;

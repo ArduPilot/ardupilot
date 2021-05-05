@@ -886,7 +886,7 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     // Define rotation from magnetometer to NED axes
     Matrix3f Tmn = Tsn*Tms;
 
-    // rotate magentic field measured at top plate into NED axes afer applying bias values learnt by main EKF
+    // rotate magnetic field measured at top plate into NED axes afer applying bias values learnt by main EKF
     Vector3f magMeasNED = Tmn*(magData - body_magfield);
 
     // calculate the innovation where the predicted measurement is the angle wrt magnetic north of the horizontal component of the measured field

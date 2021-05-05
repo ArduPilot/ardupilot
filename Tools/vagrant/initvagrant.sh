@@ -38,8 +38,12 @@ apt-get install -y gdb
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
+# enable permissive ptrace:
+perl -pe 's/kernel.yama.ptrace_scope = ./kernel.yama.ptrace_scope = 0/' -i /etc/sysctl.d/10-ptrace.conf
+echo 0 > /proc/sys/kernel/yama/ptrace_scope
+
 # build JSB sim
-apt-get install -y libtool automake autoconf libexpat1-dev
+apt-get install -y libtool automake autoconf libexpat1-dev cmake
 #  libtool-bin
 sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
 
@@ -47,6 +51,12 @@ sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
 DOT_PROFILE=/home/$VAGRANT_USER/.profile
 echo "source /vagrant/Tools/vagrant/shellinit.sh" |
     sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
+BASHRC="/home/$VAGRANT_USER/.bashrc"
+# adjust environment for every login shell:
+BASHRC_GIT="/vagrant/Tools/vagrant/bashrc_git"
+echo "source $BASHRC_GIT" |
+    sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$BASHRC
 
 # link a half-way decent .mavinit.scr into place:
 sudo --login -u $VAGRANT_USER ln -sf /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr

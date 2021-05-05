@@ -20,6 +20,11 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/I2CDevice.h>
+
+#ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
+  #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
+#endif
 
 class AP_Scripting
 {
@@ -41,6 +46,8 @@ public:
 
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
 
+    void handle_mission_command(const AP_Mission::Mission_Command& cmd);
+
    // User parameters for inputs into scripts 
    AP_Float _user[4]; 
 
@@ -55,6 +62,21 @@ public:
         SCRIPTS = 1 << 1,
     };
     uint16_t get_disabled_dir() { return uint16_t(_dir_disable.get());}
+
+    // the number of and storage for i2c devices
+    uint8_t num_i2c_devices;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
+
+    // mission item buffer
+    static const int mission_cmd_queue_size = 5;
+    struct scripting_mission_cmd {
+        uint16_t p1;
+        float content_p1;
+        float content_p2;
+        float content_p3;
+        uint32_t time_ms;
+    };
+    ObjectBuffer<struct scripting_mission_cmd> * mission_data;
 
 private:
 

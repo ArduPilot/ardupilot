@@ -52,6 +52,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     case AUX_FUNC::SIMPLE:
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STEERING:
+    case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
@@ -125,7 +126,7 @@ void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch
     }
 }
 
-void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
     case AUX_FUNC::DO_NOTHING:
@@ -134,7 +135,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
         if (ch_flag == AuxSwitchPos::HIGH) {
             // do nothing if in AUTO mode
             if (rover.control_mode == &rover.mode_auto) {
-                return;
+                break;
             }
 
             // if disarmed clear mission and set home to current location
@@ -143,7 +144,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
                 if (!rover.set_home_to_current_location(false)) {
                     // ignored
                 }
-                return;
+                break;
             }
 
             // record the waypoint if not in auto mode
@@ -245,11 +246,13 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::PITCH:
     case AUX_FUNC::ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
+    case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;
 
     default:
-        RC_Channel::do_aux_function(ch_option, ch_flag);
-        break;
+        return RC_Channel::do_aux_function(ch_option, ch_flag);
 
     }
+
+    return true;
 }

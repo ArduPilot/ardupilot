@@ -60,7 +60,6 @@ enum AutoMode {
     Auto_WP,
     Auto_CircleMoveToEdge,
     Auto_Circle,
-    Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
     Auto_TerrainRecover

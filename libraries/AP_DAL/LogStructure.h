@@ -115,6 +115,7 @@ struct log_RSO2 {
 // @Description: Replay set-default-airspeed event
 struct log_RWA2 {
     float airspeed;
+    float uncertainty;
     uint8_t _end;
 };
 
@@ -365,13 +366,13 @@ struct log_RBOH {
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
       "RSO2", "III", "Lat,Lon,Alt", "DUm", "GGB" }, \
     { LOG_RWA2_MSG, RLOG_SIZE(RWA2),                         \
-      "RWA2", "f", "Airspeed", "n", "0" }, \
+      "RWA2", "ff", "Airspeed,uncertainty", "nn", "00" }, \
     { LOG_REV3_MSG, RLOG_SIZE(REV3),                \
       "REV3", "B", "Event", "-", "-" }, \
     { LOG_RSO3_MSG, RLOG_SIZE(RSO3),                         \
       "RSO3", "III", "Lat,Lon,Alt", "DUm", "GGB" }, \
     { LOG_RWA3_MSG, RLOG_SIZE(RWA3),                         \
-      "RWA3", "f", "Airspeed", "n", "0" }, \
+      "RWA3", "ff", "Airspeed,Uncertainty", "nn", "00" }, \
     { LOG_REY3_MSG, RLOG_SIZE(REY3),                                   \
       "REY3", "ffIB", "yawangle,yawangleerr,timestamp_ms,type", "???-", "???-" }, \
     { LOG_RISH_MSG, RLOG_SIZE(RISH),                                   \

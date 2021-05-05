@@ -1,35 +1,5 @@
 #include "Copter.h"
 
-// transform pilot's yaw input into a desired yaw rate
-// returns desired yaw rate in centi-degrees per second
-float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
-{
-    // throttle failsafe check
-    if (failsafe.radio || !ap.rc_receiver_present) {
-        return 0.0f;
-    }
-    float yaw_request;
-
-    // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
-
-    // calculate yaw rate request
-    if (is_zero(g2.acro_y_expo)) {
-        yaw_request = stick_angle * g.acro_yaw_p;
-    } else {
-        // expo variables
-        float y_in, y_in3, y_out;
-
-        // yaw expo
-        y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
-        y_in3 = y_in*y_in*y_in;
-        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
-        yaw_request = ROLL_PITCH_YAW_INPUT_MAX * y_out * g.acro_yaw_p;
-    }
-    // convert pilot input to the desired yaw rate
-    return yaw_request;
-}
-
 /*************************************************************
  *  throttle control
  ****************************************************************/
@@ -44,7 +14,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update in manual throttle modes or Drift
-    if (flightmode->has_manual_throttle() || (control_mode == Mode::Number::DRIFT)) {
+    if (flightmode->has_manual_throttle() || (copter.flightmode->mode_number() == Mode::Number::DRIFT)) {
         return;
     }
 
@@ -84,16 +54,16 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     }
 #endif
 
-    float desired_rate = 0.0f;
-    float mid_stick = get_throttle_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone;
-    float deadband_bottom = mid_stick - g.throttle_deadzone;
-
     // ensure a reasonable throttle value
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+
+    float desired_rate = 0.0f;
+    const float mid_stick = get_throttle_mid();
+    const float deadband_top = mid_stick + g.throttle_deadzone;
+    const float deadband_bottom = mid_stick - g.throttle_deadzone;
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
@@ -135,7 +105,7 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
 }
 
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
-uint16_t Copter::get_pilot_speed_dn()
+uint16_t Copter::get_pilot_speed_dn() const
 {
     if (g2.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);

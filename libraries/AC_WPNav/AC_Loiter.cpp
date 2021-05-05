@@ -207,7 +207,7 @@ float AC_Loiter::get_angle_max_cd() const
 }
 
 /// run the loiter controller
-void AC_Loiter::update()
+void AC_Loiter::update(bool avoidance_on)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
@@ -219,7 +219,7 @@ void AC_Loiter::update()
     _pos_control.set_max_speed_xy(_speed_cms);
     _pos_control.set_max_accel_xy(_accel_cmss);
 
-    calc_desired_velocity(dt);
+    calc_desired_velocity(dt, avoidance_on);
     _pos_control.update_xy_controller();
 }
 
@@ -232,7 +232,7 @@ void AC_Loiter::sanity_check_params()
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
 ///		updated velocity sent directly to position controller
-void AC_Loiter::calc_desired_velocity(float nav_dt)
+void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
 {
     float ekfGndSpdLimit, ekfNavVelGainScaler;
     AP::ahrs_navekf().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -303,11 +303,15 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
         desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
     }
 
-    // Limit the velocity to prevent fence violations
-    // TODO: We need to also limit the _desired_accel
-    AC_Avoid *_avoid = AP::ac_avoid();
-    if (_avoid != nullptr) {
-        _avoid->adjust_velocity(_pos_control.get_pos_xy_p().kP(), _accel_cmss, desired_vel, nav_dt);
+    if (avoidance_on) {
+        // Limit the velocity to prevent fence violations
+        // TODO: We need to also limit the _desired_accel
+        AC_Avoid *_avoid = AP::ac_avoid();
+        if (_avoid != nullptr) {
+            Vector3f avoidance_vel_3d{desired_vel.x, desired_vel.y, 0.0f};
+            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z(), nav_dt);
+            desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
+        }
     }
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller

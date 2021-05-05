@@ -1,6 +1,8 @@
 #pragma once
 
 #include "AP_Proximity.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include "AP_Proximity_Backend.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -37,3 +39,5 @@ private:
 
 };
 #endif // CONFIG_HAL_BOARD
+
+#endif // HAL_PROXIMITY_ENABLED

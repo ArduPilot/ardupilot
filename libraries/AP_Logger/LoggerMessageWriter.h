@@ -92,8 +92,8 @@ public:
 
     void reset() override;
     void process() override;
-    bool fmt_done() { return _fmt_done; }
-    bool params_done() { return _params_done; }
+    bool fmt_done() const { return _fmt_done; }
+    bool params_done() const { return _params_done; }
 
     // reset some writers so we push stuff out to logs again.  Will
     // only work if we are in state DONE!

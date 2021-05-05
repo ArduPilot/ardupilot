@@ -138,7 +138,7 @@ define CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"
 COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 
 # I2C baro (DPS310)
-BARO DPS280 I2C:0:0x76
+BARO DPS310 I2C:0:0x76
 
 # enable builtin GPS, mag and baro
 # also allow for airspeed on i2c port, and rangefinder on MSP port

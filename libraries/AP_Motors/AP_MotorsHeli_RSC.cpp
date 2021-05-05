@@ -237,7 +237,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             // set rotor ramp to decrease speed to zero
             update_rotor_ramp(0.0f, dt);
 
-            if (_in_autorotaion) {
+            if (_in_autorotation) {
                 // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
                 _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
             } else {

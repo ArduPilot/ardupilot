@@ -15,6 +15,7 @@
 
 #include "AP_Proximity_Backend_Serial.h"
 
+#if HAL_PROXIMITY_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
 
 /*
@@ -41,3 +42,4 @@ bool AP_Proximity_Backend_Serial::detect()
     return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
 }
 
+#endif // HAL_PROXIMITY_ENABLED

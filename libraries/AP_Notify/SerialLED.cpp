@@ -23,22 +23,10 @@ SerialLED::SerialLED(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, ui
 {
 }
 
-bool SerialLED::hw_init()
+bool SerialLED::init()
 {
-    init_ports();
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&SerialLED::timer, void));
+    enable_mask = init_ports();
     return true;
-}
-
-void SerialLED::timer()
-{
-    WITH_SEMAPHORE(_sem);
-
-    const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_init_ms >= 1000) {
-        _last_init_ms = now_ms;
-        enable_mask = init_ports();
-    }
 }
 
 bool SerialLED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)

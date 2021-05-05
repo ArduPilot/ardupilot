@@ -57,7 +57,7 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_id, uint32_t& usage_sec) const
 AP_ESC_Telem *AP_ESC_Telem::_singleton = nullptr;
 
 /*
- * Get the AP_InertialSensor singleton
+ * Get the AP_ESC_Telem singleton
  */
 AP_ESC_Telem *AP_ESC_Telem::get_singleton()
 {

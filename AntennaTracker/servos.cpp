@@ -101,7 +101,7 @@ void Tracker::update_pitch_position_servo()
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-void Tracker::update_pitch_onoff_servo(float pitch)
+void Tracker::update_pitch_onoff_servo(float pitch) const
 {
     int32_t pitch_min_cd = g.pitch_min*100;
     int32_t pitch_max_cd = g.pitch_max*100;
@@ -217,7 +217,7 @@ void Tracker::update_yaw_position_servo()
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-void Tracker::update_yaw_onoff_servo(float yaw)
+void Tracker::update_yaw_onoff_servo(float yaw) const
 {
     float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
     if (fabsf(nav_status.angle_error_yaw * 0.01f) < acceptable_error) {

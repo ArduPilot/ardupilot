@@ -74,8 +74,8 @@ private:
     bool open_fdm_socket(void);
     void send_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
-    void check_stdout(void);
-    bool expect(const char *str);
+    void check_stdout(void) const;
+    bool expect(const char *str) const;
 
     void drain_control_socket();
 };

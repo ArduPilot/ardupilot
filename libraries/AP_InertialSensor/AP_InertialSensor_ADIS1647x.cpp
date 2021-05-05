@@ -89,8 +89,10 @@ AP_InertialSensor_ADIS1647x::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_ADIS1647x::start()
 {
-    accel_instance = _imu.register_accel(BACKEND_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X));
-    gyro_instance = _imu.register_gyro(BACKEND_SAMPLE_RATE,   dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X));
+    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X)) ||
+        !_imu.register_gyro(gyro_instance, BACKEND_SAMPLE_RATE,   dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X))) {
+        return;
+    }
 
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);

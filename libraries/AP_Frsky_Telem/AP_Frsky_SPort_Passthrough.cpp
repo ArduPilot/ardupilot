@@ -7,6 +7,8 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RPM/AP_RPM.h>
+#include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -110,6 +112,9 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(BATT_2, 1300, 500);     // 0x5008 Battery 2 status
     set_scheduler_entry(BATT_1, 1300, 500);     // 0x5003 Battery 1 status
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
+    set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
+    set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
+    set_scheduler_entry(UDATA, 5000, 200);      // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
     // initialize sport sensor IDs
@@ -160,6 +165,12 @@ void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
         _scheduler.packet_weight[ATTITUDE] = 45;     // attitude
     }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    // when using fport raise user data priority if any packets are pending
+    if (_use_external_data && _sport_push_buffer.pending) {
+        _scheduler.packet_weight[UDATA] = 250;
+    } else {
+        _scheduler.packet_weight[UDATA] = 5000;   // user data
+    }
 }
 
 // WFQ scheduler
@@ -181,10 +192,34 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case BATT_2:
         packet_ready = AP::battery().num_instances() > 1;
         break;
+    case RPM:
+        {
+            packet_ready = false;
+            const AP_RPM *rpm = AP::rpm();
+            if (rpm == nullptr) {
+                break;
+            }
+            packet_ready = rpm->num_sensors() > 0;
+        }
+        break;
+    case TERRAIN:
+        {
+            packet_ready = false;
+#if AP_TERRAIN_AVAILABLE
+            const AP_Terrain *terrain = AP::terrain();
+            packet_ready = terrain && terrain->enabled();
+#endif
+        }
+        break;
+    case UDATA:
+        // when using fport user data is sent by scheduler
+        // when using sport user data is sent responding to custom polling
+        packet_ready = _use_external_data && _sport_push_buffer.pending;
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        case MAV:
-            packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
-            break;
+    case MAV:
+        packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
+        break;
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     default:
         packet_ready = true;
@@ -242,6 +277,21 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case PARAM: // 0x5007 parameters
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
         break;
+    case RPM: // 0x500A rpm sensors 1 and 2
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0A, calc_rpm());
+        break;
+    case TERRAIN: // 0x500B terrain data
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0B, calc_terrain());
+        break;
+    case UDATA: // user data
+        {
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_use_external_data && _sport_push_buffer.pending) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     case MAV: // mavlite
         process_tx_queue();
@@ -276,8 +326,17 @@ void AP_Frsky_SPort_Passthrough::send(void)
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     }
     // check if we should respond to this polling byte
-    if (prev_byte == FRAME_HEAD && is_passthrough_byte(_passthrough.new_byte)) {
-        run_wfq_scheduler();
+    if (prev_byte == FRAME_HEAD) {
+        if (is_passthrough_byte(_passthrough.new_byte)) {
+            run_wfq_scheduler();
+        } else {
+            // respond to custom user data polling
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_sport_push_buffer.pending && _passthrough.new_byte == _sport_push_buffer.packet.sensor) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
     }
 }
 
@@ -348,35 +407,35 @@ bool AP_Frsky_SPort_Passthrough::get_next_msg_chunk(void)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_param(void)
 {
-    const AP_BattMonitor &_battery = AP::battery();
+    uint8_t param_id = _paramID;    //cache it because it gets changed inside the switch
+    uint32_t param_value = 0;
 
-    uint32_t param = 0;
-    uint8_t last_param = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : BATT_CAPACITY_1;
-
-    // cycle through paramIDs
-    if (_paramID >= last_param) {
-        _paramID = 0;
-    }
-
-    _paramID++;
     switch (_paramID) {
+    case NONE:
     case FRAME_TYPE:
-        param = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
+        param_value = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
+        _paramID = BATT_CAPACITY_1;
         break;
-    case BATT_FS_VOLTAGE:           // was used to send the battery failsafe voltage, lend slot to next param
-    case BATT_FS_CAPACITY:          // was used to send the battery failsafe capacity in mAh, lend slot to next param
     case BATT_CAPACITY_1:
-        _paramID = 4;
-        param = (uint32_t)roundf(_battery.pack_capacity_mah(0)); // battery pack capacity in mAh
+        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(0)); // battery pack capacity in mAh
+        _paramID = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
         break;
     case BATT_CAPACITY_2:
-        param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
+        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(1)); // battery pack capacity in mAh
+        _paramID = TELEMETRY_FEATURES;
+        break;
+    case TELEMETRY_FEATURES:
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        BIT_SET(param_value,PassthroughFeatures::BIDIR);
+#endif
+#ifdef ENABLE_SCRIPTING
+        BIT_SET(param_value,PassthroughFeatures::SCRIPTING);
+#endif
+        _paramID = FRAME_TYPE;
         break;
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-    param = (_paramID << PARAM_ID_OFFSET) | (param & PARAM_VALUE_LIMIT);
-
-    return param;
+    return (param_id << PARAM_ID_OFFSET) | (param_value & PARAM_VALUE_LIMIT);
 }
 
 /*
@@ -430,7 +489,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
  * true if we need to respond to the last polling byte
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-bool AP_Frsky_SPort_Passthrough::is_passthrough_byte(const uint8_t byte)
+bool AP_Frsky_SPort_Passthrough::is_passthrough_byte(const uint8_t byte) const
 {
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     if( byte == _SPort_bidir.downlink1_sensor_id || byte == _SPort_bidir.downlink2_sensor_id ) {
@@ -548,6 +607,51 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 }
 
 /*
+ * prepare rpm for sensors 1 and 2
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+uint32_t AP_Frsky_SPort_Passthrough::calc_rpm(void)
+{
+    const AP_RPM *ap_rpm = AP::rpm();
+    if (ap_rpm == nullptr) {
+        return 0;
+    }
+    uint32_t value = 0;
+    // we send: rpm_value*0.1 as 16 bits signed
+    float rpm;
+    // bits 0-15 for rpm 0
+    if (ap_rpm->get_rpm(0,rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1);
+    }
+    // bits 16-31 for rpm 1
+    if (ap_rpm->get_rpm(1,rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1) << 16;
+    }
+    return value;
+}
+
+/*
+ * prepare terrain data
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+uint32_t AP_Frsky_SPort_Passthrough::calc_terrain(void)
+{
+    uint32_t value = 0;
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+    if (terrain == nullptr || !terrain->enabled()) {
+        return value;
+    }
+    float height_above_terrain;
+    if (terrain->height_above_terrain(height_above_terrain, true)) {
+        // vehicle height above terrain
+        value |= prep_number(roundf(height_above_terrain * 10), 3, 2);
+    }
+#endif
+    return value;
+}
+
+/*
   fetch Sport data for an external transport, such as FPort or crossfire
   Note: we need to create a packet array with unique packet types
   For very big frames we might have to relax the "unique packet type per frame"
@@ -595,71 +699,6 @@ bool AP_Frsky_SPort_Passthrough::get_telem_data(sport_packet_t* packet_array, ui
     }
     packet_count = idx;
     return idx > 0;
-}
-
-/*
- * prepare value for transmission through FrSky link
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits, uint8_t power)
-{
-    uint16_t res = 0;
-    uint32_t abs_number = abs(number);
-
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<1;
-        } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
-        }
-    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<2;
-        } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
-        }
-    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<1;
-        } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
-            res = 0x7FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
-        }
-    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<2;
-        } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
-            res = 0xFFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
-        }
-    }
-    return res;
 }
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL

@@ -34,7 +34,7 @@ public:
 
 #ifdef ENABLE_SCRIPTING
     // Init to be called from scripting
-    bool                init(uint8_t expected_num_motors);
+    virtual bool        init(uint8_t expected_num_motors);
 #endif // ENABLE_SCRIPTING
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -69,6 +69,9 @@ public:
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
+
+    const char*         get_frame_string() const override { return _frame_class_string; }
+    const char*         get_type_string() const override { return _frame_type_string; }
 
     // disable the use of motor torque to control yaw. Used when an external mechanism such
     // as vectoring is used for yaw control
@@ -107,13 +110,16 @@ protected:
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
-    motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
-    motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
 
     // motor failure handling
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
     uint8_t             _motor_lost_index;  // index number of the lost motor
 
+    motor_frame_class   _active_frame_class; // active frame class (i.e. quad, hexa, octa, etc)
+    motor_frame_type    _active_frame_type;  // active frame type (i.e. plus, x, v, etc)
+
+    const char*         _frame_class_string = ""; // string representation of frame class
+    const char*         _frame_type_string = "";  //  string representation of frame type
 private:
     static AP_MotorsMatrix *_singleton;
 };

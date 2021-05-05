@@ -80,6 +80,7 @@ static const struct {
     { "INS_ACCSCAL_X",     1.001 },
     { "INS_ACCSCAL_Y",     1.001 },
     { "INS_ACCSCAL_Z",     1.001 },
+    { "RPM_TYPE", 10 },
 };
 
 
@@ -155,9 +156,8 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_end(ap);
 
     // open SOAP socket to FlightAxis
-    if (sock) {
-        delete sock;
-    }
+    delete sock;
+
     sock = new SocketAPM(false);
     if (!sock->connect(controller_ip, controller_port)) {
         ::printf("connect failed\n");

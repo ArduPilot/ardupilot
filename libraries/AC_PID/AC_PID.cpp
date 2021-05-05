@@ -93,6 +93,10 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _flags._reset_filter = true;
 
     memset(&_pid_info, 0, sizeof(_pid_info));
+
+    // slew limit scaler allows for plane to use degrees/sec slew
+    // limit
+    _slew_limit_scale = 1;
 }
 
 // set_dt - set time step in seconds
@@ -156,7 +160,8 @@ float AC_PID::update_all(float target, float measurement, bool limit)
     float D_out = (_derivative * _kd);
 
     // calculate slew limit modifier for P+D
-    _pid_info.Dmod = _slew_limiter.modifier(_pid_info.P + _pid_info.D, _dt);
+    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
@@ -208,7 +213,8 @@ float AC_PID::update_error(float error, bool limit)
     float D_out = (_derivative * _kd);
 
     // calculate slew limit modifier for P+D
-    _pid_info.Dmod = _slew_limiter.modifier(_pid_info.P + _pid_info.D, _dt);
+    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;

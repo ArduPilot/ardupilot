@@ -15,7 +15,7 @@ from math import acos, atan2, cos, pi, sqrt
 
 import pexpect
 
-from . rotmat import Matrix3, Vector3
+from pymavlink.rotmat import Vector3, Matrix3
 
 if (sys.version_info[0] >= 3):
     ENCODING = 'ascii'
@@ -150,6 +150,19 @@ def build_examples(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
+def build_replay(board, j=None, debug=False, clean=False):
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    if clean:
+        waf_clean()
+
+    # then build
+    cmd_make = [relwaf(), "replay"]
+    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+    return True
+
 def build_tests(board, j=None, debug=False, clean=False):
     # first configure
     waf_configure(board, j=j, debug=debug)
@@ -228,7 +241,7 @@ def make_safe_filename(text):
     """Return a version of text safe for use as a filename."""
     r = re.compile("([^a-zA-Z0-9_.+-])")
     text.replace('/', '-')
-    filename = r.sub(lambda m: "%" + str(hex(ord(str(m.group(1))))).upper(), text)
+    filename = r.sub(lambda m: str(hex(ord(str(m.group(1))))).upper(), text)
     return filename
 
 
@@ -261,9 +274,10 @@ def start_SITL(binary,
                breakpoints=[],
                disable_breakpoints=False,
                customisations=[],
-               lldb=False):
+               lldb=False,
+               supplementary=False):
 
-    if model is None:
+    if model is None and not supplementary:
         raise ValueError("model must not be None")
 
     """Launch a SITL instance."""
@@ -333,27 +347,28 @@ def start_SITL(binary,
             raise RuntimeError("DISPLAY was not set")
 
     cmd.append(binary)
-    if wipe:
-        cmd.append('-w')
-    if synthetic_clock:
-        cmd.append('-S')
-    if home is not None:
-        cmd.extend(['--home', home])
-    cmd.extend(['--model', model])
-    if speedup != 1:
-        cmd.extend(['--speedup', str(speedup)])
-    if defaults_filepath is not None:
-        if type(defaults_filepath) == list:
-            if len(defaults_filepath):
-                cmd.extend(['--defaults', ",".join(defaults_filepath)])
-        else:
-            cmd.extend(['--defaults', defaults_filepath])
-    if unhide_parameters:
-        cmd.extend(['--unhide-groups'])
-    cmd.extend(customisations)
+    if not supplementary:
+        if wipe:
+            cmd.append('-w')
+        if synthetic_clock:
+            cmd.append('-S')
+        if home is not None:
+            cmd.extend(['--home', home])
+        cmd.extend(['--model', model])
+        if speedup != 1:
+            cmd.extend(['--speedup', str(speedup)])
+        if defaults_filepath is not None:
+            if type(defaults_filepath) == list:
+                if len(defaults_filepath):
+                    cmd.extend(['--defaults', ",".join(defaults_filepath)])
+            else:
+                cmd.extend(['--defaults', defaults_filepath])
+        if unhide_parameters:
+            cmd.extend(['--unhide-groups'])
+        # somewhere for MAVProxy to connect to:
+        cmd.append('--uartC=tcp:2')
 
-    # somewhere for MAVProxy to connect to:
-    cmd.append('--uartC=tcp:2')
+    cmd.extend(customisations)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         global windowID
@@ -431,8 +446,13 @@ def MAVProxy_version():
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
     return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
-def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5762',
-                        options=[], logfile=sys.stdout):
+def start_MAVProxy_SITL(atype,
+                        aircraft=None,
+                        setup=False,
+                        master='tcp:127.0.0.1:5762',
+                        options=[],
+                        pexpect_timeout=60,
+                        logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
@@ -458,7 +478,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding=ENCODING, timeout=60, env=env)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding=ENCODING, timeout=pexpect_timeout, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret

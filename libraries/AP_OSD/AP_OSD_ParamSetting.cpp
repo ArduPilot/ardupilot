@@ -417,7 +417,7 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
 }
 
 // copy the name converting FOO_BAR_BAZ to FooBarBaz
-void AP_OSD_ParamSetting::copy_name_camel_case(char* name, size_t len)
+void AP_OSD_ParamSetting::copy_name_camel_case(char* name, size_t len) const
 {
     char buf[17];
     _param->copy_name_token(_current_token, buf, 17);

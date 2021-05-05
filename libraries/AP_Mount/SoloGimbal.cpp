@@ -221,7 +221,8 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
     const AP_InertialSensor &ins = AP::ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        if (!ins.get_delta_angle(ins_index,dAng)) {
+        float dAng_dt;
+        if (!ins.get_delta_angle(ins_index,dAng, dAng_dt)) {
             dAng = ins.get_gyro(ins_index) / ins.get_loop_rate_hz();
         }
     }
@@ -337,7 +338,7 @@ Vector3f SoloGimbal::get_ang_vel_dem_roll_tilt(const Quaternion &quatEst)
     return gimbalRateDemVecTilt;
 }
 
-Vector3f SoloGimbal::get_ang_vel_dem_feedforward(const Quaternion &quatEst)
+Vector3f SoloGimbal::get_ang_vel_dem_feedforward(const Quaternion &quatEst) const
 {
     // quaternion demanded at the previous time step
     static float lastDemY;
@@ -481,7 +482,7 @@ void SoloGimbal::write_logs()
     _log_del_vel.zero();
 }
 
-bool SoloGimbal::joints_near_limits()
+bool SoloGimbal::joints_near_limits() const
 {
     return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < -radians(135);
 }
@@ -518,7 +519,7 @@ void SoloGimbal::_acal_save_calibrations()
     _gimbalParams.flash();
 }
 
-void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
+void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates) const
 {
     float sin_theta = sinf(_measurement.joint_angles.y);
     float cos_theta = cosf(_measurement.joint_angles.y);
@@ -533,7 +534,7 @@ void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f
     joint_rates.z = sec_phi*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
 }
 
-void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)
+void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel) const
 {
     float sin_theta = sinf(_measurement.joint_angles.y);
     float cos_theta = cosf(_measurement.joint_angles.y);

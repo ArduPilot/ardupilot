@@ -90,7 +90,7 @@ bool AP_RTC::get_utc_usec(uint64_t &usec) const
     return true;
 }
 
-bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
+bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const
 {
      // get time of day in ms
     uint64_t time_ms = 0;
@@ -113,7 +113,7 @@ bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uin
     return true;
 }
 
-bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
+bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const
 {
      // get local time of day in ms
     uint64_t time_ms = 0;

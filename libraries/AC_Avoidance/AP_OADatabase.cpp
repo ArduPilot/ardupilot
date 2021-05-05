@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @Units: m
     // @Range: 0 4
     // @User: Advanced
-    AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 2.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 0.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     AP_GROUPEND
 };
@@ -405,7 +405,7 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
         }
 
         // convert object's position as an offset from EKF origin to Location
-        const Location item_loc(Vector3f(_database.items[idx].pos.x * 100.0f, _database.items[idx].pos.y * 100.0f, _database.items[idx].pos.z * 100.0f));
+        const Location item_loc(Vector3f(_database.items[idx].pos.x * 100.0f, _database.items[idx].pos.y * 100.0f, _database.items[idx].pos.z * 100.0f), Location::AltFrame::ABOVE_ORIGIN);
 
         mavlink_msg_adsb_vehicle_send(chan,
             idx,
@@ -476,5 +476,3 @@ AP_OADatabase *oadatabase()
 }
 
 }
-
-

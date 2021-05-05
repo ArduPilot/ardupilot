@@ -195,6 +195,9 @@ public:
     // gets the length of this vector
     float length(void) const;
 
+    // limit xy component vector to a given length. returns true if vector was limited
+    bool limit_length_xy(float max_length);
+
     // normalizes this vector
     void normalize()
     {
@@ -244,6 +247,9 @@ public:
     // distance from the tip of this vector to a line segment specified by two vectors
     float distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const;
 
+    // extrapolate position given bearing and pitch (in degrees) and distance
+    void offset_bearing(float bearing, float pitch, float distance);
+    
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the
     // zero vector the return from the function will always be the
@@ -262,6 +268,14 @@ public:
 
     // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
     static float closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
+
+    // Point in the line segment defined by w1,w2 which is closest to point(p)
+    static Vector3<T> point_on_line_closest_to_other_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
+
+    // This implementation is borrowed from: http://geomalgorithms.com/a07-_distance.html
+    // INPUT: 4 points corresponding to start and end of two line segments
+    // OUTPUT: shortest distance between segments, and closest point on segment 2, from segment 1, gets passed on reference as "intersection" 
+    static float segment_to_segment_dist(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& intersection) WARN_IF_UNUSED;
 };
 
 typedef Vector3<int16_t>                Vector3i;

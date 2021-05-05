@@ -4,6 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -21,6 +22,9 @@ public:
 private:
 
     AP_InertialSensor ins;
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_ExternalAHRS eAHRS;
+#endif // HAL_EXTERNAL_AHRS_ENABLED
     AP_Scheduler scheduler{nullptr};
 
     uint32_t ins_counter;

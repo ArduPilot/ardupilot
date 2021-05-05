@@ -192,6 +192,10 @@ public:
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
+        VTX_POWER =           94, // VTX power level
+        FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
+        MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
+        WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
@@ -207,11 +211,13 @@ public:
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
-        WALKING_HEIGHT =     203, // walking robot height input
+        THROTTLE =           203, // throttle pilot input
+        YAW =                204, // yaw pilot input
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
+        WALKING_HEIGHT =     211, // walking robot height input
 
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
@@ -232,23 +238,46 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
+    enum class AuxFuncTriggerSource : uint8_t {
+        INIT,
+        RC,
+        BUTTON,
+        MAVLINK,
+        MISSION,
+        SCRIPTING,
+    };
+
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
+    bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
-    virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    // wrapper function around do_aux_function which allows us to log
+    bool run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
+    // pwm value above which we condider that Radio min value is invalid
+    static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
+    // pwm value under which we condider that Radio max value is invalid
+    static const uint16_t RC_CALIB_MAX_LIMIT_PWM = 1700;
+
+    // pwm value above which the switch/button will be invoked:
+    static const uint16_t AUX_SWITCH_PWM_TRIGGER_HIGH = 1800;
+    // pwm value below which the switch/button will be disabled:
+    static const uint16_t AUX_SWITCH_PWM_TRIGGER_LOW = 1200;
 
     // pwm value above which the option will be invoked:
-    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
+    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1700;
     // pwm value below which the option will be disabled:
-    static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
+    static const uint16_t AUX_PWM_TRIGGER_LOW = 1300;
 
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
+
+    // virtual function to be overridden my subclasses
+    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
     virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -260,7 +289,7 @@ protected:
     void do_aux_function_clear_wp(const AuxSwitchPos ch_flag);
     void do_aux_function_gripper(const AuxSwitchPos ch_flag);
     void do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag);
-    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
+    virtual void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
@@ -466,6 +495,12 @@ public:
     bool get_pwm(uint8_t channel, uint16_t &pwm) const;
 
     uint32_t last_input_ms() const { return last_update_ms; };
+
+    // method for other parts of the system (e.g. Button and mavlink)
+    // to trigger auxillary functions
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
+        return rc_channel(0)->run_aux_function(ch_option, pos, source);
+    }
 
 protected:
 

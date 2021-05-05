@@ -14,7 +14,7 @@ Variometer::Variometer(const AP_Vehicle::FixedWing &parms) :
     _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
-void Variometer::update(const float polar_K, const float polar_Cd0, const float polar_B)
+void Variometer::update(const float thermal_bank, const float polar_K, const float polar_Cd0, const float polar_B)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -32,7 +32,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
 
-    tau = calculate_circling_time_constant();
+    tau = calculate_circling_time_constant(radians(thermal_bank));
 
     float dt = (float)(AP_HAL::micros64() - _prev_update_time)/1e6;
 
@@ -73,8 +73,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 
     _prev_update_time = AP_HAL::micros64();
 
-    float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
-    _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
+    _expected_thermalling_sink = calculate_aircraft_sinkrate(radians(thermal_bank), polar_K, polar_Cd0, polar_B);
 
 // @LoggerMessage: VAR
 // @Vehicles: Plane
@@ -110,7 +109,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 float Variometer::calculate_aircraft_sinkrate(float phi,
                                              const float polar_K,
                                              const float polar_CD0,
-                                             const float polar_B)
+                                             const float polar_B) const
 {
     // Remove aircraft sink rate
     float CL0;  // CL0 = 2*W/(rho*S*V^2)
@@ -126,12 +125,12 @@ float Variometer::calculate_aircraft_sinkrate(float phi,
     return _aspd_filt_constrained * (C1 + C2 / (cosphi * cosphi));
 }
 
-float Variometer::calculate_circling_time_constant()
+float Variometer::calculate_circling_time_constant(float thermal_bank)
 {
     // Calculate a time constant to use to filter quantities over a full thermal orbit.
     // This is used for rejecting variation in e.g. climb rate, or estimated climb rate
     // potential, as the aircraft orbits the thermal.
     // Use the time to circle - variations at the circling frequency then have a gain of 25%
     // and the response to a step input will reach 64% of final value in three orbits.
-    return _aparm.loiter_radius*2*M_PI/_aspd_filt_constrained;
+    return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*tanf(thermal_bank));
 }

@@ -891,8 +891,8 @@ void NavEKF2_core::FuseVelPosNED()
                         statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
                     }
 
-                    // the first 3 states represent the angular misalignment vector. This is
-                    // is used to correct the estimated quaternion
+                    // the first 3 states represent the angular misalignment vector.
+                    // This is used to correct the estimated quaternion
                     stateStruct.quat.rotate(stateStruct.angErr);
 
                     // sum the attitude error from velocity and position fusion only

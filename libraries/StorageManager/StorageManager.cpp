@@ -292,7 +292,7 @@ void StorageAccess::write_uint32(uint16_t loc, uint32_t value) const
 /*
   copy one area to another
  */
-bool StorageAccess::copy_area(const StorageAccess &source)
+bool StorageAccess::copy_area(const StorageAccess &source) const
 {
     // we deliberately allow for copies from smaller areas. This
     // allows for a partial backup region for parameters

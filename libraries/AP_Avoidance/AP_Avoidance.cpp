@@ -609,7 +609,7 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
 }
 
 // get unit vector away from the nearest obstacle
-bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu)
+bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu) const
 {
     if (obstacle == nullptr) {
         // why where we called?!

@@ -131,20 +131,17 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
-#if GEOFENCE_ENABLED == ENABLED
-        if (cmd.p1 != 2) {
-            if (!geofence_set_enabled((bool) cmd.p1)) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Unable to set fence. Enabled state to %u", cmd.p1);
-            } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "Set fence enabled state to %u", cmd.p1);
-            }
-        } else { //commanding to only disable floor
-            if (! geofence_set_floor_enabled(false)) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Unable to disable fence floor");
-            } else {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Fence floor disabled");
-            }
-        }    
+#if AC_FENCE == ENABLED
+        if (cmd.p1 == 0) { // disable fence
+            plane.fence.enable(false);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence disabled");
+        } else if (cmd.p1 == 1) { // enable fence
+            plane.fence.enable(true);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence enabled");
+        } else if (cmd.p1 == 2) { // disable fence floor only
+            plane.fence.disable_floor();
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence floor disabled");
+        }
 #endif
         break;
 
@@ -385,7 +382,9 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
     }
 
-    disable_fence_for_landing();
+#if AC_FENCE == ENABLED
+    plane.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
@@ -558,7 +557,9 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-        plane.complete_auto_takeoff();
+#if AC_FENCE == ENABLED
+        plane.fence.auto_enable_fence_after_takeoff();
+#endif
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
@@ -879,7 +880,7 @@ bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     {
     case 0:             // Airspeed
         if ((cmd.content.speed.target_ms >= aparm.airspeed_min.get()) && (cmd.content.speed.target_ms <= aparm.airspeed_max.get()))  {
-            aparm.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
+           new_airspeed_cm = cmd.content.speed.target_ms * 100; //new airspeed target for AUTO or GUIDED modes
             gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
             return true;
         }
@@ -952,6 +953,18 @@ void Plane::exit_mission_callback()
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
+        case RTL:
+            {
+                // fly home and loiter at RTL alt
+                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                if (plane.reached_loiter_target()) {
+                    // decend to Q RTL alt
+                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
+                    plane.loiter_angle_reset();
+                    vtol_approach_s.approach_stage = LOITER_TO_ALT;
+                }
+                break;
+            }
         case LOITER_TO_ALT:
             {
                 update_loiter(fabsf(quadplane.fw_land_approach_radius));

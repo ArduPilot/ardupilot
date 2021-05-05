@@ -58,12 +58,12 @@ private:
 
     uint64_t last_update_us;
 
-    bool should_report();
+    bool should_report() const;
 
     void update_from_demand();
     void update_servobased(int16_t gripper_pwm);
 
-    float tesla();
+    float tesla() const;
 
     float demand;
 };

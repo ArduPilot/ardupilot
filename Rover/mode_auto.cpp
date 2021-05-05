@@ -668,7 +668,7 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-bool ModeAuto::verify_RTL()
+bool ModeAuto::verify_RTL() const
 {
     return reached_destination();
 }

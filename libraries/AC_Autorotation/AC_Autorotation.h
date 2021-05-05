@@ -34,7 +34,7 @@ public:
     float get_bail_time(void) { return _param_bail_time; }
     float get_last_collective() const { return _collective_out; }
     bool is_enable(void) { return _param_enable; }
-    void Log_Write_Autorotation(void);
+    void Log_Write_Autorotation(void) const;
     void update_forward_speed_controller(void);  // Update foward speed controller
     void set_desired_fwd_speed(void) { _vel_target = _param_target_speed; } // Overloaded: Set desired speed for forward controller to parameter value
     void set_desired_fwd_speed(float speed) { _vel_target = speed; } // Overloaded: Set desired speed to argument value
@@ -95,7 +95,7 @@ private:
     } _flags;
 
     //--------Internal Functions--------
-    void set_collective(float _collective_filter_cutoff);
+    void set_collective(float _collective_filter_cutoff) const;
 
     // low pass filter for collective trim
     LowPassFilterFloat col_trim_lpf;
