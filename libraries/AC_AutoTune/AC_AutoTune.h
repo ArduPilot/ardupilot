@@ -358,15 +358,11 @@ protected:
 
     // dwell test used to perform frequency dwells for rate gains
     void dwell_test_init(float filt_freq);
-    void dwell_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase);
+    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // dwell test used to perform frequency dwells for angle gains
     void angle_dwell_test_init(float filt_freq);
     void angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase);
-
-    // dwell test used to perform frequency dwells for rate gains
-    void sweep_test_init(float filt_freq);
-    void sweep_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase);
 
     // determines the gain and phase for a dwell
     void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
@@ -396,8 +392,9 @@ protected:
     Vector3f start_angles;
     uint32_t settle_time;
     uint32_t phase_out_time;
-    bool     freq_sweep;
     float    waveform_freq_rads;  //current frequency for chirp waveform
+    float    start_freq;  //start freq for dwell test
+    float    stop_freq;   //ending freq for dwell test
 
 
     LowPassFilterFloat  command_filt;               // filtered command
