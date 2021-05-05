@@ -146,11 +146,6 @@ void Plane::init_ardupilot()
 #if AC_FENCE == ENABLED
     fence.init();
 #endif
-
-#if AP_TERRAIN_AVAILABLE
-    Location::set_terrain(&terrain);
-#endif
-
 }
 
 //********************************************************************************
