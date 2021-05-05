@@ -345,7 +345,8 @@ void Frame::load_frame_params(const char *model_json)
     if (fd == -1) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    char buf[st.st_size];
+    char buf[st.st_size+1];
+    memset(buf, '\0', sizeof(buf));
     if (AP::FS().read(fd, buf, st.st_size) != st.st_size) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
