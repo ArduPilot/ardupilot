@@ -573,6 +573,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "KakuteF4",
                 "KakuteF7",
                 "KakuteF7Mini",
+                "KakuteF4Mini",
                 "MambaF405v2",
                 "MatekF405",
                 "MatekF405-bdshot",
