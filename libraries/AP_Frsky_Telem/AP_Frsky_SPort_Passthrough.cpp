@@ -9,6 +9,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AC_Fence/AC_Fence.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -43,6 +44,8 @@ for FrSky SPort Passthrough
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
+#define AP_FENCE_PRESENT_OFFSET     13
+#define AP_FENCE_BREACH_OFFSET      14
 #define AP_IMU_TEMP_MIN             19.0f
 #define AP_IMU_TEMP_MAX             82.0f
 #define AP_IMU_TEMP_OFFSET          26
@@ -521,6 +524,12 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
     // bad ekf flag
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
+    // fence status
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        ap_status |= (uint8_t)(fence->enabled() && fence->present()) << AP_FENCE_PRESENT_OFFSET;
+        ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
+    }
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
     return ap_status;
