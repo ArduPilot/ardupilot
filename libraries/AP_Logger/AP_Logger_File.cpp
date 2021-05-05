@@ -684,6 +684,9 @@ uint16_t AP_Logger_File::get_num_logs()
             ret++;
         }
     }
+    if (file_exists("APM/LOGS/CACHE.TXT")) {
+        ret--;
+    }
     return ret;
 }
 
@@ -747,6 +750,12 @@ void AP_Logger_File::start_new_log(void)
     }
 
     uint16_t log_num = find_last_log();
+    if (file_exists("APM/LOGS/CACHE.TXT")) {
+        log_num--;
+    } else {
+        int fd = AP::FS().open("APM/LOGS/CACHE.TXT", O_WRONLY|O_CREAT);
+        AP::FS().close(fd);
+    }
     // re-use empty logs if possible
     if (_get_log_size(log_num) > 0 || log_num == 0) {
         log_num++;
@@ -1032,6 +1041,11 @@ void AP_Logger_File::erase_next(void)
     _cached_oldest_log = 0;
 
     erase.log_num = 0;
+}
+
+void AP_Logger_File::vehicle_armed() {
+    EXPECT_DELAY_MS(2000);
+    AP::FS().unlink("APM/LOGS/CACHE.TXT");
 }
 
 #endif // HAL_LOGGING_FILESYSTEM_ENABLED

@@ -125,6 +125,7 @@ public:
     bool allow_start_ekf() const;
 
     virtual void vehicle_was_disarmed();
+    virtual void vehicle_armed() {}
 
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);

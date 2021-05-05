@@ -57,6 +57,8 @@ public:
     bool logging_started(void) const override { return _write_fd != -1; }
     void io_timer(void) override;
 
+    void vehicle_armed() override;
+
 protected:
 
     bool WritesOK() const override;
