@@ -121,6 +121,9 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
     set_scheduler_entry(UDATA, 5000, 200);      // user data
+
+    // initialize default sport sensor ID
+    set_sensor_id(_frsky_parameters->_dnlink_id, downlink_sensor_id);
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
     // initialize sport sensor IDs
@@ -189,8 +192,8 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         break;
     case GPS_LAT:
     case GPS_LON:
-        // force gps coords to use sensor 0x1B, always send when used with external data
-        packet_ready = _use_external_data || (_passthrough.new_byte == SENSOR_ID_27);
+        // force gps coords to use default sensor ID, always send when used with external data
+        packet_ready = _use_external_data || (_passthrough.new_byte == downlink_sensor_id);
         break;
     case AP_STATUS:
         packet_ready = gcs().vehicle_initialised();
@@ -502,7 +505,7 @@ bool AP_Frsky_SPort_Passthrough::is_passthrough_byte(const uint8_t byte) const
         return true;
     }
 #endif
-    return byte == SENSOR_ID_27;
+    return byte == downlink_sensor_id;
 }
 
 /*
