@@ -504,11 +504,8 @@ public:
     // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
 
-    // add to mask of outputs which can do reverse thrust using digital controls
-    static void set_reversible_mask(uint16_t mask);
-
-    // add to mask of outputs which use digital (non-PWM) output, such as DShot
-    static void set_digital_mask(uint16_t mask);
+    // add to mask of outputs which use digital (non-PWM) output and optionally can reverse thrust, such as DShot
+    static void set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask);
 
     // return true if all of the outputs in mask are digital
     static bool have_digital_outputs(uint16_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
