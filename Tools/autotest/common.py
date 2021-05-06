@@ -1290,6 +1290,7 @@ class AutoTest(ABC):
         print(formatted_text)
         if (send_statustext and
                 self.mav is not None and
+                self.mav.port is not None and
                 self.last_progress_sent_as_statustext != text):
             self.send_statustext(formatted_text)
             self.last_progress_sent_as_statustext = text
@@ -5572,7 +5573,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=1000,
+                retries=20,
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
@@ -5708,14 +5709,28 @@ Also, ignores heartbeats not from our target system'''
             ex = e
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
-        self.context_pop()
 
         passed = True
         if ex is not None:
             passed = False
 
-        self.wait_heartbeat()
-        if self.armed() and not self.is_tracker():
+        try:
+            self.context_pop()
+        except Exception as e:
+            self.print_exception_caught(e)
+            self.progress("Not alive after test", send_statustext=False)
+            passed = False
+
+        ardupilot_alive = False
+        try:
+            self.wait_heartbeat()
+            ardupilot_alive = True
+        except Exception:
+            # process is dead
+            passed = False
+            reset_needed = True
+
+        if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
