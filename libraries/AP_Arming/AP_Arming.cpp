@@ -781,7 +781,10 @@ bool AP_Arming::board_voltage_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
 #if HAL_HAVE_BOARD_VOLTAGE
         const float bus_voltage =  hal.analogin->board_voltage();
-        const float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
+        float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
+        if (((AP::gps().get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE) || (AP::gps().get_type(1) != AP_GPS::GPS_Type::GPS_TYPE_NONE)) && (vbus_min < 5.0f)) {
+            vbus_min = 5.0f;  // Report is https://discuss.ardupilot.org/t/big-gps-round-up/67755
+        }
         if(((bus_voltage < vbus_min) || (bus_voltage > AP_ARMING_BOARD_VOLTAGE_MAX))) {
             check_failed(ARMING_CHECK_VOLTAGE, report, "Board (%1.1fv) out of range %1.1f-%1.1fv", (double)bus_voltage, (double)vbus_min, (double)AP_ARMING_BOARD_VOLTAGE_MAX);
             return false;
