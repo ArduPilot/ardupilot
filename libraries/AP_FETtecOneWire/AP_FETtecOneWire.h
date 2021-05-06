@@ -148,10 +148,11 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
 /**
     checks if the requested telemetry is available.
     @param telemetry 16bit array where the read telemetry will be stored in.
+    @param esc_id OneWire ID to match incoming telemetry package
     @param return the esc id request number or -1 if unavailable
 */
-    int8_t check_for_full_telemetry(uint16_t *telemetry);
-
+    
+    int8_t check_for_full_telemetry(uint16_t* telemetry, uint8_t esc_id);
 /**
     does almost all of the job.
     scans for ESCs if not already done.
