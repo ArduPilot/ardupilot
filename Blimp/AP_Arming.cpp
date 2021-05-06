@@ -34,8 +34,8 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)) {
+    if (rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_INTERLOCK) &&
+        rc().find_channel_for_option(AP_AuxFunc::Function::MOTOR_ESTOP)) {
         check_failed(display_failure, "Interlock/E-Stop Conflict");
         return false;
     }
