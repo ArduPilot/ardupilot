@@ -38,6 +38,8 @@ protected:
         return MSG_NEXT_MISSION_REQUEST_WAYPOINTS;
     }
 
+    bool checksum_for_mission_checksum_message(uint32_t &checksum) override;
+
 private:
     AP_Mission &mission;
 

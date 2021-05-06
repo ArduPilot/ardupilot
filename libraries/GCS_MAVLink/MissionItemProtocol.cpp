@@ -325,6 +325,26 @@ void MissionItemProtocol::queued_request_send()
     timelast_request_ms = AP_HAL::millis();
 }
 
+bool MissionItemProtocol::send_mission_checksum_message(
+    const GCS_MAVLINK &_link
+    )
+{
+    if (!HAVE_PAYLOAD_SPACE(_link.get_chan(), MISSION_CHECKSUM)) {
+        return false;
+    }
+    uint32_t checksum;
+    if (!checksum_for_mission_checksum_message(checksum)) {
+        return false;
+    }
+
+    mavlink_msg_mission_checksum_send(
+        _link.get_chan(),
+        mission_type(),
+        checksum
+        );
+    return true;
+}
+
 void MissionItemProtocol::update()
 {
     if (!receiving) {

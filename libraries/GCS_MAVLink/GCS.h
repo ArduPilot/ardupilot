@@ -730,6 +730,7 @@ private:
     // When sending parameters and waypoints this may be longer than
     // the interval specified in "deferred"
     uint16_t get_reschedule_interval_ms(const deferred_message_bucket_t &deferred) const;
+    bool try_send_mission_message_checksum();
 
     bool do_try_send_message(const ap_message id);
 

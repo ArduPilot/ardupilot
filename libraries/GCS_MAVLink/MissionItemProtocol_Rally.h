@@ -24,6 +24,12 @@ protected:
     }
     bool clear_all_items() override WARN_IF_UNUSED;
 
+    bool checksum_for_mission_checksum_message(uint32_t &checksum) override {
+        // slightly deficient implementation
+        checksum = 0;
+        return true;
+    }
+
 private:
     AP_Rally &rally;
 
