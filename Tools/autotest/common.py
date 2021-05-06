@@ -5663,7 +5663,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Run attempt failed.  Retrying")
         self.run_one_test_attempt(test, interact=interact, attempt=1)
 
-    def print_exception_caught(self, e):
+    def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
                       self.get_exception_stacktrace(e))
         path = None
@@ -5671,7 +5671,7 @@ Also, ignores heartbeats not from our target system'''
             path = self.current_onboard_log_filepath()
         except IndexError:
             pass
-        self.progress("Most recent logfile: %s" % (path, ))
+        self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
     def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
         '''called by run_one_test to actually run the test in a retry loop'''
@@ -5717,7 +5717,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.context_pop()
         except Exception as e:
-            self.print_exception_caught(e)
+            self.print_exception_caught(e, send_statustext=False)
             self.progress("Not alive after test", send_statustext=False)
             passed = False
 
