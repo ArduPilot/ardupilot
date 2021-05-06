@@ -98,8 +98,6 @@ bool AP_Baro_SPL06::_init()
     }
     WITH_SEMAPHORE(_dev->get_semaphore());
 
-    _has_sample = false;
-
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     uint8_t whoami;
@@ -209,12 +207,14 @@ void AP_Baro_SPL06::update(void)
 {
     WITH_SEMAPHORE(_sem);
 
-    if (!_has_sample) {
+    if (_pressure_count == 0) {
         return;
     }
 
-    _copy_to_frontend(_instance, _pressure, _temperature);
-    _has_sample = false;
+    _copy_to_frontend(_instance, _pressure_sum/_pressure_count, _temperature);
+
+    _pressure_sum = 0;
+    _pressure_count = 0;
 }
 
 // calculate temperature
@@ -243,6 +243,6 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
 
     WITH_SEMAPHORE(_sem);
 
-    _pressure = press_comp;
-    _has_sample = true;
+    _pressure_sum += press_comp;
+    _pressure_count++;
 }
