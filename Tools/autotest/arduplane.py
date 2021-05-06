@@ -2915,6 +2915,46 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
+    def get_mission_checksum(self):
+        self.drain_mav()
+        m = self.poll_message('MISSION_CHECKSUM')
+        print("Got %s" % str(m))
+        return m.checksum
+
+    def MISSION_CHECKSUM(self):
+        '''test support for MISSION_CHECKSUM'''
+        jumpcount_checksum = 1035750807
+        for missionstuff in [("text.txt", 4264322242),
+                             ("empty.txt", 0),
+                             ("justhome.txt", 0),
+                             ("jumpcount.txt", jumpcount_checksum),
+                             ]:
+            (filename, expected_checksum) = missionstuff
+            self.progress("Checking checksum for (%s)" % (filename,))
+            self.load_mission(filename)
+            mission_checksum = self.get_mission_checksum()
+            if mission_checksum != expected_checksum:
+                raise NotAchievedException(
+                    "Did not get expected checksum for (%s) got=%u want=%u",
+                    (mission_checksum, expected_checksum))
+
+        # fly the jump count mission, make sure the checksum doesn't
+        # change over time
+        self.load_mission("jumpcount.txt", strict=False)
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for i in range(2):
+            self.wait_current_waypoint(2, timeout=120)
+            self.wait_current_waypoint(3, timeout=120)
+            mission_checksum = self.get_mission_checksum()
+            if mission_checksum != jumpcount_checksum:
+                raise NotAchievedException(
+                    "Mission checksum changed during mission; got=%u want=%u i=%u" %
+                    (jumpcount_checksum, mission_checksum, i))
+        self.fly_home_land_and_disarm()
+
     def run_auxfunc(self,
                     function,
                     level,
@@ -3423,6 +3463,10 @@ class AutoTestPlane(AutoTest):
             ("AUTOTUNE",
              "Test AutoTune mode",
              self.AUTOTUNE),
+
+            ("MISSION_CHECKSUM",
+             "Test MISSION_CHECKSUM support",
+             self.MISSION_CHECKSUM),
 
             ("MegaSquirt",
              "Test MegaSquirt EFI",
