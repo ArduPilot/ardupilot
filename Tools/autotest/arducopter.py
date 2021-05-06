@@ -6652,6 +6652,29 @@ class AutoTestCopter(AutoTest):
             self.install_message_hook(verify_yaw)
             self.takeoff(10)
             self.remove_message_hook(verify_yaw)
+            self.hover()
+            self.change_mode('ALT_HOLD')
+            self.delay_sim_time(1)
+
+            def verify_rollpitch(mav, m):
+                if m.get_type() != 'ATTITUDE':
+                    return
+                pitch_thresh_rad = math.radians(2)
+                if m.pitch > pitch_thresh_rad:
+                    raise NotAchievedException("Excessive pitch %f deg > %f deg" %
+                                               (math.degrees(m.pitch), math.degrees(pitch_thresh_rad)))
+                roll_thresh_rad = math.radians(2)
+                if m.roll > roll_thresh_rad:
+                    raise NotAchievedException("Excessive roll %f deg > %f deg" %
+                                               (math.degrees(m.roll), math.degrees(roll_thresh_rad)))
+            self.install_message_hook(verify_rollpitch)
+            for i in range(5):
+                self.set_rc(4, 2000)
+                self.delay_sim_time(0.5)
+                self.set_rc(4, 1500)
+                self.delay_sim_time(5)
+            self.remove_message_hook(verify_rollpitch)
+
             self.do_RTL()
 
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
