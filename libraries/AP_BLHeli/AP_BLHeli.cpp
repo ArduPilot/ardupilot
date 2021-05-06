@@ -1340,11 +1340,12 @@ void AP_BLHeli::init(void)
         hal.rcout->set_output_mode(mask, mode);
     }
 
+    uint16_t digital_mask = 0;
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
     if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
-        SRV_Channels::set_digital_mask(mask);
+        digital_mask = mask;
     }
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -1355,26 +1356,24 @@ void AP_BLHeli::init(void)
         AP_Motors *motors = AP_Motors::get_singleton();
         if (motors) {
             uint16_t motormask = motors->get_motor_mask();
-            mask |= motormask;
             // set the rest of the digital channels
             if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
-                SRV_Channels::set_digital_mask(motormask);
+                digital_mask |= motormask;
             }
-
+            mask |= motormask;
         }
     }
 #endif
-
     // tell SRV_Channels about ESC capabilities
-    SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
-    // the dshot ESC type is required in order to set the reversed/reversible mask correctly
+    SRV_Channels::set_digital_outputs(digital_mask, uint16_t(channel_reversible_mask.get()) & digital_mask);
+    // the dshot ESC type is required in order to send the reversed/reversible dshot command correctly
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
-    hal.rcout->set_reversible_mask(channel_reversible_mask.get() & mask);
-    hal.rcout->set_reversed_mask(channel_reversed_mask.get() & mask);
+    hal.rcout->set_reversible_mask(uint16_t(channel_reversible_mask.get()) & digital_mask);
+    hal.rcout->set_reversed_mask(uint16_t(channel_reversed_mask.get()) & digital_mask);
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
-    hal.rcout->set_bidir_dshot_mask(channel_bidir_dshot_mask.get() & mask);
     hal.rcout->set_motor_poles(motor_poles);
+    hal.rcout->set_bidir_dshot_mask(uint16_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
