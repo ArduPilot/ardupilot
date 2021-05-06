@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 9999
+APJ_BOARD_ID 1027
 
 # Original Quanton 16MHz crystall have to be changed to 8MHz !!!
 # crystal frequency
@@ -22,10 +22,17 @@ FLASH_SIZE_KB 1024
 # I2C bus
 I2C_ORDER I2C3
 
+# The normal usage of this ordering is:
+# 1) SERIAL0: console (primary mavlink, usually USB)
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
+# 5) SERIAL4: GPS2
+# 6) SERIAL5: extra UART (usually RTOS debug console)
+
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1
-#TVJ
-#SERIAL_ORDER OTG1 USART1 USART3 UART5
+#SERIAL_ORDER OTG1 USART1 EMPTY UART5 USART3 EMPTY
+SERIAL_ORDER OTG1 USART1 EMPTY USART3
 
 # rcinput is PC6, which is the 2nd "PWM IN" pin
 PC6 TIM8_CH1 TIM8 RCIN FLOAT LOW
