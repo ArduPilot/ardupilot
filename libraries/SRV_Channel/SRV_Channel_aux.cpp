@@ -226,18 +226,6 @@ void SRV_Channels::enable_aux_servos()
 #endif
 }
 
-// add to mask of outputs which can do reverse thrust using digital controls
-// digital mask must have been set first
-void SRV_Channels::set_reversible_mask(uint16_t mask) {
-    reversible_mask |= mask;
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &c = channels[i];
-        if ((digital_mask & (1U<<i)) && (reversible_mask & (1U<<i))) {
-            c.servo_trim.set(1500);
-        }
-    }
-}
-
 /*
     for channels which have been marked as digital output then the
     MIN/MAX/TRIM values have no meaning for controlling output, as
@@ -248,8 +236,10 @@ void SRV_Channels::set_reversible_mask(uint16_t mask) {
     set TRIM to either 1000 or 1500 depending on whether the channel
     is reversible
 */
-void SRV_Channels::set_digital_mask(uint16_t mask) {
-    digital_mask |= mask;
+void SRV_Channels::set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask) {
+    digital_mask |= dig_mask;
+    reversible_mask |= rev_mask;
+
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (digital_mask & (1U<<i)) {
