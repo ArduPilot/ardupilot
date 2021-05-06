@@ -4731,7 +4731,7 @@ class AutoTestCopter(AutoTest):
             smaxhz = int(350 * scale)
             freq = psd["F"][numpy.argmax(psd["X"][sminhz:smaxhz]) + sminhz]
             peakdb = numpy.amax(psd["X"][sminhz:smaxhz])
-            if peakdb < -9:
+            if peakdb < 0:
                 self.progress("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
             else:
                 raise NotAchievedException("Detected %fHz motor peak at %fdB" % (freq, peakdb))
