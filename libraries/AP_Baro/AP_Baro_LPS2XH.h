@@ -42,9 +42,9 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    bool _has_sample;
     uint8_t _instance;
-    float _pressure;
+    float _pressure_sum;
+    uint32_t _pressure_count;
     float _temperature;
 
     uint32_t CallTime = 0;

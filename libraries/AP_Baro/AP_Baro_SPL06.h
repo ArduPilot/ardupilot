@@ -35,10 +35,10 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     int8_t _timer_counter;
-    bool _has_sample;
     uint8_t _instance;
     float _temp_raw;
-    float _pressure;
+    float _pressure_sum;
+    uint32_t _pressure_count;
     float _temperature;
 
     // Internal calibration registers
