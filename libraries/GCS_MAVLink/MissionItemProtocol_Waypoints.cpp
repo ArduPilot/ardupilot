@@ -136,3 +136,35 @@ void MissionItemProtocol_Waypoints::truncate(const mavlink_mission_count_t &pack
     // new mission arriving, truncate mission to be the same length
     mission.truncate(packet.count);
 }
+
+bool MissionItemProtocol_Waypoints::checksum_for_mission_checksum_message(uint32_t &checksum)
+{
+    // caching stuff goes here.
+
+    checksum = 0;
+    const uint16_t count = mission.num_commands();
+    for (uint16_t i=1; i<count; i++) {
+        AP_Mission::Mission_Command cmd;
+        if (!mission.read_cmd_from_storage(i, cmd)) {
+            return false;
+        }
+        mavlink_mission_item_int_t ret_packet;
+        if (!AP_Mission::mission_cmd_to_mavlink_int(cmd, ret_packet)) {
+            return MAV_MISSION_ERROR;
+        }
+#define ADD_TO_CHECKSUM(field) checksum = crc_crc32(checksum, (uint8_t*)&ret_packet.field, sizeof(ret_packet.field));
+        ADD_TO_CHECKSUM(frame);
+        ADD_TO_CHECKSUM(command);
+        ADD_TO_CHECKSUM(autocontinue);
+        ADD_TO_CHECKSUM(param1);
+        ADD_TO_CHECKSUM(param2);
+        ADD_TO_CHECKSUM(param3);
+        ADD_TO_CHECKSUM(param4);
+        ADD_TO_CHECKSUM(x);
+        ADD_TO_CHECKSUM(y);
+        ADD_TO_CHECKSUM(z);
+#undef ADD_TO_CHECKSUM
+    }
+    return checksum;
+}
+

@@ -853,6 +853,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
+        { MAVLINK_MSG_ID_MISSION_CHECKSUM,      MSG_MISSION_CHECKSUM},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4506,6 +4507,23 @@ void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) const {
     prot->queued_request_send();
 }
 
+bool GCS_MAVLINK::try_send_mission_message_checksum()
+{
+    static const MAV_MISSION_TYPE to_send[] {
+        MAV_MISSION_TYPE_MISSION,
+        MAV_MISSION_TYPE_RALLY,
+        MAV_MISSION_TYPE_FENCE,
+    };
+    for (auto type : to_send) {
+        MissionItemProtocol *prot = gcs().get_prot_for_mission_type(type);
+        if (prot == nullptr) {
+            continue;
+        }
+        prot->send_mission_checksum_message(*this);
+    }
+    return true;
+}
+
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
     AP_Mission *mission = AP::mission();
@@ -4539,6 +4557,10 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_FENCE);
         ret = true;
+        break;
+    case MSG_MISSION_CHECKSUM:
+        // size checking done within method
+        ret = try_send_mission_message_checksum();
         break;
     default:
         ret = true;
@@ -4864,6 +4886,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_NEXT_MISSION_REQUEST_WAYPOINTS:
     case MSG_NEXT_MISSION_REQUEST_RALLY:
     case MSG_NEXT_MISSION_REQUEST_FENCE:
+    case MSG_MISSION_CHECKSUM:
         ret = try_send_mission_message(id);
         break;
 
