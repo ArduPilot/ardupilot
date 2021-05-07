@@ -1175,6 +1175,9 @@ static void can_wait_node_id(void)
                 // blink LED in recognisable pattern while waiting for DNA
 #ifdef HAL_GPIO_PIN_LED
                 palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#elif defined(HAL_GPIO_PIN_SAFE_LED)
+                // or use safety LED if defined
+                palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
 #else
                 (void)led_pattern;
                 (void)led_idx;
