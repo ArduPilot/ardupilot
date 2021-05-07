@@ -6,7 +6,8 @@
 
 #define SH1106_COLUMNS 132		// display columns
 #define SH1106_ROWS 64		    // display rows
-#define SH1106_ROWS_PER_PAGE 8
+#define SH1106_PAGES 8
+#define SH1106_ROWS_PER_PAGE (SH1106_ROWS/SH1106_PAGES)
 
 class Display_SH1106_I2C: public Display_Backend {
 
@@ -31,7 +32,7 @@ private:
     void _timer();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    uint8_t _displaybuffer[SH1106_COLUMNS * SH1106_ROWS_PER_PAGE];
+    uint8_t _displaybuffer[SH1106_COLUMNS * SH1106_PAGES];
     bool _need_hw_update;
 
 };

@@ -6,7 +6,8 @@
 
 #define SSD1306_COLUMNS 128		// display columns
 #define SSD1306_ROWS 64		    // display rows
-#define SSD1306_ROWS_PER_PAGE 8
+#define SSD1306_PAGES 8
+#define SSD1306_ROWS_PER_PAGE (SSD1306_ROWS/SSD1306_PAGES)
 
 class Display_SSD1306_I2C: public Display_Backend {
 
@@ -31,6 +32,6 @@ private:
     void _timer();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE];
+    uint8_t _displaybuffer[SSD1306_COLUMNS * SSD1306_PAGES];
     bool _need_hw_update;
 };
