@@ -146,6 +146,9 @@ public:
     // get minimum stopping distance (in meters) given a speed (in m/s)
     float get_stopping_distance(float speed) const;
 
+    // get speed below which vehicle is considered stopped (in m/s)
+    float get_stop_speed() const { return MAX(_stop_speed, 0.0f); }
+
     // relax I terms of throttle and steering controllers
     void relax_I();
 
