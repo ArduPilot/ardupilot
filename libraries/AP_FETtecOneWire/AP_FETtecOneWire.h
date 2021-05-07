@@ -69,7 +69,7 @@ private:
 #else
     static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #endif
-    uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
+    uint8_t _requested_telemetry_from_esc; /// the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
 
 /**
     calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
@@ -138,33 +138,26 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
 */
     uint8_t set_full_telemetry(uint8_t active);
 
+#if HAL_WITH_ESC_TELEM
 /**
     checks if the requested telemetry is available.
-    @param telemetry 16bit array where the read telemetry will be stored in.
-    @param return the telemetry request number or -1 if unavailable
+    @param t telemetry datastructure where the read telemetry will be stored in.
+    @param centi_erpm 16bit centi-eRPM value returned from the ESC
+    @param tx_err_count Ardupilot->ESC communication CRC error counter
+    @return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
 */
-    int8_t check_for_tlm(uint16_t *telemetry);
+int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16_t& tx_err_count);
+#endif
 
 /**
-    checks if the requested telemetry is available.
-    @param telemetry 16bit array where the read telemetry will be stored in.
-    @param esc_id OneWire ID to match incoming telemetry package
-    @param return the esc id request number or -1 if unavailable
-*/
-    
-    int8_t check_for_full_telemetry(uint16_t* telemetry, uint8_t esc_id);
-/**
-    does almost all of the job.
     scans for ESCs if not already done.
     initializes the ESCs if not already done.
     sends fast throttle signals if init is complete.
     @param motor_values a 16bit array containing the throttle signals that should be sent to the motors. 0-2000 where 1001-2000 is positive rotation and 999-0 reversed rotation
-    @param telemetry 16bit array where the read telemetry will be stored in.
     @param motor_count the count of motors that should get values send
-    @param tlm_request the requested telemetry type (telem_type::XXXXX)
-    @return the telemetry request if telemetry was available, -1 if dont
+    @param tlm_request the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
 */
-    int8_t escs_set_values(uint16_t *motor_values, uint16_t *telemetry, uint8_t motor_count, uint8_t tlm_request);
+    void escs_set_values(const uint16_t *motor_values, const uint8_t motor_count, const uint8_t tlm_request);
 
     static constexpr uint8_t ALL_ID = 0x1F;
     typedef struct FETtecOneWireESC
@@ -178,13 +171,12 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
 #endif
     } FETtecOneWireESC_t;
 
-    uint8_t active_esc_ids[MOTOR_COUNT_MAX] = {0};
+    uint8_t _active_esc_ids[MOTOR_COUNT_MAX] = {0};
     FETtecOneWireESC_t _found_escs[MOTOR_COUNT_MAX];
     uint8_t _found_escs_count;
     uint8_t _scan_active;
     uint8_t _setup_active;
 
-    static constexpr uint8_t use_full_telemetry = 1; //Set to 1 to use alternative, set to 0 to use standard TLM
     uint8_t _set_full_telemetry_active = 1; //Helper to set alternative TLM for every ESC
     uint8_t _set_full_telemetry_retry_count = 0; 
     uint8_t _ignore_own_bytes;
