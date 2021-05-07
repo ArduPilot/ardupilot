@@ -583,7 +583,7 @@ int8_t AP_FETtecOneWire::check_for_full_telemetry(uint16_t* telemetry, uint8_t e
 {
     int8_t return_TLM_request = 0;
     if (_id_count > 0) {
-        uint8_t telem[16] = {0};
+        uint8_t telem[17] = {0};
         return_TLM_request = receive((uint8_t *) telem, 11, OW_RETURN_FULL_FRAME); //return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
 
         if (return_TLM_request == 1) {
