@@ -86,28 +86,6 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         return false;
     }
 
-    switch (frame[24]) {
-    case 0x00:
-        /* this is S.BUS 1 */
-        break;
-    case 0x03:
-        /* S.BUS 2 SLOT0: RX battery and external voltage */
-        break;
-    case 0x83:
-        /* S.BUS 2 SLOT1 */
-        break;
-    case 0x43:
-    case 0xC3:
-    case 0x23:
-    case 0xA3:
-    case 0x63:
-    case 0xE3:
-        break;
-    default:
-        /* we expect one of the bits above, but there are some we don't know yet */
-        break;
-    }
-
     uint16_t chancount = SBUS_INPUT_CHANNELS;
 
     decode_11bit_channels((const uint8_t*)(&frame[1]), SBUS_INPUT_CHANNELS, values,
