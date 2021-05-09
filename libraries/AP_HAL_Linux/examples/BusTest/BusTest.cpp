@@ -16,6 +16,8 @@ static struct {
     { "mpu6000",    0x75 | 0x80 },
     { "lsm9ds0_am", 0x0F | 0x80 },
     { "lsm9ds0_g",  0x0F | 0x80 },
+    { "ak8963",     0x00 | 0x80 },
+    { "lsp2xh",     0xB1 | 0xBD },
 };
 
 AP_HAL::OwnPtr<AP_HAL::Device>
