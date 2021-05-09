@@ -9,9 +9,6 @@ undef IMU
 undef HAL_CHIBIOS_ARCH_FMUV3
 undef BOOTLOADER_DEV_LIST
 
-# board ID for firmware load
-APJ_BOARD_ID 1400
-
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
