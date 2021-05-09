@@ -241,6 +241,23 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     if (desired_vel_cms_original != desired_vel_cms) {
         _last_limit_time = AP_HAL::millis();
     }
+
+    if (limits_active()) {
+        // log at not more than 10hz (adjust_velocity method can be potentially called at 400hz!)
+        uint32_t now = AP_HAL::millis();
+        if ((now - _last_log_ms) > 100) {
+            _last_log_ms = now;
+            Write_SimpleAvoidance(true, desired_vel_cms_original, desired_vel_cms, backing_up);
+        }
+    } else {
+        // avoidance isn't active anymore
+        // log once so that it registers in logs
+        if (_last_log_ms) {
+            Write_SimpleAvoidance(false, desired_vel_cms_original, desired_vel_cms, backing_up);
+            // this makes sure logging won't run again till it is active
+            _last_log_ms = 0;
+        }
+    }
 }
 
 /*

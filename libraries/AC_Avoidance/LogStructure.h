@@ -71,8 +71,10 @@ struct PACKED log_OADijkstra {
 // @Field: State: True if Simple Avoidance is active
 // @Field: DVelX: Desired velocity, X-Axis (Velocity before Avoidance)
 // @Field: DVelY: Desired velocity, Y-Axis (Velocity before Avoidance)
+// @Field: DVelZ: Desired velocity, Z-Axis (Velocity before Avoidance)
 // @Field: MVelX: Modified velocity, X-Axis (Velocity after Avoidance)
 // @Field: MVelY: Modified velocity, Y-Axis (Velocity after Avoidance)
+// @Field: MVelZ: Modified velocity, Z-Axis (Velocity after Avoidance)
 // @Field: Back: True if vehicle is backing away
 struct PACKED log_SimpleAvoid {
   LOG_PACKET_HEADER;
@@ -80,8 +82,10 @@ struct PACKED log_SimpleAvoid {
   uint8_t state;
   float desired_vel_x;
   float desired_vel_y;
+  float desired_vel_z;
   float modified_vel_x;
   float modified_vel_y;
+  float modified_vel_z;
   uint8_t backing_up;
 };
 
@@ -91,4 +95,4 @@ struct PACKED log_SimpleAvoid {
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
-      "SA",  "QBffffB","TimeUS,State,DVelX,DVelY,MVelX,MVelY,Back", "sbnnnnb", "F------"},
+      "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "sbnnnnnnb", "F--------"},
