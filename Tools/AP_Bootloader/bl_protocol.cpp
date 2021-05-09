@@ -115,6 +115,8 @@
 #define PROTO_DEVICE_BOARD_REV	3	// board revision
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
+// all except PROTO_DEVICE_VEC_AREA and PROTO_DEVICE_BOARD_REV should be done
+#define CHECK_GET_DEVICE_FINISHED(x)   ((x & (0xB)) == 0xB)
 
 // interrupt vector table for STM32
 #define SCB_VTOR 0xE000ED08
@@ -388,7 +390,7 @@ bootloader(unsigned timeout)
     uint32_t	read_address = 0;
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
-    bool done_get_device = false;
+    uint8_t done_get_device_flags = 0;
     bool done_erase = false;
     static bool done_timer_init;
     unsigned original_timeout = timeout;
@@ -510,7 +512,7 @@ bootloader(unsigned timeout)
             default:
                 goto cmd_bad;
             }
-            done_get_device = true;
+            done_get_device_flags |= (1<<(arg-1)); // set the flags for use when resetting timeout 
             break;
 
         // erase and prepare for programming
@@ -521,7 +523,7 @@ bootloader(unsigned timeout)
         //
         case PROTO_CHIP_ERASE:
 
-            if (!done_sync || !done_get_device) {
+            if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
             }
@@ -573,7 +575,7 @@ bootloader(unsigned timeout)
         // readback failure:	INSYNC/FAILURE
         //
         case PROTO_PROG_MULTI:		// program bytes
-            if (!done_sync || !done_get_device) {
+            if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
             }
@@ -845,7 +847,7 @@ bootloader(unsigned timeout)
             break;
 
 		case PROTO_SET_BAUD: {
-            if (!done_sync || !done_get_device) {
+            if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // prevent timeout going to zero on noise
                 goto cmd_bad;
             }
@@ -887,7 +889,7 @@ bootloader(unsigned timeout)
         
         // once we get both a valid sync and valid get_device then kill
         // the timeout
-        if (done_sync && done_get_device) {
+        if (done_sync && CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
             timeout = 0;
         }
 
