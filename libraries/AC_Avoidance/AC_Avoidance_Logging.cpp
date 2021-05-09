@@ -46,7 +46,7 @@ void AP_OADijkstra::Write_OADijkstra(const uint8_t state, const uint8_t error_id
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AC_Avoid::Write_SimpleAvoidance(const uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, const bool back_up) const
+void AC_Avoid::Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const
 {
     const struct log_SimpleAvoid pkt{
         LOG_PACKET_HEADER_INIT(LOG_SIMPLE_AVOID_MSG),
@@ -54,8 +54,10 @@ void AC_Avoid::Write_SimpleAvoidance(const uint8_t state, const Vector2f& desire
         state           : state,
         desired_vel_x   : desired_vel.x * 0.01f,
         desired_vel_y   : desired_vel.y * 0.01f,
+        desired_vel_z   : desired_vel.z * 0.01f,
         modified_vel_x  : modified_vel.x * 0.01f,
         modified_vel_y  : modified_vel.y * 0.01f,
+        modified_vel_z  : modified_vel.z * 0.01f,
         backing_up      : back_up,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));

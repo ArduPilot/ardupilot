@@ -205,7 +205,7 @@ private:
     void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // Logging function
-    void Write_SimpleAvoidance(const uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, const bool back_up) const;
+    void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
     AP_Int8 _enabled;
