@@ -362,7 +362,7 @@ protected:
 
     // dwell test used to perform frequency dwells for angle gains
     void angle_dwell_test_init(float filt_freq);
-    void angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase);
+    void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // determines the gain and phase for a dwell
     void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);

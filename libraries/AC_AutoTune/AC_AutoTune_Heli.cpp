@@ -66,8 +66,8 @@ void AC_AutoTune_Heli::test_init()
                 start_freq = curr_test_freq;
                 stop_freq = curr_test_freq;
             } else if (tune_type == MAX_GAINS) {
-                start_freq = 10.0f;
-                stop_freq = 80.0f;                
+                start_freq = 6.0f;
+                stop_freq = 60.0f;
             } else {
                 // reset determine_gain function for first use in the event autotune is restarted
                 test_freq[0] = 2.0f * 3.14159f * 2.0f;
@@ -89,15 +89,20 @@ void AC_AutoTune_Heli::test_init()
         }
     } else if (tune_type == SP_UP) {
         // initialize start frequency and determine gain function when dwell test is used
-        if (freq_cnt == 0) {
+        if (is_zero(start_freq)) {
             test_freq[0] = 1.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
             test_accel_max = 0.0f;
+            start_freq = 10.0f;
+            stop_freq = 80.0f;                
         }
         // reset determine_gain function whenever test is initialized
         determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], test_accel_max, dwell_complete, true);
-        angle_dwell_test_init(curr_test_freq);
-//        angle_dwell_test_init(5.0f);
+        if (!is_equal(start_freq,stop_freq)) {
+            dwell_test_init(stop_freq);
+        } else {
+            dwell_test_init(start_freq);
+        }
 
         // TODO add time limit for sweep test
         if (!is_zero(start_freq)) {
@@ -114,7 +119,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
     
     if (tune_type == SP_UP) {
-        angle_dwell_test_run(curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+        angle_dwell_test_run(start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
         rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS, dir_sign);
     } else if (tune_type == RP_UP || tune_type == RD_UP) {
@@ -563,7 +568,19 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     static float phase_max;
     static float prev_gain;
     static bool find_peak;
-    if (freq_cnt < 12) {
+
+    if (!is_equal(start_freq,stop_freq)) {
+        frq_cnt = 12;
+        if (!is_zero(sweep.ph180_freq)) {
+            freq[frq_cnt] = sweep.ph180_freq - 0.5f * test_freq_incr;
+        } else {
+            freq[frq_cnt] = 4.0f * M_PI;
+        }
+        curr_test_freq = freq[frq_cnt];
+        start_freq = curr_test_freq;
+        stop_freq = curr_test_freq;
+    }
+    if (freq_cnt < 12 && is_equal(start_freq,stop_freq)) {
         if (freq_cnt == 0) {
             freq_cnt_max = 0;
         } else if (gain[freq_cnt] > max_gain && tune_p > AUTOTUNE_SP_MIN) {
