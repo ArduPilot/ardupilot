@@ -20,6 +20,11 @@ bool ModeFollow::init(const bool ignore_checks)
         gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
+    if (g2.follow.get_sysid() < 0 || g2.follow.get_sysid() > 255) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Check FOLL_SYSID %d (0-255)", g2.follow.get_sysid());
+        return false;
+    }
+
     // re-use guided mode
     return ModeGuided::init(ignore_checks);
 }
