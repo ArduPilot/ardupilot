@@ -24,6 +24,7 @@
 
 #if HAL_ADSB_ENABLED
 #include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
@@ -54,7 +55,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
@@ -80,7 +81,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: ICAO_ID
     // @DisplayName: ICAO_ID vehicle identification number
-    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is an integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
     // @Range: -1 16777215
     // @User: Advanced
     AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
@@ -153,9 +154,15 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: LOG
     // @DisplayName: ADS-B logging
     // @Description: 0: no logging, 1: log only special ID, 2:log all
-    // @Values: 0:no logging,1:log only special ID,2:log all
+    // @Values: 0:disable GPS out,1:GCS Failsafe log only special ID,2:log all
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
+
+    // @Param: OPTIONS
+    // @DisplayName: ADS-B Options
+    // @Bitmask: 0:ADSB-out do not send GPS, 1:ADSB-out use Autopilot's baro as baro alt, 2:Squawk 7400 on RC failsafe, 3:Squawk 7400 on GCS failsafe, 4: Check config every 1s, 5: Check config every 10s
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
     AP_GROUPEND
 };
@@ -257,6 +264,13 @@ void AP_ADSB::detect_instance(uint8_t instance)
         }
         break;
 
+    case Type::uAvionix_UCP:
+        if (AP_ADSB_uAvionix_UCP::detect()) {
+            _backend[instance] = new AP_ADSB_uAvionix_UCP(*this, instance);
+            return;
+        }
+        break;
+
     case Type::Sagetech:
         if (AP_ADSB_Sagetech::detect()) {
             _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
@@ -336,22 +350,22 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = now;
 
     } else if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) &&
+                !_my_loc.is_zero() && 
                 (out_state.cfg.ICAO_id == 0 || out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param)) {
 
         // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
         if (out_state.cfg.ICAO_id_param == 0) {
             out_state.cfg.ICAO_id = genICAO(_my_loc);
+            if (strlen(out_state.cfg.callsign)>0) {
+                gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using generated ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using generated ICAO_id %d", (int)out_state.cfg.ICAO_id);
+            }
         } else {
             out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
         }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
 
-#ifndef ADSB_STATIC_CALLSIGN
-        if (!out_state.cfg.was_set_externally) {
-            set_callsign("PING", true);
-        }
-#endif
-        gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -360,7 +374,6 @@ void AP_ADSB::update(void)
             _backend[i]->update();
         }
     }
-
 }
 
 /*
@@ -647,53 +660,6 @@ uint32_t AP_ADSB::genICAO(const Location &loc) const
     }
     return( (timeSum ^ M3) & 0x00FFFFFF);
 }
-
-// assign a string to out_state.cfg.callsign but ensure it's null terminated
-void AP_ADSB::set_callsign(const char* str, const bool append_icao)
-{
-    bool zero_char_pad = false;
-
-    // clean slate
-    memset(out_state.cfg.callsign, 0, sizeof(out_state.cfg.callsign));
-
-    // copy str to cfg.callsign but we can't use strncpy because we need
-    // to restrict values to only 'A' - 'Z' and '0' - '9' and pad
-    for (uint8_t i=0; i<sizeof(out_state.cfg.callsign)-1; i++) {
-        if (!str[i] || zero_char_pad) {
-            // finish early. Either pad the rest with zero char or null terminate and call it a day
-            if ((append_icao && i<4) || zero_char_pad) {
-                out_state.cfg.callsign[i] = '0';
-                zero_char_pad = true;
-            } else {
-                // already null terminated via memset so just stop
-                break;
-            }
-
-        } else if (('A' <= str[i] && str[i] <= 'Z') ||
-                   ('0' <= str[i] && str[i] <= '9')) {
-            // valid as-is
-            // spaces are also allowed but are handled in the last else
-            out_state.cfg.callsign[i] = str[i];
-
-        } else if ('a' <= str[i] && str[i] <= 'z') {
-            // toupper()
-            out_state.cfg.callsign[i] = str[i] - ('a' - 'A');
-
-        } else if (i == 0) {
-            // invalid, pad to char zero because first index can't be space
-            out_state.cfg.callsign[i] = '0';
-
-        } else {
-            // invalid, pad with space
-            out_state.cfg.callsign[i] = ' ';
-        }
-    } // for i
-
-    if (append_icao) {
-        hal.util->snprintf(&out_state.cfg.callsign[4], 5, "%04X", unsigned(out_state.cfg.ICAO_id % 0x10000));
-    }
-}
-
 
 void AP_ADSB::push_sample(const adsb_vehicle_t &vehicle)
 {
