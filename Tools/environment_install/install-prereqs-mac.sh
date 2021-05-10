@@ -13,7 +13,7 @@ xcode-select --install
 
 brew tap ardupilot/homebrew-px4
 brew update
-brew install gcc-arm-none-eabi
+brew install ardupilot/px4/gcc-arm-none-eabi-63
 brew install gawk
 
 echo "Checking pip..."
