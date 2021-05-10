@@ -5844,6 +5844,30 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
     }
 }
 
+// Returns true if the mavlink_coordinate frame is set and if the input location's altitude frame can be converted
+// returns false if the change in altitude frame fails
+// Note: AltFrame::ABOVE_ORIGIN is converted to AltFrame::ABSOLUTE
+bool GCS_MAVLINK::location_alt_frame_to_mavlink_coordinate_frame(Location &loc, MAV_FRAME &coordinate_frame) const
+{
+    switch (loc.get_alt_frame()) {
+    case Location::AltFrame::ABOVE_TERRAIN:
+        coordinate_frame = MAV_FRAME_GLOBAL_TERRAIN_ALT_INT;
+        break;
+    case Location::AltFrame::ABSOLUTE:
+        coordinate_frame = MAV_FRAME_GLOBAL_INT;
+        break;
+    case Location::AltFrame::ABOVE_HOME:
+        coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT_INT;
+        break;
+    case Location::AltFrame::ABOVE_ORIGIN:
+        if (!loc.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            return false;
+        }
+        coordinate_frame = MAV_FRAME_GLOBAL_INT;
+    }
+    return true;
+}
+
 uint64_t GCS_MAVLINK::capabilities() const
 {
     uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
