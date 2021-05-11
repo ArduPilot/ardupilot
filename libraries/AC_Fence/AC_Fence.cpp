@@ -207,8 +207,10 @@ bool AC_Fence::present() const
     //   * min or max alt is enabled
     //   * polygon fences are enabled and any fence has been uploaded
     if (enabled_fences & AC_FENCE_TYPE_CIRCLE ||
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
         enabled_fences & AC_FENCE_TYPE_ALT_MIN ||
         enabled_fences & AC_FENCE_TYPE_ALT_MAX ||
+#endif
         ((enabled_fences & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
         return true;
     }
@@ -306,9 +308,11 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     if (!pre_arm_check_alt(fail_msg)) {
         return false;
     }
+#endif
 
     // check no limits are currently breached
     if (_breached_fences) {
@@ -322,6 +326,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     if (_alt_max < _alt_min) {
         fail_msg =  "FENCE_ALT_MAX < FENCE_ALT_MIN";
         return false;
@@ -331,6 +336,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         fail_msg =  "FENCE_MARGIN too big";
         return false;
     }
+#endif
 
     // if we got this far everything must be ok
     return true;
@@ -525,6 +531,7 @@ uint8_t AC_Fence::check()
         _manual_recovery_start_ms = 0;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     // maximum altitude fence check
     if (check_fence_alt_max()) {
         ret |= AC_FENCE_TYPE_ALT_MAX;
@@ -534,6 +541,7 @@ uint8_t AC_Fence::check()
     if (_floor_enabled && check_fence_alt_min()) {
         ret |= AC_FENCE_TYPE_ALT_MIN;
     }
+#endif
 
     // circle fence check
     if (check_fence_circle()) {
@@ -553,6 +561,7 @@ uint8_t AC_Fence::check()
 bool AC_Fence::check_destination_within_fence(const Location& loc)
 {
     // Altitude fence check - Fence Ceiling
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         int32_t alt_above_home_cm;
         if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
@@ -571,6 +580,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
             }
         }
     }
+#endif
 
     // Circular fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
@@ -625,12 +635,14 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
     float max = 0.0f;
 
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
         max = MAX(_alt_max_breach_distance, max);
     }
     if (fence_type & AC_FENCE_TYPE_ALT_MIN) {
         max = MAX(_alt_min_breach_distance, max);
     }
+#endif
     if (fence_type & AC_FENCE_TYPE_CIRCLE) {
         max = MAX(_circle_breach_distance, max);
     }
