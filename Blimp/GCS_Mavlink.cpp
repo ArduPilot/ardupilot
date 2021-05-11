@@ -202,7 +202,6 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
-        const AP_Logger::PID_Info *pid_info = nullptr;
         switch (axes[i]) { //TODO This should probably become an acceleration controller?
         // case PID_TUNING_ROLL:
         //     pid_info = &blimp.attitude_control->get_rate_roll_pid().get_pid_info();
@@ -218,16 +217,6 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         //     break;
         default:
             continue;
-        }
-        if (pid_info != nullptr) {
-            mavlink_msg_pid_tuning_send(chan,
-                                        axes[i],
-                                        pid_info->target,
-                                        pid_info->actual,
-                                        pid_info->FF,
-                                        pid_info->P,
-                                        pid_info->I,
-                                        pid_info->D);
         }
     }
 }
