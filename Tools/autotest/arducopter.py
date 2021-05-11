@@ -3614,32 +3614,54 @@ class AutoTestCopter(AutoTest):
         self.progress("Did not receive any POSITION_TARGET_LOCAL_NED message in LOITER mode. Success")
 
     def earth_to_body(self, vector):
-        m = self.mav.messages["ATTITUDE"]
-        x = rotmat.Vector3(m.roll, m.pitch, m.yaw)
-#        print('r=%f p=%f y=%f' % (m.roll, m.pitch, m.yaw))
-        return vector - x
+        r = mavextra.rotation(self.mav.messages["ATTITUDE"]).invert()
+        #        print("r=%s" % str(r))
+        return r * vector
 
     def loiter_to_ne(self, x, y, z, timeout=40):
-        dest = rotmat.Vector3(x, y, z)
+        '''loiter to x, y, z from origin (in metres), z is *up*'''
+        dest_ned = rotmat.Vector3(x, y, -z)
         tstart = self.get_sim_time()
+        success_start = -1
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
                 raise NotAchievedException("Did not loiter to ne!")
             m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
                                         blocking=True)
-            pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
-            delta_ef = pos - dest
+            pos_ned = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
+            #            print("dest_ned=%s" % str(dest_ned))
+            #            print("pos_ned=%s" % str(pos_ned))
+            delta_ef = dest_ned - pos_ned
+            #            print("delta_ef=%s" % str(delta_ef))
+
+            # determine if we've successfully navigated to close to
+            # where we should be:
             dist = math.sqrt(delta_ef.x * delta_ef.x + delta_ef.y * delta_ef.y)
-            dist_max = 2
+            dist_max = 0.1
             self.progress("dist=%f want <%f" % (dist, dist_max))
             if dist < dist_max:
-                break
+                # success!  We've gotten within our target distance
+                if success_start == -1:
+                    success_start = now
+                elif now - success_start > 10:
+                    self.progress("Yay!")
+                    break
+            else:
+                success_start = -1
+
             delta_bf = self.earth_to_body(delta_ef)
-            angle_x = math.atan2(delta_bf.x, delta_bf.z)
-            angle_y = math.atan2(delta_bf.y, delta_bf.z)
+            #            print("delta_bf=%s" % str(delta_bf))
+            angle_x = math.atan2(delta_bf.y, delta_bf.z)
+            angle_y = -math.atan2(delta_bf.x, delta_bf.z)
             distance = math.sqrt(delta_bf.x * delta_bf.x +
                                  delta_bf.y * delta_bf.y +
                                  delta_bf.z * delta_bf.z)
+            #            att = self.mav.messages["ATTITUDE"]
+            #            print("r=%f p=%f y=%f" % (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
+            #            print("angle_x=%s angle_y=%s" % (str(math.degrees(angle_x)), str(math.degrees(angle_y))))
+            #            print("distance=%s" % str(distance))
+
             self.mav.mav.landing_target_send(
                 0, # time_usec
                 1, # target_num
@@ -3650,15 +3672,6 @@ class AutoTestCopter(AutoTest):
                 0.01, # size of target in radians, X-axis
                 0.01 # size of target in radians, Y-axis
             )
-
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < 10:
-            m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
-                                        blocking=True)
-            pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
-            delta_ef = pos - dest
-            dist = math.sqrt(delta_ef.x * delta_ef.x + delta_ef.y * delta_ef.y)
-            self.progress("dist=%f" % (dist,))
 
     def fly_payload_place_mission(self):
         """Test payload placing in auto."""
