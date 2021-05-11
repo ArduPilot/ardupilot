@@ -835,11 +835,20 @@ public:
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) override;
+    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+
+    Vector3f& get_target_pos() const;
+    Vector3f& get_target_vel() const;
+    Vector3f& get_target_accel() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
+    bool stop_stabilize_pos_xy() const;
+    bool stop_stabilize_vel_xy() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
@@ -876,10 +885,12 @@ private:
 
     // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
-        AllowArmingFromTX = (1U << 0),
+        AllowArmingFromTX   = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
-        IgnorePilotYaw    = (1U << 2),
+        IgnorePilotYaw      = (1U << 2),
         SetAttitudeTarget_ThrustAsThrust = (1U << 3),
+        DoNotStabilizePositionXY = (1U << 4),
+        DoNotStabilizeVelocityXY = (1U << 5),
     };
 
     void pos_control_start();
@@ -887,8 +898,8 @@ private:
     void posvel_control_start();
     void takeoff_run();
     void pos_control_run();
-    void vel_control_run();
-    void posvel_control_run();
+    void velaccel_control_run();
+    void posvelaccel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool use_pilot_yaw(void) const;
