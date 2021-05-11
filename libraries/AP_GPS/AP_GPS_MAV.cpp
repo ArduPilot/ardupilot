@@ -146,15 +146,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
             state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
             if (packet.vel < 65535) {
-                state.ground_speed = packet.vel / 100.0f;
+                state.ground_speed = packet.vel * 0.01f;
             }
-            Vector3f vel(packet.vn/100.0f, packet.ve/100.0f, packet.vd/100.0f);
+            Vector3f vel(packet.vn*0.01f, packet.ve*0.01f, packet.vd*0.01f);
             state.velocity = vel;
             if (packet.vd != 0) {
                 state.have_vertical_velocity = true;
             }
             if (packet.cog < 36000) {
-                state.ground_course = packet.cog / 100.0f;
+                state.ground_course = packet.cog * 0.01f;
             }
             state.have_speed_accuracy = false;
             state.have_horizontal_accuracy = false;
