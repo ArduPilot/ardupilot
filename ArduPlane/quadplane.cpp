@@ -1463,7 +1463,7 @@ void QuadPlane::control_loiter()
                                                   last_pidz_init_ms, last_pidz_init_ms+transition_time_ms*2);
         if (plane.nav_pitch_cd > pitch_limit_cd) {
             plane.nav_pitch_cd = pitch_limit_cd;
-            pos_control->set_limit_accel_xy();            
+            pos_control->set_limit_xy();
         }
     }
     
@@ -2539,7 +2539,7 @@ void QuadPlane::vtol_position_controller(void)
             plane.nav_pitch_cd = pitch_limit_cd;
             // tell the pos controller we have limited the pitch to
             // stop integrator buildup
-            pos_control->set_limit_accel_xy();
+            pos_control->set_limit_xy();
         }
         
         // call attitude controller

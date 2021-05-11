@@ -14,7 +14,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     }
 
     // calculate current ekf based altitude error
-    const float current_alt_error = copter.pos_control->get_alt_target() - copter.inertial_nav.get_altitude();
+    const float current_alt_error = copter.pos_control->get_pos_target_z_cm() - copter.inertial_nav.get_altitude();
 
     // init based on tracking direction/state
     RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;

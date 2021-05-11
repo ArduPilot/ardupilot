@@ -15,10 +15,10 @@ void Copter::update_ground_effect_detector(void)
     uint32_t tnow_ms = millis();
     float xy_des_speed_cms = 0.0f;
     float xy_speed_cms = 0.0f;
-    float des_climb_rate_cms = pos_control->get_desired_velocity().z;
+    float des_climb_rate_cms = pos_control->get_vel_desired_cms().z;
 
     if (pos_control->is_active_xy()) {
-        Vector3f vel_target = pos_control->get_vel_target();
+        Vector3f vel_target = pos_control->get_vel_target_cms();
         vel_target.z = 0.0f;
         xy_des_speed_cms = vel_target.length();
     }

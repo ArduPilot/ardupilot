@@ -165,7 +165,7 @@ void Mode::auto_takeoff_run()
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
-        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
@@ -184,7 +184,7 @@ void Mode::auto_takeoff_run()
             wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         }
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control->set_limit_accel_xy();
+        pos_control->set_limit_xy();
     }
 
     // run waypoint controller

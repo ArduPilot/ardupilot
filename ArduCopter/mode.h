@@ -95,10 +95,10 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
-    const Vector3f& get_desired_velocity() {
+    const Vector3f& get_vel_desired_cms() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:
-        return pos_control->get_desired_velocity();
+        return pos_control->get_vel_desired_cms();
     }
 
 protected:
@@ -629,8 +629,6 @@ protected:
     const char *name4() const override { return "BRAK"; }
 
 private:
-
-    void init_target();
 
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
