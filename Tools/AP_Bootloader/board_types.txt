@@ -79,7 +79,6 @@ AP_HW_MRO_CONTROL_ZERO_OEM            142
 AP_HW_MATEKF765_WING                  143
 AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
-AP_HW_KAKUTEF4_MINI                   146
 AP_HW_F4BY                             20 # value due to previous release by vendor
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152
@@ -116,6 +115,7 @@ AP_HW_BEASTF7                        1026
 AP_HW_FlywooF745                     1027
 AP_HW_FreeflyRTK                     1028
 AP_HW_luminousbee5                   1029
+AP_HW_KAKUTEF4_MINI                  1030
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
