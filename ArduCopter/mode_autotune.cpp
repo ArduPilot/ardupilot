@@ -56,7 +56,7 @@ void AutoTune::run()
         get_pilot_desired_rp_yrate_cd(target_roll, target_pitch, target_yaw_rate);
 
         copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        copter.pos_control->relax_alt_hold_controllers(0.0f);
+        copter.pos_control->relax_z_controller(0.0f);
         copter.pos_control->update_z_controller();
     } else {
         // run autotune mode
@@ -93,8 +93,7 @@ void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitc
  */
 void AutoTune::init_z_limits()
 {
-    copter.pos_control->set_max_speed_z(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up);
-    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_accel_z(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
 }
 
 void AutoTune::log_pids()
