@@ -39,7 +39,7 @@ CompassLearn::CompassLearn(Compass &_compass) :
 void CompassLearn::update(void)
 {
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
+    if (compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
         !hal.util->get_soft_armed() || vehicle->get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
         // the ground
@@ -129,7 +129,7 @@ void CompassLearn::update(void)
                                                num_samples);
     }
 
-    if (!converged) {
+    {
         WITH_SEMAPHORE(sem);
 
         // set offsets to current best guess
@@ -257,7 +257,7 @@ void CompassLearn::process_sample(const struct sample &s)
 
     // send current learn state to gcs
     const uint32_t now = AP_HAL::millis();
-    if (!converged && now - last_learn_progress_sent_ms >= 5000) {
+    if (now - last_learn_progress_sent_ms >= 5000) {
         float percent = (MIN(num_samples / COMPASS_LEARN_NUM_SAMPLES, 1.0f) + 
                          MIN(COMPASS_LEARN_BEST_ERROR_THRESHOLD / (best_error + 1.0f), 1.0f) + 
                          MIN(worst_error / COMPASS_LEARN_WORST_ERROR_THRESHOLD, 1.0f)) / 3.0f * 100.f;

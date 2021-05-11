@@ -50,7 +50,6 @@ private:
     float best_error;
     float best_yaw_deg;
     float worst_error;
-    bool converged;
 
     // notification
     uint32_t last_learn_progress_sent_ms;
