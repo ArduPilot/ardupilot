@@ -15,6 +15,13 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_VIDEOTX_ENABLED
+#define HAL_VIDEOTX_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_VIDEOTX_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -147,3 +154,5 @@ private:
 namespace AP {
     AP_VideoTX& vtx();
 };
+
+#endif

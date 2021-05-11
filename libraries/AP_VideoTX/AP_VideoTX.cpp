@@ -17,6 +17,8 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <GCS_MAVLink/GCS.h>
 
+#if HAL_VIDEOTX_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 AP_VideoTX *AP_VideoTX::singleton;
@@ -450,3 +452,5 @@ namespace AP {
         return *AP_VideoTX::get_singleton();
     }
 };
+
+#endif
