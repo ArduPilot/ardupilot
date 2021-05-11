@@ -25,6 +25,7 @@
 #pragma GCC diagnostic ignored "-Wtype-limits"
 #endif
 
+#include <GCS_MAVLink/GCS.h>
 extern const AP_HAL::HAL& hal;
 
 /// map a function to a servo channel and output it
@@ -451,6 +452,9 @@ void
 SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t function,
                          int16_t value, int16_t angle_min, int16_t angle_max)
 {
+    if (function == 9) {
+        gcs().send_text(MAV_SEVERITY_INFO, "value:%d angle_min: %d angle_max: %d", value, angle_min, angle_max);
+    }
     if (!function_assigned(function)) {
         return;
     }
@@ -464,6 +468,9 @@ SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t function,
         if (c.function.get() == function) {
             float v2 = c.get_reversed()? (1-v) : v;
             uint16_t pwm = c.servo_min + v2 * (c.servo_max - c.servo_min);
+            if (function == 9) {
+                gcs().send_text(MAV_SEVERITY_INFO, "new PMW: %u", pwm);
+            }
             c.set_output_pwm(pwm);
         }
     }

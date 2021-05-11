@@ -7317,6 +7317,75 @@ class AutoTestHeli(AutoTestCopter):
             raise NotAchievedException("Hit too hard")
         self.wait_disarmed()
 
+    def wait_mount_retract(self, chan):
+        self.progress("Waiting for mount to retract")
+        open_servo_min = self.get_parameter("SERVO%u_MIN" % chan)
+        self.wait_servo_channel_value(chan, open_servo_min)
+
+    def wait_mount_deploy(self, chan):
+        self.progress("Waiting for mount to deploy")
+        open_servo_max = self.get_parameter("SERVO%u_MAX" % chan, verbose=False)
+        self.wait_servo_channel_value(chan, open_servo_max)
+
+    def mount_failsafe_action(self):
+        """Fly Mount Failsafe action"""
+        self.context_push()
+        ex = None
+        try:
+            self.progress("Setting up servo mount")
+            roll_servo = 12
+            pitch_servo = 11
+            yaw_servo = 10
+            open_servo = 9
+            self.set_parameters({
+                "MNT_TYPE": 1,
+                "SERVO%u_FUNCTION" % yaw_servo: 6,  # yaw
+                "SERVO%u_FUNCTION" % roll_servo: 7,  # roll
+                "SERVO%u_FUNCTION" % pitch_servo: 8,  # pitch
+                "SERVO%u_FUNCTION" % open_servo: 9,  # mount open
+                "MNT_FS_RC_ACTION": 0,  # retract
+                "MNT_STAB_ROLL": 1,
+                "MNT_STAB_TILT": 1,
+                "MNT_STAB_PAN": 1,
+                "MNT_DEFLT_MODE": 3,  # RC targettting
+                #                "RC9_OPTION": 27,
+            })
+
+            # self.set_rc(9, 2000)
+            self.reboot_sitl()
+
+            # self.set_rc(9, 1000)
+            # self.wait_mount_deploy(open_servo)
+
+            # self.set_rc(9, 2000)
+            # self.wait_mount_retract(open_servo)
+
+            # self.set_rc(9, 1000)
+            # self.wait_mount_deploy(open_servo)
+
+            retract_roll = 20
+            self.set_parameter("MNT_RETRACT_X", retract_roll)
+            self.progress("Killing RC")
+            self.set_parameter("SIM_RC_FAIL", 1)
+            self.wait_servo_channel_value(roll_servo, int(1500 + retract_roll/100.0 * 1000))
+#            self.wait_mount_retract(open_servo)
+
+            self.progress("Resurrecting RC")
+            self.set_parameter("SIM_RC_FAIL", 0)
+            self.wait_servo_channel_value(roll_servo, 1500)
+#            self.wait_mount_deploy(open_servo)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def set_rc_default(self):
         super(AutoTestHeli, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -7347,6 +7416,10 @@ class AutoTestHeli(AutoTestCopter):
             ("AutoRotation",
              "Fly AutoRotation",
              self.fly_autorotation),
+
+            ("MountFailsafeAction",
+             "Fly Mount Failsafe Action",
+             self.mount_failsafe_action),
 
             ("LogUpload",
              "Log upload",

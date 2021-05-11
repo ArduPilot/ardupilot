@@ -61,8 +61,23 @@ void AP_Mount_Servo::update()
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
         {
-            // update targets using pilot's rc inputs
-            update_targets_from_rc();
+            // update targets using pilot's rc inputs or go to neutral or retracted targets if no rc
+            if (rc().in_rc_failsafe()) {
+                switch (_state._rc_failsafe_action.get()) {
+                    case MAV_MOUNT_MODE_RETRACT:
+                       _angle_bf_output_deg = _state._retract_angles.get();
+                       gcs().send_text(MAV_SEVERITY_INFO, "Moving to retract angles %f %f %f", _angle_bf_output_deg[0], _angle_bf_output_deg[1], _angle_bf_output_deg[2]);
+                       break;
+                    case MAV_MOUNT_MODE_NEUTRAL:
+                       _angle_bf_output_deg = _state._neutral_angles.get();
+                       break;
+                    default:
+                        //do nothing
+                        break;
+                    }
+            } else if (rc().has_valid_input()) {
+                update_targets_from_rc();
+            }
             stabilize();
             break;
         }
@@ -144,6 +159,7 @@ void AP_Mount_Servo::send_mount_status(mavlink_channel_t chan)
 //  output: _angle_bf_output_deg (body frame angles in degrees)
 void AP_Mount_Servo::stabilize()
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "before stab: %f %f %f", _angle_bf_output_deg[0], _angle_bf_output_deg[1], _angle_bf_output_deg[2]);
     AP_AHRS &ahrs = AP::ahrs();
     // only do the full 3D frame transform if we are doing pan control
     if (_state._stab_pan) {
@@ -186,6 +202,9 @@ void AP_Mount_Servo::stabilize()
             _angle_bf_output_deg.y -= degrees(pitch_rate) * _state._pitch_stb_lead;
         }
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "after stab: %f %f %f", _angle_bf_output_deg[0], _angle_bf_output_deg[1], _angle_bf_output_deg[2]);
+
 }
 
 // closest_limit - returns closest angle to 'angle' taking into account limits.  all angles are in degrees * 10

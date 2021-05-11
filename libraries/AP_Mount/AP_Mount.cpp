@@ -395,7 +395,21 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+    // @Param: 2_FS_RC_ACTION
+    // @DisplayName: Mount2 RC Failsafe Point Position
+    // @Description: Uses the designated mode's target position if RC invalid in RC Targeting mode
+    // @Values: -1:No Change,0:Retracted,1:Neutral
+    // @User: Standard
+    AP_GROUPINFO("2_FS_RC_ACTION", 43, AP_Mount, state[1]._rc_failsafe_action, -1),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
+
+    // @Param: _FS_RC_ACTION
+    // @DisplayName: Mount RC Failsafe Point Position
+    // @Description: Uses the designated modes target position if RC invalid in RC Targeting mode
+    // @Values: -1:No Change,0:Retracted,1:Neutral
+    // @User: Standard
+    AP_GROUPINFO("_FS_RC_ACTION", 44, AP_Mount, state[0]._rc_failsafe_action, -1),
 
     AP_GROUPEND
 };
@@ -437,6 +451,7 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         // default instance's state
         state[instance]._mode = (enum MAV_MOUNT_MODE)state[instance]._default_mode.get();
+        state[instance]._rc_failsafe_action = state[instance]._rc_failsafe_action.get();
 
         MountType mount_type = get_mount_type(instance);
 
@@ -745,7 +760,7 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_report(chan);
         }
-    }    
+    }
 }
 
 
