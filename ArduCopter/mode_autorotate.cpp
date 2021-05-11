@@ -221,15 +221,12 @@ void ModeAutorotate::run()
 
                 // Initialise position and desired velocity
                 if (!pos_control->is_active_z()) {
-                    pos_control->relax_alt_hold_controllers(g2.arot.get_last_collective());
+                    pos_control->relax_z_controller(g2.arot.get_last_collective());
                 }
 
                 // Get pilot parameter limits
                 const float pilot_spd_dn = -get_pilot_speed_dn();
                 const float pilot_spd_up = g.pilot_speed_up;
-
-                // Set speed limit
-                pos_control->set_max_speed_z(curr_vel_z, pilot_spd_up);
 
                 float pilot_des_v_z = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
                 pilot_des_v_z = constrain_float(pilot_des_v_z, pilot_spd_dn, pilot_spd_up);
@@ -240,8 +237,8 @@ void ModeAutorotate::run()
                 // Calculate pitch target adjustment rate to return to level
                 _target_pitch_adjust = _pitch_target/_bail_time;
 
-                // Set acceleration limit
-                pos_control->set_max_accel_z(fabsf(_target_climb_rate_adjust));
+                // Set speed and acceleration limit
+                pos_control->set_max_speed_accel_z(curr_vel_z, pilot_spd_up, fabsf(_target_climb_rate_adjust));
 
                 motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -254,7 +251,7 @@ void ModeAutorotate::run()
             _pitch_target -= _target_pitch_adjust*G_Dt;
         }
         // Set position controller
-        pos_control->set_alt_target_from_climb_rate(_desired_v_z, G_Dt, false);
+        pos_control->set_alt_target_from_climb_rate(_desired_v_z, false);
 
         // Update controllers
         pos_control->update_z_controller();

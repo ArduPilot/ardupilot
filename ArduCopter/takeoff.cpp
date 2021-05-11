@@ -82,8 +82,7 @@ void Mode::_TakeOff::stop()
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
-                                                  float& takeoff_climb_rate)
+void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
@@ -166,7 +165,7 @@ void Mode::auto_takeoff_run()
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
-        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
