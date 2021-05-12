@@ -55,7 +55,6 @@ apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.
 vehicle_paths += glob.glob(apm_tools_path + "%s/Parameters.cpp" % args.vehicle)
 vehicle_paths.sort(reverse=True)
 
-vehicles = []
 libraries = []
 
 # AP_Vehicle also has parameters rooted at "", but isn't referenced
@@ -96,17 +95,18 @@ truename_map = {
 }
 valid_truenames = frozenset(truename_map.values())
 
-for vehicle_path in vehicle_paths:
-    name = os.path.basename(os.path.dirname(vehicle_path))
-    path = os.path.normpath(os.path.dirname(vehicle_path))
-    vehicles.append(Vehicle(name, path, truename_map[name]))
-    debug('Found vehicle type %s' % name)
-
-if len(vehicles) > 1 or len(vehicles) == 0:
+if len(vehicle_paths) > 1 or len(vehicle_paths) == 0:
     print("Single vehicle only, please")
     sys.exit(1)
 
-for vehicle in vehicles:
+vehicle_path = vehicle_paths[0]
+
+name = os.path.basename(os.path.dirname(vehicle_path))
+path = os.path.normpath(os.path.dirname(vehicle_path))
+vehicle = Vehicle(name, path, truename_map[name])
+debug('Found vehicle type %s' % vehicle.name)
+
+def process_vehicle(vehicle):
     debug("===\n\n\nProcessing %s" % vehicle.name)
     current_file = vehicle.path+'/Parameters.cpp'
 
@@ -163,6 +163,8 @@ for vehicle in vehicles:
     current_file = None
     debug("Processed %u params" % len(vehicle.params))
 
+process_vehicle(vehicle)
+
 debug("Found %u documented libraries" % len(libraries))
 
 if args.emit_sitl:
@@ -173,8 +175,6 @@ else:
 libraries = list(libraries)
 
 alllibs = libraries[:]
-
-vehicle = vehicles[0]
 
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
@@ -187,10 +187,7 @@ def process_library(vehicle, library, pathprefix=None):
         if pathprefix is not None:
             libraryfname = os.path.join(pathprefix, path)
         elif path.find('/') == -1:
-            if len(vehicles) != 1:
-                print("Unable to handle multiple vehicles with .pde library")
-                continue
-            libraryfname = os.path.join(vehicles[0].path, path)
+            libraryfname = os.path.join(vehicle.path, path)
         else:
             libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
         if path and os.path.exists(libraryfname):
@@ -381,13 +378,11 @@ def validate(param):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
 
-for vehicle in vehicles:
-    for param in vehicle.params:
-        clean_param(param)
+for param in vehicle.params:
+    clean_param(param)
 
-for vehicle in vehicles:
-    for param in vehicle.params:
-        validate(param)
+for param in vehicle.params:
+    validate(param)
 
 # Find duplicate names in library and fix up path
 for library in libraries:
@@ -452,8 +447,7 @@ for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name](sitl=args.emit_sitl)
 
     if not args.emit_sitl:
-        for vehicle in vehicles:
-            emit.emit(vehicle)
+        emit.emit(vehicle)
 
     emit.start_libraries()
 
