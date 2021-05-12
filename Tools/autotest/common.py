@@ -5061,6 +5061,46 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def distance_to_local_position(self, local_pos, timeout=30):
+        (x, y, z_down) = local_pos  # alt is *up*
+
+        pos = self.mav.recv_match(
+            type='LOCAL_POSITION_NED',
+            blocking=True
+        )
+
+        delta_x = pos.x - x
+        delta_y = pos.y - y
+        delta_z = pos.z - z_down
+        return math.sqrt(delta_x*delta_x + delta_y*delta_y + delta_z*delta_z)
+
+    def wait_distance_to_local_position(self,
+                                        local_position,  # (x, y, z_down)
+                                        distance_min,
+                                        distance_max,
+                                        timeout=10,
+                                        **kwargs):
+        """Wait for distance to home to be within specified bounds."""
+        assert distance_min <= distance_max, "Distance min should be less than distance max."
+
+        def get_distance():
+            return self.distance_to_local_position(local_position)
+
+        def validator(value2, target2=None):
+            return distance_min <= value2 <= distance_max
+
+        (x, y, z_down) = local_position
+        self.wait_and_maintain(
+            value_name="Distance to (%f,%f,%f)" % (x, y, z_down),
+            target=distance_min,
+            current_value_getter=lambda: get_distance(),
+            validator=lambda value2,
+            target2: validator(value2, target2),
+            accuracy=(distance_max - distance_min),
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_parameter_value(self, parameter, value, timeout=10):
         tstart = self.get_sim_time()
         while True:
