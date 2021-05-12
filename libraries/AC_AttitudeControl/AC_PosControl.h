@@ -270,8 +270,8 @@ public:
     void update_vel_controller_xyz();
 
     /// get desired roll and pitch to be passed to the attitude controller
-    float get_roll() const { return _roll_target; }
-    float get_pitch() const { return _pitch_target; }
+    float get_roll_cd() const { return _roll_target; }
+    float get_pitch_cd() const { return _pitch_target; }
 
     /// get desired yaw to be passed to the attitude controller
     float get_yaw_cd() const { return _yaw_target; }
