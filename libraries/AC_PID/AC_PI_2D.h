@@ -26,7 +26,7 @@ public:
     //  input is filtered before the PI controllers are run
     //  this should be called before any other calls to get_p, get_i or get_d
     void set_input(const Vector2f &input);
-    void set_input(const Vector3f &input) { set_input(Vector2f(input.x, input.y)); }
+    void set_input(const Vector3f &input) { set_input(Vector2f{input.x, input.y}); }
 
     // get_pi - get results from pid controller
     Vector2f get_pi();
