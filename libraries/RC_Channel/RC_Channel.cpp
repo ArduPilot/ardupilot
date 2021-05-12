@@ -1195,7 +1195,7 @@ void RC_Channel::init_aux()
 bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
 {
     const uint16_t in = get_radio_in();
-    if (in <= RC_MIN_LIMIT_PWM or in >= RC_MAX_LIMIT_PWM) {
+    if (in <= RC_MIN_LIMIT_PWM || in >= RC_MAX_LIMIT_PWM) {
         return false;
     }
     
