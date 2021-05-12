@@ -792,7 +792,7 @@ float AC_AttitudeControl::input_shaping_angle(float error_angle, float input_tc,
 {
     // Calculate the velocity as error approaches zero with acceleration limited by accel_max_radss
     desired_ang_vel += sqrt_controller(error_angle, 1.0f / MAX(input_tc, 0.01f), accel_max, dt);
-    if(is_positive(max_ang_vel)) {
+    if (is_positive(max_ang_vel)) {
         desired_ang_vel = constrain_float(desired_ang_vel, -max_ang_vel, max_ang_vel);
     }
 
