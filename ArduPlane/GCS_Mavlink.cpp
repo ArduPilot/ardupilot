@@ -613,6 +613,11 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
     plane.reset_offset_altitude();
 }
 
+void GCS_MAVLINK_Plane::handle_command_ack(const mavlink_message_t &msg)
+{
+    plane.command_ack_counter++;
+    GCS_MAVLINK::handle_command_ack(msg);
+}
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
@@ -631,6 +636,12 @@ MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlin
         } else {
             return MAV_RESULT_FAILED;
         }
+    }
+
+    if (is_equal(packet.param6,1.0f)) {
+        // compassmot calibration
+        return plane.mavlink_compassmot(*this);
+        // return MAV_RESULT_ACCEPTED;
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
