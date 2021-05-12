@@ -9026,7 +9026,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()
 
-    def SMART_RTL(self):
+    def SMART_pathfollow_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
         self.takeoff(20, mode='GUIDED')
@@ -9323,6 +9323,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
+    def test_SMART_RTL_nopoints(self):
+        self.context_push()
+        ex = None
+        try:
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.change_mode('ALT_HOLD')
+            self.change_mode('SMART_RTL')
+            self.change_mode('ALT_HOLD')
+            self.change_mode('SMART_RTL')
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+            self.disarm_vehicle(force=True)
+
         self.context_pop()
 
         self.reboot_sitl()
@@ -9370,6 +9386,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.disarm_vehicle()
         self.context_pop()
+
+    def SMART_RTL(self):
+        '''Check SMART_RTL'''
+        self.test_SMART_RTL_nopoints()
+        self.test_SMART_RTL_pathfollow()
 
     def PAUSE_CONTINUE(self):
         '''Test MAV_CMD_DO_PAUSE_CONTINUE in AUTO mode'''
