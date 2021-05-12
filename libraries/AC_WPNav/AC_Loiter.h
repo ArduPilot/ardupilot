@@ -30,7 +30,7 @@ public:
     void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd, float dt);
 
     /// gets pilot desired acceleration, body frame, [forward,right]
-    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_desired_accel.x, _desired_accel.y); }
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f{_desired_accel.x, _desired_accel.y}; }
 
     /// clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _desired_accel.zero(); }
