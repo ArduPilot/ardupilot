@@ -1513,7 +1513,7 @@ private:
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
     // may choose to land the vehicle.
-    uint32_t path_follow_last_pop_fail_ms;
+    uint32_t path_follow_last_semtake_fail_ms;
 };
 
 
