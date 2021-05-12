@@ -69,7 +69,7 @@ private:
 #else
     static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #endif
-    uint8_t _requested_telemetry_from_esc; /// the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
+    uint8_t _requested_telemetry_from_esc = 1; /// the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
 
 /**
     calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
@@ -144,9 +144,10 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
     @param t telemetry datastructure where the read telemetry will be stored in.
     @param centi_erpm 16bit centi-eRPM value returned from the ESC
     @param tx_err_count Ardupilot->ESC communication CRC error counter
+    @param tlm_from_id receives the ID from the ESC that has respond with its telemetry
     @return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
 */
-int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16_t& tx_err_count);
+int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16_t& tx_err_count, uint8_t &tlm_from_id);
 #endif
 
 /**

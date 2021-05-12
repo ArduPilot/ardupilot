@@ -110,29 +110,31 @@ void AP_FETtecOneWire::update()
     TelemetryData t {};
     int16_t centi_erpm;
     uint16_t tx_err_count;
+    uint8_t tlm_ok = 0; //decode_single_esc_telemetry returns 1 if telemetry is ok, 0 if its waiting and 2 if there is a crc mismatch.
+    uint8_t tlm_from_id = 0;
     if (_requested_telemetry_from_esc) {
-        decode_single_esc_telemetry(t, centi_erpm, tx_err_count);
+        tlm_ok = decode_single_esc_telemetry(t, centi_erpm, tx_err_count, tlm_from_id);
     }
-    if (_requested_telemetry_from_esc == nr_escs || _active_esc_ids[_requested_telemetry_from_esc-1] == 0) {
-        _requested_telemetry_from_esc = 1; // restart from ESC0
+    if (_requested_telemetry_from_esc == _found_escs_count) { //if found esc number is reached restart request counter
+        _requested_telemetry_from_esc = 1; // restart from ESC 1 
     } else {
         _requested_telemetry_from_esc++;
     }
 #endif
-
-    escs_set_values(motor_pwm, nr_escs, _requested_telemetry_from_esc);
+   
+    escs_set_values(motor_pwm, _found_escs_count, _requested_telemetry_from_esc);
 
 #if HAL_WITH_ESC_TELEM
     // now that escs_set_values() has been executed we can fully process the telemetry data from the ESC
     calc_tx_crc_error_perc(0, 0, 1); //Just incrementing package count for every ESC. ID does not matter if increment only is set.
-    if (_requested_telemetry_from_esc) {
+    if (_requested_telemetry_from_esc && tlm_ok==1) { //only use telemetry if it is ok.
         if (pole_count < 2) { // If Parameter is invalid use 14 Poles
             pole_count = 14;
         }
         const float tx_err_rate = calc_tx_crc_error_perc(_requested_telemetry_from_esc-1, tx_err_count, 0);
-        update_rpm(_requested_telemetry_from_esc-1, centi_erpm*100*2/pole_count.get(), tx_err_rate);
+        update_rpm(tlm_from_id-1, centi_erpm*100*2/pole_count.get(), tx_err_rate);
 
-        update_telem_data(_requested_telemetry_from_esc-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+        update_telem_data(tlm_from_id-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
     }
 #endif
 }
@@ -377,7 +379,7 @@ uint8_t AP_FETtecOneWire::scan_escs()
 */
 uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC active state %i", _active_esc_ids[_set_full_telemetry_active]);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC active state %i", _active_esc_ids[_set_full_telemetry_active-1]);
     if (_active_esc_ids[_set_full_telemetry_active]==1) { //If ESC is detected at this ID
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Setting full telemetry for ESC: %i", _set_full_telemetry_active);
         uint8_t response[1] = {0};
@@ -387,7 +389,6 @@ uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
         uint8_t pull_response = pull_command(_set_full_telemetry_active, request, response, OW_RETURN_RESPONSE);
         if(pull_response) {
             if(response[0] == OW_OK) {//Ok received or max retrys reached.
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK");
                 _set_full_telemetry_active++;   //If answer from ESC is OK, increase ID.
                 _set_full_telemetry_retry_count=0; //Reset retry count for new ESC ID
             } else {
@@ -562,7 +563,7 @@ float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_
 
         //Debug or Info
         if (send_msg_count==395 || send_msg_count==396 || send_msg_count==397 ||send_msg_count==398) {
-           GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%i: p: %f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
+           GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%i: p: %.2f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
         }
     }
     return error_count_percentage;
@@ -574,16 +575,19 @@ float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_
     @param t telemetry datastructure where the read telemetry will be stored in.
     @param centi_erpm 16bit centi-eRPM value returned from the ESC
     @param tx_err_count Ardupilot->ESC communication CRC error counter
+    @param tlm_from_id receives the ID from the ESC that has respond with its telemetry
     @return 1 if CRC is correct, 2 on CRC mismatch, 0 on waiting for answer
 */
-int8_t AP_FETtecOneWire::decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16_t& tx_err_count)
+int8_t AP_FETtecOneWire::decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16_t& tx_err_count, uint8_t &tlm_from_id)
 {
     int8_t ret = 0;
     if (_id_count > 0) {
         uint8_t telem[17] = {0};
-        ret = receive((uint8_t *) telem, 11, OW_RETURN_FULL_FRAME);  // @torsten: How do you read 11, but use 17 bytes here????
+        ret = receive((uint8_t *) telem, 11, OW_RETURN_FULL_FRAME);  // @torsten: How do you read 11, but use 17 bytes here???? //@Amilcar 11 is the size of the payload. 17 is including the OW headers which i want now, because we need to use the ESC ID from the telemetry
 
-        if (ret == 1) {
+        if (ret == 1) { //Answer ok
+            tlm_from_id = (uint8_t)telem[1];
+
             t.temperature_cdeg = int16_t(telem[5+0] * 100);
             t.voltage = float((telem[5+1]<<8)|telem[5+2]) * 0.01f;
             t.current = float((telem[5+3]<<8)|telem[5+4]) * 0.01f;
@@ -591,7 +595,7 @@ int8_t AP_FETtecOneWire::decode_single_esc_telemetry(TelemetryData& t, int16_t& 
             t.consumption_mah = float((telem[5+7]<<8)|telem[5+8]);
             tx_err_count = (telem[5+9]<<8)|telem[5+10];
         }
-        if (ret == 2) {
+        if (ret == 2) { //CRC Error
             increment_CRC_error_counter(_requested_telemetry_from_esc-1);
         }
     } else {
@@ -632,8 +636,9 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values, const uint8
                 _setup_active = init_escs();
             }
         }
-        else if (_set_full_telemetry_active < MOTOR_COUNT_MAX) { //Set telemetry to alternative mode
+        else if (_set_full_telemetry_active < MOTOR_COUNT_MAX+1) { //Set telemetry to alternative mode
                _set_full_telemetry_active = set_full_telemetry(1);
+
         }
     } else {
         //send fast throttle signals
