@@ -9868,6 +9868,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def SMART_RTL_EnterLeave(self):
+        '''check SmartRTL behaviour when entering/leaving'''
+        # we had a bug where we would consume points when re-entering smartrtl
+
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+        self.change_mode('SMART_RTL')
+        self.change_mode('ALT_HOLD')
+        self.change_mode('SMART_RTL')
+
     def GPSForYawCompassLearn(self):
         '''Moving baseline GPS yaw - with compass learning'''
         self.context_push()
@@ -11881,6 +11898,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GSF_reset,
             self.AP_Avoidance,
             self.SMART_RTL,
+            self.SMART_RTL_EnterLeave,
             self.RTL_TO_RALLY,
             self.FlyEachFrame,
             self.GPSBlending,
@@ -12034,6 +12052,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
             "CompassMot": "Cuases an arithmetic exception in the EKF",
+            "SMART_RTL_EnterLeave": "Causes a panic",
         }
 
 
