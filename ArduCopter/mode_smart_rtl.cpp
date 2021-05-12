@@ -74,7 +74,7 @@ void ModeSmartRTL::wait_cleanup_run()
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
-        path_follow_last_pop_fail_ms = 0;
+        path_follow_last_semtake_fail_ms = 0;
         smart_rtl_state = SubMode::PATH_FOLLOW;
     }
 }
@@ -83,42 +83,45 @@ void ModeSmartRTL::path_follow_run()
 {
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
-        Vector3f dest_NED;
-        // this pop_point can fail if the IO task currently has the
-        // path semaphore.
-        if (g2.smart_rtl.pop_point(dest_NED)) {
-            path_follow_last_pop_fail_ms = 0;
-            if (g2.smart_rtl.get_num_points() == 0) {
-                // this is the very last point, add 2m to the target alt and move to pre-land state
-                dest_NED.z -= 2.0f;
+        HAL_Semaphore &sem = g2.smart_rtl.path_semaphore();
+        if (sem.take_nonblocking()) {
+            Vector3f dest_NED;
+            const uint32_t num_points = g2.smart_rtl.get_num_points();
+            if (num_points == 0) {
+                // we don't even have a home point set in
+                // SmartRTL... how did we manage to get here?
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 smart_rtl_state = SubMode::PRELAND_POSITION;
-                wp_nav->set_wp_destination_NED(dest_NED);
-            } else {
-                // peek at the next point.  this can fail if the IO task currently has the path semaphore
-                Vector3f next_dest_NED;
-                if (g2.smart_rtl.peek_point(next_dest_NED)) {
+            } else if (num_points == 1) {
+                // we don't remove the home point
+                if (g2.smart_rtl.peek_point(dest_NED)) {
+                    // this is the very last point, add 2m to the target alt
+                    dest_NED.z -= 2.0f;
+                    smart_rtl_state = SubMode::PRELAND_POSITION;
                     wp_nav->set_wp_destination_NED(dest_NED);
-                    if (g2.smart_rtl.get_num_points() == 1) {
-                        // this is the very last point, add 2m to the target alt
-                        next_dest_NED.z -= 2.0f;
-                    }
-                    wp_nav->set_wp_destination_next_NED(next_dest_NED);
                 } else {
-                    // this can only happen if peek failed to take the semaphore
-                    // send next point anyway which will cause the vehicle to slow at the next point
-                    wp_nav->set_wp_destination_NED(dest_NED);
+                    // we're holding the semaphore lock and we checked
+                    // the number of points - so we should *always* be
+                    // able to get an item:
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    smart_rtl_state = SubMode::PRELAND_POSITION;
+                }
+            } else {
+                if (g2.smart_rtl.pop_point(dest_NED)) {
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                } else {
+                    // we're holding the semaphore lock and we checked
+                    // the number of points - so we should *always* be
+                    // able to get an item:
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    smart_rtl_state = SubMode::PRELAND_POSITION;
                 }
             }
-        } else if (g2.smart_rtl.get_num_points() == 0) {
-            // We should never get here; should always have at least
-            // two points and the "zero points left" is handled above.
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SubMode::PRELAND_POSITION;
-        } else if (path_follow_last_pop_fail_ms == 0) {
-            // first time we've failed to pop off (ever, or after a success)
-            path_follow_last_pop_fail_ms = AP_HAL::millis();
-        } else if (AP_HAL::millis() - path_follow_last_pop_fail_ms > 10000) {
+            sem.give();
+        } else if (path_follow_last_semtake_fail_ms == 0) {
+            // first time we've failed to take the semaphore
+            path_follow_last_semtake_fail_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - path_follow_last_semtake_fail_ms > 10000) {
             // we failed to pop a point off for 10 seconds.  This is
             // almost certainly a bug.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
