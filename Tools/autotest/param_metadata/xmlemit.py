@@ -33,7 +33,7 @@ class XmlEmit(Emit):
         self.current_element = self.libraries
 
     def emit(self, g):
-        xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.name)  # i.e. ArduPlane
+        xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)  # i.e. ArduPlane
 
         for param in g.params:
             # Begin our parameter node

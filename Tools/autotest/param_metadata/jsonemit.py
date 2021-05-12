@@ -33,10 +33,7 @@ class JSONEmit(Emit):
         # Copy content to avoid any modification
         g = copy.deepcopy(g)
 
-        # Get vehicle name
-        if 'truename' in g.__dict__:
-            self.name = g.__dict__['truename']
-            self.content[self.name] = {}
+        self.content[self.name] = {}
 
         # Check all params available
         for param in g.params:
