@@ -50,10 +50,30 @@ prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
-vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
-apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
-vehicle_paths += glob.glob(apm_tools_path + "%s/Parameters.cpp" % args.vehicle)
-vehicle_paths.sort(reverse=True)
+
+def find_vehicle_parameter_filepath(vehicle_name):
+    apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
+
+    vehicle_name_to_dir_name_map = {
+        "Copter": "ArduCopter",
+        "Plane": "ArduPlane",
+        "Tracker": "AntennaTracker",
+        "Sub": "ArduSub",
+    }
+
+    # first try ArduCopter/Parmameters.cpp
+    for top_dir in apm_path, apm_tools_path:
+        path = os.path.join(top_dir, vehicle_name, "Parameters.cpp")
+        if os.path.exists(path):
+            return path
+
+        # then see if we can map e.g. Copter -> ArduCopter
+        if vehicle_name in vehicle_name_to_dir_name_map:
+            path = os.path.join(top_dir, vehicle_name_to_dir_name_map[vehicle_name], "Parameters.cpp")
+            if os.path.exists(path):
+                return path
+
+    raise ValueError("Unable to find parameters file for (%s)" % vehicle_name)
 
 libraries = []
 
@@ -95,11 +115,7 @@ truename_map = {
 }
 valid_truenames = frozenset(truename_map.values())
 
-if len(vehicle_paths) > 1 or len(vehicle_paths) == 0:
-    print("Single vehicle only, please")
-    sys.exit(1)
-
-vehicle_path = vehicle_paths[0]
+vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 
 name = os.path.basename(os.path.dirname(vehicle_path))
 path = os.path.normpath(os.path.dirname(vehicle_path))
