@@ -3482,29 +3482,9 @@ class AutoTestCopter(AutoTest):
         )
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("Did not start to move")
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            print("%s" % m)
-            if m.groundspeed > 0.5:
+                raise NotAchievedException("Did not reach destination")
+            if self.distance_to_local_position((x, y, -z_up)) < 1:
                 break
-
-        self.progress("Waiting for vehicle to stop...")
-        self.wait_groundspeed(1, 100, timeout=timeout)
-
-        stoppos = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True)
-        self.progress("stop_pos=%s" % str(stoppos))
-
-        x_achieved = stoppos.x - startpos.x
-        if x_achieved - x > 1:
-            raise NotAchievedException("Did not achieve x position: want=%f got=%f" % (x, x_achieved))
-
-        y_achieved = stoppos.y - startpos.y
-        if y_achieved - y > 1:
-            raise NotAchievedException("Did not achieve y position: want=%f got=%f" % (y, y_achieved))
-
-        z_achieved = stoppos.z - startpos.z
-        if z_achieved - z_up > 1:
-            raise NotAchievedException("Did not achieve z position: want=%f got=%f" % (z_up, z_achieved))
 
     def test_guided_local_position_target(self, x, y, z_up):
         """ Check target position being received by vehicle """
