@@ -69,7 +69,7 @@ public:
     // integrator setting functions
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);
     void set_integrator(const Vector2f& error, const Vector2f& i);
-    void set_integrator(const Vector3f& i) { set_integrator(Vector2f(i.x, i.y)); }
+    void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }
     void set_integrator(const Vector2f& i);
 
     const AP_Logger::PID_Info& get_pid_info_x(void) const { return _pid_info_x; }
