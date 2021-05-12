@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend_Serial.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 #define PROXIMITY_SF40C_TIMEOUT_MS            200   // requests timeout after 0.2 seconds
 #define PROXIMITY_SF40C_PAYLOAD_LEN_MAX       256   // maximum payload size we can accept (in some configurations sensor may send as large as 1023)
@@ -150,3 +151,5 @@ private:
     uint32_t buff_to_uint32(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) const;
     uint16_t buff_to_uint16(uint8_t b0, uint8_t b1) const;
 };
+
+#endif // HAL_PROXIMITY_ENABLED

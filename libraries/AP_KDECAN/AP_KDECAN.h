@@ -104,7 +104,7 @@ private:
 
 
     union frame_id_t {
-        struct {
+        struct PACKED {
             uint8_t object_address;
             uint8_t destination_id;
             uint8_t source_id;

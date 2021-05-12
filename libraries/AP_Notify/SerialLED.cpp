@@ -23,7 +23,7 @@ SerialLED::SerialLED(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, ui
 {
 }
 
-bool SerialLED::hw_init()
+bool SerialLED::init()
 {
     enable_mask = init_ports();
     return true;

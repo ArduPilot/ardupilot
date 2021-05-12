@@ -36,7 +36,7 @@ void ModeSteering::update()
         // For regular steering vehicles we use the maximum lateral acceleration
         //  at full steering lock for this speed: V^2/R where R is the radius of turn.
         float max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
-        max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
+        max_g_force = constrain_float(max_g_force, 0.1f, attitude_control.get_turn_lat_accel_max());
 
         // convert pilot steering input to desired lateral acceleration
         _desired_lat_accel = max_g_force * (desired_steering / 4500.0f);

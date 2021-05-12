@@ -619,19 +619,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.customise_SITL_commandline([
             "--rc-in-port", "5502",
         ])
-        self.load_mission(self.arming_test_mission())
-        self.wait_ready_to_arm()
-        fnoo = [(1, 'MANUAL'),
-                (2, 'MANUAL'),
-                (3, 'RTL'),
-                (4, 'AUTO'),
-                (5, 'AUTO'),  # non-existant mode, should stay in RTL
-                (6, 'MANUAL')]
-        mavproxy = self.start_mavproxy()
-        for (num, expected) in fnoo:
-            mavproxy.send('switch %u\n' % num)
-            self.wait_mode(expected)
-        self.stop_mavproxy(mavproxy)
+        ex = None
+        try:
+            self.load_mission(self.arming_test_mission())
+            self.wait_ready_to_arm()
+            fnoo = [(1, 'MANUAL'),
+                    (2, 'MANUAL'),
+                    (3, 'RTL'),
+                    (4, 'AUTO'),
+                    (5, 'AUTO'),  # non-existant mode, should stay in RTL
+                    (6, 'MANUAL')]
+            mavproxy = self.start_mavproxy()
+            for (num, expected) in fnoo:
+                mavproxy.send('switch %u\n' % num)
+                self.wait_mode(expected)
+            self.stop_mavproxy(mavproxy)
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        # if we don't put things back ourselves then the test cleanup
+        # doesn't go well as we can't set the RC defaults correctly:
+        self.customise_SITL_commandline([
+        ])
+
+        if ex is not None:
+            raise ex
 
     def test_setting_modes_via_mavproxy_mode_command(self):
         fnoo = [(1, 'ACRO'),
@@ -5102,10 +5115,40 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_scripting_auxfunc(self):
+        self.start_subtest("Scripting aufunc triggering")
+
+        self.context_push()
+        self.set_parameter('RELAY_PIN', 1)
+        self.context_collect("STATUSTEXT")
+
+        ex = None
+        example_script = "RCIN_test.lua"
+        try:
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_example_script(example_script)
+            self.reboot_sitl()
+            self.wait_parameter_value("SIM_PIN_MASK", 121)
+            self.wait_parameter_value("SIM_PIN_MASK", 123)
+            self.wait_parameter_value("SIM_PIN_MASK", 121)
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.remove_example_script(example_script)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_scripting(self):
         self.test_scripting_hello_world()
         self.test_scripting_simple_loop()
         self.test_scripting_internal_test()
+        self.test_scripting_auxfunc()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,

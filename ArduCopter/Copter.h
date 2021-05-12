@@ -67,6 +67,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 // Configuration
 #include "defines.h"
@@ -112,7 +113,6 @@
 #endif
 #if PRECISION_LANDING == ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
- # include <AP_IRLock/AP_IRLock.h>
 #endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
@@ -128,9 +128,6 @@
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
-#endif
-#if PROXIMITY_ENABLED == ENABLED
- # include <AP_Proximity/AP_Proximity.h>
 #endif
 
 #include <AP_Mount/AP_Mount.h>
@@ -388,7 +385,6 @@ private:
 
     // Failsafe
     struct {
-        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
 
@@ -666,7 +662,6 @@ private:
     void update_altitude();
 
     // Attitude.cpp
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
     void update_throttle_hover();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
@@ -783,7 +778,6 @@ private:
 
     // Log.cpp
     void Log_Write_Control_Tuning();
-    void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
@@ -797,8 +791,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif
-    void Log_Write_Precland();
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void Log_Write_GuidedTarget(ModeGuided::SubMode submode, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
@@ -807,6 +800,8 @@ private:
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
+    // called when an attempt to change into a mode is unsuccessful:
+    void mode_change_failed(const Mode *mode, const char *reason);
     uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
     void update_flight_mode();
     void notify_flight_mode();
@@ -922,7 +917,6 @@ private:
     ModeAuto mode_auto;
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
-    AutoTune autotune;
     ModeAutoTune mode_autotune;
 #endif
 #if MODE_BRAKE_ENABLED == ENABLED

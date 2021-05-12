@@ -212,8 +212,6 @@ public:
     bool use_for_yaw(uint8_t i) const;
     bool use_for_yaw(void) const;
 
-    void set_use_for_yaw(uint8_t i, bool use);
-
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
@@ -433,6 +431,7 @@ private:
 		DRIVER_RM3100   =16,
         DRIVER_MSP      =17,
         DRIVER_SERIAL   =18,
+        DRIVER_MMC5XX3  =19,
     };
 
     bool _driver_enabled(enum DriverType driver_type);

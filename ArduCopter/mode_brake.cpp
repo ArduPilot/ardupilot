@@ -51,7 +51,7 @@ void ModeBrake::run()
     pos_control->update_xy_controller();
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
+    attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), 0.0f);
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable

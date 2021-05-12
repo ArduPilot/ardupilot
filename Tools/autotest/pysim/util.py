@@ -15,7 +15,7 @@ from math import acos, atan2, cos, pi, sqrt
 
 import pexpect
 
-from . rotmat import Matrix3, Vector3
+from pymavlink.rotmat import Vector3, Matrix3
 
 if (sys.version_info[0] >= 3):
     ENCODING = 'ascii'
@@ -150,6 +150,19 @@ def build_examples(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
+def build_replay(board, j=None, debug=False, clean=False):
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    if clean:
+        waf_clean()
+
+    # then build
+    cmd_make = [relwaf(), "replay"]
+    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+    return True
+
 def build_tests(board, j=None, debug=False, clean=False):
     # first configure
     waf_configure(board, j=j, debug=debug)
@@ -228,7 +241,7 @@ def make_safe_filename(text):
     """Return a version of text safe for use as a filename."""
     r = re.compile("([^a-zA-Z0-9_.+-])")
     text.replace('/', '-')
-    filename = r.sub(lambda m: "%" + str(hex(ord(str(m.group(1))))).upper(), text)
+    filename = r.sub(lambda m: str(hex(ord(str(m.group(1))))).upper(), text)
     return filename
 
 

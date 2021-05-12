@@ -27,12 +27,20 @@ T DigitalLPF<T>::apply(const T &sample, float cutoff_freq, float dt) {
     float rc = 1.0f/(M_2PI*cutoff_freq);
     alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
     _output += (sample - _output) * alpha;
+    if (!initialised) {
+        initialised = true;
+        _output = sample;
+    }
     return _output;
 }
 
 template <class T>
 T DigitalLPF<T>::apply(const T &sample) {
     _output += (sample - _output) * alpha;
+    if (!initialised) {
+        initialised = true;
+        _output = sample;
+    }
     return _output;
 }
 
@@ -53,7 +61,8 @@ const T &DigitalLPF<T>::get() const {
 
 template <class T>
 void DigitalLPF<T>::reset(T value) { 
-    _output = value; 
+    _output = value;
+    initialised = true;
 }
     
 ////////////////////////////////////////////////////////////////////////////////////////////

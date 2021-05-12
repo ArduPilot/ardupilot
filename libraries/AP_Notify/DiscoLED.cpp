@@ -47,7 +47,7 @@ DiscoLED::DiscoLED():
 {
 }
 
-bool DiscoLED::hw_init()
+bool DiscoLED::init()
 {
     /* If led sysfs api is present, use it, else use pwm sysfs api to
        drive Disco leds */

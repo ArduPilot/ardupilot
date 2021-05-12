@@ -696,6 +696,10 @@ class AutoTestPlane(AutoTest):
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
+        # don't set current waypoint to 8 unless we're distant from it
+        # or we arrive instantly and never see it as our current
+        # waypoint:
+        self.wait_distance_to_waypoint(8, 100, 10000000)
         self.set_current_waypoint(8)
         self.drain_mav()
         # TODO: reflect on file to find this magic waypoint number?
@@ -1691,7 +1695,7 @@ class AutoTestPlane(AutoTest):
                 % (distance, new_distance)
             )
 
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def rtl_climb_min(self):
         self.wait_ready_to_arm()
@@ -2179,6 +2183,36 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
 
         self.fly_mission("ap-terrain.txt", mission_timeout=600)
+
+    def test_loiter_terrain(self):
+        default_rad = self.get_parameter("WP_LOITER_RAD")
+        self.set_parameter("TERRAIN_FOLLOW", 1) # enable terrain following in loiter
+        self.set_parameter("WP_LOITER_RAD", 2000) # set very large loiter rad to get some terrain changes
+        alt = 200
+        self.takeoff(alt*0.9, alt*1.1)
+        self.set_rc(3, 1500)
+        self.change_mode("LOITER")
+        self.progress("loitering at %um" % alt)
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60*15: # enough time to do one and a bit circles
+                break
+            terrain = self.mav.recv_match(
+                type='TERRAIN_REPORT',
+                blocking=True,
+                timeout=1
+            )
+            if terrain is None:
+                raise NotAchievedException("Did not get TERRAIN_REPORT message")
+            rel_alt = terrain.current_height
+            self.progress("%um above terrain" % rel_alt)
+            if rel_alt > alt*1.2 or rel_alt < alt * 0.8:
+                raise NotAchievedException("Not terrain following")
+        self.progress("Returning home")
+        self.set_parameter("TERRAIN_FOLLOW", 0)
+        self.set_parameter("WP_LOITER_RAD", default_rad)
+        self.fly_home_land_and_disarm(240)
 
     def fly_external_AHRS(self):
         """Fly with external AHRS (VectorNav)"""
@@ -2672,8 +2706,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Enable fence and initiate fence action")
         self.do_fence_enable()
         self.assert_fence_enabled()
-        self.wait_mode("GUIDED") # We should RTL because of fence breach
-        self.delay_sim_time(30)
+        self.wait_mode("GUIDED", timeout=120) # We should RTL because of fence breach
+        self.delay_sim_time(60)
 
         items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(items) != 4:
@@ -2715,6 +2749,52 @@ class AutoTestPlane(AutoTest):
         self.do_fence_disable()
         self.fly_home_land_and_disarm()
 
+    def test_fence_breach_no_return_point_no_inclusion(self):
+        """ Test result when a breach occurs and No fence return point is present and
+            no inclusion fence is present and exclusion fence is present """
+        want_radius = 100 # Fence Return Radius
+
+        self.set_parameter("FENCE_ACTION", 6)
+        self.set_parameter("FENCE_TYPE", 2)
+        self.set_parameter("FENCE_RADIUS", 300)
+        self.set_parameter("RTL_RADIUS", want_radius)
+        self.set_parameter("NAVL1_LIM_BANK", 60)
+
+        self.clear_fence()
+
+        self.delay_sim_time(1)
+        self.wait_ready_to_arm()
+        home_loc = self.mav.location()
+        self.takeoff(alt=50)
+        self.change_mode("CRUISE")
+        self.wait_distance(150, accuracy=20)
+
+        self.progress("Enable fence and initiate fence action")
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+        self.wait_mode("GUIDED") # We should RTL because of fence breach
+        self.delay_sim_time(30)
+
+        items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if len(items) != 0:
+            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (0, len(items)))
+
+        # Check there are no fence return points specified still
+        for fence_loc in items:
+            if fence_loc.command == mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT:
+                raise NotAchievedException(
+                    "Unexpected fence return point found (%u) got %u" %
+                    (fence_loc.command,
+                     mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT))
+
+        # Wait for guided return to vehicle calculated fence return location
+        self.wait_distance_to_location(home_loc, 90, 110)
+        self.wait_circling_point_with_radius(home_loc, 92)
+
+        self.progress("Test complete, disable fence and come home")
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+
     def test_fence_disable_under_breach_action(self):
         """ Fence breach will cause the vehicle to enter guided mode.
             Upon breach clear, check the vehicle is in the expected mode"""
@@ -2737,6 +2817,44 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="RTL", expected_mode="RTL", action=1)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
+
+    def run_auxfunc(self,
+                    function,
+                    level,
+                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+            function,  # p1
+            level,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=want_result
+        )
+
+    def fly_aux_function(self):
+        self.context_collect('STATUSTEXT')
+        self.run_auxfunc(64, 2)  # 64 == reverse throttle
+        self.wait_statustext("RevThrottle: ENABLE", check_context=True)
+        self.run_auxfunc(64, 0)
+        self.wait_statustext("RevThrottle: DISABLE", check_context=True)
+        self.run_auxfunc(65, 2)  # 65 == GPS_DISABLE
+
+        self.start_subtest("Bad auxfunc")
+        self.run_auxfunc(
+            65231,
+            2,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+
+        self.start_subtest("Bad switchpos")
+        self.run_auxfunc(
+            62,
+            17,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED
+        )
 
     def tests(self):
         '''return list of all tests'''
@@ -2823,6 +2941,10 @@ class AutoTestPlane(AutoTest):
              "Tests calculated return point during fence breach when no fence return point present",
              self.test_fence_breach_no_return_point),
 
+            ("FenceNoFenceReturnPointInclusion",
+             "Tests using home as fence return point when none is present, and no inclusion fence is uploaded",
+             self.test_fence_breach_no_return_point_no_inclusion),
+
             ("FenceDisableUnderAction",
              "Tests Disabling fence while undergoing action caused by breach",
              self.test_fence_disable_under_breach_action),
@@ -2879,6 +3001,10 @@ class AutoTestPlane(AutoTest):
              "Test terrain following in mission",
              self.fly_terrain_mission),
 
+            ("Terrain-loiter",
+             "Test terrain following in loiter",
+             self.test_loiter_terrain),
+
             ("ExternalAHRS",
              "Test external AHRS support",
              self.fly_external_AHRS),
@@ -2911,6 +3037,10 @@ class AutoTestPlane(AutoTest):
              "Test IMU temperature calibration",
              self.test_imu_tempcal),
 
+            ("MAV_DO_AUX_FUNCTION",
+             "Test triggering Auxillary Functions via mavlink",
+             self.fly_aux_function),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
@@ -2919,4 +3049,5 @@ class AutoTestPlane(AutoTest):
 
     def disabled_tests(self):
         return {
+            "Terrain-loiter": "Loading of terrain data is not reliable",
         }

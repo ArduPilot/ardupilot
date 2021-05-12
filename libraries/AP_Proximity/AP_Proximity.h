@@ -14,8 +14,16 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_PROXIMITY_ENABLED
+#define HAL_PROXIMITY_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if HAL_PROXIMITY_ENABLED
+
+#include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -81,6 +89,7 @@ public:
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
+    float get_filter_freq() const { return _filt_freq; }
 
     // return sensor health
     Status get_status(uint8_t instance) const;
@@ -180,6 +189,7 @@ private:
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
     AP_Int8 _raw_log_enable;                            // enable logging raw distances
     AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
+    AP_Float _filt_freq;                               // cutoff frequency for low pass filter
 
     void detect_instance(uint8_t instance);
 };
@@ -187,3 +197,5 @@ private:
 namespace AP {
     AP_Proximity *proximity();
 };
+
+#endif // HAL_PROXIMITY_ENABLED

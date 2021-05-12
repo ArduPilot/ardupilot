@@ -113,7 +113,9 @@ jobs:
         if: failure()
         with:
            name: fail-${{matrix.config}}
-           path: /tmp/buildlogs
+           path: |
+             /tmp/buildlogs
+             /__w/ardupilot/ardupilot/logs
            retention-days: 14
 
       - name: Archive .bin artifacts
@@ -214,7 +216,9 @@ jobs:
         if: failure()
         with:
            name: fail-${{matrix.config}}
-           path: /tmp/buildlogs
+           path: |
+             /tmp/buildlogs
+             /__w/ardupilot/ardupilot/logs
            retention-days: 14
 
       - name: Archive .bin artifacts

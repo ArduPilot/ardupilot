@@ -46,6 +46,11 @@ float Plane::get_speed_scaler(void)
         // no speed estimate and not armed, use a unit scaling
         speed_scaler = 1;
     }
+    if (!plane.ahrs.airspeed_sensor_enabled()  && 
+        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        return MIN(speed_scaler, 1.0f) ;
+    }
     return speed_scaler;
 }
 
@@ -363,10 +368,17 @@ void Plane::stabilize_acro(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
-    /*
-      manual rudder for now
-     */
-    steering_control.steering = steering_control.rudder = rudder_input();
+    steering_control.steering = rudder_input();
+
+    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+        // use yaw controller
+        calc_nav_yaw_coordinated(speed_scaler);
+    } else {
+        /*
+          manual rudder
+        */
+        steering_control.rudder = steering_control.steering;
+    }
 }
 
 /*
@@ -386,9 +398,11 @@ void Plane::stabilize()
     if (quadplane.in_tailsitter_vtol_transition(now)) {
         /*
           during transition to vtol in a tailsitter try to raise the
-          nose rapidly while keeping the wings level
+          nose while keeping the wings level
          */
-        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        uint32_t dt = now - quadplane.transition_start_ms;
+        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+        nav_pitch_cd = constrain_float(quadplane.transition_initial_pitch + (quadplane.tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
         nav_roll_cd = 0;
     }
 

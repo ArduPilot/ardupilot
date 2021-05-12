@@ -15,6 +15,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+static const uint8_t COMPASS_LEARN_NUM_SAMPLES = 30;
+static const uint8_t COMPASS_LEARN_BEST_ERROR_THRESHOLD = 50;
+static const uint8_t COMPASS_LEARN_WORST_ERROR_THRESHOLD = 65;
+
 // constructor
 CompassLearn::CompassLearn(Compass &_compass) :
     compass(_compass)
@@ -74,7 +78,7 @@ void CompassLearn::update(void)
         for (uint16_t i=0; i<num_sectors; i++) {
             errors[i] = intensity;
         }
-        
+
         gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: have earth field");
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
@@ -104,16 +108,16 @@ void CompassLearn::update(void)
     }
 
     if (sample_available) {
-// @LoggerMessage: COFS
-// @Description: Current compass learn offsets
-// @Field: TimeUS: Time since system startup
-// @Field: OfsX: best learnt offset, x-axis
-// @Field: OfsY: best learnt offset, y-axis
-// @Field: OfsZ: best learnt offset, z-axis
-// @Field: Var: error of best offset vector
-// @Field: Yaw: best learnt yaw
-// @Field: WVar: error of best learn yaw
-// @Field: N: number of samples used
+        // @LoggerMessage: COFS
+        // @Description: Current compass learn offsets
+        // @Field: TimeUS: Time since system startup
+        // @Field: OfsX: best learnt offset, x-axis
+        // @Field: OfsY: best learnt offset, y-axis
+        // @Field: OfsZ: best learnt offset, z-axis
+        // @Field: Var: error of best offset vector
+        // @Field: Yaw: best learnt yaw
+        // @Field: WVar: error of best learn yaw
+        // @Field: N: number of samples used
         AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
@@ -143,7 +147,9 @@ void CompassLearn::update(void)
         }
 
         // stop updating the offsets once converged
-        if (num_samples > 30 && best_error < 50 && worst_error > 65) {
+        if (num_samples > COMPASS_LEARN_NUM_SAMPLES &&
+            best_error < COMPASS_LEARN_BEST_ERROR_THRESHOLD &&
+            worst_error > COMPASS_LEARN_WORST_ERROR_THRESHOLD) {
             // set the offsets and enable compass for EKF use. Let the
             // EKF learn the remaining compass offset error
             for (uint8_t i=0; i<compass.get_count(); i++) {
@@ -246,7 +252,16 @@ void CompassLearn::process_sample(const struct sample &s)
     best_error = bestv;
     worst_error = worstv;
     best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
+
+    // send current learn state to gcs
+    const uint32_t now = AP_HAL::millis();
+    if (!converged && now - last_learn_progress_sent_ms >= 5000) {
+        float percent = (MIN(num_samples / COMPASS_LEARN_NUM_SAMPLES, 1.0f) + 
+                         MIN(COMPASS_LEARN_BEST_ERROR_THRESHOLD / (best_error + 1.0f), 1.0f) + 
+                         MIN(worst_error / COMPASS_LEARN_WORST_ERROR_THRESHOLD, 1.0f)) / 3.0f * 100.f;
+        gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: %d%%", (int) percent);
+        last_learn_progress_sent_ms = now;
+    }
 }
 
 #endif // COMPASS_LEARN_ENABLED
-

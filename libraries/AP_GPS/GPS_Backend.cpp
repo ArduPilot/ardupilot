@@ -353,8 +353,25 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg,
 
 #ifndef HAL_BUILD_AP_PERIPH
         {
-            const Vector3f antenna_tilt = AP::ahrs().get_rotation_body_to_ned() * offset;
+            // get lag
+            float lag = 0.1;
+            get_lag(lag);
+
+            // get vehicle rotation, projected back in time using the gyro
+            // this is not 100% accurate, but it is good enough for
+            // this test. To do it completely accurately we'd need an
+            // interface into DCM, EKF2 and EKF3 to ask for a
+            // historical attitude. That is far too complex to justify
+            // for this use case
+            const auto &ahrs = AP::ahrs();
+            const Vector3f &gyro = ahrs.get_gyro();
+            Matrix3f rot_body_to_ned = ahrs.get_rotation_body_to_ned();
+            rot_body_to_ned.rotate(gyro * (-lag));
+
+            // apply rotation to the offset to get the Z offset in NED
+            const Vector3f antenna_tilt = rot_body_to_ned * offset;
             const float alt_error = reported_D + antenna_tilt.z;
+
             if (fabsf(alt_error) > permitted_error_length_pct * min_dist) {
                 // the vertical component is out of range, reject it
                 goto bad_yaw;

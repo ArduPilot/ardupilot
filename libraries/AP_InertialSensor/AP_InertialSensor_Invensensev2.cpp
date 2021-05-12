@@ -156,7 +156,7 @@ bool AP_InertialSensor_Invensensev2::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensensev2::start()
 {
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -192,8 +192,11 @@ void AP_InertialSensor_Invensensev2::start()
         break;
     }
 
-    _gyro_instance = _imu.register_gyro(1125, _dev->get_bus_id_devtype(gdev));
-    _accel_instance = _imu.register_accel(1125, _dev->get_bus_id_devtype(adev));
+    if (!_imu.register_gyro(_gyro_instance, 1125, _dev->get_bus_id_devtype(gdev)) ||
+        !_imu.register_accel(_accel_instance, 1125, _dev->get_bus_id_devtype(adev))) {
+        return;
+    }
+
 
     // setup on-sensor filtering and scaling
     _set_filter_and_scaling();
@@ -218,8 +221,6 @@ void AP_InertialSensor_Invensensev2::start()
 
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-
-    _dev->get_semaphore()->give();
 
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);
@@ -664,7 +665,7 @@ bool AP_InertialSensor_Invensensev2::_check_whoami(void)
 
 bool AP_InertialSensor_Invensensev2::_hardware_init(void)
 {
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     // disabled setup of checked registers as it can't cope with bank switching
     _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
@@ -674,7 +675,6 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     if (!_check_whoami()) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -725,15 +725,13 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
 
     if (tries == 5) {
         hal.console->printf("Failed to boot Invensense 5 times\n");
-        _dev->get_semaphore()->give();
         return false;
     }
 
     if (_inv2_type == Invensensev2_ICM20649) {
         _clip_limit = 29.5f * GRAVITY_MSS;
     }
-    _dev->get_semaphore()->give();
-    
+
     return true;
 }
 
@@ -772,8 +770,6 @@ int AP_Invensensev2_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t siz
 int AP_Invensensev2_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
                                                    uint8_t size)
 {
-    assert(buf);
-
     if (_registered) {
         hal.console->printf("Error: can't passthrough when slave is already configured\n");
         return -1;
@@ -862,7 +858,7 @@ void AP_Invensensev2_AuxiliaryBus::_configure_slaves()
 {
     auto &backend = AP_InertialSensor_Invensensev2::from(_ins_backend);
 
-    backend._dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(backend._dev->get_semaphore());
 
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
     if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
@@ -883,7 +879,6 @@ void AP_Invensensev2_AuxiliaryBus::_configure_slaves()
                             BIT_I2C_SLV0_DLY_EN | BIT_I2C_SLV1_DLY_EN |
                             BIT_I2C_SLV2_DLY_EN | BIT_I2C_SLV3_DLY_EN);
 
-    backend._dev->get_semaphore()->give();
 }
 
 int AP_Invensensev2_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,

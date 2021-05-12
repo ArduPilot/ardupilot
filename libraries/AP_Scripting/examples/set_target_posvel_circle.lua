@@ -28,7 +28,7 @@ function circle()
     local cur_freq = 0
     -- increase target speed lineary with time until ramp_up_time_s is reached
     if time <= ramp_up_time_s then 
-        cur_freq = omega_radps*time/ramp_up_time_s
+        cur_freq = omega_radps*(time/ramp_up_time_s)^2
     else 
         cur_freq = omega_radps
     end
@@ -69,10 +69,14 @@ function update()
         end
     else 
         -- calculate test starting location in NED
-        local home = ahrs:get_home()
-        local cur_loc = ahrs:get_position()
-        if home and cur_loc then
-            test_start_location = home:get_distance_NED(cur_loc)
+        local cur_loc = ahrs:get_position()        
+        if cur_loc then
+             test_start_location = cur_loc.get_vector_from_origin_NEU(cur_loc)             
+             if test_start_location then
+                test_start_location:x(test_start_location:x() * 0.01) 
+                test_start_location:y(test_start_location:y() * 0.01) 
+                test_start_location:z(-test_start_location:z() * 0.01) 
+             end             
         end
 
         -- reset some variable as soon as we are not in guided mode

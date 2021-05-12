@@ -123,7 +123,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+timelimit 32000 APM/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

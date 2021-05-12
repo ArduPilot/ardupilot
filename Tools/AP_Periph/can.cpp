@@ -417,7 +417,6 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
     uint8_t received_unique_id[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH];
     uint8_t received_unique_id_len = 0;
     for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++) {
-        assert(received_unique_id_len < UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH);
         const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
         (void) canardDecodeScalar(transfer, bit_offset, 8, false, &received_unique_id[received_unique_id_len]);
     }
@@ -443,7 +442,6 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         // Allocation complete - copying the allocated node ID from the message
         uint8_t allocated_node_id = 0;
         (void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
-        assert(allocated_node_id <= 127);
 
         canardSetLocalNodeID(ins, allocated_node_id);
         printf("Node ID allocated: %d\n", allocated_node_id);
@@ -479,7 +477,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
     if (!initialised) {
         initialised = true;
         hal.rcout->init();
-        hal.util->toneAlarm_init();
+        hal.util->toneAlarm_init(AP_HAL::Util::ALARM_BUZZER);
     }
     fix_float16(req.frequency);
     fix_float16(req.duration);
@@ -1177,6 +1175,9 @@ static void can_wait_node_id(void)
                 // blink LED in recognisable pattern while waiting for DNA
 #ifdef HAL_GPIO_PIN_LED
                 palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#elif defined(HAL_GPIO_PIN_SAFE_LED)
+                // or use safety LED if defined
+                palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
 #else
                 (void)led_pattern;
                 (void)led_idx;
@@ -1184,6 +1185,10 @@ static void can_wait_node_id(void)
                 led_idx = (led_idx+1) % 32;
                 last_led_change = now;
             }
+
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
+            periph.check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
         }
 
 
@@ -1211,12 +1216,6 @@ static void can_wait_node_id(void)
         {
             uid_size = MaxLenOfUniqueIDInRequest;
         }
-
-        // Paranoia time
-        assert(node_id_allocation_unique_id_offset < UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH);
-        assert(uid_size <= MaxLenOfUniqueIDInRequest);
-        assert(uid_size > 0);
-        assert((uid_size + node_id_allocation_unique_id_offset) <= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH);
 
         memmove(&allocation_request[1], &my_unique_id[node_id_allocation_unique_id_offset], uid_size);
 

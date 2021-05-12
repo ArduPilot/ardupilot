@@ -306,17 +306,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
         return;
     }
     if (should_log_imu_raw()) {
-        uint64_t now = AP_HAL::micros64();
-        const struct log_GYR pkt{
-            LOG_PACKET_HEADER_INIT(LOG_GYR_MSG),
-            time_us   : now,
-            instance  : instance,
-            sample_us : sample_us?sample_us:now,
-            GyrX      : gyro.x,
-            GyrY      : gyro.y,
-            GyrZ      : gyro.z
-        };
-        logger->WriteBlock(&pkt, sizeof(pkt));
+        Write_GYR(instance, sample_us, gyro);
     } else {
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
@@ -454,17 +444,7 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
         return;
     }
     if (should_log_imu_raw()) {
-        uint64_t now = AP_HAL::micros64();
-        const struct log_ACC pkt {
-            LOG_PACKET_HEADER_INIT(LOG_ACC_MSG),
-            time_us   : now,
-            instance  : instance,
-            sample_us : sample_us?sample_us:now,
-            AccX      : accel.x,
-            AccY      : accel.y,
-            AccZ      : accel.z
-        };
-        logger->WriteBlock(&pkt, sizeof(pkt));
+        Write_ACC(instance, sample_us, accel);
     } else {
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);

@@ -779,7 +779,11 @@ def write_mcu_config(f):
         f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
     f.write('\n// CPU serial number (12 bytes)\n')
-    f.write('#define UDID_START 0x%08x\n\n' % get_mcu_config('UDID_START', True))
+    udid_start = get_mcu_config('UDID_START')
+    if udid_start is None:
+        f.write('#define UDID_START UID_BASE\n\n')
+    else:
+        f.write('#define UDID_START 0x%08x\n\n' % udid_start)
 
     f.write('\n// APJ board ID (for bootloaders)\n')
     f.write('#define APJ_BOARD_ID %s\n' % get_config('APJ_BOARD_ID'))

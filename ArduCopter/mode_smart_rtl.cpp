@@ -70,7 +70,7 @@ void ModeSmartRTL::wait_cleanup_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_z_controller();
-    attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
+    attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
@@ -92,21 +92,33 @@ void ModeSmartRTL::path_follow_run()
 
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
-        Vector3f next_point;
+        Vector3f dest_NED;
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
-        if (g2.smart_rtl.pop_point(next_point)) {
+        if (g2.smart_rtl.pop_point(dest_NED)) {
             path_follow_last_pop_fail_ms = 0;
-            bool fast_waypoint = true;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
-                next_point.z -= 2.0f;
+                dest_NED.z -= 2.0f;
                 smart_rtl_state = SmartRTL_PreLandPosition;
-                fast_waypoint = false;
+                wp_nav->set_wp_destination_NED(dest_NED);
+            } else {
+                // peek at the next point.  this can fail if the IO task currently has the path semaphore
+                Vector3f next_dest_NED;
+                if (g2.smart_rtl.peek_point(next_dest_NED)) {
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    if (g2.smart_rtl.get_num_points() == 1) {
+                        // this is the very last point, add 2m to the target alt
+                        next_dest_NED.z -= 2.0f;
+                    }
+                    wp_nav->set_wp_destination_next_NED(next_dest_NED);
+                } else {
+                    // this can only happen if peek failed to take the semaphore
+                    // send next point anyway which will cause the vehicle to slow at the next point
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                }
             }
-            // send target to waypoint controller
-            wp_nav->set_wp_destination_NED(next_point);
-            wp_nav->set_fast_waypoint(fast_waypoint);
         } else if (g2.smart_rtl.get_num_points() == 0) {
             // We should never get here; should always have at least
             // two points and the "zero points left" is handled above.
@@ -131,10 +143,10 @@ void ModeSmartRTL::path_follow_run()
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -157,7 +169,7 @@ void ModeSmartRTL::pre_land_position_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_z_controller();
-    attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+    attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
 }
 
 // save current position for use by the smart_rtl flight mode
@@ -176,7 +188,7 @@ bool ModeSmartRTL::get_wp(Location& destination)
     case SmartRTL_PathFollow:
     case SmartRTL_PreLandPosition:
     case SmartRTL_Descend:
-        return wp_nav->get_wp_destination(destination);
+        return wp_nav->get_wp_destination_loc(destination);
     case SmartRTL_Land:
         return false;
     }

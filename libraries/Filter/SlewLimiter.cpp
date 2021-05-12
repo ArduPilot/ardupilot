@@ -30,7 +30,7 @@ SlewLimiter::SlewLimiter(const float &_slew_rate_max, const float &_slew_rate_ta
     slew_rate_max(_slew_rate_max),
     slew_rate_tau(_slew_rate_tau)
 {
-    slew_filter.set_cutoff_frequency(10.0);
+    slew_filter.set_cutoff_frequency(DERIVATIVE_CUTOFF_FREQ);
     slew_filter.reset(0.0);
 }
 
@@ -44,19 +44,90 @@ float SlewLimiter::modifier(float sample, float dt)
         return 1.0;
     }
 
-    // Calculate the slew rate amplitude produced by the unmodified sample
-    // calculate a low pass filtered slew rate
-    float Pterm_slew_rate = slew_filter.apply((fabsf(sample - last_sample)/ dt), dt);
+    // Calculate a low pass filtered slew rate
+    const float slew_rate = slew_filter.apply((sample - last_sample) / dt, dt);
+    last_sample = sample;
 
-    // rectify and apply a decaying envelope filter. The 10 in the
-    // constrain limits the modifier to be between 0.1 and 1.0, so we
-    // never drop PID gains below 10% of configured value
-    float alpha = 1.0 - constrain_float(dt/slew_rate_tau, 0.0, 1.0);
-    slew_amplitude = constrain_float(Pterm_slew_rate, alpha * slew_amplitude, 10 * slew_rate_max);
+    uint32_t now_ms = AP_HAL::millis();
+    const float decay_alpha = fminf(dt, slew_rate_tau) / slew_rate_tau;
+
+    // Store a series of positive slew rate exceedance events
+    if (!_pos_event_stored && slew_rate > slew_rate_max) {
+        if (_pos_event_index >= N_EVENTS) {
+            _pos_event_index = 0;
+        }
+        _pos_event_ms[_pos_event_index] = now_ms;
+        _pos_event_index++;
+        _pos_event_stored = true;
+        _neg_event_stored = false;
+    }
+
+    // Store a series of negative slew rate exceedance events
+    if (!_neg_event_stored && slew_rate < - slew_rate_max) {
+        if (_neg_event_index >= N_EVENTS) {
+            _neg_event_index = 0;
+        }
+        _neg_event_ms[_neg_event_index] = now_ms;
+        _neg_event_index++;
+        _neg_event_stored = true;
+        _pos_event_stored = false;
+    }
+
+    // Find the oldest event time
+    uint32_t oldest_ms = now_ms;
+    for (uint8_t index = 0; index < N_EVENTS; index++) {
+        if (_pos_event_ms[index] < oldest_ms) {
+            oldest_ms = _pos_event_ms[index];
+        }
+        if (_neg_event_ms[index] < oldest_ms) {
+            oldest_ms = _neg_event_ms[index];
+        }
+    }
+
+    // Decay the peak positive and negative slew rate if they are outside the window
+    // Never drop PID gains below 10% of configured value
+    if (slew_rate > _max_pos_slew_rate) {
+        _max_pos_slew_rate = fminf(slew_rate, 10.0f * slew_rate_max);
+        _max_pos_slew_event_ms = now_ms;
+    } else if (now_ms - _max_pos_slew_event_ms > WINDOW_MS) {
+        _max_pos_slew_rate *= (1.0f - decay_alpha);
+    }
+
+    if (slew_rate < -_max_neg_slew_rate) {
+        _max_neg_slew_rate = fminf(-slew_rate, 10.0f * slew_rate_max);
+        _max_neg_slew_event_ms = now_ms;
+    } else if (now_ms - _max_neg_slew_event_ms > WINDOW_MS) {
+        _max_neg_slew_rate *= (1.0f - decay_alpha);
+    }
+
+    const float raw_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
+
+    // Apply a further reduction when the oldest exceedance event falls outside the window rewuired for the
+    // specified number of exceedance events. This prevents spikes due to control mode changed, etc causing
+    // unwanted gain reduction and is only applied to the slew rate used for gain reduction
+    float modifier_input = raw_slew_rate;
+    if (now_ms - oldest_ms > (N_EVENTS + 1) * WINDOW_MS) {
+        const float oldest_time_from_window = 0.001f*(float)(now_ms - oldest_ms - (N_EVENTS + 1) * WINDOW_MS);
+        modifier_input *= expf(-oldest_time_from_window / slew_rate_tau);
+    }
+
+    // Apply a filter to increases in slew rate only to reduce the effect of gusts and large controller
+    // setpoint changeschanges
+    const float attack_alpha = fminf(2.0f * decay_alpha, 1.0f);
+
+    _modifier_slew_rate = (1.0f - attack_alpha) * _modifier_slew_rate + attack_alpha * modifier_input;
+    _modifier_slew_rate = fminf(_modifier_slew_rate, modifier_input);
+
+    _output_slew_rate = (1.0f - attack_alpha) * _output_slew_rate + attack_alpha * raw_slew_rate;
+    _output_slew_rate = fminf(_output_slew_rate, raw_slew_rate);
 
     // Calculate the gain adjustment
-    float mod = slew_rate_max / fmaxf(slew_amplitude, slew_rate_max);
-    last_sample = mod * sample;
+    float mod;
+    if (_modifier_slew_rate > slew_rate_max) {
+        mod = slew_rate_max / (slew_rate_max + MODIFIER_GAIN * (_modifier_slew_rate - slew_rate_max));
+    } else {
+        mod = 1.0f;
+    }
 
     return mod;
 }

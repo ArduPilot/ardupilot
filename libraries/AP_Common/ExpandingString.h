@@ -36,8 +36,8 @@ public:
     // print into the string
     void printf(const char *format, ...) FMT_PRINTF(2,3);
 
-    // append data to the string
-    void append(const char *s, uint32_t len);
+    // append data to the string. s can be null for zero fill
+    bool append(const char *s, uint32_t len);
 
     // destructor
     ~ExpandingString();

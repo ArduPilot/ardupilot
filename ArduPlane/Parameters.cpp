@@ -38,8 +38,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: AUTOTUNE_LEVEL
     // @DisplayName: Autotune level
-    // @Description: Level of aggressiveness of pitch and roll PID gains. Lower values result in a 'softer' tune. Level 6 recommended for most planes.
-    // @Range: 1 10
+    // @Description: Level of aggressiveness of pitch and roll PID gains. Lower values result in a 'softer' tune. Level 6 recommended for most planes. A value of 0 means to keep the current values of RMAX and TCONST for the controllers, tuning only the PID values
+    // @Range: 0 10
     // @Increment: 1
     // @User: Standard
     ASCALAR(autotune_level, "AUTOTUNE_LEVEL",  6),
@@ -848,13 +848,13 @@ const AP_Param::Info Plane::var_info[] = {
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
     
-    // @Group: RLL2SRV_
+    // @Group: RLL
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
+    GOBJECT(rollController,         "RLL",   AP_RollController),
 
-    // @Group: PTCH2SRV_
+    // @Group: PTCH
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
+    GOBJECT(pitchController,        "PTCH",  AP_PitchController),
 
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
@@ -1120,7 +1120,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL.
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor.
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 

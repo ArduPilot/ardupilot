@@ -29,9 +29,11 @@ void ModeManual::update()
     // set sailboat sails
     float desired_mainsail;
     float desired_wingsail;
-    g2.sailboat.get_pilot_desired_mainsail(desired_mainsail, desired_wingsail);
+    float desired_mast_rotation;
+    g2.sailboat.get_pilot_desired_mainsail(desired_mainsail, desired_wingsail, desired_mast_rotation);
     g2.motors.set_mainsail(desired_mainsail);
     g2.motors.set_wingsail(desired_wingsail);
+    g2.motors.set_mast_rotation(desired_wingsail);
 
     // copy RC scaled inputs to outputs
     g2.motors.set_throttle(desired_throttle);

@@ -5,7 +5,10 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_P.h>               // P library
 #include <AC_PID/AC_PID.h>             // PID library
+#include <AC_PID/AC_P_1D.h>            // P library (1-axis)
+#include <AC_PID/AC_P_2D.h>            // P library (2-axis)
 #include <AC_PID/AC_PI_2D.h>           // PI library (2-axis)
+#include <AC_PID/AC_PID_Basic.h>          // PID library (1-axis)
 #include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include "AC_AttitudeControl.h" // Attitude control library
@@ -131,9 +134,6 @@ public:
 
     /// get_vel_z_error_ratio - returns the proportion of error relative to the maximum request
     float get_vel_z_control_ratio() const { return constrain_float(_vel_z_control_ratio, 0.0f, 1.0f); }
-    
-    // returns horizontal error in cm
-    float get_horizontal_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();
@@ -153,9 +153,6 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
-
-    /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_z() { _flags.freeze_ff_z = true; }
 
     ///
     /// xy position controller
@@ -203,6 +200,9 @@ public:
     /// set_pos_target in cm from home
     void set_pos_target(const Vector3f& position);
 
+    /// set position, velocity and acceleration targets
+    void set_pos_vel_accel_target(const Vector3f& pos, const Vector3f& vel, const Vector3f& accel);
+
     /// set_xy_target in cm from home
     void set_xy_target(float x, float y);
 
@@ -214,9 +214,6 @@ public:
 
     /// set_desired_velocity_z - sets desired velocity in cm/s in z axis
     void set_desired_velocity_z(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
-
-    // clear desired velocity feed-forward in z axis
-    void clear_desired_velocity_ff_z() { _flags.use_desvel_ff_z = false; }
 
     // set desired acceleration in cm/s in xy axis
     void set_desired_accel_xy(float accel_lat_cms, float accel_lon_cms) { _accel_desired.x = accel_lat_cms; _accel_desired.y = accel_lon_cms; }
@@ -252,8 +249,11 @@ public:
     ///     set_leash_length() should have been called before this method
     void get_stopping_point_xy(Vector3f &stopping_point) const;
 
-    /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
-    float get_distance_to_target() const;
+    /// get_pos_error - get position error vector between the current and target position
+    const Vector3f get_pos_error() const { return _pos_target - _inav.get_position(); }
+
+    /// get_pos_error_xy - get the length of the position error vector in the xy plane
+    float get_pos_error_xy() const { return norm(_pos_target.x - _inav.get_position().x, _pos_target.y - _inav.get_position().y); }
 
     /// get_bearing_to_target - get bearing to target position in centi-degrees
     int32_t get_bearing_to_target() const;
@@ -269,19 +269,32 @@ public:
     ///     throttle targets will be sent directly to the motors
     void update_vel_controller_xyz();
 
-    /// get desired roll, pitch which should be fed into stabilize controllers
+    /// get desired roll and pitch to be passed to the attitude controller
     float get_roll() const { return _roll_target; }
     float get_pitch() const { return _pitch_target; }
+
+    /// get desired yaw to be passed to the attitude controller
+    float get_yaw_cd() const { return _yaw_target; }
+
+    /// get desired yaw rate to be passed to the attitude controller
+    float get_yaw_rate_cds() const { return _yaw_rate_target; }
+
+
+    /// get desired roll and pitch to be passed to the attitude controller
+    Vector3f get_thrust_vector() const;
+
+    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    bool calculate_yaw_and_rate_yaw();
 
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
 
     /// get pid controllers
-    AC_P& get_pos_z_p() { return _p_pos_z; }
-    AC_P& get_vel_z_p() { return _p_vel_z; }
-    AC_PID& get_accel_z_pid() { return _pid_accel_z; }
-    AC_P& get_pos_xy_p() { return _p_pos_xy; }
+    AC_P_2D& get_pos_xy_p() { return _p_pos_xy; }
+    AC_P_1D& get_pos_z_p() { return _p_pos_z; }
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
+    AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
+    AC_PID& get_accel_z_pid() { return _pid_accel_z; }
 
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
@@ -317,18 +330,16 @@ protected:
             uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
-            uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
-            uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
     } _flags;
 
     // limit flags structure
     struct poscontrol_limit_flags {
-        uint8_t pos_up      : 1;    // 1 if we have hit the vertical position leash limit while going up
-        uint8_t pos_down    : 1;    // 1 if we have hit the vertical position leash limit while going down
-        uint8_t vel_up      : 1;    // 1 if we have hit the vertical velocity limit going up
-        uint8_t vel_down    : 1;    // 1 if we have hit the vertical velocity limit going down
-        uint8_t accel_xy    : 1;    // 1 if we have hit the horizontal accel limit
+        bool pos_up;    // true if we have hit the vertical position leash limit while going up
+        bool pos_down;  // true if we have hit the vertical position leash limit while going down
+        bool vel_up;    // true if we have hit the vertical velocity limit going up
+        bool vel_down;  // true if we have hit the vertical velocity limit going down
+        bool accel_xy;  // true if we have hit the horizontal accel limit
     } _limit;
 
     ///
@@ -341,6 +352,9 @@ protected:
     //          set_target_to_stopping_point_z
     //          init_takeoff
     void run_z_controller();
+
+    // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
+    float get_throttle_with_vibration_override();
 
     // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
     float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f; }
@@ -365,9 +379,6 @@ protected:
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
 
-    /// Proportional controller with piecewise sqrt sections to constrain second derivative
-    static Vector3f sqrt_controller_3D(const Vector3f& error, float p, float second_ord_lim);
-
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
     void check_for_ekf_xy_reset();
@@ -383,11 +394,11 @@ protected:
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
     AP_Float    _lean_angle_max;        // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
-    AC_P        _p_pos_z;
-    AC_P        _p_vel_z;
-    AC_PID      _pid_accel_z;
-    AC_P        _p_pos_xy;
-    AC_PID_2D   _pid_vel_xy;
+    AC_P_2D     _p_pos_xy;              // XY axis position controller to convert distance error to desired velocity
+    AC_P_1D     _p_pos_z;               // Z axis position controller to convert altitude error to desired climb rate
+    AC_PID_2D   _pid_vel_xy;            // XY axis velocity controller to convert velocity error to desired acceleration
+    AC_PID_Basic _pid_vel_z;            // Z axis velocity controller to convert climb rate error to desired acceleration
+    AC_PID      _pid_accel_z;           // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
@@ -407,14 +418,14 @@ protected:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    float       _yaw_target;               // desired yaw in centi-degrees calculated by position controller
+    float       _yaw_rate_target;          // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
-    Vector3f    _pos_error;             // error between desired and actual position in cm
     Vector3f    _vel_desired;           // desired velocity in cm/s
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector3f    _vel_last;              // previous iterations velocity in cm/s
     Vector3f    _accel_desired;         // desired acceleration in cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in cm/s/s
     Vector3f    _accel_error;           // acceleration error in cm/s/s

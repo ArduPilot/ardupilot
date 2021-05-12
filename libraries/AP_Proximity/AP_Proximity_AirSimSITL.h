@@ -15,8 +15,9 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -40,6 +41,9 @@ public:
 
 private:
     SITL::SITL *sitl = AP::sitl();
+    AP_Proximity_Temp_Boundary temp_boundary;
 
 };
 #endif // CONFIG_HAL_BOARD
+
+#endif // HAL_PROXIMITY_ENABLED

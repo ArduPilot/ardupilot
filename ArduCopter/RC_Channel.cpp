@@ -113,10 +113,8 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
-        do_aux_function(ch_option, ch_flag);
-        break;
     case AUX_FUNC::AIRMODE:
-        do_aux_function_change_air_mode(ch_flag);
+        run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -127,7 +125,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
 // do_aux_function_change_mode - change mode based on an aux switch
 // being moved
 void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
-                                                     const AuxSwitchPos ch_flag)
+                                                    const AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
@@ -162,7 +160,7 @@ void RC_Channel_Copter::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
         case AUX_FUNC::FLIP:
@@ -214,12 +212,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
                 // do not allow saving new waypoints while we're in auto or disarmed
                 if (copter.flightmode->mode_number() == Mode::Number::AUTO || !copter.motors->armed()) {
-                    return;
+                    break;
                 }
 
                 // do not allow saving the first waypoint with zero throttle
                 if ((copter.mode_auto.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
-                    return;
+                    break;
                 }
 
                 // create new mission command
@@ -579,11 +577,11 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             copter.mode_acro.air_mode_aux_changed();
 #endif
             break;
-            
+
     default:
-        RC_Channel::do_aux_function(ch_option, ch_flag);
-        break;
+        return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
+    return true;
 }
 
 // change air-mode status

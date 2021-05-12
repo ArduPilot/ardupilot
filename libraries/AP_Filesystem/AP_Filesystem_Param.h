@@ -16,6 +16,7 @@
 #pragma once
 
 #include "AP_Filesystem_backend.h"
+#include <AP_Common/ExpandingString.h>
 
 #include <AP_Param/AP_Param.h>
 
@@ -28,6 +29,7 @@ public:
     int32_t read(int fd, void *buf, uint32_t count) override;
     int32_t lseek(int fd, int32_t offset, int whence) override;
     int stat(const char *pathname, struct stat *stbuf) override;
+    int32_t write(int fd, const void *buf, uint32_t count) override;
 
 private:
     // we maintain two cursors per open file to minimise seeking
@@ -40,11 +42,13 @@ private:
     // maximum size of one packed parameter
     static constexpr uint8_t max_pack_len = AP_MAX_NAME_SIZE + 2 + 4 + 3;
 
+    static constexpr uint16_t pmagic = 0x671b;
+
     // header at front of the file
     struct header {
-        uint16_t magic = 0x671b;
+        uint16_t magic = pmagic;
         uint16_t num_params;
-        uint16_t total_params;
+        uint16_t total_params; // for upload this is total file length
     };
 
     struct cursor {
@@ -62,10 +66,16 @@ private:
         uint16_t start;
         uint16_t count;
         uint32_t file_ofs;
+        uint32_t file_size;
         struct cursor *cursors;
+        ExpandingString *writebuf; // for upload
     } file[max_open_file];
 
     bool token_seek(const struct rfile &r, const uint32_t data_ofs, struct cursor &c);
     uint8_t pack_param(const struct rfile &r, struct cursor &c, uint8_t *buf);
     bool check_file_name(const char *fname);
+
+    // finish uploading parameters
+    bool finish_upload(const rfile &r);
+    bool param_upload_parse(const rfile &r, bool &need_retry);
 };

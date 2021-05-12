@@ -105,7 +105,7 @@ bool AP_ToneAlarm::init()
     if (pNotify->buzzer_enabled() == false) {
         return false;
     }
-    if (!hal.util->toneAlarm_init()) {
+    if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
         return false;
     }
 

@@ -41,13 +41,13 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
 
     // avoidance is not required if no fences
     if (!some_fences_enabled()) {
-        AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
+        Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
         return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // no avoidance required if destination is same as current location
     if (current_loc.same_latlon_as(destination)) {
-        AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
+        Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
         return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
@@ -78,7 +78,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
         if (!_inclusion_polygon_with_margin_ok) {
             report_error(error_id);
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
@@ -88,7 +88,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
         if (!_exclusion_polygon_with_margin_ok) {
             report_error(error_id);
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
@@ -98,7 +98,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, error_id);
         if (!_exclusion_circle_with_margin_ok) {
             report_error(error_id);
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
@@ -109,7 +109,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         if (!_polyfence_visgraph_ok) {
             _shortest_path_ok = false;
             report_error(error_id);
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
@@ -125,7 +125,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _shortest_path_ok = calc_shortest_path(current_loc, destination, error_id);
         if (!_shortest_path_ok) {
             report_error(error_id);
-            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
@@ -140,7 +140,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         Vector2f origin_pos;
         if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
             // convert offset from ekf origin to Location
-            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f));
+            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
             // for first point use current loc as origin
@@ -148,7 +148,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
 
         // convert offset from ekf origin to Location
-        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f));
+        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
         destination_new = destination;
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
@@ -160,12 +160,12 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             _path_idx_returned++;
         }
         // log success
-        AP::logger().Write_OADijkstra(DIJKSTRA_STATE_SUCCESS, 0, _path_idx_returned, _path_numpoints, destination, destination_new);
+        Write_OADijkstra(DIJKSTRA_STATE_SUCCESS, 0, _path_idx_returned, _path_numpoints, destination, destination_new);
         return DIJKSTRA_STATE_SUCCESS;
     }
 
     // we have reached the destination so avoidance is no longer required
-    AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
+    Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
     return DIJKSTRA_STATE_NOT_REQUIRED;
 }
 
@@ -904,4 +904,3 @@ bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
     // we should never reach here but just in case
     return false;
 }
-

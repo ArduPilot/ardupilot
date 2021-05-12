@@ -780,24 +780,26 @@ void CANIface::initOnce(bool enable_irq)
         CriticalSectionLocker lock;
         switch (can_interfaces[self_index_]) {
         case 0:
+#ifdef HAL_CAN_IFACE1_ENABLE
             nvicEnableVector(CAN1_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN1_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN1_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+#endif
             break;
-#ifdef CAN2_TX_IRQn
         case 1:
+#ifdef HAL_CAN_IFACE2_ENABLE
             nvicEnableVector(CAN2_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN2_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN2_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
-            break;
 #endif
-#ifdef CAN3_TX_IRQn
+            break;
         case 2:
+#ifdef HAL_CAN_IFACE3_ENABLE
             nvicEnableVector(CAN3_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN3_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN3_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
-            break;
 #endif
+            break;
         }
         irq_init_ = true;
     }

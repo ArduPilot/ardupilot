@@ -108,6 +108,14 @@
 #define HAL_SUPPORT_RCOUT_SERIAL !defined(HAL_BUILD_AP_PERIPH)
 #endif
 
+#ifndef HAL_DSHOT_ALARM
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#define HAL_DSHOT_ALARM 1
+#else
+#define HAL_DSHOT_ALARM 0
+#endif
+#endif
+
 // by default assume first I2C bus is internal
 #ifndef HAL_I2C_INTERNAL_MASK
 #define HAL_I2C_INTERNAL_MASK 1

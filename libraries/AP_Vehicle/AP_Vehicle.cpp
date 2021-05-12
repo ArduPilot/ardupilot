@@ -6,6 +6,9 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/sdcard.h>
+#endif
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -86,6 +89,14 @@ void AP_Vehicle::setup()
 
     load_parameters();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
+        // user wants the SDcard slower, we need to remount
+        sdcard_stop();
+        sdcard_retry();
+    }
+#endif
+
     // initialise the main loop scheduler
     const AP_Scheduler::Task *tasks;
     uint8_t task_count;
@@ -129,6 +140,10 @@ void AP_Vehicle::setup()
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
+
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+    SRV_Channels::init();
+#endif
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
@@ -333,6 +348,11 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 
     // do not process incoming mavlink messages while we delay:
     hal.scheduler->register_delay_callback(nullptr, 5);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // need to ensure the ack goes out:
+    hal.serial(0)->flush();
+#endif
 
     // delay to give the ACK a chance to get out, the LEDs to flash,
     // the IO board safety to be forced on, the parameters to flush, ...

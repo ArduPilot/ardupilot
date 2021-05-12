@@ -5,10 +5,10 @@ from lxml import etree
 from emit import Emit
 from param import known_param_fields, known_units
 
-# Emit APM documentation in an machine readable XML format
+# Emit ArduPilot documentation in an machine readable XML format
 class XmlEmit(Emit):
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         self.wiki_fname = 'apm.pdef.xml'
         self.f = open(self.wiki_fname, mode='w')
         self.preamble = '''<?xml version="1.0" encoding="utf-8"?>
@@ -21,7 +21,7 @@ class XmlEmit(Emit):
         self.current_element = self.vehicles
 
     def close(self):
-        etree.indent(self.paramfile)
+        # etree.indent(self.paramfile)  # not available on thor, Ubuntu 16.04
         pretty_xml = etree.tostring(self.paramfile, pretty_print=True, encoding='unicode')
         self.f.write(pretty_xml)
         self.f.close()

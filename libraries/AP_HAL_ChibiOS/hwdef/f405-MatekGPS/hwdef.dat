@@ -194,9 +194,15 @@ define AIRSPEED_MAX_SENSORS 1
 # -------------------- MSP --------------------------------
 define HAL_PERIPH_ENABLE_MSP
 define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 4
 
 # ----------------- rangefinder,ADSB ----------------------
 define HAL_PERIPH_ENABLE_RANGEFINDER
+define RANGEFINDER_MAX_INSTANCES 1
+
+# disable rangefinder by default
+define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
+
 define HAL_PERIPH_ENABLE_ADSB
 
 # ------------------ BATTERY Monitor -----------------------

@@ -39,7 +39,7 @@ public:
     void get_stopping_point_xy(Vector3f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_xy(); }
 
     /// get bearing to target in centi-degrees
     int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
@@ -53,6 +53,7 @@ public:
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll(); }
     float get_pitch() const { return _pos_control.get_pitch(); }
+    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 

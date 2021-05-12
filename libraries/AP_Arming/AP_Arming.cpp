@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
-    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
+    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
     // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters,64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth,524288:FFT
     // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters,64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth,524288:FFT
     // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
@@ -413,6 +413,12 @@ bool AP_Arming::compass_checks(bool report)
 
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
+
+        // check for first compass being disabled but 2nd or 3rd being enabled
+        if (!_compass.use_for_yaw(0) && (_compass.get_num_enabled() > 0)) {
+            check_failed(ARMING_CHECK_COMPASS, report, "Compass1 disabled but others enabled");
+            return false;
+        }
 
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
@@ -843,6 +849,7 @@ bool AP_Arming::system_checks(bool report)
 // check nothing is too close to vehicle
 bool AP_Arming::proximity_checks(bool report) const
 {
+#if HAL_PROXIMITY_ENABLED
     const AP_Proximity *proximity = AP::proximity();
     // return true immediately if no sensor present
     if (proximity == nullptr) {
@@ -857,6 +864,7 @@ bool AP_Arming::proximity_checks(bool report) const
         check_failed(report, "check proximity sensor");
         return false;
     }
+#endif
 
     return true;
 }
@@ -918,6 +926,7 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_CANManager::Driver_Type_EFI_NWPMU:
                 case AP_CANManager::Driver_Type_USD1:
+                case AP_CANManager::Driver_Type_MPPT_PacketDigital:
                 case AP_CANManager::Driver_Type_None:
                     break;
             }
@@ -1164,6 +1173,11 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         if (!rc_arm_checks(method)) {
             return false;
         }
+    }
+
+    // enable any pending dshot commands to be flushed before sending actual throttle values
+    if (!hal.rcout->prepare_for_arming()) {
+        return false;
     }
 
 #if HAL_GYROFFT_ENABLED

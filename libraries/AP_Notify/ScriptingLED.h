@@ -34,9 +34,10 @@ public:
 
     void get_rgb(uint8_t& red, uint8_t& green, uint8_t& blue);
 
+    bool init() override  {return true;};
+
 protected:
 
-    bool hw_init() override  {return true;};
     bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override {return true;}
 
 private:

@@ -203,7 +203,10 @@ void Plane::calc_airspeed_errors()
             // normal AUTO mode and new_airspeed variable was set by DO_CHANGE_SPEED command while in AUTO mode
             if (new_airspeed_cm > 0) {
                 target_airspeed_cm = new_airspeed_cm;
-           }
+            } else {
+                // fallover to normal airspeed
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
         }
     } else {
         // Normal airspeed target for all other cases
@@ -235,8 +238,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (aparm.airspeed_max * 100))
-        target_airspeed_cm = (aparm.airspeed_max * 100);
+    target_airspeed_cm = constrain_int32(target_airspeed_cm, aparm.airspeed_min*100, aparm.airspeed_max*100);
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
@@ -286,7 +288,7 @@ void Plane::update_loiter(uint16_t radius)
                 (control_mode == &mode_auto || control_mode == &mode_guided) &&
                 auto_state.crosstrack &&
                 current_loc.get_distance(next_WP_loc) > radius*3) ||
-               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
+               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == QuadPlane::RTL_MODE::SWITCH_QRTL)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
           navigate to it like in auto-mode for normal crosstrack behavior

@@ -32,6 +32,19 @@ float Vector2<T>::length(void) const
     return norm(x, y);
 }
 
+// limit vector to a given length. returns true if vector was limited
+template <typename T>
+bool Vector2<T>::limit_length(float max_length)
+{
+    const float len = length();
+    if ((len > max_length) && is_positive(len)) {
+        x *= (max_length / len);
+        y *= (max_length / len);
+        return true;
+    }
+    return false;
+}
+
 // dot product
 template <typename T>
 T Vector2<T>::operator *(const Vector2<T> &v) const

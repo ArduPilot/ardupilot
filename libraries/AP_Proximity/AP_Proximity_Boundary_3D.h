@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Proximity.h"
+
+#if HAL_PROXIMITY_ENABLED
+
 #include <Filter/LowPassFilter.h>
 
 #define PROXIMITY_NUM_SECTORS         8       // number of sectors
@@ -25,9 +29,10 @@
 #define PROXIMITY_BOUNDARY_DIST_MIN   0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
 #define PROXIMITY_FILT_RESET_TIME     1000    // reset filter if last distance was pushed more than this many ms away
+#define PROXIMITY_FACE_RESET_MS       1000    // face will be reset if not updated within this many ms
 
-class AP_Proximity_Boundary_3D 
-{ 
+class AP_Proximity_Boundary_3D
+{
 public:
     // constructor. This incorporates initialisation as well.
 	AP_Proximity_Boundary_3D();
@@ -66,18 +71,10 @@ public:
     void set_face_attributes(const Face &face, float pitch, float yaw, float distance);
     void set_face_attributes(const Face &face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
 
-    // add a distance to the boundary if it is shorter than any other provided distance since the last time the boundary was reset
-    // pitch and yaw are in degrees, distance is in meters
-    void add_distance(float pitch, float yaw, float distance);
-    void add_distance(float yaw, float distance) { add_distance(0, yaw, distance); }
-
     // update boundary points used for simple avoidance based on a single sector and pitch distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
     void update_boundary(const Face &face);
-
-    // update middle layer boundary points
-    void update_middle_boundary();
 
     // reset boundary.  marks all distances as invalid
     void reset();
@@ -85,6 +82,9 @@ public:
     // Reset this location, specified by Face object, back to default
     // i.e Distance is marked as not-valid
     void reset_face(const Face &face);
+
+    // check if a face has valid distance even if it was updated a long time back
+    void check_face_timeout();
 
     // get distance for a face.  returns true on success and fills in distance argument with distance in meters
     bool get_distance(const Face &face, float &distance) const;
@@ -114,6 +114,9 @@ public:
     // get raw and filtered distances in 8 directions per layer.
     bool get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
 
+    // pass down filter cut-off freq from params
+    void set_filter_freq(float filt_freq) { _filter_freq = filt_freq; }
+
     // sectors
     static_assert(PROXIMITY_NUM_SECTORS == 8, "PROXIMITY_NUM_SECTOR must be 8");
     const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
@@ -139,6 +142,9 @@ private:
     // The resultant is packed into a Boundary Location object and returned by reference as "face"
     bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const WARN_IF_UNUSED;
 
+    // Apply a new cutoff_freq to low-pass filter
+    void apply_filter_freq(float cutoff_freq);
+
     // Apply low pass filter on the raw distance
     void set_filtered_distance(const Face &face, float distance);
 
@@ -154,5 +160,34 @@ private:
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
+    float _filter_freq;                                                 // cutoff freq of low pass filter
 };
 
+// This class gives an easy way of making a temporary boundary, used for "sorting" distances.
+// When unkown number of distances at various orientations are sent we store the least distance in the temporary boundary.
+// After all the messages are received, we copy the contents of the temporary boundary and put it in the main 3-D boundary.
+class AP_Proximity_Temp_Boundary
+{
+public:
+    // constructor. This incorporates initialisation as well.
+	AP_Proximity_Temp_Boundary() { reset(); }
+
+    // reset the temporary boundary. This fills in distances with FLT_MAX
+    void reset();
+
+    // add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
+    // pitch and yaw are in degrees, distance is in meters
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance);
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, PID_TUNING_YAW, distance); }
+
+    // fill the original 3D boundary with the contents of this temporary boundary
+    void update_3D_boundary(AP_Proximity_Boundary_3D &boundary);
+
+private:
+
+    float _distances[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];      // distance to closest object within each sector and layer. Will start with FLT_MAX, and then be changed to a valid distance if needed
+    float _angle[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
+    float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
+};
+
+#endif // HAL_PROXIMITY_ENABLED

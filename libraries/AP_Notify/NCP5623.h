@@ -23,8 +23,8 @@
 class NCP5623 : public RGBLed {
 public:
     NCP5623(uint8_t bus);
+    bool init(void) override;
 protected:
-    bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;

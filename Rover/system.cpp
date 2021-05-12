@@ -65,10 +65,13 @@ void Rover::init_ardupilot()
     AP::compass().init();
 
     // initialise rangefinder
+    rangefinder.set_log_rfnd_bit(MASK_LOG_RANGEFINDER);
     rangefinder.init(ROTATION_NONE);
 
+#if HAL_PROXIMITY_ENABLED
     // init proximity sensor
     g2.proximity.init();
+#endif
 
     // init beacons used for non-gps position estimation
     g2.beacon.init();

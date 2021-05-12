@@ -215,8 +215,21 @@ float Mode::AutoYaw::yaw()
 // messages (positive is clockwise, negative is counter clockwise)
 float Mode::AutoYaw::rate_cds() const
 {
-    if (_mode == AUTO_YAW_RATE) {
+    switch (_mode) {
+
+    case AUTO_YAW_HOLD:
+    case AUTO_YAW_ROI:
+    case AUTO_YAW_FIXED:
+    case AUTO_YAW_LOOK_AHEAD:
+    case AUTO_YAW_RESETTOARMEDYAW:
+    case AUTO_YAW_CIRCLE:
+        return 0.0f;
+
+    case AUTO_YAW_RATE:
         return _rate_cds;
+
+    case AUTO_YAW_LOOK_AT_NEXT_WP:
+        return copter.wp_nav->get_yaw_rate_cds();
     }
 
     // return zero turn rate (this should never happen)

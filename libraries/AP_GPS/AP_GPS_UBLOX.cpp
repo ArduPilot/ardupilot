@@ -979,16 +979,21 @@ AP_GPS_UBLOX::_parse_gps(void)
                         gnssCount++;
                     }
                 }
-
                 for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
-                    // Reserve an equal portion of channels for all enabled systems
+                    // Reserve an equal portion of channels for all enabled systems that supports it
                     if(gps._gnss_mode[state.instance] & (1 << _buffer.gnss.configBlock[i].gnssId)) {
-                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId) {
+                        if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId && (_hardware_generation > UBLOX_M8 || GNSS_GALILEO !=_buffer.gnss.configBlock[i].gnssId)) {
                             _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
                             _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
                         } else {
-                            _buffer.gnss.configBlock[i].resTrkCh = 1;
-                            _buffer.gnss.configBlock[i].maxTrkCh = 3;
+                            if(GNSS_SBAS ==_buffer.gnss.configBlock[i].gnssId) {
+                                _buffer.gnss.configBlock[i].resTrkCh = 1;
+                                _buffer.gnss.configBlock[i].maxTrkCh = 3;
+                            }
+                            if(GNSS_GALILEO ==_buffer.gnss.configBlock[i].gnssId) {
+                                _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
+                                _buffer.gnss.configBlock[i].maxTrkCh = 8; //Per the M8 receiver description UBX-13003221 - R16, 4.1.1.3 it is not recommended to set the number of galileo channels higher then eigh
+                            }
                         }
                         _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
                     } else {
@@ -1346,7 +1351,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                 MB_Debug("RELPOSNED ITOW %u %u\n", unsigned(_buffer.relposned.iTOW), unsigned(_last_relposned_itow));
             }
             _last_relposned_itow = _buffer.relposned.iTOW;
-            _last_relposned_ms = AP_HAL::millis();
 
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
                 ((_buffer.relposned.flags & invalid_mask) == 0) &&
@@ -1355,6 +1359,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                                           _buffer.relposned.relPosD*0.01)) {
                 state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
                 state.have_gps_yaw_accuracy = true;
+                _last_relposned_ms = AP_HAL::millis();
             } else {
                 state.have_gps_yaw_accuracy = false;
             }
@@ -1522,7 +1527,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         // PVT and the new RELPOSNED message so that we give a
         // consistent view
         if (AP_HAL::millis() - _last_relposned_ms > 400) {
-            // we have stopped receiving RELPOSNED messages, disable yaw reporting
+            // we have stopped receiving valid RELPOSNED messages, disable yaw reporting
             state.have_gps_yaw = false;
         } else if (_last_relposned_itow != _last_pvt_itow) {
             // wait until ITOW matches

@@ -13,13 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Avoidance/AP_OADatabase.h>
-#include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -53,6 +53,21 @@ bool AP_Proximity_Backend::get_active_layer_distances(uint8_t layer, AP_Proximit
 void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
 {
     state.status = status;
+}
+
+// timeout faces that have not received data recently and update filter frequencies
+void AP_Proximity_Backend::boundary_3D_checks()
+{
+    // set the cutoff freq for low pass filter
+    boundary.set_filter_freq(frontend.get_filter_freq());
+
+    // check if any face has valid distance when it should not
+    const uint32_t now_ms = AP_HAL::millis();
+    // run this check every PROXIMITY_BOUNDARY_3D_TIMEOUT_MS
+    if ((now_ms - _last_timeout_check_ms) > PROXIMITY_BOUNDARY_3D_TIMEOUT_MS) {
+        _last_timeout_check_ms = now_ms;
+        boundary.check_face_timeout();
+    }
 }
 
 // correct an angle (in degrees) based on the orientation and yaw correction parameters
@@ -205,3 +220,5 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
 
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }
+
+#endif // HAL_PROXIMITY_ENABLED

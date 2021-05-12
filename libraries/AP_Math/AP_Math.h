@@ -297,6 +297,11 @@ float calc_lowpass_alpha_dt(float dt, float cutoff_freq);
 void fill_nanf(float *f, uint16_t count);
 #endif
 
+// from https://embeddedartistry.com/blog/2018/07/12/simple-fixed-point-conversion-in-c/
+// Convert to/from 16-bit fixed-point and float
+float fixed2float(const uint16_t input, const uint8_t fractional_bits = 8);
+uint16_t float2fixed(const float input, const uint8_t fractional_bits = 8);
+
 /*
   calculate turn rate in deg/sec given a bank angle and airspeed for a
   fixed wing aircraft

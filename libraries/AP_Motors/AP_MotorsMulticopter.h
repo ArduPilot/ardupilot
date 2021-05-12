@@ -50,7 +50,7 @@ public:
 
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
-    virtual float       get_throttle_hover() const override { return _throttle_hover; }
+    virtual float       get_throttle_hover() const override { return constrain_float(_throttle_hover, AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX); }
 
     // passes throttle directly to all motors for ESC calibration.
     //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()

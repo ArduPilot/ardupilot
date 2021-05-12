@@ -334,9 +334,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // the time when the last HEARTBEAT message arrived from a GCS
-        uint32_t last_heartbeat_ms;
-
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
         uint32_t short_timer_ms;
 
@@ -348,6 +345,7 @@ private:
     } failsafe;
 
     enum Landing_ApproachStage {
+        RTL,
         LOITER_TO_ALT,
         ENSURE_RADIUS,
         WAIT_FOR_BREAKOUT,
@@ -862,7 +860,6 @@ private:
     // Log.cpp
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
-    void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();

@@ -45,6 +45,8 @@ NCP5623::NCP5623(uint8_t bus)
 bool NCP5623::write(uint8_t reg, uint8_t data)
 {
     uint8_t msg[1] = { 0x00 };
+    // scale to 0 to 0x1F
+    data = (data * 255U) / 0x1FU;
     msg[0] = ((reg & 0xe0) | (data & 0x1f));
     bool ret = _dev->transfer(msg, 1, nullptr, 0);
     return ret;
@@ -61,7 +63,7 @@ bool NCP5623::write_pwm(uint8_t _rgb[3])
     return true;
 }
 
-bool NCP5623::hw_init(void)
+bool NCP5623::init(void)
 {
     uint8_t addrs[] = { NCP5623_LED_I2C_ADDR, NCP5623_C_LED_I2C_ADDR };
     for (uint8_t i=0; i<ARRAY_SIZE(addrs); i++) {

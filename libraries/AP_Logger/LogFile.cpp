@@ -207,68 +207,6 @@ void AP_Logger::Write_RSSI()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const Vector3f &gyro = ins.get_gyro(imu_instance);
-    const Vector3f &accel = ins.get_accel(imu_instance);
-    const struct log_IMU pkt{
-        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-        time_us : time_us,
-        instance: imu_instance,
-        gyro_x  : gyro.x,
-        gyro_y  : gyro.y,
-        gyro_z  : gyro.z,
-        accel_x : accel.x,
-        accel_y : accel.y,
-        accel_z : accel.z,
-        gyro_error  : ins.get_gyro_error_count(imu_instance),
-        accel_error : ins.get_accel_error_count(imu_instance),
-        temperature : ins.get_temperature(imu_instance),
-        gyro_health : (uint8_t)ins.get_gyro_health(imu_instance),
-        accel_health : (uint8_t)ins.get_accel_health(imu_instance),
-        gyro_rate : ins.get_gyro_rate_hz(imu_instance),
-        accel_rate : ins.get_accel_rate_hz(imu_instance),
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write an raw accel/gyro data packet
-void AP_Logger::Write_IMU()
-{
-    const uint64_t time_us = AP_HAL::micros64();
-
-    const AP_InertialSensor &ins = AP::ins();
-
-    uint8_t n = MAX(ins.get_accel_count(), ins.get_gyro_count());
-    for (uint8_t i=0; i<n; i++) {
-        Write_IMU_instance(time_us, i);
-    }
-}
-
-void AP_Logger::Write_Vibration()
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const uint64_t time_us = AP_HAL::micros64();
-    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-        if (!ins.use_accel(i)) {
-            continue;
-        }
-
-        const Vector3f vibration = ins.get_vibration_levels(i);
-        const struct log_Vibe pkt{
-            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-            time_us     : time_us,
-            imu         : i,
-            vibe_x      : vibration.x,
-            vibe_y      : vibration.y,
-            vibe_z      : vibration.z,
-            clipping  : ins.get_accel_clip_count(i)
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
-}
-
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               const MAV_RESULT result,
                               bool was_command_long)
@@ -498,6 +436,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         D               : info.D,
         FF              : info.FF,
         Dmod            : info.Dmod,
+        slew_rate       : info.slew_rate,
         limit           : info.limit
     };
     WriteBlock(&pkt, sizeof(pkt));
@@ -546,6 +485,7 @@ void AP_Logger::Write_Beacon(AP_Beacon &beacon)
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
 
+#if HAL_PROXIMITY_ENABLED
 // Write proximity sensor distances
 void AP_Logger::Write_Proximity(AP_Proximity &proximity)
 {
@@ -608,6 +548,7 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
         }
     }
 }
+#endif
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
@@ -623,60 +564,6 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
         D               : breadcrumb.z
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
-}
-
-void AP_Logger::Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
-{
-    const struct log_OABendyRuler pkt{
-        LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
-        time_us     : AP_HAL::micros64(),
-        type        : type,
-        active      : active,
-        target_yaw  : (uint16_t)wrap_360(target_yaw),
-        yaw         : (uint16_t)wrap_360(AP::ahrs().yaw_sensor * 0.01f),
-        target_pitch: (uint16_t)target_pitch,
-        resist_chg  : resist_chg,
-        margin      : margin,
-        final_lat   : final_dest.lat,
-        final_lng   : final_dest.lng,
-        final_alt   : final_dest.alt,
-        oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng,
-        oa_alt      : oa_dest.alt
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest)
-{
-    struct log_OADijkstra pkt{
-        LOG_PACKET_HEADER_INIT(LOG_OA_DIJKSTRA_MSG),
-        time_us     : AP_HAL::micros64(),
-        state       : state,
-        error_id    : error_id,
-        curr_point  : curr_point,
-        tot_points  : tot_points,
-        final_lat   : final_dest.lat,
-        final_lng   : final_dest.lng,
-        oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, bool back_up)
-{
-    struct log_SimpleAvoid pkt{
-        LOG_PACKET_HEADER_INIT(LOG_SIMPLE_AVOID_MSG),
-        time_us         : AP_HAL::micros64(),
-        state           : state,
-        desired_vel_x   : desired_vel.x * 0.01f,
-        desired_vel_y   : desired_vel.y * 0.01f,
-        modified_vel_x  : modified_vel.x * 0.01f,
-        modified_vel_y  : modified_vel.y * 0.01f,
-        backing_up      : back_up,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp)

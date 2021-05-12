@@ -618,7 +618,8 @@ class chibios(Board):
             '--specs=nosys.specs',
             '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
             '-D__USE_CMSIS',
-            '-Werror=deprecated-declarations'
+            '-Werror=deprecated-declarations',
+            '-DNDEBUG=1'
         ]
         if not cfg.options.Werror:
             env.CFLAGS += [
@@ -690,6 +691,13 @@ class chibios(Board):
         else:
             cfg.msg("Enabling malloc guard", "no")
             
+        if cfg.env.ENABLE_STATS:
+            cfg.msg("Enabling ChibiOS thread statistics", "yes")
+            env.CFLAGS += [ '-DHAL_ENABLE_THREAD_STATISTICS' ]
+            env.CXXFLAGS += [ '-DHAL_ENABLE_THREAD_STATISTICS' ]
+        else:
+            cfg.msg("Enabling ChibiOS thread statistics", "no")
+
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [

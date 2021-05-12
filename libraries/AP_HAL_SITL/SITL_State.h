@@ -69,7 +69,8 @@ public:
         ArduCopter,
         Rover,
         ArduPlane,
-        ArduSub
+        ArduSub,
+        Blimp
     };
 
     int gps_pipe(uint8_t index);
@@ -103,7 +104,7 @@ public:
     uint16_t current2_pin_value;  // pin 14
 
     // paths for UART devices
-    const char *_uart_path[7] {
+    const char *_uart_path[9] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
@@ -111,6 +112,8 @@ public:
         "GPS2",
         "tcp:5",
         "tcp:6",
+        "tcp:7",
+        "tcp:8",
     };
     std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
 

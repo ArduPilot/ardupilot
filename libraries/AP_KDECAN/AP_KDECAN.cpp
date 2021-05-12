@@ -570,17 +570,10 @@ void AP_KDECAN::update()
     if (_rc_out_sem.take(1)) {
         for (uint8_t i = 0; i < KDECAN_MAX_NUM_ESCS; i++) {
             if ((_esc_present_bitmask & (1 << i)) == 0) {
+                _scaled_output[i] = 0;
                 continue;
             }
-
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
-
-            if (SRV_Channels::function_assigned(motor_function)) {
-                float norm_output = SRV_Channels::get_output_norm(motor_function);
-                _scaled_output[i] = uint16_t((norm_output + 1.0f) / 2.0f * 2000.0f);
-            } else {
-                _scaled_output[i] = 0;
-            }
+            _scaled_output[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
 
         _rc_out_sem.give();
@@ -628,13 +621,12 @@ void AP_KDECAN::update()
 bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
 {
     if (!_enum_sem.take(1)) {
-        debug_can(AP_CANManager::LOG_DEBUG, "failed to get enumeration semaphore on read");
-        snprintf(reason, reason_len ,"Enumeration state unknown");
+        snprintf(reason, reason_len ,"enumeration state unknown");
         return false;
     }
 
     if (_enumeration_state != ENUMERATION_STOPPED) {
-        snprintf(reason, reason_len ,"Enumeration running");
+        snprintf(reason, reason_len, "enumeration running");
         _enum_sem.give();
         return false;
     }
@@ -652,17 +644,17 @@ bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
     uint8_t num_present_escs = __builtin_popcount(_esc_present_bitmask);
 
     if (num_present_escs < num_expected_motors) {
-        snprintf(reason, reason_len, "Too few ESCs detected");
+        snprintf(reason, reason_len, "too few ESCs detected (%u of %u)", (int)num_present_escs, (int)num_expected_motors);
         return false;
     }
 
     if (num_present_escs > num_expected_motors) {
-        snprintf(reason, reason_len, "Too many ESCs detected");
+        snprintf(reason, reason_len, "too many ESCs detected (%u > %u)", (int)num_present_escs, (int)num_expected_motors);
         return false;
     }
 
     if (_esc_max_node_id != num_expected_motors) {
-        snprintf(reason, reason_len, "Wrong node IDs, run enumeration");
+        snprintf(reason, reason_len, "wrong node IDs (%u!=%u), run enumeration", (int)_esc_max_node_id, (int)num_expected_motors);
         return false;
     }
 

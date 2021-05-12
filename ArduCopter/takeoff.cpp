@@ -146,7 +146,7 @@ void Mode::auto_takeoff_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !copter.ap.auto_armed) {
         make_safe_spool_down();
-        wp_nav->shift_wp_origin_to_current_pos();
+        wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         return;
     }
 
@@ -165,7 +165,7 @@ void Mode::auto_takeoff_run()
         set_land_complete(false);
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
-        wp_nav->shift_wp_origin_to_current_pos();
+        wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
         attitude_control->set_yaw_target_to_current_heading();
@@ -175,7 +175,6 @@ void Mode::auto_takeoff_run()
     }
 
     // check if we are not navigating because of low altitude
-    float nav_roll = 0.0f, nav_pitch = 0.0f;
     if (auto_takeoff_no_nav_active) {
         // check if vehicle has reached no_nav_alt threshold
         if (inertial_nav.get_altitude() >= auto_takeoff_no_nav_alt_cm) {
@@ -192,16 +191,16 @@ void Mode::auto_takeoff_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
+    Vector3f thrustvector{0, 0, -GRAVITY_MSS * 100.0f};
     if (!auto_takeoff_no_nav_active) {
-        nav_roll = wp_nav->get_roll();
-        nav_pitch = wp_nav->get_pitch();
+        thrustvector = wp_nav->get_thrust_vector();
     }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     copter.pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+    attitude_control->input_thrust_vector_rate_heading(thrustvector, target_yaw_rate);
 }
 
 void Mode::auto_takeoff_set_start_alt(void)

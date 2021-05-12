@@ -198,6 +198,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
+        echo "Building G4-ESC peripheral fw"
+        $waf configure --board G4-ESC
+        $waf clean
+        $waf AP_Periph
+        echo "Building FreeflyRTK peripheral fw"
+        $waf configure --board FreeflyRTK
+        $waf clean
+        $waf AP_Periph
         continue
     fi
 

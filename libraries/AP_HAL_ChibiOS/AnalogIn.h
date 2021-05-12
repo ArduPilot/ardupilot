@@ -88,6 +88,7 @@ private:
     static adcsample_t *samples;
     static uint32_t sample_sum[];
     static uint32_t sample_count;
+    HAL_Semaphore _semaphore;
 };
 
 #endif // HAL_USE_ADC

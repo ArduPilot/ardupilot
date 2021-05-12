@@ -391,7 +391,9 @@ bool AP_AK09916_BusDriver_Auxiliary::block_read(uint8_t reg, uint8_t *buf, uint3
          * We can only read a block when reading the block of sample values -
          * calling with any other value is a mistake
          */
-        assert(reg == REG_ST1);
+        if (reg != REG_ST1) {
+            return false;
+        }
 
         int n = _slave->read(buf);
         return n == static_cast<int>(size);

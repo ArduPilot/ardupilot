@@ -326,6 +326,8 @@ void GCS_MAVLINK::send_distance_sensor()
     // sending them here, and allow the later proximity code to manage
     // them
     bool filter_possible_proximity_sensors = false;
+
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity != nullptr) {
         for (uint8_t i = 0; i < proximity->num_sensors(); i++) {
@@ -334,6 +336,7 @@ void GCS_MAVLINK::send_distance_sensor()
             }
         }
     }
+#endif
 
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
@@ -371,6 +374,7 @@ void GCS_MAVLINK::send_rangefinder() const
 
 void GCS_MAVLINK::send_proximity()
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity == nullptr) {
         return; // this is wrong, but pretend we sent data and don't requeue
@@ -428,6 +432,7 @@ void GCS_MAVLINK::send_proximity()
                 0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
                 0, 0, nullptr, 0);
     }
+#endif // HAL_PROXIMITY_ENABLED
 }
 
 // report AHRS2 state
@@ -1894,9 +1899,9 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
     do {
-        WITH_SEMAPHORE(_statustext_sem);
         // send_text can be called from multiple threads; we must
         // protect the "text" member with _statustext_sem
+        WITH_SEMAPHORE(_statustext_queue.semaphore());
         hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
         memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
 
@@ -1916,6 +1921,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
             break;
         }
 
+        statustext.entry_created_ms = AP_HAL::millis16();
         statustext.msg.severity = severity;
 
         static uint16_t msgid;
@@ -1954,11 +1960,6 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
                 break;
             }
         }
-
-        // try and send immediately if possible
-        if (hal.scheduler->in_main_thread()) {
-            service_statustext();
-        }
     } while (false);
 
     // given we don't really know what these methods get up to, we
@@ -1988,53 +1989,108 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     if (notify) {
         notify->send_text(first_piece_of_text);
     }
+
+    // push the messages out straight away until the vehicle states
+    // that it is initialised.  At that point we can assume
+    // update_send is being called
+    if (!vehicle_initialised()) {
+        service_statustext();
+    }
 }
 
-/*
-    send a statustext message to specific MAVLink connections in a bitmask
- */
 void GCS::service_statustext(void)
 {
-    // create bitmask of what mavlink ports we should send this text to.
-    // note, if sending to all ports, we only need to store the bitmask for each and the string only once.
-    // once we send over a link, clear the port but other busy ports bit may stay allowing for faster links
-    // to clear the bit and send quickly but slower links to still store the string. Regardless of mixed
-    // bitrates of ports, a maximum of _status_capacity strings can be buffered. Downside
-    // is if you have a super slow link mixed with a faster port, if there are _status_capacity
-    // strings in the slow queue then the next item can not be queued for the faster link
+    WITH_SEMAPHORE(_statustext_queue.semaphore());
 
     if (_statustext_queue.is_empty()) {
         // nothing to do
         return;
     }
 
-    for (uint8_t idx=0; idx<_status_capacity; ) {
-        statustext_t *statustext = _statustext_queue[idx];
+    for (uint8_t i=first_backend_to_send; i<num_gcs(); i++) {
+        chan(i)->service_statustext();
+    }
+    for (uint8_t i=0; i<first_backend_to_send; i++) {
+        chan(i)->service_statustext();
+    }
+
+    _statustext_queue.prune();
+}
+
+void GCS::StatusTextQueue::prune(void)
+{
+    // consider pruning the statustext queue of ancient entries
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_prune_ms < 1000) {
+        return;
+    }
+    last_prune_ms = now_ms;
+
+    const uint16_t now16_ms = AP_HAL::millis16();
+    for (uint8_t idx=0; idx<available(); ) {
+        const GCS::statustext_t *statustext = (*this)[idx];
         if (statustext == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+        // be wary of integer promotion here
+        const uint16_t age = now16_ms - statustext->entry_created_ms;
+        if (age > 5000) {
+            // too old.  Purge it.
+            remove(idx);
+            continue;
+        }
+        // this is a queue.  If this one wasn't too old then the next
+        // one isn't either.
+        break;
+    }
+}
+
+/*
+    send a statustext message to specific MAVLink connections in a bitmask
+
+    must be called with semaphore held
+ */
+void GCS_MAVLINK::service_statustext(void)
+{
+    GCS::StatusTextQueue &_statustext_queue = gcs().statustext_queue();
+
+    const uint8_t chan_bit = (1U<<chan);
+    // note the lack of idx++ here.  We may remove the iteration item
+    // from the queue as the last thing we do, in which case we don't
+    // want to move idx.
+    const uint16_t payload_size = PAYLOAD_SIZE(chan, STATUSTEXT);
+    for (uint8_t idx=0; idx<_statustext_queue.available(); ) {
+        if (txspace() < payload_size) {
+            break;
+        }
+        GCS::statustext_t *statustext = _statustext_queue[idx];
+        if (statustext == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
         }
 
-        // try and send to all active mavlink ports listed in the statustext.bitmask
-        for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-            uint8_t chan_bit = (1U<<i);
-            // logical AND (&) to mask them together
-            if (statustext->bitmask & chan_bit) {
-                // something is queued on a port and that's the port index we're looped at
-                mavlink_channel_t chan_index = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-                if (HAVE_PAYLOAD_SPACE(chan_index, STATUSTEXT)) {
-                    // we have space so send then clear that channel bit on the mask
-                    mavlink_msg_statustext_send(chan_index, statustext->msg.severity, statustext->msg.text, statustext->msg.id, statustext->msg.chunk_seq);
-                    statustext->bitmask &= ~chan_bit;
-                }
+        // check to see if we need to send this queue entry:
+        if (statustext->bitmask & chan_bit) {
+            mavlink_msg_statustext_send(chan,
+                                        statustext->msg.severity,
+                                        statustext->msg.text,
+                                        statustext->msg.id,
+                                        statustext->msg.chunk_seq);
+            // indicate we've sent the message:
+            statustext->bitmask &= ~chan_bit;
+
+            if (statustext->bitmask == 0) {
+                // sent everywhere it needs to be sent, remove it from the
+                // queue but leave idx as-is as we want to handle the
+                // remaining items which have been bumped up to out
+                // current index
+                _statustext_queue.remove(idx);
+                continue;
             }
         }
-
-        if (statustext->bitmask == 0) {
-            _statustext_queue.remove(idx);
-        } else {
-            // move to next index
-            idx++;
-        }
+        // this item still has places to go.  Continue to iterate over the queue
+        idx++;
     }
 }
 
@@ -2082,12 +2138,13 @@ void GCS::update_send()
     for (uint8_t i=0; i<first_backend_to_send; i++) {
         chan(i)->update_send();
     }
+
+    service_statustext();
+
     first_backend_to_send++;
     if (first_backend_to_send >= num_gcs()) {
         first_backend_to_send = 0;
     }
-    WITH_SEMAPHORE(_statustext_sem);
-    service_statustext();
 }
 
 void GCS::update_receive(void)
@@ -2459,6 +2516,21 @@ void GCS_MAVLINK::send_heartbeat() const
         base_mode(),
         gcs().custom_mode(),
         system_status());
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_long_t &packet)
+{
+    if (packet.param2 > 2) {
+        return MAV_RESULT_DENIED;
+    }
+    const RC_Channel::AUX_FUNC aux_func = (RC_Channel::AUX_FUNC)packet.param1;
+    const RC_Channel::AuxSwitchPos position = (RC_Channel::AuxSwitchPos)packet.param2;
+    if (!rc().run_aux_function(aux_func, position, RC_Channel::AuxFuncTriggerSource::MAVLINK)) {
+        // note that this is not quite right; we could be more nuanced
+        // about our return code here.
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_long_t &packet)
@@ -3206,6 +3278,9 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
             RC_Channels::set_override(i, value, tnow);
         }
     }
+
+    gcs().sysid_myggcs_seen(tnow);
+
 }
 
 // allow override of RC channel values for HIL or for complete GCS
@@ -3239,26 +3314,32 @@ void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
         rangefinder->handle_msg(msg);
     }
 
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
@@ -3271,12 +3352,27 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 #endif
 }
 
+void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
+{
+    // if the heartbeat is from our GCS then we don't failsafe for
+    // now...
+    if (msg.sysid == sysid_my_gcs()) {
+        gcs().sysid_myggcs_seen(AP_HAL::millis());
+    }
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
 void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
+
+    case MAVLINK_MSG_ID_HEARTBEAT: {
+        handle_heartbeat(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_COMMAND_ACK: {
         handle_command_ack(msg);
         break;
@@ -3464,6 +3560,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
+        break;
+
+    case MAVLINK_MSG_ID_LANDING_TARGET:
+        handle_landing_target(msg);
         break;
     }
 
@@ -3822,7 +3922,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_
 {
     const uint16_t battery_mask = packet.param1;
     const float percentage = packet.param2;
-    if (AP::battery().reset_remaining(battery_mask, percentage)) {
+    if (AP::battery().reset_remaining_mask(battery_mask, percentage)) {
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
@@ -4127,6 +4227,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         }
         break;
 
+    case MAV_CMD_DO_AUX_FUNCTION:
+        result = handle_command_do_aux_function(packet);
+        break;
+
     case MAV_CMD_SET_MESSAGE_INTERVAL:
         result = handle_command_set_message_interval(packet);
         break;
@@ -4249,6 +4353,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_UNSUPPORTED;
 #endif
 }
+
+
+void GCS_MAVLINK::handle_landing_target(const mavlink_message_t &msg)
+{
+    mavlink_landing_target_t m;
+    mavlink_msg_landing_target_decode(&msg, &m);
+    // correct offboard timestamp
+    const uint32_t corrected_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, LANDING_TARGET));
+    handle_landing_target(m, corrected_ms);
+}
+
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int_t &packet)
 {

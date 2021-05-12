@@ -71,6 +71,7 @@ singleton AP_BattMonitor method has_failsafed boolean
 singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method get_cycle_count boolean uint8_t 0 ud->num_instances() uint16_t'Null
+singleton AP_BattMonitor method reset_remaining boolean uint8_t 0 ud->num_instances() float 0 100
 
 include AP_GPS/AP_GPS.h
 
@@ -131,6 +132,7 @@ singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_M
 
 include AP_Proximity/AP_Proximity.h
 
+singleton AP_Proximity depends HAL_PROXIMITY_ENABLED == 1
 singleton AP_Proximity alias proximity
 singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
@@ -222,8 +224,10 @@ ap_object RC_Channel method norm_input_ignore_trim float
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
+singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
+singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
 
 include AP_SerialManager/AP_SerialManager.h
 
@@ -338,3 +342,25 @@ ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
 ap_object AP_HAL::I2CDevice method write_register boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 ap_object AP_HAL::I2CDevice method read_registers boolean uint8_t 0 UINT8_MAX &uint8_t'Null 1'literal
 ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
+
+
+ap_object AP_HAL::AnalogSource method set_pin void uint8_t 0 UINT8_MAX
+ap_object AP_HAL::AnalogSource method voltage_average float
+ap_object AP_HAL::AnalogSource method voltage_latest float
+ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
+
+userdata AP_HAL::PWMSource alias PWMSource
+userdata AP_HAL::PWMSource method set_pin boolean uint8_t 0 UINT8_MAX "Scripting"'literal
+userdata AP_HAL::PWMSource method get_pwm_us uint16_t
+userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
+
+singleton hal.gpio alias gpio
+singleton hal.gpio literal
+singleton hal.gpio method read boolean uint8_t 0 UINT8_MAX
+singleton hal.gpio method write void uint8_t 0 UINT8_MAX uint8_t 0 1
+singleton hal.gpio method toggle void uint8_t 0 UINT8_MAX
+singleton hal.gpio method pinMode void uint8_t 0 UINT8_MAX uint8_t 0 1
+
+singleton hal.analogin alias analog
+singleton hal.analogin literal
+singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal

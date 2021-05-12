@@ -194,8 +194,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: RTL_MODE
     // @DisplayName: VTOL RTL mode
-    // @Description: If this is set to 1 then an RTL will change to QRTL when within RTL_RADIUS meters of the RTL destination
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If this is set to 1 then an RTL will change to QRTL when within RTL_RADIUS meters of the RTL destination, VTOL approach: vehicle will RTL at RTL alt and circle with a radius of Q_FW_LND_APR_RAD down to Q_RLT_ALT and then transission into the wind and QRTL, see 'AUTO VTOL Landing'
+    // @Values: 0:Disabled,1:Enabled,2:VTOL approach
     // @User: Standard
     AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
 
@@ -271,10 +271,18 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
     // @Param: TAILSIT_ANGLE
-    // @DisplayName: Tailsitter transition angle
-    // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
+    // @DisplayName: Tailsitter fixed wing transition angle
+    // @Description: This is the pitch angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
+    // @Units: deg
     // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle, 45),
+    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle_fw, 45),
+
+    // @Param: TAILSIT_ANG_VT
+    // @DisplayName: Tailsitter VTOL transition angle
+    // @Description: This is the pitch angle at which tailsitter aircraft will change from fixed wing control to VTOL control, if zero Q_TAILSIT_ANGLE will be used
+    // @Units: deg
+    // @Range: 5 80
+    AP_GROUPINFO("TAILSIT_ANG_VT", 61, QuadPlane, tailsitter.transition_angle_vtol, 0),
 
     // @Param: TILT_RATE_DN
     // @DisplayName: Tiltrotor downwards tilt rate
@@ -343,8 +351,9 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
-    
+
     // 60 is used above for VELZ_MAX_DN
+    // 61 is used above for TS_ANGLE_VTOL
 
     AP_GROUPEND
 };
@@ -535,6 +544,19 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TILT_FIX_GAIN", 23, QuadPlane, tilt.fixed_gain, 0),
 
+    // @Param: TAILSIT_RAT_FW
+    // @DisplayName: Tailsitter VTOL to forward flight transition rate
+    // @Description: The pitch rate at which tailsitter aircraft will pitch down in the transition from VTOL to forward flight
+    // @Units: deg/s
+    // @Range: 10 500
+    AP_GROUPINFO("TAILSIT_RAT_FW", 24, QuadPlane, tailsitter.transition_rate_fw, 50),
+
+    // @Param: TAILSIT_RAT_VT
+    // @DisplayName: Tailsitter forward flight to VTOL transition rate
+    // @Description: The pitch rate at which tailsitter aircraft will pitch up in the transition from forward flight to VTOL
+    // @Units: deg/s
+    // @Range: 10 500
+    AP_GROUPINFO("TAILSIT_RAT_VT", 25, QuadPlane, tailsitter.transition_rate_vtol, 50),
 
     AP_GROUPEND
 };
@@ -546,9 +568,12 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_RLL_P",    0.25 },
     { "Q_A_RAT_RLL_I",    0.25 },
     { "Q_A_RAT_RLL_FLTD", 10.0 },
+    { "Q_A_RAT_RLL_SMAX", 50.0 },
     { "Q_A_RAT_PIT_P",    0.25 },
     { "Q_A_RAT_PIT_I",    0.25 },
     { "Q_A_RAT_PIT_FLTD", 10.0 },
+    { "Q_A_RAT_PIT_SMAX", 50.0 },
+    { "Q_A_RAT_YAW_SMAX", 50.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
     { "Q_LOIT_ANG_MAX",   15.0 },
     { "Q_LOIT_ACC_MAX",   250.0 },
@@ -764,6 +789,9 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("Unable to allocate %s", "wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
+#if AP_TERRAIN_AVAILABLE
+    wp_nav->set_terrain(&plane.terrain);
+#endif
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
@@ -772,10 +800,6 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-
-    if (!motors->initialised_ok()) {
-        AP_BoardConfig::config_error("init failed: Q_FRAME_CLASS=%u Q_FRAME_TYPE=%u", frame_class, frame_type);
-    }
 
     tilt.is_vectored = tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW;
 
@@ -828,6 +852,11 @@ bool QuadPlane::setup(void)
     setup_defaults();
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
+
+    // Set tailsitter transition rate to match old caculation
+    if (!tailsitter.transition_rate_fw.configured()) {
+        tailsitter.transition_rate_fw.set_and_save(tailsitter.transition_angle_fw / (transition_time_ms/2000.0f));
+    }
 
     // param count will have changed
     AP_Param::invalidate_count();
@@ -1072,19 +1101,11 @@ void QuadPlane::run_z_controller(void)
         // initialize vertical speeds and leash lengths
         pos_control->set_max_speed_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up);
         pos_control->set_max_accel_z(pilot_accel_z);
-        
-        // it has been two seconds since we last ran the Z
-        // controller. We need to assume the integrator may be way off
-
-        // the base throttle we start at is the current throttle we are using
-        // note that AC_PosControl::run_z_controller() adds the Z pid (_pid_accel_z) output to _motors.get_throttle_hover()
-        float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
-        pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
         last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
-    pos_control->update_z_controller();    
+    pos_control->update_z_controller();
 }
 
 void QuadPlane::relax_attitude_control()
@@ -1784,7 +1805,6 @@ void QuadPlane::update_transition(void)
     if (is_tailsitter()) {
         if (transition_state == TRANSITION_ANGLE_WAIT_FW &&
             tailsitter_transition_fw_complete()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
             transition_state = TRANSITION_DONE;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
@@ -1916,12 +1936,9 @@ void QuadPlane::update_transition(void)
     case TRANSITION_ANGLE_WAIT_FW: {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         assisted_flight = true;
-        // calculate transition rate in degrees per
-        // millisecond. Assume we want to get to the transition angle
-        // in half the transition time
-        float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
-        plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (transition_rate * dt)*100, -8500, 8500);
+        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+        plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
         check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -2011,6 +2028,7 @@ void QuadPlane::update(void)
              */
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
+            transition_initial_pitch = constrain_float(ahrs.pitch_sensor,-8500,8500);
         } else if (is_tailsitter() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             float aspeed;
@@ -2025,7 +2043,6 @@ void QuadPlane::update(void)
                   we have completed transition to VTOL as a tailsitter,
                   setup for the back transition when needed
                 */
-                gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
             }
@@ -2612,16 +2629,29 @@ void QuadPlane::vtol_position_controller(void)
         }
         if (plane.control_mode == &plane.mode_qrtl || plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
             plane.ahrs.get_position(plane.current_loc);
-            float target_altitude = plane.next_WP_loc.alt;
+            int32_t target_altitude_cm;
+            if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,target_altitude_cm)) {
+                break;
+            }
             if (poscontrol.slow_descent) {
                 // gradually descend as we approach target
                 plane.auto_state.wp_proportion = plane.current_loc.line_path_proportion(plane.prev_WP_loc, plane.next_WP_loc);
-                target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
-                                                     plane.next_WP_loc.alt,
-                                                     plane.auto_state.wp_proportion,
-                                                     0, 1);
+                int32_t prev_alt;
+                if (plane.prev_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,prev_alt)) {
+                    target_altitude_cm = linear_interpolate(prev_alt,
+                                                         target_altitude_cm,
+                                                         plane.auto_state.wp_proportion,
+                                                         0, 1);
+                }
             }
-            adjust_alt_target(target_altitude - plane.home.alt);
+#if AP_TERRAIN_AVAILABLE
+            float terrain_altitude_offset_cm;
+            if (plane.next_WP_loc.terrain_alt && plane.terrain.height_terrain_difference_home(terrain_altitude_offset_cm, true)) {
+                // Climb if current terrain is above home, target_altitude_cm is reltive to home
+                target_altitude_cm += MAX(terrain_altitude_offset_cm*100,0);
+            }
+#endif
+            pos_control->set_alt_target_with_slew(target_altitude_cm, plane.G_Dt);
         } else {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
         }
@@ -2805,11 +2835,18 @@ void QuadPlane::init_qrtl(void)
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
-    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
+    int32_t from_alt;
+    int32_t to_alt;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
+        poscontrol.slow_descent = from_alt > to_alt;
+        return;
+    }
+    // defualt back to old method
+    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
 /*
@@ -3310,6 +3347,13 @@ void QuadPlane::guided_start(void)
     poscontrol.speed_scale = 0;
     guided_takeoff = false;
     setup_target_position();
+    int32_t from_alt;
+    int32_t to_alt;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
+        poscontrol.slow_descent = from_alt > to_alt;
+        return;
+    }
+    // defualt back to old method
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
@@ -3362,18 +3406,7 @@ bool QuadPlane::guided_mode_enabled(void)
  */
 void QuadPlane::set_alt_target_current(void)
 {
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-}
-
-/*
-  adjust the altitude target to the given target, moving it slowly
- */
-void QuadPlane::adjust_alt_target(float altitude_cm)
-{
-    float current_alt = inertial_nav.get_altitude();
-    // don't let it get beyond 50cm from current altitude
-    float target_cm = constrain_float(altitude_cm, current_alt-50, current_alt+50);
-    pos_control->set_alt_target(target_cm);
+    pos_control->set_alt_target_to_current_alt();
 }
 
 // user initiated takeoff for guided mode
@@ -3575,7 +3608,7 @@ bool QuadPlane::show_vtol_view() const
 {
     bool show_vtol = in_vtol_mode();
 
-    if (is_tailsitter() && hal.util->get_soft_armed()) {
+    if (is_tailsitter()) {
         if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
             // in a vtol mode but still transitioning from forward flight
             return false;

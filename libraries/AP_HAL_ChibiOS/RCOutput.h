@@ -32,6 +32,9 @@
 
 class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
+    // disabled channel marker
+    const static uint8_t CHAN_DISABLED = 255;
+
     void     init() override;
     void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
     uint16_t get_freq(uint8_t ch) override;
@@ -138,16 +141,30 @@ public:
 
     /*
       enable telemetry request for a mask of channels. This is used
-      with DShot to get telemetry feedback
+      with Dshot to get telemetry feedback
      */
     void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
 #ifdef HAL_WITH_BIDIR_DSHOT
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
-      with DShot to get telemetry feedback
+      with Dshot to get telemetry feedback
      */
     void set_bidir_dshot_mask(uint16_t mask) override;
+#endif
+
+    /*
+      Set the dshot rate as a multiple of the loop rate
+     */
+    void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) override;
+
+#ifndef DISABLE_DSHOT
+    /*
+      Set/get the dshot esc_type
+     */
+    void set_dshot_esc_type(DshotEscType dshot_esc_type) override { _dshot_esc_type = dshot_esc_type; }
+
+    DshotEscType get_dshot_esc_type() const override { return _dshot_esc_type; }
 #endif
 
     /*
@@ -165,14 +182,37 @@ public:
      */
     void set_safety_mask(uint16_t mask) { safety_mask = mask; }
 
+#ifndef DISABLE_DSHOT
     /*
-     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
+     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as Dshot)
      * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
      * any existing mask.
      */
-    void set_reversible_mask(uint16_t chanmask) override {
-        reversible_mask |= chanmask;
-    }
+    void set_reversible_mask(uint16_t chanmask) override;
+
+    /*
+     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    void set_reversed_mask(uint16_t chanmask) override;
+
+    /*
+      mark escs as active for the purpose of sending dshot commands
+     */
+    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= chanmask; }
+
+    /*
+      Send a dshot command, if command timout is 0 then 10 commands are sent
+      chan is the servo channel to send the command to
+     */
+    void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) override;
+
+#endif
+
+    /*
+      If not already done flush any dshot commands still pending
+     */
+    bool prepare_for_arming() override;
 
     /*
       setup serial LED output for a given channel number, with
@@ -263,6 +303,7 @@ private:
         // serial LED support
         volatile uint8_t serial_nleds;
         uint8_t clock_mask;
+        enum output_mode led_mode;
         volatile bool serial_led_pending;
         volatile bool prepared_send;
         HAL_Semaphore serial_led_mutex;
@@ -336,6 +377,11 @@ private:
         bool can_send_dshot_pulse() const {
           return is_dshot_protocol(current_mode) && AP_HAL::micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
         }
+
+        // return whether the group channel is both enabled in the group and for output
+        bool is_chan_enabled(uint8_t c) const {
+          return chan[c] != CHAN_DISABLED && (ch_mask & (1U << chan[c]));
+        }
     };
     /*
       timer thread for use by dshot events
@@ -403,6 +449,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[max_channels];
+
     // handling of bi-directional dshot
     struct {
         uint16_t mask;
@@ -414,12 +461,45 @@ private:
 #endif
     } _bdshot;
 
+    // dshot period
+    uint32_t _dshot_period_us = 400;
+    // dshot rate as a multiple of loop rate or 0 for 1Khz
+    uint8_t _dshot_rate;
+    // dshot periods since the last push()
+    uint8_t _dshot_cycle;
+    // virtual timer for post-push() pulses
+    virtual_timer_t _dshot_rate_timer;
+
+#ifndef DISABLE_DSHOT
+    // dshot commands
+    // RingBuffer to store outgoing request.
+    struct DshotCommandPacket {
+      uint8_t command;
+      uint32_t cycle;
+      uint8_t chan;
+    };
+
+    ObjectBuffer<DshotCommandPacket> _dshot_command_queue{8};
+    DshotCommandPacket _dshot_current_command;
+
+    DshotEscType _dshot_esc_type;
+
+    bool dshot_command_is_active(const pwm_group& group) const {
+      return (_dshot_current_command.chan == RCOutput::ALL_CHANNELS || (group.ch_mask & (1UL << _dshot_current_command.chan)))
+                && _dshot_current_command.cycle > 0;
+    }
+#endif
     uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
     uint16_t io_fast_channel_mask;
-    uint16_t reversible_mask;
+    // mask of channels that are 3D capable
+    uint16_t _reversible_mask;
+    // mask of channels that should be reversed at startup
+    uint16_t _reversed_mask;
+    // mask of active ESCs
+    uint16_t _active_escs_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
@@ -439,6 +519,11 @@ private:
     volatile bool _initialised;
 
     bool is_bidir_dshot_enabled() const { return _bdshot.mask != 0; }
+
+    // are all the ESCs returning data
+    bool group_escs_active(const pwm_group& group) const {
+      return group.ch_mask > 0 && (group.ch_mask & _active_escs_mask) == group.ch_mask;
+    }
 
     // find a channel group given a channel number
     struct pwm_group *find_chan(uint8_t chan, uint8_t &group_idx);
@@ -482,8 +567,11 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
-    void dshot_send_groups();
-    void dshot_send(pwm_group &group);
+    void dshot_send_groups(uint32_t time_out_us);
+    void dshot_send(pwm_group &group, uint32_t time_out_us);
+    bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
+    static void dshot_update_tick(void* p);
+    static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
     void dshot_collect_dma_locks(uint32_t last_run_us);
     static void dma_up_irq_callback(void *p, uint32_t flags);
@@ -491,11 +579,12 @@ private:
     void dma_cancel(pwm_group& group);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
-      const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
+    const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
     static bool is_dshot_protocol(const enum output_mode mode);
     static uint32_t protocol_bitrate(const enum output_mode mode);
+    void print_group_setup_error(pwm_group &group, const char* error_string);
 
     /*
       Support for bi-direction dshot
@@ -503,7 +592,7 @@ private:
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
     static uint32_t bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t count);
-    static bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
+    bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
     static void bdshot_finish_dshot_gcr_transaction(void *p);
@@ -532,5 +621,11 @@ private:
     static void serial_byte_timeout(void *ctx);
 
 };
+
+#if RCOU_DSHOT_TIMING_DEBUG
+#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#else
+#define TOGGLE_PIN_DEBUG(pin) do {} while (0)
+#endif
 
 #endif // HAL_USE_PWM

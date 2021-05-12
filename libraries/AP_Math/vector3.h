@@ -195,6 +195,9 @@ public:
     // gets the length of this vector
     float length(void) const;
 
+    // limit xy component vector to a given length. returns true if vector was limited
+    bool limit_length_xy(float max_length);
+
     // normalizes this vector
     void normalize()
     {

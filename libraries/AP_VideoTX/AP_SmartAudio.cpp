@@ -57,7 +57,7 @@ bool AP_SmartAudio::init()
             | AP_HAL::UARTDriver::OPTION_HDPLEX | AP_HAL::UARTDriver::OPTION_PULLDOWN_TX | AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
-                                          512, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+                                          768, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
             return false;
         }
 
@@ -183,8 +183,9 @@ void AP_SmartAudio::update_vtx_params()
         uint8_t pitModeRunning = (vtx.get_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
         uint8_t pitMode = opts & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
         uint8_t mode;
-        // check if we are turning pitmode on or off
-        if (pitMode != pitModeRunning) {
+        // check if we are turning pitmode on or off, but only on SA 2.1 as older versions
+        // appear not to work properly
+        if (pitMode != pitModeRunning && _protocol_version >= SMARTAUDIO_SPEC_PROTOCOL_v21) {
             if (pitModeRunning) {
                 debug("Turning OFF pitmode");
                 // turn it off
@@ -201,7 +202,14 @@ void AP_SmartAudio::update_vtx_params()
             }
         }
 
-        if (_vtx_freq_change_pending) {
+        if (pitMode) {// prevent power changes in pitmode as this takes the VTX out of pitmode
+            _vtx_power_change_pending = false;
+        }
+
+        // prioritize pitmode changes
+        if (_vtx_options_change_pending) {
+            set_operation_mode(mode);
+        } else if (_vtx_freq_change_pending) {
             if (_vtx_use_set_freq) {
                 set_frequency(vtx.get_configured_frequency_mhz(), false);
             } else {
@@ -224,8 +232,6 @@ void AP_SmartAudio::update_vtx_params()
                 }
                 break;
             }
-        } else if (_vtx_options_change_pending) {
-            set_operation_mode(mode);
         }
     }
 }

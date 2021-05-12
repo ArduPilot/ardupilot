@@ -29,6 +29,10 @@ class AutoTestTracker(AutoTest):
     def log_name(self):
         return "AntennaTracker"
 
+    def default_speedup(self):
+        '''Tracker seems to be race-free'''
+        return 100
+
     def test_filepath(self):
         return os.path.realpath(__file__)
 

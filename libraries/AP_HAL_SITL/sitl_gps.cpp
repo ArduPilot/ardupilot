@@ -19,6 +19,7 @@
 #include "UARTDriver.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_GPS/AP_GPS_UBLOX.h>
+#include <AP_Common/NMEA.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
@@ -420,12 +421,18 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    if (_sitl->gps_hdg_enabled[instance]) {
+    if (_sitl->gps_hdg_enabled[instance] > SITL::SITL::GPS_HEADING_NONE) {
         const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
         const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
         Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
         Matrix3f rot;
+        // project attitude back using gyros to get antenna orientation at time of GPS sample
+        Vector3f gyro(radians(_sitl->state.rollRate),
+                      radians(_sitl->state.pitchRate),
+                      radians(_sitl->state.yawRate));
         rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw));
+        const float lag = (1.0/_sitl->gps_hertz[instance]) * gps_state[instance].delay;
+        rot.rotate(gyro * (-lag));
         rel_antenna_pos = rot * rel_antenna_pos;
         relposned.version = 1;
         relposned.iTOW = time_week_ms;
@@ -443,7 +450,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
     _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
-    if (_sitl->gps_hdg_enabled[instance]) {
+    if (_sitl->gps_hdg_enabled[instance] > SITL::SITL::GPS_HEADING_NONE) {
         _gps_send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned), instance);
     }
 
@@ -653,37 +660,19 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
 }
 
 /*
-  NMEA checksum
- */
-uint8_t SITL_State::_gps_nmea_checksum(const char *s)
-{
-    uint8_t cs = 0;
-    const uint8_t *b = (const uint8_t *)s;
-    for (uint16_t i=1; s[i]; i++) {
-        cs ^= b[i];
-    }
-    return cs;
-}
-
-/*
   formatted print of NMEA message, with checksum appended
  */
 void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 {
-    char *s = nullptr;
-    uint8_t csum;
-    char trailer[6];
-
     va_list ap;
 
     va_start(ap, fmt);
-    vasprintf(&s, fmt, ap);
+    char *s = nmea_vaprintf(fmt, ap);
     va_end(ap);
-    csum = _gps_nmea_checksum(s);
-    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)csum);
-    _gps_write((const uint8_t*)s, strlen(s), instance);
-    _gps_write((const uint8_t*)trailer, 5, instance);
-    free(s);
+    if (s != nullptr) {
+        _gps_write((const uint8_t*)s, strlen(s), instance);
+        free(s);
+    }
 }
 
 
@@ -755,8 +744,11 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      heading,
                      dstring);
 
-    if (_sitl->gps_hdg_enabled[instance]) {
+    if (_sitl->gps_hdg_enabled[instance] == SITL::SITL::GPS_HEADING_HDT) {
         _gps_nmea_printf(instance, "$GPHDT,%.2f,T", d->yaw);
+    }
+    else if (_sitl->gps_hdg_enabled[instance] == SITL::SITL::GPS_HEADING_THS) {
+        _gps_nmea_printf(instance, "$GPTHS,%.2f,%c,T", d->yaw, d->have_lock ? 'A' : 'V');
     }
 }
 

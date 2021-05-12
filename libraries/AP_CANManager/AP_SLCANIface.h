@@ -79,6 +79,7 @@ class CANIface: public AP_HAL::CANIface
     int8_t _prev_ser_port;
     int8_t _iface_num = -1;
     uint32_t _last_had_activity;
+    uint8_t num_tries;
     AP_HAL::CANIface* _can_iface; // Can interface to be used for interaction by SLCAN interface
     HAL_Semaphore port_sem;
     bool _set_by_sermgr;

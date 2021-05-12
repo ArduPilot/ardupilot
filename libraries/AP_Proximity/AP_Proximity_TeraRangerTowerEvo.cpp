@@ -15,6 +15,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_TeraRangerTowerEvo.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -148,7 +150,7 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     // Get location on 3-D boundary based on angle to the object
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
     //check for target too far, target too close and sensor not connected
-    const bool valid = (distance_cm != 0xffff) && (distance_cm != 0x0000) && (distance_cm != 0x0001);
+    const bool valid = (distance_cm != 0xffff) && (distance_cm > 0x0001);
     if (valid && !check_obstacle_near_ground(angle_deg, distance_cm * 0.001f)) {
         boundary.set_face_attributes(face, angle_deg, ((float) distance_cm) / 1000);
         // update OA database
@@ -158,3 +160,5 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     }
     _last_distance_received_ms = AP_HAL::millis();
 }
+
+#endif // HAL_PROXIMITY_ENABLED

@@ -143,7 +143,7 @@ void Plane::ahrs_update()
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -207,7 +207,7 @@ void Plane::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))
         ahrs.Write_AOA_SSA();
@@ -236,7 +236,7 @@ void Plane::update_logging2(void)
         Log_Write_RC();
 
     if (should_log(MASK_LOG_IMU))
-        logger.Write_Vibration();
+        AP::ins().Write_Vibration();
 }
 
 
@@ -252,7 +252,7 @@ void Plane::afs_fs_check(void)
 #else
     const bool fence_breached = false;
 #endif
-    afs.check(failsafe.last_heartbeat_ms, fence_breached, failsafe.AFS_last_valid_rc_ms);
+    afs.check(fence_breached, failsafe.AFS_last_valid_rc_ms);
 }
 #endif
 
@@ -507,7 +507,7 @@ void Plane::update_alt()
             // ensure we do the initial climb in RTL. We add an extra
             // 10m in the demanded height to push TECS to climb
             // quickly
-            target_alt = MAX(target_alt, prev_WP_loc.alt + (g2.rtl_climb_min+10)*100);
+            target_alt = MAX(target_alt, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
         SpdHgt_Controller->update_pitch_throttle(target_alt,

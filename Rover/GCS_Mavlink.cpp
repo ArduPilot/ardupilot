@@ -79,11 +79,15 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     if (!rover.control_mode->get_desired_location(target)) {
         return;
     }
+    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
+    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        0xFFF8, // ignore everything except the x/y/z components
+        TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
         target.alt * 0.01f, // altitude is sent as a float
@@ -732,21 +736,11 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Rover::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
-}
-
 void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
         handle_manual_control(msg);
-        break;
-    case MAVLINK_MSG_ID_HEARTBEAT:
-        handle_heartbeat(msg);
         break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
@@ -796,17 +790,9 @@ void GCS_MAVLINK_Rover::handle_manual_control(const mavlink_message_t &msg)
     manual_override(rover.channel_steer, packet.y, 1000, 2000, tnow);
     manual_override(rover.channel_throttle, packet.z, 1000, 2000, tnow);
 
-    // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-    rover.failsafe.last_heartbeat_ms = tnow;
-}
-
-void GCS_MAVLINK_Rover::handle_heartbeat(const mavlink_message_t &msg)
-{
-    // we keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-    if (msg.sysid != rover.g.sysid_my_gcs) {
-        return;
-    }
-    rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
+    // a manual control message is considered to be a 'heartbeat' from
+    // the ground station for failsafe purposes
+    gcs().sysid_myggcs_seen(tnow);
 }
 
 void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)

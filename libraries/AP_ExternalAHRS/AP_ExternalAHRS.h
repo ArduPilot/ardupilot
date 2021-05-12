@@ -31,9 +31,13 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_ExternalAHRS_backend;
+
 class AP_ExternalAHRS {
 
 public:
+    friend class AP_ExternalAHRS_backend;
+
     AP_ExternalAHRS();
 
     void init(void);
@@ -49,14 +53,51 @@ public:
         return _singleton;
     }
 
-    // fixed IMU rate for now
+    // expected IMU rate in Hz
     float get_IMU_rate(void) const {
-        return 50;
+        return rate.get();
     }
 
     // get serial port number, -1 for not enabled
     int8_t get_port(void) const;
 
+    struct state_t {
+        HAL_Semaphore sem;
+
+        Vector3f accel;
+        Vector3f gyro;
+        Quaternion quat;
+        Location location;
+        Vector3f velocity;
+        Location origin;
+
+        bool have_quaternion;
+        bool have_origin;
+        bool have_location;
+        bool have_velocity;
+    } state;
+
+    // accessors for AP_AHRS
+    bool healthy(void) const;
+    bool initialised(void) const;
+    bool get_quaternion(Quaternion &quat);
+    bool get_origin(Location &loc);
+    bool get_location(Location &loc);
+    Vector2f get_groundspeed_vector();
+    bool get_velocity_NED(Vector3f &vel);
+    bool get_speed_down(float &speedD);
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+    void get_filter_status(nav_filter_status &status) const;
+    Vector3f get_gyro(void);
+    Vector3f get_accel(void);
+    void send_status_report(mavlink_channel_t chan) const;
+
+    // update backend
+    void update();
+
+    /*
+      structures passed to other subsystems
+     */
     typedef struct {
         uint8_t instance;
         float pressure_pa;
@@ -90,57 +131,14 @@ public:
         Vector3f gyro;
         float temperature;
     } ins_data_message_t;
-
-    // accessors for AP_AHRS
-    bool healthy(void) const;
-    bool initialised(void) const;
-    bool get_quaternion(Quaternion &quat);
-    bool get_origin(Location &loc);
-    bool get_location(Location &loc);
-    Vector2f get_groundspeed_vector();
-    bool get_velocity_NED(Vector3f &vel);
-    bool get_speed_down(float &speedD);
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
-    void get_filter_status(nav_filter_status &status) const;
-    Vector3f get_gyro(void);
-    Vector3f get_accel(void);
-    void send_status_report(mavlink_channel_t chan) const;
-
-    // check for new data
-    void update() {
-        check_uart();
-    }
-
+    
 private:
-    AP_HAL::UARTDriver *uart;
-    int8_t port_num;
-    bool port_opened;
-    uint32_t baudrate;
-
-    void update_thread();
-    bool check_uart();
-
-    void process_packet1(const uint8_t *b);
-    void process_packet2(const uint8_t *b);
+    AP_ExternalAHRS_backend *backend;
 
     AP_Enum<DevType> devtype;
+    AP_Int16         rate;
 
     static AP_ExternalAHRS *_singleton;
-
-    uint8_t *pktbuf;
-    uint16_t pktoffset;
-    uint16_t bufsize;
-
-    struct VN_packet1 *last_pkt1;
-    struct VN_packet2 *last_pkt2;
-
-    uint32_t last_pkt1_ms;
-    uint32_t last_pkt2_ms;
-
-    bool origin_set;
-    Location origin;
-
-    static HAL_Semaphore sem;
 };
 
 namespace AP {

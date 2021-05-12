@@ -27,7 +27,7 @@ DiscreteRGBLed::DiscreteRGBLed(uint16_t red, uint16_t green, uint16_t blue, bool
 
 }
 
-bool DiscreteRGBLed::hw_init(void)
+bool DiscreteRGBLed::init(void)
 {
     red_pin = hal.gpio->channel(red_pin_number);
     green_pin = hal.gpio->channel(green_pin_number);

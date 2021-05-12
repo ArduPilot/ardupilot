@@ -116,13 +116,6 @@
  # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Proximity sensor
-//
-#ifndef PROXIMITY_ENABLED
- # define PROXIMITY_ENABLED ENABLED
-#endif
-
 #ifndef MAV_SYSTEM_ID
  # define MAV_SYSTEM_ID          1
 #endif
@@ -685,9 +678,6 @@
  #define AC_OAPATHPLANNER_ENABLED   !HAL_MINIMIZE_FEATURES
 #endif
 
-#if AC_AVOID_ENABLED && !PROXIMITY_ENABLED
-  #error AC_Avoidance relies on PROXIMITY_ENABLED which is disabled
-#endif
 #if AC_AVOID_ENABLED && !AC_FENCE
   #error AC_Avoidance relies on AC_FENCE which is disabled
 #endif

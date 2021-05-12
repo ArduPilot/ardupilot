@@ -106,7 +106,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: _AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
-    // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert over 'UseBest' behaviour if 3D fix is lost on primary
+    // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert to 'UseBest' behaviour if 3D fix is lost on primary
     // @Values: 0:Use primary, 1:UseBest, 2:Blend, 4:Use primary if 3D fix or better
     // @User: Advanced
     AP_GROUPINFO("_AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
@@ -161,7 +161,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured)
     // @Values: 0:Leave as currently configured, 1:GPS-NoSBAS, 3:GPS+SBAS, 4:Galileo-NoSBAS, 6:Galileo+SBAS, 8:Beidou, 51:GPS+IMES+QZSS+SBAS (Japan Only), 64:GLONASS, 66:GLONASS+SBAS, 67:GPS+GLONASS+SBAS
-    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLOSNASS
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
     AP_GROUPINFO("_GNSS_MODE", 10, AP_GPS, _gnss_mode[0], 0),
 
@@ -177,7 +177,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use on the second GPS (all unchecked or zero to leave GPS as configured)
     // @Values: 0:Leave as currently configured, 1:GPS-NoSBAS, 3:GPS+SBAS, 4:Galileo-NoSBAS, 6:Galileo+SBAS, 8:Beidou, 51:GPS+IMES+QZSS+SBAS (Japan Only), 64:GLONASS, 66:GLONASS+SBAS, 67:GPS+GLONASS+SBAS
-    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLOSNASS
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
     AP_GROUPINFO("_GNSS_MODE2", 12, AP_GPS, _gnss_mode[1], 0),
 #endif
@@ -1285,6 +1285,12 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
     }
 
     const Location &loc = location(1);
+    float hacc = 0.0f;
+    float vacc = 0.0f;
+    float sacc = 0.0f;
+    horizontal_accuracy(1, hacc);
+    vertical_accuracy(1, vacc);
+    speed_accuracy(1, sacc);
     mavlink_msg_gps2_raw_send(
         chan,
         last_fix_time_ms(1)*(uint64_t)1000,
@@ -1299,7 +1305,12 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         num_sats(1),
         state[1].rtk_num_sats,
         state[1].rtk_age_ms,
-        gps_yaw_cdeg(1));
+        gps_yaw_cdeg(1),
+        0,                    // TODO: Elipsoid height in mm
+        hacc * 1000,          // one-sigma standard deviation in mm
+        vacc * 1000,          // one-sigma standard deviation in mm
+        sacc * 1000,          // one-sigma standard deviation in mm/s
+        0);                    // TODO one-sigma heading accuracy standard deviation
 }
 #endif // GPS_MAX_RECEIVERS
 

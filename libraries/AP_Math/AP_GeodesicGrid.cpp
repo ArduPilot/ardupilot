@@ -420,8 +420,6 @@ int AP_GeodesicGrid::_triangle_index(const Vector3f &v, bool inclusive)
         break;
     }
 
-    assert(umbrella >= 0);
-
     switch (umbrella % 3) {
     case 0:
         w.z = -w.z;

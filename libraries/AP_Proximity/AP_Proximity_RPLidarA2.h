@@ -29,10 +29,9 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend_Serial.h"
-#include <AP_HAL/AP_HAL.h>                   ///< for UARTDriver
 
+#if HAL_PROXIMITY_ENABLED
 
 class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
@@ -121,3 +120,5 @@ private:
         _sensor_health sensor_health;
     } payload;
 };
+
+#endif // HAL_PROXIMITY_ENABLED

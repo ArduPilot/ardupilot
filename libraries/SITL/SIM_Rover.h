@@ -38,12 +38,17 @@ public:
     }
 
 private:
-    float max_speed = 20.0f;
-    float max_accel = 10.0f;
-    float max_wheel_turn = 35.0f;
-    float turning_circle = 1.8f;
-    float skid_turn_rate = 140.0f;
-    bool skid_steering;
+    float max_speed = 20.0f;            // vehicle's maximum forward speed in m/s
+    float max_accel = 10.0f;            // vehicle's maximum forward acceleration in m/s/s
+    float max_wheel_turn = 35.0f;       // ackermann steering vehicle's maximum steering angle
+    float turning_circle = 1.8f;        // ackermann steering vehicle's minimum turn diameter in meters
+    float skid_turn_rate = 140.0f;      // skid-steering vehicle's maximum turn rate in deg/sec
+    bool skid_steering;                 // true if this vehicle is a skid-steering vehicle
+
+    // vectored thrust related members
+    bool vectored_thrust;                   // true if vehicle uses vectored thrust (i.e. steering controls direction of thrust)
+    float vectored_angle_max = 90.0f;       // maximum angle (in degrees) to which thrust can be turned
+    float vectored_turn_rate_max = 90.0f;   // maximum turn rate (in deg/sec) with full throttle angled at 90deg
 
     float turn_circle(float steering) const;
     float calc_yaw_rate(float steering, float speed);

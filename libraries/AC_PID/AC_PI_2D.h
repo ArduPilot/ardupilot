@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file	AC_PI_2D.h
-/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+/// @brief	2-axis PI controller with EEPROM-backed storage of constants.
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -12,18 +12,18 @@
 #define AC_PI_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
 
 /// @class	AC_PI_2D
-/// @brief	Copter PID control class
+/// @brief	2-axis PI controller
 class AC_PI_2D {
 public:
 
-    // Constructor for PID
+    // constructor
     AC_PI_2D(float initial_p, float initial_i, float initial_imax, float initial_filt_hz, float dt);
 
     // set time step in seconds
     void set_dt(float dt);
 
-    // set_input - set input to PID controller
-    //  input is filtered before the PID controllers are run
+    // set_input - set input to PI controller
+    //  input is filtered before the PI controllers are run
     //  this should be called before any other calls to get_p, get_i or get_d
     void set_input(const Vector2f &input);
     void set_input(const Vector3f &input) { set_input(Vector2f(input.x, input.y)); }
@@ -78,7 +78,7 @@ private:
     AP_Float _kp;
     AP_Float _ki;
     AP_Float _imax;
-    AP_Float _filt_hz;  // PID Input filter frequency in Hz
+    AP_Float _filt_hz;  // PI Input filter frequency in Hz
 
     // flags
     struct ac_pid_flags {
