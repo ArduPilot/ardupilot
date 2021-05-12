@@ -123,12 +123,14 @@ truename_map = {
     "AP_Periph": "AP_Periph",
 }
 valid_truenames = frozenset(truename_map.values())
+truename = truename_map.get(args.vehicle, args.vehicle)
 
 vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 
-name = os.path.basename(os.path.dirname(vehicle_path))
+basename = os.path.basename(os.path.dirname(vehicle_path))
 path = os.path.normpath(os.path.dirname(vehicle_path))
-vehicle = Vehicle(name, path, truename_map[name])
+reference = basename  # so links don't break we use ArduCopter
+vehicle = Vehicle(truename, path, reference=reference)
 debug('Found vehicle type %s' % vehicle.name)
 
 
@@ -168,7 +170,7 @@ def process_vehicle(vehicle):
                     raise ValueError("Invalid only_vehicle %s" % only_vehicle)
             if vehicle.truename not in only_vehicles_list:
                 continue
-        p = Parameter(vehicle.name+":"+param_name, current_file)
+        p = Parameter(vehicle.reference+":"+param_name, current_file)
         debug(p.name + ' ')
         global current_param
         current_param = p.name
@@ -237,7 +239,7 @@ def process_library(vehicle, library, pathprefix=None):
                 for only_vehicle in only_vehicles_list:
                     if only_vehicle not in valid_truenames:
                         raise ValueError("Invalid only_vehicle %s" % only_vehicle)
-                if vehicle.truename not in only_vehicles_list:
+                if vehicle.name not in only_vehicles_list:
                     continue
             p = Parameter(library.name+param_name, current_file)
             debug(p.name + ' ')
@@ -264,11 +266,11 @@ def process_library(vehicle, library, pathprefix=None):
                 delta = set(only_for_vehicles) - set(truename_map.values())
                 if len(delta):
                     error("Unknown vehicles (%s)" % delta)
-                debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" %
-                      (field[0], vehicle.name, vehicle.truename, field[1], str(only_for_vehicles)))
+                debug("field[0]=%s vehicle=%s field[1]=%s only_for_vehicles=%s\n" %
+                      (field[0], vehicle.name, field[1], str(only_for_vehicles)))
                 value = re.sub('@PREFIX@', library.name, field[2])
                 if field[0] in ['Values', 'Bitmask']:
-                    if vehicle.truename in only_for_vehicles:
+                    if vehicle.name in only_for_vehicles:
                         this_vehicle_values_seen = True
                         this_vehicle_value = value
                         if len(only_for_vehicles) > 1:
@@ -314,7 +316,7 @@ def process_library(vehicle, library, pathprefix=None):
                     error("unknown parameter metadata field '%s'" % field[0])
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
                 if do_append:
-                    lib.name = library.name + lib.name
+                    lib.set_name(library.name + lib.name)
                 debug("Group name: %s" % lib.name)
                 process_library(vehicle, lib, os.path.dirname(libraryfname))
                 if do_append:
