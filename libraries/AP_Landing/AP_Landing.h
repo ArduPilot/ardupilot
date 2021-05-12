@@ -129,6 +129,8 @@ private:
     // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / prev_WP_loc.get_distance(next_WP_loc)
     float slope;
 
+    float height_flare_log;
+
     AP_Mission &mission;
     AP_AHRS &ahrs;
     AP_SpdHgtControl *SpdHgt_Controller;
