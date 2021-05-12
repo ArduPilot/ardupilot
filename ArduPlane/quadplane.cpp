@@ -1075,7 +1075,6 @@ void QuadPlane::control_stabilize(void)
     // normal QSTABILIZE mode
     float pilot_throttle_scaled = get_pilot_throttle();
     hold_stabilize(pilot_throttle_scaled);
-
 }
 
 // run the multicopter Z controller
@@ -1789,7 +1788,7 @@ void QuadPlane::update_transition(void)
         // the quad should provide some assistance to the plane
         assisted_flight = true;
         if (!is_tailsitter()) {
-            // update tansition state for vehicles using airspeed wait
+            // update transition state for vehicles using airspeed wait
             if (transition_state != TRANSITION_AIRSPEED_WAIT) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
             }
@@ -1950,7 +1949,7 @@ void QuadPlane::update_transition(void)
     }
 
     case TRANSITION_ANGLE_WAIT_VTOL:
-        // nothing to do, this is handled in the fw attitude controller
+        // nothing to do, this is handled in the fixed wing attitude controller
         return;
 
     case TRANSITION_DONE:
@@ -2531,8 +2530,8 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->update_xy_controller();
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll();
-        plane.nav_pitch_cd = pos_control->get_pitch();
+        plane.nav_roll_cd = pos_control->get_roll_cd();
+        plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
         /*
           limit the pitch down with an expanding envelope. This
@@ -2598,8 +2597,8 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->update_xy_controller();
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll();
-        plane.nav_pitch_cd = pos_control->get_pitch();
+        plane.nav_roll_cd = pos_control->get_roll_cd();
+        plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -2736,8 +2735,8 @@ void QuadPlane::takeoff_controller(void)
     pos_control->update_xy_controller();
 
     // nav roll and pitch are controller by position controller
-    plane.nav_roll_cd = pos_control->get_roll();
-    plane.nav_pitch_cd = pos_control->get_pitch();
+    plane.nav_roll_cd = pos_control->get_roll_cd();
+    plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,

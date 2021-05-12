@@ -3,17 +3,17 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AC_PID/AC_P.h>               // P library
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_P_1D.h>            // P library (1-axis)
-#include <AC_PID/AC_P_2D.h>            // P library (2-axis)
-#include <AC_PID/AC_PI_2D.h>           // PI library (2-axis)
-#include <AC_PID/AC_PID_Basic.h>          // PID library (1-axis)
-#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
-#include "AC_AttitudeControl.h" // Attitude control library
-#include <AP_Motors/AP_Motors.h>          // motors library
-#include <AP_Vehicle/AP_Vehicle.h>         // common vehicle parameters
+#include <AC_PID/AC_P.h>            // P library
+#include <AC_PID/AC_PID.h>          // PID library
+#include <AC_PID/AC_P_1D.h>         // P library (1-axis)
+#include <AC_PID/AC_P_2D.h>         // P library (2-axis)
+#include <AC_PID/AC_PI_2D.h>        // PI library (2-axis)
+#include <AC_PID/AC_PID_Basic.h>    // PID library (1-axis)
+#include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
+#include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
+#include "AC_AttitudeControl.h"     // Attitude control library
+#include <AP_Motors/AP_Motors.h>    // motors library
+#include <AP_Vehicle/AP_Vehicle.h>  // common vehicle parameters
 
 
 // position controller default definitions
@@ -270,8 +270,8 @@ public:
     void update_vel_controller_xyz();
 
     /// get desired roll and pitch to be passed to the attitude controller
-    float get_roll() const { return _roll_target; }
-    float get_pitch() const { return _pitch_target; }
+    float get_roll_cd() const { return _roll_target; }
+    float get_pitch_cd() const { return _pitch_target; }
 
     /// get desired yaw to be passed to the attitude controller
     float get_yaw_cd() const { return _yaw_target; }
@@ -386,10 +386,10 @@ protected:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    AP_AHRS_View &        _ahrs;
-    const AP_InertialNav&       _inav;
-    const AP_Motors&            _motors;
-    AC_AttitudeControl&         _attitude_control;
+    AP_AHRS_View&           _ahrs;
+    const AP_InertialNav&   _inav;
+    const AP_Motors&        _motors;
+    AC_AttitudeControl&     _attitude_control;
 
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
@@ -418,17 +418,17 @@ protected:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
-    float       _yaw_target;               // desired yaw in centi-degrees calculated by position controller
-    float       _yaw_rate_target;          // desired yaw rate in centi-degrees per second calculated by position controller
+    float       _yaw_target;            // desired yaw in centi-degrees calculated by position controller
+    float       _yaw_rate_target;       // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
-    Vector3f    _pos_target;            // target location in cm from home
-    Vector3f    _vel_desired;           // desired velocity in cm/s
-    Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
+    Vector3f    _pos_target;            // target location in NEU cm from home
+    Vector3f    _vel_desired;           // desired velocity in NEU cm/s
+    Vector3f    _vel_target;            // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
-    Vector3f    _accel_desired;         // desired acceleration in cm/s/s (feed forward)
-    Vector3f    _accel_target;          // acceleration target in cm/s/s
-    Vector3f    _accel_error;           // acceleration error in cm/s/s
+    Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
+    Vector3f    _accel_target;          // acceleration target in NEU cm/s/s
+    Vector3f    _accel_error;           // acceleration error in NEU cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 

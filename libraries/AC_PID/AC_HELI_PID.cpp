@@ -84,7 +84,7 @@ AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, floa
 
 void AC_HELI_PID::update_leaky_i(float leak_rate)
 {
-    if(!is_zero(_ki) && !is_zero(_dt)){
+    if (!is_zero(_ki) && !is_zero(_dt)){
 
         // integrator does not leak down below Leak Min
         if (_integrator > _leak_min){

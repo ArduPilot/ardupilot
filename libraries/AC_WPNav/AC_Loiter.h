@@ -30,7 +30,7 @@ public:
     void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd, float dt);
 
     /// gets pilot desired acceleration, body frame, [forward,right]
-    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_desired_accel.x, _desired_accel.y); }
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f{_desired_accel.x, _desired_accel.y}; }
 
     /// clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _desired_accel.zero(); }
@@ -51,8 +51,8 @@ public:
     void update(bool avoidance_on = true);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll(); }
-    float get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
     static const struct AP_Param::GroupInfo var_info[];
