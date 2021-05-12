@@ -89,6 +89,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     const bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     const bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
+    height_flare_log = height;
+
     const AP_GPS &gps = AP::gps();
 
     if ((on_approach_stage && below_flare_alt) ||
@@ -405,14 +407,16 @@ void AP_Landing::type_slope_log(void) const
 // @Field: slope: Slope to landing point
 // @Field: slopeInit: Initial slope to landing point
 // @Field: altO: Rangefinder correction
-    AP::logger().Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
+// @Field: fh: Height for flare timing.
+    AP::logger().Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO,fh", "QBBBffff",
                                             AP_HAL::micros64(),
                                             type_slope_stage,
                                             flags,
                                             type_slope_flags,
                                             (double)slope,
                                             (double)initial_slope,
-                                            (double)alt_offset);
+                                            (double)alt_offset,
+                                            (double)height_flare_log);
 }
 
 bool AP_Landing::type_slope_is_throttle_suppressed(void) const
