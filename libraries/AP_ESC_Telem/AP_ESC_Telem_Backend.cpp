@@ -40,4 +40,9 @@ void AP_ESC_Telem_Backend::update_telem_data(const uint8_t esc_index, const Tele
     _frontend->update_telem_data(esc_index, new_data, data_present_mask);
 }
 
+// callback to increment the CRC error counter data in the frontend, should be called by the driver when a RX CRC error occurs
+void AP_ESC_Telem_Backend::increment_CRC_error_counter(const uint8_t esc_index) {
+    _frontend->increment_CRC_error_counter(esc_index);
+}
+
 #endif

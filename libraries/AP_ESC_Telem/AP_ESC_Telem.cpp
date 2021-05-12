@@ -288,8 +288,22 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     }
 
     _telem_data[esc_index].count++;
+    if (_telem_data[esc_index].count == 0) {
+        // reset the CRC error counter each time the telemetry packet counter overflows,
+        // to prevent calculating CRC error rate with the incorrect (overflown) packet counter.
+        _telem_data[esc_index].CRC_error_counter = 0;
+    }
     _telem_data[esc_index].types |= data_mask;
     _telem_data[esc_index].last_update_ms = AP_HAL::millis();
+}
+
+// callback to increment the CRC error counter data in the frontend, should be called by the driver when a RX CRC error occurs
+void AP_ESC_Telem::increment_CRC_error_counter(const uint8_t esc_index)
+{
+    if (esc_index > ESC_TELEM_MAX_ESCS) {
+        return;
+    }
+    _telem_data[esc_index].CRC_error_counter++;
 }
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
@@ -327,6 +341,7 @@ void AP_ESC_Telem::update()
             if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
                 || _rpm_data[i].last_update_us != _last_rpm_log_us[i]) {
 
+                const float error_rate = _telem_data[i].count == 0 ? 0.0f : _telem_data[i].CRC_error_counter/_telem_data[i].count * 100.0f;
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
 
@@ -339,6 +354,7 @@ void AP_ESC_Telem::update()
                 //   current_tot is in mili-Ampere hours
                 //   motor_temp is in centi-degrees Celsius
                 //   error_rate is in percentage
+                //   rx_err_rate is in percentage
                 const struct log_Esc pkt{
                     LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
                     time_us     : AP_HAL::micros64(),
@@ -349,7 +365,8 @@ void AP_ESC_Telem::update()
                     esc_temp    : _telem_data[i].temperature_cdeg,
                     current_tot : _telem_data[i].consumption_mah,
                     motor_temp  : _telem_data[i].motor_temp_cdeg,
-                    error_rate  : _rpm_data[i].error_rate
+                    error_rate  : _rpm_data[i].error_rate,
+                    rx_err_rate : error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
                 _last_telem_log_ms[i] = _telem_data[i].last_update_ms;
