@@ -20,7 +20,7 @@
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
 #define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
-#define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
+#define AC_AVOID_ACCEL_LIMIT_TIME           2500    // ms after avoidance is turned off till acceleration is limited
 
 /*
  * This class prevents the vehicle from leaving a polygon fence or hitting proximity-based obstacles

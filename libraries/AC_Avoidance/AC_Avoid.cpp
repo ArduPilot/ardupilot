@@ -266,14 +266,21 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
 */
 void AC_Avoid::limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt)
 {
-    if (original_vel == modified_vel || is_zero(_accel_max) || !is_positive(dt)) {
+    if (is_zero(_accel_max) || !is_positive(dt)) {
         // we can't limit accel if any of these conditions are true
         return;
     }
 
-    if (AP_HAL::millis() - _last_limit_time > AC_AVOID_ACCEL_TIMEOUT_MS) {
-        // reset this velocity because its been a long time since avoidance was active
-        _prev_avoid_vel = original_vel;
+    // ms since avoidance was last active last avoidance active
+    const uint32_t last_avoidance_active =  AP_HAL::millis() - _last_limit_time;
+
+    if (original_vel == modified_vel) {
+        // limit accel if avoidance has been just turned off
+        if (last_avoidance_active > AC_AVOID_ACCEL_LIMIT_TIME) {
+            // don't limit acceleration now because long time has passed since avoidance was active
+            _prev_avoid_vel = original_vel;
+            return;
+        }
     }
 
     // acceleration demanded by avoidance
