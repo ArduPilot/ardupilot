@@ -1,6 +1,13 @@
 #!/usr/bin/env python
+
+'''Generates parameter metadata files suitable for consumption by
+  ground control stations and various web services
+
+  AP_FLAKE8_CLEAN
+
+'''
+
 from __future__ import print_function
-import glob
 import os
 import re
 import sys
@@ -40,7 +47,7 @@ args = parser.parse_args()
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)  # noqa
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
@@ -50,6 +57,7 @@ prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
+
 
 def find_vehicle_parameter_filepath(vehicle_name):
     apm_tools_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools/')
@@ -74,6 +82,7 @@ def find_vehicle_parameter_filepath(vehicle_name):
                 return path
 
     raise ValueError("Unable to find parameters file for (%s)" % vehicle_name)
+
 
 libraries = []
 
@@ -122,6 +131,7 @@ path = os.path.normpath(os.path.dirname(vehicle_path))
 vehicle = Vehicle(name, path, truename_map[name])
 debug('Found vehicle type %s' % vehicle.name)
 
+
 def process_vehicle(vehicle):
     debug("===\n\n\nProcessing %s" % vehicle.name)
     current_file = vehicle.path+'/Parameters.cpp'
@@ -147,7 +157,6 @@ def process_vehicle(vehicle):
     if not args.emit_sitl:
         param_matches = prog_param.findall(p_text)
 
-
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
                                                    param_match[1],
@@ -161,6 +170,7 @@ def process_vehicle(vehicle):
                 continue
         p = Parameter(vehicle.name+":"+param_name, current_file)
         debug(p.name + ' ')
+        global current_param
         current_param = p.name
         fields = prog_param_fields.findall(field_text)
         field_list = []
@@ -179,6 +189,7 @@ def process_vehicle(vehicle):
     current_file = None
     debug("Processed %u params" % len(vehicle.params))
 
+
 process_vehicle(vehicle)
 
 debug("Found %u documented libraries" % len(libraries))
@@ -191,6 +202,7 @@ else:
 libraries = list(libraries)
 
 alllibs = libraries[:]
+
 
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
@@ -310,6 +322,7 @@ def process_library(vehicle, library, pathprefix=None):
 
     current_file = None
 
+
 for library in libraries:
     debug("===\n\n\nProcessing library %s" % library.name)
 
@@ -349,6 +362,7 @@ def clean_param(param):
             new_valueList.append(":".join([start, end]))
         param.Values = ",".join(new_valueList)
 
+
 def validate(param):
     """
     Validates the parameter meta data.
@@ -372,12 +386,12 @@ def validate(param):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
-    # Check for duplicate in @value field 
+    # Check for duplicate in @value field
     if (hasattr(param, "Values")):
         valueList = param.__dict__["Values"].split(",")
         values = []
         for i in valueList:
-            i = i.replace(" ","")
+            i = i.replace(" ", "")
             values.append(i.partition(":")[0])
         if (len(values) != len(set(values))):
             error("Duplicate values found")
@@ -393,6 +407,7 @@ def validate(param):
     if (hasattr(param, "Description")):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
+
 
 for param in vehicle.params:
     clean_param(param)
