@@ -6577,6 +6577,43 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.reboot_sitl()
 
+    def test_SMART_RTL(self):
+        self.context_push()
+        ex = None
+        try:
+            self.progress("arm the vehicle and takeoff in Guided")
+            self.takeoff(20, mode='GUIDED')
+            self.progress("fly around a bit (or whatever)")
+            locs = [
+                (50, 0, 20),
+                (-50, 50, 20),
+                (-50, 0, 20),
+            ]
+            for (lat, lng, alt) in locs:
+                self.fly_guided_move_local(lat, lng, alt)
+
+            self.change_mode('SMART_RTL')
+            for (lat, lng, alt) in reversed(locs):
+                self.wait_distance_to_local_position(
+                    (lat, lng, -alt),
+                    0,
+                    10,
+                    timeout=60
+                )
+            self.wait_disarmed()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+            self.disarm_vehicle(force=True)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -6980,6 +7017,10 @@ class AutoTestCopter(AutoTest):
             Test("GSF",
                  "Check GSF",
                  self.test_gsf),
+
+            Test("SMART_RTL",
+                 "Check SMART_RTL",
+                 self.test_SMART_RTL),
 
             Test("FlyEachFrame",
                  "Fly each supported internal frame",
