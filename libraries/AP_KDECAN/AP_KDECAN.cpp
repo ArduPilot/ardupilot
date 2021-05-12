@@ -445,18 +445,20 @@ void AP_KDECAN::loop()
                                 break;
                             }
 
-                            if (!_telem_sem.take(1)) {
-                                debug_can(AP_CANManager::LOG_DEBUG, "failed to get telemetry semaphore on write");
-                                break;
-                            }
+                            const uint8_t idx = id.source_id - ESC_NODE_ID_FIRST;
+                            const uint8_t num_poles = _num_poles > 0 ? _num_poles : DEFAULT_NUM_POLES;
+                            update_rpm(idx, uint16_t(uint16_t(frame.data[4] << 8 | frame.data[5]) * 60UL * 2 / num_poles));
 
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].time = rx_time;
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].voltage = frame.data[0] << 8 | frame.data[1];
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].current = frame.data[2] << 8 | frame.data[3];
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].rpm = frame.data[4] << 8 | frame.data[5];
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].temp = frame.data[6];
-                            _telemetry[id.source_id - ESC_NODE_ID_FIRST].new_data = true;
-                            _telem_sem.give();
+                            TelemetryData t {
+                                .temperature_cdeg = int16_t(frame.data[6] * 100),
+                                .voltage = float(uint16_t(frame.data[0] << 8 | frame.data[1])) * 0.01f,
+                                .current = float(uint16_t(frame.data[2] << 8 | frame.data[3])) * 0.01f,
+                            };
+                            update_telem_data(idx, t,
+                                AP_ESC_Telem_Backend::TelemetryType::CURRENT
+                                    | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+                                    | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+
                             break;
                         }
                         default:
@@ -581,41 +583,6 @@ void AP_KDECAN::update()
     } else {
         debug_can(AP_CANManager::LOG_DEBUG, "failed to get PWM semaphore on write");
     }
-
-    AP_Logger *logger = AP_Logger::get_singleton();
-
-    if (logger == nullptr || !logger->should_log(0xFFFFFFFF)) {
-        return;
-    }
-
-    if (!_telem_sem.take(1)) {
-        debug_can(AP_CANManager::LOG_DEBUG, "failed to get telemetry semaphore on DF read");
-        return;
-    }
-
-    telemetry_info_t telem_buffer[KDECAN_MAX_NUM_ESCS] {};
-
-    for (uint8_t i = 0; i < _esc_max_node_id; i++) {
-        if (_telemetry[i].new_data) {
-            telem_buffer[i] = _telemetry[i];
-            _telemetry[i].new_data = false;
-        }
-    }
-
-    _telem_sem.give();
-
-    uint8_t num_poles = _num_poles > 0 ? _num_poles : DEFAULT_NUM_POLES;
-
-    // log ESC telemetry data
-    for (uint8_t i = 0; i < _esc_max_node_id; i++) {
-        if (telem_buffer[i].new_data) {
-            logger->Write_ESC(i, telem_buffer[i].time,
-                          int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
-                          telem_buffer[i].voltage,
-                          telem_buffer[i].current,
-                          int16_t(telem_buffer[i].temp * 100U), 0, 0);
-        }
-    }
 }
 
 bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
@@ -659,54 +626,6 @@ bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
     }
 
     return true;
-}
-
-void AP_KDECAN::send_mavlink(uint8_t chan)
-{
-    if (!_telem_sem.take(1)) {
-        debug_can(AP_CANManager::LOG_DEBUG, "failed to get telemetry semaphore on MAVLink read");
-        return;
-    }
-
-    telemetry_info_t telem_buffer[KDECAN_MAX_NUM_ESCS];
-    memcpy(telem_buffer, _telemetry, sizeof(telemetry_info_t) * KDECAN_MAX_NUM_ESCS);
-    _telem_sem.give();
-
-    uint16_t voltage[4] {};
-    uint16_t current[4] {};
-    uint16_t rpm[4] {};
-    uint8_t temperature[4] {};
-    uint16_t totalcurrent[4] {};
-    uint16_t count[4] {};
-    uint8_t num_poles = _num_poles > 0 ? _num_poles : DEFAULT_NUM_POLES;
-    uint64_t now = AP_HAL::micros64();
-
-    for (uint8_t i = 0; i < _esc_max_node_id && i < 8; i++) {
-        uint8_t idx = i % 4;
-        if (telem_buffer[i].time && (now - telem_buffer[i].time < 1000000)) {
-            voltage[idx]      = telem_buffer[i].voltage;
-            current[idx]      = telem_buffer[i].current;
-            rpm[idx]          = uint16_t(telem_buffer[i].rpm  * 60UL * 2 / num_poles);
-            temperature[idx]  = telem_buffer[i].temp;
-        } else {
-            voltage[idx] = 0;
-            current[idx] = 0;
-            rpm[idx] = 0;
-            temperature[idx] = 0;
-        }
-
-        if (idx == 3 || i == _esc_max_node_id - 1) {
-            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)chan, ESC_TELEMETRY_1_TO_4)) {
-                return;
-            }
-
-            if (i < 4) {
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count);
-            } else {
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)chan, temperature, voltage, current, totalcurrent, rpm, count);
-            }
-        }
-    }
 }
 
 bool AP_KDECAN::run_enumeration(bool start_stop)

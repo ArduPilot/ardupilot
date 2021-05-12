@@ -22,6 +22,7 @@
 #include <AP_HAL/Semaphores.h>
 
 #include <AP_Param/AP_Param.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #include "piccolo_protocol/ESCPackets.h"
 #include "piccolo_protocol/LegacyESCPackets.h"
@@ -40,7 +41,7 @@
 #define PICCOLO_MSG_RATE_HZ_MAX 500
 #define PICCOLO_MSG_RATE_HZ_DEFAULT 50
 
-class AP_PiccoloCAN : public AP_CANDriver
+class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
 {
 public:
     AP_PiccoloCAN();
@@ -79,14 +80,11 @@ public:
     // called from SRV_Channels
     void update();
 
-    // send ESC telemetry messages over MAVLink
-    void send_esc_telemetry_mavlink(uint8_t mav_chan);
-
     // return true if a particular ESC is 'active' on the Piccolo interface
     bool is_esc_channel_active(uint8_t chan);
 
     // return true if a particular ESC has been detected
-    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
+    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000) const;
 
     // return true if a particular ESC is enabled
     bool is_esc_enabled(uint8_t chan);
