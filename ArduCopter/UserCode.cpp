@@ -90,6 +90,8 @@ void Copter::userhook_init()
 
    zoom_out = true;
 
+   cam_button_press_hold =false;
+
 
 }
 #endif
@@ -595,61 +597,64 @@ void Copter::Detect_Buttons(){
 
 void Copter::Decode_Buttons(){
 
-if(g.ch_output == 0){
+	if(g.ch_output == 0){
 
-	if(short_press_flag_ch7){
-		camera_mount.toggle_record();
-		short_press_flag_ch7 = false;
+		if(short_press_flag_ch7){
+			camera_mount.toggle_record();
+			short_press_flag_ch7 = false;
+		}
+
+		if(long_press_flag_ch7){
+			camera_mount.toggle_camera_state();
+			long_press_flag_ch7 = false;
+		}
+
+	}else if(g.ch_output == 1){
+
+		camera_mount.cam_button_output(g.ch_output);
+
+		if(ch7_button_hold){
+
+			camera_mount.cam_button_pressed(true);
+
+			if(!cam_button_press_hold){
+				camera_mount.enable_follow(false);
+				cam_button_press_hold = true;
+			}
+
+		}else{
+			camera_mount.cam_button_pressed(false);
+			cam_button_press_hold = false;
+		}
+
+	}else if(g.ch_output == 2){
+
+		camera_mount.cam_button_output(g.ch_output);
+
+		if(ch7_button_hold){
+			camera_mount.cam_button_pressed(true);
+		}else{
+			camera_mount.cam_button_pressed(false);
+		}
+
 	}
-
-	if(long_press_flag_ch7){
-		camera_mount.toggle_camera_state();
-		long_press_flag_ch7 = false;
-	}
-
-
-}else if(g.ch_output == 1){
-
-
-	  camera_mount.cam_button_output(g.ch_output);
-
-
-	if(ch7_button_hold){
-		camera_mount.cam_button_pressed(true);
-	}else{
-		camera_mount.cam_button_pressed(false);
-	}
-
-
-}else if(g.ch_output == 2){
-
-	  camera_mount.cam_button_output(g.ch_output);
-
-
-	if(ch7_button_hold){
-		camera_mount.cam_button_pressed(true);
-	}else{
-		camera_mount.cam_button_pressed(false);
-	}
-
-
-
-
-}
-
 
 
 
 	if(short_press_flag_ch9){
-		camera_mount.center_yaw();
+		camera_mount.enable_follow(true);
+		//camera_mount.center_yaw();
 		short_press_flag_ch9 = false;
 	}
 
 	if(long_press_flag_ch9){
 		//camera_mount.flip_image();
-		camera_mount.look_down();
+		//camera_mount.look_down();
+
+		camera_mount.enable_follow(false);
 		long_press_flag_ch9 = false;
 	}
+
 
 	if(short_press_flag_ch10){
 
@@ -666,9 +671,7 @@ if(g.ch_output == 0){
 				zoom_out = true;
 				camera_mount.set_camera_zoom(false);
 			}
-
 		}
-
 
 		short_press_flag_ch10 = false;
 	}

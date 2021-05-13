@@ -192,6 +192,15 @@ void AP_Mount_Backend::cam_button_output(int8_t output_type)  { _cam_button_outp
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount_Backend::enable_follow(bool en)
 {
+
+	/*
+	if(en == _enable_follow){
+		return;
+	}
+*/
+
+	command_flags.enable_yaw_follow = true;
+
 	 if(en){
 		 _enable_follow = true;
 	 }else{

@@ -68,6 +68,8 @@ bool flight_mode_switch;
 
 bool zoom_out;
 
+bool cam_button_press_hold;
+
 
 enum vehicle_state{
 	disarm,

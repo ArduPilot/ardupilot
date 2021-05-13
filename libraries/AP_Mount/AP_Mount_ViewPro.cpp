@@ -30,9 +30,7 @@ void AP_Mount_ViewPro::init()
     }else{
 
     	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ViewPro, 0);
-
     }
-
 
 
     if (_port) {
@@ -77,6 +75,7 @@ void AP_Mount_ViewPro::init()
 	command_flags.full_zoom = false;
 	command_flags.turn_camera_on = false;
 	command_flags.turn_camera_off = false;
+	command_flags.enable_yaw_follow = true;
 	yaw_center_reset_flag = false;
 	query_state_flag = false;
 	image_flip_toggle =false;
@@ -354,6 +353,18 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		_last_send = AP_HAL::millis();
 		command_flags.look_down = false;
 		return;
+
+	}else if(command_flags.enable_yaw_follow){
+
+		enable_follow_yaw(_enable_follow);
+
+		if(_enable_follow){
+			command_flags.center_yaw = true;
+		}
+
+		_last_send = AP_HAL::millis();
+		command_flags.enable_yaw_follow = false;
+
 	}
 
 
@@ -888,7 +899,7 @@ void AP_Mount_ViewPro::turn_motors_off(bool en)
 
 
 
-void AP_Mount_ViewPro::enable_follow_yaw(){
+void AP_Mount_ViewPro::enable_follow_yaw(bool en){
 
 	cmd_11_byte_struct enable_follow;
 	enable_follow.byte1 = 0x3E;
@@ -902,6 +913,15 @@ void AP_Mount_ViewPro::enable_follow_yaw(){
 	enable_follow.byte9 = 0x00;
 	enable_follow.byte10 = 0x00;
 	enable_follow.byte11 = 0x21;
+
+	if(en){
+
+	}else{
+
+		enable_follow.byte7 = 0x00;
+		enable_follow.byte11 = 0x20;
+
+	}
 
 	uint8_t* buf;
 	buf = (uint8_t*)&enable_follow;
@@ -1034,7 +1054,7 @@ void AP_Mount_ViewPro::command_gimbal(){
 			cmd_set_data.crc = 0;
 
 
-			/*
+/*
 			// force follow mode by not giving a control mode to Yaw
 			if(!_RC_control_enable){
 				cmd_set_data.YM = 0x00;

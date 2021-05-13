@@ -46,7 +46,7 @@ private:
 
     void update_zoom_focus_from_rc();
 
-    void enable_follow_yaw();
+    void enable_follow_yaw(bool en);
     void disable_follow_yaw();
 
 

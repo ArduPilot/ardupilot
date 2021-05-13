@@ -160,6 +160,7 @@ protected:
 		bool default_pip_color;
 		bool flip_image_IR;
 		bool flip_image_EO;
+		bool enable_yaw_follow;
     	}  command_flags;
 
 private:
