@@ -143,14 +143,13 @@ float ModeGuided::get_distance_to_destination() const
         return _distance_to_destination;
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
-        return 0.0f;
+        break;
     case Guided_Loiter:
         return rover.mode_loiter.get_distance_to_destination();
     case Guided_SteeringAndThrottle:
-        return 0.0f;
+        break;
     }
 
-    // we should never reach here but just in case, return 0
     return 0.0f;
 }
 
@@ -180,16 +179,16 @@ bool ModeGuided::set_desired_speed(float speed)
             g2.wp_nav.set_desired_speed(speed);
             return true;
         }
-        return false;
+        break;
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
         // speed is set from mavlink message
-        return false;
+        break;
     case Guided_Loiter:
         return rover.mode_loiter.set_desired_speed(speed);
     case Guided_SteeringAndThrottle:
         // no speed control
-        return false;
+        break;
     }
     return false;
 }
@@ -203,11 +202,11 @@ bool ModeGuided::get_desired_location(Location& destination) const
             destination = g2.wp_nav.get_oa_destination();
             return true;
         }
-        return false;
+        break;
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
         // not supported in these submodes
-        return false;
+        break;
     case Guided_Loiter:
         // get destination from loiter
         return rover.mode_loiter.get_desired_location(destination);
@@ -216,7 +215,6 @@ bool ModeGuided::get_desired_location(Location& destination) const
         break;
     }
 
-    // should never get here but just in case
     return false;
 }
 
