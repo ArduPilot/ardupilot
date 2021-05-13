@@ -37,7 +37,7 @@ public:
     
 private:
     SITL_State *_sitlState;
-    AP_ESC_Telem_SITL esc_telem;
+    AP_ESC_Telem_SITL *esc_telem;
 
     uint16_t _freq_hz;
     uint16_t _enable_mask;
