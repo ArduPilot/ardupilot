@@ -287,7 +287,6 @@ void ModeZigZag::manual_control()
 {
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
-    float takeoff_climb_rate = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
@@ -330,7 +329,6 @@ void ModeZigZag::manual_control()
         pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Takeoff:
@@ -338,9 +336,6 @@ void ModeZigZag::manual_control()
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
-
-        // get takeoff adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -351,9 +346,8 @@ void ModeZigZag::manual_control()
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
-        // update altitude target and call position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate + takeoff_climb_rate, false);
-        pos_control->update_z_controller();
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
     case AltHold_Landed_Ground_Idle:
@@ -365,7 +359,6 @@ void ModeZigZag::manual_control()
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Flying:
@@ -385,9 +378,11 @@ void ModeZigZag::manual_control()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
-        pos_control->update_z_controller();
         break;
     }
+
+    // call z-axis position controller
+    pos_control->update_z_controller();
 }
 
 // return true if vehicle is within a small area around the destination

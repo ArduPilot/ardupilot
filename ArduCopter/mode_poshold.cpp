@@ -66,7 +66,6 @@ bool ModePosHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModePosHold::run()
 {
-    float takeoff_climb_rate = 0.0f;
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     const Vector3f& vel = inertial_nav.get_velocity();
@@ -122,19 +121,16 @@ void ModePosHold::run()
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
-        // get take-off adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff.do_pilot_takeoff(target_climb_rate);
 
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update(false);
-
-        // set position controller targets
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate + takeoff_climb_rate, false);
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;

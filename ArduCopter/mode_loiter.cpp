@@ -76,7 +76,6 @@ void ModeLoiter::run()
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
-    float takeoff_climb_rate = 0.0f;
 
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
@@ -120,7 +119,6 @@ void ModeLoiter::run()
         pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Takeoff:
@@ -129,21 +127,17 @@ void ModeLoiter::run()
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
-        // get takeoff adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff.do_pilot_takeoff(target_climb_rate);
 
         // run loiter controller
         loiter_nav->update();
 
         // call attitude controller
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
-
-        // update altitude target and call position controller
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate + takeoff_climb_rate, false);
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Landed_Ground_Idle:
@@ -155,7 +149,6 @@ void ModeLoiter::run()
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Flying:
@@ -181,9 +174,11 @@ void ModeLoiter::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
-        pos_control->update_z_controller();
         break;
     }
+
+    // call z-axis position controller
+    pos_control->update_z_controller();
 }
 
 uint32_t ModeLoiter::wp_distance() const
