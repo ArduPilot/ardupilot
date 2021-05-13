@@ -23,7 +23,7 @@ void ModeAltHold::run()
 {
     float takeoff_climb_rate = 0.0f;
 
-    // initialize vertical speeds and acceleration
+    // set vertical speeds and acceleration, so that parameter changes take effect without mode change
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
