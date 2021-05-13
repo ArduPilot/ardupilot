@@ -227,8 +227,6 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 // should be called at 100hz or more
 void ModeFlowHold::run()
 {
-    float takeoff_climb_rate = 0.0f;
-
     update_height_estimate();
 
     // initialize vertical speeds and acceleration
@@ -279,14 +277,11 @@ void ModeFlowHold::run()
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
-        // get take-off adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call position controller
-        copter.pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate + takeoff_climb_rate, false);
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
     case AltHold_Landed_Ground_Idle:
