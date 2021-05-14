@@ -2642,7 +2642,8 @@ void QuadPlane::vtol_position_controller(void)
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,target_altitude_cm)) {
                 break;
             }
-            if (poscontrol.slow_descent) {
+            if (poscontrol.slow_descent &&
+                plane.prev_WP_loc.get_distance(plane.next_WP_loc) > 50) {
                 // gradually descend as we approach target
                 plane.auto_state.wp_proportion = plane.current_loc.line_path_proportion(plane.prev_WP_loc, plane.next_WP_loc);
                 int32_t prev_alt;
@@ -3358,7 +3359,7 @@ void QuadPlane::guided_start(void)
         poscontrol.slow_descent = from_alt > to_alt;
         return;
     }
-    // defualt back to old method
+    // default back to old method
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
