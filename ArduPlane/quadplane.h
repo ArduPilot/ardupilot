@@ -60,6 +60,7 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+    void update_land_positioning(void);
 
     void update_throttle_mix(void);
     
@@ -469,8 +470,9 @@ private:
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
-        Vector3f target;
+        Vector3f target_cm;
         bool slow_descent:1;
+        bool pilot_correction_active;
     } poscontrol;
 
     struct {
