@@ -2659,7 +2659,7 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
         Vector3f zero;
-        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, zero, zero);
+        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, poscontrol.target_vel_cms, zero);
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
