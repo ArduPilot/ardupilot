@@ -25,6 +25,8 @@ extern const AP_HAL::HAL& hal;
 
 #define FEMTO_DEBUGGING 0
 
+#define FEMTO_MSG_ID_UAVGPS 		8001
+
 #if FEMTO_DEBUGGING
 #include <cstdio>
  # define Debug(fmt, args ...)                  \
@@ -38,13 +40,9 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
-const char* const AP_GPS_FEMTO::_initialisation_blob[6] {
+const char* const AP_GPS_FEMTO::_initialisation_blob[2] {
     "\r\n\r\nunlogall\r\n", // cleanup enviroment
-    "log bestposb ontime 0.2\r\n", // get bestpos
-    "log bestvelb ontime 0.2\r\n", // get bestvel
-    "log psrdopb onchanged\r\n", // tersus
-    "log psrdopb ontime 0.2\r\n", // comnav
-    "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
+    "log uavgpsb ontime 0.2\r\n", // get bestpos
 };
 
 AP_GPS_FEMTO::AP_GPS_FEMTO(AP_GPS &_gps, AP_GPS::GPS_State &_state,
@@ -66,16 +64,6 @@ bool
 AP_GPS_FEMTO::read(void)
 {
     uint32_t now = AP_HAL::millis();
-
-    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
-        const char *init_str = _initialisation_blob[_init_blob_index];
-
-        if (now > _init_blob_time) {
-            port->write((const uint8_t*)init_str, strlen(init_str));
-            _init_blob_time = now + 200;
-            _init_blob_index++;
-        }
-    }
 
     bool ret = false;
     while (port->available() > 0) {
@@ -123,7 +111,7 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             femto_msg.header.data[1] = FEMTO_PREAMBLE2;
             femto_msg.header.data[2] = FEMTO_PREAMBLE3;
             femto_msg.header.data[3] = temp;
-            femto_msg.header.femto_headeru.headerlength = temp;
+            femto_msg.header.femto_header.headerlength = temp;
             femto_msg.femto_state = femto_msg_parser::HEADERDATA;
             femto_msg.read = 4;
             break;
@@ -135,20 +123,20 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             }
             femto_msg.header.data[femto_msg.read] = temp;
             femto_msg.read++;
-            if (femto_msg.read >= femto_msg.header.femto_headeru.headerlength)
+            if (femto_msg.read >= femto_msg.header.femto_header.headerlength)
             {
                 femto_msg.femto_state = femto_msg_parser::DATA;
             }
             break;
         case femto_msg_parser::DATA:
             if (femto_msg.read >= sizeof(femto_msg.data)) {
-                Debug("parse data overflow length=%u msglength=%u\n", (unsigned)femto_msg.read,femto_msg.header.femto_headeru.messagelength);
+                Debug("parse data overflow length=%u msglength=%u\n", (unsigned)femto_msg.read,femto_msg.header.femto_header.messagelength);
                 femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
                 break;
             }
-            femto_msg.data.bytes[femto_msg.read - femto_msg.header.femto_headeru.headerlength] = temp;
+            femto_msg.data.bytes[femto_msg.read - femto_msg.header.femto_header.headerlength] = temp;
             femto_msg.read++;
-            if (femto_msg.read >= (femto_msg.header.femto_headeru.messagelength + femto_msg.header.femto_headeru.headerlength))
+            if (femto_msg.read >= (femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength))
             {
                 Debug("FEMTO DATA exit\n");
                 femto_msg.femto_state = femto_msg_parser::CRC1;
@@ -170,8 +158,8 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             femto_msg.crc += (uint32_t) (temp << 24);
             femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
 
-            uint32_t crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_headeru.headerlength, (uint8_t *)&femto_msg.header.data, (uint32_t)0);
-            crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_headeru.messagelength, (uint8_t *)&femto_msg.data, crc);
+            uint32_t crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.headerlength, (uint8_t *)&femto_msg.header.data, (uint32_t)0);
+            crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.messagelength, (uint8_t *)&femto_msg.data, crc);
 
             if (femto_msg.crc == crc)
             {
@@ -191,102 +179,71 @@ AP_GPS_FEMTO::parse(uint8_t temp)
 bool
 AP_GPS_FEMTO::process_message(void)
 {
-    uint16_t messageid = femto_msg.header.femto_headeru.messageid;
+    uint16_t messageid = femto_msg.header.femto_header.messageid;
 
     Debug("FEMTO process_message messid=%u\n",messageid);
 
-    check_new_itow(femto_msg.header.femto_headeru.tow, femto_msg.header.femto_headeru.messagelength + femto_msg.header.femto_headeru.headerlength);
+    check_new_itow(femto_msg.header.femto_header.tow, femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength);
     
-    if (messageid == 42) // bestpos
+    if (messageid == FEMTO_MSG_ID_UAVGPS) // bestpos
     {
-        const bestpos &bestposu = femto_msg.data.bestposu;
+        const femto_uav_gps_t &uav_gps = femto_msg.data.uav_gps;
 
-        state.time_week = femto_msg.header.femto_headeru.week;
-        state.time_week_ms = (uint32_t) femto_msg.header.femto_headeru.tow;
+        state.time_week = femto_msg.header.femto_header.week;
+        state.time_week_ms = (uint32_t) femto_msg.header.femto_header.tow;
         state.last_gps_time_ms = AP_HAL::millis();
 
-        state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
-        state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
-        state.location.alt = (int32_t) (bestposu.hgt * 100);
+        state.location.lat = uav_gps.lat;
+        state.location.lng = uav_gps.lon;
+        state.location.alt = uav_gps.alt;
 
-        state.num_sats = bestposu.svsused;
+        state.num_sats = uav_gps.satellites_used;
 
-        state.horizontal_accuracy = (float) ((bestposu.latsdev + bestposu.lngsdev)/2);
-        state.vertical_accuracy = (float) bestposu.hgtsdev;
+        state.horizontal_accuracy = uav_gps.eph;
+        state.vertical_accuracy = uav_gps.epv;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
-        state.rtk_age_ms = bestposu.diffage * 1000;
-        state.rtk_num_sats = bestposu.svsused;
+//@TODO       state.rtk_age_ms = bestposu.diffage * 1000;
+//@TODO       state.rtk_num_sats = bestposu.svsused;
 
-        if (bestposu.solstat == 0) // have a solution
+        switch (uav_gps.fix_type)
         {
-            switch (bestposu.postype)
-            {
-                case 16:
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
-                    break;
-                case 17: // psrdiff
-                case 18: // waas
-                case 20: // omnistar
-                case 68: // ppp_converg
-                case 69: // ppp
-                    state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-                    break;
-                case 32: // l1 float
-                case 33: // iono float
-                case 34: // narrow float
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
-                    break;
-                case 48: // l1 int
-                case 50: // narrow int
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
-                    break;
-                case 0: // NONE
-                case 1: // FIXEDPOS
-                case 2: // FIXEDHEIGHT
-                default:
-                    state.status = AP_GPS::NO_FIX;
-                    break;
-            }
+            case 0:
+            case 1:
+                state.status = AP_GPS::NO_FIX;
+                break;
+            case 2:
+                state.status = AP_GPS::GPS_FIX_TYPE_2D_FIX;
+                break;                
+            case 3:
+                state.status = AP_GPS::GPS_FIX_TYPE_3D_FIX;
+                break;  
+            case 4:
+                state.status = AP_GPS::GPS_FIX_TYPE_DGPS;
+                break;              
+            case 5:
+                state.status = AP_GPS::GPS_FIX_TYPE_RTK_FLOAT;
+                break;                
+            case 6:
+                state.status = AP_GPS::GPS_FIX_TYPE_RTK_FIXED;
+                break;             
+            default:
+                state.status = AP_GPS::NO_FIX;
+                break;
         }
-        else
-        {
-            state.status = AP_GPS::NO_FIX;
-        }
-        
-        _new_position = true;
-    }
 
-    if (messageid == 99) // bestvel
-    {
-        const bestvel &bestvelu = femto_msg.data.bestvelu;
-
-        state.ground_speed = (float) bestvelu.horspd;
-        state.ground_course = (float) bestvelu.trkgnd;
+        state.ground_speed = uav_gps.vel_m_s;
+        state.ground_course = uav_gps.cog_rad * RAD_TO_DEG;
         fill_3d_velocity();
-        state.velocity.z = -(float) bestvelu.vertspd;
+        state.velocity.z = uav_gps.vel_d_m_s;
         state.have_vertical_velocity = true;
-        
-        _last_vel_time = (uint32_t) femto_msg.header.femto_headeru.tow;
-        _new_speed = true;
-    }
 
-    if (messageid == 174) // psrdop
-    {
-        const psrdop &psrdopu = femto_msg.data.psrdopu;
+        state.hdop = (uint16_t) (uav_gps.hdop*100);
+        state.vdop = (uint16_t) (uav_gps.vdop*100);
 
-        state.hdop = (uint16_t) (psrdopu.hdop*100);
-        state.vdop = (uint16_t) (psrdopu.htdop*100);
-        return false;
-    }
-
-    // ensure out position and velocity stay insync
-    if (_new_position && _new_speed && _last_vel_time == state.time_week_ms) {
-        _new_speed = _new_position = false;
-        
         return true;
     }
-    
+
     return false;
 }
 

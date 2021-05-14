@@ -45,117 +45,75 @@ private:
     static const uint8_t FEMTO_PREAMBLE1 = 0xaa;
     static const uint8_t FEMTO_PREAMBLE2 = 0x44;
     static const uint8_t FEMTO_PREAMBLE3 = 0x12;
-
-    // do we have new position information?
-    bool            _new_position:1;
-    // do we have new speed information?
-    bool            _new_speed:1;
     
-    uint32_t        _last_vel_time;
-    
-    uint8_t _init_blob_index = 0;
-    uint32_t _init_blob_time = 0;
-    static const char* const _initialisation_blob[6];
+    static const char* const _initialisation_blob[2];
    
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
 
-    struct PACKED femto_header
+    /**
+    * femto_msg_header_t is femto data header
+    */
+    struct PACKED femto_msg_header_t 
     {
-        // 0
-        uint8_t preamble[3];
-        // 3
-        uint8_t headerlength;
-        // 4
-        uint16_t messageid;
-        // 6
-        uint8_t messagetype;
-        //7
-        uint8_t portaddr;
-        //8
-        uint16_t messagelength;
-        //10
-        uint16_t sequence;
-        //12
-        uint8_t idletime;
-        //13
-        uint8_t timestatus;
-        //14
-        uint16_t week;
-        //16
-        uint32_t tow;
-        //20
-        uint32_t recvstatus;
-        // 24
-        uint16_t resv;
-        //26
-        uint16_t recvswver;
-    };    
-
-    struct PACKED psrdop
-    {
-        float gdop;
-        float pdop;
-        float hdop;
-        float htdop;
-        float tdop;
-        float cutoff;
-        uint32_t svcount;
-        // extra data for individual prns
+        uint8_t 	preamble[3];	/**< Frame header preamble 0xaa 0x44 0x12 */
+        uint8_t 	headerlength;	/**< Frame header length ,from the beginning 0xaa */
+        uint16_t 	messageid;     /**< Frame message id ,example the FEMTO_MSG_ID_UAVGPS 8001*/
+        uint8_t 	messagetype;	/**< Frame message id type */
+        uint8_t 	portaddr;	/**< Frame message port address */
+        uint16_t 	messagelength; /**< Frame message data length,from the beginning headerlength+1,end headerlength + messagelength*/
+        uint16_t 	sequence;
+        uint8_t 	idletime;	/**< Frame message idle module time */
+        uint8_t 	timestatus;
+        uint16_t 	week;
+        uint32_t 	tow;
+        uint32_t 	recvstatus;
+        uint16_t 	resv;
+        uint16_t 	recvswver;
     };
 
-    struct PACKED bestpos
+    /**
+    * femto_uav_gps_t struct need to be packed
+    */
+    struct PACKED femto_uav_gps_t
     {
-        uint32_t solstat;      ///< Solution status
-        uint32_t postype;      ///< Position type
-        double lat;            ///< latitude (deg)
-        double lng;            ///< longitude (deg)
-        double hgt;            ///< height above mean sea level (m)
-        float undulation;      ///< relationship between the geoid and the ellipsoid (m)
-        uint32_t datumid;      ///< datum id number
-        float latsdev;         ///< latitude standard deviation (m)
-        float lngsdev;         ///< longitude standard deviation (m)
-        float hgtsdev;         ///< height standard deviation (m)
-        // 4 bytes
-        uint8_t stnid[4];      ///< base station id
-        float diffage;         ///< differential position age (sec)
-        float sol_age;         ///< solution age (sec)
-        uint8_t svstracked;    ///< number of satellites tracked
-        uint8_t svsused;       ///< number of satellites used in solution
-        uint8_t svsl1;         ///< number of GPS plus GLONASS L1 satellites used in solution
-        uint8_t svsmultfreq;   ///< number of GPS plus GLONASS L2 satellites used in solution
-        uint8_t resv;          ///< reserved
-        uint8_t extsolstat;    ///< extended solution status - OEMV and greater only
-        uint8_t galbeisigmask;
-        uint8_t gpsglosigmask;
-    };
-
-    struct PACKED bestvel
-    {
-        uint32_t solstat;
-        uint32_t veltype;
-        float latency;
-        float age;
-        double horspd;
-        double trkgnd;
-        // + up
-        double vertspd;
-        float resv;
+        uint64_t 	time_utc_usec;		/** Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0*/
+        int32_t 	lat;			/** Latitude in 1E-7 degrees*/
+        int32_t 	lon;			/** Longitude in 1E-7 degrees*/
+        int32_t 	alt;			/** Altitude in 1E-3 meters above MSL, (millimetres)*/
+        int32_t 	alt_ellipsoid;		/** Altitude in 1E-3 meters bove Ellipsoid, (millimetres)*/
+        float 		s_variance_m_s;		/** GPS speed accuracy estimate, (metres/sec)*/
+        float 		c_variance_rad;		/** GPS course accuracy estimate, (radians)*/
+        float 		eph;			/** GPS horizontal position accuracy (metres)*/
+        float 		epv;			/** GPS vertical position accuracy (metres)*/
+        float 		hdop;			/** Horizontal dilution of precision*/
+        float 		vdop;			/** Vertical dilution of precision*/
+        int32_t 	noise_per_ms;		/** GPS noise per millisecond*/
+        int32_t 	jamming_indicator;	/** indicates jamming is occurring*/
+        float 		vel_m_s;		/** GPS ground speed, (metres/sec)*/
+        float 		vel_n_m_s;		/** GPS North velocity, (metres/sec)*/
+        float 		vel_e_m_s;		/** GPS East velocity, (metres/sec)*/
+        float 		vel_d_m_s;		/** GPS Down velocity, (metres/sec)*/
+        float 		cog_rad;		/** Course over ground (NOT heading, but direction of movement), -PI..PI, (radians)*/
+        int32_t 	timestamp_time_relative;/** timestamp + timestamp_time_relative = Time of the UTC timestamp since system start, (microseconds)*/
+        float 		heading;		/** heading angle of XYZ body frame rel to NED. Set to NaN if not available and updated (used for dual antenna GPS), (rad, [-PI, PI])*/
+        uint8_t 	fix_type;		/** 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: RTCM code differential, 5: Real-Time Kinematic, float, 6: Real-Time Kinematic, fixed, 8: Extrapolated. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.*/
+        bool 		vel_ned_valid;		/** True if NED velocity is valid*/
+        uint8_t 	satellites_used;	/** Number of satellites used*/
+        uint8_t		heading_type;		/**< 0 invalid,5 for float,6 for fix*/
     };
     
     union PACKED msgbuffer {
-        bestvel bestvelu;
-        bestpos bestposu;
-        psrdop psrdopu;
+        femto_uav_gps_t uav_gps;
         uint8_t bytes[256];
     };
     
     union PACKED msgheader {
-        femto_header femto_headeru;
+        femto_header femto_header;
         uint8_t data[28];
     };
 
-    struct PACKED femto_msg_parser
+    struct PACKED femto_msg_parser_t
     {
         enum
         {
