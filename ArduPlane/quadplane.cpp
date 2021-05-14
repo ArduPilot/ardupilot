@@ -728,7 +728,6 @@ bool QuadPlane::setup(void)
     default:
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
     }
-    ::printf("QuadPlane initialise, class: %u, type: %u\n", frame_class.get(), frame_type.get());
 
     if (tailsitter.motor_mask == 0) {
         // this is a normal quadplane
@@ -754,7 +753,7 @@ bool QuadPlane::setup(void)
         // this is a copter tailsitter with motor layout specified by frame_class and frame_type
         // tilting motors are not supported (tiltrotor control variables are ignored)
         if (tilt.tilt_mask != 0) {
-            ::printf("Warning: Motor tilt not supported\n");
+            gcs().send_text(MAV_SEVERITY_ERROR, "Warning: Motor tilt not supported\n");
         }
         rotation = ROTATION_PITCH_90;
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
@@ -860,7 +859,7 @@ bool QuadPlane::setup(void)
     // param count will have changed
     AP_Param::invalidate_count();
 
-    ::printf("QuadPlane initialised, class: %s, type: %s\n", motors->get_frame_string(), motors->get_type_string());
+    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised, class: %s, type: %s", motors->get_frame_string(), motors->get_type_string());
     initialised = true;
     return true;
 }
