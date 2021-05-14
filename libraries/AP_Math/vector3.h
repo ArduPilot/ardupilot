@@ -186,6 +186,9 @@ public:
     void rotate(enum Rotation rotation);
     void rotate_inverse(enum Rotation rotation);
 
+    // rotate in xy plane
+    void rotate_xy(float rotation_rad);
+
     // gets the length of this vector squared
     T  length_squared() const
     {
