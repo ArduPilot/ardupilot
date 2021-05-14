@@ -4631,7 +4631,7 @@ class AutoTest(ABC):
             self.wait_distance(distance, accuracy=2)
             self.set_rc(3, 1500)
 
-    def guided_achieve_heading(self, heading):
+    def guided_achieve_heading(self, heading, accuracy=None):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 200:
@@ -4648,6 +4648,10 @@ class AutoTest(ABC):
             )
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             self.progress("heading=%d want=%d" % (m.heading, int(heading)))
+            if accuracy is not None:
+                delta = abs(m.heading - int(heading))
+                if delta <= accuracy:
+                    return
             if m.heading == int(heading):
                 return
 
