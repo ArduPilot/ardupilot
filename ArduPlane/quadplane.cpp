@@ -1425,6 +1425,10 @@ bool QuadPlane::is_flying_vtol(void) const
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 {
+    if (poscontrol.state == QPOS_LAND_FINAL) {
+        // when in final use descent rate for final even if alt has climbed again
+        height_above_ground = MIN(height_above_ground, land_final_alt);
+    }
     const float max_climb_speed = wp_nav->get_default_speed_up();
     float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
                                    height_above_ground,
@@ -1492,6 +1496,9 @@ void QuadPlane::control_loiter()
     loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
     
     // run loiter controller
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
     loiter_nav->update();
 
     // nav roll and pitch are controller by loiter controller
@@ -1525,9 +1532,13 @@ void QuadPlane::control_loiter()
             }
         }
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        float descent_rate_cms = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
+        float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
 
-        set_climb_rate_cms(-descent_rate_cms, true);
+        if (poscontrol.state == QPOS_LAND_FINAL && (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
+            ahrs.setTouchdownExpected(true);
+        }
+
+        set_climb_rate_cms(-descent_rate_cms, descent_rate_cms>0);
         check_land_complete();
     } else if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         set_climb_rate_cms(0, false);
@@ -2492,6 +2503,7 @@ void QuadPlane::update_land_positioning(void)
     if ((options & OPTION_THR_LANDING_CONTROL) == 0) {
         // not enabled
         poscontrol.pilot_correction_active = false;
+        poscontrol.target_vel_cms.zero();
         return;
     }
     const float scale = 1.0 / 4500;
@@ -2507,12 +2519,10 @@ void QuadPlane::update_land_positioning(void)
     const float speed_max_cms = wp_nav->get_default_speed_xy() * 0.25;
     const float dt = plane.scheduler.get_loop_period_s();
 
-    Vector2f pos_change_cm(-pitch_in, roll_in);
-    pos_change_cm *= dt * speed_max_cms;
-    pos_change_cm.rotate(plane.ahrs.yaw);
+    poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
+    poscontrol.target_vel_cms.rotate_xy(plane.ahrs.yaw);
 
-    poscontrol.target_cm.x += pos_change_cm.x;
-    poscontrol.target_cm.y += pos_change_cm.y;
+    poscontrol.target_cm += poscontrol.target_vel_cms * dt;
 
     poscontrol.pilot_correction_active = (fabsf(roll_in) > 0 || fabsf(pitch_in) > 0);
 }
@@ -2673,16 +2683,12 @@ void QuadPlane::vtol_position_controller(void)
         update_land_positioning();
 
         // relax when close to the ground
-        if (poscontrol.pilot_correction_active) {
-            Vector3f zero;
-            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, zero, zero);
-        } else if (should_relax()) {
+        if (should_relax()) {
             pos_control->relax_velocity_controller_xy();
         } else {
-            // we stop doing position control in LAND_FINAL to allow for GPS glitch handling without
-            // a sharp reposition
+            // we use velocity control in QPOS_LAND_FINAL to allow for GPS glitch handling
             Vector3f zero;
-            pos_control->input_vel_accel_xy(zero, zero);
+            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms, zero);
         }
 
         run_xy_controller();
@@ -2755,8 +2761,6 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_FINAL: {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (poscontrol.state == QPOS_LAND_FINAL) {
-            // when in final use descent rate for final even if alt has climbed again
-            height_above_ground = MIN(height_above_ground, land_final_alt);
             if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
                 ahrs.setTouchdownExpected(true);
             }
