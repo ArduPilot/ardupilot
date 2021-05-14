@@ -292,6 +292,7 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
+    void run_xy_controller(void);
 
     void setup_defaults(void);
 
