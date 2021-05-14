@@ -3077,7 +3077,8 @@ bool QuadPlane::verify_vtol_land(void)
         return true;
     }
     if (poscontrol.state == QPOS_POSITION2 &&
-        plane.auto_state.wp_distance < 2) {
+        plane.auto_state.wp_distance < 2 &&
+        plane.ahrs.groundspeed() < 3) {
         poscontrol.state = QPOS_LAND_DESCEND;
 #if AC_FENCE == ENABLED
         plane.fence.auto_disable_fence_for_landing();
