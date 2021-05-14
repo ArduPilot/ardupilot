@@ -81,6 +81,7 @@
 #undef FORCE_VERSION_H_INCLUDE
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+bool pickup_flag = false;
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, max_time_micros)
 
@@ -484,6 +485,33 @@ void Copter::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
+    
+    if(control_mode != Mode::Number::LAND && ! pickup_flag){
+        if(precland.target_acquired()){
+            
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Got landing target, switch to LAND Mode");
+            copter.set_mode(Mode::Number::LAND,ModeReason::MISSION_END);
+        }
+    }
+    
+    
+    if(prev_control_mode !=Mode::Number::LAND && control_mode == Mode::Number::LAND){
+        pickup_flag = ! pickup_flag;
+    }
+    prev_control_mode =  control_mode;
+
+
+
+    if (copter.ap.land_complete && pickup_flag) {
+        SRV_Channels::set_output_pwm(SRV_Channel::k_none,2100);
+    }
+
+    if (copter.ap.land_complete && !pickup_flag) {
+        SRV_Channels::set_output_pwm(SRV_Channel::k_none,1100);
+        copter.set_mode(Mode::Number::AUTO,ModeReason::MISSION_END);
+    }
+
+
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
