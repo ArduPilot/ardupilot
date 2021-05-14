@@ -42,14 +42,14 @@ do {                                            \
 
 const char* const AP_GPS_FEMTO::_initialisation_blob[2] {
     "\r\n\r\nunlogall\r\n", // cleanup enviroment
-    "log uavgpsb ontime 0.2\r\n", // get bestpos
+    "log uavgpsb ontime 0.2\r\n", // get uavgps
 };
 
 AP_GPS_FEMTO::AP_GPS_FEMTO(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+    femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
 
     const char *init_str = _initialisation_blob[0];
     const char *init_str1 = _initialisation_blob[1];
@@ -63,8 +63,6 @@ AP_GPS_FEMTO::AP_GPS_FEMTO(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_FEMTO::read(void)
 {
-    uint32_t now = AP_HAL::millis();
-
     bool ret = false;
     while (port->available() > 0) {
         uint8_t temp = port->read();
@@ -80,58 +78,58 @@ AP_GPS_FEMTO::parse(uint8_t temp)
     switch (femto_msg.femto_state)
     {
         default:
-        case femto_msg_parser::PREAMBLE1:
+        case femto_msg_parser_t::PREAMBLE1:
             if (temp == FEMTO_PREAMBLE1)
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE2;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE2;
             femto_msg.read = 0;
             break;
-        case femto_msg_parser::PREAMBLE2:
+        case femto_msg_parser_t::PREAMBLE2:
             if (temp == FEMTO_PREAMBLE2)
             {
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE3;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE3;
             }
             else
             {
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
             }
             break;
-        case femto_msg_parser::PREAMBLE3:
+        case femto_msg_parser_t::PREAMBLE3:
             if (temp == FEMTO_PREAMBLE3)
             {
-                femto_msg.femto_state = femto_msg_parser::HEADERLENGTH;
+                femto_msg.femto_state = femto_msg_parser_t::HEADERLENGTH;
             }
             else
             {
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
             }
             break;
-        case femto_msg_parser::HEADERLENGTH:
+        case femto_msg_parser_t::HEADERLENGTH:
             Debug("FEMTO HEADERLENGTH\n");
             femto_msg.header.data[0] = FEMTO_PREAMBLE1;
             femto_msg.header.data[1] = FEMTO_PREAMBLE2;
             femto_msg.header.data[2] = FEMTO_PREAMBLE3;
             femto_msg.header.data[3] = temp;
             femto_msg.header.femto_header.headerlength = temp;
-            femto_msg.femto_state = femto_msg_parser::HEADERDATA;
+            femto_msg.femto_state = femto_msg_parser_t::HEADERDATA;
             femto_msg.read = 4;
             break;
-        case femto_msg_parser::HEADERDATA:
+        case femto_msg_parser_t::HEADERDATA:
             if (femto_msg.read >= sizeof(femto_msg.header.data)) {
                 Debug("parse header overflow length=%u\n", (unsigned)femto_msg.read);
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
                 break;
             }
             femto_msg.header.data[femto_msg.read] = temp;
             femto_msg.read++;
             if (femto_msg.read >= femto_msg.header.femto_header.headerlength)
             {
-                femto_msg.femto_state = femto_msg_parser::DATA;
+                femto_msg.femto_state = femto_msg_parser_t::DATA;
             }
             break;
-        case femto_msg_parser::DATA:
+        case femto_msg_parser_t::DATA:
             if (femto_msg.read >= sizeof(femto_msg.data)) {
                 Debug("parse data overflow length=%u msglength=%u\n", (unsigned)femto_msg.read,femto_msg.header.femto_header.messagelength);
-                femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+                femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
                 break;
             }
             femto_msg.data.bytes[femto_msg.read - femto_msg.header.femto_header.headerlength] = temp;
@@ -139,24 +137,24 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             if (femto_msg.read >= (femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength))
             {
                 Debug("FEMTO DATA exit\n");
-                femto_msg.femto_state = femto_msg_parser::CRC1;
+                femto_msg.femto_state = femto_msg_parser_t::CRC1;
             }
             break;
-        case femto_msg_parser::CRC1:
+        case femto_msg_parser_t::CRC1:
             femto_msg.crc = (uint32_t) (temp << 0);
-            femto_msg.femto_state = femto_msg_parser::CRC2;
+            femto_msg.femto_state = femto_msg_parser_t::CRC2;
             break;
-        case femto_msg_parser::CRC2:
+        case femto_msg_parser_t::CRC2:
             femto_msg.crc += (uint32_t) (temp << 8);
-            femto_msg.femto_state = femto_msg_parser::CRC3;
+            femto_msg.femto_state = femto_msg_parser_t::CRC3;
             break;
-        case femto_msg_parser::CRC3:
+        case femto_msg_parser_t::CRC3:
             femto_msg.crc += (uint32_t) (temp << 16);
-            femto_msg.femto_state = femto_msg_parser::CRC4;
+            femto_msg.femto_state = femto_msg_parser_t::CRC4;
             break;
-        case femto_msg_parser::CRC4:
+        case femto_msg_parser_t::CRC4:
             femto_msg.crc += (uint32_t) (temp << 24);
-            femto_msg.femto_state = femto_msg_parser::PREAMBLE1;
+            femto_msg.femto_state = femto_msg_parser_t::PREAMBLE1;
 
             uint32_t crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.headerlength, (uint8_t *)&femto_msg.header.data, (uint32_t)0);
             crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.messagelength, (uint8_t *)&femto_msg.data, crc);
@@ -213,19 +211,19 @@ AP_GPS_FEMTO::process_message(void)
                 state.status = AP_GPS::NO_FIX;
                 break;
             case 2:
-                state.status = AP_GPS::GPS_FIX_TYPE_2D_FIX;
+                state.status = AP_GPS::GPS_OK_FIX_2D;
                 break;                
             case 3:
-                state.status = AP_GPS::GPS_FIX_TYPE_3D_FIX;
+                state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;  
             case 4:
-                state.status = AP_GPS::GPS_FIX_TYPE_DGPS;
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                 break;              
             case 5:
-                state.status = AP_GPS::GPS_FIX_TYPE_RTK_FLOAT;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;                
             case 6:
-                state.status = AP_GPS::GPS_FIX_TYPE_RTK_FIXED;
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;             
             default:
                 state.status = AP_GPS::NO_FIX;

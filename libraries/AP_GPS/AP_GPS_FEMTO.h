@@ -109,7 +109,7 @@ private:
     };
     
     union PACKED msgheader {
-        femto_header femto_header;
+        femto_msg_header_t femto_header;
         uint8_t data[28];
     };
 
