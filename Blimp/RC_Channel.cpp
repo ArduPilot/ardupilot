@@ -106,68 +106,6 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
         }
         break;
 
-    //         case AUX_FUNC::SAVE_WP:
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //             // save waypoint when switch is brought high
-    //             if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
-
-    //                 // do not allow saving new waypoints while we're in auto or disarmed
-    //                 if (blimp.control_mode == Mode::Number::AUTO || !blimp.motors->armed()) {
-    //                     return;
-    //                 }
-
-    //                 // do not allow saving the first waypoint with zero throttle
-    //                 if ((blimp.mode_auto.mission.num_commands() == 0) && (blimp.channel_down->get_control_in() == 0)) {
-    //                     return;
-    //                 }
-
-    //                 // create new mission command
-    //                 AP_Mission::Mission_Command cmd  = {};
-
-    //                 // if the mission is empty save a takeoff command
-    //                 if (blimp.mode_auto.mission.num_commands() == 0) {
-    //                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-    //                     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    //                     cmd.content.location.alt = MAX(blimp.current_loc.alt,100);
-
-    //                     // use the current altitude for the target alt for takeoff.
-    //                     // only altitude will matter to the AP mission script for takeoff.
-    //                     if (blimp.mode_auto.mission.add_cmd(cmd)) {
-    //                         // log event
-    //                         AP::logger().Write_Event(LogEvent::SAVEWP_ADD_WP);
-    //                     }
-    //                 }
-
-    //                 // set new waypoint to current location
-    //                 cmd.content.location = blimp.current_loc;
-
-    //                 // if throttle is above zero, create waypoint command
-    //                 if (blimp.channel_down->get_control_in() > 0) {
-    //                     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    //                 } else {
-    //                     // with zero throttle, create LAND command
-    //                     cmd.id = MAV_CMD_NAV_LAND;
-    //                 }
-
-    //                 // save command
-    //                 if (blimp.mode_auto.mission.add_cmd(cmd)) {
-    //                     // log event
-    //                     AP::logger().Write_Event(LogEvent::SAVEWP_ADD_WP);
-    //                 }
-    //             }
-    // #endif
-    //              break;
-
-    //         case AUX_FUNC::AUTO:
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //             do_aux_function_change_mode(Mode::Number::AUTO, ch_flag);
-    // #endif
-    //             break;
-
-    // case AUX_FUNC::LOITER:
-    //     do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
-    //     break;
-
     case AUX_FUNC::MANUAL:
         do_aux_function_change_mode(Mode::Number::MANUAL, ch_flag);
         break;

@@ -629,7 +629,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-//    : temp_calibration() // this doesn't actually need constructing, but removing it here is problematic syntax-wise
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
