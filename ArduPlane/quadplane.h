@@ -244,6 +244,9 @@ private:
     // get pilot lean angle
     void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
 
+    // get pilot throttle in for landing code. Return value on scale of 0 to 1
+    float get_pilot_land_throttle(void) const;
+
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
 
@@ -615,6 +618,7 @@ private:
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
         OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
+        OPTION_THR_LANDING_CONTROL=(1<<15),
     };
 
     AP_Float takeoff_failure_scalar;
