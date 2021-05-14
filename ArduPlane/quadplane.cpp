@@ -2441,6 +2441,17 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
 }
 
 /*
+  run (and possibly init) xy controller
+ */
+void QuadPlane::run_xy_controller(void)
+{
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
+    pos_control->update_xy_controller();
+}
+
+/*
   main landing controller. Used for landing and RTL.
  */
 void QuadPlane::vtol_position_controller(void)
@@ -2512,7 +2523,7 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->set_accel_desired_xy_cmss(0.0f, 0.0f);
 
         // run horizontal velocity controller
-        pos_control->update_xy_controller();
+        run_xy_controller();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
@@ -2579,7 +2590,7 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             pos_control->set_pos_target_xy_cm(poscontrol.target.x, poscontrol.target.y);
         }
-        pos_control->update_xy_controller();
+        run_xy_controller();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
@@ -2714,7 +2725,8 @@ void QuadPlane::takeoff_controller(void)
 
     // set position control target and update
     pos_control->set_pos_target_xy_cm(poscontrol.target.x, poscontrol.target.y);
-    pos_control->update_xy_controller();
+
+    run_xy_controller();
 
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll_cd();
