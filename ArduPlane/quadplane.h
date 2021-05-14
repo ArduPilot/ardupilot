@@ -224,10 +224,13 @@ private:
     void check_yaw_reset(void);
     
     // hold hover (for transition)
-    void hold_hover(float target_climb_rate);    
+    void hold_hover(float target_climb_rate_cms);
 
     // hold stabilize (for transition)
-    void hold_stabilize(float throttle_in);    
+    void hold_stabilize(float throttle_in);
+
+    // set climb rate in position controller
+    void set_climb_rate_cms(float target_climb_rate_cms, bool force_descend);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
