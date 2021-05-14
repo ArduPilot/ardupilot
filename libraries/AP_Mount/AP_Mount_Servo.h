@@ -16,11 +16,7 @@ class AP_Mount_Servo : public AP_Mount_Backend
 public:
     // Constructor
     AP_Mount_Servo(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance),
-        _roll_idx(SRV_Channel::k_none),
-        _tilt_idx(SRV_Channel::k_none),
-        _pan_idx(SRV_Channel::k_none),
-        _open_idx(SRV_Channel::k_none)
+        AP_Mount_Backend(frontend, state, instance)
     {
     }
 
@@ -65,7 +61,6 @@ private:
     SRV_Channel::Aux_servo_function_t    _roll_idx;  // SRV_Channel mount roll function index
     SRV_Channel::Aux_servo_function_t    _tilt_idx;  // SRV_Channel mount tilt function index
     SRV_Channel::Aux_servo_function_t    _pan_idx;   // SRV_Channel mount pan  function index
-    SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
 
     Vector3f _angle_bf_output_deg;  // final body frame output angle in degrees
 

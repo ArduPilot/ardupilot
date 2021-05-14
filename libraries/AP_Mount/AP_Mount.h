@@ -38,7 +38,9 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 // maximum number of mounts
+#ifndef AP_MOUNT_MAX_INSTANCES
 #define AP_MOUNT_MAX_INSTANCES          1
+#endif
 
 // declare backend classes
 class AP_Mount_Backend;
