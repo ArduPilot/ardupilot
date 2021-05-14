@@ -471,6 +471,7 @@ private:
         Vector2f target_velocity;
         float max_speed;
         Vector3f target_cm;
+        Vector3f target_vel_cms;
         bool slow_descent:1;
         bool pilot_correction_active;
     } poscontrol;
