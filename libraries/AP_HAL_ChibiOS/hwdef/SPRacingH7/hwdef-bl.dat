@@ -2,16 +2,15 @@
 # for SP/Racing Extreme H7 hardware.
 
 # MCU class and specific type
-MCU STM32H7xx STM32H750xx
+MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1028
-
+APJ_BOARD_ID 1033
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
-FLASH_SIZE_KB 2048
+FLASH_SIZE_KB 1920
 
 # bootloader starts at zero offset
 FLASH_RESERVE_START_KB 0
@@ -25,6 +24,12 @@ FLASH_BOOTLOADER_LOAD_KB 128
 
 # order of UARTs (and USB). Allow bootloading on USB and telem1
 SERIAL_ORDER OTG1 USART1
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+define STM32_SERIAL_USE_USART7 TRUE
+define HAL_USE_SERIAL TRUE
 
 # USART1
 PA10 USART1_RX USART1
