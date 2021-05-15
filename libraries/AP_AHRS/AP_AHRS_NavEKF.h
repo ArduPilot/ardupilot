@@ -331,22 +331,16 @@ public:
     NavEKF3 EKF3;
 #endif
 
-private:
     enum class EKFType {
-        NONE = 0
-#if HAL_NAVEKF3_AVAILABLE
-        ,THREE = 3
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-        ,TWO = 2
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ,SITL = 10
-#endif
-#if HAL_EXTERNAL_AHRS_ENABLED
-        ,EXTERNAL = 11
-#endif
+        NONE     = 0,
+        TWO      = 2,
+        THREE    = 3,
+        SITL     = 10,
+        EXTERNAL = 11,
     };
+
+private:
+
     EKFType active_EKF_type(void) const;
 
     // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3

@@ -54,17 +54,17 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
 void AP_AHRS_NavEKF::init()
 {
     // EKF1 is no longer supported - handle case where it is selected
-    if (_ekf_type.get() == 1) {
+    if (_ekf_type.get() == (int8_t)EKFType::NONE) {
         AP_BoardConfig::config_error("EKF1 not available");
     }
 #if !HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
-    if (_ekf_type.get() == 2) {
-        _ekf_type.set(3);
+    if (_ekf_type.get() == (int8_t)EKFType::TWO) {
+        _ekf_type.set((int8_t)EKFType::THREE);
         EKF3.set_enable(true);
     }
 #elif !HAL_NAVEKF3_AVAILABLE && HAL_NAVEKF2_AVAILABLE
-    if (_ekf_type.get() == 3) {
-        _ekf_type.set(2);
+    if (_ekf_type.get() == (int8_t)EKFType::THREE) {
+        _ekf_type.set((int8_t)EKFType::TWO);
         EKF2.set_enable(true);
     }
 #endif
@@ -138,7 +138,7 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     update_external();
 #endif
     
-    if (_ekf_type == 2) {
+    if (_ekf_type == (int8_t)EKFType::TWO) {
         // if EK2 is primary then run EKF2 first to give it CPU
         // priority
 #if HAL_NAVEKF2_AVAILABLE
@@ -182,7 +182,7 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     if (active != last_active_ekf_type) {
         last_active_ekf_type = active;
         const char *shortname = "???";
-        switch ((EKFType)active) {
+        switch (active) {
         case EKFType::NONE:
             shortname = "DCM";
             break;
@@ -206,6 +206,8 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
             shortname = "EKF2";
             break;
 #endif
+        default:
+            break;
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
@@ -579,6 +581,9 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         return AP::externalAHRS().get_location(loc);
     }
 #endif
+
+    default:
+        break;
     }
 
     // fall back to position from DCM
@@ -631,7 +636,9 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
         wind.zero();
         break;
 #endif
-        
+    
+    default:
+        break;
     }
     return wind;
 }
@@ -683,6 +690,9 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
 
     // estimate it via nav velocity and wind estimates
@@ -734,6 +744,9 @@ bool AP_AHRS_NavEKF::airspeed_vector_true(Vector3f &vec) const
     case EKFType::EXTERNAL:
         break;
 #endif
+
+    default:
+        break;
     }
     return false;
 }
@@ -764,6 +777,9 @@ bool AP_AHRS_NavEKF::use_compass(void)
         // fall through
         break;
 #endif
+
+    default:
+        break;
     }
     return AP_AHRS_DCM::use_compass();
 }
@@ -798,6 +814,9 @@ bool AP_AHRS_NavEKF::get_quaternion(Quaternion &quat) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().get_quaternion(quat);
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -849,6 +868,9 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers) const
         return true;
     }
 #endif
+
+    default:
+        break;
     }
 
     // since there is no default case above, this is unreachable
@@ -896,6 +918,9 @@ bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat) const
         // External is secondary
         return AP::externalAHRS().get_quaternion(quat);
 #endif
+
+    default:
+        break;
     }
 
     // since there is no default case above, this is unreachable
@@ -942,6 +967,9 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc) const
         // External is secondary
         return AP::externalAHRS().get_location(loc);
 #endif
+
+    default:
+        break;
     }
 
     // since there is no default case above, this is unreachable
@@ -983,6 +1011,9 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
         return AP::externalAHRS().get_groundspeed_vector();
     }
 #endif
+
+    default:
+        break;
     }
     return AP_AHRS_DCM::groundspeed_vector();
 }
@@ -1025,6 +1056,9 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
         // don't allow origin set with external AHRS
         return false;
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1070,6 +1104,9 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().get_velocity_NED(vec);
 #endif
+
+    default:
+        break;
     }
     return AP_AHRS_DCM::get_velocity_NED(vec);
 }
@@ -1101,6 +1138,9 @@ bool AP_AHRS_NavEKF::get_mag_field_NED(Vector3f &vec) const
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
     return false;
 }
@@ -1132,6 +1172,9 @@ bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1171,6 +1214,9 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().get_speed_down(velocity);
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1208,6 +1254,9 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
         return false;
     }
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1282,6 +1331,9 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         return false;
     }
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1350,6 +1402,9 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
         return true;
     }
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1423,6 +1478,9 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
         return true;
     }
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -1476,6 +1534,9 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::ekf_type(void) const
 #endif
         }
         return EKFType::NONE;
+
+    default:
+        break;
     }
     // we can get to here if the user has mis-set AHRS_EKF_TYPE - any
     // value above 3 will get to here.  TWO is returned here for no
@@ -1545,6 +1606,9 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         ret = EKFType::EXTERNAL;
         break;
 #endif
+
+    default:
+        break;
     }
 
     /*
@@ -1667,6 +1731,9 @@ bool AP_AHRS_NavEKF::get_secondary_EKF_type(EKFType &secondary_ekf_type) const
         // DCM is secondary
         secondary_ekf_type = EKFType::NONE;
         return true;
+
+    default:
+        break;
     }
 
     // since there is no default case above, this is unreachable
@@ -1727,6 +1794,9 @@ bool AP_AHRS_NavEKF::healthy(void) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().healthy();
 #endif
+
+    default:
+        break;
     }
 
     return AP_AHRS_DCM::healthy();
@@ -1773,6 +1843,9 @@ bool AP_AHRS_NavEKF::pre_arm_check(bool requires_position, char *failure_msg, ui
         }
         return EKF3.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
 #endif
+
+    default:
+        break;
     }
 
     // if we get here then ekf type is invalid
@@ -1812,6 +1885,9 @@ bool AP_AHRS_NavEKF::initialised(void) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().initialised();
 #endif
+
+    default:
+        break;
     }
     return false;
 };
@@ -1854,6 +1930,9 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
         AP::externalAHRS().get_filter_status(status);
         return true;
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -1942,6 +2021,9 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
         // no limits
         break;
 #endif
+
+    default:
+        break;
     }
 }
 
@@ -1972,6 +2054,9 @@ bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -2005,6 +2090,9 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
     case EKFType::EXTERNAL:
         break;
 #endif
+
+    default:
+        break;
     }
     if (imu_idx == -1) {
         AP_AHRS::getCorrectedDeltaVelocityNED(ret, dt);
@@ -2126,6 +2214,9 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
     case EKFType::EXTERNAL:
         return 0;
 #endif
+
+    default:
+        break;
     }
     return 0;
 }
@@ -2157,6 +2248,9 @@ uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos)
     case EKFType::EXTERNAL:
         return 0;
 #endif
+
+    default:
+        break;
     }
     return 0;
 }
@@ -2188,6 +2282,9 @@ uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
     case EKFType::EXTERNAL:
         return 0;
 #endif
+
+    default:
+        break;
     }
     return 0;
 }
@@ -2219,6 +2316,9 @@ uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta)
     case EKFType::EXTERNAL:
         return 0;
 #endif
+
+    default:
+        break;
     }
     return 0;
 }
@@ -2268,6 +2368,9 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
     return false;
 }
@@ -2318,6 +2421,8 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
         return EKF3.send_status_report(chan);
 #endif
 
+    default:
+        break;
     }
 }
 
@@ -2360,6 +2465,9 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
     case EKFType::EXTERNAL:
         return AP::externalAHRS().get_origin(ret);
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2393,6 +2501,9 @@ bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2455,6 +2566,9 @@ bool AP_AHRS_NavEKF::get_location(struct Location &loc) const
     case EKFType::EXTERNAL:
         return get_position(loc);
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2497,6 +2611,9 @@ bool AP_AHRS_NavEKF::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vec
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2545,6 +2662,9 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2581,6 +2701,9 @@ bool AP_AHRS_NavEKF::get_vel_innovations_and_variances_for_source(uint8_t source
     case EKFType::EXTERNAL:
         return false;
 #endif
+
+    default:
+        break;
     }
 
     return false;
@@ -2691,6 +2814,9 @@ uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
     case EKFType::EXTERNAL:
         break;
 #endif
+
+    default:
+        break;
     }
     if (imu == -1) {
         imu = AP::ins().get_primary_accel();
@@ -2727,6 +2853,9 @@ int8_t AP_AHRS_NavEKF::get_primary_core_index() const
     case EKFType::THREE:
         return EKF3.getPrimaryCoreIndex();
 #endif
+
+    default:
+        break;
     }
 
     // we should never get here
@@ -2780,6 +2909,9 @@ void AP_AHRS_NavEKF::check_lane_switch(void)
         EKF3.checkLaneSwitch();
         break;
 #endif
+
+    default:
+        break;
     }
 }
 
@@ -2811,6 +2943,9 @@ void AP_AHRS_NavEKF::request_yaw_reset(void)
         EKF3.requestYawReset();
         break;
 #endif
+
+    default:
+        break;
     }
 }
 
@@ -2857,6 +2992,9 @@ bool AP_AHRS_NavEKF::is_ext_nav_used_for_yaw(void) const
     case EKFType::EXTERNAL:
 #endif
         return false; 
+
+    default:
+        break;
     }
     // since there is no default case above, this is unreachable
     return false;
