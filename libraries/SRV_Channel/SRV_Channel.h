@@ -510,6 +510,9 @@ public:
     // return true if all of the outputs in mask are digital
     static bool have_digital_outputs(uint16_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
 
+    // return true if any of the outputs are digital
+    static bool have_digital_outputs() { return digital_mask != 0; }
+
     // Set E - stop
     static void set_emergency_stop(bool state) {
         emergency_stop = state;
