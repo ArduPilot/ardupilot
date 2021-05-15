@@ -1492,6 +1492,10 @@ void AP_BLHeli::log_bidir_telemetry(void)
         }
     }
 
+    if (!SRV_Channels::have_digital_outputs()) {
+        return;
+    }
+
     // ask the next ESC for telemetry
     uint8_t idx_pos = last_telem_esc;
     for (uint8_t idx = (idx_pos + 1) % num_motors;
@@ -1517,7 +1521,7 @@ void AP_BLHeli::update_telemetry(void)
         log_bidir_telemetry();
     }
 #endif
-    if (!telem_uart) {
+    if (!telem_uart || !SRV_Channels::have_digital_outputs()) {
         return;
     }
     uint32_t now = AP_HAL::micros();
