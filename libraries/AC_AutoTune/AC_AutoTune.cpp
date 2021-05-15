@@ -1663,8 +1663,9 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
     const float att_hold_gain = 0.3f;
     static Vector3f filt_attitude_cd;
     Vector3f attitude_cd;
-
-
+    static float filt_command_reading;
+    static float filt_gyro_reading;
+    static float filt_tgt_rate_reading;
 
     float dwell_freq = start_frq;
     float cycle_time_ms = 0;
@@ -1728,16 +1729,6 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
         gyro_reading = ahrs_view->get_gyro().z;
         command_reading = motors->get_yaw();
         tgt_rate_reading = attitude_control->rate_bf_targets().z;
-  /*      attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-        if (is_zero(dwell_start_time_ms) && wrap_180_cd(ahrs_view->yaw_sensor - start_angle) > -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_yaw_target(-1000.0f);
-        } else if (is_zero(dwell_start_time_ms) && wrap_180_cd(ahrs_view->yaw_sensor - start_angle) < -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_yaw_target(0.0f);
-            dwell_start_time_ms = now;
-        } else {
-            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-            attitude_control->rate_bf_yaw_target(target_rate_cds);
-        } */
         if (settle_time == 0) {
             float trim_rate_cds = 5730.0f * trim_command / tune_yaw_rp + att_hold_gain * wrap_180_cd(trim_attitude_cd.z - filt_attitude_cd.z);
             attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
@@ -1748,16 +1739,26 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
         break;
     }
 
+    if (settle_time == 0) {
+        filt_command_reading += alpha * (command_reading - filt_command_reading);
+        filt_gyro_reading += alpha * (gyro_reading - filt_gyro_reading);
+        filt_tgt_rate_reading += alpha * (tgt_rate_reading - filt_tgt_rate_reading);
+    } else {
+        filt_command_reading = command_reading;
+        filt_gyro_reading = gyro_reading;
+        filt_tgt_rate_reading = tgt_rate_reading;
+    }
+
     // looks at gain and phase of input rate to output rate
-    rotation_rate = rotation_rate_filt.apply(gyro_reading,
+    rotation_rate = rotation_rate_filt.apply((gyro_reading - filt_gyro_reading),
                     AP::scheduler().get_loop_period_s());
-    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
+    filt_target_rate = target_rate_filt.apply((tgt_rate_reading - filt_tgt_rate_reading),
                        AP::scheduler().get_loop_period_s());
-    command_out = command_filt.apply(command_reading,
+    command_out = command_filt.apply((command_reading - filt_command_reading),
                                      AP::scheduler().get_loop_period_s());
 
-    // wait for dwell to start before determining gain and phase
-    if ((float)(now - dwell_start_time_ms) > 0.5f * cycle_time_ms) {
+    // wait for dwell to start before determining gain and phase or just start if sweep
+    if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
         if (freq_resp_input == 1) {
             determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
         } else {
@@ -1854,6 +1855,11 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
     static float trim_yaw_heading_reading = 0.0f;
     float sweep_time_ms = 23000;
     float dwell_freq = start_frq;
+    static float filt_command_reading;
+    static float filt_gyro_reading;
+    static float filt_tgt_rate_reading;
+
+    const float alpha = calc_lowpass_alpha_dt(0.0025f, 0.2f * start_frq);
 
     // adjust target attitude based on input_tc so amplitude decrease with increased frequency is minimized
     const float freq_co = 1.0f / attitude_control->get_input_tc();
@@ -1909,16 +1915,26 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
         break;
     }
 
+    if (settle_time == 0) {
+        filt_command_reading += alpha * (command_reading - filt_command_reading);
+        filt_gyro_reading += alpha * (gyro_reading - filt_gyro_reading);
+        filt_tgt_rate_reading += alpha * (tgt_rate_reading - filt_tgt_rate_reading);
+    } else {
+        filt_command_reading = command_reading;
+        filt_gyro_reading = gyro_reading;
+        filt_tgt_rate_reading = tgt_rate_reading;
+    }
+
     // looks at gain and phase of input rate to output rate
-    rotation_rate = rotation_rate_filt.apply(gyro_reading,
+    rotation_rate = rotation_rate_filt.apply((gyro_reading - filt_gyro_reading),
                 AP::scheduler().get_loop_period_s());
-    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
+    filt_target_rate = target_rate_filt.apply((tgt_rate_reading - filt_tgt_rate_reading),
                 AP::scheduler().get_loop_period_s());
-    command_out = command_filt.apply(command_reading,
+    command_out = command_filt.apply((command_reading - filt_command_reading),
                 AP::scheduler().get_loop_period_s());
 
     // wait for dwell to start before determining gain and phase
-    if (!is_zero(dwell_start_time_ms)) {
+    if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
         determine_gain_angle(command_out, filt_target_rate, rotation_rate, dwell_freq, dwell_gain, dwell_phase, test_accel_max, dwell_complete, false);
     }
 
@@ -1957,14 +1973,13 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
 // is set.  This function must be reset using the reset flag prior to the next dwell.
 void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
 {
-    static float max_target, max_meas, prev_target, prev_meas, sum_tgt_rate, sum_meas_rate;
+    static float max_target, max_meas, prev_target, prev_meas;
     static float min_target, min_meas, temp_meas_ampl, temp_tgt_ampl;
     static float temp_max_target, temp_min_target;
     static float temp_max_meas, temp_min_meas;
     static uint32_t temp_max_tgt_time, temp_max_meas_time;
     static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
     static uint16_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
-    static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
     uint32_t now = AP_HAL::millis();
@@ -1975,9 +1990,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         max_meas_cnt = 0;
         min_meas_cnt = 0;
         input_start_time_ms = 0;
-        sum_tgt_rate = 0;
-        sum_meas_rate = 0;
-        avg_sample_cnt = 0;
         new_tgt_time_ms = 0;
         new_meas_time_ms = 0;
         new_target = false;
@@ -2000,27 +2012,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
 
     if (input_start_time_ms == 0) {
         input_start_time_ms = now;
-    }
-
-    if (now < (uint32_t) (input_start_time_ms + 4 * cycle_time_ms)) {
-        //wait for signal to stabilize for 4 cycle
-        return;
-    } else if (now < (uint32_t) (input_start_time_ms + 6 * cycle_time_ms)) {
-        // sum target rate and measured rate signals over next 2 cycles
-        sum_tgt_rate += tgt_rate;
-        sum_meas_rate += meas_rate;
-        avg_sample_cnt++;
-        return;
-    } else if (now < (uint32_t) (input_start_time_ms + 6.25 * cycle_time_ms)) {
-        // give it another 1/4 cycle before starting the gain and phase calculation
-        prev_target = tgt_rate;
-        prev_meas = meas_rate;
-        return;
-    }
-
-    if (avg_sample_cnt > 0) {
-        tgt_rate = tgt_rate - (sum_tgt_rate / (float) avg_sample_cnt);
-        meas_rate = meas_rate - (sum_meas_rate / (float) avg_sample_cnt);
     }
 
     // cycles are complete! determine gain and phase and exit
@@ -2172,14 +2163,13 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
 // is set.  This function must be reset using the reset flag prior to the next dwell.
 void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset)
 {
-    static float max_target, max_meas, prev_target, prev_meas, sum_tgt_angle, sum_meas_angle, prev_tgt_angle, prev_meas_angle;
+    static float max_target, max_meas, prev_target, prev_meas, prev_tgt_angle, prev_meas_angle;
     static float min_target, min_meas, temp_meas_ampl, temp_tgt_ampl;
     static float temp_max_target, temp_min_target, tgt_rate, meas_rate, max_meas_rate, max_command;
     static float temp_max_meas, temp_min_meas;
     static uint32_t temp_max_tgt_time, temp_max_meas_time;
     static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
     static uint16_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
-    static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
     uint32_t now = AP_HAL::millis();
@@ -2191,9 +2181,6 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         max_meas_cnt = 0;
         min_meas_cnt = 0;
         input_start_time_ms = 0;
-        sum_tgt_angle = 0;
-        sum_meas_angle = 0;
-        avg_sample_cnt = 0;
         new_tgt_time_ms = 0;
         new_meas_time_ms = 0;
         new_target = false;
@@ -2218,29 +2205,10 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
 
     if (input_start_time_ms == 0) {
         input_start_time_ms = now;
-    }
-
-    if (now < (uint32_t) (input_start_time_ms + 4 * cycle_time_ms)) {
-        //wait for signal to stabilize for 4 cycle
-        return;
-    } else if (now < (uint32_t) (input_start_time_ms + 6 * cycle_time_ms)) {
-        // sum target rate and measured rate signals over next 2 cycles
-        sum_tgt_angle += tgt_angle;
-        sum_meas_angle += meas_angle;
-        avg_sample_cnt++;
-        return;
-    } else if (now < (uint32_t) (input_start_time_ms + 6.25 * cycle_time_ms)) {
-        // give it another 1/4 cycle before starting the gain and phase calculation
-        prev_target = (tgt_angle - prev_tgt_angle) / dt;
-        prev_meas = (meas_angle - prev_meas_angle) / dt;
         prev_tgt_angle = tgt_angle;
         prev_meas_angle = meas_angle;
-        return;
-    }
-
-    if (avg_sample_cnt > 0) {
-        tgt_angle = tgt_angle - (sum_tgt_angle / (float) avg_sample_cnt);
-        meas_angle = meas_angle - (sum_meas_angle / (float) avg_sample_cnt);
+        prev_target = 0.0f;
+        prev_meas = 0.0f;
     }
 
     tgt_rate = (tgt_angle - prev_tgt_angle) / dt;
