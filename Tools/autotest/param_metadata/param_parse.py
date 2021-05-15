@@ -254,6 +254,10 @@ def process_library(vehicle, library, pathprefix=None):
                     error("param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
+            # a parameter is considered to be vehicle-specific if
+            # there does not exist a Values: or Values{VehicleName}
+            # for that vehicle but @Values{OtherVehcicle} exists.
+            seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
                 only_for_vehicles = [x.rstrip().lstrip() for x in only_for_vehicles]
@@ -266,9 +270,22 @@ def process_library(vehicle, library, pathprefix=None):
                     error("tagged param: unknown parameter metadata field '%s'" % field[0])
                     continue
                 if vehicle.name not in only_for_vehicles:
+                    if len(only_for_vehicles) and field[0] in ['Values', 'Bitmask']:
+                        seen_values_or_bitmask_for_other_vehicle = True
                     continue
                 value = re.sub('@PREFIX@', library.name, field[2])
                 setattr(p, field[0], value)
+
+            if (getattr(p, 'Values', None) is None and
+                    getattr(p, 'Bitmask', None) is None):
+                # values and Bitmask available for this vehicle
+                if seen_values_or_bitmask_for_other_vehicle:
+                    # we've (e.g.) seen @Values{Copter} when we're
+                    # processing for Rover, and haven't seen either
+                    # @Values: or @Vales{Rover} - so we omit this
+                    # parameter on the assumption that it is not
+                    # applicable for this vehicle.
+                    continue
 
             p.path = path # Add path. Later deleted - only used for duplicates
             library.params.append(p)
