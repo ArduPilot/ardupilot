@@ -130,10 +130,13 @@ void Plane::takeoff_calc_roll(void)
     // the takeoff altitude
     float roll_limit = roll_limit_cd*0.01f;
     float baro_alt = barometer.get_altitude();
-    // below 5m use the LEVEL_ROLL_LIMIT
-    const float lim1 = 5;    
-    // at 15m allow for full roll
-    const float lim2 = 15;
+
+    // lim1 - below altitude LEVEL_ROLL_LIMIT restrict roll
+    // lim2 - above altitude (LEVEL_ROLL_LIMIT * 2) allow full roll.
+    // In between lim1 and lim2 use a scaled roll limit.
+    // The *2 scheme should scale reasonably with both small and large aircraft
+    const float lim1 = mode_takeoff.level_alt;
+    const float lim2 = MIN(mode_takeoff.level_alt*2,mode_takeoff.target_alt);
     if ((baro_alt < auto_state.baro_takeoff_alt+lim1) || (auto_state.highest_airspeed < g.takeoff_rotate_speed)) {
         roll_limit = g.level_roll_limit;
     } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {

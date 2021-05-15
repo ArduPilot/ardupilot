@@ -1,6 +1,10 @@
 #include "mode.h"
 #include "Plane.h"
 
+#ifndef PLANE_TKOFF_LVL_ALT
+#define PLANE_TKOFF_LVL_ALT 10
+#endif
+
 /*
   mode takeoff parameters
  */
@@ -16,12 +20,12 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: LVL_ALT
     // @DisplayName: Takeoff mode altitude level altitude
-    // @Description: This is the altitude below which wings are held level for TAKEOFF mode
+    // @Description: This is the altitude where the wings are held level for TAKEOFF mode and AUTO-takeoff. Below this altitude, roll demand is restricted to LEVEL_ROLL_LIMIT. Normal-flight roll restriction resumes above TKOFF_LVL_ALT*2 or TKOFF_ALT, whichever is lower. Roll limits are scaled while between those altitudes for a smooth transition.
     // @Range: 0 50
     // @Increment: 1
     // @Units: m
     // @User: Standard
-    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 20),
+    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, PLANE_TKOFF_LVL_ALT),
 
     // @Param: LVL_PITCH
     // @DisplayName: Takeoff mode altitude initial pitch
