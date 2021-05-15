@@ -107,6 +107,18 @@ void RC_Channels::clear_overrides(void)
     // copter and plane, RC_Channels needs to control failsafes to resolve this
 }
 
+uint16_t RC_Channels::get_override_mask(void)
+{
+    uint16_t ret = 0;
+    RC_Channels &_rc = rc();
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        if (_rc.channel(i)->has_override()) {
+            ret |= (1U << i);
+        }
+    }
+    return ret;
+}
+
 void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
 {
     RC_Channels &_rc = rc();
