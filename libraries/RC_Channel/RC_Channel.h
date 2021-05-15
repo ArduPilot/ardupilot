@@ -399,6 +399,10 @@ public:
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
+    // returns a mask indicating which channels have overrides.  Bit 0
+    // is RC channel 1.  Beware this is not a cheap call.
+    static uint16_t get_override_mask();
+
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
     RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
