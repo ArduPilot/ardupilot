@@ -624,7 +624,7 @@ bool NavEKF2::InitialiseFilter(void)
 
     initFailure = InitFailures::UNKNOWN;
     if (_enable == 0) {
-        if (AP::dal().get_ekf_type() == 2) {
+        if (AP::dal().get_ekf_type() == (int8_t)AP_AHRS_NavEKF::EKFType::TWO) {
             initFailure = InitFailures::NO_ENABLE;
         }
         return false;
