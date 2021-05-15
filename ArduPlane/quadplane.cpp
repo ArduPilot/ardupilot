@@ -1336,6 +1336,7 @@ void QuadPlane::init_qland(void)
     throttle_wait = false;
     setup_target_position();
     poscontrol.state = QPOS_LAND_DESCEND;
+    poscontrol.pilot_correction_done = false;
     last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     landing_detect.lower_limit_start_ms = 0;
     landing_detect.land_start_ms = 0;
@@ -2515,16 +2516,19 @@ void QuadPlane::update_land_positioning(void)
         // only allow pilot reposition when pilot has stopped descent
         roll_in = pitch_in = 0;
     }
-    // limit correction speed to 25% of wp max speed
-    const float speed_max_cms = wp_nav->get_default_speed_xy() * 0.25;
+    // limit correction speed to accel with stopping time constant of 0.5s
+    const float speed_max_cms = wp_nav->get_wp_acceleration() * 0.5;
     const float dt = plane.scheduler.get_loop_period_s();
 
     poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
-    poscontrol.target_vel_cms.rotate_xy(plane.ahrs.yaw);
+    poscontrol.target_vel_cms.rotate_xy(ahrs_view->yaw);
 
     poscontrol.target_cm += poscontrol.target_vel_cms * dt;
 
     poscontrol.pilot_correction_active = (fabsf(roll_in) > 0 || fabsf(pitch_in) > 0);
+    if (poscontrol.pilot_correction_active) {
+        poscontrol.pilot_correction_done = true;
+    }
 }
 
 /*
@@ -2533,6 +2537,7 @@ void QuadPlane::update_land_positioning(void)
 void QuadPlane::run_xy_controller(void)
 {
     if (!pos_control->is_active_xy()) {
+        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
         pos_control->init_xy_controller();
     }
     pos_control->update_xy_controller();
@@ -2647,6 +2652,7 @@ void QuadPlane::vtol_position_controller(void)
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
             poscontrol.state = QPOS_POSITION2;
+            poscontrol.pilot_correction_done = false;
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                                     (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
         }
@@ -2658,8 +2664,15 @@ void QuadPlane::vtol_position_controller(void)
         /*
           for final land repositioning and descent we run the position controller
          */
-        Vector3f zero;
-        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, poscontrol.target_vel_cms, zero);
+        if (poscontrol.pilot_correction_done) {
+            // if we have done any repositioning then to handle GPS glitches we need to switch
+            // to velocity control
+            Vector3f zero;
+            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms, zero);
+        } else {
+            Vector3f zero;
+            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, zero, zero);
+        }
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
@@ -2806,9 +2819,6 @@ void QuadPlane::setup_target_position(void)
     
     // setup vertical speed and acceleration
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-
-    // setup horizontal speed and acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 }
 
 /*
@@ -3193,6 +3203,7 @@ bool QuadPlane::verify_vtol_land(void)
         plane.auto_state.wp_distance < 2 &&
         plane.ahrs.groundspeed() < 3) {
         poscontrol.state = QPOS_LAND_DESCEND;
+        poscontrol.pilot_correction_done = false;
 #if AC_FENCE == ENABLED
         plane.fence.auto_disable_fence_for_landing();
 #endif

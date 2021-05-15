@@ -474,6 +474,7 @@ private:
         Vector3f target_vel_cms;
         bool slow_descent:1;
         bool pilot_correction_active;
+        bool pilot_correction_done;
     } poscontrol;
 
     struct {
