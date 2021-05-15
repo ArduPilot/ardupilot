@@ -64,6 +64,12 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SMAX", 12, AC_PID, _slew_rate_max, 0),
 
+    // @Param: I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
+    // @User: Advanced
+    AP_GROUPINFO("I0", 13, AC_PID, _ki_zero, 0),
+
     AP_GROUPEND
 };
 
@@ -236,11 +242,11 @@ void AC_PID::update_i(bool limit)
         // Ensure that integrator can only be reduced if the output is saturated
         if (!limit || ((is_positive(_integrator) && is_negative(_error)) || (is_negative(_integrator) && is_positive(_error)))) {
             _integrator += ((float)_error * _ki) * _dt;
-            _integrator = constrain_float(_integrator, -_kimax, _kimax);
         }
     } else {
-        _integrator = 0.0f;
+        _integrator = _ki_zero;
     }
+    _integrator = constrain_float(_integrator, -_kimax, _kimax);
     _pid_info.I = _integrator;
     _pid_info.limit = limit;
 }
@@ -268,7 +274,7 @@ float AC_PID::get_ff()
 
 void AC_PID::reset_I()
 {
-    _integrator = 0;
+    _integrator = constrain_float(_ki_zero, -_kimax, _kimax);
 }
 
 void AC_PID::reset_I_smoothly()
@@ -279,11 +285,14 @@ void AC_PID::reset_I_smoothly()
     if ((now - _reset_last_update) > 5e5 ) {
         _reset_counter = 0;
     }
+    const float ki_zero = constrain_float(_ki_zero, -_kimax, _kimax);
     if ((float)_reset_counter < (reset_time/_dt)) {
-        _integrator = _integrator - (_dt / (_dt + AC_PID_RESET_TC)) * _integrator;
+        float integrator_diff = _integrator - ki_zero;
+        integrator_diff *= 1.0f - (_dt / (_dt + AC_PID_RESET_TC));
+        _integrator = integrator_diff + ki_zero;
         _reset_counter++;
     } else {
-        _integrator = 0;
+        _integrator = ki_zero;
     }
     _reset_last_update = now;
 }
