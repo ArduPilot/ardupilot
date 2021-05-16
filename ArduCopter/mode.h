@@ -1570,6 +1570,9 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
+    uint32_t wp_distance() const override { return wp_nav->get_wp_distance_to_destination(); }
+    int32_t wp_bearing() const override { return wp_nav->get_wp_bearing_to_destination(); }
+    float crosstrack_error() const override { return wp_nav->crosstrack_error(); }
 
 private:
 
