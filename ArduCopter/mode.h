@@ -1794,6 +1794,9 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
