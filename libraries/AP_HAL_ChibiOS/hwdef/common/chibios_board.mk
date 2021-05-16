@@ -109,22 +109,26 @@ include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
+ifeq ($(USE_SNOR),yes)
+include $(CHIBIOS)/os/hal/lib/complex/serial_nor/devices/micron_n25q/hal_flash_device.mk
+endif
+
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 
 CSRC = $(sort $(ALLCSRC))
 
 CSRC += $(HWDEF)/common/stubs.c \
-	   $(HWDEF)/common/board.c \
-	   $(HWDEF)/common/usbcfg.c \
-	   $(HWDEF)/common/usbcfg_dualcdc.c \
-	   $(HWDEF)/common/usbcfg_common.c \
-	   $(HWDEF)/common/flash.c \
-	   $(HWDEF)/common/malloc.c \
-	   $(HWDEF)/common/hrt.c \
-       $(HWDEF)/common/stm32_util.c \
-       $(HWDEF)/common/bouncebuffer.c \
-       $(HWDEF)/common/watchdog.c
+	      $(HWDEF)/common/board.c \
+	      $(HWDEF)/common/usbcfg.c \
+	      $(HWDEF)/common/usbcfg_dualcdc.c \
+	      $(HWDEF)/common/usbcfg_common.c \
+	      $(HWDEF)/common/flash.c \
+	      $(HWDEF)/common/malloc.c \
+	      $(HWDEF)/common/hrt.c \
+        $(HWDEF)/common/stm32_util.c \
+        $(HWDEF)/common/bouncebuffer.c \
+        $(HWDEF)/common/watchdog.c
 
 #	   $(TESTSRC) \
 #	   test.c

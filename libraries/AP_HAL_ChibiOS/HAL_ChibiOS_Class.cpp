@@ -24,6 +24,7 @@
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
 #include "sdcard.h"
+#include "hwdef/common/flash.h"
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
@@ -176,11 +177,19 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-
+//int start_the_clock = 0;
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
+#if 0
+    while (!start_the_clock);
 
+    uint8_t* addr = 0;
+    stm32_flash_qspi_init();
+    stm32_flash_qspi_memory_map(&addr);
+    chThdSleepMilliseconds(50);
+    stm32_flash_qspi_memory_unmap();
+#endif
     /*
       switch to high priority for main loop
      */

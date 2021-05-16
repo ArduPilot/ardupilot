@@ -30,6 +30,12 @@ bool stm32_flash_ispageerased(uint32_t page);
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif
+// memory mapped QSPI flash
+#if HAL_USE_WSPI
+bool stm32_flash_qspi_init(void);
+bool stm32_flash_qspi_memory_map(uint8_t** addr);
+bool stm32_flash_qspi_memory_unmap(void);
+#endif
 #ifdef __cplusplus
 }
 #endif
