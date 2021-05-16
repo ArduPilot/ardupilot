@@ -202,6 +202,11 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _ACCZ_I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P

@@ -74,6 +74,11 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: RAT_RLL_I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID),
 
     // @Param: RAT_PIT_P
@@ -143,6 +148,11 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: RAT_PIT_I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID),
 
     // @Param: RAT_YAW_P
@@ -210,6 +220,11 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: RAT_YAW_I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
