@@ -4905,8 +4905,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         AP::gps().send_mavlink_gps_rtk(chan, 0);
         break;
     case MSG_GPS2_RAW:
+#if GPS_MAX_RECEIVERS > 1
         CHECK_PAYLOAD_SIZE(GPS2_RAW);
         AP::gps().send_mavlink_gps2_raw(chan);
+#endif
         break;
     case MSG_GPS2_RTK:
         CHECK_PAYLOAD_SIZE(GPS2_RTK);
