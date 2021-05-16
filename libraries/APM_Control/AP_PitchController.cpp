@@ -128,6 +128,11 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_I0
+    // @DisplayName: Initial I value
+    // @Description: Initial I value, this can be used to account for CG offsets by reducing the time taken to reach a steady state value, must be less than +-IMAX
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
     
     AP_GROUPEND
