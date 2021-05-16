@@ -298,7 +298,7 @@ void AP_WindVane::update()
     } else {
         // only have direction, can't do true wind calcs, set true direction to apparent + heading
         _direction_true_raw = wrap_PI(_direction_apparent_raw + AP::ahrs().yaw);
-        _speed_true = 0.0f;
+        _speed_true_raw = 0.0f;
     }
 
     /*
