@@ -128,9 +128,3 @@
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
-
-#if defined(STM32H7XX) || defined(STM32G4)
-#define HAL_CANFD_SUPPORTED 1
-# else
-#define HAL_CANFD_SUPPORTED 0
-#endif
