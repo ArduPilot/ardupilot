@@ -689,6 +689,13 @@ def enable_can(f):
     if 'CAN' in bytype and mcu_type.startswith("STM32F3"):
         f.write('#define CAN1_BASE CAN_BASE\n')
     env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
+    canfd_supported = get_config('CANFD_SUPPORTED', 0, required=False)
+    if canfd_supported:
+        f.write('#define HAL_CANFD_SUPPORTED 1\n')
+        env_vars['HAL_CANFD_SUPPORTED'] = 1
+    else:
+        f.write('#define HAL_CANFD_SUPPORTED 0\n')
+        env_vars['HAL_CANFD_SUPPORTED'] = 0
 
 
 def has_sdcard_spi():
