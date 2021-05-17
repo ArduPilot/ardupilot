@@ -85,6 +85,7 @@ public:
 
     void load_parameters();
     void prepare_reboot();
+    bool canfdout() const { return (g.can_fdmode == 1); }
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);
