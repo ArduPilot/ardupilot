@@ -233,7 +233,7 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
-#if !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_NO_LOGGING)
+#if !defined(HAL_BOOTLOADER_BUILD) && HAL_LOGGING_ENABLED
     INTERNAL_ERROR(AP_InternalError::error_t::panic);
     va_list ap;
 
