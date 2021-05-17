@@ -360,6 +360,12 @@ def setup_canmgr_build(cfg):
         'UAVCAN_NULLPTR=nullptr'
         ]
 
+    if cfg.env.HAL_CANFD_SUPPORTED:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
+    else:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
+
+
     env.INCLUDES += [
         cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
         ]
