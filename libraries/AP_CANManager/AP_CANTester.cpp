@@ -442,7 +442,7 @@ bool CANTester::test_uavcan_dna()
         return false;
     }
 
-    auto *node = new uavcan::Node<0>(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator, false);
+    auto *node = new uavcan::Node<0>(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
     if (!node) {
         return false;
     }
@@ -777,7 +777,7 @@ bool CANTester::test_uavcan_esc(bool enable_canfd)
 
     uavcan::Node<0> *node = nullptr;
     {
-        node = new uavcan::Node<0>(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator, false);
+        node = new uavcan::Node<0>(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
         if (node == nullptr) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to allocate ESC Node");
             ret = false;
@@ -854,13 +854,19 @@ bool CANTester::test_uavcan_esc(bool enable_canfd)
             goto exit;
         }
 
-        esc_status_publisher = new uavcan::Publisher<uavcan::equipment::esc::Status>(*node, enable_canfd);
+        esc_status_publisher = new uavcan::Publisher<uavcan::equipment::esc::Status>(*node);
         if (esc_status_publisher == nullptr) {
             ret = false;
             goto exit;
         }
         esc_status_publisher->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
         esc_status_publisher->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+        if (enable_canfd) {
+            node->enableCanFd();
+        } else {
+            node->disableCanFd();
+        }
         node->setNodeID(client.getAllocatedNodeID());
         node->setModeOperational();
     }
