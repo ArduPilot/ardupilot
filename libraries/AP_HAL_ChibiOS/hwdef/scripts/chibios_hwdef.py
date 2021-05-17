@@ -692,7 +692,7 @@ def write_mcu_config(f):
     if have_type_prefix('QUADSPI'):
         f.write('#define HAL_USE_WSPI TRUE\n')
         f.write('#define STM32_WSPI_USE_QUADSPI1 TRUE\n')
-        f.write('#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    0\n')
+        f.write('#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    STM32_MDMA_CHANNEL_ID_ANY\n')
         build_flags.append('USE_SNOR=yes')
     else:
         build_flags.append('USE_SNOR=no')

@@ -110,7 +110,7 @@ include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
 ifeq ($(USE_SNOR),yes)
-include $(CHIBIOS)/os/hal/lib/complex/serial_nor/devices/micron_n25q/hal_flash_device.mk
+include $(HWDEF)/common/hal_flash_device.mk
 endif
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global

@@ -177,7 +177,7 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-//int start_the_clock = 0;
+int start_the_clock = 0;
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
