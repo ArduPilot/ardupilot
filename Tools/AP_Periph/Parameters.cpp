@@ -374,6 +374,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
+
+#if HAL_CANFD_SUPPORTED
+    // can node FD Out mode
+    GSCALAR(can_fdmode,     "CAN_FDMODE", 0),
+#endif
     AP_VAREND
 };
 
