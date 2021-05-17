@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 class ExpandingString;
 
@@ -32,8 +33,13 @@ struct AP_HAL::CANFrame {
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
+#if HAL_CANFD_SUPPORTED
+    static const uint8_t NonFDCANMaxDataLen = 8;
     static const uint8_t MaxDataLen = 64;
-
+#else
+    static const uint8_t NonFDCANMaxDataLen = 8;
+    static const uint8_t MaxDataLen = 8;
+#endif
     uint32_t id;                ///< CAN ID with flags (above)
     union {
         uint8_t data[MaxDataLen];
@@ -138,6 +144,7 @@ struct AP_HAL::CANFrame {
         }
         return 64;
     }
+
     static uint8_t dataLengthToDlc(uint8_t data_length) {
         if (data_length <= 8) {
             return data_length;
