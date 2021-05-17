@@ -122,7 +122,7 @@ bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
  */
 bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd)
 {
-    AP_HAL::CANFrame f;
+    AP_HAL::CANFrame f {};
     hex2nibble_error = false;
     f.id = f.FlagEFF |
            (hex2nibble(cmd[1]) << 28) |
@@ -133,11 +133,11 @@ bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd)
            (hex2nibble(cmd[6]) <<  8) |
            (hex2nibble(cmd[7]) <<  4) |
            (hex2nibble(cmd[8]) <<  0);
-    if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::MaxDataLen)) {
+    if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
-    if (f.dlc > AP_HAL::CANFrame::MaxDataLen) {
+    if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
     {
@@ -153,18 +153,56 @@ bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd)
     return push_Frame(f);
 }
 
+#if HAL_CANFD_SUPPORTED
+/**
+ * General frame format:
+ *  <type> <id> <dlc> <data>
+ * The emitting functions below are highly optimized for speed.
+ */
+bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
+{
+    AP_HAL::CANFrame f {};
+    hex2nibble_error = false;
+    f.canfd = true;
+    f.id = f.FlagEFF |
+           (hex2nibble(cmd[1]) << 28) |
+           (hex2nibble(cmd[2]) << 24) |
+           (hex2nibble(cmd[3]) << 20) |
+           (hex2nibble(cmd[4]) << 16) |
+           (hex2nibble(cmd[5]) << 12) |
+           (hex2nibble(cmd[6]) <<  8) |
+           (hex2nibble(cmd[7]) <<  4) |
+           (hex2nibble(cmd[8]) <<  0);
+    f.dlc = hex2nibble(cmd[9]);
+    if (f.dlc > AP_HAL::CANFrame::dataLengthToDlc(AP_HAL::CANFrame::MaxDataLen)) {
+        return false;
+    }
+    {
+        const char* p = &cmd[10];
+        for (unsigned i = 0; i < AP_HAL::CANFrame::dlcToDataLength(f.dlc); i++) {
+            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
+            p += 2;
+        }
+    }
+    if (hex2nibble_error) {
+        return false;
+    }
+    return push_Frame(f);
+}
+#endif //#if HAL_CANFD_SUPPORTED
+
 bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 {
-    AP_HAL::CANFrame f;
+    AP_HAL::CANFrame f {};
     hex2nibble_error = false;
     f.id = (hex2nibble(cmd[1]) << 8) |
            (hex2nibble(cmd[2]) << 4) |
            (hex2nibble(cmd[3]) << 0);
-    if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::MaxDataLen)) {
+    if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
-    if (f.dlc > AP_HAL::CANFrame::MaxDataLen) {
+    if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
     {
@@ -182,7 +220,7 @@ bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 
 bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 {
-    AP_HAL::CANFrame f;
+    AP_HAL::CANFrame f {};
     hex2nibble_error = false;
     f.id = f.FlagEFF | f.FlagRTR |
            (hex2nibble(cmd[1]) << 28) |
@@ -193,12 +231,12 @@ bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
            (hex2nibble(cmd[6]) <<  8) |
            (hex2nibble(cmd[7]) <<  4) |
            (hex2nibble(cmd[8]) <<  0);
-    if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::MaxDataLen)) {
+    if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
 
-    if (f.dlc > AP_HAL::CANFrame::MaxDataLen) {
+    if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
     if (hex2nibble_error) {
@@ -209,17 +247,17 @@ bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 
 bool SLCAN::CANIface::handle_FrameRTRStd(const char* cmd)
 {
-    AP_HAL::CANFrame f;
+    AP_HAL::CANFrame f {};
     hex2nibble_error = false;
     f.id = f.FlagRTR |
            (hex2nibble(cmd[1]) << 8) |
            (hex2nibble(cmd[2]) << 4) |
            (hex2nibble(cmd[3]) << 0);
-    if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::MaxDataLen)) {
+    if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
-    if (f.dlc <= AP_HAL::CANFrame::MaxDataLen) {
+    if (f.dlc <= AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
     if (hex2nibble_error) {
@@ -267,7 +305,11 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     if (_port == nullptr) {
         return -1;
     }
+#if HAL_CANFD_SUPPORTED
+    constexpr unsigned SLCANMaxFrameSize = 200;
+#else
     constexpr unsigned SLCANMaxFrameSize = 40;
+#endif
     uint8_t buffer[SLCANMaxFrameSize] = {'\0'};
     uint8_t* p = &buffer[0];
     /*
@@ -277,7 +319,13 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
         *p++ = frame.isExtended() ? 'R' : 'r';
     } else if (frame.isErrorFrame()) {
         return -1;     // Not supported
-    } else {
+    }
+#if HAL_CANFD_SUPPORTED
+    else if (frame.canfd) {
+        *p++ = frame.isExtended() ? 'D' : 'd';
+    }
+#endif 
+    else {
         *p++ = frame.isExtended() ? 'T' : 't';
     }
 
@@ -301,12 +349,12 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     /*
     * DLC
     */
-    *p++ = char('0' + frame.dlc);
+    *p++ = nibble2hex(frame.dlc);
 
     /*
     * Data
     */
-    for (unsigned i = 0; i < frame.dlc; i++) {
+    for (unsigned i = 0; i < AP_HAL::CANFrame::dlcToDataLength(frame.dlc); i++) {
         const uint8_t byte = frame.data[i];
         *p++ = nibble2hex(byte >> 4);
         *p++ = nibble2hex(byte);
@@ -361,6 +409,12 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
         // See long commands below
         return handle_FrameRTRStd(cmd) ? "z\r" : "\a";
     }
+#if HAL_CANFD_SUPPORTED 
+    else if (cmd[0] == 'D') {
+        return handle_FDFrameDataExt(cmd) ? "Z\r" : "\a";
+    }
+#endif
+
     uint8_t resp_bytes[40];
     uint16_t resp_len;
     /*
@@ -622,7 +676,11 @@ int16_t SLCAN::CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadlin
         return ret;
     }
 
-    if (frame.isErrorFrame() || frame.dlc > 8) {
+    if (frame.isErrorFrame()
+#if !HAL_CANFD_SUPPORTED
+        || frame.dlc > 8
+#endif
+        ) {
         return ret;
     }
     reportFrame(frame, AP_HAL::native_micros64());
