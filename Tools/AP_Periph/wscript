@@ -41,8 +41,11 @@ def build(bld):
         'SRV_Channel',
         'AP_Notify',
         'AP_SerialLED',
-        'AP_Logger',
         'AP_Filesystem',
+        'AP_InertialSensor',
+        'AP_AccelCal',
+        'AP_Logger',
+        'AC_PID',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
