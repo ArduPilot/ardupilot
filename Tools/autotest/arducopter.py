@@ -7035,7 +7035,7 @@ class AutoTestCopter(AutoTest):
             Test("DynamicRpmNotches",
                  "Fly Dynamic Notches driven by ESC Telemetry",
                  self.fly_esc_telemetry_notches,
-                 attempts=1),
+                 attempts=8),
 
             Test("GyroFFT",
                  "Fly Gyro FFT",
