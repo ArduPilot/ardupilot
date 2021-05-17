@@ -845,9 +845,15 @@ AP_InertialSensor::init(uint16_t loop_rate)
     }
 
     // calibrate gyros unless gyro calibration has been disabled
-    if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
+    switch (gyro_calibration_timing()) {
+    case GYRO_CAL_NEVER:
+        break;
+    case GYRO_CAL_STARTUP_ONLY:
         init_gyro();
-    }
+        break;
+    default:
+        AP_BoardConfig::config_error("Invalid INS_GYR_CAL value");
+    };
 
     _sample_period_usec = 1000*1000UL / _loop_rate;
 
