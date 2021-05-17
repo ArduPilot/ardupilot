@@ -1557,7 +1557,7 @@ Compass::read(void)
         learn->update();
     }
 #endif
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         AP::logger().Write_Compass();
     }
