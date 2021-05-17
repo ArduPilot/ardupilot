@@ -821,7 +821,7 @@ bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
  */
 void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     const auto &msg = *cb.msg;
     if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
         // log to onboard log and mavlink
