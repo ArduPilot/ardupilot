@@ -81,6 +81,8 @@ struct sitl_fdm {
         float speed;
         float direction;
     } wind_vane_apparent;
+
+    bool is_lock_step_scheduled;
 };
 
 // number of rc output channels

@@ -52,6 +52,7 @@ Helicopter::Helicopter(const char *frame_str) :
     gas_heli = (strstr(frame_str, "-gas") != nullptr);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
+    lock_step_scheduled = true;
 }
 
 /*
