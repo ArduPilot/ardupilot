@@ -28,6 +28,7 @@ Blimp::Blimp(const char *frame_str) :
 {
     frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;
+    lock_step_scheduled = true;
 }
 
 // calculate rotational and linear accelerations
