@@ -1,11 +1,9 @@
 include ../CubeOrange/hwdef.dat
 
-undef COMPASS
 undef IOMCU_UART
 undef USART6
 undef ROMFS
 undef HAL_HAVE_SAFETY_SWITCH
-undef IMU
 undef HAL_CHIBIOS_ARCH_FMUV3
 undef BOOTLOADER_DEV_LIST
 
@@ -26,6 +24,8 @@ define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
+
+define HAL_INS_ENABLED 1
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
