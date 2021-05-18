@@ -292,8 +292,9 @@
 #define STM32_IRQ_FDCAN2_PRIORITY           10
 
 #define STM32_IRQ_MDMA_PRIORITY             9
-
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
+#define STM32_WSPI_QUADSPI1_MDMA_PRIORITY   1
+#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    STM32_MDMA_CHANNEL_ID_ANY
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
 #define STM32_IRQ_SDMMC2_PRIORITY           9
@@ -407,8 +408,6 @@
 #define STM32_ICU_TIM5_IRQ_PRIORITY         7
 #define STM32_ICU_TIM8_IRQ_PRIORITY         7
 #define STM32_ICU_TIM9_IRQ_PRIORITY         7
-
-#define STM32_IRQ_MDMA_PRIORITY             9
 
 /*
  * MAC driver system settings.
