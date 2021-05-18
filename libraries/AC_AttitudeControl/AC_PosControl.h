@@ -431,4 +431,7 @@ protected:
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
+
+    // return true if on a real vehicle or SITL with lock-step scheduling
+    bool has_good_timing(void) const;
 };
