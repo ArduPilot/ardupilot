@@ -3741,4 +3741,23 @@ uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
     return abs(pilot_velocity_z_max_dn);
 }
 
+/*
+  should we use the fixed wing attitude controllers for roll/pitch control
+ */
+bool QuadPlane::use_fw_attitude_controllers(void) const
+{
+#if 1
+    if (available() &&
+        motors->armed() &&
+        motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
+        in_vtol_mode() &&
+        !is_tailsitter()) {
+        // we want the desired rates for fixed wing slaved to the
+        // multicopter rates
+        return false;
+    }
+#endif
+    return true;
+}
+
 QuadPlane *QuadPlane::_singleton = nullptr;

@@ -109,9 +109,19 @@ void Plane::stabilize_roll(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
-                                                                                         speed_scaler, 
-                                                                                         disable_integrator));
+    int32_t roll_out;
+    if (!quadplane.use_fw_attitude_controllers()) {
+        // use the VTOL rate for control, to ensure consistency
+        const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
+        roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
+           opposing integrators balancing between the two controllers
+        */
+        rollController.decay_I();
+    } else {
+        roll_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
 /*
@@ -134,14 +144,28 @@ void Plane::stabilize_pitch(float speed_scaler)
         disable_integrator = true;
     }
 
-   // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
-    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !control_mode->does_auto_throttle() && flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
-       demanded_pitch = landing.get_pitch_cd();
-   }
+    int32_t pitch_out;
+    if (!quadplane.use_fw_attitude_controllers()) {
+        // use the VTOL rate for control, to ensure consistency
+        const auto &pid_info = quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
+        pitch_out = pitchController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
+           opposing integrators balancing between the two controllers
+        */
+        pitchController.decay_I();
+    } else {
+        // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
+        if (!quadplane.in_transition() &&
+            !control_mode->is_vtol_mode() &&
+            channel_throttle->in_trim_dz() &&
+            !control_mode->does_auto_throttle() &&
+            flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+            demanded_pitch = landing.get_pitch_cd();
+        }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
-                                                                                           speed_scaler, 
-                                                                                           disable_integrator));
+        pitch_out = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
 /*
