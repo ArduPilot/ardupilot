@@ -1335,7 +1335,7 @@ void QuadPlane::init_qland(void)
     init_loiter();
     throttle_wait = false;
     setup_target_position();
-    poscontrol.state = QPOS_LAND_DESCEND;
+    poscontrol.set_state(QPOS_LAND_DESCEND);
     poscontrol.pilot_correction_done = false;
     last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     landing_detect.lower_limit_start_ms = 0;
@@ -1426,7 +1426,7 @@ bool QuadPlane::is_flying_vtol(void) const
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 {
-    if (poscontrol.state == QPOS_LAND_FINAL) {
+    if (poscontrol.get_state() == QPOS_LAND_FINAL) {
         // when in final use descent rate for final even if alt has climbed again
         height_above_ground = MIN(height_above_ground, land_final_alt);
     }
@@ -1524,8 +1524,8 @@ void QuadPlane::control_loiter()
                                                                   get_desired_yaw_rate_cds());
 
     if (plane.control_mode == &plane.mode_qland) {
-        if (poscontrol.state < QPOS_LAND_FINAL && check_land_final()) {
-            poscontrol.state = QPOS_LAND_FINAL;
+        if (poscontrol.get_state() < QPOS_LAND_FINAL && check_land_final()) {
+            poscontrol.set_state(QPOS_LAND_FINAL);
             setup_target_position();
             // cut IC engine if enabled
             if (land_icengine_cut != 0) {
@@ -1535,7 +1535,7 @@ void QuadPlane::control_loiter()
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
 
-        if (poscontrol.state == QPOS_LAND_FINAL && (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
+        if (poscontrol.get_state() == QPOS_LAND_FINAL && (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
             ahrs.set_touchdown_expected(true);
         }
 
@@ -2557,7 +2557,7 @@ void QuadPlane::vtol_position_controller(void)
     check_attitude_relax();
 
     // horizontal position control
-    switch (poscontrol.state) {
+    switch (poscontrol.get_state()) {
 
     case QPOS_POSITION1: {
         setup_target_position();
@@ -2646,11 +2646,11 @@ void QuadPlane::vtol_position_controller(void)
         
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+                                                                      plane.nav_pitch_cd,
+                                                                      desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
-            poscontrol.state = QPOS_POSITION2;
+            poscontrol.set_state(QPOS_POSITION2);
             poscontrol.pilot_correction_done = false;
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                                     (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
@@ -2721,7 +2721,7 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     // now height control
-    switch (poscontrol.state) {
+    switch (poscontrol.get_state()) {
     case QPOS_POSITION1:
     case QPOS_POSITION2: {
         bool vtol_loiter_auto = false;
@@ -2772,7 +2772,7 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_LAND_DESCEND:
     case QPOS_LAND_FINAL: {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (poscontrol.state == QPOS_LAND_FINAL) {
+        if (poscontrol.get_state() == QPOS_LAND_FINAL) {
             if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
                 ahrs.set_touchdown_expected(true);
             }
@@ -2927,7 +2927,7 @@ void QuadPlane::control_auto(void)
 void QuadPlane::control_qrtl(void)
 {
     vtol_position_controller();
-    if (poscontrol.state >= QPOS_POSITION2) {
+    if (poscontrol.get_state() >= QPOS_POSITION2) {
         // change target altitude to home alt
         plane.next_WP_loc.alt = plane.home.alt;
         verify_vtol_land();
@@ -2942,7 +2942,7 @@ void QuadPlane::init_qrtl(void)
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;
-    poscontrol.state = QPOS_POSITION1;
+    poscontrol.set_state(QPOS_POSITION1);
     poscontrol.speed_scale = 0;
     pos_control->set_accel_desired_xy_cmss(Vector2f());
     pos_control->init_xy_controller();
@@ -3030,7 +3030,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
-    poscontrol.state = QPOS_POSITION1;
+    poscontrol.set_state(QPOS_POSITION1);
     poscontrol.speed_scale = 0;
 
     // initialise the position controller
@@ -3149,12 +3149,12 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
  */
 bool QuadPlane::check_land_complete(void)
 {
-    if (poscontrol.state != QPOS_LAND_FINAL) {
+    if (poscontrol.get_state() != QPOS_LAND_FINAL) {
         // only apply to final landing phase
         return false;
     }
     if (land_detector(4000)) {
-        poscontrol.state = QPOS_LAND_COMPLETE;
+        poscontrol.set_state(QPOS_LAND_COMPLETE);
         gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
         if (plane.control_mode != &plane.mode_auto ||
             !plane.mission.continue_after_land()) {
@@ -3199,10 +3199,10 @@ bool QuadPlane::verify_vtol_land(void)
     if (!available()) {
         return true;
     }
-    if (poscontrol.state == QPOS_POSITION2 &&
+    if (poscontrol.get_state() == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2 &&
         plane.ahrs.groundspeed() < 3) {
-        poscontrol.state = QPOS_LAND_DESCEND;
+        poscontrol.set_state(QPOS_LAND_DESCEND);
         poscontrol.pilot_correction_done = false;
 #if AC_FENCE == ENABLED
         plane.fence.auto_disable_fence_for_landing();
@@ -3224,8 +3224,8 @@ bool QuadPlane::verify_vtol_land(void)
     }
 
     // at land_final_alt begin final landing
-    if (poscontrol.state == QPOS_LAND_DESCEND && check_land_final()) {
-        poscontrol.state = QPOS_LAND_FINAL;
+    if (poscontrol.get_state() == QPOS_LAND_DESCEND && check_land_final()) {
+        poscontrol.set_state(QPOS_LAND_FINAL);
 
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
@@ -3447,7 +3447,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
  */
 void QuadPlane::guided_start(void)
 {
-    poscontrol.state = QPOS_POSITION1;
+    poscontrol.set_state(QPOS_POSITION1);
     poscontrol.speed_scale = 0;
     guided_takeoff = false;
     setup_target_position();
@@ -3673,7 +3673,7 @@ void QuadPlane::update_throttle_mix(void)
 bool QuadPlane::in_vtol_land_approach(void) const
 {
     if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
-        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2)) {
+        (poscontrol.get_state() == QPOS_POSITION1 || poscontrol.get_state() == QPOS_POSITION2)) {
         return true;
     }
     return false;
@@ -3685,7 +3685,7 @@ bool QuadPlane::in_vtol_land_approach(void) const
 bool QuadPlane::in_vtol_land_descent(void) const
 {
     if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
-        (poscontrol.state == QPOS_LAND_DESCEND || poscontrol.state == QPOS_LAND_FINAL)) {
+        (poscontrol.get_state() == QPOS_LAND_DESCEND || poscontrol.get_state() == QPOS_LAND_FINAL)) {
         return true;
     }
     return false;
@@ -3696,7 +3696,7 @@ bool QuadPlane::in_vtol_land_descent(void) const
  */
 bool QuadPlane::in_vtol_land_final(void) const
 {
-    return in_vtol_land_descent() && poscontrol.state == QPOS_LAND_FINAL;
+    return in_vtol_land_descent() && poscontrol.get_state() == QPOS_LAND_FINAL;
 }
 
 /*
