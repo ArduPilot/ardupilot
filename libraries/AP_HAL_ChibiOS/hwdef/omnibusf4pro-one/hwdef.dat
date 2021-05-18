@@ -1,0 +1,7 @@
+include ../omnibusf4pro/hwdef.dat
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
