@@ -573,8 +573,10 @@ void AC_PosControl::update_xy_controller()
     // Check for position control time out
     if ( !is_active_xy() ) {
         init_xy_controller();
-        // call internal error because initialisation has not been done
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        if (has_good_timing()) {
+            // call internal error because initialisation has not been done
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
     }
     _last_update_xy_us = AP_HAL::micros64();
 
@@ -863,8 +865,10 @@ void AC_PosControl::update_z_controller()
     // Check for z_controller time out
     if (!is_active_z()) {
         init_z_controller();
-        // call internal error because initialisation has not been done
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        if (has_good_timing()) {
+            // call internal error because initialisation has not been done
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
     }
     _last_update_z_us = AP_HAL::micros64();
 
@@ -1220,5 +1224,18 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
         return false;
     }
 
+    return true;
+}
+
+// return true if on a real vehicle or SITL with lock-step scheduling
+bool AC_PosControl::has_good_timing(void) const
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    auto *sitl = AP::sitl();
+    if (sitl) {
+        return sitl->state.is_lock_step_scheduled;
+    }
+#endif
+    // real boards are assumed to have good timing
     return true;
 }
