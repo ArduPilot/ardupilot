@@ -67,6 +67,7 @@ def find_vehicle_parameter_filepath(vehicle_name):
         "Plane": "ArduPlane",
         "Tracker": "AntennaTracker",
         "Sub": "ArduSub",
+        "Heli": "ArduCopter",
     }
 
     # first try ArduCopter/Parmameters.cpp
@@ -121,6 +122,7 @@ truename_map = {
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
     "AP_Periph": "AP_Periph",
+    "Helicopter": "Heli",
 }
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
@@ -130,6 +132,8 @@ vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 basename = os.path.basename(os.path.dirname(vehicle_path))
 path = os.path.normpath(os.path.dirname(vehicle_path))
 reference = basename  # so links don't break we use ArduCopter
+if truename == "Heli":
+    reference = "Helicopter"
 vehicle = Vehicle(truename, path, reference=reference)
 debug('Found vehicle type %s' % vehicle.name)
 
@@ -239,8 +243,10 @@ def process_library(vehicle, library, pathprefix=None):
                 for only_vehicle in only_vehicles_list:
                     if only_vehicle not in valid_truenames:
                         raise ValueError("Invalid only_vehicle %s" % only_vehicle)
+                # use Copter values if Heli values not present:
                 if vehicle.name not in only_vehicles_list:
-                    continue
+                    if vehicle.name != 'Heli' or 'Copter' not in only_vehicles_list:
+                        continue
             p = Parameter(library.name+param_name, current_file)
             debug(p.name + ' ')
             global current_param
@@ -272,7 +278,9 @@ def process_library(vehicle, library, pathprefix=None):
                 if vehicle.name not in only_for_vehicles:
                     if len(only_for_vehicles) and field[0] in ['Values', 'Bitmask']:
                         seen_values_or_bitmask_for_other_vehicle = True
-                    continue
+                    # use Copter values if Heli values not present:
+                    if vehicle.name != 'Heli' or 'Copter' not in only_for_vehicles:
+                        continue
                 value = re.sub('@PREFIX@', library.name, field[2])
                 setattr(p, field[0], value)
 
