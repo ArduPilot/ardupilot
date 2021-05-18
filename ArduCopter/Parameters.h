@@ -645,6 +645,9 @@ public:
 
     AP_Int32 flight_options;
 
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand_SM *precland_sm;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

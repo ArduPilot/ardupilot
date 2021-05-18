@@ -10,6 +10,9 @@ bool ModeLand::init(bool ignore_checks)
         Vector3f stopping_point;
         loiter_nav->get_stopping_point_xy(stopping_point);
         loiter_nav->init_target(stopping_point);
+#if PRECISION_LANDING == ENABLED
+        g2.precland_sm->init();
+#endif
     }
 
     // initialize vertical speeds and leash lengths

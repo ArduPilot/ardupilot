@@ -1056,6 +1056,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
 
+#if PRECISION_LANDING == ENABLED
+        // @Group: PLSM_
+        // @Path: ../libraries/AC_PrecLand/AC_PrecLand_SM.cpp
+    AP_SUBGROUPPTR(precland_sm, "PLSM_",  45, ParametersG2, AC_PrecLand_SM),
+#endif
+
     AP_GROUPEND
 };
 

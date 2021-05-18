@@ -574,6 +574,14 @@ void Copter::allocate_motors(void)
     AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    g2.precland_sm = new AC_PrecLand_SM(*pos_control, *loiter_nav, *wp_nav, precland);
+    if (g2.precland_sm == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate AC_PrecLand_SM");
+    }
+    AP_Param::load_object_from_eeprom(g2.precland_sm, g2.precland_sm->var_info);
+#endif
+
     // reload lines from the defaults file that may now be accessible
     AP_Param::reload_defaults_file(true);
     

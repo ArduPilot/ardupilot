@@ -373,6 +373,10 @@ void ModeRTL::land_start()
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
+
+#if PRECISION_LANDING == ENABLED
+    g2.precland_sm->init();
+#endif
 }
 
 bool ModeRTL::is_landing() const
