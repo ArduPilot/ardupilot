@@ -524,6 +524,8 @@ public:
 
     bool allows_arming() const override { return false; }
 
+    bool does_auto_throttle() const override { return true; }
+
 protected:
 
     bool _enter() override;
