@@ -252,7 +252,7 @@ AP_GPS_FEMTO::process_message(void)
 
         _new_uavgps = true;
     }
-    if (messageid == 42) // bestpos
+    if (messageid == FEMTO_MSG_ID_BESTPOS) // bestpos
     {
         const femto_best_pos_t &bestpos = femto_msg.data.best_pos;
 
@@ -260,13 +260,13 @@ AP_GPS_FEMTO::process_message(void)
 
         _last_vel_time = (uint32_t) femto_msg.header.femto_header.tow;
 
-        _new_position = true;
+        _new_bestpos = true;
     }
 
     // ensure bestpos and uavgps stay insync
-    if (_new_position && _new_uavgps && _last_vel_time == state.time_week_ms) 
+    if (_new_bestpos && _new_uavgps && _last_vel_time == state.time_week_ms) 
     {
-        _new_position = _new_uavgps = false;
+        _new_bestpos = _new_uavgps = false;
     
         return true;
     }

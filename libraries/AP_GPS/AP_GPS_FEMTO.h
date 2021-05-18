@@ -54,7 +54,7 @@ private:
     uint32_t _init_blob_time = 0;
 
     // do we have new position information?
-    bool _new_position:1;
+    bool _new_bestpos:1;
     // do we have new uavgps information?
     bool _new_uavgps:1;
     
