@@ -675,6 +675,11 @@ private:
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
+    /*
+      return true if we should use the fixed wing attitude control loop
+     */
+    bool use_fw_attitude_controllers(void) const;
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
