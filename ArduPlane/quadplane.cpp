@@ -2631,14 +2631,11 @@ void QuadPlane::vtol_position_controller(void)
           to prevent inability to progress to position if moving from a loiter
           to landing
          */
-        float minlimit = linear_interpolate(-aparm.angle_max, -300,
-                                            speed_towards_target, 
-                                            wp_nav->get_default_speed_xy() * 0.01, 
-                                            wp_nav->get_default_speed_xy() * 0.015);
-        float pitch_limit_cd = linear_interpolate(minlimit, plane.aparm.pitch_limit_min_cd,
-                                                  plane.auto_state.wp_proportion, 0, 1);
-        if (plane.nav_pitch_cd < pitch_limit_cd) {
-            plane.nav_pitch_cd = pitch_limit_cd;
+        float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                               poscontrol.time_since_state_start_ms(),
+                                               0, 5000);
+        if (plane.nav_pitch_cd < minlimit_cd) {
+            plane.nav_pitch_cd = minlimit_cd;
             // tell the pos controller we have limited the pitch to
             // stop integrator buildup
             pos_control->set_externally_limited_xy();
@@ -3746,7 +3743,6 @@ uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
  */
 bool QuadPlane::use_fw_attitude_controllers(void) const
 {
-#if 1
     if (available() &&
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
@@ -3756,7 +3752,6 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
         // multicopter rates
         return false;
     }
-#endif
     return true;
 }
 
