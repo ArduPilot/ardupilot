@@ -459,6 +459,8 @@ private:
     uint32_t last_loiter_ms;
 
     enum position_control_state {
+        QPOS_APPROACH,
+        QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
         QPOS_LAND_DESCEND,
@@ -485,6 +487,8 @@ private:
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
+        float start_closing_vel;
+        float start_dist;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
@@ -636,6 +640,7 @@ private:
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
         OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
         OPTION_THR_LANDING_CONTROL=(1<<15),
+        OPTION_DISABLE_APPROACH=(1<<16),
     };
 
     AP_Float takeoff_failure_scalar;
@@ -692,6 +697,32 @@ private:
       return true if we should use the fixed wing attitude control loop
      */
     bool use_fw_attitude_controllers(void) const;
+
+    /*
+      get the airspeed for landing approach
+     */
+    float get_land_airspeed(void);
+
+    /*
+      setup for landing approach
+     */
+    void poscontrol_init_approach(void);
+
+    /*
+      calculate our closing velocity vector on the landing
+      point. Takes account of the landing point having a velocity
+     */
+    Vector2f landing_closing_velocity();
+
+    /*
+      calculate our desired closing velocity vector on the landing point.
+    */
+    Vector2f landing_desired_closing_velocity();
+
+    /*
+      change spool state, providing easy hook for catching changes in debug
+     */
+    void set_desired_spool_state(AP_Motors::DesiredSpoolState state);
 
 public:
     void motor_test_output();
