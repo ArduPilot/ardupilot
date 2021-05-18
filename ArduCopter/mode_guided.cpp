@@ -500,8 +500,7 @@ void ModeGuided::vel_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
-    uint32_t tnow = millis();
-    if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (millis() - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
         if (!pos_control->get_desired_velocity().is_zero()) {
             set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f, 0.0f, 0.0f));
         }
@@ -553,8 +552,7 @@ void ModeGuided::posvel_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
-    uint32_t tnow = millis();
-    if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (millis() - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
         guided_vel_target_cms.zero();
         if (auto_yaw.mode() == AUTO_YAW_RATE) {
             auto_yaw.set_rate(0.0f);
@@ -622,8 +620,7 @@ void ModeGuided::angle_control_run()
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
-    uint32_t tnow = millis();
-    if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
+    if (millis() - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
         roll_in = 0.0f;
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
