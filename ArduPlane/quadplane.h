@@ -466,7 +466,17 @@ private:
         QPOS_LAND_COMPLETE
     };
     struct {
-        enum position_control_state state;
+    public:
+        enum position_control_state get_state() const {
+            return state;
+        }
+        void set_state(enum position_control_state s) {
+            state = s;
+            last_state_change_ms = AP_HAL::millis();
+        }
+        uint32_t time_since_state_start_ms() const {
+            return AP_HAL::millis() - last_state_change_ms;
+        }
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
@@ -475,6 +485,9 @@ private:
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
+    private:
+        uint32_t last_state_change_ms;
+        enum position_control_state state;
     } poscontrol;
 
     struct {
