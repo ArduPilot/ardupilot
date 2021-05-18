@@ -36,7 +36,6 @@ public:
     const char *name() const override { return "FEMTO"; }
 
 private:
-
     bool parse(uint8_t temp);
     bool process_message();
     uint32_t CRC32Value(uint32_t icrc);
@@ -46,10 +45,20 @@ private:
     static const uint8_t FEMTO_PREAMBLE2 = 0x44;
     static const uint8_t FEMTO_PREAMBLE3 = 0x12;
     
-    static const char* const _initialisation_blob[2];
+    static const char* const _initialisation_blob[3];
    
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
+
+    uint8_t _init_blob_index = 0;
+    uint32_t _init_blob_time = 0;
+
+    // do we have new position information?
+    bool _new_position:1;
+    // do we have new uavgps information?
+    bool _new_uavgps:1;
+    
+    uint32_t _last_vel_time;
 
     /**
     * femto_msg_header_t is femto data header
@@ -102,13 +111,40 @@ private:
         uint8_t 	satellites_used;	/** Number of satellites used*/
         uint8_t		heading_type;		/**< 0 invalid,5 for float,6 for fix*/
     };
+
+    struct PACKED femto_best_pos_t
+    {
+        uint32_t solstat;      ///< Solution status
+        uint32_t postype;      ///< Position type
+        double lat;            ///< latitude (deg)
+        double lng;            ///< longitude (deg)
+        double hgt;            ///< height above mean sea level (m)
+        float undulation;      ///< relationship between the geoid and the ellipsoid (m)
+        uint32_t datumid;      ///< datum id number
+        float latsdev;         ///< latitude standard deviation (m)
+        float lngsdev;         ///< longitude standard deviation (m)
+        float hgtsdev;         ///< height standard deviation (m)
+        // 4 bytes
+        uint8_t stnid[4];      ///< base station id
+        float diffage;         ///< differential position age (sec)
+        float sol_age;         ///< solution age (sec)
+        uint8_t svstracked;    ///< number of satellites tracked
+        uint8_t svsused;       ///< number of satellites used in solution
+        uint8_t svsl1;         ///< number of GPS plus GLONASS L1 satellites used in solution
+        uint8_t svsmultfreq;   ///< number of GPS plus GLONASS L2 satellites used in solution
+        uint8_t resv;          ///< reserved
+        uint8_t extsolstat;    ///< extended solution status - OEMV and greater only
+        uint8_t galbeisigmask;
+        uint8_t gpsglosigmask;
+    };
     
-    union PACKED msgbuffer {
+    union PACKED msg_buffer_t {
+        femto_best_pos_t best_pos;
         femto_uav_gps_t uav_gps;
         uint8_t bytes[256];
     };
     
-    union PACKED msgheader {
+    union PACKED msg_header_t {
         femto_msg_header_t femto_header;
         uint8_t data[28];
     };
@@ -127,11 +163,11 @@ private:
             CRC2,
             CRC3,
             CRC4,
-        } femto_state;
+        } femto_decode_state;
         
-        msgbuffer data;
+        msg_buffer_t data;
         uint32_t crc;
-        msgheader header;
+        msg_header_t header;
         uint16_t read;
     } femto_msg;
 };
