@@ -282,6 +282,12 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 {
     fail_msg = nullptr;
 
+    // if fences are enabled but none selected fail pre-arm check
+    if (enabled() && !present()) {
+        fail_msg = "Fences enabled, but none selected";
+        return false;
+    }
+
     // if not enabled or not fence set-up always return true
     if ((!_enabled && !_auto_enabled) || !_enabled_fences) {
         return true;
