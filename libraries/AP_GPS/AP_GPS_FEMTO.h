@@ -44,19 +44,22 @@ private:
     static const uint8_t FEMTO_PREAMBLE1 = 0xaa;
     static const uint8_t FEMTO_PREAMBLE2 = 0x44;
     static const uint8_t FEMTO_PREAMBLE3 = 0x12;
+
+    static const uint16_t FEMTO_MSG_ID_UAVGPS = 8001;
+    static const uint8_t  FEMTO_MSG_ID_BESTPOS = 42;
     
     static const char* const _initialisation_blob[3];
    
-    uint32_t crc_error_counter = 0;
-    uint32_t last_injected_data_ms = 0;
+    uint32_t crc_error_counter;
+    uint32_t last_injected_data_ms;
 
-    uint8_t _init_blob_index = 0;
-    uint32_t _init_blob_time = 0;
+    uint8_t _init_blob_index;
+    uint32_t _init_blob_time;
 
     // do we have new position information?
-    bool _new_bestpos:1;
+    bool _new_bestpos;
     // do we have new uavgps information?
-    bool _new_uavgps:1;
+    bool _new_uavgps;
     
     uint32_t _last_vel_time;
 

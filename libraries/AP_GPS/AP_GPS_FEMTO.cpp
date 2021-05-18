@@ -19,14 +19,11 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_FEMTO.h"
-#include <AP_Logger/AP_Logger.h>
+
 
 extern const AP_HAL::HAL& hal;
 
 #define FEMTO_DEBUGGING 0
-
-#define FEMTO_MSG_ID_UAVGPS 		8001
-#define FEMTO_MSG_ID_BESTPOS        42
 
 #if FEMTO_DEBUGGING
 #include <cstdio>
@@ -87,31 +84,25 @@ AP_GPS_FEMTO::read(void)
 bool
 AP_GPS_FEMTO::parse(uint8_t temp)
 {
-    switch (femto_msg.femto_decode_state)
-    {
+    switch (femto_msg.femto_decode_state) {
         default:
         case femto_msg_parser_t::PREAMBLE1:
-            if (temp == FEMTO_PREAMBLE1)
+            if (temp == FEMTO_PREAMBLE1) {
                 femto_msg.femto_decode_state = femto_msg_parser_t::PREAMBLE2;
+            }       
             femto_msg.read = 0;
             break;
         case femto_msg_parser_t::PREAMBLE2:
-            if (temp == FEMTO_PREAMBLE2)
-            {
+            if (temp == FEMTO_PREAMBLE2) {
                 femto_msg.femto_decode_state = femto_msg_parser_t::PREAMBLE3;
-            }
-            else
-            {
+            } else {
                 femto_msg.femto_decode_state = femto_msg_parser_t::PREAMBLE1;
             }
             break;
         case femto_msg_parser_t::PREAMBLE3:
-            if (temp == FEMTO_PREAMBLE3)
-            {
+            if (temp == FEMTO_PREAMBLE3) {
                 femto_msg.femto_decode_state = femto_msg_parser_t::HEADERLENGTH;
-            }
-            else
-            {
+            } else {
                 femto_msg.femto_decode_state = femto_msg_parser_t::PREAMBLE1;
             }
             break;
@@ -133,8 +124,7 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             }
             femto_msg.header.data[femto_msg.read] = temp;
             femto_msg.read++;
-            if (femto_msg.read >= femto_msg.header.femto_header.headerlength)
-            {
+            if (femto_msg.read >= femto_msg.header.femto_header.headerlength) {
                 femto_msg.femto_decode_state = femto_msg_parser_t::DATA;
             }
             break;
@@ -146,8 +136,7 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             }
             femto_msg.data.bytes[femto_msg.read - femto_msg.header.femto_header.headerlength] = temp;
             femto_msg.read++;
-            if (femto_msg.read >= (femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength))
-            {
+            if (femto_msg.read >= (femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength)) {
                 Debug("FEMTO DATA exit\n");
                 femto_msg.femto_decode_state = femto_msg_parser_t::CRC1;
             }
@@ -171,12 +160,9 @@ AP_GPS_FEMTO::parse(uint8_t temp)
             uint32_t crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.headerlength, (uint8_t *)&femto_msg.header.data, (uint32_t)0);
             crc = CalculateBlockCRC32((uint32_t)femto_msg.header.femto_header.messagelength, (uint8_t *)&femto_msg.data, crc);
 
-            if (femto_msg.crc == crc)
-            {
+            if (femto_msg.crc == crc) {
                 return process_message();
-            }
-            else
-            {
+            } else {
                 Debug("crc failed");
                 crc_error_counter++;
             }
@@ -195,8 +181,7 @@ AP_GPS_FEMTO::process_message(void)
 
     check_new_itow(femto_msg.header.femto_header.tow, femto_msg.header.femto_header.messagelength + femto_msg.header.femto_header.headerlength);
     
-    if (messageid == FEMTO_MSG_ID_UAVGPS) // uavgps
-    {
+    if (messageid == FEMTO_MSG_ID_UAVGPS) {  // uavgps
         const femto_uav_gps_t &uav_gps = femto_msg.data.uav_gps;
 
         state.time_week = femto_msg.header.femto_header.week;
@@ -215,8 +200,7 @@ AP_GPS_FEMTO::process_message(void)
         state.have_vertical_accuracy = true;
         state.rtk_num_sats = state.num_sats;
 
-        switch (uav_gps.fix_type)
-        {
+        switch (uav_gps.fix_type) {
             case 0:
             case 1:
                 state.status = AP_GPS::NO_FIX;
@@ -252,8 +236,7 @@ AP_GPS_FEMTO::process_message(void)
 
         _new_uavgps = true;
     }
-    if (messageid == FEMTO_MSG_ID_BESTPOS) // bestpos
-    {
+    if (messageid == FEMTO_MSG_ID_BESTPOS) { // bestpos
         const femto_best_pos_t &bestpos = femto_msg.data.best_pos;
 
         state.rtk_age_ms = bestpos.diffage * 1000;
@@ -264,8 +247,7 @@ AP_GPS_FEMTO::process_message(void)
     }
 
     // ensure bestpos and uavgps stay insync
-    if (_new_bestpos && _new_uavgps && _last_vel_time == state.time_week_ms) 
-    {
+    if (_new_bestpos && _new_uavgps && _last_vel_time == state.time_week_ms) {
         _new_bestpos = _new_uavgps = false;
     
         return true;
@@ -290,20 +272,19 @@ uint32_t AP_GPS_FEMTO::CRC32Value(uint32_t icrc)
 {
     int i;
     uint32_t crc = icrc;
-    for ( i = 8 ; i > 0; i-- )
-    {
-        if ( crc & 1 )
+    for ( i = 8 ; i > 0; i-- ) {
+        if ( crc & 1 ) {
             crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-        else
+        } else {
             crc >>= 1;
+        }    
     }
     return crc;
 }
 
 uint32_t AP_GPS_FEMTO::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
 {
-    while ( length-- != 0 )
-    {
+    while ( length-- != 0 ) {
         crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
     }
     return( crc );
