@@ -234,11 +234,6 @@ void Copter::parachute_check()
     static uint16_t control_loss_count; // number of iterations we have been out of control
     static int32_t baro_alt_start;
 
-    // exit immediately if parachute is not enabled
-    if (!parachute.enabled()) {
-        return;
-    }
-
     // pass is_flying to parachute library
     parachute.set_is_flying(!ap.land_complete);
 
@@ -247,6 +242,10 @@ void Copter::parachute_check()
 
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
+
+    if (!parachute.enabled()) {
+        return;
+    }
 
     // return immediately if motors are not armed or pilot's throttle is above zero
     if (!motors->armed()) {
