@@ -164,10 +164,10 @@ void ModeGuided::vel_control_start()
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
-    // initialise velocity controller
+    // initialise the position controller
     pos_control->init_z_controller();
     pos_control->init_xy_controller();
 }
@@ -181,10 +181,10 @@ void ModeGuided::posvel_control_start()
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
-    // initialise velocity controller
+    // initialise the position controller
     pos_control->init_z_controller();
     pos_control->init_xy_controller();
 
@@ -203,10 +203,10 @@ void ModeGuided::angle_control_start()
     // set guided_mode to velocity controller
     guided_mode = SubMode::Angle;
 
-    // set vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }
@@ -439,7 +439,8 @@ void ModeGuided::pos_control_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
     // call attitude controller
@@ -552,11 +553,8 @@ void ModeGuided::posvel_control_run()
         }
     }
 
-    // calculate dt
-    float dt = pos_control->get_dt();
-
     // advance position target using velocity target
-    guided_pos_target_cm += guided_vel_target_cms * dt;
+    guided_pos_target_cm += guided_vel_target_cms * pos_control->get_dt();
 
     // send position and velocity targets to position controller
     pos_control->input_pos_vel_accel_xy(guided_pos_target_cm, guided_vel_target_cms, Vector3f());

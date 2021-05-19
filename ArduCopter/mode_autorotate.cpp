@@ -231,13 +231,13 @@ void ModeAutorotate::run()
                 float pilot_des_v_z = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
                 pilot_des_v_z = constrain_float(pilot_des_v_z, pilot_spd_dn, pilot_spd_up);
 
-                // Calculate target climb rate adjustment to transition from bail out decent speed to requested climb rate on stick.
+                // Calculate target climb rate adjustment to transition from bail out descent speed to requested climb rate on stick.
                 _target_climb_rate_adjust = (curr_vel_z - pilot_des_v_z)/(_bail_time - BAILOUT_MOTOR_RAMP_TIME); //accounting for 0.5s motor spool time
 
                 // Calculate pitch target adjustment rate to return to level
                 _target_pitch_adjust = _pitch_target/_bail_time;
 
-                // Set speed and acceleration limit
+                // set vertical speed and acceleration limits
                 pos_control->set_max_speed_accel_z(curr_vel_z, pilot_spd_up, fabsf(_target_climb_rate_adjust));
 
                 motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);

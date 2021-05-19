@@ -164,7 +164,7 @@ protected:
     private:
         bool _running;
         float take_off_start_alt;
-        float take_off_alt;
+        float take_off_complete_alt ;
     };
 
     static _TakeOff takeoff;

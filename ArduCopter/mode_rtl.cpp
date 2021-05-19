@@ -171,7 +171,8 @@ void ModeRTL::climb_return_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
     // call attitude controller
@@ -228,7 +229,8 @@ void ModeRTL::loiterathome_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
     // call attitude controller
@@ -335,7 +337,8 @@ void ModeRTL::descent_run()
     // run loiter controller
     loiter_nav->update();
 
-    // call z-axis position controller
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control->set_alt_target_with_slew(rtl_path.descent_target.alt);
     pos_control->update_z_controller();
 
@@ -355,7 +358,7 @@ void ModeRTL::land_start()
     // Set wp navigation target to above home
     loiter_nav->init_target(wp_nav->get_wp_destination());
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }

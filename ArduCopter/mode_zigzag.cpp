@@ -83,7 +83,7 @@ bool ModeZigZag::init(bool ignore_checks)
     }
     loiter_nav->init_target();
 
-    // initialise position_z and desired velocity_z
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }
@@ -110,7 +110,7 @@ void ModeZigZag::exit()
 // should be called at 100hz or more
 void ModeZigZag::run()
 {
-    // initialize vertical speed and acceleration's range
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // set the direction and the total number of lines
@@ -269,7 +269,8 @@ void ModeZigZag::auto_control()
     // run waypoint controller
     const bool wpnav_ok = wp_nav->update_wpnav();
 
-    // call z-axis position controller (wp_nav should have already updated its alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
     // call attitude controller
@@ -326,7 +327,7 @@ void ModeZigZag::manual_control()
     case AltHold_MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         break;
@@ -346,7 +347,7 @@ void ModeZigZag::manual_control()
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
-        // get take-off adjusted pilot and takeoff climb rates
+        // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
@@ -358,7 +359,7 @@ void ModeZigZag::manual_control()
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHold_Flying:
@@ -381,7 +382,7 @@ void ModeZigZag::manual_control()
         break;
     }
 
-    // call z-axis position controller
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 }
 

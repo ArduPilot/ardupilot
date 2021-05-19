@@ -15,10 +15,10 @@ bool ModeBrake::init(bool ignore_checks)
     // initialise position controller
     pos_control->init_xy_controller();
 
-    // initialize vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }

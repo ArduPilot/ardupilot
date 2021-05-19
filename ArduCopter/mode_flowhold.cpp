@@ -88,10 +88,10 @@ bool ModeFlowHold::init(bool ignore_checks)
         return false;
     }
 
-    // initialize vertical maximum speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!copter.pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }
@@ -229,7 +229,7 @@ void ModeFlowHold::run()
 {
     update_height_estimate();
 
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
@@ -264,7 +264,7 @@ void ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->set_yaw_target_to_current_heading();
-        copter.pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        copter.pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         flow_pi_xy.reset_I();
         break;
 
@@ -280,7 +280,7 @@ void ModeFlowHold::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // get take-off adjusted pilot and takeoff climb rates
+        // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
@@ -290,7 +290,7 @@ void ModeFlowHold::run()
 
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHold_Flying:
@@ -336,7 +336,7 @@ void ModeFlowHold::run()
     // call attitude controller
     copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
-    // call z-axis position controller
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 }
 

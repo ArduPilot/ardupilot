@@ -48,7 +48,7 @@ bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
     return true;
 }
 
-// start takeoff to specified altitude above home in centimetres
+// start takeoff to specified altitude above home in centimeters
 void Mode::_TakeOff::start(float alt_cm)
 {
     // indicate we are taking off
@@ -59,7 +59,7 @@ void Mode::_TakeOff::start(float alt_cm)
     // initialise takeoff state
     _running = true;
     take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
-    take_off_alt = take_off_start_alt + alt_cm;
+    take_off_complete_alt  = take_off_start_alt + alt_cm;
 }
 
 // stop takeoff
@@ -68,7 +68,8 @@ void Mode::_TakeOff::stop()
     _running = false;
 }
 
-// do_pilot_takeoff - commands the aircraft to the take off altitude
+// do_pilot_takeoff - controls the vertical position controller during the process of taking off
+//  take off is complete when the vertical target reaches the take off altitude.
 //  climb is cancelled if pilot_climb_rate_cm becomes negative
 //  sets take off to complete when target altitude is within 1% of the take off altitude
 void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
@@ -82,7 +83,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
     Vector3f vel;
     Vector3f accel;
 
-    pos.z = take_off_alt;
+    pos.z = take_off_complete_alt ;
     vel.z = pilot_climb_rate_cm;
 
     // command the aircraft to the take off altitude and current pilot climb rate
@@ -90,7 +91,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 
     // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
     if (is_negative(pilot_climb_rate_cm) ||
-        (take_off_alt - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+        (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
         stop();
     }
 }
@@ -120,7 +121,7 @@ void Mode::auto_takeoff_run()
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         pos_control->update_z_controller();
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
@@ -139,7 +140,7 @@ void Mode::auto_takeoff_run()
             wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         }
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control->set_limit_xy();
+        pos_control->set_externally_limited_xy();
     }
 
     // run waypoint controller
@@ -150,7 +151,8 @@ void Mode::auto_takeoff_run()
         thrustvector = wp_nav->get_thrust_vector();
     }
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     copter.pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot

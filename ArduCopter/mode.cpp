@@ -468,7 +468,7 @@ void Mode::make_safe_spool_down()
         break;
     }
 
-    pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+    pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_z_controller();
     // we may need to move this out
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
@@ -622,7 +622,7 @@ void Mode::land_run_horizontal_control()
             thrust_vector.y *= ratio;
 
             // tell position controller we are applying an external limit
-            pos_control->set_limit_xy();
+            pos_control->set_externally_limited_xy();
         }
     }
 
@@ -801,7 +801,7 @@ GCS_Copter &Mode::gcs()
 // are taking off so I terms can be cleared
 void Mode::set_throttle_takeoff()
 {
-    // tell position controller to reset alt target and reset I terms
+    // initialise the vertical position controller
     pos_control->init_z_controller();
 }
 
