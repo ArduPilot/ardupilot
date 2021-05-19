@@ -498,7 +498,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     float speed;
     if (get_forward_speed(speed)) {
         // do not limit to less than 1 deg/s
-        const float turn_rate_max = MAX(get_turn_rate_from_lat_accel(get_turn_lat_accel_max(), speed), radians(1.0f));
+        const float turn_rate_max = MAX(get_turn_rate_from_lat_accel(get_turn_lat_accel_max(), fabsf(speed)), radians(1.0f));
         _desired_turn_rate = constrain_float(_desired_turn_rate, -turn_rate_max, turn_rate_max);
     }
 
