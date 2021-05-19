@@ -7,7 +7,7 @@ AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& i
     _alt_min(0.0f)
 {}
 
-/// input_vel_z calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
+/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by :
 ///         maximum velocity - vel_max,
@@ -20,7 +20,7 @@ AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& i
 void AC_PosControl_Sub::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend)
 {
     // check for ekf z position reset
-    check_for_ekf_z_reset();
+    handle_ekf_z_reset();
 
     // limit desired velocity to prevent breeching altitude limits
     if (_alt_min < 0 && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
@@ -42,7 +42,7 @@ void AC_PosControl_Sub::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, 
     update_pos_vel_accel_z(_pos_target, _vel_desired, _accel_desired, _dt, _limit_vector);
 
     // prevent altitude target from breeching altitude limits
-    if (_alt_min < 0 && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
+    if (is_negative(_alt_min) && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
         _pos_target.z = constrain_float(_pos_target.z, _alt_min, _alt_max);
     }
 
