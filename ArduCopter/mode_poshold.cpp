@@ -27,10 +27,10 @@
 // poshold_init - initialise PosHold controller
 bool ModePosHold::init(bool ignore_checks)
 {
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
         pos_control->init_z_controller();
     }
@@ -70,7 +70,7 @@ void ModePosHold::run()
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     const Vector3f& vel = inertial_nav.get_velocity();
 
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     loiter_nav->clear_pilot_desired_acceleration();
 
@@ -102,7 +102,7 @@ void ModePosHold::run()
     case AltHold_MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update(false);
@@ -124,7 +124,7 @@ void ModePosHold::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // get take-off adjusted pilot and takeoff climb rates
+        // set position controller targets adjusted for pilot input
         takeoff.do_pilot_takeoff(target_climb_rate);
 
         // init and update loiter although pilot is controlling lean angles
@@ -147,7 +147,7 @@ void ModePosHold::run()
 
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -490,7 +490,7 @@ void ModePosHold::run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll, pitch, target_yaw_rate);
 
-    // call z-axis position controller
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 }
 

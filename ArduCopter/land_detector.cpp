@@ -186,7 +186,7 @@ void Copter::update_throttle_mix()
         // check for large acceleration - falling or high turbulence
         const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
-        // check for requested decent
+        // check for requested descent
         bool descent_not_demanded = pos_control->get_vel_desired_cms().z >= 0.0f;
 
         // check if landing

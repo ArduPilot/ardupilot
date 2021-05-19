@@ -22,7 +22,7 @@ bool ModeThrow::init(bool ignore_checks)
     // initialise pos controller speed and acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
 
-    // initialize vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
 
     return true;
