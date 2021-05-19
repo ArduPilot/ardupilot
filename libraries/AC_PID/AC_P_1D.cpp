@@ -74,7 +74,7 @@ void AC_P_1D::set_limits(float output_min, float output_max, float D_Out_max, fl
     }
 }
 
-// set_error_limits - reduce maximum position error to error_max
+// set_error_limits - reduce maximum error to error_max
 // to be called after setting limits
 void AC_P_1D::set_error_limits(float error_min, float error_max)
 {

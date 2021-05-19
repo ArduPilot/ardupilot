@@ -72,7 +72,7 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
 //  update_all - set target and measured inputs to PID controller and calculate outputs
 //  target and error are filtered
 //  the derivative is then calculated and filtered
-//  the integral is then updated based on the setting of the limit flag
+//  the integral is then updated if it does not increase in the direction of the limit vector
 Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measurement, const Vector2f &limit)
 {
     // don't process inf or NaN
@@ -128,7 +128,7 @@ Vector2f AC_PID_2D::update_all(const Vector3f &target, const Vector3f &measureme
 
 //  update_i - update the integral
 //  If the limit is set the integral is only allowed to reduce in the direction of the limit
-void AC_PID_2D::update_i( const Vector2f &limit)
+void AC_PID_2D::update_i(const Vector2f &limit)
 {
     Vector2f limit_direction = limit;
     Vector2f delta_integrator = (_error * _ki) * _dt;
