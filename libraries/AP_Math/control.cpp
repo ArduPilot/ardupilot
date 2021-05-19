@@ -27,7 +27,8 @@
 // control default definitions
 #define CONTROL_TIME_CONSTANT_RATIO 4.0f   // time constant to ensure stable kinimatic path generation
 
-// update_vel_accel - single axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
+// the velocity is not moved in the direction of limit if limit is not set to zero
 void update_vel_accel(float& vel, float accel, float dt, float limit)
 {
     const float delta_vel = accel * dt;
@@ -37,12 +38,14 @@ void update_vel_accel(float& vel, float accel, float dt, float limit)
 }
 
 // update_vel_accel_z - single axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the velocity is not moved in the direction of limit if limit is not set to zero
 void update_vel_accel_z(Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit)
 {
     update_vel_accel(vel.z, accel.z, dt, limit.z);
 }
 
 // update_pos_vel_accel - single axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the position and velocity is not moved in the direction of limit if limit is not set to zero
 void update_pos_vel_accel(float& pos, float& vel, float accel, float dt, float limit)
 {
     // move position and velocity forward by dt if it does not increase error when limited.
@@ -55,17 +58,18 @@ void update_pos_vel_accel(float& pos, float& vel, float accel, float dt, float l
 }
 
 // update_pos_vel_accel_z - single axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the position and velocity is not moved in the direction of limit if limit is not set to zero
 void update_pos_vel_accel_z(Vector3f& pos, Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit)
 {
     update_pos_vel_accel(pos.z, vel.z, accel.z, dt, limit.z);
 }
 
 // update_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the velocity is not moved in the direction of limit if limit is not set to zero
 void update_vel_accel(Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
     Vector2f delta_vel = accel * dt;
-
     if (!is_zero(limit.length_squared())) {
         // zero delta_vel if it will increase the velocity error
         limit.normalize();
@@ -73,23 +77,24 @@ void update_vel_accel(Vector2f& vel, const Vector2f& accel, float dt, Vector2f l
             delta_vel.zero();
         }
     }
-
     vel += delta_vel;
 }
 
 // update_vel_accel_xy - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the velocity is not moved in the direction of limit if limit is not set to zero
 // This function only updates the x and y axis leaving the z axis unchanged.
 void update_vel_accel_xy(Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit)
 {
-    Vector2f vel_2f = Vector2f{vel.x, vel.y};
-    Vector2f accel_2f = Vector2f{accel.x, accel.y};
-    Vector2f limit_2f = Vector2f{limit.x, limit.y};
+    Vector2f vel_2f {vel.x, vel.y};
+    const Vector2f accel_2f {accel.x, accel.y};
+    const Vector2f limit_2f {limit.x, limit.y};
     update_vel_accel(vel_2f, accel_2f, dt, limit_2f);
     vel.x = vel_2f.x;
     vel.y = vel_2f.y;
 }
 
 // update_pos_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the position and velocity is not moved in the direction of limit if limit is not set to zero
 void update_pos_vel_accel(Vector2f& pos, Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit)
 {
     // move position and velocity forward by dt.
@@ -109,13 +114,14 @@ void update_pos_vel_accel(Vector2f& pos, Vector2f& vel, const Vector2f& accel, f
 }
 
 // update_pos_vel_accel_xy - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// the position and velocity is not moved in the direction of limit if limit is not set to zero
 // This function only updates the x and y axis leaving the z axis unchanged.
 void update_pos_vel_accel_xy(Vector3f& pos, Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit)
 {
-    Vector2f pos_2f = Vector2f{pos.x, pos.y};
-    Vector2f vel_2f = Vector2f{vel.x, vel.y};
-    Vector2f accel_2f = Vector2f{accel.x, accel.y};
-    Vector2f limit_2f = Vector2f{limit.x, limit.y};
+    Vector2f pos_2f {pos.x, pos.y};
+    Vector2f vel_2f {vel.x, vel.y};
+    const Vector2f accel_2f {accel.x, accel.y};
+    const Vector2f limit_2f {limit.x, limit.y};
     update_pos_vel_accel(pos_2f, vel_2f, accel_2f, dt, limit_2f);
     pos.x = pos_2f.x;
     pos.y = pos_2f.y;
@@ -185,8 +191,8 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
     }
 
     // Calculate time constants and limits to ensure stable operation
-    float KPa = 1.0 / tc;
-    float jerk_max = accel_max * KPa;
+    const float KPa = 1.0 / tc;
+    const float jerk_max = accel_max * KPa;
 
     // jerk limit acceleration change
     Vector2f accel_delta = accel_input - accel;
@@ -290,10 +296,10 @@ void shape_vel_accel_xy(Vector2f vel_input, const Vector2f& accel_input,
     }
 
     // Calculate time constants and limits to ensure stable operation
-    float KPa = 1.0 / tc;
+    const float KPa = 1.0 / tc;
 
     // velocity error to be corrected
-    Vector2f vel_error = vel_input - vel;
+    const Vector2f vel_error = vel_input - vel;
 
     // acceleration to correct velocity
     Vector2f accel_target = vel_error * KPa;
@@ -305,10 +311,10 @@ void shape_vel_accel_xy(Vector2f vel_input, const Vector2f& accel_input,
 void shape_vel_accel_xy(const Vector3f& vel_input, const Vector3f& accel_input,
     const Vector3f& vel, Vector3f& accel, float vel_max, float accel_max, float tc, float dt)
 {
-    Vector2f vel_input_2f = Vector2f{vel_input.x, vel_input.y};
-    Vector2f accel_input_2f = Vector2f{accel_input.x, accel_input.y};
-    Vector2f vel_2f = Vector2f{vel.x, vel.y};
-    Vector2f accel_2f = Vector2f{accel.x, accel.y};
+    Vector2f vel_input_2f {vel_input.x, vel_input.y};
+    const Vector2f accel_input_2f {accel_input.x, accel_input.y};
+    const Vector2f vel_2f {vel.x, vel.y};
+    Vector2f accel_2f {accel.x, accel.y};
 
     shape_vel_accel_xy(vel_input_2f, accel_input_2f, vel_2f, accel_2f, vel_max, accel_max, tc, dt);
     accel.x = accel_2f.x;
@@ -429,12 +435,12 @@ void shape_pos_vel_accel_xy(const Vector3f& pos_input, const Vector3f& vel_input
     const Vector3f& pos, const Vector3f& vel, Vector3f& accel,
     float vel_max, float vel_correction_max, float accel_max, float tc, float dt)
 {
-    Vector2f pos_input_2f = Vector2f{pos_input.x, pos_input.y};
-    Vector2f vel_input_2f = Vector2f{vel_input.x, vel_input.y};
-    Vector2f accel_input_2f = Vector2f{accel_input.x, accel_input.y};
-    Vector2f pos_2f = Vector2f{pos.x, pos.y};
-    Vector2f vel_2f = Vector2f{vel.x, vel.y};
-    Vector2f accel_2f = Vector2f{accel.x, accel.y};
+    const Vector2f pos_input_2f {pos_input.x, pos_input.y};
+    const Vector2f vel_input_2f {vel_input.x, vel_input.y};
+    const Vector2f accel_input_2f {accel_input.x, accel_input.y};
+    const Vector2f pos_2f {pos.x, pos.y};
+    const Vector2f vel_2f {vel.x, vel.y};
+    Vector2f accel_2f {accel.x, accel.y};
 
     shape_pos_vel_accel_xy(pos_input_2f, vel_input_2f, accel_input_2f,
         pos_2f, vel_2f, accel_2f, vel_max, vel_correction_max, accel_max, tc, dt);
