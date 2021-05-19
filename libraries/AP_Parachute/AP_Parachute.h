@@ -105,6 +105,9 @@ public:
 
 private:
 
+    // send user command long updating the parchute status
+    void send_msg();
+
     // Structure to lookup for release reasons
     struct LookupTable{
        release_reason option;
@@ -144,6 +147,8 @@ private:
     uint32_t    _fall_time_ms;           // system time that the vehicle stated falling lower faster _min_accel
     uint8_t     _release_reasons;        // bitmask of the current reasons to release
     uint32_t    _cancel_timeout_ms;
+    uint32_t    _last_msg_send_ms;
+
 };
 
 namespace AP {
