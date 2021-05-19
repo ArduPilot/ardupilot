@@ -31,8 +31,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "ToshibaCAN",  fmt, #args); } while (0)
-
+#else
+#define debug_can(level_debug, fmt, args...)
+#endif
 
 // stupid compiler is not able to optimise this under gnu++11
 // move this back when moving to gnu++17
