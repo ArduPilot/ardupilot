@@ -7,6 +7,7 @@ Runs tests with gcov coverage support.
 """
 import argparse
 import os
+import tempfile
 import time
 import shutil
 import subprocess
@@ -14,6 +15,7 @@ import sys
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 os.set_blocking(sys.stdout.fileno(), True)
+os.set_blocking(sys.stderr.fileno(), True)
 
 tools_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(tools_dir, '../..'))
@@ -22,7 +24,7 @@ root_dir = os.path.realpath(os.path.join(tools_dir, '../..'))
 class CoverageRunner(object):
     """Coverage Runner Class."""
 
-    def __init__(self):
+    def __init__(self, verbose=False):
         """Set the files Path."""
         self.REPORT_DIR = os.path.join(root_dir, "reports/lcov-report")
         self.INFO_FILE = os.path.join(root_dir, self.REPORT_DIR, "lcov.info")
@@ -31,7 +33,7 @@ class CoverageRunner(object):
         self.GENHTML_LOG = os.path.join(root_dir, "GCOV_genhtml.log")
 
         self.autotest = os.path.join(root_dir, "Tools/autotest/autotest.py")
-        self.CI = os.environ.get("CI", False)
+        self.verbose = verbose
         self.start_time = time.time()
 
     def progress(self, text):
@@ -40,7 +42,7 @@ class CoverageRunner(object):
         formatted_text = "****** AT-%06.1f: %s" % (delta_time, text)
         print(formatted_text)
 
-    def init_coverage(self):
+    def init_coverage(self, use_example=False):
         """Initialize ArduPilot for coverage.
 
         This needs to be run with the binaries built.
@@ -58,10 +60,14 @@ class CoverageRunner(object):
             pass
 
         self.progress("Checking that vehicles binaries are set up and built")
-        examples_dir = os.path.join(root_dir, 'build/linux/examples')
         binaries_dir = os.path.join(root_dir, 'build/sitl/bin')
-        if not (self.check_build("example", examples_dir) and self.check_build("binaries", binaries_dir)):
-            self.run_build()
+        dirs_to_check = [["binaries", binaries_dir], ["tests", os.path.join(root_dir, 'build/linux/tests')]]
+        if use_example:
+            dirs_to_check.append(["examples", os.path.join(root_dir, 'build/linux/examples')])
+        for dirc in dirs_to_check:
+            if not (self.check_build(dirc[0], dirc[1])):
+                self.run_build()
+                break
 
         self.progress("Zeroing previous build")
         retcode = subprocess.call(["lcov", "--zerocounters", "--directory", root_dir])
@@ -80,7 +86,7 @@ class CoverageRunner(object):
                                      "--directory", root_dir,
                                      "-o", self.INFO_FILE_BASE,
                                      ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=True)
-            if not self.CI:
+            if self.verbose:
                 print(*result.args)
                 print(result.stdout)
             with open(self.LCOV_LOG, 'w') as log_file:
@@ -110,28 +116,26 @@ class CoverageRunner(object):
 
     def run_build(self, use_example=False):
         """Clean the build directory and build binaries for coverage."""
-        os.environ["CCFLAGS"] = os.environ.get("CCFLAGS", "") + " -fprofile-arcs -ftest-coverage"
-        os.environ["CXXFLAGS"] = os.environ.get("CXXFLAGS", "") + " -fprofile-arcs -ftest-coverage"
-        os.environ["LINKFLAGS"] = os.environ.get("LINKFLAGS", "") + " -lgcov -coverage"
-        os.environ["COVERAGE"] = "1"
-        self.progress("Removing previous build binaries")
-        try:
-            shutil.rmtree(os.path.join(root_dir, "build"))
-        except FileNotFoundError:
-            pass
 
-        self.progress("Building examples and SITL binaries")
         os.chdir(root_dir)
         waf_light = os.path.join(root_dir, "modules/waf/waf-light")
+        self.progress("Removing previous build binaries")
+        subprocess.run([waf_light, "configure", "--debug"], check=True)
+        subprocess.run([waf_light, "clean"], check=True)
+
+        self.progress("Building examples and SITL binaries")
+
         try:
             if use_example:
-                subprocess.run([waf_light, "configure", "--board=linux", "--debug"], check=True)
+                subprocess.run([waf_light, "configure", "--board=linux", "--debug", "--coverage"], check=True)
                 subprocess.run([waf_light, "examples"], check=True)
             subprocess.run(
                 [self.autotest,
                  "--debug",
-                 "build.unit_tests"])
-            subprocess.run([waf_light, "configure", "--debug"], check=True)
+                 "--coverage",
+                 "build.unit_tests"],
+                check=True)
+            subprocess.run([waf_light, "configure", "--debug", "--coverage"], check=True)
             subprocess.run([waf_light], check=True)
         except subprocess.CalledProcessError as err:
             print("ERROR :")
@@ -167,6 +171,7 @@ class CoverageRunner(object):
              "run.unit_tests"])
         subprocess.run(["reset"])
         os.set_blocking(sys.stdout.fileno(), True)
+        os.set_blocking(sys.stderr.fileno(), True)
         test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker"]
         for test in test_list:
             self.progress("Running test.%s" % test)
@@ -191,35 +196,35 @@ class CoverageRunner(object):
             # we cannot use subprocess.PIPE and result.stdout to get the output as it will be too long and trigger
             # BlockingIOError: [Errno 11] write could not complete without blocking
             # thus we ouput to temp file, and print the file line by line...
-            with open("tmp_file", 'w+') as tmp_file:
+            with tempfile.NamedTemporaryFile(mode="w+") as tmp_file:
                 try:
+                    self.progress("Capturing Coverage statistics")
                     subprocess.run(["lcov",
                                     "--no-external",
                                     "--capture",
                                     "--directory", root_dir,
                                     "-o", self.INFO_FILE,
                                     ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
-                    if not self.CI:
+                    if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
                         for line in content:
                             print(line, flush=True)
                             log_file.write(line)
-                        tmp_file.seek(0)
 
+                    self.progress("Matching Coverage with binaries")
                     subprocess.run(["lcov",
                                     "--add-tracefile", self.INFO_FILE_BASE,
                                     "--add-tracefile", self.INFO_FILE,
                                     ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
-                    if not self.CI:
+                    if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
                         for line in content:
-                            # print(line)  # not usefull to print
+                            # print(line, flush=True)  # not usefull to print
                             log_file.write(line)
-                        tmp_file.seek(0)
-
                     # remove files we do not intentionally test:
+                    self.progress("Removing unwanted coverage statistics")
                     subprocess.run(["lcov",
                                     "--remove", self.INFO_FILE,
                                     ".waf*",
@@ -228,34 +233,37 @@ class CoverageRunner(object):
                                     root_dir + "/build/linux/libraries/*",
                                     root_dir + "/build/sitl/libraries/*",
                                     root_dir + "/build/sitl/modules/*",
+                                    root_dir + "/libraries/*/examples/*",
                                     "-o", self.INFO_FILE
                                     ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
-                    if not self.CI:
+                    if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
                         for line in content:
-                            # print(line)  # not usefull to print
+                            # print(line, flush=True)  # not usefull to print
                             log_file.write(line)
-                        tmp_file.seek(0)
 
                 except subprocess.CalledProcessError as err:
                     print("ERROR :")
                     print(err.cmd)
                     print(err.output)
-                    os.remove("tmp_file")
                     sys.exit(1)
-            os.remove("tmp_file")
 
         with open(self.GENHTML_LOG, 'w+') as log_file:
             try:
+                self.progress("Generating HTML files")
                 subprocess.run(["genhtml", self.INFO_FILE,
                                 "-o", self.REPORT_DIR,
+                                "--demangle-cpp",
                                 ], stdout=log_file, stderr=subprocess.STDOUT, text=True, check=True)
-                if not self.CI:
-                    log_file.seek(0)
-                    content = log_file.read().splitlines()
-                    for line in content:
+
+                log_file.seek(0)
+                content = log_file.read().splitlines()
+                if self.verbose:
+                    for line in content[1: -3]:
                         print(line, flush=True)
+                for line in content[-3:]:
+                    print(line, flush=True)
             except subprocess.CalledProcessError as err:
                 print("ERROR :")
                 print(err.cmd)
@@ -266,6 +274,8 @@ class CoverageRunner(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs tests with gcov coverage support.')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Output everything on terminal.')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-i', '--init', action='store_true',
                        help='Initialise ArduPilot for coverage. It should be run after building the binaries.')
@@ -278,7 +288,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    runner = CoverageRunner()
+    runner = CoverageRunner(verbose=args.verbose)
     if args.init:
         runner.init_coverage()
         sys.exit(0)
