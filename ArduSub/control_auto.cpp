@@ -148,7 +148,8 @@ void Sub::auto_wp_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     ////////////////////////////
@@ -242,7 +243,8 @@ void Sub::auto_circle_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
@@ -329,7 +331,8 @@ void Sub::auto_loiter_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     // get pilot desired lean angles

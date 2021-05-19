@@ -311,7 +311,8 @@ void Sub::guided_pos_control_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     // call attitude controller
@@ -416,11 +417,8 @@ void Sub::guided_posvel_control_run()
         posvel_vel_target_cms.zero();
     }
 
-    // calculate dt
-    float dt = pos_control.get_dt();
-
     // advance position target using velocity target
-    posvel_pos_target_cm += posvel_vel_target_cms * dt;
+    posvel_pos_target_cm += posvel_vel_target_cms * pos_control.get_dt();
 
     // send position and velocity targets to position controller
     pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm, posvel_vel_target_cms, Vector3f());
