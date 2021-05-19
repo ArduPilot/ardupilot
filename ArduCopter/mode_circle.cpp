@@ -12,7 +12,7 @@ bool ModeCircle::init(bool ignore_checks)
     pilot_yaw_override = false;
     speed_changing = false;
 
-    // initialize speeds and accelerations
+    // set speed and acceleration limits
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
@@ -26,7 +26,7 @@ bool ModeCircle::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeCircle::run()
 {
-    // initialize speeds and accelerations
+    // set speed and acceleration limits
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
