@@ -599,6 +599,7 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "MIXING_GAIN",      1.0 },
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
+    { "Q_TRANS_DECEL",    6 },
 };
 
 /*
