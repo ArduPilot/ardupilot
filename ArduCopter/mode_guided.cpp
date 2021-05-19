@@ -793,10 +793,8 @@ uint32_t ModeGuided::wp_distance() const
     switch(guided_mode) {
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination();
-        break;
     case SubMode::PosVel:
         return pos_control->get_pos_error_xy();
-        break;
     default:
         return 0;
     }
@@ -807,10 +805,8 @@ int32_t ModeGuided::wp_bearing() const
     switch(guided_mode) {
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
-        break;
     case SubMode::PosVel:
         return pos_control->get_bearing_to_target();
-        break;
     case SubMode::TakeOff:
     case SubMode::Velocity:
     case SubMode::Angle:
