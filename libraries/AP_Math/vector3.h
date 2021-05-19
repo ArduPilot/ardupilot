@@ -186,7 +186,7 @@ public:
     void rotate(enum Rotation rotation);
     void rotate_inverse(enum Rotation rotation);
 
-    // rotate in xy plane
+    // rotate vector by angle in radians in xy plane leaving z untouched
     void rotate_xy(float rotation_rad);
 
     // gets the length of this vector squared
