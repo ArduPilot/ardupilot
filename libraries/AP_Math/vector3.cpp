@@ -282,7 +282,7 @@ void Vector3<T>::rotate_inverse(enum Rotation rotation)
     (*this) = M.mul_transpose(*this);
 }
 
-// rotate vector by angle in radians in xy plane
+// rotate vector by angle in radians in xy plane leaving z untouched
 template <typename T>
 void Vector3<T>::rotate_xy(float angle_rad)
 {
