@@ -22,7 +22,8 @@ AC_P_2D::AC_P_2D(float initial_p, float dt) :
     _kp = initial_p;
 }
 
-//  set target and measured inputs to P controller and calculate outputs
+// update_all - set target and measured inputs to P controller and calculate outputs
+// limit is set true if the target has been moved to limit the maximum position error
 Vector2f AC_P_2D::update_all(float &target_x, float &target_y, const Vector2f &measurement, bool &limit)
 {
     limit = false;
