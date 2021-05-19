@@ -213,7 +213,7 @@ bool AC_AutoTune::init_position_controller(void)
     // initialize vertical maximum speeds and acceleration
     init_z_limits();
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     pos_control->init_z_controller();
 
     return true;
