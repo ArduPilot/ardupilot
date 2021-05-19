@@ -23,6 +23,10 @@ TEST(Lines3dTests, ClosestDistBetweenLinePoint)
     // random point test
     const Vector3f intersection = Vector3f::point_on_line_closest_to_other_point(Vector3f{}, Vector3f{0.0f, 10.0f, 10.0f}, Vector3f{0.0f, 5.0f, 5.0f});
     EXPECT_VECTOR3F_EQ((Vector3f{0.0f, 5.0f, 5.0f}), intersection);
+
+    // check protection agains null length
+    const Vector3f intersection_null = Vector3f::point_on_line_closest_to_other_point(Vector3f{1.0f, 1.0f, 1.0f}, Vector3f{1.0f, 1.0f, 1.0f}, Vector3f{0.0f, 5.0f, 5.0f});
+    EXPECT_VECTOR3F_EQ((Vector3f{0.0f, 0.0f, 0.0f}), intersection_null);
 }
 
 TEST(Lines3dTests, SegmentToSegmentDistance)
