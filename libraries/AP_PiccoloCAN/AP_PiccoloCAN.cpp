@@ -40,7 +40,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "PiccoloCAN", fmt, ##args); } while (0)
+#else
+#define debug_can(level_debug, fmt, args...)
+#endif
 
 // table of user-configurable Piccolo CAN bus parameters
 const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
