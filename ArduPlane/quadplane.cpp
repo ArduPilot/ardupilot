@@ -1080,15 +1080,14 @@ void QuadPlane::run_z_controller(void)
 {
     const uint32_t now = AP_HAL::millis();
     if (!pos_control->is_active_z()) {
-        // initialize vertical maximum speeds and acceleration
+        // set vertical speed and acceleration limits
         pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
+        // initialise the vertical position controller
         if (!is_tailsitter()) {
-            // initialize the Alt Hold controller with no decent
             pos_control->init_z_controller();
         } else {
-            // initialize the Alt Hold controller with no decent
-            // todo: do we need to add this function just for this?
+            // initialise the vertical position controller with no descent
             pos_control->init_z_controller_no_descent();
         }
     }
@@ -1131,7 +1130,7 @@ void QuadPlane::init_qacro(void)
 // init quadplane hover mode 
 void QuadPlane::init_hover(void)
 {
-    // initialize vertical maximum speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
     set_climb_rate_cms(0, false);
 
@@ -1169,7 +1168,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     // motors use full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // initialize vertical speeds and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
     // call attitude controller
@@ -1318,7 +1317,7 @@ void QuadPlane::init_loiter(void)
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
 
-    // initialize vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
     init_throttle_wait();
@@ -1437,7 +1436,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
-        float thr_in = get_pilot_land_throttle();
+        const float thr_in = get_pilot_land_throttle();
         const float dz = 0.1;
         const float thresh1 = 0.5+dz;
         const float thresh2 = 0.5-dz;
@@ -1488,7 +1487,7 @@ void QuadPlane::control_loiter()
     // motors use full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // initialize vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
     // process pilot's roll and pitch input
@@ -1513,7 +1512,7 @@ void QuadPlane::control_loiter()
                                                   last_pidz_init_ms, last_pidz_init_ms+transition_time_ms*2);
         if (plane.nav_pitch_cd > pitch_limit_cd) {
             plane.nav_pitch_cd = pitch_limit_cd;
-            pos_control->set_limit_xy();
+            pos_control->set_externally_limited_xy();
         }
     }
     
@@ -2525,7 +2524,7 @@ void QuadPlane::update_land_positioning(void)
 
     poscontrol.target_cm += poscontrol.target_vel_cms * dt;
 
-    poscontrol.pilot_correction_active = (fabsf(roll_in) > 0 || fabsf(pitch_in) > 0);
+    poscontrol.pilot_correction_active = (!is_zero(roll_in)|| !is_zero(pitch_in));
     if (poscontrol.pilot_correction_active) {
         poscontrol.pilot_correction_done = true;
     }
@@ -2605,14 +2604,13 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             poscontrol.max_speed = target_speed;
         }
-        pos_control->set_vel_desired_xy_cms(target_speed_xy.x*100,
-                                            target_speed_xy.y*100);
+        pos_control->set_vel_desired_xy_cms(target_speed_xy * 100);
 
         // reset position controller xy target to current position
         // because we only want velocity control (no position control)
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control->set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
-        pos_control->set_accel_desired_xy_cmss(0.0f, 0.0f);
+        pos_control->set_accel_desired_xy_cmss(Vector2f());
 
         // run horizontal velocity controller
         run_xy_controller();
@@ -2642,7 +2640,7 @@ void QuadPlane::vtol_position_controller(void)
             plane.nav_pitch_cd = pitch_limit_cd;
             // tell the pos controller we have limited the pitch to
             // stop integrator buildup
-            pos_control->set_limit_xy();
+            pos_control->set_externally_limited_xy();
         }
         
         // call attitude controller
@@ -2665,8 +2663,8 @@ void QuadPlane::vtol_position_controller(void)
           for final land repositioning and descent we run the position controller
          */
         if (poscontrol.pilot_correction_done) {
-            // if we have done any repositioning then to handle GPS glitches we need to switch
-            // to velocity control
+            // if the pilot has repositioned the vehicle then we switch to velocity control.  This prevents the vehicle
+            // shifting position in the event of GPS glitches.
             Vector3f zero;
             pos_control->input_vel_accel_xy(poscontrol.target_vel_cms, zero);
         } else {
@@ -2681,7 +2679,7 @@ void QuadPlane::vtol_position_controller(void)
 
         run_xy_controller();
 
-        // nav roll and pitch are controller by position controller
+        // nav roll and pitch are controlled by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
@@ -2816,8 +2814,8 @@ void QuadPlane::setup_target_position(void)
         last_auto_target = loc;
     }
     last_loiter_ms = now;
-    
-    // setup vertical speed and acceleration
+
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 }
 
@@ -2834,8 +2832,8 @@ void QuadPlane::takeoff_controller(void)
     setup_target_position();
 
     // set position controller desired velocity and acceleration to zero
-    pos_control->set_vel_desired_xy_cms(0.0f,0.0f);
-    pos_control->set_accel_desired_xy_cmss(0.0f,0.0f);
+    pos_control->set_vel_desired_xy_cms(Vector2f());
+    pos_control->set_accel_desired_xy_cmss(Vector2f());
 
     // set position control target and update
     Vector3f zero;
@@ -2945,7 +2943,7 @@ void QuadPlane::init_qrtl(void)
     plane.prev_WP_loc = plane.current_loc;
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
-    pos_control->set_accel_desired_xy_cmss(0.0f, 0.0f);
+    pos_control->set_accel_desired_xy_cmss(Vector2f());
     pos_control->init_xy_controller();
     int32_t from_alt;
     int32_t to_alt;
@@ -2983,10 +2981,10 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     }
     throttle_wait = false;
 
-    // initialize vertical speed and acceleration
+    // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    
-    // initialize the Alt Hold controller with no decent
+
+    // initialise the vertical position controller
     pos_control->init_z_controller();
 
     // also update nav_controller for status output
@@ -3034,6 +3032,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
 
+    // initialise the position controller
     pos_control->init_xy_controller();
     pos_control->init_z_controller();
 
@@ -3656,7 +3655,7 @@ void QuadPlane::update_throttle_mix(void)
         // check for large acceleration - falling or high turbulence
         bool accel_moving = (throttle_mix_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
-        // check for requested decent
+        // check for requested descent
         bool descent_not_demanded = pos_control->get_vel_desired_cms().z >= 0.0f;
 
         if (large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
