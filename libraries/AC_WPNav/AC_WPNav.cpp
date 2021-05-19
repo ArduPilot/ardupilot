@@ -365,7 +365,7 @@ void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_xy()
     _pos_control.init_xy_controller();
 
     // get current and target locations
-    const Vector3f& curr_pos = _pos_control.get_pos_target_cm();
+    const Vector3f& curr_pos = _inav.get_position();
 
     // shift origin and destination horizontally
     _origin.x = curr_pos.x;
@@ -538,11 +538,8 @@ bool AC_WPNav::update_wpnav()
 {
     bool ret = true;
 
-    // get dt from pos controller
-    float dt = _pos_control.get_dt();
-
     // advance the target if necessary
-    if (!advance_wp_target_along_track(dt)) {
+    if (!advance_wp_target_along_track(_pos_control.get_dt())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;
     }

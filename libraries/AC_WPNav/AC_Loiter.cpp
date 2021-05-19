@@ -133,21 +133,21 @@ void AC_Loiter::soften_for_landing()
 
     // also prevent I term build up in xy velocity controller. Note
     // that this flag is reset on each loop, in update_xy_controller()
-    _pos_control.set_limit_xy();
+    _pos_control.set_externally_limited_xy();
 }
 
 /// set pilot desired acceleration in centi-degrees
 //   dt should be the time (in seconds) since the last call to this function
 void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd)
 {
-    float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt();
     // Convert from centidegrees on public interface to radians
     const float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
     const float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
-    Vector3f desired_euler = Vector3f{euler_roll_angle, euler_pitch_angle, _ahrs.yaw};
-    Vector3f desired_accel = _pos_control.lean_angles_to_accel(desired_euler);
+    const Vector3f desired_euler {euler_roll_angle, euler_pitch_angle, _ahrs.yaw};
+    const Vector3f desired_accel = _pos_control.lean_angles_to_accel(desired_euler);
 
     _desired_accel.x = desired_accel.x;
     _desired_accel.y = desired_accel.y;
@@ -162,8 +162,8 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
     _predicted_euler_angle += _predicted_euler_rate * dt;
 
     // convert our predicted attitude to an acceleration vector assuming we are not accelerating vertically
-    Vector3f predicted_euler = Vector3f{_predicted_euler_angle.x, _predicted_euler_angle.y, _ahrs.yaw};
-    Vector3f predicted_accel = _pos_control.lean_angles_to_accel(predicted_euler);
+    const Vector3f predicted_euler {_predicted_euler_angle.x, _predicted_euler_angle.y, _ahrs.yaw};
+    const Vector3f predicted_accel = _pos_control.lean_angles_to_accel(predicted_euler);
 
     _predicted_accel.x = predicted_accel.x;
     _predicted_accel.y = predicted_accel.y;
@@ -187,13 +187,10 @@ float AC_Loiter::get_angle_max_cd() const
 /// run the loiter controller
 void AC_Loiter::update(bool avoidance_on)
 {
-    // calculate dt
-    float dt = _pos_control.get_dt();
-
     // initialise pos controller speed and acceleration
     _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss, _accel_cmss);
 
-    calc_desired_velocity(dt, avoidance_on);
+    calc_desired_velocity(_pos_control.get_dt(), avoidance_on);
     _pos_control.update_xy_controller();
 }
 
@@ -228,7 +225,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
 
     // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &desired_vel_3d = _pos_control.get_vel_desired_cms();
-    Vector2f desired_vel(desired_vel_3d.x,desired_vel_3d.y);
+    Vector2f desired_vel{desired_vel_3d.x,desired_vel_3d.y};
 
     // update the desired velocity using our predicted acceleration
     desired_vel.x += _predicted_accel.x * nav_dt;
@@ -289,11 +286,10 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
 
     // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &target_pos_3d = _pos_control.get_pos_target_cm();
-    Vector2f target_pos{target_pos_3d.x,target_pos_3d.y};
+    Vector2f target_pos{target_pos_3d.x, target_pos_3d.y};
 
     // update the target position using our predicted velocity
-    target_pos.x += desired_vel.x * nav_dt;
-    target_pos.y += desired_vel.y * nav_dt;
+    target_pos += desired_vel * nav_dt;
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_pos_vel_accel_xy(target_pos, desired_vel, _desired_accel);

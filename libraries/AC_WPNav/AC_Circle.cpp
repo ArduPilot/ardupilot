@@ -156,7 +156,7 @@ bool AC_Circle::update(float climb_rate_cms)
     calc_velocities(false);
 
     // calculate dt
-    float dt = _pos_control.get_dt();
+    const float dt = _pos_control.get_dt();
 
     // ramp angular velocity to maximum
     if (_angular_vel < _angular_vel_max) {
@@ -189,12 +189,15 @@ bool AC_Circle::update(float climb_rate_cms)
     }
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
-    Vector3f target;
+    Vector3f target {
+        _center.x,
+        _center.y,
+        target_z_cm
+    };
     if (!is_zero(_radius)) {
         // calculate target position
-        target.x = _center.x + _radius * cosf(-_angle);
-        target.y = _center.y - _radius * sinf(-_angle);
-        target.z = target_z_cm;
+        target.x += _radius * cosf(-_angle);
+        target.y += - _radius * sinf(-_angle);
 
         // heading is from vehicle to center of circle
         _yaw = get_bearing_cd(_inav.get_position(), _center);
@@ -205,20 +208,15 @@ bool AC_Circle::update(float climb_rate_cms)
         }
 
     } else {
-        // set target position to center
-        target.x = _center.x;
-        target.y = _center.y;
-        target.z = target_z_cm;
-
         // heading is same as _angle but converted to centi-degrees
         _yaw = _angle * DEGX100;
     }
 
     // update position controller target
-    Vector3f vel = Vector3f();
-    _pos_control.input_pos_vel_accel_xy(target, vel, Vector3f());
+    Vector3f zero;
+    _pos_control.input_pos_vel_accel_xy(target, zero, zero);
     if(_terrain_alt) {
-        _pos_control.input_pos_vel_accel_z(target, vel, Vector3f());
+        _pos_control.input_pos_vel_accel_z(target, zero, zero);
     } else {
         _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms,  false);
     }
