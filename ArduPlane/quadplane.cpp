@@ -2604,7 +2604,7 @@ void QuadPlane::vtol_position_controller(void)
         const float aspeed_threshold = MAX(plane.aparm.airspeed_min, assist_speed);
 
         // run fixed wing navigation
-        plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
+        plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         // use TECS for throttle
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.SpdHgt_Controller->get_throttle_demand());
@@ -2705,7 +2705,7 @@ void QuadPlane::vtol_position_controller(void)
         }
 
         // run fixed wing navigation
-        plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
+        plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         /*
           calculate target velocity, not dropping it below 2m/s
@@ -2793,7 +2793,7 @@ void QuadPlane::vtol_position_controller(void)
         }
 
         // also run fixed wing navigation
-        plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
+        plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         update_land_positioning();
 
@@ -3123,7 +3123,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     pos_control->init_z_controller();
 
     // also update nav_controller for status output
-    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+    plane.nav_controller->update_waypoint(plane.current_loc, plane.next_WP_loc);
 
     // calculate the time required to complete a takeoff
     // this may be conservative and accept extra time due to clamping
@@ -3178,7 +3178,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.crash_state.is_crashed = false;
     
     // also update nav_controller for status output
-    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+    plane.nav_controller->update_waypoint(plane.current_loc, plane.next_WP_loc);
 
     poscontrol_init_approach();
     return true;
