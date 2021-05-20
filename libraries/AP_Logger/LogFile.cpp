@@ -264,11 +264,13 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
     return WriteBlock(&pkt, sizeof(pkt));
 }
 
+#if HAL_MISSION_ENABLED
 bool AP_Logger_Backend::Write_EntireMission()
 {
     // kick off asynchronous write:
     return _startup_messagewriter->writeentiremission();
 }
+#endif
 
 // Write a text message to the log
 bool AP_Logger_Backend::Write_Message(const char *message)

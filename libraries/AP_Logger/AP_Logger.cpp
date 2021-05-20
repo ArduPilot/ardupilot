@@ -92,12 +92,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, AP_Logger, _params.file_disarm_rot,       0),
 
+#if HAL_LOGGING_MAVLINK_ENABLED
     // @Param: _MAV_BUFSIZE
     // @DisplayName: Maximum AP_Logger MAVLink Backend buffer size
     // @Description: Maximum amount of memory to allocate to AP_Logger-over-mavlink
     // @User: Advanced
     // @Units: kB
     AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_LOGGING_MAV_BUFSIZE),
+#endif
 
     // @Param: _FILE_TIMEOUT
     // @DisplayName: Timeout before giving up on file writes
@@ -136,7 +138,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
     if (hal.util->was_watchdog_armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -833,7 +835,9 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 }
 
 void AP_Logger::periodic_tasks() {
+#ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
+#endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
