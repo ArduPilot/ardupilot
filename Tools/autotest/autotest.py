@@ -125,12 +125,12 @@ def build_binaries():
     return True
 
 
-def build_examples():
+def build_examples(**kwargs):
     """Build examples."""
     for target in 'fmuv2', 'Pixhawk1', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target)
+            util.build_examples(target, **kwargs)
         except Exception as e:
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -139,12 +139,13 @@ def build_examples():
     return True
 
 
-def build_unit_tests():
+def build_unit_tests(**kwargs):
     """Build tests."""
     for target in ['linux']:
         print("Running build.unit_tests for %s" % target)
+        print(*kwargs)
         try:
-            util.build_tests(target)
+            util.build_tests(target, **kwargs)
         except Exception as e:
             print("Failed build.unit_tests on board=%s" % target)
             print(str(e))
@@ -516,7 +517,7 @@ def run_step(step):
         return build_binaries()
 
     if step == 'build.examples':
-        return build_examples()
+        return build_examples(**build_opts)
 
     if step == 'run.examples':
         return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
@@ -528,7 +529,7 @@ def run_step(step):
         return convert_gpx()
 
     if step == 'build.unit_tests':
-        return build_unit_tests()
+        return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
         return run_unit_tests()
