@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Minimum physical roll angular position of mount.
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMIN_ROL", 8, AP_Mount, state[0]._roll_angle_min, -4500),
 
@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Maximum physical roll angular position of the mount
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_ROL", 9, AP_Mount, state[0]._roll_angle_max, 4500),
 
@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Minimum physical tilt (pitch) angular position of mount.
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMIN_TIL", 11, AP_Mount, state[0]._tilt_angle_min, -4500),
 
@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Maximum physical tilt (pitch) angular position of the mount
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_TIL", 12, AP_Mount, state[0]._tilt_angle_max, 4500),
 
@@ -164,7 +164,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Minimum physical pan (yaw) angular position of mount.
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMIN_PAN",  14, AP_Mount, state[0]._pan_angle_min,  -4500),
 
@@ -173,7 +173,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Maximum physical pan (yaw) angular position of the mount
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
 
@@ -308,7 +308,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Mount2's minimum physical roll angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMIN_ROL",    32, AP_Mount, state[1]._roll_angle_min, -4500),
 
@@ -317,7 +317,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Mount2's maximum physical roll angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMAX_ROL",    33, AP_Mount, state[1]._roll_angle_max, 4500),
 
@@ -333,7 +333,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Mount2's minimum physical tilt (pitch) angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMIN_TIL",    35, AP_Mount, state[1]._tilt_angle_min, -4500),
 
@@ -342,7 +342,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Mount2's maximum physical tilt (pitch) angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMAX_TIL",    36, AP_Mount, state[1]._tilt_angle_max, 4500),
 
@@ -358,7 +358,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: Mount2's minimum physical pan (yaw) angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMIN_PAN",    38, AP_Mount, state[1]._pan_angle_min,  -4500),
 
@@ -367,7 +367,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Description: MOunt2's maximum physical pan (yaw) angular position
     // @Units: cdeg
     // @Range: -18000 17999
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("2_ANGMAX_PAN",    39, AP_Mount, state[1]._pan_angle_max,  4500),
 
