@@ -260,6 +260,19 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(notify, "NTF_",  AP_Notify),
 #endif
 
+#if HAL_LOGGING_ENABLED
+    // @Group: LOG
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
+
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Bitmask: 2:GPS
+    // @User: Standard
+    GSCALAR(log_bitmask,    "LOG_BITMASK",          4),
+#endif
+
     AP_VAREND
 };
 
