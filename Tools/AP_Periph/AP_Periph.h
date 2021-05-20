@@ -7,6 +7,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include "SRV_Channel/SRV_Channel.h"
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -48,6 +49,8 @@ extern const struct app_descriptor app_descriptor;
 
 class AP_Periph_FW {
 public:
+    AP_Periph_FW();
+
     void init();
     void update();
 
@@ -167,6 +170,11 @@ public:
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
+#endif
+
+#if HAL_LOGGING_ENABLED
+    static const struct LogStructure log_structure[];
+    AP_Logger logger;
 #endif
 
     // setup the var_info table
