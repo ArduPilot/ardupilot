@@ -90,9 +90,11 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "threads.txt") == 0) {
         hal.util->thread_info(*r.str);
     }
+#if HAL_SCHEDULER_ENABLED
     if (strcmp(fname, "tasks.txt") == 0) {
         AP::scheduler().task_info(*r.str);
     }
+#endif
     if (strcmp(fname, "dma.txt") == 0) {
         hal.util->dma_info(*r.str);
     }
