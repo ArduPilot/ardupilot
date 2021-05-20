@@ -23,6 +23,9 @@
 #include "AP_FETtecOneWire.h"
 #if HAL_AP_FETTECONEWIRE_ENABLED
 
+#define FTOW_UART_LOCK_KEY 0x30150102
+
+
 const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @Param: MASK
     // @DisplayName: Channel Bitmask
@@ -71,12 +74,17 @@ void AP_FETtecOneWire::init()
     AP_SerialManager& serial_manager = AP::serialmanager();
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FETtecOneWire, 0);
     if (_uart) {
+        _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        _uart->set_unbuffered_writes(true);
+        _uart->set_blocking_writes(false);
         _uart->begin(2000000);
     }
 }
 
+
 void AP_FETtecOneWire::update()
 {
+
     if (!_initialised) {
         _initialised = true;
         init();
@@ -88,6 +96,9 @@ void AP_FETtecOneWire::update()
         return;
     }
 
+    if (!_uart->is_dma_enabled()){
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Uart for OneWire needs DMA!");
+    }
     // tell SRV_Channels about ESC capabilities
     const uint16_t mask = uint16_t(motor_mask.get());
     SRV_Channels::set_digital_mask(mask);
@@ -95,6 +106,7 @@ void AP_FETtecOneWire::update()
     // get ESC set points, stop as soon as there is a gap
     uint8_t nr_escs = 0;
     uint16_t motor_pwm[MOTOR_COUNT_MAX] = {1000};
+
     for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
         SRV_Channel* c = SRV_Channels::srv_channel(i);
         if (c == nullptr) {
@@ -113,7 +125,9 @@ void AP_FETtecOneWire::update()
     uint8_t tlm_ok = 0; //decode_single_esc_telemetry returns 1 if telemetry is ok, 0 if its waiting and 2 if there is a crc mismatch.
     uint8_t tlm_from_id = 0;
     if (_requested_telemetry_from_esc) {
+
         tlm_ok = decode_single_esc_telemetry(t, centi_erpm, tx_err_count, tlm_from_id);
+
     }
     if (_requested_telemetry_from_esc == _found_escs_count) { //if found esc number is reached restart request counter
         _requested_telemetry_from_esc = 1; // restart from ESC 1 
@@ -121,12 +135,20 @@ void AP_FETtecOneWire::update()
         _requested_telemetry_from_esc++;
     }
 #endif
-   
-    escs_set_values(motor_pwm, _found_escs_count, _requested_telemetry_from_esc);
+
+    uint32_t txSpace =  _uart->txspace(); //Ugly workaround. 
+    if (txSpace==511 && !_uart->tx_pending()){ //Ugly workaround. 
+        escs_set_values(motor_pwm, _found_escs_count, _requested_telemetry_from_esc);
+    }
+
+
+
 
 #if HAL_WITH_ESC_TELEM
     // now that escs_set_values() has been executed we can fully process the telemetry data from the ESC
+
     calc_tx_crc_error_perc(0, 0, 1); //Just incrementing package count for every ESC. ID does not matter if increment only is set.
+
     if (_requested_telemetry_from_esc && tlm_ok==1) { //only use telemetry if it is ok.
         if (pole_count < 2) { // If Parameter is invalid use 14 Poles
             pole_count = 14;
@@ -137,6 +159,7 @@ void AP_FETtecOneWire::update()
         update_telem_data(tlm_from_id-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE|AP_ESC_Telem_Backend::TelemetryType::VOLTAGE|AP_ESC_Telem_Backend::TelemetryType::CURRENT|AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
     }
 #endif
+
 }
 
 /**
@@ -177,7 +200,7 @@ void AP_FETtecOneWire::transmit(uint8_t esc_id, uint8_t* bytes, uint8_t length)
         transmit_arr[i + 5] = bytes[i];
     }
     transmit_arr[length + 5] = get_crc8(transmit_arr, length + 5); // crc
-    _uart->write(transmit_arr, length + 6);
+    _uart->write_locked(transmit_arr, length + 6,FTOW_UART_LOCK_KEY);
     _ignore_own_bytes += length + 6;
 }
 
@@ -389,6 +412,7 @@ uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
         uint8_t pull_response = pull_command(_set_full_telemetry_active, request, response, OW_RETURN_RESPONSE);
         if(pull_response) {
             if(response[0] == OW_OK) {//Ok received or max retrys reached.
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK. Full Telemetry activ");
                 _set_full_telemetry_active++;   //If answer from ESC is OK, increase ID.
                 _set_full_telemetry_retry_count=0; //Reset retry count for new ESC ID
             } else {
@@ -541,8 +565,8 @@ uint8_t AP_FETtecOneWire::init_escs()
 */
 float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_error_count, uint8_t increment_only){
 
-    static uint16_t error_count[MOTOR_COUNT_MAX] = {0}; //saves the error counter from the ESCs
-    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX] = {0}; //saves the error counter from the ESCs to pass the overflow
+    static uint16_t error_count[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs
+    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs to pass the overflow
     static uint16_t send_msg_count = 0; //counts the messages that are send by fc
     float error_count_percentage = 0.0f;
     #define HZ_MOTOR 400.0
@@ -550,7 +574,7 @@ float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_
 
     if (increment_only) {
         send_msg_count++;
-        if (send_msg_count > 400) { // The update loop runs at 400Hz, hence this resets every second
+        if (send_msg_count > 63000) { // The update loop runs at 400Hz, hence this resets every second
             send_msg_count = 0; //reset the counter
             for (int i=0; i<_found_escs_count; i++) {
                     error_count_since_overflow[i] = error_count[i]; //save the current ESC error state               
@@ -562,9 +586,9 @@ float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_
         error_count_percentage = (float)corrected_error_count*(float)PERCENTAGE_DIVIDER; //calculates percentage
 
         //Debug or Info
-        if (send_msg_count==395 || send_msg_count==396 || send_msg_count==397 ||send_msg_count==398) {
-           GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%i: p: %.2f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
-        }
+       // if (send_msg_count==1200-4 || send_msg_count==1200-3 || send_msg_count==1200-2 ||send_msg_count==1200-1) {
+        //   GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%i: p: %.2f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
+        //}
     }
     return error_count_percentage;
 }
@@ -583,7 +607,7 @@ int8_t AP_FETtecOneWire::decode_single_esc_telemetry(TelemetryData& t, int16_t& 
     int8_t ret = 0;
     if (_id_count > 0) {
         uint8_t telem[17] = {0};
-        ret = receive((uint8_t *) telem, 11, OW_RETURN_FULL_FRAME);  // @torsten: How do you read 11, but use 17 bytes here???? //@Amilcar 11 is the size of the payload. 17 is including the OW headers which i want now, because we need to use the ESC ID from the telemetry
+        ret = receive((uint8_t *) telem, 11, OW_RETURN_FULL_FRAME); 
 
         if (ret == 1) { //Answer ok
             tlm_from_id = (uint8_t)telem[1];
@@ -628,6 +652,7 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values, const uint8
         if (_scan_active < MOTOR_COUNT_MAX) {
             // scan for all ESCs in onewire bus
             _scan_active = scan_escs();
+
         } else if (_setup_active < MOTOR_COUNT_MAX) {
             if (_found_escs_count == 0) {
                 _scan_active = 0;
@@ -635,10 +660,10 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values, const uint8
                 // check if in bootloader, start ESCs FW if they are and prepare fast throttle command
                 _setup_active = init_escs();
             }
+
         }
         else if (_set_full_telemetry_active < MOTOR_COUNT_MAX+1) { //Set telemetry to alternative mode
                _set_full_telemetry_active = set_full_telemetry(1);
-
         }
     } else {
         //send fast throttle signals
@@ -702,7 +727,7 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values, const uint8
             // send throttle signal
             fast_throttle_command[_fast_throttle_byte_count - 1] = get_crc8(
                     fast_throttle_command, _fast_throttle_byte_count - 1);
-            _uart->write(fast_throttle_command, _fast_throttle_byte_count);
+            _uart->write_locked(fast_throttle_command, _fast_throttle_byte_count,FTOW_UART_LOCK_KEY);
             // last byte of signal can be used to make sure the first TLM byte is correct, in case of spike corruption
             _ignore_own_bytes = _fast_throttle_byte_count - 1;
             _last_crc = fast_throttle_command[_fast_throttle_byte_count - 1];
