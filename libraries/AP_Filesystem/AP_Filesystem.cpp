@@ -43,8 +43,11 @@ static AP_Filesystem_Param fs_param;
 #include "AP_Filesystem_Sys.h"
 static AP_Filesystem_Sys fs_sys;
 
+#include <AP_Mission/AP_Mission.h>
+#if HAL_MISSION_ENABLED
 #include "AP_Filesystem_Mission.h"
 static AP_Filesystem_Mission fs_mission;
+#endif
 
 /*
   mapping from filesystem prefix to backend
@@ -57,7 +60,9 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { "@PARAM/", fs_param },
     { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
+#if HAL_MISSION_ENABLED
     { "@MISSION/", fs_mission },
+#endif
 };
 
 #define MAX_FD_PER_BACKEND 256U
