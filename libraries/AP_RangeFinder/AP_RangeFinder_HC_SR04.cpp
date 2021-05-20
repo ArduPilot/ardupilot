@@ -108,7 +108,7 @@ void AP_RangeFinder_HC_SR04::update(void)
         // glitch remover: measurement is greater than .5m from last.
         // the SR-04 seeems to suffer from single-measurement glitches
         // which can be removed by a simple filter.
-        if (labs(state.distance_cm - last_distance_cm) > 50) {
+        if (labs(int32_t(uint32_t(state.distance_cm) - last_distance_cm)) > 50) {
             // if greater for 5 readings then pass it as new height,
             // otherwise use last reading
             if (glitch_count++ > 4) {
