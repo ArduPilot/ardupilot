@@ -266,8 +266,8 @@ void Copter::parachute_check()
         return;
     }
 
-    // ensure we are flying
-    if (ap.land_complete) {
+    // ensure we are flying, ignore land state in standby mode, it can get out of sync
+    if (ap.land_complete && !standby_active) {
         control_loss_count = 0;
         return;
     }
@@ -289,7 +289,7 @@ void Copter::parachute_check()
         }
 
     } else {
-        // full control check for angle error over 30 degrees
+        // full control check for angle error
         const float angle_error = attitude_control->get_att_error_angle_deg();
         if (angle_error >= parachute.max_ang_err()) {
             control_loss_count++;
@@ -342,8 +342,8 @@ void Copter::parachute_manual_release()
     }
 
     // do not release if vehicle is landed
-    // do not release if we are landed or below the minimum altitude above home
-    if (ap.land_complete) {
+    // land flag cannot be trusted if in standby mode
+    if (ap.land_complete && !standby_active) {
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Landed");
         AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_LANDED);
