@@ -2868,4 +2868,24 @@ void AP_AHRS_NavEKF::set_alt_measurement_noise(float noise)
 #endif
 }
 
+// return the active alt source
+void AP_AHRS_NavEKF::set_using_qnh_flag(bool using_qnh) {
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        EKF2.setUsingQnhFlag(using_qnh);
+        return;
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        EKF3.setUsingQnhFlag(using_qnh);
+        return;
+#endif
+
+    default:
+        // Don't do anything
+        return;
+    }
+}
 #endif // AP_AHRS_NAVEKF_AVAILABLE

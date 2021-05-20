@@ -139,6 +139,8 @@ struct log_REY3 {
 struct log_RBRH {
     uint8_t primary;
     uint8_t num_instances;
+    float offset;
+    uint16_t pad; // this is required to make the structure the expected size
     uint8_t _end;
 };
 
@@ -384,7 +386,7 @@ struct log_RBOH {
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \
       "RASI", "fIBBB", "pd,UpdateMS,H,Use,I", "----#", "-----" }, \
     { LOG_RBRH_MSG, RLOG_SIZE(RBRH),                                   \
-      "RBRH", "BB", "Primary,NumInst", "--", "--" },  \
+      "RBRH", "BBd", "Primary,NumInst,offset", "--m", "---" },  \
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
       "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \

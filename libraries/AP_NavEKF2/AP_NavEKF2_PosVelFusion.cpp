@@ -284,6 +284,10 @@ bool NavEKF2_core::resetHeightDatum(void)
     dal.baro().update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
+    if (activeHgtSource == HGT_SOURCE_BARO) {
+        // if using baro it may have a offset
+        stateStruct.position.z -= lastBaroOffset;
+    }
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
 
     if (validOrigin) {
@@ -525,6 +529,20 @@ void NavEKF2_core::SelectVelPosFusion()
 
             // store the time of the reset
             lastPosResetD_ms = imuSampleTime_ms;
+        }
+    }
+
+    // Change in primary baro or baro altitude offset
+    if ((lastBaroSelected != baroDataDelayed.sensor_idx) || !is_equal(baroDataDelayed.offset,lastBaroOffset)) {
+        lastBaroSelected = baroDataDelayed.sensor_idx;
+        lastBaroOffset = baroDataDelayed.offset;
+        if (activeHgtSource == HGT_SOURCE_BARO) {
+            // If an offset has come through from baro we are either correcting baro drift from the GCS
+            // or we are flying on a QNH reference, in which case we want to fly with the baro drift.
+            // The baro height offset has already been applied so we remove it first before zeroing it.
+            hgtMea += baroHgtOffset;
+            baroHgtOffset = 0.0f;
+            ResetPositionD(-hgtMea);
         }
     }
 
@@ -971,6 +989,9 @@ void NavEKF2_core::selectHeightForFusion()
     if (extNavUsedForPos) {
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
+    } else if (usingQNH){
+        // force alt source to baro as we are flying off of a pressure refence
+        activeHgtSource = HGT_SOURCE_BARO;
     } else if ((frontend->_altSource == 1) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = HGT_SOURCE_RNG;

@@ -311,6 +311,9 @@ public:
     // return true when external nav data is also being used as a yaw observation
     bool isExtNavUsedForYaw(void) const;
 
+    // set flag to force alt source to baro if we are using qnh pressure reference
+    void setUsingQnhFlag (bool on_qnh);
+
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
@@ -438,6 +441,8 @@ private:
 
     struct baro_elements : EKF_obs_element_t {
         float       hgt;
+        uint8_t     sensor_idx;     // index number of baro sensor
+        float       offset;         // altitude offset
     };
 
     struct range_elements : EKF_obs_element_t {
@@ -831,6 +836,8 @@ private:
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
     bool tasDataToFuse;             // true when new airspeed data is waiting to be fused
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
+    uint8_t lastBaroSelected;       // last baro used, to detect switch in parmary baro
+    float lastBaroOffset;           // last baro offset distance used
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
@@ -1061,6 +1068,7 @@ private:
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source
+    bool usingQNH;              // flag that forces activeHgtSource to baro when using pressure as sea level reference
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected

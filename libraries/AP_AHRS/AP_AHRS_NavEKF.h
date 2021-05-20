@@ -321,6 +321,9 @@ public:
         return uint8_t(active_EKF_type());
     }
 
+    // Set flag in EKF to force using baro as height source
+    void set_using_qnh_flag(bool using_qnh) override;
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;

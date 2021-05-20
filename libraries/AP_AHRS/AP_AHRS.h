@@ -598,6 +598,9 @@ public:
     // set and save the alt noise parameter value
     virtual void set_alt_measurement_noise(float noise) {};
 
+    // Set flag in EKF to force using baro as height source
+    virtual void set_using_qnh_flag(bool using_qnh) {};
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;

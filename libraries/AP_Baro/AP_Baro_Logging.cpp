@@ -12,7 +12,7 @@ void AP_Baro::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
         temperature   : (int16_t)(get_temperature(baro_instance) * 100 + 0.5f),
         climbrate     : get_climb_rate(),
         sample_time_ms: get_last_update(baro_instance),
-        drift_offset  : get_baro_drift_offset(),
+        alt_offset    : get_alt_offset(),
         ground_temp   : get_ground_temperature(),
         healthy       : (uint8_t)healthy(baro_instance)
     };

@@ -30,6 +30,9 @@ public:
     float get_altitude() const {
         return get_altitude(get_primary());
     }
+    float get_alt_offset() const {
+        return _RBRH.offset;
+    }
 
     // update_calibration is a no-op in Replay as it simply modifies the data
     // which we'll be logging for input to the EKF.

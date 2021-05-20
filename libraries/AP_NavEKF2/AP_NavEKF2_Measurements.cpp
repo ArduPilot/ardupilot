@@ -670,6 +670,9 @@ void NavEKF2_core::readBaroData()
 
         baroDataNew.hgt = baro.get_altitude();
 
+        // record current offset to cope with any change
+        baroDataNew.offset = baro.get_alt_offset();
+
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
         if (getTakeoffExpected()) {

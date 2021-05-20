@@ -219,6 +219,24 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
+    // @Param: _QNH
+    // @DisplayName: Pressure reference at sea level
+    // @Description: When set an altitude offset is applied to the barometer altitude reading so that absolute zero altitude reads zero at the QNH pressure provided.  This is useful when operating amongst manned aircraft.
+    // @Units: hPa
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_QNH", 21, AP_Baro, _qnh_ref, 0),
+
+    // @Param: _QFE_RAD
+    // @DisplayName: Radius around home that QFE pressure will be used.
+    // @Description: If BARO_QNH is set, beyond the BARO_QFE_RAD from home, the QNH pressure setting will be used. This will force EKF altitude source to baro when operation on QNH and return to previously set alt source when inside QFE_RAD.
+    // @Units: m
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_QFE_RAD", 22, AP_Baro, _qfe_rad, 500),
+#endif
+
     AP_GROUPEND
 };
 
@@ -515,6 +533,7 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
  */
 void AP_Baro::init(void)
 {
+    _qnh_ref.set_and_save(0);
     init_done = true;
 
     // ensure that there isn't a previous ground temperature saved
@@ -829,19 +848,15 @@ void AP_Baro::update(void)
 {
     WITH_SEMAPHORE(_rsem);
 
-    if (fabsf(_alt_offset - _alt_offset_active) > 0.01f) {
-        // If there's more than 1cm difference then slowly slew to it via LPF.
-        // The EKF does not like step inputs so this keeps it happy.
-        _alt_offset_active = (0.95f*_alt_offset_active) + (0.05f*_alt_offset);
-    } else {
-        _alt_offset_active = _alt_offset;
-    }
-
     if (!_hil_mode) {
         for (uint8_t i=0; i<_num_drivers; i++) {
             drivers[i]->backend_update(i);
         }
     }
+
+#ifndef HAL_BUILD_AP_PERIPH
+    update_qnh_alt_offset();
+#endif
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
@@ -865,7 +880,7 @@ void AP_Baro::update(void)
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
             if (sensors[i].alt_ok) {
-                sensors[i].altitude = altitude + _alt_offset_active;
+                sensors[i].altitude = altitude + get_alt_offset();
             }
         }
         if (_hil.have_alt) {
@@ -944,6 +959,47 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
     if (instance < _num_sensors) {
         sensors[instance].p_correction = p_correction;
     }
+}
+
+#ifndef HAL_BUILD_AP_PERIPH
+// get baro drift amount
+void AP_Baro::update_qnh_alt_offset(void)
+{
+    // Return early if set to non-active
+    if (_qnh_ref.get() < 1 || _remove_qnh_offset) {
+        AP::ahrs().set_using_qnh_flag(false);
+        _qnh_alt_offset = 0.0f;
+        return;
+    }
+
+    float min_dist_home = MAX(_qfe_rad.get(),100.0f);
+    Vector2f home_dist;
+    if (!AP::ahrs().get_relative_position_NE_home(home_dist) || (home_dist.length() < min_dist_home)) {
+        // Either we do not have a good position estimate or we should be using qfe
+        AP::ahrs().set_using_qnh_flag(false);
+        _qnh_alt_offset = 0.0f;
+        return;
+    }
+
+    // Ensure alt source is set to barometer if we are going to fly relative to a pressure reference.
+    AP::ahrs().set_using_qnh_flag(true);
+
+    // We need to find the altitude offset from zero as defined by GPS and our origin altitude from MSL that
+    // approximated based on our ground pressure and the provided sea level pressure (QNH).
+    // Home altitude which is set by GPS and home is where the ground pressure is set for the baro.
+    // Return delta in meters.  Home is in cm. get_alt_difference is in m. Convert _qnh_ref from hPa to Pa.
+    _qnh_alt_offset =  AP::ahrs().get_home().alt*0.01f - get_altitude_difference(_qnh_ref.get()*100.0f, get_ground_pressure());
+}
+#endif
+
+// returns the altitude offset from either the drift correction from a GCS or the QNH reference offset
+float AP_Baro::get_alt_offset(void) const
+{
+#ifndef HAL_BUILD_AP_PERIPH
+    return _qnh_alt_offset + _alt_offset.get();
+#else
+    return _alt_offset.get();
+#endif
 }
 
 #if HAL_MSP_BARO_ENABLED

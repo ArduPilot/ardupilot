@@ -1674,3 +1674,17 @@ void NavEKF2_core::zeroAttCovOnly()
     }
 }
 
+void NavEKF2_core::setUsingQnhFlag (bool on_qnh)
+{
+    if (usingQNH != on_qnh) {
+        usingQNH = on_qnh;
+        if (core_index == 0) {
+            // Only issue message from first core
+            if (usingQNH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "EKF2: Using QNH");
+                return;
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "EKF2: Not using QNH");
+        }
+    }
+}

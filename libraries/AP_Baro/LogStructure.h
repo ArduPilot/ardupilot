@@ -26,7 +26,7 @@ struct PACKED log_BARO {
     int16_t temperature;
     float   climbrate;
     uint32_t sample_time_ms;
-    float   drift_offset;
+    float   alt_offset;
     float   ground_temp;
     uint8_t healthy;
 };

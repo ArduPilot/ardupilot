@@ -291,6 +291,9 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    // set flag to force alt source to baro if we are using qnh pressure reference
+    void setUsingQnhFlag (bool on_qnh);
+
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
     // causes the EKF to start the EKF-GSF yaw estimator
@@ -513,6 +516,8 @@ private:
 
     struct baro_elements : EKF_obs_element_t {
         float       hgt;            // height of the pressure sensor in local NED earth frame (m)
+        uint8_t     sensor_idx;     // index number of baro sensor
+        float       offset;         // altitude offset
     };
 
     struct range_elements : EKF_obs_element_t {
@@ -1006,6 +1011,8 @@ private:
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
     bool tasDataToFuse;             // true when new airspeed data is waiting to be fused
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
+    uint8_t lastBaroSelected;       // last baro used, to detect switch in parmary baro
+    float lastBaroOffset;           // last baro offset distance used
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
@@ -1289,6 +1296,7 @@ private:
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
     AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
+    bool usingQNH;                              // flag that forces activeHgtSource to baro when using pressure as sea level reference
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
