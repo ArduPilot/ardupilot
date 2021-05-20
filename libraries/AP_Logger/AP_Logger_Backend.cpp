@@ -483,6 +483,7 @@ bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
     return Write_Message(msg);
 }
 
+#if HAL_RALLY_ENABLED
 // Write rally points
 bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
                                          uint8_t sequence,
@@ -506,6 +507,7 @@ bool AP_Logger_Backend::Write_Rally()
     // kick off asynchronous write:
     return _startup_messagewriter->writeallrallypoints();
 }
+#endif
 
 /*
   convert a list entry number back into a log number (which can then
