@@ -104,7 +104,7 @@ void AP_FETtecOneWire::update()
     }
     // tell SRV_Channels about ESC capabilities
     const uint16_t mask = uint16_t(motor_mask.get());
-    SRV_Channels::set_digital_mask(mask);
+    SRV_Channels::set_digital_outputs(mask, 0);
 
     // get ESC set points, stop as soon as there is a gap
     uint8_t nr_escs = 0;
