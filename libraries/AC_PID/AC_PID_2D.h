@@ -33,7 +33,7 @@ public:
 
     // get results from pid controller
     Vector2f get_p() const;
-    Vector2f get_i() const;
+    const Vector2f& get_i() const;
     Vector2f get_d() const;
     Vector2f get_ff();
     const Vector2f& get_error() const { return _error; }

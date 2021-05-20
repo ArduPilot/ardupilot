@@ -149,7 +149,7 @@ Vector2f AC_PID_2D::get_p() const
     return _error * _kp;
 }
 
-Vector2f AC_PID_2D::get_i() const
+const Vector2f& AC_PID_2D::get_i() const
 {
     return _integrator;
 }
