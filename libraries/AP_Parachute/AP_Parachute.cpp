@@ -109,6 +109,8 @@ void AP_Parachute::enabled(bool on_off)
     _release_time = 0;
     _release_reasons = 0;
     _cancel_timeout_ms = 0;
+    _sink_time_ms = 0;
+    _fall_time_ms = 0;
 
     AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
@@ -122,7 +124,7 @@ void AP_Parachute::release(release_reason reason)
     }
 
     // only take action if there is a change in release reason
-    if ((_release_reasons && (1U <<reason)) == 0) {
+    if ((_release_reasons && (1U << reason)) != 0) {
         return;
     }
 
@@ -139,7 +141,12 @@ void AP_Parachute::release(release_reason reason)
 
     const char *string = string_for_release(reason);
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Releaseing in %i ms - %s", _cancel_timeout_ms - now, string);
+    const uint32_t time_till_deploy = _cancel_timeout_ms - now;
+    if (_cancel_delay > 0) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Releaseing in %0.1f s - %s", time_till_deploy * 0.001f, string);
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO,"Parachute: %s", string);
+    }
 }
 
 // send user command long updating the parchute status
@@ -203,8 +210,10 @@ void AP_Parachute::update()
         return;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
-    AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
+    if (!_release_initiated) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
+        AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
+    }
 
     if (_options & NOTIFY_ONLY) {
         // just send text and write to log, do not actually do anything
@@ -281,7 +290,7 @@ void AP_Parachute::update(float sink_rate, float accel)
         return;
     }
 
-    if (sink_rate <= _critical_sink && is_positive(_critical_sink)) {
+    if (sink_rate <= _critical_sink || !is_positive(_critical_sink)) {
         // reset sink_time if vehicle is not sinking too fast
         _sink_time_ms = 0;
     } else if (_sink_time_ms == 0) {
@@ -289,7 +298,7 @@ void AP_Parachute::update(float sink_rate, float accel)
         _sink_time_ms = AP_HAL::millis();
     }
 
-    if (accel <= _min_accel && is_positive(_min_accel)) {
+    if (accel <= _min_accel || !is_positive(_min_accel)) {
         // reset fall time if vehicle is not falling too fast
         _fall_time_ms = 0;
     } else if (_fall_time_ms == 0) {
