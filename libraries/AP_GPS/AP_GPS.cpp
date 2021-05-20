@@ -755,7 +755,7 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 
 bool AP_GPS::should_log() const
 {
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return false;
@@ -890,12 +890,14 @@ void AP_GPS::update_instance(uint8_t instance)
             }
         }
     }
-    
-#ifndef HAL_BUILD_AP_PERIPH
+
+#if HAL_LOGGING_ENABLED
     if (data_should_be_logged && should_log()) {
         Write_GPS(instance);
     }
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     if (state[instance].status >= GPS_OK_FIX_3D) {
         const uint64_t now = time_epoch_usec(instance);
         if (now != 0) {
@@ -1743,7 +1745,7 @@ void AP_GPS::calc_blended_state(void)
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_LOGGING_ENABLED
     const uint32_t last_blended_message_time_ms = timing[GPS_BLENDED_INSTANCE].last_message_time_ms;
 #endif
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
@@ -1888,7 +1890,7 @@ void AP_GPS::calc_blended_state(void)
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_LOGGING_ENABLED
     if (timing[GPS_BLENDED_INSTANCE].last_message_time_ms > last_blended_message_time_ms &&
         should_log()) {
         Write_GPS(GPS_BLENDED_INSTANCE);
