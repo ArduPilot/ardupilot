@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @DisplayName: Integrator limit
 	// @Description: This limits the number of degrees of steering in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the vehicle is severely out of trim.
 	// @Range: 0 4500
-	// @Increment: 1
+	// @Increment: 10
 	// @Units: cdeg
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
@@ -106,8 +106,8 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Param: DRTMIN
     // @DisplayName: Minimum angle of wheel
     // @Description: The angle that limits smallest angle of steering wheel at maximum speed. Even if it should derate below, it will stop derating at this angle.
-    // @Range: 0.0 4500.0
-    // @Increment: 0.1
+    // @Range: 0 4500
+    // @Increment: 10
     // @Units: cdeg
     // @User: Advanced
     AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree,        4500),
