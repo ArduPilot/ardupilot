@@ -63,13 +63,18 @@ private:
     AP_Int8 pole_count;
 
     uint32_t _last_send_us;
-    static constexpr uint32_t DELAY_TIME_US = 700;
 #if HAL_WITH_ESC_TELEM
     static constexpr uint8_t MOTOR_COUNT_MAX = ESC_TELEM_MAX_ESCS; /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #else
     static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #endif
-    uint8_t _requested_telemetry_from_esc = 1; /// the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
+    uint8_t _requested_telemetry_from_esc; /// the ESC to request telemetry from (0 for no telemetry, 1 for ESC0, 2 for ESC1, 3 for ESC2, ...)
+
+    enum return_type
+    {
+      OW_RETURN_RESPONSE,
+      OW_RETURN_FULL_FRAME
+    };
 
 /**
     calculates crc tx error rate for incoming packages. It converts the CRC error counts into percentage
@@ -101,9 +106,9 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
     @param bytes 8 bit byte array, where the received answer gets stored in
     @param length the expected answer length
     @param return_full_frame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
-    @return 1 if the expected answer frame was there, 0 if dont
+    @return 2 on CRC error, 1 if the expected answer frame was there, 0 if dont
 */
-    uint8_t receive(uint8_t *bytes, uint8_t length, uint8_t return_full_frame);
+    uint8_t receive(uint8_t *bytes, uint8_t length, return_type return_full_frame);
 
 /**
     Resets a pending pull request
@@ -116,9 +121,9 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
     @param command 8bit array containing the command that should be send including the possible payload
     @param response 8bit array where the response will be stored in
     @param return_full_frame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
-    @return 1 if the request is completed, 0 if dont
+    @return true if the request is completed, false if dont
 */
-    uint8_t pull_command(uint8_t esc_id, uint8_t *command, uint8_t *response, uint8_t return_full_frame);
+    bool pull_command(uint8_t esc_id, uint8_t *command, uint8_t *response, return_type return_full_frame);
 
 /**
     scans for ESCs in bus. should be called until _scan_active >= MOTOR_COUNT_MAX
@@ -134,6 +139,7 @@ float calc_tx_crc_error_perc(uint8_t esc_id, uint16_t esc_error_count, uint8_t i
 
 /**
     sets the telemetry mode to full mode, where one ESC answers with all telem values including CRC Error count and a CRC
+    @param active if full telemetry should be used
     @return returns the response code
 */
     uint8_t set_full_telemetry(uint8_t active);
@@ -160,7 +166,6 @@ int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16
 */
     void escs_set_values(const uint16_t *motor_values, const uint8_t motor_count, const uint8_t tlm_request);
 
-    static constexpr uint8_t ALL_ID = 0x1F;
     typedef struct FETtecOneWireESC
     {
       uint8_t in_boot_loader;
@@ -172,6 +177,10 @@ int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16
 #endif
     } FETtecOneWireESC_t;
 
+    uint16_t _error_count[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs
+    uint16_t _error_count_since_overflow[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs to pass the overflow
+    uint16_t _send_msg_count; //counts the messages that are send by fc
+ 
     uint8_t _active_esc_ids[MOTOR_COUNT_MAX] = {0};
     FETtecOneWireESC_t _found_escs[MOTOR_COUNT_MAX];
     uint8_t _found_escs_count;
@@ -185,16 +194,10 @@ int8_t decode_single_esc_telemetry(TelemetryData& t, int16_t& centi_erpm, uint16
     int8_t _max_id;
     uint8_t _id_count;
     uint8_t _fast_throttle_byte_count;
-    uint8_t _pull_success;
+    bool _pull_success;
     uint8_t _pull_busy;
     uint8_t _tlm_request;
     uint8_t _last_crc;
-
-    enum return_type
-    {
-      OW_RETURN_RESPONSE,
-      OW_RETURN_FULL_FRAME
-    };
 
     enum msg_type
     {

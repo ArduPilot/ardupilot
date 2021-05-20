@@ -25,6 +25,9 @@
 
 #define FTOW_UART_LOCK_KEY 0x30150102
 
+static constexpr uint32_t DELAY_TIME_US = 700;
+static constexpr uint32_t RESPONSE_LENGTH = 18;
+static constexpr uint8_t ALL_ID = 0x1F;
 
 const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @Param: MASK
@@ -97,7 +100,7 @@ void AP_FETtecOneWire::update()
     }
 
     if (!_uart->is_dma_enabled()){
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Uart for OneWire needs DMA!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "UART for OneWire needs DMA!");
     }
     // tell SRV_Channels about ESC capabilities
     const uint16_t mask = uint16_t(motor_mask.get());
@@ -125,24 +128,19 @@ void AP_FETtecOneWire::update()
     uint8_t tlm_ok = 0; //decode_single_esc_telemetry returns 1 if telemetry is ok, 0 if its waiting and 2 if there is a crc mismatch.
     uint8_t tlm_from_id = 0;
     if (_requested_telemetry_from_esc) {
-
         tlm_ok = decode_single_esc_telemetry(t, centi_erpm, tx_err_count, tlm_from_id);
-
     }
     if (_requested_telemetry_from_esc == _found_escs_count) { //if found esc number is reached restart request counter
-        _requested_telemetry_from_esc = 1; // restart from ESC 1 
+        _requested_telemetry_from_esc = 1; // restart from the first ESC
     } else {
         _requested_telemetry_from_esc++;
     }
 #endif
 
-    uint32_t txSpace =  _uart->txspace(); //Ugly workaround. 
-    if (txSpace==511 && !_uart->tx_pending()){ //Ugly workaround. 
+    uint32_t txSpace =  _uart->txspace(); //Ugly workaround.
+    if (txSpace==511 && !_uart->tx_pending()) { //Ugly workaround.
         escs_set_values(motor_pwm, _found_escs_count, _requested_telemetry_from_esc);
     }
-
-
-
 
 #if HAL_WITH_ESC_TELEM
     // now that escs_set_values() has been executed we can fully process the telemetry data from the ESC
@@ -172,7 +170,7 @@ uint8_t AP_FETtecOneWire::get_crc8(uint8_t* buf, uint16_t buf_len) const
 {
     uint8_t crc = 0;
     for (uint16_t i = 0; i < buf_len; i++) {
-        crc = crc8_telem(buf[i], crc);
+        crc = crc8_dvb(buf[i], crc, 0x7);
     }
     return (crc);
 }
@@ -211,7 +209,7 @@ void AP_FETtecOneWire::transmit(uint8_t esc_id, uint8_t* bytes, uint8_t length)
     @param return_full_frame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
     @return 2 on CRC error, 1 if the expected answer frame was there, 0 if dont
 */
-uint8_t AP_FETtecOneWire::receive(uint8_t* bytes, uint8_t length, uint8_t return_full_frame)
+uint8_t AP_FETtecOneWire::receive(uint8_t* bytes, uint8_t length, return_type return_full_frame)
 {
     /*
     a frame looks like:
@@ -245,7 +243,7 @@ uint8_t AP_FETtecOneWire::receive(uint8_t* bytes, uint8_t length, uint8_t return
             }
             // check CRC
             if (get_crc8(receive_buf, length + 5) == receive_buf[length + 5]) {
-                if (!return_full_frame) {
+                if (return_full_frame == OW_RETURN_RESPONSE) {
                     for (uint8_t i = 0; i < length; i++) {
                         bytes[i] = receive_buf[5 + i];
                     }
@@ -271,7 +269,7 @@ uint8_t AP_FETtecOneWire::receive(uint8_t* bytes, uint8_t length, uint8_t return
 */
 void AP_FETtecOneWire::pull_reset()
 {
-    _pull_success = 0;
+    _pull_success = false;
     _pull_busy = 0;
 }
 
@@ -281,20 +279,20 @@ void AP_FETtecOneWire::pull_reset()
     @param command 8bit array containing the command that should be send including the possible payload
     @param response 8bit array where the response will be stored in
     @param return_full_frame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
-    @return 1 if the request is completed, 0 if dont
+    @return true if the request is completed, false if dont
 */
-uint8_t AP_FETtecOneWire::pull_command(uint8_t esc_id, uint8_t* command, uint8_t* response,
-        uint8_t return_full_frame)
+bool AP_FETtecOneWire::pull_command(uint8_t esc_id, uint8_t* command, uint8_t* response,
+        return_type return_full_frame)
 {
     if (!_pull_busy) {
         _pull_busy = 1;
-        _pull_success = 0;
+        _pull_success = false;
         transmit(esc_id, command, _request_length[command[0]]);
     } else {
         uint8_t recv_ret = receive(response, _response_length[command[0]], return_full_frame);
         switch (recv_ret) {
             case 1:
-                _pull_success = 1;
+                _pull_success = true;
                 _pull_busy = 0;
                 break;
             default:
@@ -310,7 +308,7 @@ uint8_t AP_FETtecOneWire::pull_command(uint8_t esc_id, uint8_t* command, uint8_t
 */
 uint8_t AP_FETtecOneWire::scan_escs()
 {
-    uint8_t response[18] = {0};
+    uint8_t response[RESPONSE_LENGTH] = {0};
     uint8_t request[1] = {0};
     if (_scan_active == 0) {
         _ss.delay_loops = 500;
@@ -409,8 +407,8 @@ uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
         uint8_t request[2] = {0};
         request[0] = OW_SET_TLM_TYPE;
         request[1] = active; //Alternative Tlm => 1, normal TLM => 0
-        uint8_t pull_response = pull_command(_set_full_telemetry_active, request, response, OW_RETURN_RESPONSE);
-        if(pull_response) {
+        bool pull_response = pull_command(_set_full_telemetry_active, request, response, OW_RETURN_RESPONSE);
+        if (pull_response) {
             if(response[0] == OW_OK) {//Ok received or max retrys reached.
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW OK. Full Telemetry activ");
                 _set_full_telemetry_active++;   //If answer from ESC is OK, increase ID.
@@ -418,19 +416,19 @@ uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OW Fail");
                 _set_full_telemetry_retry_count++; //No OK received, increase retry count
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_set_full_telemetry_retry_count);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i", _set_full_telemetry_retry_count);
             }
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PullCommand Fail %i",pull_response);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PullCommand Fail %i", pull_response);
             _set_full_telemetry_retry_count++;
             if (_set_full_telemetry_retry_count>128) { //It is important to have the correct telemetry set so start over if there is something wrong.
                 _pull_busy=0;
                 _set_full_telemetry_active=1;
             }
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i",_set_full_telemetry_retry_count);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Retry Count %i", _set_full_telemetry_retry_count);
         }
     } else { //If there is no ESC detected skip it.
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ESC at ID: %i",_set_full_telemetry_active);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No ESC at ID: %i", _set_full_telemetry_active);
         _set_full_telemetry_active++;
     }
     return _set_full_telemetry_active;
@@ -443,7 +441,7 @@ uint8_t AP_FETtecOneWire::set_full_telemetry(uint8_t active)
 */
 uint8_t AP_FETtecOneWire::init_escs()
 {
-    uint8_t response[18] = {0};
+    uint8_t response[RESPONSE_LENGTH] = {0};
     uint8_t request[1] = {0};
     if (_setup_active == 0) {
         _is.delay_loops = 0;
@@ -563,32 +561,24 @@ uint8_t AP_FETtecOneWire::init_escs()
     @param increment_only if this is set to 1 it only increases the message count and returns 0. If set to 1 it does not increment but gives back the error count.
     @return the error in percent
 */
-float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_error_count, uint8_t increment_only){
-
-    static uint16_t error_count[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs
-    static uint16_t error_count_since_overflow[MOTOR_COUNT_MAX]; //saves the error counter from the ESCs to pass the overflow
-    static uint16_t send_msg_count = 0; //counts the messages that are send by fc
+float AP_FETtecOneWire::calc_tx_crc_error_perc(uint8_t esc_id, uint16_t current_error_count, uint8_t increment_only)
+{
     float error_count_percentage = 0.0f;
     #define HZ_MOTOR 400.0
-    #define PERCENTAGE_DIVIDER (100.0/HZ_MOTOR) //to save the division in loop precalculate by the motor loops 100%/400Hz
+    #define PERCENTAGE_DIVIDER (100.0/HZ_MOTOR) //to save the division in loop, precalculate by the motor loops 100%/400Hz
 
     if (increment_only) {
-        send_msg_count++;
-        if (send_msg_count > 63000) { // The update loop runs at 400Hz, hence this resets every second
-            send_msg_count = 0; //reset the counter
+        _send_msg_count++;
+        if (_send_msg_count > 63000) { // The update loop runs at 400Hz, hence this resets every second
+            _send_msg_count = 0; //reset the counter
             for (int i=0; i<_found_escs_count; i++) {
-                    error_count_since_overflow[i] = error_count[i]; //save the current ESC error state               
+                    _error_count_since_overflow[i] = _error_count[i]; //save the current ESC error state
             }
         }
     } else { //Calculate the percentage
-        error_count[esc_id] = current_error_count; //Save the error count to the esc
-        uint16_t corrected_error_count = (uint16_t)((uint16_t)error_count[esc_id] - (uint16_t)error_count_since_overflow[esc_id]); //calculates error difference since last overflow.
+        _error_count[esc_id] = current_error_count; //Save the error count to the esc
+        uint16_t corrected_error_count = (uint16_t)((uint16_t)_error_count[esc_id] - (uint16_t)_error_count_since_overflow[esc_id]); //calculates error difference since last overflow.
         error_count_percentage = (float)corrected_error_count*(float)PERCENTAGE_DIVIDER; //calculates percentage
-
-        //Debug or Info
-       // if (send_msg_count==1200-4 || send_msg_count==1200-3 || send_msg_count==1200-2 ||send_msg_count==1200-1) {
-        //   GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%i: p: %.2f, m: %u, eD: %u, eEr: %u, Ov: %u", esc_id, error_count_percentage, send_msg_count, corrected_error_count, error_count[esc_id],error_count_since_overflow[esc_id]);
-        //}
     }
     return error_count_percentage;
 }
