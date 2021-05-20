@@ -2158,6 +2158,9 @@ def add_apperiph_defaults(f):
         return
     print("Setting up as AP_Periph")
     f.write('''
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 0
+#endif
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 0
 #endif
@@ -2166,6 +2169,16 @@ def add_apperiph_defaults(f):
 #define HAL_SERIAL2_PROTOCOL -1
 #define HAL_SERIAL3_PROTOCOL -1
 #define HAL_SERIAL4_PROTOCOL -1
+
+#ifndef HAL_LOGGING_MAVLINK_ENABLED
+#define HAL_LOGGING_MAVLINK_ENABLED 0
+#endif
+#ifndef HAL_MISSION_ENABLED
+#define HAL_MISSION_ENABLED 0
+#endif
+#ifndef HAL_RALLY_ENABLED
+#define HAL_RALLY_ENABLED 0
+#endif
 ''')
             
 
