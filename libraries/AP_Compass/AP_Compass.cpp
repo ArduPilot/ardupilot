@@ -879,6 +879,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     _state[i].registered = true;
     _state[i].priority = priority;
     instance = uint8_t(i);
+    _compass_count = 1;
     return true;
 #else
     Priority priority;
