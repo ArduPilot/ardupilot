@@ -118,6 +118,7 @@ AP_HW_luminousbee5                   1029
 AP_HW_KAKUTEF4_MINI                  1030
 AP_HW_H31_PIXC4_PI                   1031
 AP_HW_H31_PIXC4_JETSON               1032
+AP_HW_SIERRAF9PGPS_PERIPH            1033
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
