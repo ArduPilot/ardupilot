@@ -1,4 +1,4 @@
-include ../f103-periph/hwdef-bl.dat
+include ../f103-periph/hwdef-bl.inc
 
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0

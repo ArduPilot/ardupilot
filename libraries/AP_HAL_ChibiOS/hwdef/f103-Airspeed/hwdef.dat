@@ -1,4 +1,4 @@
-include ../f103-periph/hwdef.dat
+include ../f103-periph/hwdef.inc
 
 define CAN_APP_NODE_NAME "org.ardupilot.f103_airspeed"
 
