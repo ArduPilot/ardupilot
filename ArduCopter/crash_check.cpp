@@ -238,7 +238,9 @@ void Copter::parachute_check()
     parachute.set_is_flying(!ap.land_complete);
 
     // pass sink rate to parachute library
-    parachute.update(-inertial_nav.get_velocity_z() * 0.01f,copter.ahrs.get_accel_ef().z);
+    parachute.update(-inertial_nav.get_velocity_z() * 0.01f,
+                    copter.ahrs.get_accel_ef().z,
+                    motors->get_throttle() < motors->get_throttle_hover());
 
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
@@ -280,26 +282,20 @@ void Copter::parachute_check()
 
     if (standby_active) {
         // in standby mode check for large angles
-        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > CRASH_CHECK_ANGLE_DEG) {
-            if (control_loss_count > 0) {
-                control_loss_count--;
-            }
-            return;
+        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > MAX(parachute.max_rp_ang(),copter.aparm.angle_max)) {
+            control_loss_count++;
+        } else if (control_loss_count > 0) {
+            control_loss_count--;
         }
+
     } else {
         // full control check for angle error over 30 degrees
         const float angle_error = attitude_control->get_att_error_angle_deg();
-        if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
-            if (control_loss_count > 0) {
-                control_loss_count--;
-            }
-            return;
+        if (angle_error >= parachute.max_ang_err()) {
+            control_loss_count++;
+        } else if (control_loss_count > 0) {
+            control_loss_count--;
         }
-    }
-
-    // increment counter
-    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
-        control_loss_count++;
     }
 
     // record baro alt if we have just started losing control
@@ -310,8 +306,6 @@ void Copter::parachute_check()
     } else if (baro_alt >= baro_alt_start) {
         control_loss_count = 0;
         return;
-
-    // To-Do: add check that the vehicle is actually falling
 
     // check if loss of control for at least 1 second
     } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
