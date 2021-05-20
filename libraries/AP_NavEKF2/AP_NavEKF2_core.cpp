@@ -352,7 +352,7 @@ void NavEKF2_core::InitialiseVariablesMag()
 
     inhibitMagStates = true;
 
-    magSelectIndex = 0;
+    magSelectIndex = dal.compass().get_first_usable();
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;
