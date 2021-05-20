@@ -97,6 +97,20 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CANCEL_MS", 9, AP_Parachute, _cancel_delay, 0),
 
+    // @Param: ANG_ER_MX
+    // @DisplayName: Max angle error
+    // @Description: Max angle error for aircraft not in standby.  Values above this will release the chute.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ANG_ER_MX", 10, AP_Parachute, _ang_error_max, 30.0f),
+
+    // @Param: SB_MX_ANG
+    // @DisplayName: Standby Max Angle
+    // @Description: The maximum absolute roll or pitch angles for aircraft in standby.  Values above this will release the chute.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("SB_MX_ANG", 11, AP_Parachute, _sb_rp_ang_max, 80.0f),
+
     AP_GROUPEND
 };
 
@@ -281,7 +295,7 @@ void AP_Parachute::update()
 }
 
 // update - set vehicle sink rate and accel
-void AP_Parachute::update(float sink_rate, float accel)
+void AP_Parachute::update(const float sink_rate, const float accel, const bool throttle_below_hover)
 {
     // reset sink time if critical sink rate check is disabled or vehicle is not flying
     if (!_is_flying) {
@@ -290,7 +304,8 @@ void AP_Parachute::update(float sink_rate, float accel)
         return;
     }
 
-    if (sink_rate <= _critical_sink || !is_positive(_critical_sink)) {
+    // sink rate is posative down
+    if (sink_rate <= _critical_sink || !is_positive(sink_rate) || throttle_below_hover) {
         // reset sink_time if vehicle is not sinking too fast
         _sink_time_ms = 0;
     } else if (_sink_time_ms == 0) {

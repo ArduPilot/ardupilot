@@ -89,11 +89,15 @@ public:
     ///   0 = altitude check disabled
     int16_t alt_min() const { return _alt_min; }
 
+    float max_ang_err() const { return _ang_error_max.get(); }
+
+    float max_rp_ang() const { return _sb_rp_ang_max.get(); }
+
     /// set_is_flying - accessor to the is_flying flag
     void set_is_flying(const bool is_flying) { _is_flying = is_flying; }
 
     // update - set vehicle sink rate and earth frame Z accel
-    void update(float sink_rate, float accel);
+    void update(const float sink_rate, const float accel, const bool throttle_below_hover);
 
     // trigger parachute release thresholds
     void check();
@@ -134,6 +138,8 @@ private:
     AP_Float    _min_accel;          // critical earth frame Z acceleration
     AP_Int32    _options;            // bitmask of options
     AP_Int32    _cancel_delay;
+    AP_Float    _ang_error_max;       // Maximum roll/pitch error when aircraft not in standby
+    AP_Float    _sb_rp_ang_max;       // Maximum absolute roll/pitch angle when aircraft in standby
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
