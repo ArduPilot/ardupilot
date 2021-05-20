@@ -21,3 +21,25 @@ void Copter::standby_update()
     attitude_control->set_yaw_target_to_current_heading();
     pos_control->standby_xyz_reset();
 }
+
+// enter standby mode, flight controller is no longer flying the vehicle
+void Copter::enter_standby()
+{
+    standby_active = true;
+    AP::logger().Write_Event(LogEvent::STANDBY_ENABLE);
+    gcs().send_text(MAV_SEVERITY_INFO, "StandBy Enabled");
+}
+
+// Exit standby mode, takeover flying of the vehicle
+void Copter::exit_standby()
+{
+    standby_active = false;
+    AP::logger().Write_Event(LogEvent::STANDBY_DISABLE);
+    gcs().send_text(MAV_SEVERITY_INFO, "StandBy Disabled");
+
+    // if motors are armed make sure the vehicle does not think its on the ground
+    set_land_complete(!motors->armed());
+
+    // re init the current mode ignoring checks, should make the switch more seamless
+    flightmode->init(true);
+}

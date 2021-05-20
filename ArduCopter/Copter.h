@@ -775,6 +775,8 @@ private:
 
     // standby.cpp
     void standby_update();
+    void enter_standby();
+    void exit_standby();
 
     // Log.cpp
     void Log_Write_Control_Tuning();
