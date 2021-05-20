@@ -1,4 +1,4 @@
-include ../f303-periph/hwdef.dat
+include ../f303-periph/hwdef.inc
 
 define HAL_CAN_DEFAULT_NODE_ID 0
 

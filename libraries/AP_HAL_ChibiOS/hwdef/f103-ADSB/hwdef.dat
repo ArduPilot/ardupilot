@@ -1,4 +1,4 @@
-include ../f103-periph/hwdef.dat
+include ../f103-periph/hwdef.inc
 
 #STDOUT_SERIAL SD1
 #STDOUT_BAUDRATE 115200
