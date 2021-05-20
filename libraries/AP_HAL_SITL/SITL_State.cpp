@@ -821,17 +821,18 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
-    uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
+    uint16_t engine_fail = _sitl?_sitl->engine_fail.get():0;
     float throttle = 0.0f;
-    
-    if (engine_fail >= ARRAY_SIZE(input.servos)) {
-        engine_fail = 0;
-    }
+
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    if (_vehicle != Rover) {
-        input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
-    } else {
-        input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
+    for (i=0; i<SITL_NUM_CHANNELS; i++) {
+        if (engine_fail & 1U<<i) {
+            if (_vehicle != Rover) {
+                input.servos[i] = ((input.servos[i]-1000) * engine_mul) + 1000;
+            } else {
+                input.servos[i] = static_cast<uint16_t>(((input.servos[i] - 1500) * engine_mul) + 1500);
+            }
+        }
     }
 
     if (_vehicle == ArduPlane) {

@@ -193,7 +193,7 @@ public:
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
-    AP_Int8  engine_fail; // engine servo to fail (0-7)
+    AP_Int16  engine_fail; // engine servo to fail (0-7)
 
     AP_Float gps_noise[2]; // amplitude of the gps altitude error
     AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
