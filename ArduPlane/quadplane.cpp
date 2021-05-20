@@ -2601,7 +2601,7 @@ void QuadPlane::vtol_position_controller(void)
         }
 
         // speed for crossover to POSITION1 controller
-        const float aspeed_threshold = MAX(plane.aparm.airspeed_min, assist_speed);
+        const float aspeed_threshold = MAX(plane.aparm.airspeed_min-2, assist_speed);
 
         // run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
@@ -2675,6 +2675,15 @@ void QuadPlane::vtol_position_controller(void)
             vel_forward.last_ms = AP_HAL::millis();
         }
 
+        // handle loss of forward thrust in approach
+        if (poscontrol.get_state() == QPOS_APPROACH && aspeed < aspeed_threshold &&
+            motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 low speed as=%.1f at=%.1f",
+                            aspeed, aspeed_threshold);
+            poscontrol.set_state(QPOS_POSITION1);
+        }
+
+        
         if (poscontrol.get_state() == QPOS_APPROACH) {
             poscontrol_init_approach();
         }
