@@ -4,6 +4,7 @@
 from collections import OrderedDict
 import sys, os
 import fnmatch
+import re
 
 import waflib
 from waflib import Utils
@@ -348,15 +349,28 @@ class Board:
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
+def get_boards_list():
+    board_list = []
+    for dirname, dirlist, filenames in os.walk('libraries/AP_HAL_ChibiOS/hwdef'):
+        for f in filenames:
+            if not re.match("hwdef.*\.dat", f):
+                continue
+            if f.split('-')[-1] == 'bl.dat':
+                continue    # skip bl files
+            brd_name = os.path.basename(dirname)
+            if f != "hwdef.dat":
+                brd_name = '{}-{}'.format(brd_name, re.match("hwdef-(.*)\.dat", f).group(1))
+            board_list.append((brd_name, os.path.join(dirname, f)))
+    return board_list
+
 def add_dynamic_boards():
     '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        if d in _board_classes.keys():
+    board_list = get_boards_list()
+    for brd_name, hwdef in board_list:
+        if brd_name in _board_classes.keys():
             continue
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            newclass = type(d, (chibios,), {'name': d})
+            newclass = type(brd_name, (chibios,), {'name': brd_name})
 
 def get_boards_names():
     add_dynamic_boards()
@@ -366,17 +380,16 @@ def get_boards_names():
 def get_ap_periph_boards():
     '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        if d in list_ap:
+    board_list = get_boards_list()
+    for brd_name, hwdef in board_list:
+        if brd_name in list_ap:
             continue
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
             with open(hwdef, "r") as f:
                 if '-periph' in f.readline():  # try to get -periph include
-                    list_ap.append(d)
-                if 'AP_PERIPH' in f.read():
-                    list_ap.append(d)
+                    list_ap.append(brd_name)
+                if 'CAN_APP_NODE_NAME' in f.read():
+                    list_ap.append(brd_name)
     list_ap = list(set(list_ap))
     return list_ap
 

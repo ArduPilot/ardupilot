@@ -370,19 +370,36 @@ def configure(cfg):
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
     import subprocess
-
+    env.SUBTYPE_OPTION = ''
+    subtype = None
     if env.BOOTLOADER:
-        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        hwdef_in = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        if not os.path.exists(hwdef_in):
+            # try subtype
+            maintype = re.match("(.*)-",env.BOARD).group(1)
+            subtype = env.BOARD.split('-')[-1]
+        if not os.path.exists(hwdef_in):
+            # try maintype bl
+            maintype = re.match("(.*)-",env.BOARD).group(1)
+            hwdef_in = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % maintype)
         env.BOOTLOADER_OPTION="--bootloader"
     else:
-        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        hwdef_in = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        if not os.path.exists(hwdef_in):
+            # try subtype
+            maintype = re.match("(.*)-",env.BOARD).group(1)
+            subtype = env.BOARD.split('-')[-1]
+            hwdef_in = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-%s.dat' % (maintype, subtype))
         env.BOOTLOADER_OPTION=""
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
+    env.HWDEF = hwdef_in
     python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    if subtype is not None:
+        env.SUBTYPE_OPTION = '--subtype %s' % subtype
+    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}' {6}".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS, env.SUBTYPE_OPTION)
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
@@ -406,8 +423,9 @@ def build(bld):
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s'" % (
-            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
+        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s' %s" % (
+            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters,
+            bld.env.SUBTYPE_OPTION),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld'),
