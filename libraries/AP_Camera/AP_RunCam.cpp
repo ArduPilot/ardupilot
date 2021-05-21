@@ -704,7 +704,7 @@ void AP_RunCam::handle_5_key_simulation_response(const Request& request)
     _waiting_device_response = false;
 }
 
-// command to stop recording
+// command to start recording
 AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
     if (DeviceType(_cam_type.get()) == DeviceType::Split4k) {
         return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
