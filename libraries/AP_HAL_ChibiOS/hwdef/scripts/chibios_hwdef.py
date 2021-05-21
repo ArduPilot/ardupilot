@@ -21,6 +21,8 @@ parser.add_argument(
 parser.add_argument(
     'hwdef', type=str, default=None, help='hardware definition file')
 parser.add_argument(
+    '--subtype', type=str, default=None, help='subtype of the board')
+parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
 
 args = parser.parse_args()
@@ -2151,11 +2153,44 @@ def process_file(filename):
         else:
             process_line(line)
 
+def add_config_from_file(config, filename):
+    try:
+        f = open(filename, "r")
+    except Exception:
+        error("Unable to open file %s" % filename)
+    for line in f.readlines():
+        line = line.split('#')[0] # ensure we discard the comments
+        line = line.strip()
+        if len(line) == 0 or line[0] == '#':
+            continue
+        a = shlex.split(line)
+        if a[0] == "include" and len(a) > 1:
+            include_file = a[1]
+            if include_file[0] != '/':
+                dir = os.path.dirname(filename)
+                include_file = os.path.normpath(
+                    os.path.join(dir, include_file))
+            print("Including %s" % include_file)
+            add_config_from_file(config, include_file)
+        elif a[0] == config and len(a) > 1:
+            process_line(line)
+
 def add_apperiph_defaults(f):
     '''add default defines for peripherals'''
     if env_vars.get('AP_PERIPH',0) == 0:
         # not AP_Periph
         return
+    if get_config('CAN_APP_NODE_NAME', required=False) is None:
+        if args.bootloader:
+            #try scanning the related hwdef
+            if args.subtype:
+                add_config_from_file('CAN_APP_NODE_NAME', 
+                        os.path.dirname(args.hwdef) + '/hwdef-{}.dat'.format(args.subtype))
+            else:
+                add_config_from_file('CAN_APP_NODE_NAME', 
+                        os.path.dirname(args.hwdef) + '/hwdef.dat')
+
+    f.write('#define CAN_APP_NODE_NAME {}'.format(get_config('CAN_APP_NODE_NAME')))
     print("Setting up as AP_Periph")
     f.write('''
 #ifndef HAL_LOGGING_ENABLED
