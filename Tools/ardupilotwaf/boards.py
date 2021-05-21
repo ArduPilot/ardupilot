@@ -404,6 +404,7 @@ Please use a replacement build as follows:
 
         boards = _board_classes.keys()
         if not ctx.env.BOARD in boards:
+            # warning: the output of this command is parsed by build_binaries.py
             ctx.fatal(
                 "Invalid board '%s': choices are\n%sInvalid board '%s'.  Options shown above this line." %
                 (ctx.env.BOARD,
