@@ -18,6 +18,8 @@ public:
 
 	int32_t get_rate_out(float desired_rate, float scaler);
 	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
+    float   get_coordination_gain() { return _roll_ff; }
+    float   get_angle_error_gain() { return 1.0f / MAX(gains.tau, 0.1f); }
 
 	void reset_I();
 

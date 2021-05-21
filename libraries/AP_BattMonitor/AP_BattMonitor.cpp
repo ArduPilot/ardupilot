@@ -325,6 +325,15 @@ bool AP_BattMonitor::healthy(uint8_t instance) const {
     return instance < _num_instances && state[instance].healthy;
 }
 
+bool AP_BattMonitor::powered(void) const {
+    for (uint8_t instance=0; instance < _num_instances; instance++) {
+        if (state[instance].voltage > 5.0f) {
+            return true;
+        };
+    }
+    return false;
+}
+
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
 {

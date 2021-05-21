@@ -3,6 +3,7 @@
  */
 #include "AP_Arming.h"
 #include "Plane.h"
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 constexpr uint32_t AP_ARMING_DELAY_MS = 2000; // delay from arming to start of motor spoolup
 
@@ -267,6 +268,7 @@ void AP_Arming_Plane::update_soft_armed()
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+    AP::logger().set_vehicle_powered(AP::battery().powered());
 
     // update delay_arming oneshot
     if (delay_arming &&

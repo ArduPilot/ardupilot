@@ -25,6 +25,7 @@ public:
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster
 	virtual void update_pitch_throttle( int32_t hgt_dem_cm,
+										float hgt_rate_dem_ms, // first time derivative of 0.01*hgt_dem_cm
 										int32_t EAS_dem_cm,
 										enum AP_Vehicle::FixedWing::FlightStage flight_stage,
                                         float distance_beyond_land_wp,
@@ -41,6 +42,17 @@ public:
 	// should return -9000 to +9000
 	virtual int32_t get_pitch_demand(void)=0;
 	
+    // demanded vertical acceleration in m/s/s - up is positive
+    // set input argument clipping as:
+	// 1 when acceleraton is clipping in the up direction, -1 when clipping in the down direction, 0 when not clipping
+    virtual float get_vert_accel_demand(int8_t clipping)=0;
+
+    // get upper pitch angle limit in rad/s
+    virtual float get_pitch_max(void)=0;
+
+    // get lower pitch angle limit in rad/s
+    virtual float get_pitch_min(void)=0;
+
 	// Rate of change of velocity along X body axis in m/s^2
     virtual float get_VXdot(void)=0;
 	

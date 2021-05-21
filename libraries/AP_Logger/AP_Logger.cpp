@@ -73,8 +73,8 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
-    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. This can make for very large logfiles but can help a lot when tracking down startup issues
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. If set to 2 it will be enabled when disarmed only if battery is connected. This can make for very large logfiles but can help a lot when tracking down startup issues
+    // @Values: 0:Disabled,1:Enabled,2:Enabled On Battery
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
@@ -1357,7 +1357,7 @@ bool AP_Logger::log_while_disarmed(void) const
     if (_force_log_disarmed) {
         return true;
     }
-    if (_params.log_disarmed != 0) {
+    if (_params.log_disarmed == 1 || (_params.log_disarmed == 2 && _powered)) {
         return true;
     }
 

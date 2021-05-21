@@ -91,7 +91,7 @@ bool Plane::allow_reverse_thrust(void) const
         allow = false;
         break;
     default:
-        // all other control_modes are auto_throttle_mode=false.
+        // all other control_modes are control_mode->does_auto_throttle()==false.
         // If we are not controlling throttle, don't limit it.
         allow = true;
         break;
