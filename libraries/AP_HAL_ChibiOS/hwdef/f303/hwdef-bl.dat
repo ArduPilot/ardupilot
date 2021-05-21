@@ -1,0 +1,4 @@
+include hwdef-bl.inc
+
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0

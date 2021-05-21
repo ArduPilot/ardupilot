@@ -97,4 +97,4 @@ RAM_RESERVE_START 256
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
-define CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"
+CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"

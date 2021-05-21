@@ -71,7 +71,7 @@ PB9 CAN1_TX CAN1
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
-define CAN_APP_NODE_NAME "org.ardupilot.FreeflyRTK"
+CAN_APP_NODE_NAME "org.ardupilot.FreeflyRTK"
 
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0

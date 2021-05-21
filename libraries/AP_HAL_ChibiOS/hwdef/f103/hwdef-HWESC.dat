@@ -1,0 +1,7 @@
+include hwdef.inc
+
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+CAN_APP_NODE_NAME "org.ardupilot.ap_periph_HWESC"
+
+define HAL_PERIPH_ENABLE_HWESC

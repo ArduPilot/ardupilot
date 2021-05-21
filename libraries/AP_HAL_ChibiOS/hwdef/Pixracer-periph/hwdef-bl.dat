@@ -53,7 +53,7 @@ PE15 MAG_CS CS
 PD0 CAN1_RX CAN1
 PD1 CAN1_TX CAN1
 
-define CAN_APP_NODE_NAME "org.ardupilot.Pixracer-periph"
+CAN_APP_NODE_NAME "org.ardupilot.Pixracer-periph"
 
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
