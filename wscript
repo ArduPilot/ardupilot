@@ -362,6 +362,12 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.start_msg('Debug build')
+    if cfg.env.DEBUG:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
     cfg.env.append_value('GIT_SUBMODULES', 'mavlink')
 
     cfg.env.prepend_value('INCLUDES', [
