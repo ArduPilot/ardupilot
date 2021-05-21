@@ -21,7 +21,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#define FEMTO_USE_UAV_STATUS_MSG 0      /**< @TODO: best pos msg will be replaced by uav status msg in the future */
 
 class AP_GPS_FEMTO : public AP_GPS_Backend
 {
@@ -94,7 +93,7 @@ private:
         uint8_t 	satellites_used;	/** Number of satellites used*/
         uint8_t		heading_type;		/**< 0 invalid,5 for float,6 for fix*/
     };
-#if FEMTO_USE_UAV_STATUS_MSG
+
     /** uav status data */
     struct PACKED femto_uav_status_t
     {
@@ -119,40 +118,10 @@ private:
             uint16_t  status;
         } sat_status[64];               /**< uav status of all satellites */
     };
-#else
-    /** best pos data */
-    struct PACKED femto_best_pos_t
-    {
-        uint32_t    solstat;            /**< Solution status */
-        uint32_t    postype;            /**< Position type */
-        double      lat;                /**< latitude (deg) */
-        double      lng;                /**< longitude (deg) */
-        double      hgt;                /**< height above mean sea level (m) */
-        float       undulation;         /**< relationship between the geoid and the ellipsoid (m) */
-        uint32_t    datumid;            /**< datum id number */
-        float       latsdev;            /**< latitude standard deviation (m) */
-        float       lngsdev;            /**< longitude standard deviation (m) */
-        float       hgtsdev;            /**< height standard deviation (m) */
-        uint8_t     stnid[4];           /**< base station id */
-        float       diffage;            /**< differential position age (sec) */
-        float       sol_age;            /**< solution age (sec) */
-        uint8_t     svstracked;         /**< number of satellites tracked */
-        uint8_t     svsused;            /**< number of satellites used in solution */
-        uint8_t     svsl1;              /**< number of GPS plus GLONASS L1 satellites used in solution */
-        uint8_t     svsmultfreq;        /**< number of GPS plus GLONASS L2 satellites used in solution */
-        uint8_t     resv;               /**< reserved */
-        uint8_t     extsolstat;         /**< extended solution status - OEMV and greater only */
-        uint8_t     galbeisigmask;
-        uint8_t     gpsglosigmask;
-    };
-#endif
+
     /** save msg body buffer */
     union PACKED msg_buffer_u {
-#if FEMTO_USE_UAV_STATUS_MSG
-       femto_uav_status_t uav_status;
-#else
-        femto_best_pos_t best_pos;
-#endif
+        femto_uav_status_t uav_status;
         femto_uav_gps_t uav_gps;
 
         uint8_t bytes[1024];
@@ -191,12 +160,7 @@ private:
     const uint8_t FEMTO_PREAMBLE3 = 0x12;
 
     const uint16_t FEMTO_MSG_ID_UAVGPS = 8001;
-#if FEMTO_USE_UAV_STATUS_MSG
     const uint16_t FEMTO_MSG_ID_UAVSTATUS = 8017;
-#else
-    const uint8_t  FEMTO_MSG_ID_BESTPOS = 42;
-#endif
-
 
     const uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
     
@@ -208,13 +172,9 @@ private:
     uint8_t _init_blob_index;
     uint32_t _init_blob_time;
 
-#if FEMTO_USE_UAV_STATUS_MSG
+
     bool _new_uavstatus;    /**< have new uav status */
     uint32_t _last_uav_status_time;
-#else
-    bool _new_bestpos;      /**< have new best pos */
-    uint32_t _last_best_pos_time;
-#endif
 
     bool _new_uavgps;       /**< have new uav gps */
     uint32_t _last_uav_gps_time;

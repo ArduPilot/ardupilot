@@ -41,11 +41,7 @@ do {                                            \
 const char* const AP_GPS_FEMTO::_initialisation_blob[] {
     "\r\n\r\nunlogall\r\n",         /**< cleanup enviroment */
     "log uavgpsb ontime 0.2\r\n",   /**< get uavgps */
-#if FEMTO_USE_UAV_STATUS_MSG
     "log uavstatus ontime 0.2\r\n", /**< get uavstatus */
-#else
-    "log bestposb ontime 0.2\r\n",  /**< get bestpos */
-#endif
 };
 
 AP_GPS_FEMTO::AP_GPS_FEMTO(AP_GPS &_gps, AP_GPS::GPS_State &_state,
@@ -243,7 +239,7 @@ bool AP_GPS_FEMTO::process_message(void)
 
         _new_uavgps = true;
     }
-#if FEMTO_USE_UAV_STATUS_MSG
+
     if (messageid == FEMTO_MSG_ID_UAVSTATUS) { /**< uavstatus */
         const femto_uav_status_t &uavstatus = femto_msg.data.uav_status;
 
@@ -260,25 +256,6 @@ bool AP_GPS_FEMTO::process_message(void)
     
         return true;
     }
-#else
-    if (messageid == FEMTO_MSG_ID_BESTPOS) { /**< bestpos */
-        const femto_best_pos_t &bestpos = femto_msg.data.best_pos;
-
-        state.rtk_age_ms = bestpos.diffage * 1000;
-
-        _last_best_pos_time = (uint32_t) femto_msg.header.femto_header.tow;
-
-        _new_bestpos = true;
-    }
-
-    /** ensure uavstatus and uavgps stay insync */
-    if (_new_bestpos && _new_uavgps && _last_best_pos_time == _last_uav_gps_time) {
-        _new_bestpos = _new_uavgps = false;
-    
-        return true;
-    }
-#endif
-
 
     return false;
 }
