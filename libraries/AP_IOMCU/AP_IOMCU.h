@@ -154,6 +154,9 @@ private:
     // have we forced the safety off?
     bool safety_forced_off;
 
+    // was safety off on last status?
+    bool last_safety_off;
+
     void send_servo_out(void);
     void read_rc_input(void);
     void read_servo(void);
