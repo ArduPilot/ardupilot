@@ -448,6 +448,45 @@ void Vector2<T>::rotate(float angle_rad)
     y = ry;
 }
 
+template <typename T>
+bool Vector2<T>::point_on_segment(const Vector2<T>& point, const Vector2<T>& seg_start, const Vector2<T>& seg_end)
+{
+    const float expected_run = seg_end.x-seg_start.x;
+    const float intersection_run = point.x-seg_start.x;
+    // check slopes are identical:
+    if (fabsf(expected_run) < FLT_EPSILON) {
+        if (fabsf(intersection_run) > FLT_EPSILON) {
+            return false;
+        }
+    } else {
+        const float expected_slope = (seg_end.y-seg_start.y)/expected_run;
+        const float intersection_slope = (point.y-seg_start.y)/intersection_run;
+        if (fabsf(expected_slope - intersection_slope) > FLT_EPSILON) {
+            return false;
+        }
+    }
+    // check for presence in bounding box
+    if (seg_start.x < seg_end.x) {
+        if (point.x < seg_start.x || point.x > seg_end.x) {
+            return false;
+        }
+    } else {
+        if (point.x < seg_end.x || point.x > seg_start.x) {
+            return false;
+        }
+    }
+    if (seg_start.y < seg_end.y) {
+        if (point.y < seg_start.y || point.y > seg_end.y) {
+            return false;
+        }
+    } else {
+        if (point.y < seg_end.y || point.y > seg_start.y) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // only define for float
 template class Vector2<float>;
 
