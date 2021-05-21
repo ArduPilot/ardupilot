@@ -170,19 +170,8 @@ is bob we will attempt to checkout bob-AVR'''
 
         try:
             out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
-            lines = out.split('\n')
-            needles = ["BOARDTEST' (choose from", "BOARDTEST': choices are"]
-            for line in lines:
-                for needle in needles:
-                    idx = line.find(needle)
-                    if idx != -1:
-                        break
-                if idx != -1:
-                    line = line[idx+len(needle):-1]
-                    line = line.replace("'", "")
-                    line = line.replace(" ", "")
-                    boards = line.split(",")
-                    return board not in boards
+            lines = [x.rstrip().lstrip() for x in out.split('\n')]
+            return board in lines
         except IOError as e:
             if e.errno != 2:
                 raise
