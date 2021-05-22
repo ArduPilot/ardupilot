@@ -106,16 +106,6 @@ static uint8_t hex2nibble(char c)
     return out;
 }
 
-int SLCAN::CANIface::set_port(AP_HAL::UARTDriver* port)
-{
-    if (port == nullptr) {
-        return -1;
-    }
-    _port = port;
-    return 0;
-}
-
-
 bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
 {
     AP_HAL::CANIface::CanRxItem frm;
