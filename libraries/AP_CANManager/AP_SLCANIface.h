@@ -100,9 +100,6 @@ public:
     // Initialisation of SLCAN Passthrough method of operation
     bool init_passthrough(uint8_t i);
 
-    // Set UART port to be used with slcan interface
-    int set_port(AP_HAL::UARTDriver* port);
-
     void reset_params();
     int8_t get_iface_num() const
     {
