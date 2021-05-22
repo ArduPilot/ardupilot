@@ -560,7 +560,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-            if (gps.num_sats() >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
+            if (gps.num_sats() >= AP::ahrs().get_gps_minsats() && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.0f;
             } else if (gps.num_sats() == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.4f;
