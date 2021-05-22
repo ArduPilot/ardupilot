@@ -361,7 +361,7 @@ class AutoTestQuadPlane(AutoTest):
         # should not change just because we arm:
         # note that Q-modes always consider themselves as flying when armed,
         # thus the IN_AIR just here.
-#FIXME: removed because state isn't well-reflected; fixed in future PR
+# FIXME: removed because state isn't well-reflected; fixed in future PR
 #        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
 #                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
         self.change_mode("MANUAL")
