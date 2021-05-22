@@ -191,6 +191,8 @@ public:
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
 
+    int8_t get_gps_minsats() const { return _gps_minsats; }
+
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
     int32_t pitch_sensor;
