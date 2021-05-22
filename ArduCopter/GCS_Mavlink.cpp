@@ -809,9 +809,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             } else {
                 copter.wp_nav->set_speed_xy(packet.param2 * 100.0f);
             }
-            return MAV_RESULT_ACCEPTED;
         }
-        return MAV_RESULT_FAILED;
+        return MAV_RESULT_ACCEPTED;
 
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_MISSION_START:
