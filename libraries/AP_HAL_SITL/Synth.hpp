@@ -33,7 +33,7 @@ struct sTone
 ////////////////////////////////////////////////////////////
 // Converts frequency (Hz) to angular velocity
 ////////////////////////////////////////////////////////////
-const double PI = 3.14159265359;
+const double PI = M_PI;
 double w(const double dHertz)
 {
     return dHertz * 2.0 * PI;
