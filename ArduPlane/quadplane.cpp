@@ -1913,7 +1913,7 @@ void QuadPlane::update_transition(void)
             // using vectored yaw for tilt-rotors as the yaw control
             // is needed to maintain good control in forward
             // transitions
-            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->reset_yaw_target_and_rate();
             attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         }
 
@@ -1965,7 +1965,7 @@ void QuadPlane::update_transition(void)
         // We disable this for vectored yaw tilt rotors as they do need active
         // yaw control throughout the transition
         if (!tilt.is_vectored) {
-            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->reset_yaw_target_and_rate();
             attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         }
         break;
