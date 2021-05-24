@@ -147,7 +147,7 @@ void ModeLoiter::run()
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+        attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
