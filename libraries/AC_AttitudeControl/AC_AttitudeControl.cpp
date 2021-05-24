@@ -875,6 +875,17 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
     return rot_accel;
 }
 
+// Sets attitude target to vehicle attitude and sets all rates to zero
+void AC_AttitudeControl::set_attitude_target_to_current_attitude()
+{
+    // move attitude target to current attitude
+    _ahrs.get_quat_body_to_ned(_attitude_target);
+
+    // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
+    _ang_vel_target.zero();
+    _euler_angle_target.zero();
+}
+
 // Sets yaw target to vehicle heading and sets yaw rate to zero
 void AC_AttitudeControl::reset_yaw_target_and_rate()
 {
