@@ -114,7 +114,7 @@ void ModeThrow::run()
         }
 
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         break;
@@ -129,7 +129,7 @@ void ModeThrow::run()
         }
 
         // Hold throttle at zero during the throw and continually reset the attitude controller
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
 
