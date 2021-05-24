@@ -133,7 +133,7 @@ public:
     void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target); }
 
     // Sets yaw target to vehicle heading and sets yaw rate to zero
-    void set_yaw_target_to_current_heading();
+    void reset_yaw_target_and_rate();
 
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();

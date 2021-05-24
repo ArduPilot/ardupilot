@@ -876,7 +876,7 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
 }
 
 // Sets yaw target to vehicle heading and sets yaw rate to zero
-void AC_AttitudeControl::set_yaw_target_to_current_heading()
+void AC_AttitudeControl::reset_yaw_target_and_rate()
 {
     // move attitude target to current heading
     float yaw_shift = _ahrs.yaw - _euler_angle_target.z;
