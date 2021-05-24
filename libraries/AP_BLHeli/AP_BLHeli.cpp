@@ -1505,14 +1505,14 @@ void AP_BLHeli::log_bidir_telemetry(void)
 
     // ask the next ESC for telemetry
     uint8_t idx_pos = last_telem_esc;
-    for (uint8_t idx = (idx_pos + 1) % num_motors;
-        idx != idx_pos;
-        idx = (idx_pos + 1) % num_motors) {
-        uint16_t mask = 1U << motor_map[idx];
-        if (SRV_Channels::have_digital_outputs(mask)) {
-            last_telem_esc = idx;
+    uint8_t idx = (idx_pos + 1) % num_motors;
+    for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+        if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
             break;
         }
+    }
+    if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
+        last_telem_esc = idx;
     }
 }
 
@@ -1574,16 +1574,17 @@ void AP_BLHeli::update_telemetry(void)
     if (now - last_telem_request_us >= telem_rate_us) {
         // ask the next ESC for telemetry
         uint8_t idx_pos = last_telem_esc;
-        for (uint8_t idx = (idx_pos + 1) % num_motors;
-            idx != idx_pos;
-            idx = (idx_pos + 1) % num_motors) {
-            uint16_t mask = 1U << motor_map[idx];
-            if (SRV_Channels::have_digital_outputs(mask)) {
-                hal.rcout->set_telem_request_mask(mask);
-                last_telem_esc = idx;
-                last_telem_request_us = now;
+        uint8_t idx = (idx_pos + 1) % num_motors;
+        for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+            if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
                 break;
             }
+        }
+        uint16_t mask = 1U << motor_map[idx];
+        if (SRV_Channels::have_digital_outputs(mask)) {
+            hal.rcout->set_telem_request_mask(mask);
+            last_telem_esc = idx;
+            last_telem_request_us = now;
         }
     }
 }
