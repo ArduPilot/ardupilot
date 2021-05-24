@@ -101,7 +101,7 @@ void ModePosHold::run()
 
     case AltHold_MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -141,7 +141,7 @@ void ModePosHold::run()
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update(false);
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         init_wind_comp_estimate();
         FALLTHROUGH;
 

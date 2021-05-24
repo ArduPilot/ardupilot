@@ -131,7 +131,7 @@ void ModeSystemId::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         break;
 
@@ -140,7 +140,7 @@ void ModeSystemId::run()
         // Tradheli initializes targets when going from disarmed to armed state. 
         // init_targets_on_arming is always set true for multicopter.
         if (motors->init_targets_on_arming()) {
-            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->reset_yaw_target_and_rate();
             attitude_control->reset_rate_controller_I_terms_smoothly();
         }
         break;

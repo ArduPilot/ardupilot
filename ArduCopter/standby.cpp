@@ -18,6 +18,6 @@ void Copter::standby_update()
     }
 
     attitude_control->reset_rate_controller_I_terms();
-    attitude_control->set_yaw_target_to_current_heading();
+    attitude_control->reset_yaw_target_and_rate();
     pos_control->standby_xyz_reset();
 }

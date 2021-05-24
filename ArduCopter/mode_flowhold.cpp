@@ -263,7 +263,7 @@ void ModeFlowHold::run()
     case AltHold_MotorStopped:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
-        copter.attitude_control->set_yaw_target_to_current_heading();
+        copter.attitude_control->reset_yaw_target_and_rate();
         copter.pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         flow_pi_xy.reset_I();
         break;
@@ -285,7 +285,7 @@ void ModeFlowHold::run()
         break;
 
     case AltHold_Landed_Ground_Idle:
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
