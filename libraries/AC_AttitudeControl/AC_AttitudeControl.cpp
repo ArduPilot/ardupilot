@@ -876,7 +876,7 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
 }
 
 // Sets attitude target to vehicle attitude and sets all rates to zero
-void AC_AttitudeControl::set_attitude_target_to_current_attitude()
+void AC_AttitudeControl::reset_target_and_rate()
 {
     // move attitude target to current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
