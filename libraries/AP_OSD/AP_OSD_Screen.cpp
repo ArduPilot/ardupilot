@@ -1612,7 +1612,7 @@ void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
         return;
     }
 
-    uint8_t esc_temp = uint8_t(etemp);
+    uint8_t esc_temp = uint8_t(etemp / 100);
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
 }
 
@@ -2021,7 +2021,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(clk);
     DRAW_SETTING(vtx_power);
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#ifdef HAL_WITH_ESC_TELEM
     DRAW_SETTING(blh_temp);
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);
