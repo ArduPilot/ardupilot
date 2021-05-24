@@ -194,6 +194,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
     // @Range: 0 100
     // @Units: %
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
@@ -465,6 +466,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
     // @Description: RC Channel to use for flight mode control
+    // @Range: 1 16
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
 
@@ -522,7 +525,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
     // @Units: cdeg
     // @Range: 0 9000
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
@@ -531,7 +534,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch up angle commanded in modes with stabilized limits.
     // @Units: cdeg
     // @Range: 0 9000
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
 
@@ -540,7 +543,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch down angle commanded in modes with stabilized limits
     // @Units: cdeg
     // @Range: -9000 0
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
@@ -650,6 +653,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: speed used for speed scaling calculations
     // @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
     // @Units: m/s
+    // @Range: 0 50
+    // @Increment: 0.1
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
 
@@ -664,6 +669,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Pitch angle offset
     // @Description: Offset applied to AHRS pitch used for in-flight pitch trimming. Correct ground leveling is better than changing this parameter.
     // @Units: cdeg
+    // @Range: -4500 4500
+    // @Increment: 10
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
@@ -685,6 +692,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
+    // @Increment: 1
     // @Units: %
     // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
@@ -703,6 +711,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
 	// @Units: %
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 
@@ -719,6 +728,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: OVERRIDE_CHAN
     // @DisplayName: IO override channel
     // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
+    // @Range: 0 16
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
 
@@ -767,6 +778,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
     // @Range: 10 127
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
@@ -1198,6 +1210,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Recommend 4.2 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FWD_BAT_VOLT_MAX", 23, ParametersG2, fwd_thr_batt_voltage_max, 0.0f),
 
@@ -1206,6 +1219,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FWD_BAT_VOLT_MIN", 24, ParametersG2, fwd_thr_batt_voltage_min, 0.0f),
 
