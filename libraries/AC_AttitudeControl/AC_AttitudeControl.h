@@ -130,7 +130,7 @@ public:
     void reset_rate_controller_I_terms_smoothly();
 
     // Sets attitude target to vehicle attitude and sets all rates to zero
-    void set_attitude_target_to_current_attitude();
+    void reset_target_and_rate();
 
     // Sets yaw target to vehicle heading and sets yaw rate to zero
     void reset_yaw_target_and_rate();
