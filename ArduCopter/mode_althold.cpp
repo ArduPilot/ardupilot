@@ -45,12 +45,12 @@ void ModeAltHold::run()
 
     case AltHold_MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHold_Landed_Ground_Idle:
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
