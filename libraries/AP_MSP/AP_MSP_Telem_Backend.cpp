@@ -894,7 +894,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *d
             float rpm = 0.0f;
             telem.get_rpm(i, rpm);
             telem.get_temperature(i, temp);
-            sbuf_write_u8(dst, uint8_t(temp));        // deg
+            sbuf_write_u8(dst, uint8_t(temp / 100));        // deg
             sbuf_write_u16(dst, uint16_t(rpm * 0.1));
         }
     }
