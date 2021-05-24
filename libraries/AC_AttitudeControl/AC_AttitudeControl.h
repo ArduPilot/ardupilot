@@ -129,8 +129,8 @@ public:
     // reset rate controller I terms smoothly to zero in 0.5 seconds
     void reset_rate_controller_I_terms_smoothly();
 
-    // Sets attitude target to vehicle attitude
-    void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target); }
+    // Sets attitude target to vehicle attitude and sets all rates to zero
+    void set_attitude_target_to_current_attitude();
 
     // Sets yaw target to vehicle heading and sets yaw rate to zero
     void reset_yaw_target_and_rate();
