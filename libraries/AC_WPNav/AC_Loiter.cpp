@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @DisplayName: Loiter Horizontal Maximum Speed
     // @Description: Defines the maximum speed in cm/s which the aircraft will travel horizontally while in loiter mode
     // @Units: cm/s
-    // @Range: 20 2000
+    // @Range: 20 3500
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("SPEED", 2, AC_Loiter, _speed_cms, LOITER_SPEED_DEFAULT),
