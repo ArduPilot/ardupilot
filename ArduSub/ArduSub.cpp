@@ -195,7 +195,7 @@ void Sub::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
+    if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || !mode_has_manual_throttle(control_mode))) {
         pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
