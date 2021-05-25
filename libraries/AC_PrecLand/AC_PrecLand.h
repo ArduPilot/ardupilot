@@ -29,6 +29,9 @@ public:
     AC_PrecLand(const AC_PrecLand &other) = delete;
     AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
+    static AC_PrecLand *get_singleton();
+    static AC_PrecLand *_singleton;
+
     // perform any required initialisation of landing controllers
     // update_rate_hz should be the rate at which the update method will be called in hz
     void init(uint16_t update_rate_hz);
@@ -147,4 +150,8 @@ private:
     // write out PREC message to log:
     void Write_Precland();
     uint32_t last_log_ms;  // last time we logged
+};
+
+namespace AP {
+AC_PrecLand *precland();
 };

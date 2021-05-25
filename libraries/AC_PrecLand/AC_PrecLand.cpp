@@ -119,6 +119,13 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 //
 AC_PrecLand::AC_PrecLand()
 {
+    if (_singleton) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Too many precland");
+#endif
+        return;
+    }
+    _singleton = this;
     // set parameters to defaults
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -494,4 +501,19 @@ void AC_PrecLand::Write_Precland()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Get the AP_Generator singleton
+AC_PrecLand *AC_PrecLand::get_singleton()
+{
+    return _singleton;
+}
+
+AC_PrecLand *AC_PrecLand::_singleton;
+
+namespace AP {
+AC_PrecLand *precland()
+{
+    return AC_PrecLand::get_singleton();
+}
+};
 
