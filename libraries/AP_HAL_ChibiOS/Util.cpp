@@ -179,7 +179,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 
         pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
     }
-#endif
+#endif // HAL_PWM_ALARM
 #if HAL_DSHOT_ALARM
     // don't play the motors while flying
     if (!(_toneAlarm_types & ALARM_DSHOT) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
@@ -199,7 +199,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
     } else {  // G+
         hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
     }
-#endif // HAL_PWM_ALARM
+#endif // HAL_DSHOT_ALARM
 }
 #endif
 
