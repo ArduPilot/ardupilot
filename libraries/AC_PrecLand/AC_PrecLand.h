@@ -129,6 +129,7 @@ private:
 
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
+    float                       _dist;                  // Distance to target measured from rangefinder or sensor
 
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {

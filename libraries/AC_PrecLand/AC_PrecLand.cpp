@@ -407,13 +407,13 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
         bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
-            float dist, alt;
+            float alt;
             if (_backend->distance_to_target() > 0.0f) {
-                dist = _backend->distance_to_target();
-                alt = dist * target_vec_unit_ned.z;
+                _dist = _backend->distance_to_target();
+                alt = _dist * target_vec_unit_ned.z;
             } else {
                 alt = MAX(rangefinder_alt_m, 0.0f);
-                dist = alt / target_vec_unit_ned.z;
+                _dist = alt / target_vec_unit_ned.z;
             }
 
             // Compute camera position relative to IMU
@@ -421,7 +421,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             Vector3f cam_pos_ned = inertial_data_delayed->Tbn * (_cam_offset.get() - accel_body_offset);
 
             // Compute target position relative to IMU
-            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt) + cam_pos_ned;
+            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x * _dist, target_vec_unit_ned.y * _dist, alt) + cam_pos_ned;
             return true;
         }
     }
