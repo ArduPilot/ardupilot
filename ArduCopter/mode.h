@@ -207,6 +207,8 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
+        void update_weathervane(const int16_t pilot_yaw, const int16_t roll_cdeg, const int16_t pitch_cdeg);
+
     private:
 
         float look_ahead_yaw();
@@ -229,6 +231,8 @@ public:
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _rate_cds;
+
+        autopilot_yaw_mode _last_mode;
     };
     static AutoYaw auto_yaw;
 
@@ -421,9 +425,12 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
+        // 3rd bit available
+        AllowWeatherVaning                 = (1 << 4U) // set as 4th bit to mirror GUID_OPTION
     };
 
     bool use_pilot_yaw(void) const;
+    bool allows_weathervaning(void) const;
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -890,6 +897,7 @@ private:
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
         SetAttitudeTarget_ThrustAsThrust = (1U << 3),
+        AllowWeatherVaning = (1U << 4)
     };
 
     void pos_control_start();
@@ -902,6 +910,7 @@ private:
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool use_pilot_yaw(void) const;
+    bool allows_weathervaning(void) const;
 
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;

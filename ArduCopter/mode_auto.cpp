@@ -146,7 +146,12 @@ void ModeAuto::run()
 bool ModeAuto::allows_arming(AP_Arming::Method method) const
 {
     return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
-};
+}
+
+bool ModeAuto::allows_weathervaning(void) const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning);
+}
 
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
@@ -812,6 +817,11 @@ void ModeAuto::wp_run()
         }
     }
 
+    // if set and no pilot input for 3 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(target_yaw_rate, wp_nav->get_roll(), wp_nav->get_pitch());
+    }
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
@@ -833,6 +843,8 @@ void ModeAuto::wp_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE || auto_yaw.mode() == AUTO_YAW_WEATHERVANE) {
+        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
@@ -922,6 +934,12 @@ void ModeAuto::loiter_run()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    }
+
+    // if set and no pilot input for 3 sec weathervane copter into wind
+    if (allows_weathervaning()) {
+        auto_yaw.update_weathervane(target_yaw_rate, wp_nav->get_roll(), wp_nav->get_pitch());
+        target_yaw_rate += auto_yaw.rate_cds();
     }
 
     // set motors to full range

@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
+#include <AC_AttitudeControl/AC_WeatherVane.h>
 
 #if GRIPPER_ENABLED == ENABLED
  # include <AP_Gripper/AP_Gripper.h>
@@ -644,6 +645,8 @@ public:
 #endif
 
     AP_Int32 flight_options;
+
+    AC_WeatherVane weathervane;
 
 };
 
