@@ -122,7 +122,7 @@ void RCOutput::set_reversed_mask(uint16_t chanmask) {
     }
 }
 
-// Set the dshot outputs that should be reversed (as opposed to 3D)
+// Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
 void RCOutput::set_reversible_mask(uint16_t chanmask) {
     _reversible_mask |= chanmask;
