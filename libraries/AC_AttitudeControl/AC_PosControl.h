@@ -310,6 +310,7 @@ public:
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     Vector3f lean_angles_to_accel(const Vector3f& att_target_euler) const;
 
+    // write PSC and/or PSCZ logs
     void write_log();
 
     // provide feedback on whether arming would be a good idea right now:
