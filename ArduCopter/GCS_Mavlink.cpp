@@ -277,6 +277,17 @@ void GCS_MAVLINK_Copter::send_winch_status() const
 #endif
 }
 
+void GCS_MAVLINK_Copter::send_landing_target() const
+{
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand *precland = AP::precland();
+    if (precland == nullptr) {
+        return;
+    }
+    precland->send_landing_target(chan);
+#endif
+}
+
 uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
 {
     return copter.g.sysid_my_gcs;

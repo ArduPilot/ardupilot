@@ -66,6 +66,7 @@ private:
     void send_pid_tuning() override;
 
     void send_winch_status() const override;
+    void send_landing_target() const override;
 
     void send_wind() const;
 };

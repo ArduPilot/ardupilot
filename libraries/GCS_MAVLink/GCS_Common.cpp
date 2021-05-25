@@ -858,6 +858,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_LANDING_TARGET,        MSG_LANDING_TARGET},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4774,6 +4775,7 @@ void GCS_MAVLINK::send_generator_status() const
 #endif
 }
 
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5080,6 +5082,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
+        break;
+
+    case MSG_LANDING_TARGET:
+        CHECK_PAYLOAD_SIZE(LANDING_TARGET);
+        send_landing_target();
         break;
 
     default:

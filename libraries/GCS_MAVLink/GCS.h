@@ -268,6 +268,7 @@ public:
     void send_rpm() const;
     void send_generator_status() const;
     virtual void send_winch_status() const {};
+    virtual void send_landing_target() const {};
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
