@@ -1081,18 +1081,21 @@ void AC_PosControl::standby_xyz_reset()
     init_ekf_xy_reset();
 }
 
-// write log to dataflash
+// write PSC and/or PSCZ logs
 void AC_PosControl::write_log()
 {
-    float accel_x, accel_y;
-    lean_angles_to_accel_xy(accel_x, accel_y);
+    if (is_active_xy()) {
+        float accel_x, accel_y;
+        lean_angles_to_accel_xy(accel_x, accel_y);
+        AP::logger().Write_PSC(get_pos_target_cm(), _inav.get_position(), get_vel_target_cms(), _inav.get_velocity(), get_accel_target_cmss(), accel_x, accel_y);
+    }
 
-    AP::logger().Write_PSC(get_pos_target_cm(), _inav.get_position(), get_vel_target_cms(), _inav.get_velocity(), get_accel_target_cmss(), accel_x, accel_y);
-    AP::logger().Write_PSCZ(get_pos_target_cm().z, _inav.get_position().z,
-        get_vel_desired_cms().z, get_vel_target_cms().z, _inav.get_velocity().z,
-                            _accel_desired.z, get_accel_target_cmss().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
+    if (is_active_z()) {
+        AP::logger().Write_PSCZ(get_pos_target_cm().z, _inav.get_position().z,
+                                get_vel_desired_cms().z, get_vel_target_cms().z, _inav.get_velocity().z,
+                                _accel_desired.z, get_accel_target_cmss().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
+    }
 }
-
 
 ///
 /// private methods
