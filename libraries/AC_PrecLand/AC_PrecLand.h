@@ -72,6 +72,8 @@ public:
     // process a LANDING_TARGET mavlink message
     void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms);
 
+    void send_landing_target(mavlink_channel_t chan);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 

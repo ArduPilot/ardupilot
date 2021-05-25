@@ -468,6 +468,28 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 }
 
+// Send LANDING_TARGET mavlink message
+void AC_PrecLand::send_landing_target(mavlink_channel_t chan)
+{
+    mavlink_msg_landing_target_send(
+            chan,
+            _last_backend_los_meas_ms * 1000, // sensor/measurement timestamp in microseconds, either from epoch or since boot
+            0,
+            MAV_FRAME_LOCAL_NED, // frame
+            0,
+            0,
+            _dist, // distance to target, measured from rangefinder or sensor message
+            0,
+            0,
+            _target_pos_rel_out_NE.x, // x,
+            _target_pos_rel_out_NE.y, // y,
+            0,
+            0,
+            LANDING_TARGET_TYPE_LIGHT_BEACON, // TODO: use type from backend default to IRLOCK type,
+            target_acquired()  // use acquire as validator as that is use in the code for now
+    );
+}
+
 // Write a precision landing entry
 void AC_PrecLand::Write_Precland()
 {
