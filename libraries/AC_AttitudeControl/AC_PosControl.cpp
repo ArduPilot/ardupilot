@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _ACCZ_P
     // @DisplayName: Acceleration (vertical) controller P gain
     // @Description: Acceleration (vertical) controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
-    // @Range: 0.500 1.500
+    // @Range: 0.200 1.500
     // @Increment: 0.05
     // @User: Standard
 
