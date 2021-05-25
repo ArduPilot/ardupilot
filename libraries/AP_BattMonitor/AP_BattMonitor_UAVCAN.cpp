@@ -87,10 +87,15 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
 void AP_BattMonitor_UAVCAN::handle_battery_info(const BattInfoCb &cb)
 {
     WITH_SEMAPHORE(_sem_battmon);
-    _interim_state.temperature = cb.msg->temperature;
     _interim_state.voltage = cb.msg->voltage;
     _interim_state.current_amps = cb.msg->current;
     _soc = cb.msg->state_of_charge_pct;
+
+    if (!isnanf(cb.msg->temperature) && cb.msg->temperature > 0) {
+        // Temperature reported from battery in kelvin and stored internally in Celsius.
+        _interim_state.temperature = cb.msg->temperature - C_TO_KELVIN;
+        _interim_state.temperature_time = AP_HAL::millis();
+    }
 
     uint32_t tnow = AP_HAL::micros();
     uint32_t dt = tnow - _interim_state.last_time_micros;
@@ -130,12 +135,15 @@ void AP_BattMonitor_UAVCAN::read()
     // Copy over relevant states over to main state
     WITH_SEMAPHORE(_sem_battmon);
     _state.temperature = _interim_state.temperature;
+    _state.temperature_time = _interim_state.temperature_time;
     _state.voltage = _interim_state.voltage;
     _state.current_amps = _interim_state.current_amps;
     _state.consumed_mah = _interim_state.consumed_mah;
     _state.consumed_wh = _interim_state.consumed_wh;
     _state.last_time_micros = _interim_state.last_time_micros;
     _state.healthy = _interim_state.healthy;
+
+    _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
 }
 
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
