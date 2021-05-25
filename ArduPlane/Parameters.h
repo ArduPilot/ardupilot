@@ -410,7 +410,7 @@ public:
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
-    AP_Int16 use_reverse_thrust;
+    AP_Int32 use_reverse_thrust;
 
     // Failsafe
     AP_Int8 fs_action_short;
