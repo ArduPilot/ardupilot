@@ -277,8 +277,11 @@ public:
 
     // This implementation is borrowed from: http://geomalgorithms.com/a07-_distance.html
     // INPUT: 4 points corresponding to start and end of two line segments
-    // OUTPUT: shortest distance between segments, and closest point on segment 2, from segment 1, gets passed on reference as "intersection" 
-    static float segment_to_segment_dist(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& intersection) WARN_IF_UNUSED;
+    // OUTPUT: closest point on segment 2, from segment 1, gets passed on reference as "closest_point"
+    static void segment_to_segment_closest_point(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& closest_point);
+
+    // Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
+    static bool segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point);
 };
 
 typedef Vector3<int16_t>                Vector3i;
