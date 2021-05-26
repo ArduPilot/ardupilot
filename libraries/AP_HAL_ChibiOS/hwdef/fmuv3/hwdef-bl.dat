@@ -25,7 +25,6 @@ FLASH_RESERVE_START_KB 0
 
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # baudrate to run bootloader at on uarts
 define BOOTLOADER_BAUDRATE 115200
