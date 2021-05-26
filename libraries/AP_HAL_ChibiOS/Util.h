@@ -59,11 +59,9 @@ public:
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
     bool toneAlarm_init(uint8_t types) override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
     static uint8_t _toneAlarm_types;
-#endif
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
