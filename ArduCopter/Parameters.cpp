@@ -477,8 +477,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: ACRO_RP_EXPO
     // @DisplayName: Acro Roll/Pitch Expo
-    // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges
-    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Description: Acro roll/pitch Expo to allow faster rotation when stick at edges. 0: disables, 0.1: Very Low, 1.0: Maximum positive, -0.5: Maximum negative
     // @Range: -0.5 1.0
     // @User: Advanced
     GSCALAR(acro_rp_expo,  "ACRO_RP_EXPO",    ACRO_RP_EXPO_DEFAULT),
@@ -833,8 +832,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: ACRO_Y_EXPO
     // @DisplayName: Acro Yaw Expo
-    // @Description: Acro yaw expo to allow faster rotation when stick at edges
-    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Description: Acro yaw expo to allow faster rotation when stick at edges.0: disables, 0.1: Very Low, 1.0: Maximum positive, -0.5: Maximum negative
     // @Range: -0.5 1.0
     // @User: Advanced
     AP_GROUPINFO("ACRO_Y_EXPO", 9, ParametersG2, acro_y_expo, ACRO_Y_EXPO_DEFAULT),
