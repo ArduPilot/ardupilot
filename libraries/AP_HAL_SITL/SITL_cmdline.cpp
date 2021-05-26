@@ -457,6 +457,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
+        case 'h':
+            _usage();
+            exit(0);
         default:
             _usage();
             exit(1);
