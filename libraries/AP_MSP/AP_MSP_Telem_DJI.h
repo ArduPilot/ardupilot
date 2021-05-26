@@ -57,6 +57,7 @@ public:
     MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst) override;
 
     enum : uint8_t {
         DJI_FLAG_ARM = 0,

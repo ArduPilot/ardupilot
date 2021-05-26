@@ -344,6 +344,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
+
 #if HAL_WITH_ESC_TELEM
     // @Param: BLHTEMP_EN
     // @DisplayName: BLHTEMP_EN
