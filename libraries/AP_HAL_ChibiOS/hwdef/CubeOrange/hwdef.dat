@@ -18,6 +18,8 @@ APJ_BOARD_ID 140
 
 FLASH_SIZE_KB 2048
 
+CANFD_SUPPORTED 1
+
 # with 2M flash we can afford to optimize for speed
 env OPTIMIZE -O2
 

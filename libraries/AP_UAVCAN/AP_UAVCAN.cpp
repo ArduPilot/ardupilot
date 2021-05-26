@@ -99,6 +99,15 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
 
+#if HAL_CANFD_SUPPORTED
+    // @Param: SRV_RT
+    // @DisplayName: Bitmask to enable CANFD frames on publishers
+    // @Description: Maximum transmit rate for servo outputs
+    // @Bitmask: 0:SRV, 1:ESC, 2:LightsCommand, 3:BeepCommand, 4:SafetyState, 5:ArmingStatus, 6:RTCMStream
+    // @User: Advanced
+    AP_GROUPINFO("FD_BM", 5, AP_UAVCAN, _canfd_enable_bm, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -198,7 +207,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator, false);
 
     if (_node == nullptr) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
@@ -266,31 +275,38 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 
-    act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
+    act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node,
+                                                                                                   _canfd_enable_bm & (1<<PUB_CANFD_SRV));
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
-    esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*_node);
+    esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*_node,
+                                                                                      _canfd_enable_bm & (1<<PUB_CANFD_ESC));
     esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
-    rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*_node);
+    rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*_node,
+                                                                                                _canfd_enable_bm & (1<<PUB_CANFD_LIGHTSCOMMAND));
     rgb_led[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
-    buzzer[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::BeepCommand>(*_node);
+    buzzer[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::BeepCommand>(*_node,
+                                                                                             _canfd_enable_bm & (1<<PUB_CANFD_BEEPCOMMAND));
     buzzer[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     buzzer[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
-    safety_state[driver_index] = new uavcan::Publisher<ardupilot::indication::SafetyState>(*_node);
+    safety_state[driver_index] = new uavcan::Publisher<ardupilot::indication::SafetyState>(*_node,
+                                                                                           _canfd_enable_bm & (1<<PUB_CANFD_SAFETYSTATE));
     safety_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     safety_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
-    arming_status[driver_index] = new uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>(*_node);
+    arming_status[driver_index] = new uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>(*_node,
+                                                                                                 _canfd_enable_bm & (1<<PUB_CANFD_ARMINGSTATUS));
     arming_status[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     arming_status[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
-    rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node);
+    rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node,
+                                                                                           _canfd_enable_bm & (1<<PUB_CANFD_RTCM));
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
     

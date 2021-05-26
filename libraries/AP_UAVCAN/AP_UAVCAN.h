@@ -33,11 +33,19 @@
 
 
 #ifndef UAVCAN_NODE_POOL_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_SIZE 16384
+#else
 #define UAVCAN_NODE_POOL_SIZE 8192
+#endif
 #endif
 
 #ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 128
+#else
 #define UAVCAN_NODE_POOL_BLOCK_SIZE 64
+#endif
 #endif
 
 #ifndef UAVCAN_SRV_NUMBER
@@ -145,6 +153,16 @@ private:
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+    enum {
+        PUB_CANFD_SRV,
+        PUB_CANFD_ESC,
+        PUB_CANFD_LIGHTSCOMMAND,
+        PUB_CANFD_BEEPCOMMAND,
+        PUB_CANFD_SAFETYSTATE,
+        PUB_CANFD_ARMINGSTATUS,
+        PUB_CANFD_RTCM
+    };
+
     void loop(void);
 
     ///// SRV output /////
@@ -170,6 +188,11 @@ private:
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;
+#if HAL_CANFD_SUPPORTED
+    AP_Int32 _canfd_enable_bm;
+#else
+    static constexpr uint32_t _canfd_enable_bm = 0;
+#endif
 
     uavcan::Node<0> *_node;
 

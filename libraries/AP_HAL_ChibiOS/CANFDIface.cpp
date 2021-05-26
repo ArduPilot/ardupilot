@@ -56,20 +56,16 @@
 #define FDCAN2_IT0_IRQHandler      STM32_FDCAN2_IT0_HANDLER
 #define FDCAN2_IT1_IRQHandler      STM32_FDCAN2_IT1_HANDLER
 
-#if defined(STM32G4)
-// on G4 FIFO elements are spaced at 18 words
+// FIFO elements are spaced at 18 words
 #define FDCAN_FRAME_BUFFER_SIZE 18
-#else
-// on H7 they are spaced at 4 words
-#define FDCAN_FRAME_BUFFER_SIZE 4
-#endif
+
 
 //Message RAM Allocations in Word lengths
 
 #if defined(STM32H7)
-#define MAX_FILTER_LIST_SIZE 80U            //80 element Standard Filter List elements or 40 element Extended Filter List
-#define FDCAN_NUM_RXFIFO0_SIZE 104U         //26 Frames
-#define FDCAN_TX_FIFO_BUFFER_SIZE 128U      //32 Frames
+#define MAX_FILTER_LIST_SIZE 78U            //78 element Standard Filter List elements or 40 element Extended Filter List
+#define FDCAN_NUM_RXFIFO0_SIZE 108U         //6 Frames
+#define FDCAN_TX_FIFO_BUFFER_SIZE 126U      //7 Frames
 #define MESSAGE_RAM_END_ADDR 0x4000B5FC
 
 #elif defined(STM32G4)
@@ -242,6 +238,7 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
 
     const uint32_t prescaler = prescaler_bs / (1 + bs1_bs2_sum);
     if ((prescaler < 1U) || (prescaler > 1024U)) {
+        Debug("Timings: No Solution found\n");
         return false;              // No solution
     }
 
@@ -294,6 +291,9 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
         solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
     }
 
+    Debug("Timings: quanta/bit: %d, sample point location: %.1f%%\n",
+          int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
+
     /*
      * Final validation
      * Helpful Python:
@@ -304,11 +304,9 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
      *
      */
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
+        Debug("Timings: Invalid Solution %lu %lu %lu %lu %lu \n", pclk, prescaler, solution.bs1, solution.bs2, (pclk / (prescaler * (1 + solution.bs1 + solution.bs2))));
         return false;
     }
-
-    Debug("Timings: quanta/bit: %d, sample point location: %.1f%%\n",
-          int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
 
     out_timings.prescaler = uint16_t(prescaler - 1U);
     out_timings.sjw = 0;                                        // Which means one
@@ -317,11 +315,23 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
     return true;
 }
 
+static uint32_t bytes_to_word(const uint8_t data[]) {
+    return (uint32_t(data[3]) << 24) |
+           (uint32_t(data[2]) << 16) |
+           (uint32_t(data[1]) << 8)  |
+           (uint32_t(data[0]) << 0);
+}
+
 int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
                        CanIOFlags flags)
 {
+    if (!initialised_) {
+        return -1;
+    }
+
     stats.tx_requests++;
-    if (frame.isErrorFrame() || frame.dlc > 8 || !initialised_) {
+    if (frame.isErrorFrame() || (frame.dlc > 8 && !frame.isCanFDFrame()) ||
+        frame.dlc > 15) {
         stats.tx_rejected++;
         return -1;
     }
@@ -334,7 +344,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     uint8_t index;
 
     if ((can_->TXFQS & FDCAN_TXFQS_TFQF) != 0) {
-        stats.tx_rejected++;
+        stats.tx_overflow++;
         return 0;    //we don't have free space
     }
     index = ((can_->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
@@ -352,18 +362,22 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     if (frame.isRemoteTransmissionRequest()) {
         buffer[0] |= RTR;
     }
+
     //Write Data Length Code, and Message Marker
     buffer[1] =  frame.dlc << 16 | index << 24;
 
+    if (frame.isCanFDFrame()) {
+        buffer[1] |= FDF | BRS; // do CAN FD transfer and bit rate switching
+        stats.fdf_tx_requests++;
+        pending_tx_[index].canfd_frame = true;
+    } else {
+        pending_tx_[index].canfd_frame = false;
+    }
+
     // Write Frame to the message RAM
-    buffer[2] = (uint32_t(frame.data[3]) << 24) |
-                (uint32_t(frame.data[2]) << 16) |
-                (uint32_t(frame.data[1]) << 8)  |
-                (uint32_t(frame.data[0]) << 0);
-    buffer[3] = (uint32_t(frame.data[7]) << 24) |
-                (uint32_t(frame.data[6]) << 16) |
-                (uint32_t(frame.data[5]) << 8)  |
-                (uint32_t(frame.data[4]) << 0);
+    for (uint8_t i = 0, l = 2; i < AP_HAL::CANFrame::dlcToDataLength(frame.dlc); i+=4, l++) {
+        buffer[l] = bytes_to_word(&frame.data[i]);
+    }
 
     //Set Add Request
     can_->TXBAR = (1 << index);
@@ -645,6 +659,19 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
                   (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
 
+    if (!computeTimings(bitrate*8, timings)) { // Do 8x fast Data transmission for CAN FD frames
+        can_->CCCR &= ~FDCAN_CCCR_INIT;
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
+        return false;
+    }
+    Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
+          unsigned(timings.prescaler), unsigned(timings.bs1), unsigned(timings.bs2));
+
     can_->DBTP = ((timings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
                   (timings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_DBTP_DBRP_Pos));
@@ -679,6 +706,8 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     can_->TXBTIE = 0xFFFFFFFF;
 #endif
     can_->ILE = 0x3;
+
+    can_->CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE; // enable sending CAN FD frames, and Bitrate switching
 
     // If mode is Filtered then we finish the initialisation in configureFilter method
     // otherwise we finish here
@@ -718,6 +747,8 @@ void CANIface::setupMessageRam()
 #else
     uint32_t num_elements = 0;
 
+    can_->RXESC = 0x777; //Support upto 64byte long frames
+    can_->TXESC = 0x7; //Support upto 64byte long frames
     // Rx FIFO 0 start address and element count
     num_elements = MIN((FDCAN_NUM_RXFIFO0_SIZE/FDCAN_FRAME_BUFFER_SIZE), 64U);
     if (num_elements) {
@@ -749,6 +780,9 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
 
             if (!pending_tx_[i].pushed) {
                 stats.tx_success++;
+                if (pending_tx_[i].canfd_frame) {
+                    stats.fdf_tx_success++;
+                }
                 pending_tx_[i].pushed = true;
             } else {
                 continue;
@@ -817,7 +851,7 @@ bool CANIface::readRxFIFO(uint8_t fifo_index)
     }
 
     // Read the frame contents
-    AP_HAL::CANFrame frame;
+    AP_HAL::CANFrame frame {};
     uint32_t id = frame_ptr[0];
     if ((id & IDE) == 0) {
         //Standard ID
@@ -831,10 +865,18 @@ bool CANIface::readRxFIFO(uint8_t fifo_index)
     if ((id & RTR) != 0) {
         frame.id |= AP_HAL::CANFrame::FlagRTR;
     }
+
+    if (frame_ptr[1] & FDF) {
+        frame.setCanFD(true);
+        stats.fdf_rx_received++;
+    } else {
+        frame.setCanFD(false);
+    }
+
     frame.dlc = (frame_ptr[1] & DLC_MASK) >> 16;
     uint8_t *data = (uint8_t*)&frame_ptr[2];
-    //We only handle Data Length of 8 Bytes for now
-    for (uint8_t i = 0; i < 8; i++) {
+
+    for (uint8_t i = 0; i < 64; i++) {
         frame.data[i] = data[i];
     }
 
@@ -1034,6 +1076,7 @@ void CANIface::get_stats(ExpandingString &str)
     CriticalSectionLocker lock;
     str.printf("tx_requests:    %lu\n"
                "tx_rejected:    %lu\n"
+               "tx_overflow:    %lu\n"
                "tx_success:     %lu\n"
                "tx_timedout:    %lu\n"
                "tx_abort:       %lu\n"
@@ -1041,9 +1084,13 @@ void CANIface::get_stats(ExpandingString &str)
                "rx_overflow:    %lu\n"
                "rx_errors:      %lu\n"
                "num_busoff_err: %lu\n"
-               "num_events:     %lu\n",
+               "num_events:     %lu\n"
+               "fdf_rx:         %lu\n"
+               "fdf_tx_req:     %lu\n"
+               "fdf_tx:         %lu\n",
                stats.tx_requests,
                stats.tx_rejected,
+               stats.tx_overflow,
                stats.tx_success,
                stats.tx_timedout,
                stats.tx_abort,
@@ -1051,7 +1098,10 @@ void CANIface::get_stats(ExpandingString &str)
                stats.rx_overflow,
                stats.rx_errors,
                stats.num_busoff_err,
-               stats.num_events);
+               stats.num_events,
+               stats.fdf_rx_received,
+               stats.fdf_tx_requests,
+               stats.fdf_tx_success);
 }
 #endif
 

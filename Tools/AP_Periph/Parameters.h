@@ -38,6 +38,7 @@ public:
         k_param_msp_port,
         k_param_notify,
         k_param_esc_pwm_type,
+        k_param_can_fdmode,
     };
 
     AP_Int16 format_version;
@@ -91,6 +92,11 @@ public:
 
     AP_Int32 serial_number;
 
+#if HAL_CANFD_SUPPORTED
+    AP_Int8 can_fdmode;
+#else
+    static constexpr uint8_t can_fdmode = 0;
+#endif
     Parameters() {}
 };
 

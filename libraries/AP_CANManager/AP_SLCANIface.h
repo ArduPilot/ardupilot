@@ -52,6 +52,9 @@ class CANIface: public AP_HAL::CANIface
     bool handle_FrameDataStd(const char* cmd);
     bool handle_FrameDataExt(const char* cmd);
 
+#if HAL_CANFD_SUPPORTED
+    bool handle_FDFrameDataExt(const char* cmd);
+#endif
     // Parsing bytes received on the serial port
     inline void addByte(const uint8_t byte);
 

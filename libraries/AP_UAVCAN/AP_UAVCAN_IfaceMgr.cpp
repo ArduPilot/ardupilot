@@ -48,7 +48,7 @@ int16_t CanIface::send(const CanFrame& frame, MonotonicTime tx_deadline, CanIOFl
     if (can_iface_ == UAVCAN_NULLPTR) {
         return -1;
     }
-    return can_iface_->send(AP_HAL::CANFrame(frame.id, frame.data, frame.dlc), tx_deadline.toUSec(), flags);
+    return can_iface_->send(AP_HAL::CANFrame(frame.id, frame.data, AP_HAL::CANFrame::dlcToDataLength(frame.dlc), frame.isCanFDFrame()), tx_deadline.toUSec(), flags);
 }
 
 /**
@@ -83,7 +83,7 @@ int16_t CanIface::receive(CanFrame& out_frame, MonotonicTime& out_ts_monotonic, 
     if (ret < 0) {
         return ret;
     }
-    out_frame = CanFrame(frame.id, (const uint8_t*)frame.data, frame.dlc);
+    out_frame = CanFrame(frame.id, (const uint8_t*)frame.data, AP_HAL::CANFrame::dlcToDataLength(frame.dlc), frame.isCanFDFrame());
     out_flags = flags;
     if (rx_timestamp != 0) {
         out_ts_utc = uavcan::UtcTime::fromUSec(SystemClock::instance().getAdjustUsec() + rx_timestamp);

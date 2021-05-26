@@ -276,7 +276,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
     server_state = HEALTHY;
 
     //Setup publisher for this driver index
-    allocation_pub[driver_index] = new uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>(*_node);
+    allocation_pub[driver_index] = new uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>(*_node, false);
     if (allocation_pub[driver_index] == nullptr) {
         return false;
     }
@@ -288,7 +288,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
     allocation_pub[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(uavcan::protocol::dynamic_node_id::Allocation::FOLLOWUP_TIMEOUT_MS));
 
     //Setup GetNodeInfo Client
-    getNodeInfo_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::GetNodeInfo>(*_node);
+    getNodeInfo_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::GetNodeInfo>(*_node, false);
     if (getNodeInfo_client[driver_index] == nullptr) {
         return false;
     }
