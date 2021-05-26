@@ -125,15 +125,6 @@ public:
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }
 
-    /*
-        ToneAlarm Driver
-    */
-    enum ToneAlarmType {
-        ALARM_NONE=0,
-        ALARM_BUZZER=1<<0,
-        ALARM_DSHOT=1<<1
-    };
-
     virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
