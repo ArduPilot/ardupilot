@@ -76,6 +76,7 @@ void Copter::update_ekf_terrain_height_stable()
     // set to false if no position estimate
     if (!position_ok() && !ekf_has_relative_position()) {
         ahrs.set_terrain_hgt_stable(false);
+        return;
     }
 
     // consider terrain height stable if vehicle is taking off or landing
