@@ -8,7 +8,7 @@
 
 void Copter::init_precland()
 {
-    copter.precland.init(400);
+    copter.precland.init();
 }
 
 void Copter::update_precland()
