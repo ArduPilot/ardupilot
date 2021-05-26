@@ -1139,11 +1139,11 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
 
     // calc margin in cm
     const float margin_cm = MAX(_margin * 100.0f, 0.0f);
-    Vector3f stopping_point; 
+    Vector3f stopping_point_plus_margin;
     if (!desired_vel_cms.is_zero()) {
         // only used for "stop mode". Pre-calculating the stopping point here makes sure we do not need to repeat the calculations under iterations.
         const float speed = safe_vel.length();
-        stopping_point = safe_vel * ((2.0f + get_stopping_distance(kP, accel_cmss, speed))/speed);
+        stopping_point_plus_margin = safe_vel * ((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
     }
 
     for (uint8_t i = 0; i<obstacle_num; i++) {
@@ -1153,6 +1153,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
             // this one is not valid
             continue;
         }
+
         const float dist_to_boundary = vector_to_obstacle.length();
         if (is_zero(dist_to_boundary)) {
             continue;
@@ -1193,27 +1194,34 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         
             break;
         }
-      
+
         case BEHAVIOR_STOP: {
             // vector from current position to obstacle
             Vector3f limit_direction;
-            // find intersection with line segment
-            const float limit_distance_cm = _proximity.distance_to_obstacle(i, Vector3f{}, stopping_point, limit_direction);
-            if (is_zero(limit_distance_cm)) {
-                // We are exactly on the edge, this should ideally never be possible
-                // i.e. do not adjust velocity.
-                return;
+            // find closest point with line segment
+            // also see if the vehicle will "roughly" intersect the boundary with the projected stopping point
+            const bool intersect = _proximity.closest_point_from_segment_to_obstacle(i, Vector3f{}, stopping_point_plus_margin, limit_direction);
+            if (intersect) {
+                // the vehicle is intersecting the plane formed by the boundary
+                // distance to the closest point from the stopping point
+                float limit_distance_cm = limit_direction.length();
+                if (is_zero(limit_distance_cm)) {
+                    // We are exactly on the edge, this should ideally never be possible
+                    // i.e. do not adjust velocity.
+                    return;
+                }
+                if (limit_distance_cm <= margin_cm) {
+                    // we are within the margin so stop vehicle
+                    safe_vel.zero();
+                } else {
+                    // vehicle inside the given edge, adjust velocity to not violate this edge
+                    limit_velocity_3D(kP, accel_cmss, safe_vel, limit_direction, margin_cm, kP_z, accel_cmss_z, dt);
+                }
+
+                break;
             }
-            if (limit_distance_cm <= margin_cm) {
-                // we are within the margin so stop vehicle
-                safe_vel.zero();
-            } else {
-                // vehicle inside the given edge, adjust velocity to not violate this edge
-                limit_velocity_3D(kP, accel_cmss, safe_vel, limit_direction, margin_cm, kP_z, accel_cmss_z, dt);
-            }
-            break;
         }
-        }   
+        }
     }
 
     // desired backup velocity is sum of maximum velocity component in each quadrant 
