@@ -270,21 +270,32 @@ bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_
 // Appropriate layer and sector are found from the passed obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from the segment that was passed, in body-frame.
-// Used by GPS based Simple Avoidance  - for "brake mode" 
-// FLT_MAX is returned if the obstacle_num provided does not produce a valid obstacle
-float AP_Proximity_Boundary_3D::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
-{   
-    Face face; 
+// Addionally a 3-D plane is constructed using the closest point found above as normal, and a point on the line segment in the boundary.
+// True is returned when the passed line segment intersects this plane.
+// This helps us know if the passed line segment was in the direction of the boundary, or going in a different direction.
+// Used by GPS based Simple Avoidance  - for "brake mode"
+// False is returned if the obstacle_num provided does not produce a valid obstacle
+bool AP_Proximity_Boundary_3D::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
+{
+    Face face;
     if (!convert_obstacle_num_to_face(obstacle_num, face)) {
         // not a valid a face
-        return FLT_MAX;
+        return false;
     }
 
     const uint8_t sector_end = face.sector;
     const uint8_t sector_start = get_next_sector(face.sector);
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
-    return Vector3f::segment_to_segment_dist(seg_start, seg_end, start, end, closest_point);
+
+    // closest point between passed line segment and boundary
+    Vector3f::segment_to_segment_closest_point(seg_start, seg_end, start, end, closest_point);
+    if (closest_point == start) {
+        // draw a plane using the closest point as normal vector, and a point on the boundary
+        // return false if the passed segment does not intersect the plane
+        return Vector3f::segment_plane_intersect(seg_start, seg_end, closest_point, end);
+    }
+    return Vector3f::segment_plane_intersect(seg_start, seg_end, closest_point, start);
 }
 
 // get distance and angle to closest object (used for pre-arm check)

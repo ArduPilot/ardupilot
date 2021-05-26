@@ -97,8 +97,8 @@ public:
     bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_boundary) const;
 
     // Returns a body frame vector (in cm) nearest to obstacle, in betwen seg_start and seg_end
-    // FLT_MAX is returned if the obstacle_num provided does not produce a valid obstacle
-    float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
+    // True is returned if the segment intersects a plane formed by considering the "closest point" as normal vector to the plane.
+    bool closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings
