@@ -26,7 +26,7 @@
 
    APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 */
 
 #include "Rover.h"
