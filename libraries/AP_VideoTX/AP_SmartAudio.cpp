@@ -68,6 +68,8 @@ bool AP_SmartAudio::init()
 
 void AP_SmartAudio::loop()
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay(100);
     }
@@ -141,13 +143,15 @@ void AP_SmartAudio::loop()
             if (AP::vtx().have_params_changed() ||_vtx_power_change_pending
                 || _vtx_freq_change_pending || _vtx_options_change_pending) {
                 update_vtx_params();
-                _vtx_gcs_pending = true;
+                set_configuration_pending(true);
+                vtx.set_configuration_finished(false);
                 // we've tried to udpate something, re-request the settings so that they
                 // are reflected correctly
                 request_settings();
-            } else if (_vtx_gcs_pending) {
+            } else if (is_configuration_pending()) {
                 AP::vtx().announce_vtx_settings();
-                _vtx_gcs_pending = false;
+                set_configuration_pending(false);
+                vtx.set_configuration_finished(true);
             }
         }
     }
@@ -237,9 +241,10 @@ void AP_SmartAudio::update_vtx_params()
                 break;
             }
         }
+    } else {
+        vtx.set_configuration_finished(true);
     }
 }
-
 /**
  * Sends an SmartAudio Command to the vtx, waits response on the update event
  * @param frameBuffer frameBuffer to send over the wire
