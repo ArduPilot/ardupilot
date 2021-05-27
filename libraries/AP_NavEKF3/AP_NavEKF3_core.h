@@ -795,10 +795,10 @@ private:
     void SelectBodyOdomFusion();
 
     // Estimate terrain offset using a single state EKF
-    void EstimateTerrainOffset();
+    void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
     // fuse optical flow measurements into the main filter
-    void FuseOptFlow();
+    void FuseOptFlow(const of_elements &ofDataDelayed);
 
     // Control filter mode changes
     void controlFilterModes();
@@ -1145,7 +1145,6 @@ private:
     // variables added for optical flow fusion
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
     of_elements ofDataNew;          // OF data at the current time horizon
-    of_elements ofDataDelayed;      // OF data at the fusion time horizon
     bool flowDataValid;             // true while optical flow data is still fresh
     Vector2f auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
