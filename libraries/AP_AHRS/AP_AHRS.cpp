@@ -508,6 +508,32 @@ Vector3f AP_AHRS::get_vibration(void) const
     return AP::ins().get_vibration_levels();
 }
 
+void AP_AHRS::set_takeoff_expected(bool b)
+{
+    _flags.takeoff_expected = b;
+    takeoff_expected_start_ms = AP_HAL::millis();
+}
+
+void AP_AHRS::set_touchdown_expected(bool b)
+{
+    _flags.touchdown_expected = b;
+    touchdown_expected_start_ms = AP_HAL::millis();
+}
+
+/*
+  update takeoff/touchdown flags
+ */
+void AP_AHRS::update_flags(void)
+{
+    const uint32_t timeout_ms = 1000;
+    if (_flags.takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
+        _flags.takeoff_expected = false;
+    }
+    if (_flags.touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
+        _flags.touchdown_expected = false;
+    }
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
