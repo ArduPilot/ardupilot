@@ -112,6 +112,9 @@ public:
     // display the current VTX settings in the GCS
     void announce_vtx_settings() const;
 
+    void set_configuration_finished(bool configuration_finished) { _configuration_finished = configuration_finished; }
+    bool is_configuration_finished() { return _configuration_finished; }
+
     static AP_VideoTX *singleton;
 
 private:
@@ -142,6 +145,8 @@ private:
     bool _initialized;
     // when defaults have been configured
     bool _defaults_set;
+    // true when configuration have been applied succesfully to the VTX
+    bool _configuration_finished;
 };
 
 namespace AP {
