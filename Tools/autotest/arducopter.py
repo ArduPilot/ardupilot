@@ -6680,6 +6680,101 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def get_ground_effect_duration_from_current_onboard_log(self, bit, ignore_multi=False):
+        '''returns a duration in seconds we were expecting to interact with
+        the ground.  Will die if there's more than one such block of
+        time and ignore_multi is not set (will return first duration
+        otherwise)
+        '''
+        ret = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen_expected_start_TimeUS = None
+        first = None
+        last = None
+        while True:
+            m = dfreader.recv_match(type="XKF4")
+            if m is None:
+                break
+            last = m
+            if first is None:
+                first = m
+            # self.progress("%s" % str(m))
+            expected = m.SS & (1 << bit)
+            if expected:
+                if seen_expected_start_TimeUS is None:
+                    seen_expected_start_TimeUS = m.TimeUS
+                    continue
+            else:
+                if seen_expected_start_TimeUS is not None:
+                    duration = (m.TimeUS - seen_expected_start_TimeUS)/1000000.0
+                    ret.append(duration)
+                    seen_expected_start_TimeUS = None
+        if seen_expected_start_TimeUS is not None:
+            duration = (last.TimeUS - seen_expected_start_TimeUS)/1000000.0
+            ret.append(duration)
+        return ret
+
+    def get_takeoffexpected_durations_from_current_onboard_log(self, ignore_multi=False):
+        return self.get_ground_effect_duration_from_current_onboard_log(11, ignore_multi=ignore_multi)
+
+    def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
+        return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
+
+    def GroundEffectCompensation_takeOffExpected(self):
+        self.change_mode('ALT_HOLD')
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.progress("Making sure we'll have a short log to look at")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        # arm the vehicle and let it disarm normally.  This should
+        # yield a log where the EKF considers a takeoff imminent until
+        # disarm
+        self.start_subtest("Check ground effect compensation remains set in EKF while we're at idle on the ground")
+        self.arm_vehicle()
+        self.wait_disarmed()
+
+        durations = self.get_takeoffexpected_durations_from_current_onboard_log()
+        duration = durations[0]
+        want = 9
+        self.progress("takeoff-expected duration: %fs" % (duration,))
+        if duration < want:  # assumes default 10-second DISARM_DELAY
+            raise NotAchievedException("Should have been expecting takeoff for longer than %fs (want>%f)" %
+                                       (duration, want))
+
+        self.start_subtest("takeoffExpected should be false very soon after we launch into the air")
+        self.takeoff(mode='ALT_HOLD', alt_min=5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        duration = durations[0]
+        self.progress("takeoff-expected-duration %f" % (duration,))
+        want_lt = 5
+        if duration >= want_lt:
+            raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
+                                       (duration, want_lt))
+
+    def GroundEffectCompensation_touchDownExpected(self):
+        self.zero_throttle()
+        self.change_mode('ALT_HOLD')
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.progress("Making sure we'll have a short log to look at")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("Make sure touchdown-expected duration is about right")
+        self.takeoff(20, mode='ALT_HOLD')
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        gots = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        got = gots[2]
+        expected = 23  # this is the time in the final descent phase of LAND
+        if abs(got - expected) > 5:
+            raise NotAchievedException("Was expecting roughly %fs of touchdown expected, got %f" % (expected, got))
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -7120,6 +7215,14 @@ class AutoTestCopter(AutoTest):
             Test("Replay",
                  "Test Replay",
                  self.test_replay),
+
+            Test("GroundEffectCompensation_touchDownExpected",
+                 "Test EKF's handling of touchdown-expected",
+                 self.GroundEffectCompensation_touchDownExpected),
+
+            Test("GroundEffectCompensation_takeOffExpected",
+                 "Test EKF's handling of takeoff-expected",
+                 self.GroundEffectCompensation_takeOffExpected),
 
             Test("LogUpload",
                  "Log upload",
