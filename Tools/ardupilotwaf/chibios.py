@@ -5,7 +5,7 @@
 Waf tool for ChibiOS build
 """
 
-from waflib import Errors, Logs, Task, Utils
+from waflib import Context, Errors, Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
@@ -93,6 +93,30 @@ class generate_bin(Task.Task):
         return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class verify_executable(Task.Task):
+    color='CYAN'
+    always_run = True
+    def keyword(self):
+        return "Verifying"
+    def run(self):
+        if not self.env.HAL_LOG_ASSERT_ENABLE:
+            return
+        cmd = [self.env.get_flat('SIZE')] + ["--format=sysv"] + ['%s'%self.inputs[0]]
+        out = self.generator.bld.cmd_and_log(
+            cmd,
+            quiet=Context.BOTH,
+        )
+        size_found = False
+        print(out)
+        for line in out.split('\n'):
+            if "assert_strings" in line:
+                size_found = True
+                size = int(line.split()[1])
+                if (size >= (64*1024)):
+                    raise Exception("Assert Strings overflowing set limit of 64KB.")
+        if not size_found:
+            raise Exception('Assert String size not found')
 
 def to_unsigned(i):
     '''convert a possibly signed integer to unsigned'''
@@ -200,8 +224,11 @@ def chibios_firmware(self):
     bin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
+    verify_executable = self.create_task('verify_executable', src=link_output)
+    verify_executable.set_run_after(self.link_task)
+
     generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
-    generate_bin_task.set_run_after(self.link_task)
+    generate_bin_task.set_run_after(verify_executable)
 
     generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
     generate_apj_task.set_run_after(generate_bin_task)
@@ -223,7 +250,7 @@ def chibios_firmware(self):
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
                                                src=link_output)
-        default_params_task.set_run_after(self.link_task)
+        default_params_task.set_run_after(verify_executable)
         generate_bin_task.set_run_after(default_params_task)
 
     if self.env.APP_DESCRIPTOR:
@@ -314,6 +341,7 @@ def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
+    cfg.find_program('arm-none-eabi-size', var='SIZE')
     env = cfg.env
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
