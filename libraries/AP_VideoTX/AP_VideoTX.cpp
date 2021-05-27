@@ -350,7 +350,7 @@ bool AP_VideoTX::set_defaults()
 void AP_VideoTX::announce_vtx_settings() const
 {
     // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: Freq: %dMHz, Power: %dmw, Band: %d, Chan: %d",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %dMHz, PWR: %dmW, B: %d, CH: %d",
         _frequency_mhz.get(), has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get(),
         _band.get() + 1, _channel.get() + 1);
 }
