@@ -1936,7 +1936,7 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
         powr = vtx->get_power_mw();
     }
-    backend->write(x, y, false, "%4hu%c", powr, SYM_MW);
+    backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYM_MW);
 }
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
