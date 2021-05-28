@@ -116,14 +116,6 @@ public:
         return _compass;
     }
 
-    void set_optflow(const OpticalFlow *optflow) {
-        _optflow = optflow;
-    }
-
-    const OpticalFlow* get_optflow() const {
-        return _optflow;
-    }
-
     // allow for runtime change of orientation
     // this makes initial config easier
     void update_orientation();
@@ -664,9 +656,6 @@ protected:
 
     // pointer to compass object, if available
     Compass         * _compass;
-
-    // pointer to OpticalFlow object, if available
-    const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
 
