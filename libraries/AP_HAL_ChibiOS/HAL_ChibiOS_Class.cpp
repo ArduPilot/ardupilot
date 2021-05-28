@@ -181,6 +181,8 @@ static void main_loop()
 {
     daemon_task = chThdGetSelfX();
 
+    LOG_ASSERT(false, "Verify Assert Working");
+
     /*
       switch to high priority for main loop
      */

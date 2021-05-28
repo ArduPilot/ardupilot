@@ -92,6 +92,7 @@ public:
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) override;
     
+    void read_last_assert_fail(const char** thread, const char** msg, uint8_t& count) override;
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {

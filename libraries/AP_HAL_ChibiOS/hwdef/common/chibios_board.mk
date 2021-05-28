@@ -10,7 +10,7 @@ endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT = -Os
+  USE_COPT = -Os -std=c11
 endif
 
 # C++ specific options here (added to USE_OPT).

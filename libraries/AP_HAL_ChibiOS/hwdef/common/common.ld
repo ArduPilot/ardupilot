@@ -77,6 +77,7 @@ SECTIONS
         *(.text.*)
         *(.rodata)
         *(.rodata.*)
+        *(.assert_strings)
         *(.glue_7t)
         *(.glue_7)
         *(.gcc*)

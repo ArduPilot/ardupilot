@@ -41,7 +41,8 @@ extern AP_IOMCU iomcu;
 #endif
 
 extern const AP_HAL::HAL& hal;
-
+_Atomic(uint32_t) assert_log_addr;
+uint8_t chsys_initialised;
 using namespace ChibiOS;
 #if CH_CFG_USE_HEAP == TRUE
 
@@ -576,4 +577,31 @@ void Util::uart_info(ExpandingString &str)
 #if !defined(HAL_NO_UARTDRIVER)    
     ChibiOS::UARTDriver::uart_info(str);
 #endif
+}
+
+
+/*
+    This method can only have one consumer, This gives out the thread name
+    and line number and msg of the last unread assert fail
+*/
+extern const char __start_assert_strings;
+extern const char __stop_assert_strings;
+void Util::read_last_assert_fail(const char** thread, const char** msg, uint8_t& count) {
+#if HAL_LOG_ASSERT_ENABLED
+    static uint32_t last_assert_log_addr;
+    if (last_assert_log_addr == assert_log_addr) {
+        // Nothing new
+        return;
+    }
+    last_assert_log_addr = assert_log_addr;
+    *msg = (const char*)(((last_assert_log_addr & 0xFFFF)) + &__start_assert_strings);
+    uint8_t thread_idx = (last_assert_log_addr & 0xFF0000) >> 16;
+    *thread = hal.scheduler->thread_name_by_index(thread_idx);
+
+    // verify sanity of adresses
+    if ((*msg < &__start_assert_strings || *msg >= &__stop_assert_strings)) {
+        msg = NULL;
+    }
+    count = (last_assert_log_addr & 0xFF000000) >> 24;
+#endif //#if HAL_LOG_ASSERT_ENABLED
 }

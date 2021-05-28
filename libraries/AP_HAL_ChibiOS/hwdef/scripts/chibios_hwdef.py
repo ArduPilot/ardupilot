@@ -751,7 +751,13 @@ def write_mcu_config(f):
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     env_vars['BOARD_FLASH_SIZE'] = flash_size
     f.write('#define CRT1_AREAS_NUMBER 1\n')
-
+    if flash_size > 1024:
+        # we have enough flash size to enable Assert Logging
+        env_vars['HAL_LOG_ASSERT_ENABLED'] = True
+        f.write('#define HAL_LOG_ASSERT_ENABLED 1')
+    else:
+        env_vars['HAL_LOG_ASSERT_ENABLED'] = False
+        f.write('#define HAL_LOG_ASSERT_ENABLED 0')
     flash_reserve_start = get_config(
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
