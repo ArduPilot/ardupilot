@@ -6,8 +6,8 @@ void Copter::update_ground_effect_detector(void)
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
         gndeffect_state.touchdown_expected = false;
-        ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
-        ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
+        ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
+        ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
         return;
     }
 
@@ -64,8 +64,8 @@ void Copter::update_ground_effect_detector(void)
     gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;
 
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
-    ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
-    ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
+    ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
+    ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
 }
 
 // update ekf terrain height stable setting
