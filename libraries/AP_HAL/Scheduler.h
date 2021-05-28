@@ -124,6 +124,11 @@ public:
         return false;
     }
 
+    /*
+      thread name by index
+    */
+    virtual const char* thread_name_by_index(uint8_t idx) { return nullptr; }
+
 private:
 
     AP_HAL::Proc _delay_cb;

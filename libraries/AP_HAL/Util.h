@@ -205,9 +205,18 @@ public:
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
 
+    virtual void read_last_assert_fail(const char** thread, const char** msg, uint8_t& count) {}
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
     uint32_t last_armed_change_ms;
 };
+
+
+#if !HAL_LOG_ASSERT_ENABLED
+#define LOG_ASSERT(condition, msg) do { \
+    (void)condition; \
+}while(0)
+#endif
