@@ -737,7 +737,7 @@ void NavEKF3_core::readBaroData()
 
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to rotor wash ground interaction corrupting the EKF altitude during initial ascent
-        if (expectGndEffectTakeoff) {
+        if (dal.get_takeoff_expected()) {
             baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
         }
 

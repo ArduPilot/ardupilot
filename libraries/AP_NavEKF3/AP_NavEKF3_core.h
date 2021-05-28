@@ -291,15 +291,6 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
-    // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-    // causes the EKF to start the EKF-GSF yaw estimator
-    void setTakeoffExpected(bool val);
-
-    // called by vehicle code to specify that a touchdown is expected to happen
-    // causes the EKF to compensate for expected barometer errors due to ground effect
-    void setTouchdownExpected(bool val);
-
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -823,15 +814,6 @@ private:
     // Set the NED origin to be used until the next filter reset
     void setOrigin(const Location &loc);
 
-    // update and return the status that indicates takeoff is expected so that we can compensate for expected
-    // barometer errors due to rotor-wash ground interaction and start the EKF-GSF yaw estimator prior to
-    // takeoff movement
-    bool updateTakeoffExpected();
-
-    // update and return the status that indicates touchdown is expected so that we can compensate for expected
-    // barometer errors due to rotor-wash ground interaction
-    bool updateTouchdownExpected();
-
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
 
@@ -1296,14 +1278,7 @@ private:
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     // baro ground effect
-    bool expectGndEffectTakeoff;      // external state - takeoff expected in VTOL flight
-    bool expectGndEffectTouchdown;    // external state - touchdown expected in VTOL flight
-    uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
-
-    // takeoff preparation used to start EKF-GSF yaw estimator and mitigate rotor-wash ground interaction Baro errors
-    uint32_t takeoffExpectedSet_ms;   // system time at which expectTakeoff was set
-    bool expectTakeoff;               // external state from vehicle conrol code - takeoff expected
 
     // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
