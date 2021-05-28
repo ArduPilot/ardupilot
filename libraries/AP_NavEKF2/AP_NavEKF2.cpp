@@ -1233,40 +1233,6 @@ void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &raw
     }
 }
 
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2::setTakeoffExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event2(AP_DAL::Event::setTakeoffExpected);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetTakeoffExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTakeoffExpected(val);
-        }
-    }
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2::setTouchdownExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event2(AP_DAL::Event::setTouchdownExpected);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetTouchdownExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTouchdownExpected(val);
-        }
-    }
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
 // cannot be used as a height reference. Use to prevent range finder operation otherwise
