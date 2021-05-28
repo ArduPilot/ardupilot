@@ -86,15 +86,6 @@ void Sub::rpm_update(void)
 }
 #endif
 
-// initialise optical flow sensor
-#if OPTFLOW == ENABLED
-void Sub::init_optflow()
-{
-    // initialise optical flow sensor
-    optflow.init(MASK_LOG_OPTFLOW);
-}
-#endif      // OPTFLOW == ENABLED
-
 void Sub::accel_cal_update()
 {
     if (hal.util->get_soft_armed()) {
