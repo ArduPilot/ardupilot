@@ -1300,6 +1300,7 @@ void AP_Logger::io_thread(void)
 
         last_run_us = AP_HAL::micros();
 
+        Write_AssertFail();
         FOR_EACH_BACKEND(io_timer());
     }
 }
@@ -1347,6 +1348,29 @@ void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
       error_code    : uint8_t(error_code),
   };
   WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+// Wrote an event packet
+void AP_Logger::Write_AssertFail()
+{
+    const char *thread = nullptr;
+    const char *msg = nullptr;
+    uint8_t count = 0;
+    hal.util->read_last_assert_fail(&thread, &msg, count);
+    if (msg != nullptr) {
+        struct log_AssertFailMsg pkt{
+            LOG_PACKET_HEADER_INIT(LOG_ASSERTFAIL_MSG),
+            time_us  : AP_HAL::micros64(),
+            count    : count,
+            thread   : {},
+            msg      : {}
+        };
+        strncpy_noterm(pkt.msg, msg, sizeof(pkt.msg));
+        if (thread != nullptr) {
+            strncpy_noterm(pkt.thread, thread, sizeof(pkt.thread));
+        }
+        WriteCriticalBlock(&pkt, sizeof(pkt));
+    }
 }
 
 /*

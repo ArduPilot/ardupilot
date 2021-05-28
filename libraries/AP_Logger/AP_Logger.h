@@ -295,6 +295,7 @@ public:
     void Write_Event(LogEvent id);
     void Write_Error(LogErrorSubsystem sub_system,
                      LogErrorCode error_code);
+    void Write_AssertFail(void);
     void Write_RCIN(void);
     void Write_RCOUT(void);
     void Write_RSSI();

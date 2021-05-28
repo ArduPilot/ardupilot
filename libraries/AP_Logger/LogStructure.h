@@ -711,6 +711,15 @@ struct PACKED log_PSCZ {
     float throttle_out;
 };
 
+// Assert message
+struct PACKED log_AssertFailMsg {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t count;
+    char thread[16];
+    char msg[64];
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1316,8 +1325,9 @@ LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_PSC_MSG, sizeof(log_PSC), \
       "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }, \
     { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
-      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002" }
-
+      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002" }, \
+    { LOG_ASSERTFAIL_MSG, sizeof(log_AssertFailMsg), \
+      "ASSF", "QBNZ", "TimeUS,Cnt,Thd,Msg", "s---", "F---" } \
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
 // @Field: TimeUS: Time since system startup
@@ -1430,6 +1440,7 @@ enum LogMessages : uint8_t {
     LOG_PSCZ_MSG,
     LOG_RAW_PROXIMITY_MSG,
     LOG_IDS_FROM_PRECLAND,
+    LOG_ASSERTFAIL_MSG,
 
     _LOG_LAST_MSG_
 };
