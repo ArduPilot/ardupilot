@@ -102,8 +102,10 @@ bool ModeZigZag::init(bool ignore_checks)
 // perform cleanup required when leaving zigzag mode
 void ModeZigZag::exit()
 {
+#if SPRAYER_ENABLED == ENABLED
     // The sprayer will stop if the flight mode is changed from ZigZag to other
     spray(false);
+#endif
 }
 
 // run the zigzag controller
@@ -130,8 +132,10 @@ void ModeZigZag::run()
                     if (auto_stage == AutoState::SIDEWAYS) {
                         save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
                     } else {
+#if SPRAYER_ENABLED == ENABLED
                         // spray off
                         spray(false);
+#endif
                         move_to_side();
                     }
                 } else {
@@ -179,10 +183,12 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             // if both A and B have been stored advance state
             if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
                 stage = MANUAL_REGAIN;
+#if SPRAYER_ENABLED == ENABLED
                 spray(false);
             } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
                 // if only A or B have been stored, spray on
                 spray(true);
+#endif
             }
             break;
 
@@ -197,8 +203,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     stage = AUTO;
                     auto_stage = AutoState::AB_MOVING;
                     ab_dest_stored = ab_dest;
+#if SPRAYER_ENABLED == ENABLED
                     // spray on while moving to A or B
                     spray(true);
+#endif
                     reach_wp_time_ms = 0;
                     if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
@@ -237,7 +245,9 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
 {
     if (stage == AUTO) {
         stage = MANUAL_REGAIN;
+#if SPRAYER_ENABLED == ENABLED
         spray(false);
+#endif
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
@@ -572,14 +582,14 @@ void ModeZigZag::init_auto()
     is_suspended = false;
 }
 
+#if SPRAYER_ENABLED == ENABLED
 // spray on / off
 void ModeZigZag::spray(bool b)
 {
-#if SPRAYER_ENABLED == ENABLED
     if (_spray_enabled) {
         copter.sprayer.run(b);
     }
-#endif
 }
+#endif
 
 #endif // MODE_ZIGZAG_ENABLED == ENABLED

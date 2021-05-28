@@ -1573,7 +1573,9 @@ private:
     void manual_control();
     bool reached_destination();
     bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+#if SPRAYER_ENABLED == ENABLED
     void spray(bool b);
+#endif
     bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
     void move_to_side();
 
