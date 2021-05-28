@@ -123,8 +123,10 @@ void Copter::init_ardupilot()
 
     attitude_control->parameter_sanity_check();
 
-    // init the optical flow sensor
-    init_optflow();
+#if OPTFLOW == ENABLED
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
+#endif      // OPTFLOW == ENABLED
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
