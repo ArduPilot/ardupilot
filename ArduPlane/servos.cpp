@@ -570,7 +570,7 @@ void Plane::set_servos_controlled(void)
         bool throw_detected = accel_x_due_to_throw > GRAVITY_MSS;
         bool throttle_up_detected = throttle > aparm.throttle_cruise;
         if (throw_detected || throttle_up_detected) {
-            plane.ahrs.setTakeoffExpected(true);
+            plane.ahrs.set_takeoff_expected(true);
         }
     }
 }
