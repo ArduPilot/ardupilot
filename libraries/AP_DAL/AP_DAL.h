@@ -37,10 +37,10 @@ public:
         resetGyroBias             =  0,
         resetHeightDatum          =  1,
         //setInhibitGPS           =  2, // removed
-        setTakeoffExpected        =  3,
-        unsetTakeoffExpected      =  4,
-        setTouchdownExpected      =  5,
-        unsetTouchdownExpected    =  6,
+        //setTakeoffExpected        =  3, // removed
+        //unsetTakeoffExpected      =  4, // removed
+        //setTouchdownExpected      =  5, // removed
+        //unsetTouchdownExpected    =  6, // removed
         //setInhibitGpsVertVelUse   =  7, // removed
         //unsetInhibitGpsVertVelUse =  8, // removed
         setTerrainHgtStable       =  9,
@@ -172,6 +172,17 @@ public:
     bool get_fly_forward(void) const {
         return _RFRN.fly_forward;
     }
+
+    bool get_takeoff_expected(void) const {
+        return _RFRN.takeoff_expected;
+    }
+
+    bool get_touchdown_expected(void) const {
+        return _RFRN.touchdown_expected;
+    }
+
+    // for EKF usage to enable takeoff expected to true
+    void set_takeoff_expected();
 
     // get ahrs trim
     const Vector3f &get_trim() const {
