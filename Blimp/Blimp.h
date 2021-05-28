@@ -485,7 +485,6 @@ private:
     bool rangefinder_alt_ok();
     bool rangefinder_up_ok();
     void rpm_update();
-    void init_optflow();
     void update_optical_flow(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
