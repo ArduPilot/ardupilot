@@ -26,7 +26,12 @@
 #ifdef HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_Math/crc.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_Motors/AP_MotorsUGV.h>
+#else
 #include <AP_Motors/AP_Motors_Class.h>
+#endif
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -53,7 +58,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
     // @DisplayName: BLHeli auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
@@ -1355,12 +1360,16 @@ void AP_BLHeli::init(void)
         digital_mask = mask;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
     if (channel_auto.get() == 1) {
-        AP_Motors *motors = AP_Motors::get_singleton();
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+        AP_MotorsUGV *motors = AP::motors_ugv();
+#else
+        AP_Motors *motors = AP::motors();
+#endif
         if (motors) {
             uint16_t motormask = motors->get_motor_mask();
             // set the rest of the digital channels
