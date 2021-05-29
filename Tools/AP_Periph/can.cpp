@@ -1578,6 +1578,45 @@ void AP_Periph_FW::pwm_hardpoint_update()
 }
 #endif // HAL_PERIPH_ENABLE_PWM_HARDPOINT
 
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+void AP_Periph_FW::tempSensor_update()
+{
+    if (!tempSensor.healthy()) {
+        return;
+    }
+
+    const int32_t id = tempSensor.get_id();
+
+    switch (tempSensor.get_id_src()) {
+    case MCP9600::ID_Src::ESC:
+        if (id > 0 && id < 32) {
+            // pkt.esc_index is constrained to a 5 bit number
+
+            uavcan_equipment_esc_Status pkt {};
+            pkt.temperature = tempSensor.get_temperature() + C_TO_KELVIN;
+            pkt.esc_index = id - 1;
+
+            fix_float16(pkt.temperature);
+
+            uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+            uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer);
+            canardBroadcast(&canard,
+                            UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                            UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                            &transfer_id,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            &buffer[0],
+                            total_size);
+        }
+        break;
+    case MCP9600::ID_Src::Battery:
+    // handled in can_battery_update()
+        break;
+    }
+
+}
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_HWESC
 void AP_Periph_FW::hwesc_telem_update()
 {
@@ -1755,6 +1794,14 @@ void AP_Periph_FW::can_battery_update(void)
             pkt.current = current;
         }
         float temperature;
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+        if (tempSensor.get_id_src() == MCP9600::ID_Src::Battery &&
+            tempSensor.get_id()  == pkt.battery_id &&
+            tempSensor.healthy()) {
+            pkt.temperature = tempSensor.get_temperature() + C_TO_KELVIN;        
+        }
+        else
+#endif
         if (battery.lib.get_temperature(temperature, i)) {
             // Battery lib reports temperature in Celsius.
             // Convert Celsius to Kelvin for tranmission on CAN.

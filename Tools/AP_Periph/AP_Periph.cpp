@@ -210,6 +210,10 @@ void AP_Periph_FW::init()
     }
 #endif
     
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+    tempSensor.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     notify.init();
 #endif
@@ -345,6 +349,10 @@ void AP_Periph_FW::update()
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
         check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+        tempSensor_update();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT

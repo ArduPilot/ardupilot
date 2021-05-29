@@ -13,6 +13,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
+#include <AP_TemperatureSensor/MCP9600.h>
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 #include <AP_CANManager/AP_CANManager.h>
@@ -205,6 +206,10 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+    MCP9600 tempSensor;
+    void tempSensor_update();
+#endif
 
 #if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
     void update_rainbow();

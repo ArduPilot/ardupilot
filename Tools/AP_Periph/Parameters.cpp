@@ -304,6 +304,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(esc_pwm_type, "ESC_PWM_TYPE",     0),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_TEMP_SENSOR_MCP9600
+    // @Group: TEMP_
+    // @Path: ../libraries/AP_TemperatureSensor/MCP9600.cpp
+    GOBJECT(tempSensor,         "TEMP_",     MCP9600),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_MSP
     // @Param: MSP_PORT
     // @DisplayName: MSP Serial Port

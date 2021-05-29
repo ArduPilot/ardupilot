@@ -50,6 +50,7 @@ public:
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
+        k_param_tempSensor,
     };
 
     AP_Int16 format_version;
