@@ -1029,6 +1029,8 @@ def write_QSPI_table(f):
         bus = dev[1]
         mode = dev[2]
         speed = dev[3]
+        size_pow2 = dev[4]
+        ncs_clk_delay = dev[5]
         if not bus.startswith('QUADSPI') or bus not in qspi_list:
             error("Bad QUADSPI bus in QSPIDEV line %s" % dev)
         if mode not in ['MODE1', 'MODE3']:
@@ -1038,8 +1040,8 @@ def write_QSPI_table(f):
 
         devidx = len(devlist)
         f.write(
-            '#define HAL_QSPI_DEVICE%-2u QSPIDesc(%-17s, %2u, QSPIDEV_%s, %7s)\n'
-            % (devidx, name, qspi_list.index(bus), mode, speed))
+            '#define HAL_QSPI_DEVICE%-2u QSPIDesc(%-17s, %2u, QSPIDEV_%s, %7s, %2u, %2u)\n'
+            % (devidx, name, qspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
         devlist.append('HAL_QSPI_DEVICE%u' % devidx)
     f.write('#define HAL_QSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
     for dev in qspidev:
