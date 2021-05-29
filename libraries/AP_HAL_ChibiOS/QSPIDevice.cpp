@@ -77,14 +77,14 @@ bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 
     if (send_len == 0 && recv_len == 0) {
         // This is just a command
-        ret = wspiCommand(qspi_devices[device_desc.bus].driver, &mode);
+        ret = !wspiCommand(qspi_devices[device_desc.bus].driver, &mode);
     } else if (send_len > 0 && recv == 0) {
         // This is a send cmd
-        ret = wspiSend(qspi_devices[device_desc.bus].driver, &mode, send_len, send);
+        ret = !wspiSend(qspi_devices[device_desc.bus].driver, &mode, send_len, send);
     } else if (send_len == 0 && recv_len >= 1) {
         // This is a receive cmd,
         // we only consume first byte of send
-        ret = wspiReceive(qspi_devices[device_desc.bus].driver, &mode, recv_len, recv);
+        ret = !wspiReceive(qspi_devices[device_desc.bus].driver, &mode, recv_len, recv);
     } else {
         // Can't handle this transaction type
         ret = false;
