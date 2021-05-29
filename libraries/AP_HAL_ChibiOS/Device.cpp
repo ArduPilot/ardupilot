@@ -18,7 +18,7 @@
 #include <AP_HAL/utility/OwnPtr.h>
 #include <stdio.h>
 
-#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE || HAL_USE_WSPI == TRUE
 
 #include "Scheduler.h"
 #include "Semaphores.h"
@@ -38,6 +38,13 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
 {
     bouncebuffer_init(&bounce_buffer_tx, 10, false);
     bouncebuffer_init(&bounce_buffer_rx, 10, false);
+}
+
+DeviceBus::DeviceBus(uint8_t _thread_priority, bool axi_sram) :
+        thread_priority(_thread_priority)
+{
+    bouncebuffer_init(&bounce_buffer_tx, 10, axi_sram);
+    bouncebuffer_init(&bounce_buffer_rx, 10, axi_sram);
 }
 
 /*
