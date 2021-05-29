@@ -196,6 +196,26 @@ bool UARTDriver::discard_input(void)
 
 void UARTDriver::flush(void)
 {
+    // flush the write buffer - but don't fail and don't
+    // infinitely-loop.  This is not a good definition of "flush", but
+    // it was judged that we had to return from this function even if
+    // we hadn't actually done our job.
+    uint32_t start_ms = AP_HAL::millis();
+    while (AP_HAL::millis() - start_ms < 1000) {
+        if (_writebuffer.available() == 0) {
+            break;
+        }
+        _timer_tick();
+    }
+
+    // ensure that the outbound TCP queue is also empty...
+    start_ms = AP_HAL::millis();
+    while (AP_HAL::millis() - start_ms < 1000) {
+        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
+            break;
+        }
+        usleep(1000);
+    }
 }
 
 // size_t UARTDriver::write(uint8_t c)

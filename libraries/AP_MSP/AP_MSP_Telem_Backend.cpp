@@ -17,7 +17,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_GPS/AP_GPS.h>
@@ -65,7 +65,7 @@ void AP_MSP_Telem_Backend::setup_wfq_scheduler(void)
     set_scheduler_entry(ALTITUDE, 250, 250);          // 4Hz  altitude(cm) and velocity(cm/s)
     set_scheduler_entry(ANALOG, 250, 250);            // 4Hz  rssi + batt
     set_scheduler_entry(BATTERY_STATE, 500, 500);     // 2Hz  battery
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     set_scheduler_entry(ESC_SENSOR_DATA, 500, 500);   // 2Hz  ESC telemetry
 #endif
     set_scheduler_entry(RTC_DATETIME, 1000, 1000);    // 1Hz  RTC
@@ -113,7 +113,7 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
     case ALTITUDE:          // Altitude and Vario
     case ANALOG:            // Rssi, Battery, mAh, Current
     case BATTERY_STATE:     // voltage, capacity, current, mAh
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     case ESC_SENSOR_DATA:   // esc temp + rpm
 #endif
     case RTC_DATETIME:      // RTC
@@ -450,7 +450,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_battery_state(dst);
     case MSP_UID:
         return msp_process_out_uid(dst);
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     case MSP_ESC_SENSOR_DATA:
         return msp_process_out_esc_sensor_data(dst);
 #endif
@@ -820,7 +820,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
     update_home_pos(home_state);
 
     sbuf_write_u32(dst, home_state.rel_altitude_cm);                // relative altitude cm
-    sbuf_write_u16(dst, (int16_t)get_vspeed_ms() * 100);            // climb rate cm/s
+    sbuf_write_u16(dst, int16_t(get_vspeed_ms() * 100));            // climb rate cm/s
     return MSP_RESULT_ACK;
 }
 
@@ -884,16 +884,18 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *dst)
 {
-#ifdef HAVE_AP_BLHELI_SUPPORT
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli && blheli->have_telem_data()) {
-        const uint8_t num_motors = blheli->get_num_motors();
+#if HAL_WITH_ESC_TELEM
+    AP_ESC_Telem& telem = AP::esc_telem();
+    if (telem.get_last_telem_data_ms(0)) {
+        const uint8_t num_motors = telem.get_num_active_escs();
         sbuf_write_u8(dst, num_motors);
         for (uint8_t i = 0; i < num_motors; i++) {
-            AP_BLHeli::telem_data td {};
-            blheli->get_telem_data(i, td);
-            sbuf_write_u8(dst, td.temperature);        // deg
-            sbuf_write_u16(dst, td.rpm / 100);
+            int16_t temp = 0;
+            float rpm = 0.0f;
+            telem.get_rpm(i, rpm);
+            telem.get_temperature(i, temp);
+            sbuf_write_u8(dst, uint8_t(temp / 100));        // deg
+            sbuf_write_u16(dst, uint16_t(rpm * 0.1));
         }
     }
 #endif

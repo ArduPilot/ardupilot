@@ -17,8 +17,8 @@ nparams = ['RCn_', 'SERVOn_', 'SRn_', 'BTNn_']
 
 class MDEmit(Emit):
 
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         fname = 'Parameters.md'
         self.nparams = []
         self.f = open(fname, mode='w')
@@ -29,7 +29,7 @@ class MDEmit(Emit):
         if os.getenv('BRDOC') is not None:
             self.header = """---\nlayout: default\ntitle: "Parameters"\npermalink: /parameters/\nnav:"""
         
-        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your APM to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
+        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
 
     def close(self):
@@ -48,16 +48,16 @@ class MDEmit(Emit):
     def emit(self, g):
         nparam = False # Flag indicating this is a parameter group with redundant information (ie RCn_, SERVOn_)
         
-        if g.name == 'ArduSub':
+        if g.reference == 'ArduSub':
             self.blacklist = sub_blacklist
         
-        if self.blacklist is not None and g.name in self.blacklist:
+        if self.blacklist is not None and g.reference in self.blacklist:
             return
         
-        pname = g.name
+        pname = g.reference
         
         # Check to see this is a parameter group with redundant information
-        rename = re.sub('\d+', 'n', g.name)
+        rename = re.sub('\d+', 'n', g.reference)
         if rename in nparams:
             if rename in self.nparams:
                 return

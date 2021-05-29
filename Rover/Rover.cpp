@@ -265,7 +265,7 @@ void Rover::ahrs_update()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
 }
 
@@ -280,7 +280,17 @@ void Rover::gcs_failsafe_check(void)
     }
 
     // check for updates from GCS within 2 seconds
-    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", failsafe.last_heartbeat_ms != 0 && (millis() - failsafe.last_heartbeat_ms) > 2000);
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    bool do_failsafe = true;
+    if (gcs_last_seen_ms == 0) {
+        // we've never seen the GCS, so we never failsafe for not seeing it
+        do_failsafe = false;
+    } else if (millis() - gcs_last_seen_ms <= 2000) {
+        // we've never seen the GCS in the last couple of seconds, so all good
+        do_failsafe = false;
+    }
+
+    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", do_failsafe);
 }
 
 /*
@@ -324,7 +334,7 @@ void Rover::update_logging2(void)
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_Vibration();
+        AP::ins().Write_Vibration();
     }
 }
 
@@ -361,7 +371,7 @@ void Rover::one_second_loop(void)
     set_likely_flying(hal.util->get_soft_armed());
 
     // send latest param values to wp_nav
-    g2.wp_nav.set_turn_params(g.turn_max_g, g2.turn_radius, g2.motors.have_skid_steering());
+    g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
 }
 
 void Rover::update_current_mode(void)

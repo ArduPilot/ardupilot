@@ -394,6 +394,15 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
 
+    // @Param: _TURN_MAX_G
+    // @DisplayName: Turning maximum G force
+    // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
+    // @Units: gravities
+    // @Range: 0.1 10
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_TURN_MAX_G", 13, AR_AttitudeControl, _turn_lateral_G_max, 0.6f),
+
     AP_GROUPEND
 };
 
@@ -483,6 +492,14 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     if (is_positive(_steer_rate_max)) {
         const float steer_rate_max_rad = radians(_steer_rate_max);
         _desired_turn_rate = constrain_float(_desired_turn_rate, -steer_rate_max_rad, steer_rate_max_rad);
+    }
+
+    // G limit based on speed
+    float speed;
+    if (get_forward_speed(speed)) {
+        // do not limit to less than 1 deg/s
+        const float turn_rate_max = MAX(get_turn_rate_from_lat_accel(get_turn_lat_accel_max(), fabsf(speed)), radians(1.0f));
+        _desired_turn_rate = constrain_float(_desired_turn_rate, -turn_rate_max, turn_rate_max);
     }
 
     // set PID's dt

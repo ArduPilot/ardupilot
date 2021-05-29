@@ -164,6 +164,8 @@ public:
     }
 
     Quaternion operator*(const Quaternion &v) const;
+
+    Vector3f operator*(const Vector3f &v) const;
     Quaternion &operator*=(const Quaternion &v);
     Quaternion operator/(const Quaternion &v) const;
 

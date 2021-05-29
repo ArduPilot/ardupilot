@@ -181,7 +181,6 @@ void Blimp::check_ekf_reset()
     float yaw_angle_change_rad;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        // attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
         AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
@@ -189,7 +188,6 @@ void Blimp::check_ekf_reset()
 #if AP_AHRS_NAVEKF_AVAILABLE && (HAL_NAVEKF2_AVAILABLE || HAL_NAVEKF3_AVAILABLE)
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
-        // attitude_control->inertial_frame_reset();
         ekf_primary_core = ahrs.get_primary_core_index();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
@@ -235,7 +233,6 @@ void Blimp::check_vibration()
             if (now - vibration_check.clear_ms > 15000) {
                 // restore ekf gains, reset timers and update user
                 vibration_check.high_vibes = false;
-                // pos_control->set_vibe_comp(false);
                 vibration_check.clear_ms = 0;
                 AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
@@ -257,7 +254,6 @@ void Blimp::check_vibration()
         if (!vibration_check.high_vibes) {
             // switch ekf to use resistant gains
             vibration_check.high_vibes = true;
-            // pos_control->set_vibe_comp(true);
             AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
         }

@@ -213,7 +213,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->set_system_initialized();
 
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (getenv("SITL_WATCHDOG_RESET")) {
         const AP_HAL::Util::PersistentData &pd = util->persistent_data;
         AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine", "QbIHHHHH",

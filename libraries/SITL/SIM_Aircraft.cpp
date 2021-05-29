@@ -63,7 +63,7 @@ Aircraft::Aircraft(const char *frame_str) :
         sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     }
 
-    terrain = &AP::terrain();
+    terrain = AP::terrain();
 
     // init rangefinder array to -1 to signify no data
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++){
@@ -99,9 +99,10 @@ float Aircraft::ground_height_difference() const
         sitl->terrain_enable && terrain &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
+        h2 += local_ground_level;
         return h2 - h1;
     }
-    return 0.0f;
+    return local_ground_level;
 }
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
@@ -329,6 +330,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         // initialise home
         fdm.home = home;
     }
+    fdm.is_lock_step_scheduled = lock_step_scheduled;
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
     fdm.altitude  = location.alt * 1.0e-2;
@@ -510,6 +512,7 @@ void Aircraft::update_model(const struct sitl_input &input)
         loc.alt = sitl->opos.alt.get() * 1.0e2;
         set_start_location(loc, sitl->opos.hdg.get());
     }
+    local_ground_level = 0.0f;
     update(input);
 }
 
@@ -879,6 +882,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 
     if (precland && precland->is_enabled()) {
         precland->update(get_location(), get_position());
+        if (precland->_over_precland_base) {
+            local_ground_level += precland->_origin_height;
+        }
     }
 
     // update RichenPower generator

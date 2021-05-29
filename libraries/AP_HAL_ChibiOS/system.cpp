@@ -22,6 +22,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <ch.h>
 #include "hal.h"
@@ -233,7 +234,7 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
-#if !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_NO_LOGGING)
+#if !defined(HAL_BOOTLOADER_BUILD) && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
     INTERNAL_ERROR(AP_InternalError::error_t::panic);
     va_list ap;
 

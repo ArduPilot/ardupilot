@@ -94,11 +94,16 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
     if (!blimp.flightmode->get_wp(target)) {
         return;
     }
+    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
+    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        0xFFF8, // ignore everything except the x/y/z components
+        TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
         target.alt * 0.01f, // altitude is sent as a float
@@ -129,11 +134,11 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f; // convert to metres
 //     } else if (guided_mode == Guided_Velocity) {
 //         type_mask = 0x0FC7; // ignore everything except velocity
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f; // convert to m/s
 //     } else {
 //         type_mask = 0x0FC0; // ignore everything except position & velocity
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f;
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f;
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f;
 //     }
 
 //     mavlink_msg_position_target_local_ned_send(
@@ -477,19 +482,6 @@ void GCS_MAVLINK_Blimp::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", blimp.get_frame_string());
 }
 
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Blimp::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    blimp.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
-}
-
-void GCS_MAVLINK_Blimp::handle_command_ack(const mavlink_message_t &msg)
-{
-    blimp.command_ack_counter++;
-    GCS_MAVLINK::handle_command_ack(msg);
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -643,15 +635,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_l
 void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
-        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg.sysid != blimp.g.sysid_my_gcs) {
-            break;
-        }
-        blimp.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        break;
-    }
 
     // #if MODE_GUIDED_ENABLED == ENABLED
     //     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82

@@ -289,7 +289,7 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
 #endif
 
 #ifdef HAL_STDOUT_SERIAL
-    //STDOUT Initialistion
+    //STDOUT Initialisation
     SerialConfig stdoutcfg =
     {
       HAL_STDOUT_BAUDRATE,

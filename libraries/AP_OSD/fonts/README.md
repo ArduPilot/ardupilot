@@ -29,7 +29,7 @@ Available styles and respective OSD_FONT numbers are:
 
 ## Adding font styles ##
 
-Charsets can be edited or built form scratch using [MAX7456charwizard](https://github.com/diydrones/MinimOSD-Extra/blob/master/Tools/MAX7456Charwizard.jar). Added charsets need to be converted to a binary file named fontN.bin prior to building the code. Files within this namespace will be automatically included in the build, so you can modify and replace existing .bin files or add your individual styles.
+Charsets can be edited or built form scratch using MAX7456Charwizard.jar included in this directory. Added charsets need to be converted to a binary file named fontN.bin prior to building the code. Files within this namespace will be automatically included in the build, so you can modify and replace existing .bin files or add your individual styles.
 
 To do that, navigate to:
 ```

@@ -52,6 +52,7 @@ public:
     virtual bool init(bool ignore_checks) {
         return true;
     }
+    virtual void exit() {};
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
@@ -94,10 +95,10 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
-    const Vector3f& get_desired_velocity() {
+    const Vector3f& get_vel_desired_cms() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:
-        return pos_control->get_desired_velocity();
+        return pos_control->get_vel_desired_cms();
     }
 
 protected:
@@ -156,16 +157,14 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void get_climb_rates(float& pilot_climb_rate,
-                             float& takeoff_climb_rate);
+        void do_pilot_takeoff(float& pilot_climb_rate);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
+        float take_off_start_alt;
+        float take_off_complete_alt ;
     };
 
     static _TakeOff takeoff;
@@ -275,7 +274,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
@@ -350,16 +349,31 @@ public:
     Number mode_number() const override { return Number::AUTO; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
+    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED; }
+
+    // Auto modes
+    enum class SubMode : uint8_t {
+        TAKEOFF,
+        WP,
+        LAND,
+        RTL,
+        CIRCLE_MOVE_TO_EDGE,
+        CIRCLE,
+        NAVGUIDED,
+        LOITER,
+        LOITER_TO_ALT,
+        NAV_PAYLOAD_PLACE,
+    };
 
     // Auto
-    AutoMode mode() const { return _mode; }
+    SubMode mode() const { return _mode; }
 
     bool loiter_start();
     void rtl_start();
@@ -435,7 +449,7 @@ private:
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
@@ -548,7 +562,6 @@ public:
     void run() override;
 
 protected:
-    bool start(void) override;
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
     void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
@@ -567,6 +580,7 @@ public:
     Number mode_number() const override { return Number::AUTOTUNE; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -575,7 +589,6 @@ public:
     bool is_autopilot() const override { return false; }
 
     void save_tuning_gains();
-    void stop();
     void reset();
 
 protected:
@@ -614,8 +627,6 @@ protected:
     const char *name4() const override { return "BRAK"; }
 
 private:
-
-    void init_target();
 
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
@@ -837,6 +848,9 @@ public:
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
+    // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
+    bool set_attitude_target_provides_thrust() const;
+
     void limit_clear();
     void limit_init_time_and_pos();
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
@@ -846,7 +860,15 @@ public:
 
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
-    GuidedMode mode() const { return guided_mode; }
+    enum class SubMode {
+        TakeOff,
+        WP,
+        Velocity,
+        PosVel,
+        Angle,
+    };
+
+    SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
@@ -867,6 +889,7 @@ private:
         AllowArmingFromTX = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
+        SetAttitudeTarget_ThrustAsThrust = (1U << 3),
     };
 
     void pos_control_start();
@@ -881,7 +904,7 @@ private:
     bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
-    GuidedMode guided_mode = Guided_TakeOff;
+    SubMode guided_mode = SubMode::TakeOff;
     bool send_notification;     // used to send one time notification to ground station
 
 };
@@ -1040,22 +1063,24 @@ private:
     RPMode roll_mode;
     RPMode pitch_mode;
 
-    uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-    uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-
     // pilot input related variables
     float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
     float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
-    float brake_gain;                           // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from brake_rate)
-    float brake_roll;                           // target roll angle during braking periods
-    float brake_pitch;                          // target pitch angle during braking periods
-    int16_t brake_timeout_roll;                 // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    int16_t brake_timeout_pitch;                // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    float brake_angle_max_roll;                 // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    float brake_angle_max_pitch;                // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    int16_t brake_to_loiter_timer;              // cycles to mix brake and loiter controls in POSHOLD_BRAKE_TO_LOITER
+    struct {
+        uint8_t time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+
+        float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
+        float roll;                         // target roll angle during braking periods
+        float pitch;                        // target pitch angle during braking periods
+        int16_t timeout_roll;               // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        int16_t timeout_pitch;              // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        float angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        int16_t to_loiter_timer;            // cycles to mix brake and loiter controls in POSHOLD_TO_LOITER
+    } brake;
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
@@ -1101,15 +1126,15 @@ public:
     bool get_wp(Location &loc) override;
 
     // RTL states
-    enum RTLState {
-        RTL_Starting,
-        RTL_InitialClimb,
-        RTL_ReturnHome,
-        RTL_LoiterAtHome,
-        RTL_FinalDescent,
-        RTL_Land
+    enum class SubMode : uint8_t {
+        STARTING,
+        INITIAL_CLIMB,
+        RETURN_HOME,
+        LOITER_AT_HOME,
+        FINAL_DESCENT,
+        LAND
     };
-    RTLState state() { return _state; }
+    SubMode state() { return _state; }
 
     // this should probably not be exposed
     bool state_complete() const { return _state_complete; }
@@ -1152,7 +1177,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1203,9 +1228,18 @@ public:
     bool is_autopilot() const override { return true; }
 
     void save_position();
-    void exit();
+    void exit() override;
 
     bool is_landing() const override;
+
+    // Safe RTL states
+    enum class SubMode : uint8_t {
+        WAIT_FOR_PATH_CLEANUP,
+        PATH_FOLLOW,
+        PRELAND_POSITION,
+        DESCEND,
+        LAND
+    };
 
 protected:
 
@@ -1224,7 +1258,7 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
+    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
@@ -1464,7 +1498,7 @@ public:
     Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1507,7 +1541,7 @@ public:
     } zigzag_direction;
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     // auto control methods.  copter flies grid pattern

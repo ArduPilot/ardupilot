@@ -24,7 +24,7 @@
 
 #define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
 #define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
-#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 1000 // we should check the 3D boundary faces after every this many ms
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 750 // we should check the 3D boundary faces after every this many ms
 
 class AP_Proximity_Backend
 {

@@ -38,13 +38,13 @@ void Sub::Log_Write_Control_Tuning()
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
         throttle_hover      : motors.get_throttle_hover(),
-        desired_alt         : pos_control.get_alt_target() / 100.0f,
+        desired_alt         : pos_control.get_pos_target_z_cm() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
-        target_climb_rate   : (int16_t)pos_control.get_vel_target_z(),
+        target_climb_rate   : (int16_t)pos_control.get_vel_target_z_cms(),
         climb_rate          : climb_rate
     };
     logger.WriteBlock(&pkt, sizeof(pkt));

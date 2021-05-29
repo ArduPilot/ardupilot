@@ -126,9 +126,6 @@ private:
     Parameters g;
     ParametersG2 g2;
 
-    // used to detect MAVLink acks from GCS to stop compassmot
-    uint8_t command_ack_counter;
-
     // primary input control channels
     RC_Channel *channel_right;
     RC_Channel *channel_front;
@@ -193,7 +190,7 @@ private:
             uint8_t initialised_params      : 1; // 24      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
             uint8_t unused3                 : 1; // 25      // was compass_init_location; true when the compass's initial location has been set
             uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
-            uint8_t armed_with_switch       : 1; // 27      // we armed using a arming switch
+            uint8_t unused4                 : 1; // 27      // was "we armed using a arming switch"
         };
         uint32_t value;
     } ap_t;
@@ -215,8 +212,6 @@ private:
 
     // Failsafe
     struct {
-        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
-
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
         uint8_t radio               : 1; // A status flag for the radio failsafe
@@ -436,7 +431,6 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
     void Log_Sensor_Health();
-    void Log_Write_Precland();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
@@ -491,7 +485,6 @@ private:
     bool rangefinder_alt_ok();
     bool rangefinder_up_ok();
     void rpm_update();
-    void init_optflow();
     void update_optical_flow(void);
     void compass_cal_update(void);
     void accel_cal_update(void);

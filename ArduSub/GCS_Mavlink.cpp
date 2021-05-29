@@ -92,7 +92,7 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         targets.z * 1.0e-2f,
         sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
         MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        sub.pos_control.get_alt_error() * 1.0e-2f,
+        sub.pos_control.get_pos_error_z_cm() * 1.0e-2f,
         0,
         0);
 }
@@ -529,15 +529,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
-    case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
-        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg.sysid != sub.g.sysid_my_gcs) {
-            break;
-        }
-        sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        break;
-    }
-
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
         if (msg.sysid != sub.g.sysid_my_gcs) {
             break;    // Only accept control from our gcs
@@ -552,8 +543,9 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         sub.transform_manual_control_to_rc_override(packet.x,packet.y,packet.z,packet.r,packet.buttons);
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
-        // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        // a RC override message is considered to be a 'heartbeat'
+        // from the ground station for failsafe purposes
+        gcs().sysid_myggcs_seen(AP_HAL::millis());
         break;
     }
 
@@ -687,7 +679,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
          */
 
         if (!pos_ignore && sub.control_mode == ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_alt_target(packet.alt*100);
+            sub.pos_control.set_pos_target_z_cm(packet.alt*100);
             break;
         }
 
@@ -785,13 +777,6 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
             MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
             GCS_MAVLINK::capabilities()
         );
-}
-
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {

@@ -38,10 +38,11 @@ public:
     // decode pilot mainsail input and return in steer_out and throttle_out arguments
     // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
     // wingsail_out is in the range -100 to 100, defaults to 0
-    void get_pilot_desired_mainsail(float &mainsail_out, float &wingsail_out);
+    // mast_rotation_out is in the range -100 to 100, defaults to 0
+    void get_pilot_desired_mainsail(float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
 
     // calculate throttle and mainsail angle required to attain desired speed (in m/s)
-    void get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out, float &wingsail_out);
+    void get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out, float &wingsail_out, float &mast_rotation_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;

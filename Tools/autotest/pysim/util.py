@@ -137,9 +137,14 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
     return True
 
 
-def build_examples(board, j=None, debug=False, clean=False):
+def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, extra_configure_args=[]):
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board,
+                      j=j,
+                      debug=debug,
+                      math_check_indexes=math_check_indexes,
+                      extra_args=extra_configure_args)
 
     # then clean
     if clean:
@@ -163,9 +168,14 @@ def build_replay(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
-def build_tests(board, j=None, debug=False, clean=False):
+def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, extra_configure_args=[]):
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board,
+                      j=j,
+                      debug=debug,
+                      math_check_indexes=math_check_indexes,
+                      extra_args=extra_configure_args)
 
     # then clean
     if clean:

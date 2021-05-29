@@ -335,9 +335,6 @@ private:
         // number of low throttle values
         uint8_t throttle_counter;
 
-        // the time when the last HEARTBEAT message arrived from a GCS
-        uint32_t last_heartbeat_ms;
-
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
         uint32_t short_timer_ms;
 

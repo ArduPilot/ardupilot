@@ -12,7 +12,9 @@
 #endif
 
 // maximum number of sensor instances
+#ifndef BARO_MAX_INSTANCES
 #define BARO_MAX_INSTANCES 3
+#endif
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
@@ -60,7 +62,12 @@ public:
 
     // healthy - returns true if sensor and derived altitude are good
     bool healthy(void) const { return healthy(_primary); }
+#ifdef HAL_BUILD_AP_PERIPH
+    // calibration and alt check not valid for AP_Periph
+    bool healthy(uint8_t instance) const { return sensors[instance].healthy; }
+#else
     bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated; }
+#endif
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;

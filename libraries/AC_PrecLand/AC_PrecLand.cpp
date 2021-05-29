@@ -14,8 +14,8 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: ENABLED
-    // @DisplayName: Precision Land enabled/disabled and behaviour
-    // @Description: Precision Land enabled/disabled and behaviour
+    // @DisplayName: Precision Land enabled/disabled
+    // @Description: Precision Land enabled/disabled
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 0, AP_PARAM_FLAG_ENABLE),
@@ -30,8 +30,8 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: YAW_ALIGN
     // @DisplayName: Sensor yaw alignment
     // @Description: Yaw angle from body x-axis to sensor x-axis.
-    // @Range: 0 360
-    // @Increment: 1
+    // @Range: 0 36000
+    // @Increment: 10
     // @User: Advanced
     // @Units: cdeg
     AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align, 0),
@@ -150,24 +150,24 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     }
 
     // instantiate backend based on type parameter
-    switch ((enum PrecLandType)(_type.get())) {
+    switch ((Type)(_type.get())) {
         // no type defined
-        case PRECLAND_TYPE_NONE:
+        case Type::NONE:
         default:
             return;
         // companion computer
-        case PRECLAND_TYPE_COMPANION:
+        case Type::COMPANION:
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
-        case PRECLAND_TYPE_IRLOCK:
+        case Type::IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        case PRECLAND_TYPE_SITL_GAZEBO:
+        case Type::SITL_GAZEBO:
             _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
             break;
-        case PRECLAND_TYPE_SITL:
+        case Type::SITL:
             _backend = new AC_PrecLand_SITL(*this, _backend_state);
             break;
 #endif
@@ -209,6 +209,12 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     if (_backend != nullptr && _enabled) {
         _backend->update();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_log_ms > 40) {  // 25Hz
+        last_log_ms = now;
+        Write_Precland();
     }
 }
 
@@ -257,11 +263,11 @@ bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
-void AC_PrecLand::handle_msg(const mavlink_message_t &msg)
+void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
     // run backend update
     if (_backend != nullptr) {
-        _backend->handle_msg(msg);
+        _backend->handle_msg(packet, timestamp_ms);
     }
 }
 
@@ -273,8 +279,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 {
     const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
-    switch (_estimator_type) {
-        case ESTIMATOR_TYPE_RAW_SENSOR: {
+    switch ((EstimatorType)_estimator_type.get()) {
+        case EstimatorType::RAW_SENSOR: {
             // Return if there's any invalid velocity data
             for (uint8_t i=0; i<_inertial_history->available(); i++) {
                 const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
@@ -309,7 +315,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
             break;
         }
-        case ESTIMATOR_TYPE_KALMAN_FILTER: {
+        case EstimatorType::KALMAN_FILTER: {
             // Predict
             if (target_acquired()) {
                 const float& dt = inertial_data_delayed->dt;
@@ -454,3 +460,38 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
 }
+
+// Write a precision landing entry
+void AC_PrecLand::Write_Precland()
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    Vector3f target_pos_meas;
+    Vector2f target_pos_rel;
+    Vector2f target_vel_rel;
+    get_target_position_relative_cm(target_pos_rel);
+    get_target_velocity_relative_cms(target_vel_rel);
+    get_target_position_measurement_cm(target_pos_meas);
+
+    const struct log_Precland pkt {
+        LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
+        time_us         : AP_HAL::micros64(),
+        healthy         : healthy(),
+        target_acquired : target_acquired(),
+        pos_x           : target_pos_rel.x,
+        pos_y           : target_pos_rel.y,
+        vel_x           : target_vel_rel.x,
+        vel_y           : target_vel_rel.y,
+        meas_x          : target_pos_meas.x,
+        meas_y          : target_pos_meas.y,
+        meas_z          : target_pos_meas.z,
+        last_meas       : last_backend_los_meas_ms(),
+        ekf_outcount    : ekf_outlier_count(),
+        estimator       : (uint8_t)_estimator_type
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+

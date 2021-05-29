@@ -323,7 +323,6 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: XT: the vehicle's current distance from the current travel segment
 // @Field: XTi: integration of the vehicle's crosstrack error
 // @Field: AspdE: difference between vehicle's airspeed and desired airspeed
-// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
 // @Field: TLat: target latitude
 // @Field: TLng: target longitude
 // @Field: TAlt: target altitude
@@ -332,16 +331,24 @@ const struct LogStructure Plane::log_structure[] = {
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
 
 // @LoggerMessage: ATRP
-// @Description: Pitch/Roll AutoTune messages for Plane 
+// @Description: Plane AutoTune
+// @Vehicles: Plane
 // @Field: TimeUS: Time since system startup
-// @Field: Type: Type of autotune (0 = Roll/ 1 = Pitch)
-// @Field: State: AutoTune state
-// @Field: Servo: Normalised control surface output (between -4500 to 4500)
-// @Field: Demanded: Desired Pitch/Roll rate
-// @Field: Achieved: Achieved Pitch/Roll rate
-// @Field: P: Proportional part of PID
+// @Field: Axis: tuning axis
+// @Field: State: tuning state
+// @Field: Sur: control surface deflection
+// @Field: Tar: target rate
+// @Field: Act: actual rate
+// @Field: FF0: FF value single sample
+// @Field: FF: FF value
+// @Field: P: P value
+// @Field: I: I value
+// @Field: D: D value
+// @Field: Action: action taken
+// @Field: RMAX: Rate maximum
+// @Field: TAU: time constant
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
-      "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P", "s---dd-", "F---00-" },
+      "ATRP", "QBBffffffffBff", "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,I,D,Action,RMAX,TAU", "s#-dkk------ks", "F--00000000-00" },
 
 // @LoggerMessage: STAT
 // @Description: Current status of the aircraft
@@ -387,7 +394,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
-// @Field: Limit: 1 if I term is limited due to output saturation 
+// @Field: SRate: slew rate
+// @Field: Limit: 1 if I term is limited due to output saturation
     { LOG_PIQR_MSG, sizeof(log_PID),
       "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
     { LOG_PIQP_MSG, sizeof(log_PID),
@@ -408,7 +416,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
-// @Field: Limit: 1 if I term is limited due to output saturation 
+// @Field: SRate: slew rate
+// @Field: Limit: 1 if I term is limited due to output saturation
     { LOG_PIDG_MSG, sizeof(log_PID),
       "PIDG", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
 

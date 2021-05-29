@@ -342,4 +342,8 @@ private:
     void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
     void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
 
+    // logging
+    void Write_ACC(const uint8_t instance, const uint64_t sample_us, const Vector3f &accel) const; // Write ACC data packet: raw accel data
+    void Write_GYR(const uint8_t instance, const uint64_t sample_us, const Vector3f &gyro) const;  // Write GYR data packet: raw gyro data
+
 };

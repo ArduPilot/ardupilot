@@ -12,6 +12,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+// if this assert fails then fix it and the comment in GCS.h where
+// _statustext_queue is declared
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+assert_storage_size<GCS::statustext_t, 58> _assert_statustext_t_size;
+#endif
+
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
                                   uint32_t &health)
@@ -150,7 +156,7 @@ void GCS::update_sensor_status_flags()
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (compass.enabled() && compass.healthy() && ahrs.use_compass()) {
+    if (compass.enabled() && compass.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
 

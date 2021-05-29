@@ -12,14 +12,12 @@ bool ModeLand::init(bool ignore_checks)
         loiter_nav->init_target(stopping_point);
     }
 
-    // initialize vertical speeds and leash lengths
-    pos_control->set_max_speed_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
-    pos_control->set_max_accel_z(wp_nav->get_accel_z());
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        pos_control->init_z_controller();
     }
 
     land_start_time = millis();
@@ -75,7 +73,7 @@ void ModeLand::gps_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
-        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+        if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
         }
 
@@ -128,7 +126,7 @@ void ModeLand::nogps_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
-        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+        if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
         }
 

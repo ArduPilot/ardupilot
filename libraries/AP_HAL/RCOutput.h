@@ -58,6 +58,12 @@ public:
     virtual void     set_reversible_mask(uint16_t chanmask) {}
     
     /*
+     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    virtual void     set_reversed_mask(uint16_t chanmask) {}
+
+    /*
      * Delay subsequent calls to write() going to the underlying hardware in
      * order to group related writes together. When all the needed writes are
      * done, call push() to commit the changes.
@@ -187,6 +193,38 @@ public:
         MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
         MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
     };
+
+    // https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
+    enum BLHeliDshotCommand : uint8_t {
+      DSHOT_RESET = 0,
+      DSHOT_BEEP1 = 1,
+      DSHOT_BEEP2 = 2,
+      DSHOT_BEEP3 = 3,
+      DSHOT_BEEP4 = 4,
+      DSHOT_BEEP5 = 5,
+      DSHOT_ESC_INFO = 6,
+      DSHOT_ROTATE = 7,
+      DSHOT_ROTATE_ALTERNATE = 8,
+      DSHOT_3D_OFF = 9,
+      DSHOT_3D_ON = 10,
+      DSHOT_SAVE = 12,
+      DSHOT_NORMAL = 20,
+      DSHOT_REVERSE = 21,
+      DSHOT_LED0_ON = 22,
+      DSHOT_LED1_ON = 23,
+      DSHOT_LED2_ON = 24,
+      DSHOT_LED3_ON = 25,
+      DSHOT_LED0_OFF = 26,
+      DSHOT_LED1_OFF = 27,
+      DSHOT_LED2_OFF = 28,
+      DSHOT_LED3_OFF = 29,
+    };
+
+    enum DshotEscType {
+      DSHOT_ESC_NONE = 0,
+      DSHOT_ESC_BLHELI = 1
+    };
+
     virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 
     /*
@@ -210,6 +248,39 @@ public:
       with DShot to get telemetry feedback
      */
     virtual void set_bidir_dshot_mask(uint16_t mask) {}
+
+    /*
+      mark escs as active for the purpose of sending dshot commands
+     */
+    virtual void set_active_escs_mask(uint16_t mask) {}
+
+    /*
+      Set the dshot rate as a multiple of the loop rate
+     */
+    virtual void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) {}
+
+    /*
+      Set the dshot ESC type
+     */
+    virtual void set_dshot_esc_type(DshotEscType esc_type) {}
+
+    virtual DshotEscType get_dshot_esc_type() const { return DSHOT_ESC_NONE; }
+
+    const static uint32_t ALL_CHANNELS = 255;
+    /*
+      Send a dshot command, if command timout is 0 then 10 commands are sent
+      chan is the servo channel to send the command to
+     */
+    virtual void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) {}
+
+    /*
+      If not already done flush any dshot commands still pending
+     */
+    virtual bool prepare_for_arming() { return true; }
+    /*
+      set the number of motor poles to be used in rpm calculations
+     */
+    virtual void set_motor_poles(uint8_t poles) {}
 
     /*
       setup serial led output for a given channel number, with

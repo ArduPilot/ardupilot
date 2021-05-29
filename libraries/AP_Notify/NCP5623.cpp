@@ -45,6 +45,8 @@ NCP5623::NCP5623(uint8_t bus)
 bool NCP5623::write(uint8_t reg, uint8_t data)
 {
     uint8_t msg[1] = { 0x00 };
+    // scale to 0 to 0x1F
+    data = (data * 255U) / 0x1FU;
     msg[0] = ((reg & 0xe0) | (data & 0x1f));
     bool ret = _dev->transfer(msg, 1, nullptr, 0);
     return ret;

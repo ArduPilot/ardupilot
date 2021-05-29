@@ -573,6 +573,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "KakuteF4",
                 "KakuteF7",
                 "KakuteF7Mini",
+                "KakuteF4Mini",
                 "MambaF405v2",
                 "MatekF405",
                 "MatekF405-bdshot",
@@ -593,6 +594,9 @@ is bob we will attempt to checkout bob-AVR'''
                 "mini-pix",
                 "airbotf4",
                 "revo-mini",
+                "revo-mini-bdshot",
+                "revo-mini-i2c",
+                "revo-mini-i2c-bdshot",
                 "CubeBlack",
                 "CubeBlack+",
                 "CubePurple",
@@ -636,6 +640,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "BeastH7",
                 "BeastF7",
                 "FlywooF745",
+                "luminousbee5",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -659,6 +664,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeBlack-periph",
                 "MatekH743-periph",
                 "HitecMosaic",
+                "FreeflyRTK",
                 ]
 
     def build_arducopter(self, tag):

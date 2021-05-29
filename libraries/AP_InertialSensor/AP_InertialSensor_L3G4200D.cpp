@@ -250,8 +250,10 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
  */
 void AP_InertialSensor_L3G4200D::start(void)
 {
-    _gyro_instance  = _imu.register_gyro(800, _dev_gyro->get_bus_id_devtype(DEVTYPE_L3G4200D));
-    _accel_instance = _imu.register_accel(800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D));
+    if (!_imu.register_gyro(_gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_L3G4200D)) ||
+        !_imu.register_accel(_accel_instance, 800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D))) {
+        return;
+    }
 
     // start the timer process to read samples
     _dev_accel->register_periodic_callback(1250, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate_accel, void));

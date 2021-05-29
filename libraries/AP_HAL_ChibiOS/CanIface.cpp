@@ -590,6 +590,9 @@ void CANIface::pollErrorFlagsFromISR()
 {
     const uint8_t lec = uint8_t((can_->ESR & bxcan::ESR_LEC_MASK) >> bxcan::ESR_LEC_SHIFT);
     if (lec != 0) {
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+        stats.esr = can_->ESR; // Record error status
+#endif
         can_->ESR = 0;
 
         // Serving abort requests
@@ -950,7 +953,8 @@ void CANIface::get_stats(ExpandingString &str)
                "rx_overflow:    %lu\n"
                "rx_errors:      %lu\n"
                "num_busoff_err: %lu\n"
-               "num_events:     %lu\n",
+               "num_events:     %lu\n"
+               "ESR:            %lx\n",
                stats.tx_requests,
                stats.tx_rejected,
                stats.tx_success,
@@ -960,8 +964,8 @@ void CANIface::get_stats(ExpandingString &str)
                stats.rx_overflow,
                stats.rx_errors,
                stats.num_busoff_err,
-               stats.num_events);
-    memset(&stats, 0, sizeof(stats));
+               stats.num_events,
+               stats.esr);
 }
 #endif
 

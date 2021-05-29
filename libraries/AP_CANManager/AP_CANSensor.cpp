@@ -95,6 +95,24 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
     return true;
 }
 
+bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+{
+    if (!_initialized) {
+        debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized for write_frame");
+        return false;
+    }
+
+    bool read_select = false;
+    bool write_select = true;
+    bool ret = _can_iface->select(read_select, write_select, &out_frame, AP_HAL::native_micros64() + timeout_us);
+    if (!ret || !write_select) {
+        return false;
+    }
+
+    uint64_t deadline = AP_HAL::native_micros64() + 2000000;
+    return (_can_iface->send(out_frame, deadline, AP_HAL::CANIface::AbortOnError) == 1);
+}
+
 void CANSensor::loop()
 {
     while (!hal.scheduler->is_system_initialized()) {

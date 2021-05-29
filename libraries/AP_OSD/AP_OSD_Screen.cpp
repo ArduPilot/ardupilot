@@ -46,6 +46,7 @@
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AC_Fence/AC_Fence.h>
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
@@ -342,8 +343,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
-
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     // @Param: BLHTEMP_EN
     // @DisplayName: BLHTEMP_EN
     // @Description: Displays first esc's temp
@@ -392,7 +392,6 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
-
     // @Param: GPSLAT_EN
     // @DisplayName: GPSLAT_EN
     // @Description: Displays GPS latitude
@@ -961,6 +960,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(restvolt, "RESTVOLT", 58, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: FENCE_EN
+    // @DisplayName: FENCE_EN
+    // @Description: Displays indication of fence enable and breach
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: FENCE_X
+    // @DisplayName: FENCE_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: FENCE_Y
+    // @DisplayName: FENCE_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(fence, "FENCE", 59, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
@@ -1055,6 +1070,11 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AH        0xF3
 #define SYM_MW        0xF4
 #define SYM_CLK       0xBC
+#define SYM_KILO      0x4B
+#define SYM_TERALT 0xEF
+#define SYM_FENCE_ENABLED 0xF5
+#define SYM_FENCE_DISABLED 0xF6
+
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -1583,52 +1603,39 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     }
 }
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
-
+#if HAL_WITH_ESC_TELEM
 void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-
-        // AP_BLHeli & blh = AP_BLHeli::AP_BLHeli();
-        uint8_t esc_temp = td.temperature;
-        backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
+    int16_t etemp;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_temperature(0, etemp)) {
+        return;
     }
+
+    uint8_t esc_temp = uint8_t(etemp / 100);
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
 }
 
 void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-        backend->write(x, y, false, "%5d%c", td.rpm, SYM_RPM);
+    float rpm;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_rpm(0, rpm)) {
+        return;
     }
+    backend->write(x, y, false, "%3.1f%c%c", uint16_t(rpm) * 0.001f, SYM_KILO, SYM_RPM);
 }
 
 void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-
-        float esc_amps = td.current * 0.01;
-        backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
+    float esc_amps;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_current(0, esc_amps)) {
+        return;
     }
+    backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
 }
-#endif  //HAVE_AP_BLHELI_SUPPORT
+#endif
 
 void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
 {
@@ -1934,16 +1941,32 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 {
-    AP_Terrain &terrain = AP::terrain();
+    AP_Terrain *terrain = AP::terrain();
 
     float terrain_altitude;
-    if (terrain.height_above_terrain(terrain_altitude,true)) {
-        backend->write(x, y, terrain_altitude < osd->warn_terr, "%4d%c", (int)u_scale(ALTITUDE, terrain_altitude), u_icon(ALTITUDE));
+    if (terrain != nullptr && terrain->height_above_terrain(terrain_altitude,true)) {
+        bool blink = (osd->warn_terr != -1)? (terrain_altitude < osd->warn_terr) : false; //blink if warn_terr is not disabled and alt above terrain is below warning value
+        backend->write(x, y, blink, "%4d%c%c", (int)u_scale(ALTITUDE, terrain_altitude), u_icon(ALTITUDE), SYM_TERALT);
      } else {
-        backend->write(x, y, false, " ---%c", u_icon(ALTITUDE));
+        backend->write(x, y, false, " ---%c%c", u_icon(ALTITUDE),SYM_TERALT);
      }
 }
 #endif
+
+
+void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
+{
+    AC_Fence *fenceptr = AP::fence();
+    if (fenceptr == nullptr) {
+       return;
+    }
+    if (fenceptr->enabled() && fenceptr->present()) {
+        backend->write(x, y, fenceptr->get_breaches(), "%c", SYM_FENCE_ENABLED);
+    } else {
+        backend->write(x, y, false, "%c", SYM_FENCE_DISABLED);
+    }
+}
+
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
@@ -1987,6 +2010,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+    DRAW_SETTING(fence);
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
@@ -1997,7 +2021,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(clk);
     DRAW_SETTING(vtx_power);
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#ifdef HAL_WITH_ESC_TELEM
     DRAW_SETTING(blh_temp);
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);

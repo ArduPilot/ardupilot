@@ -7,6 +7,7 @@
 #define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
+#define HAL_DSHOT_ALARM 0
 
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
@@ -186,17 +187,13 @@
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
     #define HAL_NUM_CAN_IFACES 1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-    #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(LSM9DS1, "lsm9ds1_ag", ROTATION_PITCH_180)
-    #define HAL_MAG_PROBE_LIST PROBE_MAG_SPI(LSM9DS1, "lsm9ds1_m",  ROTATION_NONE)
-    #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
-    #define HAL_BATT_CURR_PIN    0
+    #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "icm20602", ROTATION_ROLL_180_YAW_270)
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(MMC5XX3, 1, 0x30, false, ROTATION_YAW_90)
+    #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 4, 0x76)
+    #define HAL_BATT_CURR_PIN    4
     #define HAL_BATT_CURR_SCALE  1
-    #define HAL_BATT_VOLT_PIN    1
+    #define HAL_BATT_VOLT_PIN    5
     #define HAL_BATT_VOLT_SCALE  1
-    #define HAL_RGBLED_RED   24
-    #define HAL_RGBLED_GREEN 25
-    #define HAL_RGBLED_BLUE  26
-    #define HAL_RGBLED_NORMAL_POLARITY false
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
     #define HAL_GPIO_A_LED_PIN 66
     #define HAL_GPIO_B_LED_PIN 67

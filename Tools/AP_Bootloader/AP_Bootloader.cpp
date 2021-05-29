@@ -37,7 +37,11 @@ extern "C" {
     int main(void);
 }
 
-struct boardinfo board_info;
+struct boardinfo board_info = {
+    .board_type = APJ_BOARD_ID,
+    .board_rev = 0,
+    .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024
+};
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
 #define HAL_BOOTLOADER_TIMEOUT 5000
@@ -49,9 +53,6 @@ struct boardinfo board_info;
 
 int main(void)
 {
-    board_info.board_type = APJ_BOARD_ID;
-    board_info.board_rev = 0;
-    board_info.fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024;
     if (BOARD_FLASH_SIZE > 1024 && check_limit_flash_1M()) {
         board_info.fw_size = (1024 - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
     }
@@ -107,7 +108,15 @@ int main(void)
         timeout = 0;
     }
 #endif
-    
+#if defined(HAL_GPIO_PIN_VBUS) && defined(HAL_ENABLE_VBUS_CHECK)
+#if HAL_USE_SERIAL_USB == TRUE
+    else if (palReadLine(HAL_GPIO_PIN_VBUS) == 0)  {
+        try_boot = true;
+        timeout = 0;
+    }
+#endif
+#endif
+
     // if we fail to boot properly we want to pause in bootloader to give
     // a chance to load new app code
     set_fast_reboot(RTC_BOOT_OFF);

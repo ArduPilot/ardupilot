@@ -5,10 +5,10 @@ import copy
 from emit import Emit
 
 
-# Emit APM documentation in JSON format
+# Emit ArduPilot documentation in JSON format
 class JSONEmit(Emit):
-    def __init__(self):
-        Emit.__init__(self)
+    def __init__(self, *args, **kwargs):
+        Emit.__init__(self, *args, **kwargs)
         json_fname = 'apm.pdef.json'
         self.f = open(json_fname, mode='w')
         self.content = {"json": {"version": 0}}
@@ -33,10 +33,7 @@ class JSONEmit(Emit):
         # Copy content to avoid any modification
         g = copy.deepcopy(g)
 
-        # Get vehicle name
-        if 'truename' in g.__dict__:
-            self.name = g.__dict__['truename']
-            self.content[self.name] = {}
+        self.content[self.name] = {}
 
         # Check all params available
         for param in g.params:

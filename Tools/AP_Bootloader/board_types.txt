@@ -113,7 +113,13 @@ AP_HW_MRO_CTRL_ZERO_OEM_H7           1024
 AP_HW_BEASTH7                        1025
 AP_HW_BEASTF7                        1026
 AP_HW_FlywooF745                     1027
-
+AP_HW_FreeflyRTK                     1028
+AP_HW_luminousbee5                   1029
+AP_HW_KAKUTEF4_MINI                  1030
+AP_HW_H31_PIXC4_PI                   1031
+AP_HW_H31_PIXC4_JETSON               1032
+AP_HW_CUBEORANGE_JOEY                1033
+AP_HW_SIERRAF9PGPS_PERIPH            1034
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401

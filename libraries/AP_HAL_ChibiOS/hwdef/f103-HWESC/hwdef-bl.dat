@@ -1,4 +1,4 @@
-include ../f103-periph/hwdef-bl.dat
+include ../f103-periph/hwdef-bl.inc
 
 # start with a fixed node ID so the board is usable without DNA
 define HAL_CAN_DEFAULT_NODE_ID 0

@@ -69,6 +69,9 @@ class LoggerDocco(object):
                 self.fields_order.append(field)
 
         def set_field_description(self, field, description):
+            if field in self.fields:
+                raise ValueError("Already have field %s in %s" %
+                                 (field, self.name))
             self.ensure_field(field)
             self.fields[field]["description"] = description
 

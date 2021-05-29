@@ -91,13 +91,18 @@ void Blimp::handle_battery_failsafe(const char *type_str, const int8_t action)
 void Blimp::failsafe_gcs_check()
 {
     // Bypass GCS failsafe checks if disabled or GCS never connected
-    if (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0) {
+    if (g.failsafe_gcs == FS_GCS_DISABLED) {
         return;
     }
 
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    if (gcs_last_seen_ms == 0) {
+         return;
+     }
+
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
-    const uint32_t last_gcs_update_ms = millis() - failsafe.last_heartbeat_ms;
+    const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
     // Determine which event to trigger

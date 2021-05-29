@@ -24,6 +24,9 @@
 #if defined(STM32H7)
 // always use a bouncebuffer on H7, to ensure alignment and padding
 #define IS_DMA_SAFE(addr) false
+#elif defined(STM32F732xx)
+// always use bounce buffer on F732
+#define IS_DMA_SAFE(addr) false
 #elif defined(STM32F7)
 // on F76x we only consider first half of DTCM memory as DMA safe, 2nd half is used as fast memory for EKF
 // on F74x we only have 64k of DTCM

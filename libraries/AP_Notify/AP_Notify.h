@@ -72,6 +72,7 @@ public:
         Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
         Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
+        Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
         Notify_LED_MAX
     };
 
@@ -155,7 +156,9 @@ public:
     // play a tune string
     static void play_tune(const char *tune);
 
-    bool buzzer_enabled() const { return _buzzer_enable; }
+    bool buzzer_enabled() const { return _buzzer_type != 0; }
+
+    uint8_t get_buzzer_types() const { return _buzzer_type; }
 
     // set flight mode string
     void set_flight_mode_str(const char *str);
@@ -189,7 +192,7 @@ private:
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
-    AP_Int8 _buzzer_enable;
+    AP_Int8 _buzzer_type;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;

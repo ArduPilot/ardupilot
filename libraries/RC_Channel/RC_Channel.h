@@ -195,6 +195,7 @@ public:
         VTX_POWER =           94, // VTX power level
         FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
+        WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
@@ -237,15 +238,30 @@ public:
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
 
+    enum class AuxFuncTriggerSource : uint8_t {
+        INIT,
+        RC,
+        BUTTON,
+        MAVLINK,
+        MISSION,
+        SCRIPTING,
+    };
+
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
-    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    // wrapper function around do_aux_function which allows us to log
+    bool run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
+    // pwm value under which we consider that Radio value is invalid
+    static const uint16_t RC_MIN_LIMIT_PWM = 900;
+    // pwm value above which we consider that Radio value is invalid
+    static const uint16_t RC_MAX_LIMIT_PWM = 2200;
+
     // pwm value above which we condider that Radio min value is invalid
     static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
     // pwm value under which we condider that Radio max value is invalid
@@ -264,6 +280,9 @@ public:
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
+
+    // virtual function to be overridden my subclasses
+    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
     virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -385,6 +404,10 @@ public:
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
+    // returns a mask indicating which channels have overrides.  Bit 0
+    // is RC channel 1.  Beware this is not a cheap call.
+    static uint16_t get_override_mask();
+
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
     RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
@@ -482,8 +505,10 @@ public:
 
     uint32_t last_input_ms() const { return last_update_ms; };
 
-    bool do_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos) {
-        return rc_channel(0)->do_aux_function(ch_option, pos);
+    // method for other parts of the system (e.g. Button and mavlink)
+    // to trigger auxillary functions
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
+        return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
 
 protected:

@@ -1290,6 +1290,7 @@ class AutoTest(ABC):
         print(formatted_text)
         if (send_statustext and
                 self.mav is not None and
+                self.mav.port is not None and
                 self.last_progress_sent_as_statustext != text):
             self.send_statustext(formatted_text)
             self.last_progress_sent_as_statustext = text
@@ -4155,6 +4156,9 @@ class AutoTest(ABC):
     def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
+        if dead.sitl_commandline_customised and len(self.contexts):
+            self.contexts[-1].sitl_commandline_customised = True
+
         dead_parameters_dict = {}
         for p in dead.parameters:
             dead_parameters_dict[p[0]] = p[1]
@@ -4525,7 +4529,7 @@ class AutoTest(ABC):
                 return mode_map.get(mode)
         if mode in mode_map.values():
             return mode
-        self.progress("Available modes '%s'" % mode_map)
+        self.progress("No mode (%s); available modes '%s'" % (mode, mode_map))
         raise ErrorException("Unknown mode '%s'" % mode)
 
     def run_cmd_do_set_mode(self,
@@ -4627,7 +4631,7 @@ class AutoTest(ABC):
             self.wait_distance(distance, accuracy=2)
             self.set_rc(3, 1500)
 
-    def guided_achieve_heading(self, heading):
+    def guided_achieve_heading(self, heading, accuracy=None):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 200:
@@ -4644,6 +4648,10 @@ class AutoTest(ABC):
             )
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             self.progress("heading=%d want=%d" % (m.heading, int(heading)))
+            if accuracy is not None:
+                delta = abs(m.heading - int(heading))
+                if delta <= accuracy:
+                    return
             if m.heading == int(heading):
                 return
 
@@ -4984,6 +4992,15 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def wait_distance_to_waypoint(self, wp_num, distance_min, distance_max, **kwargs):
+        # TODO: use mission_request_partial_list_send
+        wps = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        m = wps[wp_num]
+        self.progress("m: %s" % str(m))
+        loc = mavutil.location(m.x / 1.0e7, m.y / 1.0e7, 0, 0)
+        self.progress("loc: %s" % str(loc))
+        self.wait_distance_to_location(loc, distance_min, distance_max, **kwargs)
+
     def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         assert distance_min <= distance_max, "Distance min should be less than distance max."
@@ -5047,6 +5064,59 @@ class AutoTest(ABC):
             timeout=timeout,
             **kwargs
         )
+
+    def distance_to_local_position(self, local_pos, timeout=30):
+        (x, y, z_down) = local_pos  # alt is *up*
+
+        pos = self.mav.recv_match(
+            type='LOCAL_POSITION_NED',
+            blocking=True
+        )
+
+        delta_x = pos.x - x
+        delta_y = pos.y - y
+        delta_z = pos.z - z_down
+        return math.sqrt(delta_x*delta_x + delta_y*delta_y + delta_z*delta_z)
+
+    def wait_distance_to_local_position(self,
+                                        local_position,  # (x, y, z_down)
+                                        distance_min,
+                                        distance_max,
+                                        timeout=10,
+                                        **kwargs):
+        """Wait for distance to home to be within specified bounds."""
+        assert distance_min <= distance_max, "Distance min should be less than distance max."
+
+        def get_distance():
+            return self.distance_to_local_position(local_position)
+
+        def validator(value2, target2=None):
+            return distance_min <= value2 <= distance_max
+
+        (x, y, z_down) = local_position
+        self.wait_and_maintain(
+            value_name="Distance to (%f,%f,%f)" % (x, y, z_down),
+            target=distance_min,
+            current_value_getter=lambda: get_distance(),
+            validator=lambda value2,
+            target2: validator(value2, target2),
+            accuracy=(distance_max - distance_min),
+            timeout=timeout,
+            **kwargs
+        )
+
+    def wait_parameter_value(self, parameter, value, timeout=10):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("%s never got value %f" %
+                                           (parameter, value))
+            v = self.get_parameter(parameter, verbose=False)
+            self.progress("Got parameter value (%s=%f)" %
+                          (parameter, v))
+            if v == value:
+                return
+            self.delay_sim_time(0.1)
 
     def get_servo_channel_value(self, channel, timeout=2):
         channel_field = "servo%u_raw" % channel
@@ -5542,12 +5612,47 @@ Also, ignores heartbeats not from our target system'''
             self.remove_message_hook(mh)
         return statustext_full
 
+    # routines helpful for testing LUA scripting:
+    def script_example_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "examples", scriptname)
+
+    def script_test_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", scriptname)
+
+    def installed_script_path(self, scriptname):
+        return os.path.join("scripts", scriptname)
+
+    def install_script(self, source, scriptname):
+        dest = self.installed_script_path(scriptname)
+        destdir = os.path.dirname(dest)
+        if not os.path.exists(destdir):
+            os.mkdir(destdir)
+        self.progress("Copying (%s) to (%s)" % (source, dest))
+        shutil.copy(source, dest)
+
+    def install_example_script(self, scriptname):
+        source = self.script_example_source_path(scriptname)
+        self.install_script(source, scriptname)
+
+    def install_test_script(self, scriptname):
+        source = self.script_test_source_path(scriptname)
+        self.install_script(source, scriptname)
+
+    def remove_example_script(self, scriptname):
+        dest = self.installed_script_path(scriptname)
+        try:
+            os.unlink(dest)
+        except IOError:
+            pass
+        except OSError:
+            pass
+
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         try:
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=1000,
+                retries=20,
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
@@ -5612,14 +5717,14 @@ Also, ignores heartbeats not from our target system'''
         buildlogs directory'''
         to_dir = self.logs_dir
         # move binary log files
-        for log in self.bin_logs():
+        for log in sorted(self.bin_logs()):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
             print("Renaming %s to %s" % (log, newname))
             shutil.move(log, newname)
         # move core files
         save_binaries = False
-        for log in glob.glob("core*"):
+        for log in sorted(glob.glob("core*")):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (bname, self.log_name(), name))
             print("Renaming %s to %s" % (log, newname))
@@ -5637,7 +5742,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Run attempt failed.  Retrying")
         self.run_one_test_attempt(test, interact=interact, attempt=1)
 
-    def print_exception_caught(self, e):
+    def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
                       self.get_exception_stacktrace(e))
         path = None
@@ -5645,7 +5750,7 @@ Also, ignores heartbeats not from our target system'''
             path = self.current_onboard_log_filepath()
         except IndexError:
             pass
-        self.progress("Most recent logfile: %s" % (path, ))
+        self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
     def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
         '''called by run_one_test to actually run the test in a retry loop'''
@@ -5683,14 +5788,28 @@ Also, ignores heartbeats not from our target system'''
             ex = e
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
-        self.context_pop()
 
         passed = True
         if ex is not None:
             passed = False
 
-        self.wait_heartbeat()
-        if self.armed() and not self.is_tracker():
+        try:
+            self.context_pop()
+        except Exception as e:
+            self.print_exception_caught(e, send_statustext=False)
+            self.progress("Not alive after test", send_statustext=False)
+            passed = False
+
+        ardupilot_alive = False
+        try:
+            self.wait_heartbeat()
+            ardupilot_alive = True
+        except Exception:
+            # process is dead
+            passed = False
+            reset_needed = True
+
+        if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
@@ -7888,7 +8007,7 @@ Also, ignores heartbeats not from our target system'''
 
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
-            self.start_test("Testing Set Position in %s" % frame_name)
+            self.start_subtest("Testing Set Position in %s" % frame_name)
             self.start_subtest("Changing Latitude")
             targetpos.lat += 0.0001
             if test_alt:
@@ -7926,8 +8045,8 @@ Also, ignores heartbeats not from our target system'''
                                height_accuracy=2, minimum_duration=2)
 
             if test_heading:
-                self.start_test("Testing Yaw targetting in %s" % frame_name)
-                self.start_subtest("Changing Latitude and Heading")
+                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
+                self.progress("Changing Latitude and Heading")
                 targetpos.lat += 0.0001
                 if test_alt:
                     targetpos.alt += 5
@@ -7988,7 +8107,7 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_heading(0, minimum_duration=5, timeout=timeout)
 
             if test_yaw_rate:
-                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
 
                 def send_yaw_rate(rate, target=None):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8044,7 +8163,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.stop_mavproxy(mavproxy)
 
-        self.start_test("Getting back to home and disarm")
+        self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
@@ -8110,8 +8229,8 @@ Also, ignores heartbeats not from our target system'''
 
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
-            self.start_test("Testing Set Velocity in %s" % frame_name)
-            self.start_subtest("Changing Vx speed")
+            self.start_subtest("Testing Set Velocity in %s" % frame_name)
+            self.progress("Changing Vx speed")
             self.wait_speed_vector(
                 target_speed,
                 timeout=timeout,
@@ -8180,7 +8299,7 @@ Also, ignores heartbeats not from our target system'''
             )
 
             if test_heading:
-                self.start_test("Testing Yaw targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw targetting in %s" % frame_name)
 
                 def send_yaw_target(yaw, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8279,7 +8398,7 @@ Also, ignores heartbeats not from our target system'''
                 )
 
             if test_yaw_rate:
-                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+                self.start_subtest("Testing Yaw Rate targetting in %s" % frame_name)
 
                 def send_yaw_rate(rate, mav_frame):
                     self.mav.mav.set_position_target_global_int_send(
@@ -8416,7 +8535,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.stop_mavproxy(mavproxy)
 
-        self.start_test("Getting back to home and disarm")
+        self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
@@ -8996,7 +9115,7 @@ switch value'''
                 mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
                 mavproxy.send("\n")
-            mavproxy.expect("APM: Calibration successful", timeout=timeout)
+            mavproxy.expect(".*Calibration successful", timeout=timeout)
             self.drain_mav()
 
             self.progress("Checking results")
@@ -9159,6 +9278,20 @@ switch value'''
             self.wait_statustext("PreArm: Motors Emergency Stopped", check_context=True)
             self.context_pop()
             self.reboot_sitl()
+
+        if self.is_rover():
+            self.start_subtest("Testing using buttons for changing modes")
+            self.context_push()
+            if not self.mode_is('MANUAL'):
+                raise NotAchievedException("Bad mode")
+            self.set_parameter("BTN_FUNC%u" % btn, 53)  # steering mode
+            # press button:
+            self.set_parameter("SIM_PIN_MASK", mask)
+            self.wait_mode('STEERING')
+            # release button:
+            self.set_parameter("SIM_PIN_MASK", 0)
+            self.wait_mode('MANUAL')
+            self.context_pop()
 
     def compare_number_percent(self, num1, num2, percent):
         if num1 == 0 and num2 == 0:

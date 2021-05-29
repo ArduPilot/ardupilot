@@ -5,6 +5,10 @@
 
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 
+#ifndef HAL_LOGGING_ENABLED
+#define HAL_LOGGING_ENABLED 1
+#endif
+
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
     #ifdef HAL_LOGGING_DATAFLASH
@@ -69,7 +73,6 @@
 #include <AP_AHRS/AP_AHRS_NavEKF.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/LogStructure.h>
@@ -77,7 +80,6 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
-#include <AP_InertialSensor/AP_InertialSensor_Backend.h>
 #include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
@@ -236,10 +238,6 @@ enum class LogErrorCode : uint8_t {
     GPS_GLITCH = 2,
 };
 
-// fwd declarations to avoid include errors
-class AC_AttitudeControl;
-class AC_PosControl;
-
 class AP_Logger
 {
     friend class AP_Logger_Backend; // for _num_types
@@ -269,6 +267,10 @@ public:
 
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
+
+    /* Write block of data at current offset and return true if first backend succeeds*/
+    bool WriteBlock_first_succeed(const void *pBuffer, uint16_t size);
+
     /* Write an *important* block of data at current offset */
     void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
@@ -293,20 +295,6 @@ public:
     void Write_Event(LogEvent id);
     void Write_Error(LogErrorSubsystem sub_system,
                      LogErrorCode error_code);
-    void Write_IMU();
-    bool Write_ISBH(uint16_t seqno,
-                        AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
-                        uint8_t instance,
-                        uint16_t multiplier,
-                        uint16_t sample_count,
-                        uint64_t sample_us,
-                        float sample_rate_hz);
-    bool Write_ISBD(uint16_t isb_seqno,
-                        uint16_t seqno,
-                        const int16_t x[32],
-                        const int16_t y[32],
-                        const int16_t z[32]);
-    void Write_Vibration();
     void Write_RCIN(void);
     void Write_RCOUT(void);
     void Write_RSSI();
@@ -315,9 +303,7 @@ public:
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate = 0.0f);
     void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
-    void Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -334,9 +320,6 @@ public:
     void Write_Proximity(AP_Proximity &proximity);
 #endif
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
-    void Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool ignore_chg, float margin, const Location &final_dest, const Location &oa_dest);
-    void Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest);
-    void Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, bool back_up);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
     void Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y);
     void Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out);
@@ -357,6 +340,7 @@ public:
         float D;
         float FF;
         float Dmod;
+        float slew_rate;
         bool  limit;
     };
 
@@ -422,9 +406,7 @@ public:
     bool vehicle_is_armed() const { return _armed; }
 
     void handle_log_send();
-    bool in_log_download() const {
-        return transfer_activity != TransferActivity::IDLE;
-    }
+    bool in_log_download() const;
 
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
@@ -510,9 +492,8 @@ private:
     bool _armed;
 
     // state to help us not log unneccesary RCIN values:
-    bool seen_nonzero_rcin15_or_rcin16;
+    bool should_log_rcin2;
 
-    void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);

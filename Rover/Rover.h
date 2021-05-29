@@ -210,7 +210,6 @@ private:
         uint32_t start_time;        // start time of the earliest failsafe
         uint8_t triggered;          // bit flags of failsafes that have triggered an action
         uint32_t last_valid_rc_ms;  // system time of most recent RC input from pilot
-        uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
         bool ekf;
     } failsafe;
 

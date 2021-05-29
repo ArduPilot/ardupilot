@@ -226,6 +226,46 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SITL, SITL::BaroParm),
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SITL, SITL::BaroParm),
 
+    // user settable parameters for the 1st barometer
+    // @Param: BARO_RND
+    // @DisplayName: Baro Noise
+    // @Description: Amount of (evenly-distributed) noise injected into the 1st baro
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: BARO_GLITCH
+    // @DisplayName: Baro Glitch
+    // @Description: Glitch for 1st baro
+    // @Units: m
+    // @User: Advanced
+
+    // user settable parameters for the 2nd barometer
+    // @Param: BAR2_RND
+    // @DisplayName: Baro2 Noise
+    // @Description: Amount of (evenly-distributed) noise injected into the 2nd baro
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: BAR2_GLITCH
+    // @DisplayName: Baro2 Glitch
+    // @Description: Glitch for 2nd baro
+    // @Units: m
+    // @User: Advanced
+
+    // user settable parameters for the 3rd barometer
+    // @Param: BAR3_RND
+    // @DisplayName: Baro3 Noise
+    // @Description: Amount of (evenly-distributed) noise injected into the 3rd baro
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: BAR3_GLITCH
+    // @DisplayName: Baro3 Glitch
+    // @Description: Glitch for 2nd baro
+    // @Units: m
+    // @User: Advanced
+
+    AP_GROUPINFO("ESC_TELEM", 40, SITL, esc_telem, 1),
 
     // user settable parameters for the 1st airspeed sensor
     AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
@@ -282,7 +322,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS_NOISE",     10, SITL,  gps_noise[0], 0),
     AP_GROUPINFO("GPS_LOCKTIME",  11, SITL,  gps_lock_time[0], 0),
     AP_GROUPINFO("GPS_ALT_OFS",   12, SITL,  gps_alt_offset[0], 0),
-    AP_GROUPINFO("GPS_HDG",       13, SITL,  gps_hdg_enabled[0], 0),
+    AP_GROUPINFO("GPS_HDG",       13, SITL,  gps_hdg_enabled[0], SITL::GPS_HEADING_NONE),
     AP_GROUPINFO("GPS_ACC",       14, SITL,  gps_accuracy[0], 0.3),
     AP_GROUPINFO("GPS_VERR",      15, SITL,  gps_vel_err[0], 0),
 
@@ -298,7 +338,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS2_NOISE",    39, SITL,  gps_noise[1], 0),
     AP_GROUPINFO("GPS2_LCKTIME",  40, SITL,  gps_lock_time[1], 0),
     AP_GROUPINFO("GPS2_ALT_OFS",  41, SITL,  gps_alt_offset[1], 0),
-    AP_GROUPINFO("GPS2_HDG",      42, SITL,  gps_hdg_enabled[1], 0),
+    AP_GROUPINFO("GPS2_HDG",      42, SITL,  gps_hdg_enabled[1], SITL::GPS_HEADING_NONE),
     AP_GROUPINFO("GPS2_ACC",      43, SITL,  gps_accuracy[1], 0.3),
     AP_GROUPINFO("GPS2_VERR",     44, SITL,  gps_vel_err[1], 0),
 
@@ -387,6 +427,12 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_GROUPINFO("ACC2_SCAL",    23, SITL, accel_scale[1], 0),
     AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
     AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
+
+    // @Param: SAIL_TYPE
+    // @DisplayName: Sailboat simulation sail type
+    // @Description: 0: mainsail with sheet, 1: directly actuated wing
+    AP_GROUPINFO("SAIL_TYPE",     26, SITL, sail_type, 0),
+
 
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),

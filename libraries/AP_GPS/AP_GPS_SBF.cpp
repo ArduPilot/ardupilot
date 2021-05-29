@@ -54,6 +54,7 @@ do {                                            \
 
 constexpr const char *AP_GPS_SBF::portIdentifiers[];
 constexpr const char* AP_GPS_SBF::_initialisation_blob[];
+constexpr const char* AP_GPS_SBF::sbas_on_blob[];
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
@@ -117,8 +118,26 @@ AP_GPS_SBF::read(void)
                                 }
                                 break;
                             case Config_State::Blob:
-                                if (asprintf(&config_string,"%s\n", (char *)_initialisation_blob[_init_blob_index]) == -1) {
+                                if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::SBAS:
+                                switch ((AP_GPS::SBAS_Mode)gps._sbas_mode) {
+                                    case AP_GPS::SBAS_Mode::Disabled:
+                                        if (asprintf(&config_string, "%s\n", sbas_off) == -1) {
+                                            config_string = nullptr;
+                                        }
+                                        break;
+                                    case AP_GPS::SBAS_Mode::Enabled:
+                                        if (asprintf(&config_string, "%s\n", sbas_on_blob[_init_blob_index]) == -1) {
+                                            config_string = nullptr;
+                                        }
+                                        break;
+                                    case AP_GPS::SBAS_Mode::DoNotChange:
+                                        config_string = nullptr;
+                                        config_step = Config_State::Complete;
+                                        break;
                                 }
                                 break;
                             case Config_State::Complete:
@@ -313,6 +332,14 @@ AP_GPS_SBF::parse(uint8_t temp)
                                 case Config_State::Blob:
                                     _init_blob_index++;
                                     if (_init_blob_index >= ARRAY_SIZE(_initialisation_blob)) {
+                                        config_step = Config_State::SBAS;
+                                        _init_blob_index = 0;
+                                    }
+                                    break;
+                                case Config_State::SBAS:
+                                    _init_blob_index++;
+                                    if ((gps._sbas_mode == AP_GPS::SBAS_Mode::Disabled)
+                                        ||_init_blob_index >= ARRAY_SIZE(sbas_on_blob)) {
                                         config_step = Config_State::Complete;
                                     }
                                     break;
@@ -529,15 +556,19 @@ AP_GPS_SBF::process_message(void)
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
-        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
-                        _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
+        config_step != Config_State::Complete) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u/%u/%u)",
+                                         state.instance + 1,
+                                         (unsigned)config_step,
+                                         _init_blob_index,
+                                         (unsigned)ARRAY_SIZE(_initialisation_blob),
+                                         (unsigned)ARRAY_SIZE(sbas_on_blob));
     }
 }
 
 bool AP_GPS_SBF::is_configured (void) const {
-    return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
-             _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
+    return ((gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
+            (config_step == Config_State::Complete));
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {

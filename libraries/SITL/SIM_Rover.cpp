@@ -34,7 +34,14 @@ SimRover::SimRover(const char *frame_str) :
         // with a sabertooth controller
         max_accel = 14;
         max_speed = 4;
+        return;
     }
+
+    vectored_thrust = strstr(frame_str, "vector") != nullptr;
+    if (vectored_thrust) {
+        printf("Vectored Thrust Rover Simulation Started\n");
+    }
+    lock_step_scheduled = true;
 }
 
 
@@ -57,6 +64,9 @@ float SimRover::calc_yaw_rate(float steering, float speed)
 {
     if (skid_steering) {
         return steering * skid_turn_rate;
+    }
+    if (vectored_thrust) {
+        return steering * vectored_turn_rate_max;
     }
     if (fabsf(steering) < 1.0e-6 or fabsf(speed) < 1.0e-6) {
         return 0;
@@ -94,6 +104,13 @@ void SimRover::update(const struct sitl_input &input)
     } else {
         steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
         throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+
+        // vectored thrust conversion
+        if (vectored_thrust) {
+            const float steering_angle_rad = radians(steering * vectored_angle_max);
+            steering = sinf(steering_angle_rad) * throttle;
+            throttle *= cosf(steering_angle_rad);
+        }
     }
 
     // how much time has passed?

@@ -149,20 +149,28 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
+    const uint16_t override_mask = rc().get_override_mask();
+
     // don't waste logging bandwidth if we haven't seen non-zero
     // channels 15/16:
-    if (!seen_nonzero_rcin15_or_rcin16) {
-        if (!values[14] && !values[15]) {
-            return;
+    if (!should_log_rcin2) {
+        if (values[14] || values[15]) {
+            should_log_rcin2 = true;
+        } else if (override_mask != 0) {
+            should_log_rcin2 = true;
         }
-        seen_nonzero_rcin15_or_rcin16 = true;
+    }
+
+    if (!should_log_rcin2) {
+        return;
     }
 
     const struct log_RCIN2 pkt2{
         LOG_PACKET_HEADER_INIT(LOG_RCIN2_MSG),
         time_us       : AP_HAL::micros64(),
         chan15         : values[14],
-        chan16         : values[15]
+        chan16         : values[15],
+        override_mask  : override_mask,
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
@@ -205,68 +213,6 @@ void AP_Logger::Write_RSSI()
         RXRSSI        : rssi->read_receiver_rssi()
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const Vector3f &gyro = ins.get_gyro(imu_instance);
-    const Vector3f &accel = ins.get_accel(imu_instance);
-    const struct log_IMU pkt{
-        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-        time_us : time_us,
-        instance: imu_instance,
-        gyro_x  : gyro.x,
-        gyro_y  : gyro.y,
-        gyro_z  : gyro.z,
-        accel_x : accel.x,
-        accel_y : accel.y,
-        accel_z : accel.z,
-        gyro_error  : ins.get_gyro_error_count(imu_instance),
-        accel_error : ins.get_accel_error_count(imu_instance),
-        temperature : ins.get_temperature(imu_instance),
-        gyro_health : (uint8_t)ins.get_gyro_health(imu_instance),
-        accel_health : (uint8_t)ins.get_accel_health(imu_instance),
-        gyro_rate : ins.get_gyro_rate_hz(imu_instance),
-        accel_rate : ins.get_accel_rate_hz(imu_instance),
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write an raw accel/gyro data packet
-void AP_Logger::Write_IMU()
-{
-    const uint64_t time_us = AP_HAL::micros64();
-
-    const AP_InertialSensor &ins = AP::ins();
-
-    uint8_t n = MAX(ins.get_accel_count(), ins.get_gyro_count());
-    for (uint8_t i=0; i<n; i++) {
-        Write_IMU_instance(time_us, i);
-    }
-}
-
-void AP_Logger::Write_Vibration()
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const uint64_t time_us = AP_HAL::micros64();
-    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-        if (!ins.use_accel(i)) {
-            continue;
-        }
-
-        const Vector3f vibration = ins.get_vibration_levels(i);
-        const struct log_Vibe pkt{
-            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-            time_us     : time_us,
-            imu         : i,
-            vibe_x      : vibration.x,
-            vibe_y      : vibration.y,
-            vibe_z      : vibration.z,
-            clipping  : ins.get_accel_clip_count(i)
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
@@ -423,30 +369,6 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-// Write ESC status messages
-//   id starts from 0
-//   rpm is eRPM (rpm * 100)
-//   voltage is in centi-volts
-//   current is in centi-amps
-//   temperature is in centi-degrees Celsius
-//   current_tot is in centi-amp hours
-void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate)
-{
-    const struct log_Esc pkt{
-        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
-        time_us     : time_us,
-        instance    : instance,
-        rpm         : rpm,
-        voltage     : voltage,
-        current     : current,
-        esc_temp    : esc_temp,
-        current_tot : current_tot,
-        motor_temp  : motor_temp,
-        error_rate  : error_rate
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 /*
   write servo status from CAN servo
  */
@@ -459,25 +381,6 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
         position    : position,
         force       : force,
         speed       : speed,
-        power_pct   : power_pct
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-/*
-  write ESC status from CAN ESC
- */
-void AP_Logger::Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct)
-{
-    const struct log_CESC pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CESC_MSG),
-        time_us     : time_us,
-        id          : id,
-        error_count : error_count,
-        voltage     : voltage,
-        current     : current,
-        temperature : temperature,
-        rpm         : rpm,
         power_pct   : power_pct
     };
     WriteBlock(&pkt, sizeof(pkt));
@@ -498,6 +401,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         D               : info.D,
         FF              : info.FF,
         Dmod            : info.Dmod,
+        slew_rate       : info.slew_rate,
         limit           : info.limit
     };
     WriteBlock(&pkt, sizeof(pkt));
@@ -625,64 +529,6 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
         D               : breadcrumb.z
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
-}
-
-void AP_Logger::Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
-{
-    int32_t oa_dest_alt, final_alt;
-    bool got_oa_dest = oa_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt);
-    bool got_final_dest = final_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, final_alt);
-    
-    const struct log_OABendyRuler pkt{
-        LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
-        time_us     : AP_HAL::micros64(),
-        type        : type,
-        active      : active,
-        target_yaw  : (uint16_t)wrap_360(target_yaw),
-        yaw         : (uint16_t)wrap_360(AP::ahrs().yaw_sensor * 0.01f),
-        target_pitch: (uint16_t)target_pitch,
-        resist_chg  : resist_chg,
-        margin      : margin,
-        final_lat   : final_dest.lat,
-        final_lng   : final_dest.lng,
-        final_alt   : got_final_dest ? final_alt : final_dest.alt,
-        oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng,
-        oa_alt      : got_oa_dest ? oa_dest_alt : oa_dest.alt
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest)
-{
-    struct log_OADijkstra pkt{
-        LOG_PACKET_HEADER_INIT(LOG_OA_DIJKSTRA_MSG),
-        time_us     : AP_HAL::micros64(),
-        state       : state,
-        error_id    : error_id,
-        curr_point  : curr_point,
-        tot_points  : tot_points,
-        final_lat   : final_dest.lat,
-        final_lng   : final_dest.lng,
-        oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_SimpleAvoidance(uint8_t state, const Vector2f& desired_vel, const Vector2f& modified_vel, bool back_up)
-{
-    struct log_SimpleAvoid pkt{
-        LOG_PACKET_HEADER_INIT(LOG_SIMPLE_AVOID_MSG),
-        time_us         : AP_HAL::micros64(),
-        state           : state,
-        desired_vel_x   : desired_vel.x * 0.01f,
-        desired_vel_y   : desired_vel.y * 0.01f,
-        modified_vel_x  : modified_vel.x * 0.01f,
-        modified_vel_y  : modified_vel.y * 0.01f,
-        backing_up      : back_up,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp)

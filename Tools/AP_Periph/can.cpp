@@ -477,7 +477,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
     if (!initialised) {
         initialised = true;
         hal.rcout->init();
-        hal.util->toneAlarm_init();
+        hal.util->toneAlarm_init(AP_HAL::Util::ALARM_BUZZER);
     }
     fix_float16(req.frequency);
     fix_float16(req.duration);
@@ -1175,6 +1175,9 @@ static void can_wait_node_id(void)
                 // blink LED in recognisable pattern while waiting for DNA
 #ifdef HAL_GPIO_PIN_LED
                 palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#elif defined(HAL_GPIO_PIN_SAFE_LED)
+                // or use safety LED if defined
+                palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
 #else
                 (void)led_pattern;
                 (void)led_idx;
@@ -1182,6 +1185,10 @@ static void can_wait_node_id(void)
                 led_idx = (led_idx+1) % 32;
                 last_led_change = now;
             }
+
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
+            periph.check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
         }
 
 

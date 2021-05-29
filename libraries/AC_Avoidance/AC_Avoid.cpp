@@ -45,6 +45,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
     // @Units: cdeg
+    // @Increment: 10
     // @Range: 0 4500
     // @User: Standard
     AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
@@ -240,6 +241,23 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
 
     if (desired_vel_cms_original != desired_vel_cms) {
         _last_limit_time = AP_HAL::millis();
+    }
+
+    if (limits_active()) {
+        // log at not more than 10hz (adjust_velocity method can be potentially called at 400hz!)
+        uint32_t now = AP_HAL::millis();
+        if ((now - _last_log_ms) > 100) {
+            _last_log_ms = now;
+            Write_SimpleAvoidance(true, desired_vel_cms_original, desired_vel_cms, backing_up);
+        }
+    } else {
+        // avoidance isn't active anymore
+        // log once so that it registers in logs
+        if (_last_log_ms) {
+            Write_SimpleAvoidance(false, desired_vel_cms_original, desired_vel_cms, backing_up);
+            // this makes sure logging won't run again till it is active
+            _last_log_ms = 0;
+        }
     }
 }
 

@@ -29,22 +29,6 @@ public:
     AC_PrecLand(const AC_PrecLand &other) = delete;
     AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
-    // precision landing behaviours (held in PRECLAND_ENABLED parameter)
-    enum PrecLandBehaviour {
-        PRECLAND_BEHAVIOUR_DISABLED,
-        PRECLAND_BEHAVIOR_ALWAYSLAND,
-        PRECLAND_BEHAVIOR_CAUTIOUS
-    };
-
-    // types of precision landing (used for PRECLAND_TYPE parameter)
-    enum PrecLandType {
-        PRECLAND_TYPE_NONE = 0,
-        PRECLAND_TYPE_COMPANION,
-        PRECLAND_TYPE_IRLOCK,
-        PRECLAND_TYPE_SITL_GAZEBO,
-        PRECLAND_TYPE_SITL,
-    };
-
     // perform any required initialisation of landing controllers
     // update_rate_hz should be the rate at which the update method will be called in hz
     void init(uint16_t update_rate_hz);
@@ -60,9 +44,6 @@ public:
 
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
-
-    // returns estimator type
-    uint8_t estimator_type() const { return _estimator_type; }
 
     // returns ekf outlier count
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
@@ -86,19 +67,25 @@ public:
     bool target_acquired();
 
     // process a LANDING_TARGET mavlink message
-    void handle_msg(const mavlink_message_t &msg);
+    void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms);
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    enum estimator_type_t {
-        ESTIMATOR_TYPE_RAW_SENSOR = 0,
-        ESTIMATOR_TYPE_KALMAN_FILTER = 1
+    enum class EstimatorType : uint8_t {
+        RAW_SENSOR = 0,
+        KALMAN_FILTER = 1,
     };
 
-    // returns enabled parameter as an behaviour
-    enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
+    // types of precision landing (used for PRECLAND_TYPE parameter)
+    enum class Type : uint8_t {
+        NONE = 0,
+        COMPANION = 1,
+        IRLOCK = 2,
+        SITL_GAZEBO = 3,
+        SITL = 4,
+    };
 
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
@@ -114,10 +101,10 @@ private:
     void run_output_prediction();
 
     // parameters
-    AP_Int8                     _enabled;           // enabled/disabled and behaviour
-    AP_Int8                     _type;              // precision landing sensor type
+    AP_Int8                     _enabled;           // enabled/disabled
+    AP_Enum<Type>               _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
-    AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type
     AP_Float                    _lag;               // sensor lag in seconds
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
@@ -156,4 +143,8 @@ private:
         bool    healthy;
     } _backend_state;
     AC_PrecLand_Backend         *_backend;  // pointers to backend precision landing driver
+
+    // write out PREC message to log:
+    void Write_Precland();
+    uint32_t last_log_ms;  // last time we logged
 };
