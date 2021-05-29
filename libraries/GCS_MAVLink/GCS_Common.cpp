@@ -1998,6 +1998,107 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     }
 }
 
+/*
+   send a statustext text string to specific MAVLink bitmask
+   No messages are written to the flight log.
+*/
+void GCS::send_textv_gcsonly(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
+{
+    char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
+
+    do {
+        // send_text can be called from multiple threads; we must
+        // protect the "text" member with _statustext_sem
+        WITH_SEMAPHORE(_statustext_queue.semaphore());
+        hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
+        memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
+
+        // filter destination ports to only allow active ports.
+        statustext_t statustext{};
+        if (update_send_has_been_called) {
+            statustext.bitmask = statustext_send_channel_mask();
+        } else {
+            // we have not yet initialised the streaming-channel-mask,
+            // which is done as part of the update() call.  So just send
+            // it to all channels:
+            statustext.bitmask = (1<<_num_gcs)-1;
+        }
+        statustext.bitmask &= dest_bitmask;
+        if (!statustext.bitmask) {
+            // nowhere to send
+            break;
+        }
+
+        statustext.entry_created_ms = AP_HAL::millis16();
+        statustext.msg.severity = severity;
+
+        static uint16_t msgid;
+        if (strlen(statustext_printf_buffer) > sizeof(statustext.msg.text)) {
+            msgid++;
+            if (msgid == 0) {
+                msgid = 1;
+            }
+            statustext.msg.id = msgid;
+        }
+
+        const char *remainder = statustext_printf_buffer;
+        for (uint8_t i=0; i<_status_capacity; i++) {
+            statustext.msg.chunk_seq = i;
+            const size_t remainder_len = strlen(remainder);
+            // note that remainder_len may be zero here!
+            uint16_t n = MIN(sizeof(statustext.msg.text), remainder_len);
+            if (i == _status_capacity -1 && n == sizeof(statustext.msg.text)) {
+                // fantastic.  This us a very long statustext and
+                // we've actually managed to push everything else out
+                // of the queue - this is the last chunk, so we MUST
+                // null-terminate.
+                n -= 1;
+            }
+            memset(statustext.msg.text, '\0', sizeof(statustext.msg.text));
+            memcpy(statustext.msg.text, remainder, n);
+            // The force push will ensure comm links do not block other comm links forever if they fail.
+            // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
+            // block but not until the buffer fills up.
+            _statustext_queue.push_force(statustext);
+            remainder = &remainder[n];
+
+            // note that remainder_len here is the remainder length for
+            // the *old* remainder!
+            if (remainder_len < sizeof(statustext.msg.text) || statustext.msg.id == 0) {
+                break;
+            }
+        }
+    } while (false);
+
+    frsky = AP::frsky_telem();
+    if (frsky != nullptr) {
+        frsky->queue_message(severity, first_piece_of_text);
+    }
+#if HAL_SPEKTRUM_TELEM_ENABLED
+    AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
+    if (spektrum != nullptr) {
+        spektrum->queue_message(severity, first_piece_of_text);
+    }
+#endif
+#if HAL_CRSF_TELEM_ENABLED
+    AP_CRSF_Telem* crsf = AP::crsf_telem();
+    if (crsf != nullptr) {
+        crsf->queue_message(severity, first_piece_of_text);
+    }
+#endif
+    AP_Notify *notify = AP_Notify::get_singleton();
+    if (notify) {
+        notify->send_text(first_piece_of_text);
+    }
+
+    // push the messages out straight away until the vehicle states
+    // that it is initialised.  At that point we can assume
+    // update_send is being called
+    if (!vehicle_initialised()) {
+        service_statustext();
+    }
+}
+
 void GCS::service_statustext(void)
 {
     WITH_SEMAPHORE(_statustext_queue.semaphore());

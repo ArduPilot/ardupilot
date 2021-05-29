@@ -931,6 +931,9 @@ public:
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
     uint8_t statustext_send_channel_mask() const;
+    void send_text_gcsonly(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
+    void send_textv_gcsonly(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
+    virtual void send_textv_gcsonly(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask);
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;
