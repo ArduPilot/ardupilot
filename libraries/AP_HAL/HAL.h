@@ -9,6 +9,7 @@ class AP_Param;
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "SPIDevice.h"
+#include "QSPIDevice.h"
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "system.h"
@@ -30,6 +31,7 @@ public:
         AP_HAL::UARTDriver* _uartI, // extra4
         AP_HAL::I2CDeviceManager* _i2c_mgr,
         AP_HAL::SPIDeviceManager* _spi,
+        AP_HAL::QSPIDeviceManager* _qspi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
         AP_HAL::UARTDriver* _console,
@@ -58,6 +60,7 @@ public:
         uartI(_uartI),
         i2c_mgr(_i2c_mgr),
         spi(_spi),
+        qspi(_qspi),
         analogin(_analogin),
         storage(_storage),
         console(_console),
@@ -116,6 +119,7 @@ private:
 public:
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
+    AP_HAL::QSPIDeviceManager* qspi;
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
     AP_HAL::UARTDriver* console;
