@@ -28,6 +28,9 @@
 #define STM32_LSEDRV                (3U << 3U)
 #endif
 
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 /*
  * STM32H7xx drivers configuration.
  * The following settings override the default settings present in
@@ -73,7 +76,11 @@
 #define STM32_VOS                           STM32_VOS_SCALE1
 #define STM32_PWR_CR1                       (PWR_CR1_SVOS_1 | PWR_CR1_SVOS_0)
 #define STM32_PWR_CR2                       (PWR_CR2_BREN)
+#ifdef SMPS_PWR
+#define STM32_PWR_CR3                       (PWR_CR3_SMPSEN | PWR_CR3_USB33DEN)
+#else
 #define STM32_PWR_CR3                       (PWR_CR3_LDOEN | PWR_CR3_USB33DEN)
+#endif
 #define STM32_PWR_CPUCR                     0
 
 /*
@@ -554,3 +561,12 @@
 #define STM32_SDC_MAX_CLOCK                 12500000
 #endif
 
+#ifndef STM32_WSPI_USE_QUADSPI1
+#define STM32_WSPI_USE_QUADSPI1                  FALSE
+#endif
+
+#if STM32_WSPI_USE_QUADSPI1
+#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    STM32_MDMA_CHANNEL_ID_ANY
+#define STM32_WSPI_QUADSPI1_MDMA_PRIORITY   1
+#define STM32_WSPI_QUADSPI1_PRESCALER_VALUE ((STM32_QSPICLK / HAL_QSPI1_CLK) - 1)
+#endif
