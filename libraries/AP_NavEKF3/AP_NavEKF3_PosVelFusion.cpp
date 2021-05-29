@@ -1182,7 +1182,7 @@ void NavEKF3_core::selectHeightForFusion()
         }
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to rotor wash ground interaction corrupting the EKF altitude during initial ascent
-        if (motorsArmed && dal.get_takeoff_expected()) {
+        if (motorsArmed && dal.get_takeoff_expected() && !assume_zero_sideslip()) {
             hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
         }
         velPosObs[5] = -hgtMea;
