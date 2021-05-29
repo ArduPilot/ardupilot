@@ -2,6 +2,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_RTC/AP_RTC.h>
+#include <GCS_MAVLink/GCS.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -123,13 +124,16 @@ void AP_Stats::update()
 
 void AP_Stats::set_flying(const bool is_flying)
 {
+    static uint32_t oneFlightTime = 0;
     if (is_flying) {
         if (!_flying_ms) {
             _flying_ms = AP_HAL::millis();
+            oneFlightTime = _flying_ms;
         }
     } else {
         update_flighttime();
         _flying_ms = 0;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "current flight time is %.1f sec", (AP_HAL::millis() - oneFlightTime)*0.001f);
     }
 }
 
