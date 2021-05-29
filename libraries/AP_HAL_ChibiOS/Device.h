@@ -19,7 +19,7 @@
 #include "Semaphores.h"
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE || HAL_USE_WSPI == TRUE
 
 #include "Scheduler.h"
 #include "shared_dma.h"
@@ -30,6 +30,8 @@ namespace ChibiOS {
 class DeviceBus {
 public:
     DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY);
+    
+    DeviceBus(uint8_t _thread_priority, bool axi_sram);
 
     struct DeviceBus *next;
     Semaphore semaphore;
