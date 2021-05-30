@@ -3029,6 +3029,26 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+        # Test trigger from 3-position switch on RC transmitter
+        # Chute should not if in report only mode
+        self.progress("Test report only option")
+        self.set_parameter("CHUTE_OPTIONS", 4)
+        self.takeoff(20)
+        self.set_rc(9, 2000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + 5:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "BANG" in m.text:
+                self.set_rc(9, 1000)
+                self.reboot_sitl()
+                raise NotAchievedException("Parachute deployed when in notify only mode")
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_OPTIONS", 0)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
         # Test motor failure with 3 position switch setting enable
         self.context_push()
         self.progress("Crashing with 3pos switch in enable position")
