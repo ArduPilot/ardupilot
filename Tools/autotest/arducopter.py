@@ -3046,7 +3046,7 @@ class AutoTestCopter(AutoTest):
 
         # Test motor failure with 3 position switch setting disabled - Chute should not deploy
         self.progress("Crashing with 3pos switch in disable position")
-        self.takeoff(40, mode='LOITER')
+        self.takeoff(40, mode='LOITER', timeout=120)
         self.set_rc(9, 1100)
         self.set_parameter("SIM_ENGINE_FAIL", 15)
         self.set_parameter("SIM_ENGINE_MUL", 0.55)
@@ -3095,7 +3095,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Motor failure one motor - test loss of control")
         # Set impossible sink rate to avoid tripping the sink rate reason before we trip the loss of control
         self.set_parameter("CHUTE_CRT_SINK", 1000)
-        self.takeoff(40, mode='LOITER')
+        self.takeoff(40, mode='LOITER', timeout=120)
         # Enable chute via 3 pos switch
         self.set_rc(9, 1500)
 
