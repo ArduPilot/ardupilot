@@ -665,6 +665,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "MatekH743-periph",
                 "HitecMosaic",
                 "FreeflyRTK",
+                "HolybroGPS",
                 ]
 
     def build_arducopter(self, tag):
