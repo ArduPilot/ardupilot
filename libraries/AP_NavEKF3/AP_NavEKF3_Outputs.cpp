@@ -59,20 +59,6 @@ float NavEKF3_core::errorScore() const
     return score;
 }
 
-#if EK3_FEATURE_BODY_ODOM
-// return data for debugging body frame odometry fusion
-uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
-{
-    velInnov.x = innovBodyVel[0];
-    velInnov.y = innovBodyVel[1];
-    velInnov.z = innovBodyVel[2];
-    velInnovVar.x = varInnovBodyVel[0];
-    velInnovVar.y = varInnovBodyVel[1];
-    velInnovVar.z = varInnovBodyVel[2];
-    return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
-}
-#endif // EK3_FEATURE_BODY_ODOM
-
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation

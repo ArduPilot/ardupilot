@@ -263,6 +263,7 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     rngBcnFuseDataReportIndex++;
 }
 
+#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 {
     if (core_index != frontend->primary) {
@@ -270,25 +271,25 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
         return;
     }
 
-    Vector3f velBodyInnov,velBodyInnovVar;
     static uint32_t lastUpdateTime_ms = 0;
-    uint32_t updateTime_ms = getBodyFrameOdomDebug( velBodyInnov, velBodyInnovVar);
+    const uint32_t updateTime_ms = MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
     if (updateTime_ms > lastUpdateTime_ms) {
         const struct log_XKFD pkt11{
             LOG_PACKET_HEADER_INIT(LOG_XKFD_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
-            velInnovX : velBodyInnov.x,
-            velInnovY : velBodyInnov.y,
-            velInnovZ : velBodyInnov.z,
-            velInnovVarX : velBodyInnovVar.x,
-            velInnovVarY : velBodyInnovVar.y,
-            velInnovVarZ : velBodyInnovVar.z
+            velInnovX : innovBodyVel[0],
+            velInnovY : innovBodyVel[1],
+            velInnovZ : innovBodyVel[2],
+            velInnovVarX : varInnovBodyVel[0],
+            velInnovVarY : varInnovBodyVel[1],
+            velInnovVarZ : varInnovBodyVel[2]
          };
         AP::logger().WriteBlock(&pkt11, sizeof(pkt11));
         lastUpdateTime_ms = updateTime_ms;
     }
 }
+#endif
 
 void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us) const
 {
