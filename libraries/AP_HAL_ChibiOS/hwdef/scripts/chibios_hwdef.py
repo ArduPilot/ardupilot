@@ -2161,6 +2161,11 @@ def add_apperiph_defaults(f):
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 0
 #endif
+// default to no protocols, AP_Periph enables with params
+#define HAL_SERIAL1_PROTOCOL -1
+#define HAL_SERIAL2_PROTOCOL -1
+#define HAL_SERIAL3_PROTOCOL -1
+#define HAL_SERIAL4_PROTOCOL -1
 ''')
             
 
