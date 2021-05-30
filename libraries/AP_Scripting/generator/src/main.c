@@ -1140,8 +1140,8 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     //   - then cast down as appropriate
 
     // select minimums
-    char * forced_min;
-    char * forced_max;
+    char * forced_min = NULL;
+    char * forced_max = NULL;
     switch (t.type) {
       case TYPE_FLOAT:
         forced_min = "-INFINITY";
@@ -1172,7 +1172,6 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
         forced_max = "UINT32_MAX";
         break;
       case TYPE_ENUM:
-        forced_min = forced_max = NULL;
         break;
       case TYPE_NONE:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
@@ -1745,6 +1744,8 @@ void emit_operators(struct userdata *data) {
         break;
       case OP_LAST:
         return;
+      default:
+        assert(FALSE);
     }
 
     fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, op_name);
