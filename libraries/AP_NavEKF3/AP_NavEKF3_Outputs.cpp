@@ -526,27 +526,6 @@ void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
     status = filterStatus;
 }
 
-/*
-return filter gps quality check status
-*/
-void  NavEKF3_core::getFilterGpsStatus(nav_gps_status &faults) const
-{
-    // init return value
-    faults.value = 0;
-
-    // set individual flags
-    faults.flags.bad_sAcc           = gpsCheckStatus.bad_sAcc; // reported speed accuracy is insufficient
-    faults.flags.bad_hAcc           = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
-    faults.flags.bad_vAcc           = gpsCheckStatus.bad_vAcc; // reported vertical position accuracy is insufficient
-    faults.flags.bad_yaw            = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
-    faults.flags.bad_sats           = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
-    faults.flags.bad_horiz_drift    = gpsCheckStatus.bad_horiz_drift; // GPS horizontal drift is too large to start using GPS (check assumes vehicle is static)
-    faults.flags.bad_hdop           = gpsCheckStatus.bad_hdop; // reported HDoP is too large to start using GPS
-    faults.flags.bad_vert_vel       = gpsCheckStatus.bad_vert_vel; // GPS vertical speed is too large to start using GPS (check assumes vehicle is static)
-    faults.flags.bad_fix            = gpsCheckStatus.bad_fix; // The GPS cannot provide the 3D fix required
-    faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
-}
-
 // send an EKF_STATUS message to GCS
 void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
 {

@@ -320,11 +320,6 @@ public:
     void getFilterFaults(uint16_t &faults) const;
 
     /*
-    return filter gps quality check status
-    */
-    void getFilterGpsStatus(nav_gps_status &status) const;
-
-    /*
     Return a filter function status that indicates:
         Which outputs are valid
         If the filter has detected takeoff
@@ -1374,18 +1369,21 @@ private:
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
-    struct {
-        bool bad_sAcc:1;
-        bool bad_hAcc:1;
-        bool bad_vAcc:1;
-        bool bad_yaw:1;
-        bool bad_sats:1;
-        bool bad_VZ:1;
-        bool bad_horiz_drift:1;
-        bool bad_hdop:1;
-        bool bad_vert_vel:1;
-        bool bad_fix:1;
-        bool bad_horiz_vel:1;
+    union {
+        struct {
+            bool bad_sAcc:1;
+            bool bad_hAcc:1;
+            bool bad_vAcc:1;
+            bool bad_yaw:1;
+            bool bad_sats:1;
+            bool bad_VZ:1;
+            bool bad_horiz_drift:1;
+            bool bad_hdop:1;
+            bool bad_vert_vel:1;
+            bool bad_fix:1;
+            bool bad_horiz_vel:1;
+        };
+        uint16_t value;
     } gpsCheckStatus;
 
     // states held by magnetometer fusion across time steps
