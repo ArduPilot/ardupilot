@@ -146,12 +146,10 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         tasTimeout<<4;
 
     nav_filter_status solutionStatus {};
-    nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
-    getFilterGpsStatus(gpsStatus);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
@@ -167,7 +165,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         faults : _faultStatus,
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
-        gps : gpsStatus.value,
+        gps : gpsCheckStatus.value,
         primary : frontend->getPrimaryCoreIndex()
     };
     AP::logger().WriteBlock(&pkt4, sizeof(pkt4));
