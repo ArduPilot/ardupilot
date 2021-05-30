@@ -1580,21 +1580,6 @@ void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms,
     }
 }
 
-// return data for debugging body frame odometry fusion
-uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const
-{
-    uint32_t ret = 0;
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
-
-    if (core) {
-        ret = core[instance].getBodyFrameOdomDebug(velInnov, velInnovVar);
-    }
-
-    return ret;
-}
-
 // parameter conversion of EKF3 parameters
 void NavEKF3::convert_parameters()
 {
