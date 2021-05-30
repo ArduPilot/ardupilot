@@ -296,7 +296,9 @@ void AP_Notify::add_backends(void)
                 }
                 break;
             case Notify_LED_NCP5623_I2C_Internal:
-                ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new NCP5623(b));
+                }
                 break;
 #endif
             case Notify_LED_PCA9685LED_I2C_External:
