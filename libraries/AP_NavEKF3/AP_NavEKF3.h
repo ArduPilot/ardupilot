@@ -291,12 +291,6 @@ public:
     void getFilterFaults(int8_t instance, uint16_t &faults) const;
 
     /*
-    return filter gps quality check status for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-    */
-    void getFilterGpsStatus(int8_t instance, nav_gps_status &faults) const;
-
-    /*
     return filter status flags for the specified instance
     An out of range instance (eg -1) returns data for the primary instance
     */

@@ -1758,19 +1758,6 @@ void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status) const
     }
 }
 
-/*
-return filter gps quality check status
-*/
-void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getFilterGpsStatus(status);
-    } else {
-        memset(&status, 0, sizeof(status));
-    }
-}
-
 // send an EKF_STATUS_REPORT message to GCS
 void NavEKF3::send_status_report(mavlink_channel_t chan) const
 {
