@@ -848,7 +848,7 @@ void NavEKF3_core::FuseVelPosNED()
                     R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    const float gndMaxBaroErr = 4.0f;
+                    const float gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0f);
                     const float gndBaroInnovFloor = -0.5f;
 
                     if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
