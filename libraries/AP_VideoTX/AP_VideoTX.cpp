@@ -75,6 +75,8 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
+const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L"};
+
 const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
 {
     { 5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725}, /* Band A */
@@ -350,9 +352,9 @@ bool AP_VideoTX::set_defaults()
 void AP_VideoTX::announce_vtx_settings() const
 {
     // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: Freq: %dMHz, Power: %dmw, Band: %d, Chan: %d",
-        _frequency_mhz.get(), has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get(),
-        _band.get() + 1, _channel.get() + 1);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %s%d %dMHz, PWR: %dmW",
+        band_names[_band.get()], _channel.get() + 1, _frequency_mhz.get(),
+        has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
 }
 
 // change the video power based on switch input
