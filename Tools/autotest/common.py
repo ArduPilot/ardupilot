@@ -871,19 +871,16 @@ class FRSkySPort(FRSky):
             0x500B: "terrain",
 
             # SPort non-passthrough:
-            0x01: "GPS_ALT_BP",
-            0x02: "Temp1",
-            0x04: "Fuel",
-            0x05: "Temp2",
-            0x09: "GPS_ALT_AP",
-            0x10: "BARO_ALT_BP",
-            0x11: "GPS_ALT_AP",
-            0x14: "HDG",
-            0x19: "GPS_SPEED_AP",
-            0x21: "BARO_ALT_AP",
-            0x28: "CURR",
-            0x30: "VARIO",
-            0x39: "VFAS",
+            0x082F: "GALT", # gps altitude integer cm
+            0x040F: "TMP1", # Tmp1
+            0x060F: "Fuel", # fuel % 0-100
+            0x041F: "TMP2", # Tmp2
+            0x010F: "ALT",  # baro alt cm
+            0x083F: "GSPD", # gps speed integer mm/s
+            0x084F: "HDG",  # yaw in cd
+            0x020F: "CURR", # current dA
+            0x011F: "VSPD", # vertical speed cm/s
+            0x021F: "VFAS", # battery 1 voltage cV
             # 0x800: "GPS", ## comments as duplicated dictrionary key
             0x050E: "RPM1",
 
@@ -9883,8 +9880,8 @@ switch value'''
         self.end_subtest("Enable fence via MAVlite")
 
     def tfs_validate_gps_alt(self, value):
-        self.progress("validating gps altitude integer part (0x%02x)" % value)
-        alt = value
+        self.progress("validating gps altitude (0x%02x)" % value)
+        alt_m = value * 0.01 # cm -> m
         gpi = self.mav.recv_match(
             type='GLOBAL_POSITION_INT',
             blocking=True,
@@ -9892,15 +9889,15 @@ switch value'''
         )
         if gpi is None:
             raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_alt = round(gpi.alt * 0.001)
-        self.progress("GLOBAL_POSITION_INT alt==%f frsky==%f" % (gpi_alt, alt))
-        if self.compare_number_percent(gpi_alt, alt, 10):
+        gpi_alt_m = round(gpi.alt * 0.001) # mm-> m
+        self.progress("GLOBAL_POSITION_INT alt==%f frsky==%f" % (gpi_alt_m, alt_m))
+        if self.compare_number_percent(gpi_alt_m, alt_m, 10):
             return True
         return False
 
     def tfs_validate_baro_alt(self, value):
-        self.progress("validating baro altitude integer part (0x%02x)" % value)
-        alt_m = value
+        self.progress("validating baro altitude (0x%02x)" % value)
+        alt_m = value * 0.01 # cm -> m
         gpi = self.mav.recv_match(
             type='GLOBAL_POSITION_INT',
             blocking=True,
@@ -9908,15 +9905,15 @@ switch value'''
         )
         if gpi is None:
             raise NotAchievedException("Did not get GLOBAL_POSITION_INT message")
-        gpi_alt_m = round(gpi.relative_alt * 0.001)
+        gpi_alt_m = round(gpi.relative_alt * 0.001) # mm -> m
         self.progress("GLOBAL_POSITION_INT relative_alt==%f frsky==%f" % (gpi_alt_m, alt_m))
         if abs(gpi_alt_m - alt_m) < 1:
             return True
         return False
 
     def tfs_validate_gps_speed(self, value):
-        self.progress("validating gps speed integer part (0x%02x)" % value)
-        speed = value
+        self.progress("validating gps speed (0x%02x)" % value)
+        speed_ms = value * 0.001 # mm/s -> m/s
         vfr_hud = self.mav.recv_match(
             type='VFR_HUD',
             blocking=True,
@@ -9924,15 +9921,15 @@ switch value'''
         )
         if vfr_hud is None:
             raise NotAchievedException("Did not get VFR_HUD message")
-        vfr_hud_speed = round(vfr_hud.groundspeed)
-        self.progress("VFR_HUD groundspeed==%f frsky==%f" % (vfr_hud_speed, speed))
-        if self.compare_number_percent(vfr_hud_speed, speed, 10):
+        vfr_hud_speed_ms = round(vfr_hud.groundspeed)
+        self.progress("VFR_HUD groundspeed==%f frsky==%f" % (vfr_hud_speed_ms, speed_ms))
+        if self.compare_number_percent(vfr_hud_speed_ms, speed_ms, 10):
             return True
         return False
 
     def tfs_validate_yaw(self, value):
         self.progress("validating yaw (0x%02x)" % value)
-        yaw = value
+        yaw_deg = value * 0.01 # cd -> deg
         vfr_hud = self.mav.recv_match(
             type='VFR_HUD',
             blocking=True,
@@ -9940,15 +9937,15 @@ switch value'''
         )
         if vfr_hud is None:
             raise NotAchievedException("Did not get VFR_HUD message")
-        vfr_hud_yaw = round(vfr_hud.heading)
-        self.progress("VFR_HUD heading==%f frsky==%f" % (vfr_hud_yaw, yaw))
-        if self.compare_number_percent(vfr_hud_yaw, yaw, 10):
+        vfr_hud_yaw_deg = round(vfr_hud.heading)
+        self.progress("VFR_HUD heading==%f frsky==%f" % (vfr_hud_yaw_deg, yaw_deg))
+        if self.compare_number_percent(vfr_hud_yaw_deg, yaw_deg, 10):
             return True
         return False
 
     def tfs_validate_vspeed(self, value):
         self.progress("validating vspeed (0x%02x)" % value)
-        vspeed = value
+        vspeed_ms = value * 0.01 # cm/s -> m/s
         vfr_hud = self.mav.recv_match(
             type='VFR_HUD',
             blocking=True,
@@ -9956,15 +9953,15 @@ switch value'''
         )
         if vfr_hud is None:
             raise NotAchievedException("Did not get VFR_HUD message")
-        vfr_hud_vspeed = round(vfr_hud.climb)
-        self.progress("VFR_HUD climb==%f frsky==%f" % (vfr_hud_vspeed, vspeed))
-        if self.compare_number_percent(vfr_hud_vspeed, vspeed, 10):
+        vfr_hud_vspeed_ms = round(vfr_hud.climb)
+        self.progress("VFR_HUD climb==%f frsky==%f" % (vfr_hud_vspeed_ms, vspeed_ms))
+        if self.compare_number_percent(vfr_hud_vspeed_ms, vspeed_ms, 10):
             return True
         return False
 
     def tfs_validate_battery1(self, value):
         self.progress("validating battery1 (0x%02x)" % value)
-        voltage = value*0.1
+        voltage_v = value * 0.01 # cV -> V
         batt = self.mav.recv_match(
             type='BATTERY_STATUS',
             blocking=True,
@@ -9973,16 +9970,16 @@ switch value'''
         )
         if batt is None:
             raise NotAchievedException("Did not get BATTERY_STATUS message")
-        battery_status_value = batt.voltages[0]/1000.0
-        self.progress("BATTERY_STATUS volatge==%f frsky==%f" % (battery_status_value, voltage))
-        if self.compare_number_percent(battery_status_value, voltage, 10):
+        battery_status_voltage_v = batt.voltages[0] * 0.001 # mV -> V
+        self.progress("BATTERY_STATUS volatge==%f frsky==%f" % (battery_status_voltage_v, voltage_v))
+        if self.compare_number_percent(battery_status_voltage_v, voltage_v, 10):
             return True
         return False
 
     def tfs_validate_current1(self, value):
         # test frsky current vs BATTERY_STATUS
         self.progress("validating battery1 (0x%02x)" % value)
-        current = value*0.1
+        current_a = value * 0.1 # dA -> A
         batt = self.mav.recv_match(
             type='BATTERY_STATUS',
             blocking=True,
@@ -9991,9 +9988,9 @@ switch value'''
         )
         if batt is None:
             raise NotAchievedException("Did not get BATTERY_STATUS message")
-        battery_status_current = batt.current_battery*0.01
-        self.progress("BATTERY_STATUS current==%f frsky==%f" % (battery_status_current, current))
-        if self.compare_number_percent(battery_status_current, current, 10):
+        battery_status_current_a = batt.current_battery * 0.01 # cA -> A
+        self.progress("BATTERY_STATUS current==%f frsky==%f" % (battery_status_current_a, current_a))
+        if self.compare_number_percent(battery_status_current_a, current_a, 10):
             return True
         return False
 
@@ -10098,21 +10095,18 @@ switch value'''
         # This, at least makes sure we're getting some of each
         # message.
         wants = {
-            0x01: self.tfs_validate_gps_alt, # gps altitude integer m
-            0x02: self.tfs_validate_tmp1, # Tmp1
-            0x04: self.tfs_validate_fuel, # fuel
-            0x05: self.tfs_validate_tmp2, # Tmp2
-            0x09: lambda x: True, # gps altitude decimal cm
-            0x10: self.tfs_validate_baro_alt, # baro alt integer m
-            0x11: self.tfs_validate_gps_speed, # gps speed integer m/s
-            0x14: self.tfs_validate_yaw, # yaw in degrees
-            0x19: lambda x: True, # gps speed decimal cm/s
-            0x21: lambda x: True, # altitude decimal m
-            0x28: self.tfs_validate_current1, # current A
-            0x30: self.tfs_validate_vspeed, # vertical speed m/s
-            0x39: self.tfs_validate_battery1, # battery 1 voltage
-            0x800: self.tf_validate_gps, # gps lat/lon
-            0x50E: self.tfs_validate_rpm, # rpm 1
+            0x082F: self.tfs_validate_gps_alt, # gps altitude integer cm
+            0x040F: self.tfs_validate_tmp1, # Tmp1
+            0x060F: self.tfs_validate_fuel, # fuel % 0-100
+            0x041F: self.tfs_validate_tmp2, # Tmp2
+            0x010F: self.tfs_validate_baro_alt, # baro alt cm
+            0x083F: self.tfs_validate_gps_speed, # gps speed integer mm/s
+            0x084F: self.tfs_validate_yaw, # yaw in cd
+            0x020F: self.tfs_validate_current1, # current dA
+            0x011F: self.tfs_validate_vspeed, # vertical speed cm/s
+            0x021F: self.tfs_validate_battery1, # battery 1 voltage cV
+            0x0800: self.tf_validate_gps, # gps lat/lon
+            0x050E: self.tfs_validate_rpm, # rpm 1
         }
         tstart = self.get_sim_time_cached()
         last_wanting_print = 0
