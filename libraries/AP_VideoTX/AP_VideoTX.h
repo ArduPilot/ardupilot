@@ -47,6 +47,8 @@ public:
         VTX_UNLOCKED          = (1 << 3),
     };
 
+    static const char *band_names[];
+
     enum VideoBand {
         BAND_A,
         BAND_B,
