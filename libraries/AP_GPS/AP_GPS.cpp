@@ -1555,7 +1555,7 @@ bool AP_GPS::calc_blend_weights(void)
     // The time delta calculations below also rely upon every instance being currently detected and being parsed
 
     // exit immediately if not enough receivers to do blending
-    if (state[0].status <= NO_FIX || state[1].status <= NO_FIX) {
+    if (_force_disable_gps || state[0].status <= NO_FIX || state[1].status <= NO_FIX) {
         return false;
     }
 
