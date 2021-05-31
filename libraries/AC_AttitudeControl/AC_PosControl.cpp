@@ -328,13 +328,13 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 /// 3D position shaper
 ///
 
-/// input_pos_vel_accel_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
+/// input_pos_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
 ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
 ///     The time constant also defines the time taken to achieve the maximum acceleration.
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-void AC_PosControl::input_pos_vel_accel_xyz(const Vector3p& pos)
+void AC_PosControl::input_pos_xyz(const Vector3p& pos)
 {
     Vector3f dest_vector = (pos - _pos_target).tofloat();
 
