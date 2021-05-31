@@ -74,14 +74,12 @@ void AP_SmartAudio::loop()
         hal.scheduler->delay(100);
     }
 
-    uint8_t res_retries=0;
     // allocate response buffer
     uint8_t _response_buffer[AP_SMARTAUDIO_MAX_PACKET_SIZE];
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
     _port->begin(_smartbaud, AP_SMARTAUDIO_UART_BUFSIZE_RX, AP_SMARTAUDIO_UART_BUFSIZE_TX);
 
-    //bool tried = false;
 
     while (true) {
         // now time to control loop switching
@@ -128,9 +126,6 @@ void AP_SmartAudio::loop()
             // setup sheduler delay to 50 ms again after response processes
             if (!read_response(_response_buffer)) {
                 hal.scheduler->delay(10);
-                res_retries++;
-            } else {
-                res_retries = 0;
             }
 
         } else if (_is_waiting_response) { // timeout
