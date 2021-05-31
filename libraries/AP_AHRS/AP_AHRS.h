@@ -24,7 +24,6 @@
 #include <inttypes.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
@@ -115,14 +114,6 @@ public:
 
     const Compass* get_compass() const {
         return _compass;
-    }
-
-    void set_optflow(const OpticalFlow *optflow) {
-        _optflow = optflow;
-    }
-
-    const OpticalFlow* get_optflow() const {
-        return _optflow;
     }
 
     // allow for runtime change of orientation
@@ -665,9 +656,6 @@ protected:
 
     // pointer to compass object, if available
     Compass         * _compass;
-
-    // pointer to OpticalFlow object, if available
-    const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
 

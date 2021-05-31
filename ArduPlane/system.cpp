@@ -88,13 +88,6 @@ void Plane::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
-    // make optflow available to libraries
-    if (optflow.enabled()) {
-        ahrs.set_optflow(&optflow);
-    }
-#endif
-
 // init EFI monitoring
 #if EFI_ENABLED
     g2.efi.init();

@@ -106,11 +106,6 @@ void Copter::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
-
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location::set_terrain(&terrain);
@@ -123,8 +118,10 @@ void Copter::init_ardupilot()
 
     attitude_control->parameter_sanity_check();
 
-    // init the optical flow sensor
-    init_optflow();
+#if OPTFLOW == ENABLED
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
+#endif      // OPTFLOW == ENABLED
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount

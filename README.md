@@ -58,7 +58,7 @@ It is continually being expanded to provide support for new emerging vehicle typ
 
 - The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
 
-- We have an active group of Beta Testers to help us improve our code: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
+- We have an active group of Beta Testers to help us improve our code: [release procedures](https://ardupilot.org/dev/docs/release-procedures.html)
 
 - Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
 

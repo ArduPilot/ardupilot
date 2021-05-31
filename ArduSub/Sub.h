@@ -550,9 +550,6 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void) const;
-#if OPTFLOW == ENABLED
-    void init_optflow();
-#endif
     void terrain_update();
     void terrain_logging();
     void init_ardupilot() override;
