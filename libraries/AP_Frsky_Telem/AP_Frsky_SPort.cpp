@@ -52,34 +52,31 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_VARIO:   // Sensor ID  0
                 switch (_SPort.vario_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_BP, _SPort_data.alt_nav_meters); // send altitude integer part
+                    send_sport_frame(SPORT_DATA_FRAME, ALT_ID, _SPort_data.alt_nav_meters*100 + _SPort_data.alt_nav_cm); // send altitude in cm
                     break;
                 case 1:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_BARO_ALT_AP, _SPort_data.alt_nav_cm); // send altitude decimal part
-                    break;
-                case 2:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_VARIO, _SPort_data.vario_vspd); // send vspeed m/s
+                    send_sport_frame(SPORT_DATA_FRAME, VARIO_ID, _SPort_data.vario_vspd); // send vspeed cm/s
                     _SPort.vario_refresh = true;
                     break;
                 }
-                if (++_SPort.vario_call > 2) {
+                if (++_SPort.vario_call > 1) {
                     _SPort.vario_call = 0;
                 }
                 break;
             case SENSOR_ID_FAS: // Sensor ID  2
                 switch (_SPort.fas_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
+                    send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining as %
                     break;
                 case 1:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
+                    send_sport_frame(SPORT_DATA_FRAME, VFAS_ID, (uint16_t)roundf(_battery.voltage() * 100.0f)); // send battery voltage in cV
                     break;
                 case 2: {
                     float current;
                     if (!_battery.current_amps(current)) {
                         current = 0;
                     }
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
+                    send_sport_frame(SPORT_DATA_FRAME, CURR_ID, (uint16_t)roundf(current * 10.0f)); // send current consumption in dA
                     break;
                 }
                 break;
@@ -97,23 +94,17 @@ void AP_Frsky_SPort::send(void)
                     send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
                     break;
                 case 2:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_BP, _SPort_data.speed_in_meter); // send gps speed integer part
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_SPEED_ID, _SPort_data.speed_in_meter*1000 + _SPort_data.speed_in_centimeter*10); // send gps speed in mm/sec
                     break;
                 case 3:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_AP, _SPort_data.speed_in_centimeter); // send gps speed decimal part
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_ALT_ID, _SPort_data.alt_gps_meters*100+_SPort_data.alt_gps_cm); // send gps altitude in cm
                     break;
                 case 4:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_BP, _SPort_data.alt_gps_meters); // send gps altitude integer part
-                    break;
-                case 5:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_ALT_AP, _SPort_data.alt_gps_cm); // send gps altitude decimals
-                    break;
-                case 6:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_COURS_BP, _SPort_data.yaw); // send heading in degree based on AHRS and not GPS
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_COURS_ID, _SPort_data.yaw*100); // send heading in cd based on AHRS and not GPS
                     _SPort.gps_refresh = true;
                     break;
                 }
-                if (++_SPort.gps_call > 6) {
+                if (++_SPort.gps_call > 4) {
                     _SPort.gps_call = 0;
                 }
                 break;
@@ -141,10 +132,10 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
                 case 0 :
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+                    send_sport_frame(SPORT_DATA_FRAME, TEMP2_ID, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                     break;
                 case 1:
-                    send_sport_frame(SPORT_DATA_FRAME, DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
+                    send_sport_frame(SPORT_DATA_FRAME, TEMP1_ID, gcs().custom_mode()); // send flight mode
                     break;
                 }
                 if (++_SPort.various_call > 1) {
