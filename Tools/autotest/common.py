@@ -8622,8 +8622,7 @@ Also, ignores heartbeats not from our target system'''
                 seq += 1
                 items.append(item)
 
-        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                                           items)
+        self.check_fence_upload_download(items)
 
     def wait_for_initial_mode(self):
         '''wait until we get a heartbeat with an expected initial mode (the
