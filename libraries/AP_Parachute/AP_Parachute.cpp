@@ -169,10 +169,10 @@ void AP_Parachute::send_msg()
     mavlink_command_long_t cmd_msg{};
     cmd_msg.command = MAV_CMD_USER_1;
     cmd_msg.param1 = _release_reasons; // bitmask of reason to release, see release_reason enum
-    cmd_msg.param2 = ((_cancel_timeout_ms == 0) || released()) ? -1.0f : (_cancel_timeout_ms - AP_HAL::millis()); // ms until release
+    cmd_msg.param2 = ((_cancel_timeout_ms == 0) || _release_initiated) ? -1.0f : (_cancel_timeout_ms - AP_HAL::millis()); // ms until release
     cmd_msg.param3 = AP::vehicle()->get_standby(); // standby states
     cmd_msg.param4 = _enabled; // 0 or less for disabled, otherwise enabled
-    cmd_msg.param5 = released(); // 0 for not, 1 if released
+    cmd_msg.param5 = _release_initiated; // 0 for not, 1 if released or relasing
     gcs().send_to_active_channels(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg);
 }
 
