@@ -101,6 +101,9 @@ public:
     // whether control input is ignored with STICK_MIXING=0
     virtual bool does_auto_throttle() const { return false; }
 
+    // method for mode specific target altitude profiles
+    virtual bool update_target_altitude() { return false; }
+    
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -525,6 +528,8 @@ public:
     bool allows_arming() const override { return false; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool update_target_altitude() override;
 
 protected:
 
