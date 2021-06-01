@@ -3802,6 +3802,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_long_t &packet)
+{
+    if (hal.util->get_soft_armed()) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    (void)AP::arming().pre_arm_checks(true);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -4171,6 +4180,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
+        break;
+
+    case MAV_CMD_RUN_PREARM_CHECKS:
+        result = handle_command_run_prearm_checks(packet);
         break;
 
     case MAV_CMD_FLASH_BOOTLOADER:
