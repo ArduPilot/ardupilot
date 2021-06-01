@@ -137,7 +137,6 @@ protected:
     AP_Float    _arm_length_m;                  // distance to motors in m
     AP_Float    _thrust_coefficient;            // thrust coefficient in N/(rad/s)²
     AP_Float    _torque_coefficient;            // torque coefficient in Nm/(rad/s)²
-    AP_Float    _motor_moment_inertia_kgm2;     // moment of inertia of motor and propellar !!! became redundant check _yaw_rate_filter 
     AP_Float    _throttle2motor_speed;          // coefficient between scaled throttle(between 0-1) command and motor speed in rad/s 
     AP_Float    _torque_est_filter_cutoff;      // rpm filter cutoff frequency for torque estimation in Hz
     AP_Float    _spec_thrust_est_filter_cutoff; // rpm filter cutoff frequency for specific thrust estimation in Hz

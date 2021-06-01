@@ -166,20 +166,12 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TRQ_COEF",                       17, AC_INDI_Control, _torque_coefficient, 1.523e-8f),
 
-    // @Param: _MOT_INER
-    // @DisplayName: Moment of inertia of the motor and propellar in kg.m² 
-    // @Description: Moment of inertia of the motor and propellar around motor axis in kg.m².
-    // @Units: kg.m²
-    // @Range: 0.000001 0.0001
-    // @User: Standard
-    AP_GROUPINFO("_MOT_INER",                       18, AC_INDI_Control, _motor_moment_inertia_kgm2, 6.73e-6f),
-
     // @Param: _THR2RTRSPD
     // @DisplayName: Throttle command to motor speed coefficient
     // @Description: Defines relation from scaled throttle command(between 0-1) to motor speed in rad/s. Relation between throttle command and motor speed assumed to be linear.
     // @Range: 100 4000
     // @User: Standard
-    AP_GROUPINFO("_THR2RTRSPD",                     19, AC_INDI_Control, _throttle2motor_speed, 3251.0f),
+    AP_GROUPINFO("_THR2RTRSPD",                     18, AC_INDI_Control, _throttle2motor_speed, 3251.0f),
 
     // @Param: _TRQEST_FILT
     // @DisplayName: Torque estimate cutoff frequency in Hz
@@ -204,7 +196,6 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Range: 2 20
     // @User: Standard    
     AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 3.0f),
-
 
     // @Param: _YAW_FILT
     // @DisplayName: Toruqe command z axis filter
