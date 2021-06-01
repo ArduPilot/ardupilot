@@ -116,7 +116,7 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
         if (!read_latlon_from_storage(offset, item.loc)) {
             return false;
         }
-        item.radius = fence_storage.read_uint32(offset);
+        item.radius = fence_storage.read_float(offset);
         break;
     case AC_PolyFenceType::POLYGON_INCLUSION:
     case AC_PolyFenceType::POLYGON_EXCLUSION:
@@ -789,7 +789,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
                 break;
             }
             // now read the radius
-            circle.radius = fence_storage.read_uint32(storage_offset);
+            circle.radius = fence_storage.read_float(storage_offset);
             if (circle.radius <= 0) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: non-positive circle radius");
                 storage_valid = false;
@@ -1075,7 +1075,7 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
                 return false;
             }
             // store the radius
-            fence_storage.write_uint32(offset, new_item.radius);
+            fence_storage.write_float(offset, new_item.radius);
             offset += 4;
             break;
         case AC_PolyFenceType::RETURN_POINT:
