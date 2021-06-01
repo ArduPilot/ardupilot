@@ -489,6 +489,7 @@ private:
         bool pilot_correction_done;
         float start_closing_vel;
         float start_dist;
+        uint32_t thrust_loss_start_ms;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;

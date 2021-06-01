@@ -2568,6 +2568,7 @@ void QuadPlane::poscontrol_init_approach(void)
                         poscontrol.start_closing_vel,
                         poscontrol.start_dist);
         poscontrol.set_state(QPOS_APPROACH);
+        poscontrol.thrust_loss_start_ms = 0;
     }
 }
 
@@ -2674,6 +2675,24 @@ void QuadPlane::vtol_position_controller(void)
             vel_forward.integrator = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
             vel_forward.last_ms = AP_HAL::millis();
         }
+
+        bool throttle_saturated = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) >= plane.aparm.throttle_max;
+        if (throttle_saturated &&
+            motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
+            plane.auto_state.sink_rate > 0.2 && aspeed < aspeed_threshold+4) {
+            const uint32_t now = AP_HAL::millis();
+            if (poscontrol.thrust_loss_start_ms == 0) {
+                poscontrol.thrust_loss_start_ms = now;
+            }
+            if (now - poscontrol.thrust_loss_start_ms > 5000) {
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 thrust loss as=%.1f at=%.1f",
+                                aspeed, aspeed_threshold);
+                poscontrol.set_state(QPOS_POSITION1);
+            }
+        } else {
+            poscontrol.thrust_loss_start_ms = 0;
+        }
+
 
         // handle loss of forward thrust in approach
         if (poscontrol.get_state() == QPOS_APPROACH && aspeed < aspeed_threshold &&
