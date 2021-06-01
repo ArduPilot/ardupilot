@@ -1480,7 +1480,9 @@ void AP_Periph_FW::can_battery_update(void)
         }
         float temperature;
         if (battery.lib.get_temperature(temperature, i)) {
-            pkt.temperature = temperature;
+            // Battery lib reports temperature in Celsius.
+            // Convert Celsius to Kelvin for tranmission on CAN.
+            pkt.temperature = temperature + C_TO_KELVIN;
         }
 
         fix_float16(pkt.voltage);
