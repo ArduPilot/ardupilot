@@ -38,6 +38,9 @@
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)
 #endif
 
+// Enable when trying to check if you are not just listening yourself
+#define ENABLE_ECHO_SAFE 0
+
 /*
   initialise a bouncebuffer
  */
@@ -79,6 +82,9 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         bouncebuffer->size = size;
     }
     *buf = bouncebuffer->dma_buf;
+#if ENABLE_ECHO_SAFE
+    memset(bouncebuffer->dma_buf, 0xBB, bouncebuffer->size);
+#endif
 #if defined(STM32H7)
     osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
     stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
