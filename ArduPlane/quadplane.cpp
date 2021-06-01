@@ -3089,6 +3089,13 @@ void QuadPlane::init_qrtl(void)
     pos_control->set_accel_desired_xy_cmss(Vector2f());
     pos_control->init_xy_controller();
     poscontrol_init_approach();
+    float dist = plane.next_WP_loc.get_distance(plane.current_loc);
+    const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
+    if (dist < 1.5*radius &&
+        motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+        // we're close to destination and already running VTOL motors, don't transition
+        poscontrol.set_state(QPOS_POSITION1);
+    }
     int32_t from_alt;
     int32_t to_alt;
     if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
