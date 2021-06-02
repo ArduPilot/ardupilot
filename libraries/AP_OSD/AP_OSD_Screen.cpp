@@ -154,7 +154,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: SATS_EN
     // @DisplayName: SATS_EN
-    // @Description: Displays number of acquired sattelites
+    // @Description: Displays number of acquired satellites
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: SATS_X
@@ -2054,7 +2054,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(clk);
     DRAW_SETTING(vtx_power);
 
-#ifdef HAL_WITH_ESC_TELEM
+#if HAL_WITH_ESC_TELEM
     DRAW_SETTING(blh_temp);
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);
