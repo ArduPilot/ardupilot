@@ -247,6 +247,8 @@ void AP_SmartAudio::update_vtx_params()
  */
 void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     if (size <= 0 || _port == nullptr) {
         return;
     }
@@ -254,6 +256,9 @@ void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
     const uint8_t *request = reinterpret_cast<const uint8_t*>(&requestFrame);
 
     // write request
+    if (vtx.has_option(AP_VideoTX::VideoOptions::VTX_PULLDOWN)) {
+        _port->write((uint8_t)0x00);
+    }
     _port->write(request, size);
     _port->flush();
 
