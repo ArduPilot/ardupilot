@@ -81,13 +81,13 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_max, 0.75f),
 
-    // @Param: ALT_MIN
+    // @Param{Copter}: ALT_MIN
     // @DisplayName: Avoidance minimum altitude
     // @Description: Minimum altitude above which proximity based avoidance will start working. This requires a valid downward facing rangefinder reading to work. Set zero to disable
     // @Units: m
     // @Range: 0 6
     // @User: Standard
-    AP_GROUPINFO("ALT_MIN", 7, AC_Avoid, _alt_min, 0.0f),
+    AP_GROUPINFO_FRAME("ALT_MIN", 7, AC_Avoid, _alt_min, 0.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Param: ACCEL_MAX
     // @DisplayName: Avoidance maximum acceleration
