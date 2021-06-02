@@ -5,7 +5,7 @@ def build(bld):
     if not bld.env.BOOTLOADER:
         return
 
-    if bld.env.EXTERNAL_FLASH_SUPPORT:
+    if bld.env.EXTERNAL_PROG_FLASH_MB:
         flashiface_lib = ['AP_HAL', 'AP_FlashIface']
     else:
         flashiface_lib = []
