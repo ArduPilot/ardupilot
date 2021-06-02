@@ -5,6 +5,11 @@ def build(bld):
     if not bld.env.BOOTLOADER:
         return
 
+    if bld.env.EXTERNAL_FLASH_SUPPORT:
+        flashiface_lib = ['AP_HAL', 'AP_FlashIface']
+    else:
+        flashiface_lib = []
+    
     # build external libcanard library
     bld.stlib(source='../../modules/libcanard/canard.c',
               target='libcanard')
@@ -19,7 +24,7 @@ def build(bld):
     bld.ap_stlib(
         name= 'AP_Bootloader_libs',
         ap_vehicle='AP_Bootloader',
-        ap_libraries= [
+        ap_libraries= flashiface_lib + [
         'AP_Math'
         ])
     
