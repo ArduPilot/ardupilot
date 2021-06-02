@@ -223,6 +223,7 @@ static Empty::OpticalFlow opticalFlow;
 
 static Empty::DSP dspDriver;
 static Empty::Flash flashDriver;
+static Empty::QSPIDeviceManager qspi_mgr_instance;
 
 #if HAL_NUM_CAN_IFACES
 static CANIface* canDrivers[HAL_NUM_CAN_IFACES];
@@ -241,6 +242,7 @@ HAL_Linux::HAL_Linux() :
         &uartIDriver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
+        &qspi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,
