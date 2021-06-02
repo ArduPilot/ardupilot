@@ -704,6 +704,14 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("OGNM_TEST_SF", 6, NavEKF3, _ognmTestScaleFactor, 2.0f),
 
+    // @Param: GND_EFF_DZ
+    // @DisplayName: Baro height ground effect dead zone
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when takeing off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. 
+    // @Range: 0.0 10.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
+
     AP_GROUPEND
 };
 
@@ -1693,41 +1701,6 @@ void NavEKF3::convert_parameters()
     // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
     if (AP::dal().opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
         AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
-    }
-}
-
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-// causes the EKF to start the EKF-GSF yaw estimator
-void NavEKF3::setTakeoffExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event3(AP_DAL::Event::setTakeoffExpected);
-    } else {
-        AP::dal().log_event3(AP_DAL::Event::unsetTakeoffExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTakeoffExpected(val);
-        }
-    }
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF3::setTouchdownExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event3(AP_DAL::Event::setTouchdownExpected);
-    } else {
-        AP::dal().log_event3(AP_DAL::Event::unsetTouchdownExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTouchdownExpected(val);
-        }
     }
 }
 

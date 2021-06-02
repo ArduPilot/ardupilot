@@ -1536,7 +1536,7 @@ void QuadPlane::control_loiter()
         float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
 
         if (poscontrol.state == QPOS_LAND_FINAL && (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
-            ahrs.setTouchdownExpected(true);
+            ahrs.set_touchdown_expected(true);
         }
 
         set_climb_rate_cms(-descent_rate_cms, descent_rate_cms>0);
@@ -2774,7 +2774,7 @@ void QuadPlane::vtol_position_controller(void)
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
         if (poscontrol.state == QPOS_LAND_FINAL) {
             if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
-                ahrs.setTouchdownExpected(true);
+                ahrs.set_touchdown_expected(true);
             }
         }
         const float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
@@ -3066,7 +3066,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 
     if (now - takeoff_start_time_ms < 3000 &&
         (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
-        ahrs.setTakeoffExpected(true);
+        ahrs.set_takeoff_expected(true);
     }
     
     // check for failure conditions
@@ -3536,7 +3536,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     guided_start();
     guided_takeoff = true;
     if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
-        ahrs.setTakeoffExpected(true);
+        ahrs.set_takeoff_expected(true);
     }
     return true;
 }
