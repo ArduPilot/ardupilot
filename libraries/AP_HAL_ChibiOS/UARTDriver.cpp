@@ -1678,15 +1678,15 @@ void UARTDriver::uart_info(ExpandingString &str)
     str.printf("UARTV1\n");
 
     uint32_t now_ms = AP_HAL::millis();
-    for (uint8_t i = 0; i < UART_MAX_DRIVERS; i++) {
-        UARTDriver* uart = uart_drivers[i];
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        UARTDriver* uart = (UARTDriver *)hal.serial(i);
 
         if (uart == nullptr || uart->uart_thread_ctx == nullptr) {
             continue;
         }
 
-        const char* fmt = "%-8s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n";
-        str.printf(fmt, uart->uart_thread_name, uart->tx_dma_enabled ? '*' : ' ', uart->_tx_stats_bytes,
+        const char* fmt = "SERIAL%u %-5s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n";
+        str.printf(fmt, i, uart->uart_thread_name, uart->tx_dma_enabled ? '*' : ' ', uart->_tx_stats_bytes,
             uart->rx_dma_enabled ? '*' : ' ', uart->_rx_stats_bytes,
             uart->_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms), uart->_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms));
 
