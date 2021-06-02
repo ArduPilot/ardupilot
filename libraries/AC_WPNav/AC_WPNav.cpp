@@ -430,7 +430,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // check target velocity is non-zero
     if (is_positive(curr_target_vel.length())) {
         Vector3f track_direction = curr_target_vel.normalized();
-        const float track_error = _pos_control.get_pos_error_cm().dot(track_direction);
+        const Vector3f pos_error = _pos_control.get_pos_error_cm();
+        _track_error_xy = (pos_error.x * track_direction.x) + (pos_error.y * track_direction.y);
+        const float track_error = _track_error_xy + pos_error.z * track_direction.z;
         const float track_velocity = _inav.get_velocity().dot(track_direction);
         // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
         track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.1f, 1.0f);
