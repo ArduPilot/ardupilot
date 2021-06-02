@@ -97,6 +97,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ACCEL_MAX", 8, AC_Avoid, _accel_max, 3.0f),
 
+    // @Param: BACKUP_DZ
+    // @DisplayName: Avoidance deadzone between stopping and backing away from obstacle
+    // @Description: Distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles. Increase this parameter if you see vehicle going back and forth in front of obstacle.
+    // @Units: m
+    // @Range: 0 2
+    // @User: Standard
+    AP_GROUPINFO("BACKUP_DZ", 9, AC_Avoid, _backup_deadzone, 0.10f),
+
     AP_GROUPEND
 };
 
@@ -1163,14 +1171,14 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         if (is_negative(dist_to_boundary - margin_cm)) {
             const float breach_dist = margin_cm - dist_to_boundary;
             // add a deadzone so that the vehicle doesn't backup and go forward again and again
-            // the deadzone is hardcoded to be 10cm
-            if (breach_dist > AC_AVOID_MIN_BACKUP_BREACH_DIST) {
+            const float deadzone = MAX(0.0f, _backup_deadzone) * 100.0f;
+            if (breach_dist > deadzone) {
                 // this vector will help us decide how much we have to back away horizontally and vertically
                 const Vector3f margin_vector = vector_to_obstacle.normalized() * breach_dist;
                 const float xy_back_dist = norm(margin_vector.x, margin_vector.y);
                 const float z_back_dist = margin_vector.z;
                 calc_backup_velocity_3D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, xy_back_dist, vector_to_obstacle, kP_z, accel_cmss_z, z_back_dist, min_back_vel_z, max_back_vel_z, dt);
-            }        
+            }
         }
 
         if (desired_vel_cms.is_zero()) {
