@@ -45,6 +45,7 @@ public:
         VTX_PITMODE_UNTIL_ARM = (1 << 1),
         VTX_PITMODE_ON_DISARM = (1 << 2),
         VTX_UNLOCKED          = (1 << 3),
+        VTX_PULLDOWN          = (1 << 4),
     };
 
     static const char *band_names[];
