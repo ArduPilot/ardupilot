@@ -484,6 +484,13 @@ public:
     AP_Int8 failsafe_scr;
     AP_Int32 button_delay_ms;
 
+#if HAL_WITH_ESC_TELEM
+    AP_Float warn_esc_high_rpm;
+    AP_Float warn_esc_low_rpm;
+    AP_Float warn_esc_temp;
+    AP_Float warn_esc_amps;
+#endif
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,

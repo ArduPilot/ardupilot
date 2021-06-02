@@ -112,6 +112,7 @@ known_units = {
              'gravities': 'standard acceleration due to gravity' , # g_n would be a more correct unit, but IMHO no one understands what g_n means
              'octal'   : 'octal'                 ,
              'RPM'     : 'Revolutions Per Minute',
+             'kRPM'    : 'Thousands of Revolutions Per Minute',
              'kg/m/m'  : 'kilograms per square meter', # metre is the SI unit name, meter is the american spelling of it
              }
 

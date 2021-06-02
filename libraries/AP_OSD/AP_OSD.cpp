@@ -206,6 +206,40 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_W_RESTVOLT", 26, AP_OSD, warn_restvolt, 10.0f),
 
+#if HAL_WITH_ESC_TELEM
+    // @Param: _W_ESCRPM
+    // @DisplayName: ESCRPM warn level
+    // @Description: Set level above which ESCRPM item will flash
+    // @Range: 0 500
+    // @Units: kRPM
+    // @User: Standard
+    AP_GROUPINFO("_W_ESCRPM", 31, AP_OSD, warn_esc_high_rpm, 0.0f),
+
+    // @Param: _W_ESCLRPM
+    // @DisplayName: ESCRPM warn level
+    // @Description: Set level under which ESCRPM item will flash with throttle > 5% and armed
+    // @Range: 0 10000
+    // @Units: RPM
+    // @User: Standard
+    AP_GROUPINFO("_W_ESCLRPM", 32, AP_OSD, warn_esc_low_rpm, 0.1f),
+
+    // @Param: _W_ESCTEMP
+    // @DisplayName: ESCTEMP warn level
+    // @Description: Set level at which ESCTEMP item will flash
+    // @Range: 0 200
+    // @Units: degC
+    // @User: Standard
+    AP_GROUPINFO("_W_ESCTEMP", 33, AP_OSD, warn_esc_temp, 80.0f),
+
+    // @Param: _W_ESCAMPS
+    // @DisplayName: ESCAMPS warn level
+    // @Description: Set level at which ESCAMPS item will flash
+    // @Range: 0 200
+    // @Units: A
+    // @User: Standard
+    AP_GROUPINFO("_W_ESCAMPS", 34, AP_OSD, warn_esc_amps, 80.0f),
+#endif
+
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_

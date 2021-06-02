@@ -443,6 +443,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(highest_esc_rpm, "ESCHRPM", 63, AP_OSD_Screen, AP_OSD_Setting),
 #endif
+
     // @Param: GPSLAT_EN
     // @DisplayName: GPSLAT_EN
     // @Description: Displays GPS latitude
@@ -1733,14 +1734,17 @@ void AP_OSD_Screen::draw_highest_esc_temp(uint8_t x, uint8_t y)
         return;
     }
 
-    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, etemp / 100), u_icon(TEMPERATURE));
+    etemp /= 100;
+    backend->write(x, y, (osd->warn_esc_temp > 0 && etemp > osd->warn_esc_temp), "%3d%c", (int)u_scale(TEMPERATURE, etemp), u_icon(TEMPERATURE));
 }
 
 void AP_OSD_Screen::draw_rpm(uint8_t x, uint8_t y, float rpm)
 {
     float krpm = rpm * 0.001f;
     const char *format = krpm < 9.995 ? "%.2f%c%c" : (krpm < 99.95 ? "%.1f%c%c" : "%.0f%c%c");
-    backend->write(x, y, false, format, krpm, SYMBOL(SYM_KILO), SYMBOL(SYM_RPM));
+    const bool warn_high = osd->warn_esc_high_rpm > 0 && krpm > osd->warn_esc_high_rpm;
+    const bool warn_low = osd->warn_esc_low_rpm > 0 && krpm < osd->warn_esc_low_rpm && gcs().get_hud_throttle() >= 5;
+    backend->write(x, y, warn_high || warn_low, format, krpm, SYMBOL(SYM_KILO), SYMBOL(SYM_RPM));
 }
 
 void AP_OSD_Screen::draw_avg_esc_rpm(uint8_t x, uint8_t y)
@@ -1762,7 +1766,9 @@ void AP_OSD_Screen::draw_avg_esc_amps(uint8_t x, uint8_t y)
     if (!AP::esc_telem().get_average_current(amps)) {
         return;
     }
-    backend->write(x, y, false, "%4.1f%c", amps, SYMBOL(SYM_AMP));
+    float highest_amps = 0;
+    AP::esc_telem().get_highest_current(highest_amps);
+    backend->write(x, y, highest_amps > osd->warn_esc_amps, "%4.1f%c", amps, SYMBOL(SYM_AMP));
 }
 
 void AP_OSD_Screen::draw_highest_esc_amps(uint8_t x, uint8_t y)
@@ -1771,7 +1777,7 @@ void AP_OSD_Screen::draw_highest_esc_amps(uint8_t x, uint8_t y)
     if (!AP::esc_telem().get_highest_current(amps)) {
         return;
     }
-    backend->write(x, y, false, "%4.1f%c", amps, SYMBOL(SYM_AMP));
+    backend->write(x, y, amps > osd->warn_esc_amps, "%4.1f%c", amps, SYMBOL(SYM_AMP));
 }
 
 void AP_OSD_Screen::draw_total_esc_amps(uint8_t x, uint8_t y)
@@ -1780,7 +1786,9 @@ void AP_OSD_Screen::draw_total_esc_amps(uint8_t x, uint8_t y)
     if (!AP::esc_telem().get_total_current(amps)) {
         return;
     }
-    backend->write(x, y, false, "%4.1f%c", amps, SYMBOL(SYM_AMP));
+    float highest_amps = 0;
+    AP::esc_telem().get_highest_current(highest_amps);
+    backend->write(x, y, highest_amps > osd->warn_esc_amps, "%4.1f%c", amps, SYMBOL(SYM_AMP));
 }
 #endif
 
