@@ -1623,7 +1623,9 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
     if (!AP::esc_telem().get_rpm(0, rpm)) {
         return;
     }
-    backend->write(x, y, false, "%3.1f%c%c", uint16_t(rpm) * 0.001f, SYM_KILO, SYM_RPM);
+    float krpm = rpm * 0.001f;
+    const char *format = krpm < 9.995 ? "%.2f%c%c" : (krpm < 99.95 ? "%.1f%c%c" : "%.0f%c%c");
+    backend->write(x, y, false, format, krpm, SYM_KILO, SYM_RPM);
 }
 
 void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
