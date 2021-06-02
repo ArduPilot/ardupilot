@@ -227,6 +227,9 @@ protected:
     // updates _scurve_jerk and _scurve_jerk_time
     void calc_scurve_jerk_and_jerk_time();
 
+    // compute and set the horizontal error
+    void compute_track_xy_error(const Vector3f &curr_pos);
+
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
     const AP_AHRS_View&     _ahrs;

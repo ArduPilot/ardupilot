@@ -422,6 +422,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
     const Vector3f &curr_pos = _inav.get_position() - Vector3f{0, 0, terr_offset};
 
+    compute_track_xy_error(curr_pos);
+
     // Use _track_scalar_dt to slow down S-Curve time to prevent target moving too far in front of aircraft
     Vector3f curr_target_vel = _pos_control.get_vel_desired_cms();
     curr_target_vel.z -= _vel_terrain_offset;
@@ -828,4 +830,23 @@ void AC_WPNav::calc_scurve_jerk_and_jerk_time()
         _scurve_jerk_time = MAX(_attitude_control.get_input_tc(), 0.1f);
     }
     _scurve_jerk_time *= 2.0f;
+}
+
+// compute and set the horizontal error
+void AC_WPNav::compute_track_xy_error(const Vector3f &curr_pos) {
+    Vector3f track_pos_desired = _destination - _origin;
+    const Vector3f track_pos_curr = curr_pos - _origin;
+    Vector3f track_pos_error;
+
+    // Ensure that length is not zero before normalizing
+    const float track_pos_length = track_pos_desired.length();
+    if (is_zero(track_pos_length)) {
+        track_pos_error = track_pos_curr;
+    } else {
+        track_pos_desired /= track_pos_length;
+        // Note given a unit vector, below is the same as track_pos_curr - track_pos_curr.projected(track_pos_desired)
+        track_pos_error = track_pos_curr - (track_pos_desired * track_pos_curr.dot(track_pos_desired));
+    }
+
+    _track_error_xy = norm(track_pos_error.x, track_pos_error.y);
 }
