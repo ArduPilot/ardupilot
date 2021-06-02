@@ -849,25 +849,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     _active_accel_instance = besti;
 
-#define YAW_INDEPENDENT_DRIFT_CORRECTION 0
-#if YAW_INDEPENDENT_DRIFT_CORRECTION
-    // step 2 calculate earth_error_Z
-    const float earth_error_Z = error.z;
-
-    // equation 10
-    const float tilt = norm(GA_e.x, GA_e.y);
-
-    // equation 11
-    const float theta = atan2f(GA_b[besti].y, GA_b[besti].x);
-
-    // equation 12
-    const Vector3f GA_e2 = Vector3f(cosf(theta)*tilt, sinf(theta)*tilt, GA_e.z);
-
-    // step 6
-    error = GA_b[besti] % GA_e2;
-    error.z = earth_error_Z;
-#endif // YAW_INDEPENDENT_DRIFT_CORRECTION
-
     // to reduce the impact of two competing yaw controllers, we
     // reduce the impact of the gps/accelerometers on yaw when we are
     // flat, but still allow for yaw correction using the
