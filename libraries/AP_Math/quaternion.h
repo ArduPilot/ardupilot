@@ -171,4 +171,7 @@ public:
 
     // angular difference between quaternions
     Quaternion angular_difference(const Quaternion &v) const;
+
+    // absolute (e.g. always positive) earth-frame roll-pitch difference (in radians) between this Quaternion and another
+    float roll_pitch_difference(const Quaternion &v) const;
 };
