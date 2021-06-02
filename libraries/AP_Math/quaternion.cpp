@@ -692,3 +692,22 @@ Quaternion Quaternion::angular_difference(const Quaternion &v) const
 {
     return v.inverse() * *this;
 }
+
+// absolute (e.g. always positive) earth-frame roll-pitch difference (in radians) between this Quaternion and another
+float Quaternion::roll_pitch_difference(const Quaternion &v) const
+{
+    // convert Quaternions to rotation matrices
+    Matrix3f m, vm;
+    rotation_matrix(m);
+    v.rotation_matrix(vm);
+
+    // rotate earth frame vertical vector by each rotation matrix
+    const Vector3f z_unit_vec{0,0,1};
+    const Vector3f z_unit_m = m.mul_transpose(z_unit_vec);
+    const Vector3f z_unit_vm = vm.mul_transpose(z_unit_vec);
+    const Vector3f vec_diff = z_unit_vm - z_unit_m;
+    const float vec_len_div2 = constrain_float(vec_diff.length() * 0.5f, 0.0f, 1.0f);
+
+    // calculate and return angular difference
+    return (2.0f * asinf(vec_len_div2));
+}
