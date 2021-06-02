@@ -23,6 +23,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_FlashIface_JEDEC.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL_ChibiOS/QSPIDevice.h>
+#include "../../Tools/AP_Bootloader/support.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -70,12 +72,14 @@ static const struct supported_device supported_devices[] = {
 
 #define MAX_READ_SIZE       1024UL
 
+static ChibiOS::QSPIDeviceManager qspi;
+
 bool AP_FlashIface_JEDEC::init()
 {
     // Get device bus by name
     _dev = nullptr;
     for (uint8_t i = 0; i < ARRAY_SIZE(supported_devices); i++) {
-        _dev = hal.qspi->get_device(supported_devices[i].name);
+        _dev = qspi.get_device(supported_devices[i].name);
         if (_dev) {
             _dev_list_idx = i;
             break;
