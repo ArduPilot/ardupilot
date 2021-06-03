@@ -18,7 +18,8 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         current_total       : has_curr ? _state.consumed_mah : AP::logger().quiet_nanf(),
         consumed_wh         : has_curr ? _state.consumed_wh : AP::logger().quiet_nanf(),
         temperature         : (int16_t) ( has_temperature() ? _state.temperature * 100 : 0),
-        resistance          : _state.resistance
+        resistance          : _state.resistance,
+        rem_percent         : capacity_remaining_pct(),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
