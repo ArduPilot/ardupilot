@@ -232,13 +232,13 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
 bool AP_BattMonitor_Backend::reset_remaining(float percentage)
 {
     percentage = constrain_float(percentage, 0, 100);
-    const float used_proportion = (100 - percentage) * 0.01;
+    const float used_proportion = (100.0f - percentage) * 0.01f;
     _state.consumed_mah = used_proportion * _params._pack_capacity;
     // without knowing the history we can't do consumed_wh
     // accurately. Best estimate is based on current voltage. This
     // will be good when resetting the battery to a value close to
     // full charge
-    _state.consumed_wh = _state.consumed_mah * 1000 * _state.voltage;
+    _state.consumed_wh = _state.consumed_mah * 0.001f * _state.voltage;
 
     // reset failsafe state for this backend
     _state.failsafe = update_failsafes();
