@@ -150,7 +150,7 @@ void AP_MSP::init_osd()
     _osd_item_settings[OSD_NUMERICAL_HEADING] = &osd->screen[0].heading;
     _osd_item_settings[OSD_NUMERICAL_VARIO] = &osd->screen[0].vspeed;
 #if HAL_WITH_ESC_TELEM
-    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[0].blh_temp;
+    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[0].esc_temp;
 #endif
     _osd_item_settings[OSD_RTC_DATETIME] = &osd->screen[0].clk;
 #endif  // OSD_ENABLED
