@@ -45,6 +45,12 @@ public:
     // get an individual ESC's consumption in milli-Ampere.hour if available, returns true on success
     bool get_consumption_mah(uint8_t esc_index, float& consumption_mah) const;
 
+    // return the average selected motor rpm
+    float get_average_motor_rpm(uint32_t esc_mask) const;
+
+    // return the average motor frequency in Hz for dynamic filtering
+    float get_average_motor_frequency_hz(uint32_t esc_mask) const;
+
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz() const;
 
