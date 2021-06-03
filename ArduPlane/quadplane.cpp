@@ -2676,30 +2676,36 @@ void QuadPlane::vtol_position_controller(void)
             vel_forward.last_ms = AP_HAL::millis();
         }
 
-        bool throttle_saturated = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) >= plane.aparm.throttle_max;
-        if (throttle_saturated &&
-            motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
-            plane.auto_state.sink_rate > 0.2 && aspeed < aspeed_threshold+4) {
-            const uint32_t now = AP_HAL::millis();
-            if (poscontrol.thrust_loss_start_ms == 0) {
-                poscontrol.thrust_loss_start_ms = now;
+        if (tilt.tilt_mask == 0 && !is_tailsitter()) {
+            /*
+              cope with fwd motor thrust loss during approach. We detect
+              this by looking for the fwd throttle saturating. This only
+              applies to separate lift-thrust vehicles
+            */
+            bool throttle_saturated = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) >= plane.aparm.throttle_max;
+            if (throttle_saturated &&
+                motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
+                plane.auto_state.sink_rate > 0.2 && aspeed < aspeed_threshold+4) {
+                const uint32_t now = AP_HAL::millis();
+                if (poscontrol.thrust_loss_start_ms == 0) {
+                    poscontrol.thrust_loss_start_ms = now;
+                }
+                if (now - poscontrol.thrust_loss_start_ms > 5000) {
+                    gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 thrust loss as=%.1f at=%.1f",
+                                    aspeed, aspeed_threshold);
+                    poscontrol.set_state(QPOS_POSITION1);
+                }
+            } else {
+                poscontrol.thrust_loss_start_ms = 0;
             }
-            if (now - poscontrol.thrust_loss_start_ms > 5000) {
-                gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 thrust loss as=%.1f at=%.1f",
+
+            // handle loss of forward thrust in approach based on low airspeed detection
+            if (poscontrol.get_state() == QPOS_APPROACH && aspeed < aspeed_threshold &&
+                motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 low speed as=%.1f at=%.1f",
                                 aspeed, aspeed_threshold);
                 poscontrol.set_state(QPOS_POSITION1);
             }
-        } else {
-            poscontrol.thrust_loss_start_ms = 0;
-        }
-
-
-        // handle loss of forward thrust in approach
-        if (poscontrol.get_state() == QPOS_APPROACH && aspeed < aspeed_threshold &&
-            motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 low speed as=%.1f at=%.1f",
-                            aspeed, aspeed_threshold);
-            poscontrol.set_state(QPOS_POSITION1);
         }
 
         
