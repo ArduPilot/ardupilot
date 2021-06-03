@@ -925,66 +925,28 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
 
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
 protected:
 
-    const char *name() const override { return "POSHOLD"; }
-    const char *name4() const override { return "PHLD"; }
+    const char* name() const override { return "POSHOLD"; }
+    const char* name4() const override { return "PHLD"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+
+#if PRECISION_LANDING == ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
 
 private:
 
-    void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    float mix_controls(float mix_ratio, float first_control, float second_control);
-    void update_brake_angle_from_velocity(float &brake_angle, float velocity);
-    void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
-    void roll_controller_to_pilot_override();
-    void pitch_controller_to_pilot_override();
-
-    enum class RPMode {
-        PILOT_OVERRIDE=0,            // pilot is controlling this axis (i.e. roll or pitch)
-        BRAKE,                       // this axis is braking towards zero
-        BRAKE_READY_TO_LOITER,       // this axis has completed braking and is ready to enter loiter mode (both modes must be this value before moving to next stage)
-        BRAKE_TO_LOITER,             // both vehicle's axis (roll and pitch) are transitioning from braking to loiter mode (braking and loiter controls are mixed)
-        LOITER,                      // both vehicle axis are holding position
-        CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
-    };
-
-    RPMode roll_mode;
-    RPMode pitch_mode;
-
-    uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-    uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-
-    // pilot input related variables
-    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
-    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
-
-    // braking related variables
-    float brake_gain;                           // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from brake_rate)
-    float brake_roll;                           // target roll angle during braking periods
-    float brake_pitch;                          // target pitch angle during braking periods
-    int16_t brake_timeout_roll;                 // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    int16_t brake_timeout_pitch;                // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    float brake_angle_max_roll;                 // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    float brake_angle_max_pitch;                // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    int16_t brake_to_loiter_timer;              // cycles to mix brake and loiter controls in POSHOLD_BRAKE_TO_LOITER
-
-    // loiter related variables
-    int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
-    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
-
-    // wind compensation related variables
-    Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
-    float wind_comp_roll;                       // roll angle to compensate for wind
-    float wind_comp_pitch;                      // pitch angle to compensate for wind
-    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
-
-    // final output
-    float roll;   // final roll angle sent to attitude controller
-    float pitch;  // final pitch angle sent to attitude controller
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+#endif
 
 };
 
