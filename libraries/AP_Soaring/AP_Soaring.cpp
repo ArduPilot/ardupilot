@@ -194,10 +194,13 @@ bool SoaringController::check_thermal_criteria()
 
 SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2f prev_wp, Vector2f next_wp)
 {
+    // Check conditions for re-entering cruise. Note that the aircraft needs to also be aligned with the appropriate
+    // heading before some of these conditions will actually trigger.
+    // The GCS messages are emitted in mode_thermal.cpp. Update these if the logic here is changed.
+
     ActiveStatus status = active_state();
 
     if (status == ActiveStatus::SOARING_DISABLED) {
-        _cruise_criteria_msg_last = LoiterStatus::DISABLED;
         return LoiterStatus::DISABLED;
     }
 
@@ -208,35 +211,19 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
         result = LoiterStatus::EXIT_COMMANDED;
     } else if (alt > alt_max) {
         result = LoiterStatus::ALT_TOO_HIGH;
-        if (result != _cruise_criteria_msg_last) {
-            gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper alt = %dm", (int16_t)alt);
-        }
     } else if (alt < alt_min) {
         result = LoiterStatus::ALT_TOO_LOW;
-        if (result != _cruise_criteria_msg_last) {
-            gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower alt = %dm", (int16_t)alt);
-        }
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
         const float mcCreadyAlt = McCready(alt);
         if (_thermalability < mcCreadyAlt) {
             result = LoiterStatus::THERMAL_WEAK;
-            if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: th %3.1fm/s alt %3.1fm Mc %3.1fm/s", (double)_thermalability, (double)alt, (double)mcCreadyAlt);
-            }
         } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
             result = LoiterStatus::ALT_LOST;
-            if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
-            }
         } else if (check_drift(prev_wp, next_wp)) {
             result = LoiterStatus::DRIFT_EXCEEDED;
-            if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Drifted too far");
-            }
         }
     }
 
-    _cruise_criteria_msg_last = result;
     return result;
 }
 
