@@ -35,7 +35,7 @@ namespace SITL {
 
 class RF_Benewake_TF03 : public RF_Benewake {
 public:
-
+    RF_Benewake_TF03(uint8_t port_num): RF_Benewake(port_num) {};
     // see AP_RangeFinder_Benewake.cpp for definitions
     uint8_t byte4() const override { return 0; } // reserved
     uint8_t byte5() const override { return 0; } // reserved

@@ -86,7 +86,7 @@ public:
 
     // create a file descriptor attached to a virtual device; type of
     // device is given by name parameter
-    int sim_fd(const char *name, const char *arg);
+    int sim_fd(const char *name, const char *arg, int8_t port_num);
     // returns a write file descriptor for a created virtual device
     int sim_fd_write(const char *name);
 

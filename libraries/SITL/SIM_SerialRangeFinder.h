@@ -29,7 +29,7 @@ namespace SITL {
 class SerialRangeFinder : public SerialDevice {
 public:
 
-    SerialRangeFinder() {};
+    SerialRangeFinder(uint8_t port_num): _port_num(port_num) {};
 
     // update state
     virtual void update(float range);
@@ -38,9 +38,12 @@ public:
 
     virtual uint16_t reading_interval_ms() const { return 200; } // 5Hz default
 
+    uint8_t get_port() const { return _port_num; }
+
 private:
 
     uint32_t last_sent_ms;
+    uint8_t _port_num;
 };
 
 }

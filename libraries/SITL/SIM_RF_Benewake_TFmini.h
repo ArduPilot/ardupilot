@@ -35,7 +35,7 @@ namespace SITL {
 
 class RF_Benewake_TFmini : public RF_Benewake {
 public:
-
+    RF_Benewake_TFmini(uint8_t port_num): RF_Benewake(port_num) {};
     // see AP_RangeFinder_Benewake.cpp for definitions
     uint8_t byte4() const override { return 1; } // strength L
     uint8_t byte5() const override { return 1; } // strength H

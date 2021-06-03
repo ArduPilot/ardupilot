@@ -227,7 +227,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 }
 
 #define streq(a, b) (!strcmp(a, b))
-int SITL_State::sim_fd(const char *name, const char *arg)
+int SITL_State::sim_fd(const char *name, const char *arg, int8_t port_num)
 {
     if (streq(name, "vicon")) {
         if (vicon != nullptr) {
@@ -239,86 +239,86 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
         }
-        benewake_tf02 = new SITL::RF_Benewake_TF02();
+        benewake_tf02 = new SITL::RF_Benewake_TF02(port_num);
         return benewake_tf02->fd();
     } else if (streq(name, "benewake_tf03")) {
         if (benewake_tf03 != nullptr) {
             AP_HAL::panic("Only one benewake_tf03 at a time");
         }
-        benewake_tf03 = new SITL::RF_Benewake_TF03();
+        benewake_tf03 = new SITL::RF_Benewake_TF03(port_num);
         return benewake_tf03->fd();
     } else if (streq(name, "benewake_tfmini")) {
         if (benewake_tfmini != nullptr) {
             AP_HAL::panic("Only one benewake_tfmini at a time");
         }
-        benewake_tfmini = new SITL::RF_Benewake_TFmini();
+        benewake_tfmini = new SITL::RF_Benewake_TFmini(port_num);
         return benewake_tfmini->fd();
     } else if (streq(name, "lightwareserial")) {
         if (lightwareserial != nullptr) {
             AP_HAL::panic("Only one lightwareserial at a time");
         }
-        lightwareserial = new SITL::RF_LightWareSerial();
+        lightwareserial = new SITL::RF_LightWareSerial(port_num);
         return lightwareserial->fd();
     } else if (streq(name, "lightwareserial-binary")) {
         if (lightwareserial_binary != nullptr) {
             AP_HAL::panic("Only one lightwareserial-binary at a time");
         }
-        lightwareserial_binary = new SITL::RF_LightWareSerialBinary();
+        lightwareserial_binary = new SITL::RF_LightWareSerialBinary(port_num);
         return lightwareserial_binary->fd();
     } else if (streq(name, "lanbao")) {
         if (lanbao != nullptr) {
             AP_HAL::panic("Only one lanbao at a time");
         }
-        lanbao = new SITL::RF_Lanbao();
+        lanbao = new SITL::RF_Lanbao(port_num);
         return lanbao->fd();
     } else if (streq(name, "blping")) {
         if (blping != nullptr) {
             AP_HAL::panic("Only one blping at a time");
         }
-        blping = new SITL::RF_BLping();
+        blping = new SITL::RF_BLping(port_num);
         return blping->fd();
     } else if (streq(name, "leddarone")) {
         if (leddarone != nullptr) {
             AP_HAL::panic("Only one leddarone at a time");
         }
-        leddarone = new SITL::RF_LeddarOne();
+        leddarone = new SITL::RF_LeddarOne(port_num);
         return leddarone->fd();
     } else if (streq(name, "ulanding_v0")) {
         if (ulanding_v0 != nullptr) {
             AP_HAL::panic("Only one ulanding_v0 at a time");
         }
-        ulanding_v0 = new SITL::RF_uLanding_v0();
+        ulanding_v0 = new SITL::RF_uLanding_v0(port_num);
         return ulanding_v0->fd();
     } else if (streq(name, "ulanding_v1")) {
         if (ulanding_v1 != nullptr) {
             AP_HAL::panic("Only one ulanding_v1 at a time");
         }
-        ulanding_v1 = new SITL::RF_uLanding_v1();
+        ulanding_v1 = new SITL::RF_uLanding_v1(port_num);
         return ulanding_v1->fd();
     } else if (streq(name, "maxsonarseriallv")) {
         if (maxsonarseriallv != nullptr) {
             AP_HAL::panic("Only one maxsonarseriallv at a time");
         }
-        maxsonarseriallv = new SITL::RF_MaxsonarSerialLV();
+        maxsonarseriallv = new SITL::RF_MaxsonarSerialLV(port_num);
         return maxsonarseriallv->fd();
     } else if (streq(name, "wasp")) {
         if (wasp != nullptr) {
             AP_HAL::panic("Only one wasp at a time");
         }
-        wasp = new SITL::RF_Wasp();
+        wasp = new SITL::RF_Wasp(port_num);
         return wasp->fd();
     } else if (streq(name, "nmea")) {
         if (nmea != nullptr) {
             AP_HAL::panic("Only one nmea at a time");
         }
-        nmea = new SITL::RF_NMEA();
+        nmea = new SITL::RF_NMEA(port_num);
         return nmea->fd();
 
     } else if (streq(name, "rf_mavlink")) {
         if (wasp != nullptr) {
             AP_HAL::panic("Only one rf_mavlink at a time");
         }
-        rf_mavlink = new SITL::RF_MAVLink();
+        rf_mavlink = new SITL::RF_MAVLink(port_num);
         return rf_mavlink->fd();
 
     } else if (streq(name, "frsky-d")) {
@@ -374,7 +374,7 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         if (gyus42v2 != nullptr) {
             AP_HAL::panic("Only one gyus42v2 at a time");
         }
-        gyus42v2 = new SITL::RF_GYUS42v2();
+        gyus42v2 = new SITL::RF_GYUS42v2(port_num);
         return gyus42v2->fd();
     } else if (streq(name, "VectorNav")) {
         if (vectornav != nullptr) {
