@@ -259,20 +259,20 @@ void Location::offset(float ofs_north, float ofs_east)
  * positions, so it keeps the accuracy even when dealing with small
  * distances and floating point numbers
  */
-void Location::offset_bearing(float bearing, float distance)
+void Location::offset_bearing(float bearing_deg, float distance)
 {
-    const float ofs_north = cosf(radians(bearing)) * distance;
-    const float ofs_east  = sinf(radians(bearing)) * distance;
+    const float ofs_north = cosf(radians(bearing_deg)) * distance;
+    const float ofs_east  = sinf(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
 }
 
 // extrapolate latitude/longitude given bearing, pitch and distance
-void Location::offset_bearing_and_pitch(float bearing, float pitch, float distance)
+void Location::offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance)
 {
-    const float ofs_north =  cosf(radians(pitch)) * cosf(radians(bearing)) * distance;
-    const float ofs_east  =  cosf(radians(pitch)) * sinf(radians(bearing)) * distance;
+    const float ofs_north =  cosf(radians(pitch_deg)) * cosf(radians(bearing_deg)) * distance;
+    const float ofs_east  =  cosf(radians(pitch_deg)) * sinf(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
-    const int32_t dalt =  sinf(radians(pitch)) * distance *100.0f;
+    const int32_t dalt =  sinf(radians(pitch_deg)) * distance *100.0f;
     alt += dalt; 
 }
 
