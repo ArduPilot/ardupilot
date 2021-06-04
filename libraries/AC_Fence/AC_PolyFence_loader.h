@@ -27,6 +27,7 @@ public:
     Vector2l loc;
     uint8_t vertex_count;
     float radius;
+    uint8_t inclusion_group;
 };
 
 class AC_PolyFence_loader
@@ -113,11 +114,19 @@ public:
     // false if margin < fence radius 
     bool check_inclusion_circle_margin(float margin) const;
 
+    /// return system time of last update to the exclusion circles
+    uint32_t get_inclusion_circle_update_ms() const {
+        return _load_time_ms;
+    }
+
     ///
     /// mavlink
     ///
     /// handler for polygon fence messages with GCS
     void handle_msg(class GCS_MAVLINK &link, const mavlink_message_t& msg);
+
+    // breached(Vector2f&) - returns true of pos_cm (an offset in cm from the EKF origin) breaches any fence
+    bool breached(const Vector2f& pos_cm) const WARN_IF_UNUSED;
 
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;
@@ -127,6 +136,11 @@ public:
     // returns true if a polygonal include fence could be returned
     bool inclusion_boundary_available() const WARN_IF_UNUSED {
         return _num_loaded_inclusion_boundaries != 0;
+    }
+
+    // returns true if there are multiple inclusion groups
+    bool have_inclusion_groups() const {
+        return _eeprom_num_inclusion_groups > 1;
     }
 
     // loaded - returns true if the fences have been loaded from
@@ -231,7 +245,8 @@ private:
     // new_fence_storage_magic - magic number indicating fence storage
     // has been formatted for use by polygon fence storage code.
     // FIXME: ensure this is out-of-band for old lat/lon point storage
-    static const uint8_t new_fence_storage_magic = 235;
+    static const uint8_t old_fence_storage_magic = 235;
+    static const uint8_t new_fence_storage_magic = 236;
 
     // validate_fence - returns true if new_items look completely valid
     bool validate_fence(const AC_PolyFenceItem *new_items, uint16_t count) const WARN_IF_UNUSED;
@@ -243,7 +258,7 @@ private:
 
     // formatted - returns true if the fence storage space seems to be
     // formatted for new-style fence storage
-    bool formatted() const WARN_IF_UNUSED;
+    bool formatted(uint8_t magic) const WARN_IF_UNUSED;
     // format - format the storage space for use by
     // the new polyfence code
     bool format() WARN_IF_UNUSED;
@@ -273,6 +288,7 @@ private:
         Vector2f *points; // pointer into the _loaded_offsets_from_origin array
         Vector2l *points_lla; // pointer into the _loaded_points_lla array
         uint8_t count; // count of points in the boundary
+        uint8_t inclusion_group;
     };
     InclusionBoundary *_loaded_inclusion_boundary;
 
@@ -310,6 +326,7 @@ private:
         Vector2f pos_cm;    // vector offset from home in cm
         Vector2l point;       // lat/lng of zone
         float radius;
+        uint8_t inclusion_group;
     };
     InclusionCircle *_loaded_circle_inclusion_boundary;
 
@@ -349,6 +366,10 @@ private:
     // stored fence to the new storage format (so people don't lose
     // their fences when upgrading)
     bool convert_to_new_storage() WARN_IF_UNUSED;
+
+    // convert to new format with inclusion group storage
+    bool convert_to_new_format() WARN_IF_UNUSED;
+
     // load boundary point from eeprom, returns true on successful load
     bool load_point_from_eeprom(uint16_t i, Vector2l& point) const WARN_IF_UNUSED;
 
@@ -393,13 +414,15 @@ private:
     // scan fails (for example, the storage is corrupt), then this
     // method will return false.
     FUNCTOR_TYPEDEF(scan_fn_t, void, const AC_PolyFenceType, uint16_t);
-    bool scan_eeprom(scan_fn_t scan_fn) WARN_IF_UNUSED;
+    bool scan_eeprom(scan_fn_t scan_fn, bool old_format = false) WARN_IF_UNUSED;
     // scan_eeprom_count_fences - a static function designed to be
     // massed to scan_eeprom which counts the number of fences and
     // fence items present.  The results of this counting appear in _eeprom_fence_count and _eeprom_item_count
     void scan_eeprom_count_fences(const AC_PolyFenceType type, uint16_t read_offset);
     uint16_t _eeprom_fence_count;
     uint16_t _eeprom_item_count;
+    uint32_t _eeprom_inclusion_group_bitmask;
+    uint8_t _eeprom_num_inclusion_groups;
 
     // scan_eeprom_index_fences - a static function designed to be
     // passed to scan_eeprom.  _index must be a pointer to
@@ -418,6 +441,11 @@ private:
     // _num_fences - count of the number of fences in _index.  This
     // should be equal to _eeprom_fence_count
     uint16_t _num_fences;
+
+    // count the number of polygon and circle inclusion types, this allows to
+    // convert old format with no inclusion group stored to new
+    void scan_eeprom_count_inclusions(const AC_PolyFenceType type, uint16_t read_offset);
+    uint16_t _num_inclusions;
 
     // count_eeprom_fences - refresh the count of fences in permanent storage
     bool count_eeprom_fences() WARN_IF_UNUSED;

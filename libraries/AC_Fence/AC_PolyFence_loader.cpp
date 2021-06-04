@@ -80,6 +80,9 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
     case AC_PolyFenceType::POLYGON_EXCLUSION:
         vertex_count_offset = offset;
         offset += 1; // the count of points in the fence
+        if (type == AC_PolyFenceType::POLYGON_INCLUSION) {
+            offset++; // inclusion group
+        }
         offset += (delta * 8);
         break;
     case AC_PolyFenceType::RETURN_POINT:
@@ -117,6 +120,10 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
             return false;
         }
         item.radius = fence_storage.read_uint32(offset);
+        if (type ==  AC_PolyFenceType::CIRCLE_INCLUSION) {
+            offset += 4; // for the unint32 just read
+            item.inclusion_group = fence_storage.read_uint8(offset);
+        }
         break;
     case AC_PolyFenceType::POLYGON_INCLUSION:
     case AC_PolyFenceType::POLYGON_EXCLUSION:
@@ -124,6 +131,10 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
             return false;
         }
         item.vertex_count = fence_storage.read_uint8(vertex_count_offset);
+        if (type ==  AC_PolyFenceType::POLYGON_INCLUSION) {
+            vertex_count_offset++;
+            item.inclusion_group = fence_storage.read_uint8(vertex_count_offset);
+        }
         break;
     case AC_PolyFenceType::RETURN_POINT:
         if (!read_latlon_from_storage(offset, item.loc)) {
@@ -178,6 +189,16 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
     return true;
 }
 
+// returns true of pos_cm (an offset in cm from the EKF origin) breaches any fence
+bool AC_PolyFence_loader::breached(const Vector2f& pos_cm) const {
+    Location loc;
+    if (!AP::ahrs().get_origin(loc)) {
+        return false;
+    }
+    loc.offset(pos_cm.x * 0.01f, pos_cm.y * 0.01f);
+    return breached(loc);
+}
+
 bool AC_PolyFence_loader::breached() const
 {
     struct Location loc;
@@ -200,14 +221,6 @@ bool AC_PolyFence_loader::breached(const Location& loc) const
     pos.x = loc.lat;
     pos.y = loc.lng;
 
-    // check we are inside each inclusion zone:
-    for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
-        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
-        if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
-            return true;
-        }
-    }
-
     // check we are outside each exclusion zone:
     for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
         const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
@@ -216,6 +229,7 @@ bool AC_PolyFence_loader::breached(const Location& loc) const
         }
     }
 
+    // check exclusion circles
     for (uint8_t i=0; i<_num_loaded_circle_exclusion_boundaries; i++) {
         const ExclusionCircle &circle = _loaded_circle_exclusion_boundary[i];
         Location circle_center;
@@ -227,6 +241,12 @@ bool AC_PolyFence_loader::breached(const Location& loc) const
         }
     }
 
+    // both circle and inclusion zones support groups
+    // vehicle needs to be inside all zones in a single group to be considered inside that group
+    // vehicle must be inside at least one group
+    uint32_t breached = 0;
+
+    // check circular includes
     for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries; i++) {
         const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
         Location circle_center;
@@ -234,17 +254,36 @@ bool AC_PolyFence_loader::breached(const Location& loc) const
         circle_center.lng = circle.point.y;
         const float diff_cm = loc.get_distance(circle_center)*100.0f;
         if (diff_cm > circle.radius * 100.0f) {
-            return true;
+            if (!have_inclusion_groups()) {
+                // no other groups are loaded so we don't need to check the rest
+                return true;
+            }
+            breached |= 1U << circle.inclusion_group;
         }
     }
 
-    // no fence breached
-    return false;
+    // check we are inside each inclusion zone:
+    for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
+        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
+            if (!have_inclusion_groups()) {
+                return true;
+            }
+            breached |= 1U << boundary.inclusion_group;
+        }
+    }
+
+    if (!have_inclusion_groups() || ((~breached) & _eeprom_inclusion_group_bitmask) > 0) {
+        // don't have groups or still inside at least one
+        return false;
+    }
+
+    return true;
 }
 
-bool AC_PolyFence_loader::formatted() const
+bool AC_PolyFence_loader::formatted(uint8_t magic) const
 {
-    return (fence_storage.read_uint8(0) == new_fence_storage_magic &&
+    return (fence_storage.read_uint8(0) == magic &&
             fence_storage.read_uint8(1) == 0 &&
             fence_storage.read_uint8(2) == 0 &&
             fence_storage.read_uint8(3) == 0);
@@ -265,6 +304,8 @@ bool AC_PolyFence_loader::format()
     void_index();
     _eeprom_fence_count = 0;
     _eeprom_item_count = 0;
+    _eeprom_inclusion_group_bitmask = 0;
+    _eeprom_num_inclusion_groups = 0;
     return write_eos_to_storage(offset);
 }
 
@@ -332,6 +373,164 @@ out:
     return ret;
 }
 
+bool AC_PolyFence_loader::convert_to_new_format()
+{
+    // count the number of extra bytes we need to store the groups
+    _num_inclusions = 0;
+    if (!scan_eeprom(FUNCTOR_BIND_MEMBER(&AC_PolyFence_loader::scan_eeprom_count_inclusions, void, const AC_PolyFenceType, uint16_t), true)) {
+        Debug("failed inclusions count");
+        return format();
+    }
+
+    if (_num_inclusions == 0) {
+        // nothing to do, just update the magic value
+        Debug("no inclusions, no change");
+        fence_storage.write_uint8(0, new_fence_storage_magic);
+        return true;
+    }
+    Debug("%u inclusions",_num_inclusions);
+
+    // allocate a buffer the size of the number of incusion groups we need to add
+    // we can then shuffle through the eeprom leaving room as we go
+    uint8_t *tmp_buffer = new uint8_t[_num_inclusions+1];
+    if (tmp_buffer == nullptr) {
+        Debug("Buffer failed");
+        return format();
+    }
+
+    uint16_t read_offset = 4; // skipping reserved first 4 bytes
+    uint16_t write_offset = 4; // skipping reserved first 4 bytes
+    uint16_t pre_advance_buffer = 0; // shuffle across this number of bytes
+    uint16_t post_advance_buffer = 0; // shuffle across this number of bytes
+    uint8_t buffer_add_index = 0;
+
+    bool all_done = false;
+    while (!all_done) {
+        if (MAX(read_offset,write_offset) > fence_storage.size()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            AP_HAL::panic("did not find end-of-storage-marker before running out of space");
+#endif
+            return format();
+        }
+
+        pre_advance_buffer = 1; // +1 for the type
+        post_advance_buffer = 0;
+        bool add_group = false;
+
+        const AC_PolyFenceType type = (AC_PolyFenceType)fence_storage.read_uint8(read_offset);
+        switch (type) {
+        case AC_PolyFenceType::END_OF_STORAGE:
+            all_done = true;
+            break;
+        case AC_PolyFenceType::POLYGON_INCLUSION:
+            add_group = true;
+            FALLTHROUGH;
+        case AC_PolyFenceType::POLYGON_EXCLUSION: {
+            pre_advance_buffer += 1; // vertex count
+            post_advance_buffer +=  fence_storage.read_uint8(read_offset+1)*8; // latlon for each point
+            break;
+        }
+        case AC_PolyFenceType::CIRCLE_INCLUSION:
+            add_group = true;
+            FALLTHROUGH;
+        case AC_PolyFenceType::CIRCLE_EXCLUSION: {
+            pre_advance_buffer += 12; // lanlon and radius
+            break;
+        }
+        case AC_PolyFenceType::RETURN_POINT:
+            pre_advance_buffer += 8; // lanlon and radius
+            break;
+        }
+
+        Debug("Type %u, pre %u, post %u",uint8_t(type),pre_advance_buffer,post_advance_buffer);
+
+        // advance the buffer pre adding a point
+        for (uint8_t i=0; i<pre_advance_buffer; i++) {
+
+            // write into the buffer from storage
+            tmp_buffer[buffer_add_index] = fence_storage.read_uint8(read_offset);
+            read_offset++;
+
+            // overwrite the storage at the given location
+            fence_storage.write_uint8(write_offset,tmp_buffer[0]);
+            write_offset++;
+
+            Debug("%u: pre Buffer %u, read %u:%u, write %u:%u",i,buffer_add_index,read_offset-1,tmp_buffer[buffer_add_index],write_offset-1,tmp_buffer[0]);
+
+            // shuffle the buffer along by one
+            for (uint8_t j=0; j<=_num_inclusions; j++) {
+                tmp_buffer[j] = tmp_buffer[j+1];
+            }
+        }
+
+        // add a inclusion group if required, all will be added to group 0
+        if (add_group) {
+            tmp_buffer[buffer_add_index] = 0;
+            buffer_add_index++;
+            if (buffer_add_index > _num_inclusions) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                AP_HAL::panic("found more inclusions than expected");
+#endif
+                delete[] tmp_buffer;
+                return format();
+            }
+        }
+
+        // advance the buffer post adding a point
+        for (uint8_t i=0; i<post_advance_buffer; i++) {
+
+            // write into the buffer from storage
+            tmp_buffer[buffer_add_index] = fence_storage.read_uint8(read_offset);
+            read_offset++;
+
+            // overwrite the storage at the given location
+            fence_storage.write_uint8(write_offset,tmp_buffer[0]);
+            write_offset++;
+
+            Debug("%u: post Buffer %u, read %u:%u, write %u:%u",i,buffer_add_index,read_offset-1,tmp_buffer[buffer_add_index],write_offset-1,tmp_buffer[0]);
+
+            // shuffle the buffer along by one
+            for (uint8_t j=0; j<=_num_inclusions; j++) {
+                tmp_buffer[j] = tmp_buffer[j+1];
+            }
+        }
+
+        // got to the end of the read, just need to save out what is left in the buffer
+        if (all_done) {
+            for (uint8_t i=0; i<buffer_add_index; i++) {
+                Debug("final %u, write %u:%u",i,write_offset,tmp_buffer[i]);
+                fence_storage.write_uint8(write_offset,tmp_buffer[i]);
+                write_offset++;
+            }
+        }
+    }
+
+    delete[] tmp_buffer;
+
+    if (buffer_add_index != _num_inclusions) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("inclusions did not match expected");
+#endif
+        return format();
+    }
+
+    if (read_offset != write_offset - _num_inclusions) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("read and write did not match");
+#endif
+        return format();
+    }
+
+    // update to the new magic value
+    fence_storage.write_uint8(0, new_fence_storage_magic);
+
+    _eos_offset = write_offset - 1;
+
+    return true;
+
+}
+
+
 bool AC_PolyFence_loader::scale_latlon_from_origin(const Location &origin, const Vector2l &point, Vector2f &pos_cm)
 {
     Location tmp_loc;
@@ -359,10 +558,10 @@ bool AC_PolyFence_loader::read_polygon_from_storage(const Location &origin, uint
     return true;
 }
 
-bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn)
+bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn, bool old_format)
 {
     uint16_t read_offset = 0; // skipping reserved first 4 bytes
-    if (!formatted()) {
+    if (!formatted(old_format ? old_fence_storage_magic : new_fence_storage_magic)) {
         return false;
     }
     read_offset += 4;
@@ -403,10 +602,17 @@ bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn)
         case AC_PolyFenceType::POLYGON_EXCLUSION: {
             const uint8_t vertex_count = fence_storage.read_uint8(read_offset);
             read_offset += 1; // for the count we just read
-            read_offset += vertex_count*8;
+            if (type == AC_PolyFenceType::POLYGON_INCLUSION && !old_format) {
+                read_offset += 1; // for inclusion_group
+            }
+            read_offset += vertex_count*8; // latlon for each point
             break;
         }
         case AC_PolyFenceType::CIRCLE_INCLUSION:
+            if (!old_format) {
+                read_offset += 1; // for inclusion_group
+            }
+            FALLTHROUGH;
         case AC_PolyFenceType::CIRCLE_EXCLUSION: {
             read_offset += 8; // for latlon
             read_offset += 4; // for radius
@@ -431,13 +637,17 @@ void AC_PolyFence_loader::scan_eeprom_count_fences(const AC_PolyFenceType type, 
     case AC_PolyFenceType::END_OF_STORAGE:
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
-    case AC_PolyFenceType::POLYGON_EXCLUSION:
-    case AC_PolyFenceType::POLYGON_INCLUSION: {
+    case AC_PolyFenceType::POLYGON_INCLUSION:
+        _eeprom_inclusion_group_bitmask |=  1U << fence_storage.read_uint8(read_offset+2); // skip type(1) and count(1)
+        FALLTHROUGH;
+    case AC_PolyFenceType::POLYGON_EXCLUSION: {
         const uint8_t vertex_count = fence_storage.read_uint8(read_offset+1); // skip type
         _eeprom_item_count += vertex_count;
         break;
     }
     case AC_PolyFenceType::CIRCLE_INCLUSION:
+        _eeprom_inclusion_group_bitmask |=  1U << fence_storage.read_uint8(read_offset+13); // skip type(1), lat(4), lon(4) and radius(4)
+        FALLTHROUGH;
     case AC_PolyFenceType::CIRCLE_EXCLUSION:
     case AC_PolyFenceType::RETURN_POINT:
         _eeprom_item_count++;
@@ -449,7 +659,9 @@ bool AC_PolyFence_loader::count_eeprom_fences()
 {
     _eeprom_fence_count = 0;
     _eeprom_item_count = 0;
+    _eeprom_inclusion_group_bitmask = 0;
     const bool ret = scan_eeprom(FUNCTOR_BIND_MEMBER(&AC_PolyFence_loader::scan_eeprom_count_fences, void, const AC_PolyFenceType, uint16_t));
+    _eeprom_num_inclusion_groups = __builtin_popcount(_eeprom_inclusion_group_bitmask);
     return ret;
 }
 
@@ -485,10 +697,25 @@ void AC_PolyFence_loader::scan_eeprom_index_fences(const AC_PolyFenceType type, 
     }
 }
 
+void AC_PolyFence_loader::scan_eeprom_count_inclusions(const AC_PolyFenceType type, uint16_t read_offset)
+{
+    if (type == AC_PolyFenceType::POLYGON_INCLUSION || type == AC_PolyFenceType::CIRCLE_INCLUSION) {
+        _num_inclusions++;
+    }
+}
+
 bool AC_PolyFence_loader::index_eeprom()
 {
-    if (!formatted()) {
-        if (!convert_to_new_storage()) {
+    if (!formatted(new_fence_storage_magic)) {
+        if (!formatted(old_fence_storage_magic)) {
+            Debug("Updating to new storage");
+            if (!convert_to_new_storage()) {
+                return false;
+            }
+        }
+        // convert to new format with inclusion groups
+        Debug("Updating to new format");
+        if (!convert_to_new_format()) {
             return false;
         }
     }
@@ -726,7 +953,9 @@ bool AC_PolyFence_loader::load_from_eeprom()
                 storage_valid = false;
                 break;
             }
-            storage_offset += 1; // skip vertex count
+            storage_offset ++; // skip vertex count
+            boundary.inclusion_group = fence_storage.read_uint8(storage_offset);
+            storage_offset ++; // for the inclusion group just read
             if (!read_polygon_from_storage(ekf_origin, storage_offset, index.count, next_storage_point, next_storage_point_lla)) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: polygon read failed");
                 storage_valid = false;
@@ -795,6 +1024,8 @@ bool AC_PolyFence_loader::load_from_eeprom()
                 storage_valid = false;
                 break;
             }
+            storage_offset += 4;
+            circle.inclusion_group = fence_storage.read_uint8(storage_offset);
             _num_loaded_circle_inclusion_boundaries++;
             break;
         }
@@ -911,6 +1142,7 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
     AC_PolyFenceType expecting_type = AC_PolyFenceType::END_OF_STORAGE;
     uint16_t expected_type_count = 0;
     uint16_t orig_expected_type_count = 0;
+    uint8_t expected_group = 0;
     bool seen_return_point = false;
 
     for (uint16_t i=0; i<count; i++) {
@@ -924,6 +1156,11 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
             return false;
 
         case AC_PolyFenceType::POLYGON_INCLUSION:
+            if (new_items[i].inclusion_group > 31) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Invalid inclusion group (%u), only support 0-31", new_items[i].inclusion_group);
+                return false;
+            }
+            FALLTHROUGH;
         case AC_PolyFenceType::POLYGON_EXCLUSION:
             if (new_items[i].vertex_count < 3) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Invalid vertex count (%u)", new_items[i].vertex_count);
@@ -933,12 +1170,16 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
                 expected_type_count = new_items[i].vertex_count;
                 orig_expected_type_count = expected_type_count;
                 expecting_type = new_items[i].type;
+                expected_group = new_items[i].inclusion_group;
             } else {
                 if (new_items[i].type != expecting_type) {
                     gcs().send_text(MAV_SEVERITY_WARNING, "Received incorrect vertex type (want=%u got=%u)", (unsigned)expecting_type, (unsigned)new_items[i].type);
                     return false;
                 } else if (new_items[i].vertex_count != orig_expected_type_count) {
                     gcs().send_text(MAV_SEVERITY_WARNING, "Unexpected vertex count want=%u got=%u\n", orig_expected_type_count, new_items[i].vertex_count);
+                    return false;
+                } else if ((new_items[i].inclusion_group != expected_group) && (new_items[i].type == AC_PolyFenceType::POLYGON_INCLUSION)) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Unexpected group want=%u got=%u\n", expected_group, new_items[i].inclusion_group);
                     return false;
                 }
             }
@@ -947,6 +1188,11 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
             break;
 
         case AC_PolyFenceType::CIRCLE_INCLUSION:
+            if (new_items[i].inclusion_group > 31) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Invalid inclusion group (%u), only support 0-31", new_items[i].inclusion_group);
+                return false;
+            }
+            FALLTHROUGH;
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
             if (expected_type_count) {
                gcs().send_text(MAV_SEVERITY_WARNING, "Received incorrect type (want=%u got=%u)", (unsigned)expecting_type, (unsigned)new_items[i].type);
@@ -1001,6 +1247,8 @@ uint16_t AC_PolyFence_loader::fence_storage_space_required(const AC_PolyFenceIte
         ret += 1; // one byte for type
         switch (new_items[i].type) {
         case AC_PolyFenceType::POLYGON_INCLUSION:
+            ret += 1; // inclusion group
+            FALLTHROUGH;
         case AC_PolyFenceType::POLYGON_EXCLUSION:
             ret += 1 + 8 * new_items[i].vertex_count; // 1 count, 4 lat, 4 lon for each point
             i += new_items[i].vertex_count - 1; // i is incremented down below
@@ -1009,6 +1257,8 @@ uint16_t AC_PolyFence_loader::fence_storage_space_required(const AC_PolyFenceIte
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
         case AC_PolyFenceType::CIRCLE_INCLUSION:
+            ret += 1; // inclusion group
+            FALLTHROUGH;
         case AC_PolyFenceType::CIRCLE_EXCLUSION:
             ret += 12; // 4 radius, 4 lat, 4 lon
             break;
@@ -1054,6 +1304,10 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
                 }
                 fence_storage.write_uint8(offset, vertex_count);
                 offset++;
+                if (new_item.type == AC_PolyFenceType::POLYGON_INCLUSION) {
+                    fence_storage.write_uint8(offset, new_item.inclusion_group);
+                    offset++;
+                }
             }
             vertex_count--;
             if (!write_latlon_to_storage(offset, new_item.loc)) {
@@ -1077,6 +1331,10 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
             // store the radius
             fence_storage.write_uint32(offset, new_item.radius);
             offset += 4;
+            if (new_item.type == AC_PolyFenceType::CIRCLE_INCLUSION) {
+                fence_storage.write_uint8(offset, new_item.inclusion_group);
+                offset++;
+            }
             break;
         case AC_PolyFenceType::RETURN_POINT:
             if (!write_type_to_storage(offset, new_item.type)) {
@@ -1155,7 +1413,7 @@ bool AC_PolyFence_loader::get_return_point(Vector2l &ret)
 #endif
         return false;
     }
-    offset++;
+    offset += 2; // advance past count and inclusion group
     Vector2l min_loc;
     if (!read_latlon_from_storage(offset, min_loc)) {
         return false;
@@ -1267,8 +1525,7 @@ void AC_PolyFence_loader::handle_msg_fetch_fence_point(GCS_MAVLINK &link, const 
                 // we haven't been given a value for this item yet; we will return zeroes
             } else {
                 uint16_t storage_offset = inclusion_fence->storage_offset;
-                storage_offset++; // skip over type
-                storage_offset++; // skip over count
+                storage_offset += 3; // skip over type, count and inclusion group
                 storage_offset += 8*fencepoint_offset; // move to point we're interested in
                 Vector2l bob;
                 if (!read_latlon_from_storage(storage_offset, bob)) {
@@ -1308,7 +1565,7 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::get_or_create_return_point
         for (uint8_t i=0; i<inclusion_fence->count; i++) {
             // we are shifting the last fence point first - so 'i=0'
             // means the last point stored.
-            const uint16_t point_storage_offset = offset + 2 + (inclusion_fence->count-1-i) * 8;
+            const uint16_t point_storage_offset = offset + 3 + (inclusion_fence->count-1-i) * 8;
             Vector2l latlon;
             uint16_t tmp_read_offs = point_storage_offset;
             if (!read_latlon_from_storage(tmp_read_offs, latlon)) {
@@ -1319,6 +1576,9 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::get_or_create_return_point
                 return nullptr;
             }
         }
+        // read/write the group:
+        const uint8_t group = fence_storage.read_uint8(inclusion_fence->storage_offset+2);
+        fence_storage.write_uint8(inclusion_fence->storage_offset + 2 + 9, group);
         // read/write the count:
         const uint8_t count = fence_storage.read_uint8(inclusion_fence->storage_offset+1);
         fence_storage.write_uint8(inclusion_fence->storage_offset + 1 + 9, count);
@@ -1326,7 +1586,7 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::get_or_create_return_point
         const uint8_t t = fence_storage.read_uint8(inclusion_fence->storage_offset);
         fence_storage.write_uint8(inclusion_fence->storage_offset + 9, t);
 
-        uint16_t write_offset = offset + 2 + 8*inclusion_fence->count + 9;
+        uint16_t write_offset = offset + 3 + 8*inclusion_fence->count + 9;
         if (!write_eos_to_storage(write_offset)) {
             return nullptr;
         }
@@ -1384,7 +1644,9 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::get_or_create_include_fenc
     if (!write_type_to_storage(_eos_offset, AC_PolyFenceType::POLYGON_INCLUSION)) {
         return nullptr;
     }
-    fence_storage.write_uint8(_eos_offset, 0);
+    fence_storage.write_uint8(_eos_offset, 0); // count
+    _eos_offset++;
+    fence_storage.write_uint8(_eos_offset, 0); // inclusion group
     _eos_offset++;
     if (!write_eos_to_storage(_eos_offset)) {
         return nullptr;
@@ -1485,7 +1747,7 @@ void AC_PolyFence_loader::handle_msg_fence_point(GCS_MAVLINK &link, const mavlin
             // expand the storage space
             fence_storage.write_uint8(offset, packet.idx); // remembering that idx[0] is the return point....
         }
-        offset++; // move past number of points
+        offset += 2; // move past number of points and inclusion group
         offset += (packet.idx-1)*8;
         if (!write_latlon_to_storage(offset, point)) {
             link.send_text(MAV_SEVERITY_WARNING, "PolyFence: storage write failed");

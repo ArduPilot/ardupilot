@@ -556,7 +556,7 @@ uint8_t AC_Fence::check()
 }
 
 // returns true if the destination is within fence (used to reject waypoints outside the fence)
-bool AC_Fence::check_destination_within_fence(const Location& loc)
+bool AC_Fence::check_destination_within_fence(const Location& loc) const
 {
     // Altitude fence check - Fence Ceiling
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {

@@ -1535,6 +1535,50 @@ class AutoTest(ABC):
                 locs
             ])
 
+    def load_complex_fence(self, filename, target_system=1, target_component=1):
+        filepath = os.path.join(testdir, self.current_test_name_directory, filename)
+        self.progress("Loading fence from (%s)" % str(filepath))
+        items = []
+        seq = 0
+        for line in open(filepath, 'rb'):
+            if len(line) == 0:
+                continue
+            if seq == 0:
+                if not line.startswith(b'QGC WPL 110'):
+                    raise ValueError("Expected 'QGC WPL 110' got: %s" % line)
+                seq += 1
+                continue
+
+            m = re.split(r'\t', line.decode('ascii'))
+            if m is None:
+                raise ValueError("Could not match %s" % line)
+            if len(m) != 12:
+                raise ValueError("Expected 12 values got %u: %s" % (len(m), line))
+            if int(m[0]) != seq - 1:
+                raise ValueError("Item out of order expected %u got %u" % (seq - 1, int(m[0])))
+
+            item = self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                int(m[0]), # seq
+                int(m[2]), # frame
+                int(m[3]), # command
+                int(m[1]), # current wp
+                int(m[11]), # autocontinue
+                float(m[4]), # p1
+                float(m[5]), # p2
+                float(m[6]), # p3
+                float(m[7]), # p4
+                int(float(m[8]) * 1e7), # latitude
+                int(float(m[9]) * 1e7), # longitude
+                float(m[10]), # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            seq += 1
+            items.append(item)
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+
     def send_reboot_command(self):
         self.mav.mav.command_long_send(self.sysid_thismav(),
                                        1,

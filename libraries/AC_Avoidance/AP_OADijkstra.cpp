@@ -16,7 +16,6 @@
 #include "AP_OADijkstra.h"
 
 #include <AC_Fence/AC_Fence.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
 #define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  32      // expanding arrays for fence points and paths to destination will grow in increments of 20 elements
@@ -26,8 +25,17 @@
 /// Constructor
 AP_OADijkstra::AP_OADijkstra() :
         _inclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _inclusion_polygon_index(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _inclusion_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _exclusion_polygon_index(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _exclusion_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _inclusion_exclusion_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _inclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _polygon_inclusion_circle_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _polygon_exclusion_circle_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _circle_circle_intersection_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _short_path_data(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK)
 {
@@ -65,6 +73,13 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _shortest_path_ok = false;
     }
 
+    // check for inclusion circle updates
+    if (check_inclusion_circle_updated()) {
+        _inclusion_circle_with_margin_ok = false;
+        _polyfence_visgraph_ok = false;
+        _shortest_path_ok = false;
+    }
+
     // check for exclusion circle updates
     if (check_exclusion_circle_updated()) {
         _exclusion_circle_with_margin_ok = false;
@@ -72,33 +87,98 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         _shortest_path_ok = false;
     }
 
+    // flags for re-calculation of intersections
+    bool inclusion_polygon_changed = false;
+    bool exclusion_polygon_changed = false;
+    bool inclusion_circle_changed = false;
+    bool exclusion_circle_changed = false;
+
     // create inner polygon fence
-    AP_OADijkstra_Error error_id;
+    AP_OADijkstra_Error error_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
     if (!_inclusion_polygon_with_margin_ok) {
         _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
-        if (!_inclusion_polygon_with_margin_ok) {
+        if (!_inclusion_polygon_with_margin_ok ||
+            !intersect_polygon_groups(_inclusion_polygon_pts, _inclusion_polygon_index, _num_inclusion_polygons, _inclusion_polygon_pts, _inclusion_polygon_index, _num_inclusion_polygons, _inclusion_intersection_pts, _inclusion_intersection_numpoints, true)) {
             report_error(error_id);
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
+        inclusion_polygon_changed = true;
     }
 
     // create exclusion polygon outer fence
     if (!_exclusion_polygon_with_margin_ok) {
         _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
-        if (!_exclusion_polygon_with_margin_ok) {
+        if (!_exclusion_polygon_with_margin_ok ||
+            !intersect_polygon_groups(_exclusion_polygon_pts, _exclusion_polygon_index, _num_exclusion_polygons, _exclusion_polygon_pts, _exclusion_polygon_index, _num_exclusion_polygons, _exclusion_intersection_pts, _exclusion_intersection_numpoints, true)) {
+            report_error(error_id);
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            return DIJKSTRA_STATE_ERROR;
+        }
+        exclusion_polygon_changed = true;
+    }
+
+    if (inclusion_polygon_changed || exclusion_polygon_changed) {
+        // recalculate intersections between inclusion and exclusion polygons
+        if (!intersect_polygon_groups(_inclusion_polygon_pts, _inclusion_polygon_index, _num_inclusion_polygons, _exclusion_polygon_pts, _exclusion_polygon_index, _num_exclusion_polygons, _inclusion_exclusion_intersection_pts, _inclusion_exclusion_intersection_numpoints, false)) {
+            report_error(AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY);
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY, 0, 0, destination, destination);
+            return DIJKSTRA_STATE_ERROR;
+        }
+    }
+
+    // create inclusion circle points
+    if (!_inclusion_circle_with_margin_ok) {
+        _inclusion_circle_with_margin_ok = create_circle_with_margin(_polyfence_margin * 100.0f, error_id, _inclusion_circle_pts, _inclusion_circle_numpoints, false);
+        if (!_inclusion_circle_with_margin_ok) {
             report_error(error_id);
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            return DIJKSTRA_STATE_ERROR;
+        }
+        inclusion_circle_changed = true;
+    }
+
+    if (inclusion_polygon_changed || exclusion_polygon_changed || inclusion_circle_changed) {
+        // recalculate intersections between inclusion circles and polygons
+        _polygon_inclusion_circle_intersection_numpoints = 0;
+        if (!intersect_polygon_and_circle(_polyfence_margin * 100.0f, _inclusion_polygon_pts, _inclusion_polygon_index, _num_inclusion_polygons, _polygon_inclusion_circle_intersection_pts, _polygon_inclusion_circle_intersection_numpoints, false) ||
+            !intersect_polygon_and_circle(_polyfence_margin * 100.0f, _exclusion_polygon_pts, _exclusion_polygon_index, _num_exclusion_polygons, _polygon_inclusion_circle_intersection_pts, _polygon_inclusion_circle_intersection_numpoints, false)) {
+            gcs().send_text(MAV_SEVERITY_EMERGENCY,"poly circle inersect fail");
+            report_error(AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY);
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create exclusion circle points
     if (!_exclusion_circle_with_margin_ok) {
-        _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, error_id);
+        _exclusion_circle_with_margin_ok = create_circle_with_margin(_polyfence_margin * 100.0f, error_id, _exclusion_circle_pts, _exclusion_circle_numpoints, true);
         if (!_exclusion_circle_with_margin_ok) {
             report_error(error_id);
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            return DIJKSTRA_STATE_ERROR;
+        }
+        exclusion_circle_changed = true;
+    }
+
+
+    if (inclusion_polygon_changed || exclusion_polygon_changed || exclusion_circle_changed) {
+        // recalculate intersections between exclusion circles and polygons
+        _polygon_exclusion_circle_intersection_numpoints = 0;
+        if (!intersect_polygon_and_circle(_polyfence_margin * 100.0f, _inclusion_polygon_pts, _inclusion_polygon_index, _num_inclusion_polygons, _polygon_exclusion_circle_intersection_pts, _polygon_exclusion_circle_intersection_numpoints, true) ||
+            !intersect_polygon_and_circle(_polyfence_margin * 100.0f, _exclusion_polygon_pts, _exclusion_polygon_index, _num_exclusion_polygons, _polygon_exclusion_circle_intersection_pts, _polygon_exclusion_circle_intersection_numpoints, true)) {
+            report_error(AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY);
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY, 0, 0, destination, destination);
+            return DIJKSTRA_STATE_ERROR;
+        }
+    }
+
+
+    if (inclusion_circle_changed || exclusion_circle_changed) {
+        // recalculate intersections between inclusion and exclusion circles
+        if (!intersect_circles(_polyfence_margin * 100.0f)) {
+            report_error(AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY);
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
@@ -245,6 +325,210 @@ bool AP_OADijkstra::check_inclusion_polygon_updated() const
     return (_inclusion_polygon_update_ms != fence->polyfence().get_inclusion_polygon_update_ms());
 }
 
+// intersect two sets of polygons as defined by points, index and number. Record intersectons in provided array
+// self bool should be set if serching for intersections between same group of polygons
+bool AP_OADijkstra::intersect_polygon_groups(AP_ExpandingArray<Vector2f> &points1, AP_ExpandingArray<polygon_start_finish> &index1, uint8_t num_poly1, AP_ExpandingArray<Vector2f> &points2,  AP_ExpandingArray<polygon_start_finish> &index2, uint8_t num_poly2, AP_ExpandingArray<Vector2f> &intersections, uint8_t &num_intersections, bool self)
+{
+    if (!intersections.expand_to_hold(1)) {
+        return false;
+    }
+    num_intersections = 0;
+
+    if (num_poly1 == 0 || num_poly2 == 0) {
+        // no polygons to intersect
+        return true;
+    }
+
+    // loop through polygon groups
+    for (uint8_t i = 0; i<num_poly1 - (self?1:0); i++) {
+        // dont try and intersect the same polygon
+        for (uint8_t j = i + (self?1:0); j<num_poly2; j++) {
+
+            // loop through lines in each polygon
+            for (uint8_t ii = index1[i].start_index; ii<= index1[i].end_index; ii++) {
+                uint8_t after_idx1 = (ii == index1[i].end_index) ? index1[i].start_index : ii+1;
+
+                for (uint8_t jj = index2[j].start_index; jj<= index2[j].end_index; jj++) {
+                    uint8_t after_idx2 = (jj == index2[j].end_index) ? index2[j].start_index : jj+1;
+
+                    if (Vector2f::segment_intersection(points1[ii], points1[after_idx1], points2[jj], points2[after_idx2], intersections[num_intersections])) {
+                        num_intersections++;
+                        // expand array if required
+                        if (!intersections.expand_to_hold(num_intersections+1)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+// intestect a circle and a polygon group
+bool AP_OADijkstra::intersect_polygon_and_circle(float margin_cm, AP_ExpandingArray<Vector2f> &points, AP_ExpandingArray<polygon_start_finish> &index, uint8_t num_poly, AP_ExpandingArray<Vector2f> &intersections, uint8_t &num_intersections, bool exclusion)
+{
+    if (num_poly == 0) {
+        // no polygons to intersect
+        return true;
+    }
+
+    // exit immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    uint8_t num_circles;
+    if (exclusion) {
+        num_circles = fence->polyfence().get_exclusion_circle_count();
+    } else {
+        num_circles = fence->polyfence().get_inclusion_circle_count();
+    }
+
+    // iterate through circles
+    for (uint8_t i = 0; i < num_circles; i++) {
+        Vector2f circle_pos_cm;
+        float radius;
+        bool got_fence;
+        if (exclusion) {
+            got_fence = fence->polyfence().get_exclusion_circle(i, circle_pos_cm, radius);
+            radius = (radius * 100.0f) + margin_cm;
+        } else {
+            got_fence = fence->polyfence().get_inclusion_circle(i, circle_pos_cm, radius);
+            radius = (radius * 100.0f) - margin_cm;
+        }
+        if (got_fence) {
+
+            // iterate throught each polygon
+            for (uint8_t j = 0; j<num_poly; j++) {
+
+                // loop through lines in each polygon
+                for (uint8_t ii = index[j].start_index; ii<= index[j].end_index; ii++) {
+                    uint8_t after_idx1 = (ii == index[j].end_index) ? index[j].start_index : ii+1;
+
+                    Vector2f intersection1;
+                    Vector2f intersection2;
+
+                    uint8_t num = Vector2f::circle_segment_intersections(points[ii], points[after_idx1], circle_pos_cm, radius, intersection1, intersection2);
+                    if (num > 0) {
+                        // expand array if required
+                        if (!intersections.expand_to_hold(num_intersections+num)) {
+                            return false;
+                        }
+                        intersections[num_intersections] = intersection1;
+                        num_intersections++;
+                        if (num > 1) {
+                            intersections[num_intersections] = intersection2;
+                            num_intersections++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool AP_OADijkstra::intersect_circles(float margin_cm)
+{
+    _circle_circle_intersection_numpoints = 0;
+
+    // exit immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    uint8_t inclusions = fence->polyfence().get_inclusion_circle_count();
+    uint8_t exclusions = fence->polyfence().get_exclusion_circle_count();
+
+    Vector2f circle_pos_cm1;
+    float radius1;
+    Vector2f circle_pos_cm2;
+    float radius2;
+
+    Vector2f intersection1;
+    Vector2f intersection2;
+
+    // iterate through inclusions circles
+    for (uint8_t i = 0; i < inclusions; i++) {
+
+        if (fence->polyfence().get_inclusion_circle(i, circle_pos_cm1, radius1)) {
+            radius1 = (radius1 * 100.0f) - margin_cm;
+
+            // intersect with remaining inclusion circles
+            for (uint8_t j = i + 1; j < inclusions; j++) {
+                if (fence->polyfence().get_inclusion_circle(j, circle_pos_cm2, radius2)) {
+                    radius2 = (radius2 * 100.0f) - margin_cm;
+                    uint8_t num = Vector2f::circle_circle_intersections(circle_pos_cm1, radius1, circle_pos_cm2, radius2, intersection1, intersection2);
+                    if (num > 0) {
+                        // expand array if required
+                        if (!_circle_circle_intersection_pts.expand_to_hold(_circle_circle_intersection_numpoints+num)) {
+                            return false;
+                        }
+                        _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection1;
+                        _circle_circle_intersection_numpoints++;
+                        if (num > 1) {
+                            _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection2;
+                            _circle_circle_intersection_numpoints++;
+                        }
+                    }
+                }
+            }
+
+            // intersect with exclusion circles
+            for (uint8_t j = 0; j < exclusions; j++) {
+                if (fence->polyfence().get_exclusion_circle(j, circle_pos_cm2, radius2)) {
+                    radius2 = (radius2 * 100.0f) - margin_cm;
+                    uint8_t num = Vector2f::circle_circle_intersections(circle_pos_cm1, radius1, circle_pos_cm2, radius2, intersection1, intersection2);
+                    if (num > 0) {
+                        // expand array if required
+                        if (!_circle_circle_intersection_pts.expand_to_hold(_circle_circle_intersection_numpoints+num)) {
+                            return false;
+                        }
+                        _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection1;
+                        _circle_circle_intersection_numpoints++;
+                        if (num > 1) {
+                            _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection2;
+                            _circle_circle_intersection_numpoints++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // iterate through exclusion circles
+    for (uint8_t i = 0; i < exclusions; i++) {
+
+        if (fence->polyfence().get_exclusion_circle(i, circle_pos_cm1, radius1)) {
+            radius1 = (radius1 * 100.0f) - margin_cm;
+
+            // intersect with remaining exclusion circles
+            for (uint8_t j = i + 1; j < exclusions; j++) {
+                if (fence->polyfence().get_exclusion_circle(j, circle_pos_cm2, radius2)) {
+                    radius2 = (radius2 * 100.0f) - margin_cm;
+                    uint8_t num = Vector2f::circle_circle_intersections(circle_pos_cm1, radius1, circle_pos_cm2, radius2, intersection1, intersection2);
+                    if (num > 0) {
+                        // expand array if required
+                        if (!_circle_circle_intersection_pts.expand_to_hold(_circle_circle_intersection_numpoints+num)) {
+                            return false;
+                        }
+                        _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection1;
+                        _circle_circle_intersection_numpoints++;
+                        if (num > 1) {
+                            _circle_circle_intersection_pts[_circle_circle_intersection_numpoints] = intersection2;
+                            _circle_circle_intersection_numpoints++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
 // create polygons inside the existing inclusion polygons
 // returns true on success.  returns false on failure and err_id is updated
 bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
@@ -265,9 +549,16 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
 
     // clear all points
     _inclusion_polygon_numpoints = 0;
+    _num_inclusion_polygons = 0;
 
     // return immediately if no polygons
     const uint8_t num_inclusion_polygons = fence->polyfence().get_inclusion_polygon_count();
+
+    // expand array if required
+    if (!_inclusion_polygon_index.expand_to_hold(num_inclusion_polygons)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
+        return false;
+    }
 
     // iterate through polygons and create inner points
     for (uint8_t i = 0; i < num_inclusion_polygons; i++) {
@@ -279,6 +570,8 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
             return false;
         }
+
+        _inclusion_polygon_index[_num_inclusion_polygons].start_index = _inclusion_polygon_numpoints;
 
         // for each point in inclusion polygon
         // Note: boundary is "unclosed" meaning the last point is *not* the same as the first
@@ -321,6 +614,9 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
 
         // update total number of points
         _inclusion_polygon_numpoints += num_points;
+
+        _inclusion_polygon_index[_num_inclusion_polygons].end_index = _inclusion_polygon_numpoints - 1;
+        _num_inclusion_polygons++;
     }
     return true;
 }
@@ -356,9 +652,16 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
 
     // clear all points
     _exclusion_polygon_numpoints = 0;
+    _num_exclusion_polygons = 0;
 
     // return immediately if no exclusion polygons
     const uint8_t num_exclusion_polygons = fence->polyfence().get_exclusion_polygon_count();
+
+    // expand array if required
+    if (!_exclusion_polygon_index.expand_to_hold(num_exclusion_polygons)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
+        return false;
+    }
 
     // iterate through exclusion polygons and create outer points
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
@@ -370,6 +673,8 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
             return false;
         }
+
+        _exclusion_polygon_index[_num_exclusion_polygons].start_index = _exclusion_polygon_numpoints;
 
         // for each point in exclusion polygon
         // Note: boundary is "unclosed" meaning the last point is *not* the same as the first
@@ -412,11 +717,26 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
 
         // update total number of points
         _exclusion_polygon_numpoints += num_points;
+
+        _exclusion_polygon_index[_num_exclusion_polygons].end_index = _exclusion_polygon_numpoints - 1;
+        _num_exclusion_polygons++;
     }
     return true;
 }
 
-// check if exclusion circles have been updated since create_exclusion_circle_with_margin was run
+// check if inclusion circles have been updated
+// returns true if changed
+bool AP_OADijkstra::check_inclusion_circle_updated() const
+{
+    // exit immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+    return (_inclusion_circle_update_ms != fence->polyfence().get_exclusion_circle_update_ms());
+}
+
+// check if exclusion circles have been updated
 // returns true if changed
 bool AP_OADijkstra::check_exclusion_circle_updated() const
 {
@@ -430,7 +750,7 @@ bool AP_OADijkstra::check_exclusion_circle_updated() const
 
 // create polygons around existing exclusion circles
 // returns true on success.  returns false on failure and err_id is updated
-bool AP_OADijkstra::create_exclusion_circle_with_margin(float margin_cm, AP_OADijkstra_Error &err_id)
+bool AP_OADijkstra::create_circle_with_margin(float margin_cm, AP_OADijkstra_Error &err_id, AP_ExpandingArray<Vector2f> &points, uint8_t &num_points, bool exclusion)
 {
     // exit immediately if fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
@@ -440,7 +760,17 @@ bool AP_OADijkstra::create_exclusion_circle_with_margin(float margin_cm, AP_OADi
     }
 
     // clear all points
-    _exclusion_circle_numpoints = 0;
+    num_points = 0;
+
+    uint8_t num_circles;
+    if (exclusion) {
+        num_circles = fence->polyfence().get_exclusion_circle_count();
+        _exclusion_circle_update_ms = fence->polyfence().get_exclusion_circle_update_ms();
+    } else {
+        num_circles = fence->polyfence().get_inclusion_circle_count();
+        _inclusion_circle_update_ms = fence->polyfence().get_inclusion_circle_update_ms();
+    }
+
 
     // unit length offsets for polygon points around circles
     const Vector2f unit_offsets[] = {
@@ -453,31 +783,36 @@ bool AP_OADijkstra::create_exclusion_circle_with_margin(float margin_cm, AP_OADi
     };
     const uint8_t num_points_per_circle = ARRAY_SIZE(unit_offsets);
 
-    // expand polygon point array if required
-    const uint8_t num_exclusion_circles = fence->polyfence().get_exclusion_circle_count();
-    if (!_exclusion_circle_pts.expand_to_hold(num_exclusion_circles * num_points_per_circle)) {
+    // expand point array if required
+    if (!points.expand_to_hold(num_circles * num_points_per_circle)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
 
     // iterate through exclusion circles and create outer polygon points
-    for (uint8_t i = 0; i < num_exclusion_circles; i++) {
+    for (uint8_t i = 0; i < num_circles; i++) {
         Vector2f circle_pos_cm;
         float radius;
-        if (fence->polyfence().get_exclusion_circle(i, circle_pos_cm, radius)) {
-            // scaler to ensure lines between points do not intersect circle
-            const float scaler = (1.0f / cosf(radians(180.0f / (float)num_points_per_circle))) * ((radius * 100.0f) + margin_cm);
-
+        bool got_fence;
+        if (exclusion) {
+            got_fence = fence->polyfence().get_exclusion_circle(i, circle_pos_cm, radius);
+        } else {
+            got_fence = fence->polyfence().get_inclusion_circle(i, circle_pos_cm, radius);
+        }
+        if (got_fence) {
+            float scaler = (radius * 100.0f) - margin_cm;
+            if (exclusion) {
+                // scaler to ensure lines between points do not intersect exclusion circle
+                scaler = (1.0f / cosf(radians(180.0f / (float)num_points_per_circle))) * ((radius * 100.0f) + margin_cm);
+            }
+ 
             // add points to array
             for (uint8_t j = 0; j < num_points_per_circle; j++) {
-                _exclusion_circle_pts[_exclusion_circle_numpoints] = circle_pos_cm + (unit_offsets[j] * scaler);
-                _exclusion_circle_numpoints++;
+                points[num_points] = circle_pos_cm + (unit_offsets[j] * scaler);
+                num_points++;
             }
         }
     }
-
-    // record fence update time so we don't process these exclusion circles again
-    _exclusion_circle_update_ms = fence->polyfence().get_exclusion_circle_update_ms();
 
     return true;
 }
@@ -485,7 +820,9 @@ bool AP_OADijkstra::create_exclusion_circle_with_margin(float margin_cm, AP_OADi
 // returns total number of points across all fence types
 uint16_t AP_OADijkstra::total_numpoints() const
 {
-    return _inclusion_polygon_numpoints + _exclusion_polygon_numpoints + _exclusion_circle_numpoints;
+    return _inclusion_polygon_numpoints + _exclusion_polygon_numpoints + _inclusion_circle_numpoints +_exclusion_circle_numpoints + _inclusion_intersection_numpoints +
+           _exclusion_intersection_numpoints + _inclusion_exclusion_intersection_numpoints + _polygon_inclusion_circle_intersection_numpoints + 
+           _polygon_exclusion_circle_intersection_numpoints + _circle_circle_intersection_numpoints;
 }
 
 // get a single point across the total list of points from all fence types
@@ -510,15 +847,78 @@ bool AP_OADijkstra::get_point(uint16_t index, Vector2f &point) const
     }
     index -= _exclusion_polygon_numpoints;
 
+    // return an inclusion circle point
+    if (index < _inclusion_circle_numpoints) {
+        point = _inclusion_circle_pts[index];
+        return true;
+    }
+    index -= _inclusion_circle_numpoints;
+
     // return an exclusion circle point
     if (index < _exclusion_circle_numpoints) {
         point = _exclusion_circle_pts[index];
+        return true;
+    }
+    index -= _exclusion_circle_numpoints;
+
+    // return an inclusion polygon intersection
+    if (index < _inclusion_intersection_numpoints) {
+        point = _inclusion_intersection_pts[index];
+        return true;
+    }
+    index -= _inclusion_intersection_numpoints;
+
+    // return an exclusion polygon intersection
+    if (index < _exclusion_intersection_numpoints) {
+        point = _exclusion_intersection_pts[index];
+        return true;
+    }
+    index -= _exclusion_intersection_numpoints;
+
+    // return an inclusion - exclusion polygon intersection
+    if (index < _inclusion_exclusion_intersection_numpoints) {
+        point = _inclusion_exclusion_intersection_pts[index];
+        return true;
+    }
+    index -= _inclusion_exclusion_intersection_numpoints;
+
+    // return an inclusion circle - polygon intersection
+    if (index < _polygon_inclusion_circle_intersection_numpoints) {
+        point = _polygon_inclusion_circle_intersection_pts[index];
+        return true;
+    }
+    index -= _polygon_inclusion_circle_intersection_numpoints;
+
+    // return an exclusion circle - polygon intersection
+    if (index < _polygon_exclusion_circle_intersection_numpoints) {
+        point = _polygon_exclusion_circle_intersection_pts[index];
+        return true;
+    }
+    index -= _polygon_exclusion_circle_intersection_numpoints;
+
+    // return an circle - circle intersection
+    if (index < _circle_circle_intersection_numpoints) {
+        point = _circle_circle_intersection_pts[index];
         return true;
     }
 
     // we should never get here but just in case
     return false;
 }
+
+// get a single point across the total list of points from all fence types and check if its valid
+bool AP_OADijkstra::get_valid_point(uint16_t index, Vector2f &point) const
+{
+    if (get_point(index,point)) {
+        const AC_Fence *fence = AC_Fence::get_singleton();
+        if (fence == nullptr) {
+            return false;
+        }
+        return !fence->polyfence().breached(point);
+    }
+    return false;
+}
+
 
 // returns true if line segment intersects polygon or circular fence
 bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &seg_end) const
@@ -529,14 +929,24 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
         return false;
     }
 
+    // point that will be moved along the line segment to test if crossing will result in a breach
+    Vector2f start_point;
+    Vector2f line_dir = (seg_end - seg_start).normalized();
+
     // determine if segment crosses any of the inclusion polygons
     uint16_t num_points = 0;
     for (uint8_t i = 0; i < fence->polyfence().get_inclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
         if (boundary != nullptr) {
             Vector2f intersection;
-            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
-                return true;
+            start_point = seg_start;
+            while (Polygon_intersects(boundary, num_points, start_point, seg_end, intersection)) {
+                // a point 50 cm past the intersection
+                start_point = intersection + line_dir * 50;
+                if (fence->polyfence().breached(start_point)) {
+                    // crossing the line would result in a breach
+                    return true;
+                }
             }
         }
     }
@@ -546,8 +956,14 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         if (boundary != nullptr) {
             Vector2f intersection;
-            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
-                return true;
+            start_point = seg_start;
+            while (Polygon_intersects(boundary, num_points, start_point, seg_end, intersection)) {
+                // a point 50 cm past the intersection
+                start_point = intersection + line_dir * 50;
+                if (fence->polyfence().breached(start_point)) {
+                    // crossing the line would result in a breach
+                    return true;
+                }
             }
         }
     }
@@ -557,13 +973,22 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
         Vector2f center_pos_cm;
         float radius;
         if (fence->polyfence().get_inclusion_circle(i, center_pos_cm, radius)) {
-            // intersects circle if either start or end is further from the center than the radius
-            const float radius_cm_sq = sq(radius * 100.0f) ;
-            if ((seg_start - center_pos_cm).length_squared() > radius_cm_sq) {
-                return true;
-            }
-            if ((seg_end - center_pos_cm).length_squared() > radius_cm_sq) {
-                return true;
+            Vector2f intersection1;
+            Vector2f intersection2;
+            uint8_t num = Vector2f::circle_segment_intersections(seg_start, seg_end, center_pos_cm, radius * 100.0f, intersection1, intersection2);
+            if (num > 0) {
+                intersection1 += line_dir * 50;
+                if (fence->polyfence().breached(intersection1)) {
+                    // crossing the circle would result in a breach
+                    return true;
+                }
+                if (num > 1) {
+                    intersection2 += line_dir * 50;
+                    if (fence->polyfence().breached(intersection2)) {
+                        // crossing the circle would result in a breach
+                        return true;
+                    }
+                }
             }
         }
     }
@@ -589,7 +1014,6 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
 
 // create visibility graph for all fence (with margin) points
 // returns true on success.  returns false on failure and err_id is updated
-// requires these functions to have been run create_inclusion_polygon_with_margin, create_exclusion_polygon_with_margin, create_exclusion_circle_with_margin
 bool AP_OADijkstra::create_fence_visgraph(AP_OADijkstra_Error &err_id)
 {
     // exit immediately if fence is not enabled
@@ -611,10 +1035,10 @@ bool AP_OADijkstra::create_fence_visgraph(AP_OADijkstra_Error &err_id)
     // calculate distance from each point to all other points
     for (uint8_t i = 0; i < total_numpoints() - 1; i++) {
         Vector2f start_seg;
-        if (get_point(i, start_seg)) {
+        if (get_valid_point(i, start_seg)) {
             for (uint8_t j = i + 1; j < total_numpoints(); j++) {
                 Vector2f end_seg;
-                if (get_point(j, end_seg)) {
+                if (get_valid_point(j, end_seg)) {
                     // if line segment does not intersect with any inclusion or exclusion zones add to visgraph
                     if (!intersects_fence(start_seg, end_seg)) {
                         if (!_fence_visgraph.add_item({AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i},
@@ -647,10 +1071,21 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
     // clear visibility graph
     visgraph.clear();
 
+
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    if (fence->polyfence().breached(position)) {
+        // not within fence
+        return false;
+    }
+
     // calculate distance from position to all inclusion/exclusion fence points
     for (uint8_t i = 0; i < total_numpoints(); i++) {
         Vector2f seg_end;
-        if (get_point(i, seg_end)) {
+        if (get_valid_point(i, seg_end)) {
             if (!intersects_fence(position, seg_end)) {
                 // line segment does not intersect with fences so add to visgraph
                 if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i}, (position - seg_end).length())) {
@@ -662,6 +1097,10 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
 
     // add extra point to visibility graph if it doesn't intersect with polygon fence or exclusion polygons
     if (add_extra_position) {
+        if (fence->polyfence().breached(extra_position)) {
+            // not within fence
+            return false;
+        }
         if (!intersects_fence(position, extra_position)) {
             if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, (position - extra_position).length())) {
                 return false;

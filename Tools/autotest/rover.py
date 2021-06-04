@@ -3833,6 +3833,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                         target_component=target_component)
         self.test_poly_fence_noarms_inclusion_polyfence(target_system=target_system,
                                                         target_component=target_component)
+        self.test_poly_fence_noarms_inclusion_circle_group(target_system=target_system,
+                                                           target_component=target_component)
 
     def test_poly_fence_noarms_exclusion_circle(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when within an exclusion circle")
@@ -3933,6 +3935,112 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if self.arm_motors_with_rc_input():
             raise NotAchievedException(
                 "Armed when outside an inclusion zone")
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           [])
+        self.wait_fence_not_breached()
+
+    def test_poly_fence_noarms_inclusion_circle_group(self, target_system=1, target_component=1):
+        self.start_subtest("Ensure not armable when outside two inclusion circles of difrent groups")
+
+        here = self.mav.location()
+
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                0, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, -100, -100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                1, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, 100, 100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
+        self.drain_mav()
+        self.assert_fence_breached()
+        if self.arm_motors_with_rc_input():
+            raise NotAchievedException(
+                "Armed when outside an inclusion groups")
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           [])
+        self.wait_fence_not_breached()
+
+    def test_poly_fence_arms_inclusion_circle_group(self, target_system=1, target_component=1):
+        self.start_subtest("Ensure armable when outside an inclusion circle but within another in a second group")
+
+        here = self.mav.location()
+
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                0, # p2 - group
+                0, # p3
+                0, # p4
+                int(here.lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                1, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, 100, 100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
+        self.drain_mav()
+        self.wait_fence_not_breached()
+        if not self.arm_vehicle():
+            raise NotAchievedException(
+                "Did not arm in inclusion group")
+
+        self.disarm_vehicle()
 
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            [])
@@ -4351,6 +4459,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_fence_upload_timeouts()
 
         self.test_poly_fence_noarms(target_system=target_system, target_component=target_component)
+        self.test_poly_fence_arms_inclusion_circle_group(target_system=target_system, target_component=target_component)
 
         self.arm_vehicle()
 
@@ -4569,9 +4678,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_disarmed()
 
     def test_poly_fence_object_avoidance_guided(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_guided_pathfinding(
             target_system=target_system,
             target_component=target_component)
@@ -4582,7 +4688,37 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        self.load_complex_fence("rover-path-planning-fence.txt")
+        self.load_mission("rover-path-planning-mission.txt")
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("AVOID_ENABLE", 3)
+            self.set_parameter("OA_TYPE", 2)
+            self.set_parameter("FENCE_MARGIN", 0) # FIXME: https://github.com/ArduPilot/ardupilot/issues/11601
+            self.reboot_sitl()
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_parameter("FENCE_ENABLE", 1)
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
+            # target_loc is copied from the mission file
+            target_loc = mavutil.location(40.073799, -105.229156)
+            self.wait_location(target_loc, timeout=300)
+            # mission has RTL as last item
+            self.wait_distance_to_home(3, 7, timeout=300)
+            self.disarm_vehicle()
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def test_poly_fence_object_avoidance_auto_inclusion_groups(self, target_system=1, target_component=1):
+        self.load_complex_fence("rover-path-planning-fence-inclusion.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.context_push()
         ex = None
@@ -4630,7 +4766,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         )
 
     def test_poly_fence_object_avoidance_guided_pathfinding(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        self.load_complex_fence("rover-path-planning-fence.txt")
         self.context_push()
         ex = None
         try:
@@ -4801,16 +4937,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.disarm_vehicle()
 
     def test_poly_fence_object_avoidance_guided_bendy_ruler(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -4836,8 +4970,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_poly_fence_object_avoidance_bendy_ruler_easier(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
         self.test_poly_fence_object_avoidance_auto_bendy_ruler_easier(
             target_system=target_system, target_component=target_component)
         self.test_poly_fence_object_avoidance_guided_bendy_ruler_easier(
@@ -4848,16 +4980,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         test can go away once we've nailed that one.  The only
         difference here is the target point.
         '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -4887,18 +5017,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         test can go away once we've nailed that one.  The only
         difference here is the target point.
         '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.load_mission("rover-path-bendyruler-mission-easier.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -4922,10 +5049,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_poly_fence_object_avoidance(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_auto(
+            target_system=target_system,
+            target_component=target_component)
+        self.test_poly_fence_object_avoidance_auto_inclusion_groups(
             target_system=target_system,
             target_component=target_component)
         self.test_poly_fence_object_avoidance_guided(
@@ -4933,8 +5060,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component)
 
     def test_poly_fence_object_avoidance_bendy_ruler(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
         # bendy Ruler isn't as flexible as Dijkstra for planning, so
         # it gets a simpler test:
         self.test_poly_fence_object_avoidance_guided_bendy_ruler(
@@ -5901,6 +6026,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         return {
             "DriveMaxRCIN": "currently triggers Arithmetic Exception",
             "SlewRate": "got timing report failure on CI",
+            "PolyFenceObjectAvoidanceBendyRuler": "Has been disabled for ages, now its more obvious",
+            "PolyFenceObjectAvoidanceBendyRulerEasier": "Has been disabled for ages, now its more obvious",
         }
 
     def rc_defaults(self):

@@ -87,17 +87,25 @@ private:
     // exclusion circle methods
     //
 
-    // check if exclusion circles have been updated since create_exclusion_circle_with_margin was run
+    // check if inclusion circles have been updated since
+    // returns true if changed
+    bool check_inclusion_circle_updated() const;
+
+    //
+    // exclusion circle methods
+    //
+
+    // check if exclusion circles have been updated
     // returns true if changed
     bool check_exclusion_circle_updated() const;
-
-    // create polygons around existing exclusion circles
-    // returns true on success.  returns false on failure and err_id is updated
-    bool create_exclusion_circle_with_margin(float margin_cm, AP_OADijkstra_Error &err_id);
 
     //
     // other methods
     //
+
+    // create polygons around existing inclusion and exclusion circles
+    // returns true on success.  returns false on failure and err_id is updated
+    bool create_circle_with_margin(float margin_cm, AP_OADijkstra_Error &err_id, AP_ExpandingArray<Vector2f> &points, uint8_t &num_points, bool exclusion);
 
     // returns total number of points across all fence types
     uint16_t total_numpoints() const;
@@ -105,6 +113,8 @@ private:
     // get a single point across the total list of points from all fence types
     // also returns the type of point
     bool get_point(uint16_t index, Vector2f& point) const;
+    // as above but also check if point is within fence
+    bool get_valid_point(uint16_t index, Vector2f &point) const;
 
     // returns true if line segment intersects polygon or circular fence
     bool intersects_fence(const Vector2f &seg_start, const Vector2f &seg_end) const;
@@ -122,6 +132,7 @@ private:
     // shortest path state variables
     bool _inclusion_polygon_with_margin_ok;
     bool _exclusion_polygon_with_margin_ok;
+    bool _inclusion_circle_with_margin_ok;
     bool _exclusion_circle_with_margin_ok;
     bool _polyfence_visgraph_ok;
     bool _shortest_path_ok;
@@ -133,17 +144,50 @@ private:
     float _polyfence_margin = 10;           // margin around polygon defaults to 10m but is overriden with set_fence_margin
     AP_ExpandingArray<Vector2f> _inclusion_polygon_pts; // array of nodes corresponding to inclusion polygon points plus a margin
     uint8_t _inclusion_polygon_numpoints;   // number of points held in above array
+    AP_ExpandingArray<Vector2f> _inclusion_intersection_pts; // inclusion - inclusion polygon intersections
+    uint8_t _inclusion_intersection_numpoints; // number of points held in above array
     uint32_t _inclusion_polygon_update_ms;  // system time of boundary update from AC_Fence (used to detect changes to polygon fence)
 
     // exclusion polygon related variables
     AP_ExpandingArray<Vector2f> _exclusion_polygon_pts; // array of nodes corresponding to exclusion polygon points plus a margin
     uint8_t _exclusion_polygon_numpoints;   // number of points held in above array
+    AP_ExpandingArray<Vector2f> _exclusion_intersection_pts; // exclusion - exclusion polygon intersections
+    uint8_t _exclusion_intersection_numpoints; // number of points held in above array
     uint32_t _exclusion_polygon_update_ms;  // system time exclusion polygon was updated (used to detect changes)
+
+    // intersections between inclusion and exclusion polygons
+    AP_ExpandingArray<Vector2f> _inclusion_exclusion_intersection_pts; // inclusion - exclusion polygon intersections
+    uint8_t _inclusion_exclusion_intersection_numpoints; // number of points held in above array
+
+    class polygon_start_finish {
+    public:
+        uint8_t start_index;
+        uint8_t end_index;
+    };
+    // store the start and end points of each polygon in the _inclusion_polygon_pts and _exclusion_polygon_pts arrays
+    // this allows us to add the intersection points of the polygons to the vis graph
+    AP_ExpandingArray<polygon_start_finish> _inclusion_polygon_index;
+    AP_ExpandingArray<polygon_start_finish> _exclusion_polygon_index;
+    uint8_t _num_inclusion_polygons;
+    uint8_t _num_exclusion_polygons;
+
+    // inclusion circle related variables
+    AP_ExpandingArray<Vector2f> _inclusion_circle_pts; // array of nodes surrounding inclusion circles plus a margin
+    uint8_t _inclusion_circle_numpoints;    // number of points held in above array
+    AP_ExpandingArray<Vector2f> _polygon_inclusion_circle_intersection_pts; // polygon inclusion circle intersections
+    uint8_t _polygon_inclusion_circle_intersection_numpoints; // number of points held in above array
+    uint32_t _inclusion_circle_update_ms;   // system time inclusion circles were updated (used to detect changes)
 
     // exclusion circle related variables
     AP_ExpandingArray<Vector2f> _exclusion_circle_pts; // array of nodes surrounding exclusion circles plus a margin
     uint8_t _exclusion_circle_numpoints;    // number of points held in above array
+    AP_ExpandingArray<Vector2f> _polygon_exclusion_circle_intersection_pts; // polygon exclusion circle intersections
+    uint8_t _polygon_exclusion_circle_intersection_numpoints; // number of points held in above array
     uint32_t _exclusion_circle_update_ms;   // system time exclusion circles were updated (used to detect changes)
+
+    // circle - circle intersections
+    uint8_t _circle_circle_intersection_numpoints;    // number of points held in above array
+    AP_ExpandingArray<Vector2f> _circle_circle_intersection_pts; // polygon exclusion circle intersections
 
     // visibility graphs
     AP_OAVisGraph _fence_visgraph;          // holds distances between all inclusion/exclusion fence points (with margin)
@@ -177,6 +221,15 @@ private:
     // find index of node with lowest tentative distance (ignore visited nodes)
     // returns true if successful and node_idx argument is updated
     bool find_closest_node_idx(node_index &node_idx) const;
+
+    // intestect two polygons groups and record in provided array
+    bool intersect_polygon_groups(AP_ExpandingArray<Vector2f> &points1, AP_ExpandingArray<polygon_start_finish> &index1, uint8_t num_poly1, AP_ExpandingArray<Vector2f> &points2,  AP_ExpandingArray<polygon_start_finish> &index2, uint8_t num_poly2, AP_ExpandingArray<Vector2f> &intersections, uint8_t &num_intersections, bool self);
+
+    // intestect a circle and a polygon group
+    bool intersect_polygon_and_circle(float margin_cm, AP_ExpandingArray<Vector2f> &points, AP_ExpandingArray<polygon_start_finish> &index, uint8_t num_poly, AP_ExpandingArray<Vector2f> &intersections, uint8_t &num_intersections, bool exclusion);
+
+    // intestect all circular zones
+    bool intersect_circles(float margin_cm);
 
     // final path variables and functions
     AP_ExpandingArray<AP_OAVisGraph::OAItemID> _path;   // ids of points on return path in reverse order (i.e. destination is first element)

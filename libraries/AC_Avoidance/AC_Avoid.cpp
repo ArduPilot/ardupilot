@@ -790,7 +790,7 @@ void AC_Avoid::adjust_velocity_inclusion_and_exclusion_polygons(float kP, float 
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
         Vector2f backup_vel_inc;
         // adjust velocity
-        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_margin(), dt, true);
+        adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, backup_vel_inc, boundary, num_points, fence->get_margin(), dt, true, fence->polyfence().have_inclusion_groups());
         find_max_quadrant_velocity(backup_vel_inc, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel);
     }
 
@@ -873,6 +873,20 @@ void AC_Avoid::adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vec
             const float radius_cm = (radius * 100.0f);
             if (dist_sq_cm > sq(radius_cm)) {
                 continue;
+            }
+
+            if (fence->polyfence().have_inclusion_groups()) {
+                // For 'OR' fences project a point 50cm outside the fence and see if that is inside any fence
+                Vector2f outside_point = center_pos_cm + position_NE_rel.normalized() * (radius_cm + 50);
+                Location loc;
+                if (AP::ahrs().get_origin(loc)) {
+                    outside_point *= 0.01f; // cm to m
+                    loc.offset(outside_point.x, outside_point.y);
+                    if (fence->check_destination_within_fence(loc)) {
+                        // if we cross this boundary we will still be inside a fence so there is no need to avoid
+                        continue;
+                    }
+                }
             }
 
             const float radius_with_margin = radius_cm - margin_cm;
@@ -1238,7 +1252,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, float margin, float dt, bool stay_inside)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, float margin, float dt, bool stay_inside, bool inclusion_fence)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
@@ -1291,6 +1305,21 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
         Vector2f vector_to_boundary = Vector2f::closest_point(position_xy, start, end) - position_xy;
+
+        if (inclusion_fence) {
+            // For 'OR' fences project a point 50cm outside the fence and see if that is inside any fence
+            Vector2f outside_point = position_xy + vector_to_boundary + vector_to_boundary.normalized() * 50;
+            Location loc;
+            if (_ahrs.get_origin(loc)) {
+                outside_point *= 0.01f; // cm to m
+                loc.offset(outside_point.x, outside_point.y);
+                if (AP::fence()->check_destination_within_fence(loc)) {
+                    // if we cross this boundary we will still be inside a fence so there is no need to avoid
+                    continue;
+                }
+            }
+        }
+
         // back away if vehicle has breached margin
         if (is_negative(vector_to_boundary.length() - margin_cm)) {
             calc_backup_velocity_2D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, margin_cm-vector_to_boundary.length(), vector_to_boundary, dt);
