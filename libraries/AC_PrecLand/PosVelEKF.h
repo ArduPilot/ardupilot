@@ -34,13 +34,15 @@ private:
     /*
     _state[0] = position
     _state[1] = velocity
+    _state[2] = accel bias
     */
-    float _state[2];
+    float _state[3];
 
     /*
     Covariance Matrix is ALWAYS symmetric, therefore the following matrix is assumed:
-    P = Covariance Matrix = |_cov[0]  _cov[1]|
-                            |_cov[1]  _cov[2]|
+    P = Covariance Matrix = |_cov[0]  _cov[1] _cov[2]|
+                            |_cov[1]  _cov[3] _cov[4]|
+                            |_cov[2]  _cov[4] _cov[5]|
     */
-    float _cov[3];
+    float _cov[6];
 };
