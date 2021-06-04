@@ -67,9 +67,8 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 };
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                                         AP_RangeFinder_Params &_params,
-                                         uint8_t serial_instance) :
-    AP_RangeFinder_Backend_Serial(_state, _params, serial_instance)
+                                         AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend_Serial(_state, _params)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
