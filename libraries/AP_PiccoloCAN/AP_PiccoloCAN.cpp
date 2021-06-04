@@ -345,24 +345,6 @@ void AP_PiccoloCAN::update()
                 servo.newTelemetry = false;
             }
         }
-
-        for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
-
-            PiccoloESC_Info_t &esc = _esc_info[i];
-
-            if (esc.newTelemetry) {
-
-                logger->Write_ESC(i, timestamp,
-                                  (int32_t) esc.rpm * 100,
-                                  esc.voltage,
-                                  esc.current,
-                                  (int16_t) esc.fetTemperature,
-                                  0,  // TODO - Accumulated current
-                                  (int16_t) esc.motorTemperature);
-
-                esc.newTelemetry = false;
-            }
-        }
     }
 }
 
@@ -707,11 +689,13 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
         // There are no common error bits between the Gen-1 and Gen-2 ICD
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
-        TelemetryData t {
+        
+        AP_ESC_Telem_Backend::TelemetryData t {
             .temperature_cdeg = int16_t(esc.escTemperature * 100),
             .voltage = float(esc.voltage) * 0.01f,
             .current = float(esc.current) * 0.01f,
         };
+
         update_telem_data(addr, t,
             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
@@ -719,7 +703,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
         esc.newTelemetry = true;
     } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
-        TelemetryData t { };
+        AP_ESC_Telem_Backend::TelemetryData t { };
         t.motor_temp_cdeg = int16_t(esc.fetTemperature * 100);
         update_telem_data(addr, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
 
@@ -823,7 +807,7 @@ bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint64_t timeout_ms)
 /**
  * Determine if an ESC is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms) const
+bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
