@@ -7,9 +7,9 @@ class AP_RangeFinder_Backend_Serial : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_Backend_Serial(RangeFinder::RangeFinder_State &_state,
-                                  AP_RangeFinder_Params &_params,
-                                  uint8_t serial_instance);
+                                  AP_RangeFinder_Params &_params);
 
+    void init_serial(uint8_t serial_instance) override;
     // static detection function
     static bool detect(uint8_t serial_instance);
 
