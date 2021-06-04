@@ -467,15 +467,12 @@ private:
         QPOS_LAND_FINAL,
         QPOS_LAND_COMPLETE
     };
-    struct {
+    class PosControlState {
     public:
         enum position_control_state get_state() const {
             return state;
         }
-        void set_state(enum position_control_state s) {
-            state = s;
-            last_state_change_ms = AP_HAL::millis();
-        }
+        void set_state(enum position_control_state s);
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
@@ -487,9 +484,8 @@ private:
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
-        float start_closing_vel;
-        float start_dist;
         uint32_t thrust_loss_start_ms;
+        uint32_t last_log_ms;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
