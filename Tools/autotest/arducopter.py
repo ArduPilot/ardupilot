@@ -6126,6 +6126,21 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Did not get %s" % want)
             still_want.remove(m.get_type())
 
+    def fly_rangefinder_sitl(self):
+        """This test need an access to JSON backend that implement the SITL RF.
+        It currently does nothing else that checking return is -1."""
+        self.set_parameter("RNGFND1_TYPE", 100)
+        self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        expected_alt = 5
+        self.user_takeoff(alt_min=expected_alt)
+        self.land_and_disarm()
+        self.progress("Ensure RFND messages in log")
+        if not self.current_onboard_log_contains_message("RFND"):
+            raise NotAchievedException("No RFND messages in log")
+
     def fly_rangefinder_mavlink(self):
         self.fly_rangefinder_mavlink_distance_sensor()
 
@@ -6282,6 +6297,7 @@ class AutoTestCopter(AutoTest):
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
 
         self.fly_rangefinder_mavlink()
+        self.fly_rangefinder_sitl()
 
         i2c_drivers = [
             ("maxbotixi2cxl", 2),
