@@ -181,7 +181,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_HAVE_IMU_HEATER
     // @Param: IMU_TARGTEMP
     // @DisplayName: Target IMU temperature
-    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET -1 on The Cube. A value of -1 sets PH1 behaviour 
+    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
