@@ -29,7 +29,7 @@ protected:
 
     // it is essential that anyone relying on the base-class update to
     // implement this:
-    virtual bool get_reading(uint16_t &reading_cm) { return false; }
+    virtual bool get_reading(uint16_t &reading_cm) = 0;
 
     // maximum time between readings before we change state to NoData:
     virtual uint16_t read_timeout_ms() const { return 200; }
