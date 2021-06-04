@@ -35,6 +35,7 @@ void AP_BattMonitor_ESC::read(void)
     float current_sum = 0;
     float temperature_sum = 0;
     uint32_t highest_ms = 0;
+     _state.consumed_mah = delta_mah;
 
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
         int16_t  temperature_cdeg;
@@ -90,6 +91,19 @@ void AP_BattMonitor_ESC::read(void)
         // current sensor
         have_current = true;
     }
+}
+
+bool AP_BattMonitor_ESC::reset_remaining(float percentage)
+{
+    delta_mah = 0.0f;
+    read();
+    const float current_mah = _state.consumed_mah;
+    if (AP_BattMonitor_Backend::reset_remaining(percentage)) {
+        delta_mah = _state.consumed_mah - current_mah;
+        return true;
+    }
+
+    return false;
 }
 
 #endif // HAL_WITH_ESC_TELEM
