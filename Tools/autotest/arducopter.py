@@ -299,7 +299,7 @@ class AutoTestCopter(AutoTest):
                                              origin.longitude,
                                              final_alt)
 
-    def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
+    def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080, timeout=30):
         """Change altitude."""
         def adjust_altitude(current_alt, target_alt, accuracy):
             if math.fabs(current_alt - target_alt) <= accuracy:
@@ -312,6 +312,7 @@ class AutoTestCopter(AutoTest):
             (alt_min - 5),
             alt_min,
             relative=True,
+            timeout=timeout,
             called_function=lambda current_alt, target_alt: adjust_altitude(current_alt, target_alt, 1)
         )
         self.hover()
