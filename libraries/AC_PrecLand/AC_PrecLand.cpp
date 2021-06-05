@@ -405,17 +405,10 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     if (_backend->have_los_meas() && _backend->los_meas_time_ms() != _last_backend_los_meas_ms) {
         _last_backend_los_meas_ms = _backend->los_meas_time_ms();
         _backend->get_los_body(target_vec_unit_body);
-
-        // Apply sensor yaw alignment rotation
-        float sin_yaw_align = sinf(radians(_yaw_align*0.01f));
-        float cos_yaw_align = cosf(radians(_yaw_align*0.01f));
-        Matrix3f Rz = Matrix3f(
-            cos_yaw_align, -sin_yaw_align, 0,
-            sin_yaw_align, cos_yaw_align, 0,
-            0, 0, 1
-        );
-
-        target_vec_unit_body = Rz*target_vec_unit_body;
+        if (!is_zero(_yaw_align)) {
+            // Apply sensor yaw alignment rotation
+            target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
+        }
         return true;
     } else {
         return false;
