@@ -893,7 +893,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                 return; // all done
             }
             // find out how much is still left to write while we still have the lock
-            n = _writebuf.available();
+            n = MIN(_writebuf.available(), n);
         }
 
         dma_handle->lock(); // we have our own thread so grab the lock
@@ -909,6 +909,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                     // low baudrate. Switch off DMA for future
                     // transmits on this low baudrate UART
                     tx_dma_enabled = false;
+                    dma_handle->unlock(false);
+                    break;
                 }
             }
             /*
@@ -978,6 +980,13 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             // update stats
             _total_written += tx_len;
             _tx_stats_bytes += tx_len;
+
+            n -= tx_len;
+        } else {
+            // if we didn't manage to transmit any bytes then stop
+            // processing so we can check flow control state in outer
+            // loop
+            break;
         }
     }
 }
