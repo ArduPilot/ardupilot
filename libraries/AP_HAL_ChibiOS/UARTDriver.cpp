@@ -48,8 +48,6 @@ thread_t* volatile UARTDriver::uart_rx_thread_ctx;
 // table to find UARTDrivers from serial number, used for event handling
 UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
-uint32_t UARTDriver::_last_stats_ms;
-
 // event used to wake up waiting thread. This event number is for
 // caller threads
 static const eventmask_t EVT_DATA = EVENT_MASK(10);
@@ -1671,29 +1669,20 @@ uint8_t UARTDriver::get_options(void) const
     return _last_options;
 }
 
-// request information on uart I/O for @SYS/uarts.txt
+// request information on uart I/O for @SYS/uarts.txt for this uart
 void UARTDriver::uart_info(ExpandingString &str)
 {
-    // a header to allow for machine parsers to determine format
-    str.printf("UARTV1\n");
-
     uint32_t now_ms = AP_HAL::millis();
-    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
-        UARTDriver* uart = (UARTDriver *)hal.serial(i);
-
-        if (uart == nullptr || uart->uart_thread_ctx == nullptr) {
-            continue;
-        }
-
-        const char* fmt = "SERIAL%u %-5s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n";
-        str.printf(fmt, i, uart->uart_thread_name, uart->tx_dma_enabled ? '*' : ' ', uart->_tx_stats_bytes,
-            uart->rx_dma_enabled ? '*' : ' ', uart->_rx_stats_bytes,
-            uart->_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms), uart->_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms));
-
-        uart->_tx_stats_bytes = 0;
-        uart->_rx_stats_bytes = 0;
-    }
-
+    str.printf("%-5s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
+               uart_thread_name,
+               tx_dma_enabled ? '*' : ' ',
+               unsigned(_tx_stats_bytes),
+               rx_dma_enabled ? '*' : ' ',
+               unsigned(_rx_stats_bytes),
+               unsigned(_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms)),
+               unsigned(_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms)));
+    _tx_stats_bytes = 0;
+    _rx_stats_bytes = 0;
     _last_stats_ms = now_ms;
 }
 
