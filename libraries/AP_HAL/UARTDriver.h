@@ -5,6 +5,8 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
+class ExpandingString;
+
 /* Pure virtual UARTDriver class */
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
@@ -124,4 +126,7 @@ public:
       return true if this UART has DMA enabled on both RX and TX
      */
     virtual bool is_dma_enabled() const { return false; }
+
+    // request information on uart I/O for this uart, for @SYS/uarts.txt
+    virtual void uart_info(ExpandingString &str) {}
 };
