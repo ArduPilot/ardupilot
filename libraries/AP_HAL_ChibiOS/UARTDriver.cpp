@@ -1673,8 +1673,12 @@ uint8_t UARTDriver::get_options(void) const
 void UARTDriver::uart_info(ExpandingString &str)
 {
     uint32_t now_ms = AP_HAL::millis();
-    str.printf("%-5s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
-               uart_thread_name,
+    if (sdef.is_usb) {
+        str.printf("OTG%u  ", unsigned(sdef.instance));
+    } else {
+        str.printf("UART%u ", unsigned(sdef.instance));
+    }
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
                tx_dma_enabled ? '*' : ' ',
                unsigned(_tx_stats_bytes),
                rx_dma_enabled ? '*' : ' ',
