@@ -2457,7 +2457,7 @@ bool QuadPlane::in_vtol_auto(void) const
     case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return plane.auto_state.vtol_loiter && poscontrol.get_state() > QPOS_APPROACH;
+        return plane.auto_state.vtol_loiter;
     case MAV_CMD_NAV_TAKEOFF:
         return is_vtol_takeoff(id);
     case MAV_CMD_NAV_VTOL_LAND:
@@ -2469,7 +2469,8 @@ bool QuadPlane::in_vtol_auto(void) const
 }
 
 /*
-  are we in a VTOL mode?
+  are we in a VTOL mode? This is used to decide if we run the
+  transition handling code or not
  */
 bool QuadPlane::in_vtol_mode(void) const
 {
@@ -2485,11 +2486,20 @@ bool QuadPlane::in_vtol_mode(void) const
         poscontrol.get_state() == QPOS_APPROACH) {
         return false;
     }
-    return (plane.control_mode->is_vtol_mode() ||
-            (plane.control_mode->is_guided_mode()
-             && plane.auto_state.vtol_loiter &&
-             poscontrol.get_state() > QPOS_APPROACH) ||
-            in_vtol_auto());
+    if (plane.control_mode->is_vtol_mode()) {
+        return true;
+    }
+    if (plane.control_mode->is_guided_mode()
+        && plane.auto_state.vtol_loiter &&
+        poscontrol.get_state() > QPOS_APPROACH) {
+        return true;
+    }
+    if (in_vtol_auto()) {
+        if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
