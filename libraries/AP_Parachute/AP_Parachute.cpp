@@ -305,7 +305,7 @@ void AP_Parachute::update(const float sink_rate, const float accel, const bool t
     }
 
     // sink rate is posative down
-    if (sink_rate <= _critical_sink || !is_positive(sink_rate) || throttle_below_hover) {
+    if (sink_rate <= _critical_sink || !is_positive(_critical_sink) || throttle_below_hover) {
         // reset sink_time if vehicle is not sinking too fast
         _sink_time_ms = 0;
     } else if (_sink_time_ms == 0) {
