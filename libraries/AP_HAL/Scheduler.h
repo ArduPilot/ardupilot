@@ -124,6 +124,29 @@ public:
         return false;
     }
 
+    /*
+      create a new task.  Tasks may be run synchronously in the main thread.
+
+      proc_init is run once, before the body is looped over.  If on a
+      thread, it is run on that thread.
+
+      proc_body is called repeatedly.  If in a thread it is called in
+      a loop.  It must return a delay (in microseconds) that is the
+      time after which the body should be called again.
+
+     */
+    FUNCTOR_TYPEDEF(TaskBodyMemberProc, uint32_t);
+
+    virtual bool task_create(
+        AP_HAL::MemberProc proc_init,
+        AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority) {
+        return false;
+    }
+
 private:
 
     AP_HAL::Proc _delay_cb;

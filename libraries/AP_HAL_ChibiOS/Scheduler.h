@@ -136,6 +136,17 @@ public:
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
 
+    /*
+      create a new task (may create a thread)
+     */
+    bool task_create(
+        AP_HAL::MemberProc proc_init,
+        AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority) override;
+
     // pat the watchdog
     void watchdog_pat(void);
 
@@ -185,6 +196,8 @@ private:
     void _run_timers();
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);
+
+    static void task_create_thread_trampoline(void *ctx);
 
 #if defined STM32H7
     void check_low_memory_is_zero();
