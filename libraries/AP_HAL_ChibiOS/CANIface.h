@@ -153,6 +153,7 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
         uint32_t rx_errors;
         uint32_t num_busoff_err;
         uint32_t num_events;
+        uint32_t esr;
     } stats;
 #endif
 

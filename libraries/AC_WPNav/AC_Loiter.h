@@ -27,7 +27,7 @@ public:
 
     /// set pilot desired acceleration in centi-degrees
     //   dt should be the time (in seconds) since the last call to this function
-    void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd, float dt);
+    void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd);
 
     /// gets pilot desired acceleration, body frame, [forward,right]
     Vector2f get_pilot_desired_acceleration() const { return Vector2f{_desired_accel.x, _desired_accel.y}; }
@@ -39,10 +39,10 @@ public:
     void get_stopping_point_xy(Vector3f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_pos_error_xy(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
 
     /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target_cd(); }
 
     /// get maximum lean angle when using loiter
     float get_angle_max_cd() const;

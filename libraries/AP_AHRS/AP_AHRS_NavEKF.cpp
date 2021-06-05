@@ -1780,11 +1780,6 @@ bool AP_AHRS_NavEKF::pre_arm_check(bool requires_position, char *failure_msg, ui
     return false;
 }
 
-void AP_AHRS_NavEKF::set_ekf_use(bool setting)
-{
-    _ekf_type.set(setting?1:0);
-}
-
 // true if the AHRS has completed initialisation
 bool AP_AHRS_NavEKF::initialised(void) const
 {
@@ -2584,58 +2579,6 @@ bool AP_AHRS_NavEKF::get_vel_innovations_and_variances_for_source(uint8_t source
     }
 
     return false;
-}
-
-void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
-{
-    switch (takeoffExpectedState) {
-    case TriState::UNKNOWN:
-        break;
-    case TriState::True:
-        if (val) {
-            return;
-        }
-        break;
-    case TriState::False:
-        if (!val) {
-            return;
-        }
-        break;
-    }
-    takeoffExpectedState = (TriState)val;
-
-#if HAL_NAVEKF2_AVAILABLE
-    EKF2.setTakeoffExpected(val);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    EKF3.setTakeoffExpected(val);
-#endif
-}
-
-void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
-{
-    switch (touchdownExpectedState) {
-    case TriState::UNKNOWN:
-        break;
-    case TriState::True:
-        if (val) {
-            return;
-        }
-        break;
-    case TriState::False:
-        if (!val) {
-            return;
-        }
-        break;
-    }
-    touchdownExpectedState = (TriState)val;
-
-#if HAL_NAVEKF2_AVAILABLE
-    EKF2.setTouchdownExpected(val);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    EKF3.setTouchdownExpected(val);
-#endif
 }
 
 bool AP_AHRS_NavEKF::getGpsGlitchStatus() const

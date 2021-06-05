@@ -895,7 +895,7 @@ void AP_Baro::update(void)
     }
 
     // logging
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (should_log()) {
         Write_Baro();
     }

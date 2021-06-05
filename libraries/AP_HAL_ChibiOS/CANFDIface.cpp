@@ -886,6 +886,7 @@ void CANIface::pollErrorFlagsFromISR()
     const uint8_t cel = can_->ECR >> 16;
 
     if (cel != 0) {
+        stats.ecr = can_->ECR;
         for (int i = 0; i < NumTxMailboxes; i++) {
             if (!pending_tx_[i].abort_on_error || pending_tx_[i].aborted) {
                 continue;
@@ -1041,7 +1042,8 @@ void CANIface::get_stats(ExpandingString &str)
                "rx_overflow:    %lu\n"
                "rx_errors:      %lu\n"
                "num_busoff_err: %lu\n"
-               "num_events:     %lu\n",
+               "num_events:     %lu\n"
+               "ECR:            %lx\n",
                stats.tx_requests,
                stats.tx_rejected,
                stats.tx_success,
@@ -1051,7 +1053,8 @@ void CANIface::get_stats(ExpandingString &str)
                stats.rx_overflow,
                stats.rx_errors,
                stats.num_busoff_err,
-               stats.num_events);
+               stats.num_events,
+               stats.ecr);
 }
 #endif
 

@@ -512,8 +512,8 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.pred_horiz_pos_rel = ((optFlowNavPossible || gpsNavPossible) && filterHealthy) || filterStatus.flags.horiz_pos_rel; // we should be able to estimate a relative position when we enter flight mode
     filterStatus.flags.pred_horiz_pos_abs = (gpsNavPossible && filterHealthy) || filterStatus.flags.horiz_pos_abs; // we should be able to estimate an absolute position when we enter flight mode
     filterStatus.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
-    filterStatus.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
-    filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
+    filterStatus.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
+    filterStatus.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;

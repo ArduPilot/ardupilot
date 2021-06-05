@@ -1,5 +1,43 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.1.0-beta3 24-May-2021
+Changes from 4.1.0-beta2
+1) Dshot bug fix for autopilots with I/O boards (CubeBlack, CubeOrange, etc)
+--------------------------------
+Rover 4.1.0-beta2 20-May-2021
+Changes from 4.1.0-beta1
+1) Rover/Boat specific enhancements and bug fixes
+    a) Direct mast rotation logging
+    b) RangeFinder logging enabled (RFND)
+    c) Shaking reduced when vehicle stopped by simple avoidance
+    d) Sonar water temperature logged in DPTH message
+    e) TURN_MAX_G renamed to ATC_TURN_MAX_G and applied to all turns
+    f) Wind direction calculation when not using wind speed sensor fixed
+2) BLHeli improvements and fixes
+    a) Bi-directional ESC telemetry fixes
+    b) Bi-directional dshot 1200 supported
+    c) Control of digital with non-digital outputs fixed
+    d) Support dshot commands for LED, buzzer and direction control
+    e) Passthru reliability improved
+3) New autopilot boards
+    a) PixC4-Pi and PixC4-Jetson
+4) Avoidance fixes
+    a) OBSTACLE_DISTANCE_3D boundary cleared after 0.75 seconds, allows easier multi-camera support
+5) Other enhancements
+    a) Auxiliary function logging shows how it was invoked (switch, button or scripting)
+    b) External IST8308 compass supported on CubeBlack
+    c) FrSky telem reports failsafe, terrain alt health and fence status
+    d) OSD gets fence icon
+    e) RunCam OSD and camera control
+    f) Septentrio GPSs support GPS_SBAS_MOD parameter
+6) Bug fixes
+    a) Barometer averaging fixes for BMP380, BMP280, LPS2XH, SPL06 drivers
+    b) EKF3 fix to reset yaw after GPS-for-yaw recovers
+    c) KDECAN output range, motor order and pre-arm check messages fixed
+    d) Logging memory leak when finding last log fixed
+    e) Pixhawk4 mini safety switch fix
+    f) SD card slowdown with early mounts fixed
+--------------------------------
 Rover 4.1.0-beta1 08-Apr-2021
 Changes from 4.0.0
 1) EKF changes:
@@ -672,7 +710,7 @@ for 3 new boards in this release. They are:
  - the Pixracer
 
 More information about the list of supported boards is available here:
-http://dev.ardupilot.org/wiki/supported-autopilot-controller-boards/
+https://ardupilot.org/copter/docs/common-autopilots.html
 
 Startup on a moving platform
 ----------------------------

@@ -39,6 +39,7 @@ SingleCopter::SingleCopter(const char *frame_str) :
     */
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1;
+    lock_step_scheduled = true;
 }
 
 /*

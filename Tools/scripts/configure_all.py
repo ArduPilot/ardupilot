@@ -32,7 +32,7 @@ def get_board_list():
     '''add boards based on existance of hwdef-bl.dat in subdirectories for ChibiOS'''
     board_list = []
     # these are base builds, and don't build directly
-    omit = ['f103-periph', 'f303-periph']
+    omit = []
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:
         hwdef = os.path.join(dirname, d, 'hwdef.dat')

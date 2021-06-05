@@ -1794,6 +1794,7 @@ def write_hwdef_header(outfilename):
     write_MAG_config(f)
     write_BARO_config(f)
     write_board_validate_macro(f)
+    add_apperiph_defaults(f)
 
     write_peripheral_enable(f)
 
@@ -2150,6 +2151,23 @@ def process_file(filename):
         else:
             process_line(line)
 
+def add_apperiph_defaults(f):
+    '''add default defines for peripherals'''
+    if env_vars.get('AP_PERIPH',0) == 0:
+        # not AP_Periph
+        return
+    print("Setting up as AP_Periph")
+    f.write('''
+#ifndef HAL_LOGGING_ENABLED
+#define HAL_LOGGING_ENABLED 0
+#endif
+// default to no protocols, AP_Periph enables with params
+#define HAL_SERIAL1_PROTOCOL -1
+#define HAL_SERIAL2_PROTOCOL -1
+#define HAL_SERIAL3_PROTOCOL -1
+#define HAL_SERIAL4_PROTOCOL -1
+''')
+            
 
 # process input file
 process_file(args.hwdef)

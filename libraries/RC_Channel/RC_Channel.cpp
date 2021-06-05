@@ -414,7 +414,7 @@ bool RC_Channel::read_6pos_switch(int8_t& position)
 {
     // calculate position of 6 pos switch
     const uint16_t pulsewidth = get_radio_in();
-    if (pulsewidth <= 900 || pulsewidth >= 2200) {
+    if (pulsewidth <= RC_MIN_LIMIT_PWM || pulsewidth >= RC_MAX_LIMIT_PWM) {
         return false;  // This is an error condition
     }
 
@@ -1097,19 +1097,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
 #if !HAL_MINIMIZE_FEATURES
     case AUX_FUNC::KILL_IMU1:
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP::ins().kill_imu(0, true);
-        } else {
-            AP::ins().kill_imu(0, false);
-        }
+        AP::ins().kill_imu(0, ch_flag == AuxSwitchPos::HIGH);
         break;
 
     case AUX_FUNC::KILL_IMU2:
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP::ins().kill_imu(1, true);
-        } else {
-            AP::ins().kill_imu(1, false);
-        }
+        AP::ins().kill_imu(1, ch_flag == AuxSwitchPos::HIGH);
         break;
 #endif // HAL_MINIMIZE_FEATURES
 
@@ -1195,7 +1187,7 @@ void RC_Channel::init_aux()
 bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
 {
     const uint16_t in = get_radio_in();
-    if (in <= 900 or in >= 2200) {
+    if (in <= RC_MIN_LIMIT_PWM || in >= RC_MAX_LIMIT_PWM) {
         return false;
     }
     

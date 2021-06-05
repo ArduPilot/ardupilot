@@ -30,6 +30,16 @@
 #define HAL_WATCHDOG_ENABLED_DEFAULT false
 #endif
 
+#if HAL_HAVE_IMU_HEATER
+#ifndef HAL_IMUHEAT_P_DEFAULT
+#define HAL_IMUHEAT_P_DEFAULT 200
+#endif
+#ifndef HAL_IMUHEAT_I_DEFAULT
+#define HAL_IMUHEAT_I_DEFAULT 0.3
+#endif
+#endif
+
+
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
@@ -238,7 +248,7 @@ private:
     struct {
         AP_Int8 imu_target_temperature;
         uint32_t last_update_ms;
-        AC_PI pi_controller{200, 0.3, 70};
+        AC_PI pi_controller{HAL_IMUHEAT_P_DEFAULT, HAL_IMUHEAT_I_DEFAULT, 70};
         uint16_t count;
         float sum;
         float output;

@@ -109,7 +109,7 @@
 #endif
 
 #ifndef HAL_DSHOT_ALARM
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && HAL_USE_PWM == TRUE
 #define HAL_DSHOT_ALARM 1
 #else
 #define HAL_DSHOT_ALARM 0

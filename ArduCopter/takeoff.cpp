@@ -56,87 +56,43 @@ void Mode::_TakeOff::start(float alt_cm)
     // tell position controller to reset alt target and reset I terms
     copter.flightmode->set_throttle_takeoff();
 
-    // calculate climb rate
-    const float speed = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
-
-    // sanity check speed and target
-    if (speed <= 0.0f || alt_cm <= 0.0f) {
-        return;
-    }
-
     // initialise takeoff state
     _running = true;
-    max_speed = speed;
-    start_ms = millis();
-    alt_delta = alt_cm;
+    take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
+    take_off_complete_alt  = take_off_start_alt + alt_cm;
 }
 
 // stop takeoff
 void Mode::_TakeOff::stop()
 {
     _running = false;
-    start_ms = 0;
 }
 
-// returns pilot and takeoff climb rates
-//  pilot_climb_rate is both an input and an output
-//  takeoff_climb_rate is only an output
-//  has side-effect of turning takeoff off when timeout as expired
-void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
+// do_pilot_takeoff - controls the vertical position controller during the process of taking off
+//  take off is complete when the vertical target reaches the take off altitude.
+//  climb is cancelled if pilot_climb_rate_cm becomes negative
+//  sets take off to complete when target altitude is within 1% of the take off altitude
+void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
-        takeoff_climb_rate = 0.0f;
         return;
     }
 
-    // acceleration of 50cm/s/s
-    static constexpr float TAKEOFF_ACCEL = 50.0f;
-    const float takeoff_minspeed = MIN(50.0f, max_speed);
-    const float time_elapsed = (millis() - start_ms) * 1.0e-3f;
-    const float speed = MIN(time_elapsed * TAKEOFF_ACCEL + takeoff_minspeed, max_speed);
+    Vector3f pos;
+    Vector3f vel;
+    Vector3f accel;
 
-    const float time_to_max_speed = (max_speed - takeoff_minspeed) / TAKEOFF_ACCEL;
-    float height_gained;
-    if (time_elapsed <= time_to_max_speed) {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_elapsed) + takeoff_minspeed * time_elapsed;
-    } else {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_to_max_speed) + takeoff_minspeed * time_to_max_speed +
-                        (time_elapsed - time_to_max_speed) * max_speed;
-    }
+    pos.z = take_off_complete_alt ;
+    vel.z = pilot_climb_rate_cm;
 
-    // check if the takeoff is over
-    if (height_gained >= alt_delta) {
+    // command the aircraft to the take off altitude and current pilot climb rate
+    copter.pos_control->input_pos_vel_accel_z(pos, vel, accel);
+
+    // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
+    if (is_negative(pilot_climb_rate_cm) ||
+        (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
         stop();
-    }
-
-    // if takeoff climb rate is zero return
-    if (speed <= 0.0f) {
-        takeoff_climb_rate = 0.0f;
-        return;
-    }
-
-    // default take-off climb rate to maximum speed
-    takeoff_climb_rate = speed;
-
-    // if pilot's commands descent
-    if (pilot_climb_rate < 0.0f) {
-        // if overall climb rate is still positive, move to take-off climb rate
-        if (takeoff_climb_rate + pilot_climb_rate > 0.0f) {
-            takeoff_climb_rate = takeoff_climb_rate + pilot_climb_rate;
-            pilot_climb_rate = 0.0f;
-        } else {
-            // if overall is negative, move to pilot climb rate
-            pilot_climb_rate = pilot_climb_rate + takeoff_climb_rate;
-            takeoff_climb_rate = 0.0f;
-        }
-    } else { // pilot commands climb
-        // pilot climb rate is zero until it surpasses the take-off climb rate
-        if (pilot_climb_rate > takeoff_climb_rate) {
-            pilot_climb_rate = pilot_climb_rate - takeoff_climb_rate;
-        } else {
-            pilot_climb_rate = 0.0f;
-        }
     }
 }
 
@@ -165,9 +121,9 @@ void Mode::auto_takeoff_run()
     } else {
         // motors have not completed spool up yet so relax navigation and position controllers
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
-        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         pos_control->update_z_controller();
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         return;
@@ -184,7 +140,7 @@ void Mode::auto_takeoff_run()
             wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         }
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control->set_limit_accel_xy();
+        pos_control->set_externally_limited_xy();
     }
 
     // run waypoint controller
@@ -195,7 +151,8 @@ void Mode::auto_takeoff_run()
         thrustvector = wp_nav->get_thrust_vector();
     }
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     copter.pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot

@@ -181,8 +181,9 @@ private:
     AP_OSD_Setting clk{false, 0, 0};
     AP_OSD_Setting callsign{false, 0, 0};
     AP_OSD_Setting vtx_power{false, 0, 0};
-    AP_OSD_Setting hgt_abvterr{true, 23, 7};
-    AP_OSD_Setting fence{true, 14, 9};
+    AP_OSD_Setting hgt_abvterr{false, 23, 7};
+    AP_OSD_Setting fence{false, 14, 9};
+    AP_OSD_Setting rngf{false, 0, 0};
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
@@ -254,6 +255,7 @@ private:
     void draw_vtx_power(uint8_t x, uint8_t y);
     void draw_hgt_abvterr(uint8_t x, uint8_t y);
     void draw_fence(uint8_t x, uint8_t y);
+    void draw_rngf(uint8_t x, uint8_t y);
 
 
     struct {

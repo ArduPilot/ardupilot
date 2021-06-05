@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: RLL2THR
     // @DisplayName: Bank angle compensation gain
-    // @Description: Gain from bank angle to throttle to compensate for loss of airspeed from drag in turns. Set to approximately 10x the sink rate in m/s caused by a 45-degree turn. High efficiency models may need less while less efficient aircraft may need more. Should be tuned in an automatic mission with waypoints and turns greater than 90 degrees. Tune with PTCH2SV_RLL and KFF_RDDRMIX to achieve constant airspeed, constant altitude turns.
+    // @Description: Gain from bank angle to throttle to compensate for loss of airspeed from drag in turns. Set to approximately 10x the sink rate in m/s caused by a 45-degree turn. High efficiency models may need less while less efficient aircraft may need more. Should be tuned in an automatic mission with waypoints and turns greater than 90 degrees. Tune with PTCH2SRV_RLL and KFF_RDDRMIX to achieve constant airspeed, constant altitude turns.
     // @Range: 5.0 30.0
     // @Increment: 1.0
     // @User: Advanced
@@ -770,6 +770,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     if (_flags.is_gliding)
     {
         _throttle_dem = 0.0f;
+        return;
     }
 
     // Calculate additional throttle for turn drag compensation including throttle nudging

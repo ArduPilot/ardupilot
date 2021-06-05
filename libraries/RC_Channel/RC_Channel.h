@@ -257,6 +257,11 @@ public:
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
+    // pwm value under which we consider that Radio value is invalid
+    static const uint16_t RC_MIN_LIMIT_PWM = 900;
+    // pwm value above which we consider that Radio value is invalid
+    static const uint16_t RC_MAX_LIMIT_PWM = 2200;
+
     // pwm value above which we condider that Radio min value is invalid
     static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
     // pwm value under which we condider that Radio max value is invalid
@@ -398,6 +403,10 @@ public:
     static bool receiver_bind(const int dsmMode);                      // puts the receiver in bind mode if present, returns true if success
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
+
+    // returns a mask indicating which channels have overrides.  Bit 0
+    // is RC channel 1.  Beware this is not a cheap call.
+    static uint16_t get_override_mask();
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();

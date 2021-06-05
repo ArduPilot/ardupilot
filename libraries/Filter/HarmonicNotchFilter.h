@@ -82,6 +82,7 @@ public:
     enum class Options {
         DoubleNotch = 1<<0,
         DynamicHarmonic = 1<<1,
+        LoopRateUpdate = 2<<1,
     };
 
     HarmonicNotchFilterParams(void);

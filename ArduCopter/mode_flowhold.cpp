@@ -88,14 +88,12 @@ bool ModeFlowHold::init(bool ignore_checks)
         return false;
     }
 
-    // initialize vertical speeds and leash lengths
-    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
-    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // initialise position and desired velocity
+    // initialise the vertical position controller
     if (!copter.pos_control->is_active_z()) {
-        copter.pos_control->set_alt_target_to_current_alt();
-        copter.pos_control->set_desired_velocity_z(copter.inertial_nav.get_velocity_z());
+        pos_control->init_z_controller();
     }
 
     flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
@@ -229,13 +227,10 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 // should be called at 100hz or more
 void ModeFlowHold::run()
 {
-    float takeoff_climb_rate = 0.0f;
-
     update_height_estimate();
 
-    // initialize vertical speeds and acceleration
-    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
-    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -268,8 +263,8 @@ void ModeFlowHold::run()
     case AltHold_MotorStopped:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
-        copter.attitude_control->set_yaw_target_to_current_heading();
-        copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        copter.attitude_control->reset_yaw_target_and_rate();
+        copter.pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         flow_pi_xy.reset_I();
         break;
 
@@ -282,24 +277,20 @@ void ModeFlowHold::run()
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
 
-        // get take-off adjusted pilot and takeoff climb rates
-        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call position controller
-        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
-        copter.pos_control->add_takeoff_climb_rate(takeoff_climb_rate, copter.G_Dt);
+        // set position controller targets adjusted for pilot input
+        takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
     case AltHold_Landed_Ground_Idle:
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHold_Flying:
@@ -311,7 +302,7 @@ void ModeFlowHold::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        copter.pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
         break;
     }
 
@@ -345,7 +336,7 @@ void ModeFlowHold::run()
     // call attitude controller
     copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
-    // call z-axis position controller
+    // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 }
 

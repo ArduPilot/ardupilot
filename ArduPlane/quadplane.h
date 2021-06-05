@@ -60,6 +60,7 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+    void update_land_positioning(void);
 
     void update_throttle_mix(void);
     
@@ -224,10 +225,13 @@ private:
     void check_yaw_reset(void);
     
     // hold hover (for transition)
-    void hold_hover(float target_climb_rate);    
+    void hold_hover(float target_climb_rate_cms);
 
     // hold stabilize (for transition)
-    void hold_stabilize(float throttle_in);    
+    void hold_stabilize(float throttle_in);
+
+    // set climb rate in position controller
+    void set_climb_rate_cms(float target_climb_rate_cms, bool force_descend);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
@@ -240,6 +244,9 @@ private:
 
     // get pilot lean angle
     void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+
+    // get pilot throttle in for landing code. Return value on scale of 0 to 1
+    float get_pilot_land_throttle(void) const;
 
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
@@ -292,6 +299,7 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
+    void run_xy_controller(void);
 
     void setup_defaults(void);
 
@@ -462,8 +470,11 @@ private:
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
-        Vector3f target;
+        Vector3f target_cm;
+        Vector3f target_vel_cms;
         bool slow_descent:1;
+        bool pilot_correction_active;
+        bool pilot_correction_done;
     } poscontrol;
 
     struct {
@@ -611,6 +622,7 @@ private:
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
         OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
+        OPTION_THR_LANDING_CONTROL=(1<<15),
     };
 
     AP_Float takeoff_failure_scalar;

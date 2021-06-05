@@ -102,7 +102,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
   config.vm.define "bionic32", autostart: false do |bionic32|
     bionic32.vm.box = "ubuntu/bionic32"
@@ -112,7 +112,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   config.vm.define "bionic64", primary: true do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -121,7 +121,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   config.vm.define "bionic64-desktop", primary: true do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"

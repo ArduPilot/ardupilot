@@ -458,7 +458,7 @@ void Mode::make_safe_spool_down()
     case AP_Motors::SpoolState::GROUND_IDLE:
         // relax controllers during idle states
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         break;
 
     case AP_Motors::SpoolState::SPOOLING_UP:
@@ -468,7 +468,7 @@ void Mode::make_safe_spool_down()
         break;
     }
 
-    pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+    pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_z_controller();
     // we may need to move this out
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
@@ -502,14 +502,14 @@ void Mode::land_run_vertical_control(bool pause_descent)
         if (g.land_speed_high > 0) {
             max_land_descent_velocity = -g.land_speed_high;
         } else {
-            max_land_descent_velocity = pos_control->get_max_speed_down();
+            max_land_descent_velocity = pos_control->get_max_speed_down_cms();
         }
 
         // Don't speed up for landing.
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
+        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
@@ -524,14 +524,14 @@ void Mode::land_run_vertical_control(bool pause_descent)
             const float precland_min_descent_speed = 10.0f;
 
             float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy()*(max_descent_speed/precland_acceptable_error));
+            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy_cm()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
 #endif
     }
 
     // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, true);
+    pos_control->set_pos_target_z_from_climb_rate_cm(cmb_rate, true);
     pos_control->update_z_controller();
 }
 
@@ -592,13 +592,13 @@ void Mode::land_run_horizontal_control()
             target_vel_rel.x = -inertial_nav.get_velocity().x;
             target_vel_rel.y = -inertial_nav.get_velocity().y;
         }
-        pos_control->set_xy_target(target_pos.x, target_pos.y);
+        pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
         pos_control->override_vehicle_velocity_xy(-target_vel_rel);
     }
 #endif
 
     // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
     // run loiter controller
     loiter_nav->update();
@@ -622,7 +622,7 @@ void Mode::land_run_horizontal_control()
             thrust_vector.y *= ratio;
 
             // tell position controller we are applying an external limit
-            pos_control->set_limit_accel_xy();
+            pos_control->set_externally_limited_xy();
         }
     }
 
@@ -676,7 +676,7 @@ float Mode::get_pilot_desired_throttle() const
 float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 {
 #if AC_AVOID_ENABLED == ENABLED
-    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), target_rate, G_Dt);
     return target_rate;
 #else
     return target_rate;
@@ -801,8 +801,8 @@ GCS_Copter &Mode::gcs()
 // are taking off so I terms can be cleared
 void Mode::set_throttle_takeoff()
 {
-    // tell position controller to reset alt target and reset I terms
-    pos_control->init_takeoff();
+    // initialise the vertical position controller
+    pos_control->init_z_controller();
 }
 
 uint16_t Mode::get_pilot_speed_dn()

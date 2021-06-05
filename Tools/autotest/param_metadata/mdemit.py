@@ -48,16 +48,16 @@ class MDEmit(Emit):
     def emit(self, g):
         nparam = False # Flag indicating this is a parameter group with redundant information (ie RCn_, SERVOn_)
         
-        if g.name == 'ArduSub':
+        if g.reference == 'ArduSub':
             self.blacklist = sub_blacklist
         
-        if self.blacklist is not None and g.name in self.blacklist:
+        if self.blacklist is not None and g.reference in self.blacklist:
             return
         
-        pname = g.name
+        pname = g.reference
         
         # Check to see this is a parameter group with redundant information
-        rename = re.sub('\d+', 'n', g.name)
+        rename = re.sub('\d+', 'n', g.reference)
         if rename in nparams:
             if rename in self.nparams:
                 return

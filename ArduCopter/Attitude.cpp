@@ -9,7 +9,7 @@
 void Copter::update_throttle_hover()
 {
     // if not armed or landed exit
-    if (!motors->armed() || ap.land_complete) {
+    if (!motors->armed() || ap.land_complete || standby_active) {
         return;
     }
 
@@ -19,7 +19,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_desired_velocity().z)) {
+    if (!is_zero(pos_control->get_vel_desired_cms().z)) {
         return;
     }
 

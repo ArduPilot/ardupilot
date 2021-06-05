@@ -5,6 +5,10 @@
 
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 
+#ifndef HAL_LOGGING_ENABLED
+#define HAL_LOGGING_ENABLED 1
+#endif
+
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
     #ifdef HAL_LOGGING_DATAFLASH
@@ -488,7 +492,7 @@ private:
     bool _armed;
 
     // state to help us not log unneccesary RCIN values:
-    bool seen_nonzero_rcin15_or_rcin16;
+    bool should_log_rcin2;
 
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 

@@ -95,10 +95,10 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
-    const Vector3f& get_desired_velocity() {
+    const Vector3f& get_vel_desired_cms() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:
-        return pos_control->get_desired_velocity();
+        return pos_control->get_vel_desired_cms();
     }
 
 protected:
@@ -157,16 +157,14 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void get_climb_rates(float& pilot_climb_rate,
-                             float& takeoff_climb_rate);
+        void do_pilot_takeoff(float& pilot_climb_rate);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
+        float take_off_start_alt;
+        float take_off_complete_alt ;
     };
 
     static _TakeOff takeoff;
@@ -358,10 +356,24 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
+    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED; }
+
+    // Auto modes
+    enum class SubMode : uint8_t {
+        TAKEOFF,
+        WP,
+        LAND,
+        RTL,
+        CIRCLE_MOVE_TO_EDGE,
+        CIRCLE,
+        NAVGUIDED,
+        LOITER,
+        LOITER_TO_ALT,
+        NAV_PAYLOAD_PLACE,
+    };
 
     // Auto
-    AutoMode mode() const { return _mode; }
+    SubMode mode() const { return _mode; }
 
     bool loiter_start();
     void rtl_start();
@@ -437,7 +449,7 @@ private:
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
@@ -615,8 +627,6 @@ protected:
     const char *name4() const override { return "BRAK"; }
 
 private:
-
-    void init_target();
 
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
@@ -1116,15 +1126,15 @@ public:
     bool get_wp(Location &loc) override;
 
     // RTL states
-    enum RTLState {
-        RTL_Starting,
-        RTL_InitialClimb,
-        RTL_ReturnHome,
-        RTL_LoiterAtHome,
-        RTL_FinalDescent,
-        RTL_Land
+    enum class SubMode : uint8_t {
+        STARTING,
+        INITIAL_CLIMB,
+        RETURN_HOME,
+        LOITER_AT_HOME,
+        FINAL_DESCENT,
+        LAND
     };
-    RTLState state() { return _state; }
+    SubMode state() { return _state; }
 
     // this should probably not be exposed
     bool state_complete() const { return _state_complete; }
@@ -1167,7 +1177,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1222,6 +1232,15 @@ public:
 
     bool is_landing() const override;
 
+    // Safe RTL states
+    enum class SubMode : uint8_t {
+        WAIT_FOR_PATH_CLEANUP,
+        PATH_FOLLOW,
+        PRELAND_POSITION,
+        DESCEND,
+        LAND
+    };
+
 protected:
 
     const char *name() const override { return "SMARTRTL"; }
@@ -1239,7 +1258,7 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
+    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we

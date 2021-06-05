@@ -1,101 +1,56 @@
 #include "AC_PosControl_Sub.h"
 
 AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control) :
-    AC_PosControl(ahrs, inav, motors, attitude_control),
+                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt) :
+    AC_PosControl(ahrs, inav, motors, attitude_control, dt),
     _alt_max(0.0f),
     _alt_min(0.0f)
 {}
 
-/// set_alt_target_from_climb_rate - adjusts target up or down using a climb rate in cm/s
-///     should be called continuously (with dt set to be the expected time between calls)
-///     actual position target will be moved no faster than the speed_down and speed_up
-///     target will also be stopped if the motors hit their limits or leash length is exceeded
-void AC_PosControl_Sub::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
+/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
+///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+///     The kinematic path is constrained by :
+///         maximum velocity - vel_max,
+///         maximum acceleration - accel_max,
+///         time constant - tc.
+///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
+///     The time constant also defines the time taken to achieve the maximum acceleration.
+///     The time constant must be positive.
+///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+void AC_PosControl_Sub::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend)
 {
-    // adjust desired alt if motors have not hit their limits
-    // To-Do: add check of _limit.pos_down?
-    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
-        _pos_target.z += climb_rate_cms * dt;
+    // check for ekf z position reset
+    handle_ekf_z_reset();
+
+    // limit desired velocity to prevent breeching altitude limits
+    if (_alt_min < 0 && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
+        vel.z = constrain_float(vel.z,
+            sqrt_controller(_alt_min-_pos_target.z, 0.0f, _accel_max_z_cmss, 0.0f),
+            sqrt_controller(_alt_max-_pos_target.z, 0.0f, _accel_max_z_cmss, 0.0f));
     }
 
-    // do not let target alt get above limit
-    if (_alt_max < 100 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-    }
-
-    // do not let target alt get below limit
-    if (_alt_min < 0 && _alt_min < _alt_max && _pos_target.z < _alt_min) {
-        _pos_target.z = _alt_min;
-        _limit.pos_down = true;
-    }
-
-    // do not use z-axis desired velocity feed forward
-    // vel_desired set to desired climb rate for reporting and land-detector
-    _vel_desired.z = 0.0f;
-}
-
-/// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
-///     should be called continuously (with dt set to be the expected time between calls)
-///     actual position target will be moved no faster than the speed_down and speed_up
-///     target will also be stopped if the motors hit their limits or leash length is exceeded
-///     set force_descend to true during landing to allow target to move low enough to slow the motors
-void AC_PosControl_Sub::set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend)
-{
     // calculated increased maximum acceleration if over speed
-    float accel_z_cms = _accel_z_cms;
-    if (_vel_desired.z < _speed_down_cms && !is_zero(_speed_down_cms)) {
-        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_down_cms;
+    float accel_z_cms = _accel_max_z_cmss;
+    if (_vel_desired.z < _vel_max_down_cms && !is_zero(_vel_max_down_cms)) {
+        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _vel_max_down_cms;
     }
-    if (_vel_desired.z > _speed_up_cms && !is_zero(_speed_up_cms)) {
-        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _speed_up_cms;
+    if (_vel_desired.z > _vel_max_up_cms && !is_zero(_vel_max_up_cms)) {
+        accel_z_cms *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _vel_max_up_cms;
     }
-    accel_z_cms = constrain_float(accel_z_cms, 0.0f, 750.0f);
-
-    // jerk_z is calculated to reach full acceleration in 1000ms.
-    float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
-
-    float accel_z_max = MIN(accel_z_cms, safe_sqrt(2.0f*fabsf(_vel_desired.z - climb_rate_cms)*jerk_z));
-
-    _accel_last_z_cms += jerk_z * dt;
-    _accel_last_z_cms = MIN(accel_z_max, _accel_last_z_cms);
-
-    float vel_change_limit = _accel_last_z_cms * dt;
-    _vel_desired.z = constrain_float(climb_rate_cms, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
 
     // adjust desired alt if motors have not hit their limits
-    // To-Do: add check of _limit.pos_down?
-    if ((_vel_desired.z<0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
-        _pos_target.z += _vel_desired.z * dt;
+    update_pos_vel_accel_z(_pos_target, _vel_desired, _accel_desired, _dt, _limit_vector);
+
+    // prevent altitude target from breeching altitude limits
+    if (is_negative(_alt_min) && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
+        _pos_target.z = constrain_float(_pos_target.z, _alt_min, _alt_max);
     }
 
-    // do not let target alt get above limit
-    if (_alt_max < 100 && _pos_target.z > _alt_max) {
-        _pos_target.z = _alt_max;
-        _limit.pos_up = true;
-        // decelerate feed forward to zero
-        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
-    }
+    shape_vel_accel(vel.z, accel.z,
+        _vel_desired.z, _accel_desired.z,
+        _vel_max_down_cms, _vel_max_up_cms,
+        -accel_z_cms, accel_z_cms,
+        _tc_z_s, _dt);
 
-    // do not let target alt get below limit
-    if (_alt_min < 0 && _alt_min < _alt_max && _pos_target.z < _alt_min) {
-        _pos_target.z = _alt_min;
-        _limit.pos_down = true;
-        // decelerate feed forward to zero
-        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
-    }
-}
-
-/// relax_alt_hold_controllers - set all desired and targets to measured
-void AC_PosControl_Sub::relax_alt_hold_controllers()
-{
-    _pos_target.z = _inav.get_altitude();
-    _vel_desired.z = 0.0f;
-    _vel_target.z = _inav.get_velocity_z();
-    _accel_desired.z = 0.0f;
-    _accel_last_z_cms = 0.0f;
-    _flags.reset_rate_to_accel_z = true;
-    _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
-    _pid_accel_z.reset_filter();
+    update_vel_accel_z(vel, accel, _dt, _limit_vector);
 }

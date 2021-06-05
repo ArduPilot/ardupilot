@@ -210,14 +210,11 @@ void AC_AutoTune::stop()
 // initialise position controller
 bool AC_AutoTune::init_position_controller(void)
 {
-    // initialize vertical speeds and leash lengths
+    // initialize vertical maximum speeds and acceleration
     init_z_limits();
 
-    // initialise position and desired velocity
-    if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav->get_velocity_z());
-    }
+    // initialise the vertical position controller
+    pos_control->init_z_controller();
 
     return true;
 }
@@ -351,7 +348,7 @@ void AC_AutoTune::run()
     if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_alt_hold_controllers(0.0f);
+        pos_control->relax_z_controller(0.0f);
         return;
     }
 
@@ -413,7 +410,7 @@ void AC_AutoTune::run()
     }
 
     // call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate_cms, AP::scheduler().get_last_loop_time_s(), false);
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms, false);
     pos_control->update_z_controller();
 
 }

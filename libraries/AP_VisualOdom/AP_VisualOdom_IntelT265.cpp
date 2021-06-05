@@ -129,12 +129,6 @@ void AP_VisualOdom_IntelT265::rotate_attitude(Quaternion &attitude) const
 // use sensor provided attitude to calculate rotation to align sensor with AHRS/EKF attitude
 bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude)
 {
-    // fail immediately if ahrs cannot provide attitude
-    Quaternion ahrs_quat;
-    if (!AP::ahrs().get_quaternion(ahrs_quat)) {
-        return false;
-    }
-
     // do not align to ahrs if it is using us as its yaw source
     if (AP::ahrs().is_ext_nav_used_for_yaw()) {
         return false;
@@ -165,11 +159,9 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     const float sens_yaw = att_corrected.get_euler_yaw();
 
     // trim yaw by difference between ahrs and sensor yaw
-    Vector3f angle_diff;
-    ahrs_quat.angular_difference(att_corrected).to_axis_angle(angle_diff);
     const float yaw_trim_orig = _yaw_trim;
-    _yaw_trim = angle_diff.z;
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "VisOdom: yaw shifted %d to %d deg",
+    _yaw_trim = wrap_2PI(AP::ahrs().get_yaw() - sens_yaw);
+    gcs().send_text(MAV_SEVERITY_INFO, "VisOdom: yaw shifted %d to %d deg",
                     (int)degrees(_yaw_trim - yaw_trim_orig),
                     (int)wrap_360(degrees(sens_yaw + _yaw_trim)));
 

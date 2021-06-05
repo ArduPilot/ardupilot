@@ -879,6 +879,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     _state[i].registered = true;
     _state[i].priority = priority;
     instance = uint8_t(i);
+    _compass_count = 1;
     return true;
 #else
     Priority priority;
@@ -1557,11 +1558,19 @@ Compass::read(void)
         learn->update();
     }
 #endif
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         AP::logger().Write_Compass();
     }
 #endif
+
+    // Set _first_usable parameter
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_use_for_yaw[i]) {
+            _first_usable = uint8_t(i);
+            break;
+        }
+    }
     return healthy();
 }
 
@@ -1704,7 +1713,7 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return healthy(0) && use_for_yaw(0);
+    return healthy(_first_usable) && use_for_yaw(_first_usable);
 }
 
 /// return true if the specified compass can be used for yaw calculations
@@ -1769,7 +1778,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
     // Declination correction (if supplied)
     if ( fabsf(_declination) > 0.0f ) {

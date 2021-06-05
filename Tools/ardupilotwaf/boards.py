@@ -164,6 +164,19 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
+        if cfg.env.COVERAGE:
+            env.CFLAGS += [
+                '-fprofile-arcs',
+                '-ftest-coverage',
+            ]
+            env.CXXFLAGS += [
+                '-fprofile-arcs',
+                '-ftest-coverage',
+            ]
+            env.LINKFLAGS += [
+                '-lgcov',
+                '-coverage',
+            ]
 
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
@@ -544,7 +557,7 @@ class sitl_periph_gps(sitl):
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
             HAL_NO_GCS = 1,
-            HAL_NO_LOGGING = 1,
+            HAL_LOGGING_ENABLED = 0,
         )
         # libcanard is written for 32bit platforms
         env.CXXFLAGS += [

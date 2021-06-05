@@ -6,8 +6,8 @@ void Copter::update_ground_effect_detector(void)
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
         gndeffect_state.touchdown_expected = false;
-        ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
-        ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
+        ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
+        ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
         return;
     }
 
@@ -15,10 +15,10 @@ void Copter::update_ground_effect_detector(void)
     uint32_t tnow_ms = millis();
     float xy_des_speed_cms = 0.0f;
     float xy_speed_cms = 0.0f;
-    float des_climb_rate_cms = pos_control->get_desired_velocity().z;
+    float des_climb_rate_cms = pos_control->get_vel_desired_cms().z;
 
     if (pos_control->is_active_xy()) {
-        Vector3f vel_target = pos_control->get_vel_target();
+        Vector3f vel_target = pos_control->get_vel_target_cms();
         vel_target.z = 0.0f;
         xy_des_speed_cms = vel_target.length();
     }
@@ -31,8 +31,11 @@ void Copter::update_ground_effect_detector(void)
 
     // takeoff logic
 
-    // if we are armed and haven't yet taken off
-    if (motors->armed() && ap.land_complete && !gndeffect_state.takeoff_expected) {
+    if (flightmode->mode_number() == Mode::Number::THROW) {
+        // throw mode never wants the takeoff expected EKF code
+        gndeffect_state.takeoff_expected = false;
+    } else if (motors->armed() && ap.land_complete) {
+        // if we are armed and haven't yet taken off then we expect an imminent takeoff
         gndeffect_state.takeoff_expected = true;
     }
 
@@ -64,8 +67,8 @@ void Copter::update_ground_effect_detector(void)
     gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;
 
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
-    ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
-    ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
+    ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
+    ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
 }
 
 // update ekf terrain height stable setting
@@ -76,6 +79,7 @@ void Copter::update_ekf_terrain_height_stable()
     // set to false if no position estimate
     if (!position_ok() && !ekf_has_relative_position()) {
         ahrs.set_terrain_hgt_stable(false);
+        return;
     }
 
     // consider terrain height stable if vehicle is taking off or landing

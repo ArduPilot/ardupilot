@@ -270,15 +270,6 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
-    // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-    // causes the EKF to start the EKF-GSF yaw estimator
-    void setTakeoffExpected(bool val);
-
-    // called by vehicle code to specify that a touchdown is expected to happen
-    // causes the EKF to compensate for expected barometer errors due to ground effect
-    void setTouchdownExpected(bool val);
-
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -448,6 +439,7 @@ private:
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
+    AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -478,7 +470,6 @@ private:
     const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
     const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
     const uint32_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
-    const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec

@@ -1035,12 +1035,13 @@ private:
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static const uint8_t _status_capacity = 5;
+    static const uint8_t _status_capacity = 7;
 #else
     static const uint8_t _status_capacity = 30;
 #endif
 
-    // queue of outgoing statustext messages
+    // queue of outgoing statustext messages.  Each entry consumes 58
+    // bytes of RAM on stm32
     StatusTextQueue _statustext_queue{_status_capacity};
 
     // true if we have already allocated protocol objects:

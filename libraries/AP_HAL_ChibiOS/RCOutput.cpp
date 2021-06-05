@@ -465,7 +465,7 @@ void RCOutput::enable_ch(uint8_t chan)
     pwm_group *grp = find_chan(chan, i);
     if (grp) {
         en_mask |= 1U << (chan - chan_offset);
-        grp->ch_mask |= 1U << chan;
+        grp->en_mask |= 1U << (chan - chan_offset);
     }
 }
 
@@ -476,7 +476,7 @@ void RCOutput::disable_ch(uint8_t chan)
     if (grp) {
         pwmDisableChannel(grp->pwm_drv, i);
         en_mask &= ~(1U<<(chan - chan_offset));
-        grp->ch_mask &= ~(1U << chan);
+        grp->en_mask &= ~(1U << (chan - chan_offset));
     }
 }
 

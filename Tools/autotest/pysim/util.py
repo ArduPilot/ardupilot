@@ -96,10 +96,12 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, math_check_indexes=False, extra_args=[]):
+def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, extra_args=[]):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
+    if coverage:
+        cmd_configure.append('--coverage')
     if math_check_indexes:
         cmd_configure.append('--enable-math-check-indexes')
     if j is not None:
@@ -114,7 +116,7 @@ def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
 
-def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, extra_configure_args=[]):
+def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
     """Build desktop SITL."""
 
     # first configure
@@ -123,6 +125,7 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
                       j=j,
                       debug=debug,
                       math_check_indexes=math_check_indexes,
+                      coverage=coverage,
                       extra_args=extra_configure_args)
 
     # then clean
@@ -137,9 +140,15 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
     return True
 
 
-def build_examples(board, j=None, debug=False, clean=False):
+def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board,
+                      j=j,
+                      debug=debug,
+                      math_check_indexes=math_check_indexes,
+                      coverage=coverage,
+                      extra_args=extra_configure_args)
 
     # then clean
     if clean:
@@ -163,9 +172,15 @@ def build_replay(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
-def build_tests(board, j=None, debug=False, clean=False):
+def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board,
+                      j=j,
+                      debug=debug,
+                      math_check_indexes=math_check_indexes,
+                      coverage=coverage,
+                      extra_args=extra_configure_args)
 
     # then clean
     if clean:
