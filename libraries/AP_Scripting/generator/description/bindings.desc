@@ -372,3 +372,7 @@ singleton hal.gpio method pinMode void uint8_t 0 UINT8_MAX uint8_t 0 1
 singleton hal.analogin alias analog
 singleton hal.analogin literal
 singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
+
+include AP_RTC/JitterCorrection.h
+userdata JitterCorrection new uint16_t 0 UINT16_MAX
+userdata JitterCorrection method correct_offboard_timestamp_msec uint32_t uint32_t 0U UINT32_MAX uint32_t 0U UINT32_MAX
