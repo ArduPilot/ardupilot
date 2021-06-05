@@ -12,6 +12,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+static const uint32_t EKF_INIT_TIME_MS = 2000; // EKF initialisation requires this many milliseconds of good sensor data
+static const uint32_t EKF_INIT_SENSOR_MIN_UPDATE_MS = 500; // Sensor must update within this many ms during EKF init, else init will fail
+static const uint32_t LANDING_TARGET_TIMEOUT_MS = 2000; // Sensor must update within this many ms, else prec landing will be switched off
+
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: ENABLED
     // @DisplayName: Precision Land enabled/disabled
@@ -220,7 +224,12 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
 bool AC_PrecLand::target_acquired()
 {
-    _target_acquired = _target_acquired && (AP_HAL::millis()-_last_update_ms) < 2000;
+    if ((AP_HAL::millis()-_last_update_ms) > LANDING_TARGET_TIMEOUT_MS) {
+        // not had a sensor update since a long time
+        // probably lost the target
+        _estimator_initialized = false;
+        _target_acquired = false;
+    }
     return _target_acquired;
 }
 
@@ -328,7 +337,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
-                if (!target_acquired()) {
+                if (!_estimator_initialized) {
+                    // start init of EKF. We will let the filter consume the data for a while before it available for consumption
                     // reset filter state
                     if (inertial_data_delayed->inertialNavVelocityValid) {
                         _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
@@ -338,7 +348,9 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                         _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
                     }
                     _last_update_ms = AP_HAL::millis();
-                    _target_acquired = true;
+                    _estimator_init_ms = AP_HAL::millis();
+                    // we have initialized the estimator but will not use the values for sometime so that EKF settles down
+                    _estimator_initialized = true;
                 } else {
                     float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
                     float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
@@ -347,12 +359,14 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                         _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
                         _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
                         _last_update_ms = AP_HAL::millis();
-                        _target_acquired = true;
                     } else {
                         _outlier_reject_count++;
                     }
                 }
             }
+
+            // check EKF was properly initialized when the sensor detected a landing target
+            check_ekf_init_timeout();
 
             // Output prediction
             if (target_acquired()) {
@@ -364,6 +378,24 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 run_output_prediction();
             }
             break;
+        }
+    }
+}
+
+
+// check if EKF got the time to initialize when the landing target was first detected
+// Expects sensor to update within EKF_INIT_SENSOR_MIN_UPDATE_MS milliseconds till EKF_INIT_TIME_MS milliseconds have passed
+// after this period landing target estimates can be used by vehicle
+void AC_PrecLand::check_ekf_init_timeout()
+{
+    if (!target_acquired() && _estimator_initialized) {
+        // we have just got the target in sight
+        if (AP_HAL::millis()-_last_update_ms > EKF_INIT_SENSOR_MIN_UPDATE_MS) {
+            // we have lost the target, not enough readings to initialize the EKF
+            _estimator_initialized = false;
+        } else if (AP_HAL::millis()-_estimator_init_ms > EKF_INIT_TIME_MS) {
+            // the target has been visible for a while, EKF should now have initialized to a good value
+            _target_acquired = true;
         }
     }
 }
