@@ -110,6 +110,7 @@ Changes from 4.0.7
     m) Smart Audio
     n) SMBus batteries up to 12 cells
     o) USD1 CAN radar
+    p) Daiwa Winch
 11) Harmonic Notch Improvements
     a) Bi-directional dshot support
     b) Double notch support (see INS_HNTCH_OPTS = 1)
