@@ -42,7 +42,6 @@ private:
     void init(void);
     void detect_servos();
 
-    uint16_t update_crc(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
     void add_stuffing(uint8_t *packet);
     void send_packet(uint8_t *txpacket);
     void read_bytes();
