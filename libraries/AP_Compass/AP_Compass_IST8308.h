@@ -48,7 +48,6 @@ private:
     bool init();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    AP_HAL::Util::perf_counter_t _perf_xfer_err;
 
     enum Rotation _rotation;
     uint8_t _instance;
