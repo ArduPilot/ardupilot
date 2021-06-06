@@ -53,11 +53,9 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SITL,  batt_capacity_ah,  0),
-    AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
-    AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
+    AP_SUBGROUPEXTENSION("",      23, SITL,  var_rng),
     AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
-    AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
     AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
@@ -71,7 +69,6 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SITL,  var_ins),
-    AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SITL,  engine_fail,  0),
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SITL, ShipSim),
@@ -438,6 +435,14 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SITL, AP_InertialSensor::TCal),
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo SITL::var_rng[] = {
+    AP_GROUPINFO("SONAR_GLITCH",  1, SITL,  sonar_glitch, 0),
+    AP_GROUPINFO("SONAR_RND",     2, SITL,  sonar_noise, 0),
+    AP_GROUPINFO("SONAR_SCALE",   3, SITL,  sonar_scale, 12.1212f),
+    AP_GROUPINFO("RGFD_POS",     4, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPEND
 };
     
