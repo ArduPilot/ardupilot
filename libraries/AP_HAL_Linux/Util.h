@@ -4,7 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat.h"
-#include "Perf.h"
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #include "ToneAlarm_Disco.h"
 #endif
@@ -87,26 +86,6 @@ public:
      * file for each call.
      */
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
-
-    perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
-    {
-        return Perf::get_singleton()->add(t, name);
-    }
-
-    void perf_begin(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->begin(perf);
-    }
-
-    void perf_end(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->end(perf);
-    }
-
-    void perf_count(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->count(perf);
-    }
 
     int get_hw_arm32();
 
