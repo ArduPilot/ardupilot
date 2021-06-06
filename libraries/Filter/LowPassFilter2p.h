@@ -34,7 +34,9 @@ public:
         float b1;
         float b2;
     };
-  
+
+    CLASS_NO_COPY(DigitalBiquadFilter);
+
     DigitalBiquadFilter();
 
     T apply(const T &sample, const struct biquad_params &params);
@@ -62,6 +64,8 @@ public:
     T apply(const T &sample);
     void reset(void);
     void reset(const T &value);
+
+    CLASS_NO_COPY(LowPassFilter2p);
 
 protected:
     struct DigitalBiquadFilter<T>::biquad_params _params;
