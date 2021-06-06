@@ -264,8 +264,8 @@ private:
 
     // cruise throttle and speed learning
     typedef struct {
-        LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);
-        LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
+        LowPassFilterFloat speed_filt{2.0f};
+        LowPassFilterFloat throttle_filt{2.0f};
         uint32_t learn_start_ms;
         uint32_t log_count;
     } cruise_learn_t;
