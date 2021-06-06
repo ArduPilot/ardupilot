@@ -5830,7 +5830,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.wait_rtl_complete()
 
-    def fly_rangefinder_drivers_fly(self, rangefinders):
+    def fly_rangefinder_drivers_fly(self, rangefinders, range_max):
         '''ensure rangefinder gives height-above-ground'''
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
@@ -5866,7 +5866,54 @@ class AutoTestCopter(AutoTest):
                     "distance sensor.current_distance (%f) (%s) disagrees with global-position-int.relative_alt (%s)" %
                     (ds.current_distance/100.0, name, gpi.relative_alt/1000.0))
 
-        self.land_and_disarm()
+        # test Out of Range
+        self.start_subtest("Testing Rangefinder out of range value")
+        self.hover()
+        self.change_mode('LOITER')
+        self.context_push()
+        for i in range(0, len(rangefinders)):
+            if range_max[i] > 0:
+                name = rangefinders[i]
+                self.progress("i=%u (%s)" % (i, name))
+                serial_param_name = "RNGFND%u_MAX_CM" % (i+1)
+                self.set_parameter(serial_param_name, range_max[i] - 300)
+                sim_serial_param_name = "SIM_RF_%u_HEALTH" % (i+4)
+                self.set_parameter(sim_serial_param_name, 1)  # NODATA
+                ds = self.mav.recv_match(
+                    type="DISTANCE_SENSOR",
+                    timeout=2,
+                    blocking=True,
+                    condition="DISTANCE_SENSOR.id==%u" % i
+                )
+                if ds is None:
+                    raise NotAchievedException("Did not receive DISTANCE_SENSOR message for id==%u (%s)" % (i, name))
+                self.progress("Got: %s" % str(ds))
+
+                if abs(ds.current_distance - range_max[i]) > 100:
+                    raise NotAchievedException(
+                        "distance sensor.current_distance (%f) (%s) disagrees with sensor limit (%d)" %
+                        (ds.current_distance, name, range_max[i]))
+
+                self.set_parameter(serial_param_name, range_max[i] + 300)
+                sim_serial_param_name = "SIM_RF_%u_HEALTH" % (i+4)
+                self.set_parameter(sim_serial_param_name, 3)  # OutOfRangeHigh
+                ds = self.mav.recv_match(
+                    type="DISTANCE_SENSOR",
+                    timeout=2,
+                    blocking=True,
+                    condition="DISTANCE_SENSOR.id==%u" % i
+                )
+                if ds is None:
+                    raise NotAchievedException("Did not receive DISTANCE_SENSOR message for id==%u (%s)" % (i, name))
+                self.progress("Got: %s" % str(ds))
+                if abs(ds.current_distance - (range_max[i] + 100 + 300)) > 100:  # +100 coming for the driver limit
+                    raise NotAchievedException(
+                        "distance sensor.current_distance (%f) (%s) disagrees with sensor limit (%d)" %
+                        (ds.current_distance, name, (range_max[i] + 100 + 300)))
+
+        self.land_and_disarm(timeout=100)
+        self.zero_throttle()
+        self.context_pop()
 
         self.progress("Ensure RFND messages in log")
         if not self.current_onboard_log_contains_message("RFND"):
@@ -6264,21 +6311,22 @@ class AutoTestCopter(AutoTest):
     def fly_rangefinder_drivers(self):
         self.set_parameter("RTL_ALT", 500)
         self.set_parameter("RTL_ALT_TYPE", 1)
+        # (Driver Name, driver num, max alt cm(default 1000))
         drivers = [
-            ("lightwareserial", 8),  # autodetected between this and -binary
-            ("lightwareserial-binary", 8),
-            ("ulanding_v0", 11),
-            ("ulanding_v1", 11),
-            ("leddarone", 12),
-            ("maxsonarseriallv", 13),
-            ("nmea", 17),
-            ("wasp", 18),
-            ("benewake_tf02", 19),
-            ("blping", 23),
-            ("benewake_tfmini", 20),
-            ("lanbao", 26),
-            ("benewake_tf03", 27),
-            ("gyus42v2", 31),
+            ("lightwareserial", 8, 10000),  # autodetected between this and -binary
+            ("lightwareserial-binary", 8, -1),
+            ("ulanding_v0", 11, -1),
+            ("ulanding_v1", 11, -1),
+            ("leddarone", 12, -1),
+            ("maxsonarseriallv", 13, -1),
+            ("nmea", 17, -1),
+            ("wasp", 18, -1),
+            ("benewake_tf02", 19, 2200),
+            ("blping", 23, -1),
+            ("benewake_tfmini", 20, 1200),
+            ("lanbao", 26, -1),
+            ("benewake_tf03", 27, 18000),
+            ("gyus42v2", 31, -1),
         ]
         while len(drivers):
             do_drivers = drivers[0:3]
@@ -6288,32 +6336,32 @@ class AutoTestCopter(AutoTest):
                                                          (1, '--uartF', 5),
                                                          (2, '--uartG', 6)]:
                 if len(do_drivers) > offs:
-                    (sim_name, rngfnd_param_value) = do_drivers[offs]
+                    (sim_name, rngfnd_param_value, _) = do_drivers[offs]
                     command_line_args.append("%s=sim:%s" %
                                              (cmdline_argument, sim_name))
                     serial_param_name = "SERIAL%u_PROTOCOL" % serial_num
                     self.set_parameter(serial_param_name, 9) # rangefinder
                     self.set_parameter("RNGFND%u_TYPE" % (offs+1), rngfnd_param_value)
             self.customise_SITL_commandline(command_line_args)
-            self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+            self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers], [x[2] for x in do_drivers])
 
         self.fly_rangefinder_mavlink()
         self.fly_rangefinder_sitl()
 
         i2c_drivers = [
-            ("maxbotixi2cxl", 2),
+            ("maxbotixi2cxl", 2, -1),
         ]
         while len(i2c_drivers):
             do_drivers = i2c_drivers[0:9]
             i2c_drivers = i2c_drivers[9:]
             count = 1
             for d in do_drivers:
-                (sim_name, rngfnd_param_value) = d
+                (sim_name, rngfnd_param_value, _) = d
                 self.set_parameter("RNGFND%u_TYPE" % count, rngfnd_param_value)
                 count += 1
 
             self.reboot_sitl()
-            self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+            self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers], [x[2] for x in do_drivers])
 
     def fly_ship_takeoff(self):
         # test ship takeoff
