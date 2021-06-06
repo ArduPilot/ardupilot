@@ -839,7 +839,17 @@ void handle_userdata(void) {
     }
     node->alias = (char *)allocate(strlen(alias) + 1);
     strcpy(node->alias, alias);
-  
+
+  } else if (strcmp(type, keyword_depends) == 0) {
+      if (node->dependency != NULL) {
+        error(ERROR_SINGLETON, "Userdata only support a single depends");
+      }
+      char *depends = strtok(NULL, "");
+      if (depends == NULL) {
+        error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
+      }
+      string_copy(&(node->dependency), depends);
+
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
