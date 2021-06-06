@@ -979,6 +979,16 @@ void handle_ap_object(void) {
     node->flags |= UD_FLAG_SEMAPHORE_POINTER;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
+  } else if (strcmp(type, keyword_depends) == 0) {
+      if (node->dependency != NULL) {
+        error(ERROR_SINGLETON, "AP_Objects only support a single depends");
+      }
+      char *depends = strtok(NULL, "");
+      if (depends == NULL) {
+        error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
+      }
+      string_copy(&(node->dependency), depends);
+
   } else {
     error(ERROR_SINGLETON, "AP_Objects only support aliases, methods or semaphore keyowrds (got %s)", type);
   }
@@ -1108,8 +1118,10 @@ void emit_userdata_declarations(void) {
 void emit_ap_object_declarations(void) {
   struct userdata * node = parsed_ap_objects;
   while (node) {
+    start_dependency(header, node->dependency);
     fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
     fprintf(header, "%s ** check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
+    end_dependency(header, node->dependency);
     node = node->next;
   }
 }
@@ -2010,7 +2022,9 @@ void emit_sandbox(void) {
   }
   data = parsed_ap_objects;
   while (data) {
+    start_dependency(source, data->dependency);
     fprintf(source, "    {\"%s\", new_%s},\n", data->name, data->sanatized_name);
+    end_dependency(source, data->dependency);
     data = data->next;
   }
   fprintf(source, "};\n\n");
