@@ -22,7 +22,6 @@ public:
     AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
         AP_Logger_Backend(front, writer),
         _max_blocks_per_send_blocks(8)
-        ,_perf_packing(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DM_packing"))
         {
             _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
             // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
@@ -170,10 +169,6 @@ private:
     void start_new_log(void) override {
         return;
     }
-    // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_errors;
-    AP_HAL::Util::perf_counter_t  _perf_packing;
-    AP_HAL::Util::perf_counter_t  _perf_overruns;
 
     HAL_Semaphore semaphore;
 };
