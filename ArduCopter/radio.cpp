@@ -84,9 +84,9 @@ void Copter::read_radio()
 
     if (rc().read_input()) {
         ap.new_radio_frame = true;
-
-        set_throttle_and_failsafe(channel_throttle->get_radio_in());
-        set_throttle_zero_flag(channel_throttle->get_control_in());
+        int16_t throttle_radio_in = channel_throttle->get_radio_in();
+        set_throttle_and_failsafe(throttle_radio_in);
+        set_throttle_zero_flag(throttle_radio_in);
 
         // RC receiver must be attached if we've just got input
         ap.rc_receiver_present = true;
@@ -95,7 +95,7 @@ void Copter::read_radio()
         radio_passthrough_to_motors();
 
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(channel_throttle->get_control_in(), dt);
+        rc_throttle_control_in_filter.apply(throttle_radio_in, dt);
         last_radio_update_ms = tnow_ms;
         return;
     }
