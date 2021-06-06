@@ -111,6 +111,7 @@ private:
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
+    AP_Float                    _cutoff_filt;
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
@@ -126,6 +127,9 @@ private:
 
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
+
+    LowPassFilterVector2f       *_filter_output_pos;
+    LowPassFilterVector2f       *_filter_output_vel;
 
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {
