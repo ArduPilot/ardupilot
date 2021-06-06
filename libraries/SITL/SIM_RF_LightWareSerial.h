@@ -36,11 +36,30 @@ namespace SITL {
 class RF_LightWareSerial : public SerialRangeFinder {
 public:
     RF_LightWareSerial(uint8_t port_num): SerialRangeFinder(port_num) {};
-
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 
-    void update(float range) override;
+    void update(float range, uint8_t health) override;
 
+    float out_of_range;
+    void set_health(RangeFinder::Status health) override
+    {
+        out_of_range = 1.0f;
+        switch (health) {
+        case RangeFinder::Status::NotConnected :
+            break;
+
+        case RangeFinder::Status::OutOfRangeLow :
+            break;
+
+        case RangeFinder::Status::NoData :
+        case RangeFinder::Status::OutOfRangeHigh :
+            out_of_range = -1.0f;
+            break;
+
+        case RangeFinder::Status::Good :
+            break;
+        }
+    };
 private:
 
     bool check_synced();

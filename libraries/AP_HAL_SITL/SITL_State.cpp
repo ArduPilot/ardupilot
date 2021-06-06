@@ -643,49 +643,49 @@ void SITL_State::_fdm_input_local(void)
                       attitude);
     }
     if (benewake_tf02 != nullptr) {
-        benewake_tf02->update(sitl_model->rangefinder_range());
+        benewake_tf02->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[benewake_tf02->get_port()]);
     }
     if (benewake_tf03 != nullptr) {
-        benewake_tf03->update(sitl_model->rangefinder_range());
+        benewake_tf03->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[benewake_tf03->get_port()]);
     }
     if (benewake_tfmini != nullptr) {
-        benewake_tfmini->update(sitl_model->rangefinder_range());
+        benewake_tfmini->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[benewake_tfmini->get_port()]);
     }
     if (lightwareserial != nullptr) {
-        lightwareserial->update(sitl_model->rangefinder_range());
+        lightwareserial->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[lightwareserial->get_port()]);
     }
     if (lightwareserial_binary != nullptr) {
-        lightwareserial_binary->update(sitl_model->rangefinder_range());
+        lightwareserial_binary->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[lightwareserial_binary->get_port()]);
     }
     if (lanbao != nullptr) {
-        lanbao->update(sitl_model->rangefinder_range());
+        lanbao->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[lanbao->get_port()]);
     }
     if (blping != nullptr) {
-        blping->update(sitl_model->rangefinder_range());
+        blping->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[blping->get_port()]);
     }
     if (leddarone != nullptr) {
-        leddarone->update(sitl_model->rangefinder_range());
+        leddarone->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[leddarone->get_port()]);
     }
     if (ulanding_v0 != nullptr) {
-        ulanding_v0->update(sitl_model->rangefinder_range());
+        ulanding_v0->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[ulanding_v0->get_port()]);
     }
     if (ulanding_v1 != nullptr) {
-        ulanding_v1->update(sitl_model->rangefinder_range());
+        ulanding_v1->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[ulanding_v1->get_port()]);
     }
     if (maxsonarseriallv != nullptr) {
-        maxsonarseriallv->update(sitl_model->rangefinder_range());
+        maxsonarseriallv->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[maxsonarseriallv->get_port()]);
     }
     if (wasp != nullptr) {
-        wasp->update(sitl_model->rangefinder_range());
+        wasp->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[wasp->get_port()]);
     }
     if (nmea != nullptr) {
-        nmea->update(sitl_model->rangefinder_range());
+        nmea->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[nmea->get_port()]);
     }
     if (rf_mavlink != nullptr) {
-        rf_mavlink->update(sitl_model->rangefinder_range());
+        rf_mavlink->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[rf_mavlink->get_port()]);
     }
     if (gyus42v2 != nullptr) {
-        gyus42v2->update(sitl_model->rangefinder_range());
+        gyus42v2->update(sitl_model->rangefinder_range(), _sitl->rangefinder_serial_health[gyus42v2->get_port()]);
     }
 
     if (frsky_d != nullptr) {

@@ -24,7 +24,7 @@ uint32_t RF_Benewake::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t b
 {
     buffer[0] = 0x59;
     buffer[1] = 0x59;
-    buffer[3] = alt_cm >> 8;
+    buffer[3] = (out_of_range + alt_cm) >> 8;
     buffer[2] = alt_cm & 0xff;
     buffer[4] = byte4();
     buffer[5] = byte5();

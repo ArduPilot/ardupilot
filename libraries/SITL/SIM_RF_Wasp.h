@@ -36,8 +36,7 @@ namespace SITL {
 class RF_Wasp : public SerialRangeFinder {
 public:
     RF_Wasp(uint8_t port_num): SerialRangeFinder(port_num) {};
-
-    void update(float range) override;
+    void update(float range, uint8_t health) override;
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 

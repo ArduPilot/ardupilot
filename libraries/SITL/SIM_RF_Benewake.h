@@ -27,7 +27,26 @@ public:
     RF_Benewake(uint8_t port_num): SerialRangeFinder(port_num) {};
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
+    uint16_t out_of_range;
 
+    void set_health(RangeFinder::Status health) override
+    {
+        out_of_range = 0;
+        switch (health) {
+        case RangeFinder::Status::NotConnected :
+            break;
+
+        case RangeFinder::Status::OutOfRangeLow :
+            break;
+        case RangeFinder::Status::NoData :
+        case RangeFinder::Status::OutOfRangeHigh :
+            out_of_range = 32768;
+            break;
+
+        case RangeFinder::Status::Good :
+            break;
+        }
+    };
 private:
 
     virtual uint8_t byte4() const = 0;
