@@ -177,12 +177,12 @@ void AP_PiccoloCAN::loop()
         // Calculate the output rate for ESC commands
         _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
 
-        uint16_t escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
+        uint16_t escCmdRateMs = 1000 / _esc_hz;
 
         // Calculate the output rate for servo commands
         _srv_hz = constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
 
-        uint16_t servoCmdRateMs = (uint16_t) ((float) 1000 / _srv_hz);
+        uint16_t servoCmdRateMs = 1000 / _srv_hz;
 
         uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
