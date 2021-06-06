@@ -12,6 +12,8 @@ public:
     // Constructor
     AC_PI(float initial_p, float initial_i, float initial_imax);
 
+    CLASS_NO_COPY(AC_PI);
+
     // update controller
     float update(float measurement, float target, float dt);
 
