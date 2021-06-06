@@ -30,17 +30,23 @@ AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial(
     RangeFinder::RangeFinder_State &_state,
     AP_RangeFinder_Params &_params,
     uint8_t serial_instance) :
+    _serial_instance(serial_instance),
     AP_RangeFinder_Backend(_state, _params)
 {
-    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
+
+}
+
+void AP_RangeFinder_Backend_Serial::init_serial()
+{
+    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, _serial_instance);
     if (uart != nullptr) {
-        uart->begin(initial_baudrate(serial_instance), rx_bufsize(), tx_bufsize());
+        uart->begin(initial_baudrate(), rx_bufsize(), tx_bufsize());
     }
 }
 
-uint32_t AP_RangeFinder_Backend_Serial::initial_baudrate(const uint8_t serial_instance) const
+uint32_t AP_RangeFinder_Backend_Serial::initial_baudrate() const
 {
-    return AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
+    return AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, _serial_instance);
 }
 
 /*
