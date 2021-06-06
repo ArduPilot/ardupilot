@@ -156,8 +156,8 @@ void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
 // loop to send output to CAN devices in background thread
 void AP_PiccoloCAN::loop()
 {
-    AP_HAL::CANFrame txFrame;
-    AP_HAL::CANFrame rxFrame;
+    AP_HAL::CANFrame txFrame {};
+    AP_HAL::CANFrame rxFrame {};
 
     uint16_t esc_tx_counter = 0;
     uint16_t servo_tx_counter = 0;
@@ -423,7 +423,7 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 // send servo messages over CAN
 void AP_PiccoloCAN::send_servo_messages(void)
 {
-    AP_HAL::CANFrame txFrame;
+    AP_HAL::CANFrame txFrame {};
 
     uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
@@ -492,7 +492,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
 // send ESC messages over CAN
 void AP_PiccoloCAN::send_esc_messages(void)
 {
-    AP_HAL::CANFrame txFrame;
+    AP_HAL::CANFrame txFrame {};
 
     uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
