@@ -472,6 +472,7 @@ public:
     // Sailboat sim only
     AP_Int8 sail_type;
 
+    AP_Int8 rangefinder_serial_health[9];
 };
 
 } // namespace SITL

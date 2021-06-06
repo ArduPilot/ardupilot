@@ -443,6 +443,15 @@ const AP_Param::GroupInfo SITL::var_rng[] = {
     AP_GROUPINFO("SONAR_RND",     2, SITL,  sonar_noise, 0),
     AP_GROUPINFO("SONAR_SCALE",   3, SITL,  sonar_scale, 12.1212f),
     AP_GROUPINFO("RGFD_POS",     4, SITL,  rngfnd_pos_offset, 0),
+    AP_GROUPINFO("RF_0_HEALTH",     5, SITL,  rangefinder_serial_health[0], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_1_HEALTH",     6, SITL,  rangefinder_serial_health[1], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_2_HEALTH",     7, SITL,  rangefinder_serial_health[2], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_3_HEALTH",     8, SITL,  rangefinder_serial_health[3], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_4_HEALTH",     9, SITL,  rangefinder_serial_health[4], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_5_HEALTH",     10, SITL,  rangefinder_serial_health[5], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_6_HEALTH",     11, SITL,  rangefinder_serial_health[6], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_7_HEALTH",     12, SITL,  rangefinder_serial_health[7], (int8_t)RangeFinder::Status::Good),
+    AP_GROUPINFO("RF_8_HEALTH",     13, SITL,  rangefinder_serial_health[8], (int8_t)RangeFinder::Status::Good),
     AP_GROUPEND
 };
     
