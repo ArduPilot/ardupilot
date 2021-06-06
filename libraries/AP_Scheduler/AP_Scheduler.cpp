@@ -157,18 +157,6 @@ void AP_Scheduler::run(uint32_t time_available)
     uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;
 
-    if (_debug > 1 && _perf_counters == nullptr) {
-        _perf_counters = new AP_HAL::Util::perf_counter_t[_num_tasks];
-        if (_perf_counters != nullptr) {
-            for (uint8_t i=0; i<_num_unshared_tasks; i++) {
-                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _tasks[i].name);
-            }
-            for (uint8_t i=_num_unshared_tasks; i<_num_tasks; i++) {
-                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _common_tasks[i].name);
-            }
-        }
-    }
-    
     for (uint8_t i=0; i<_num_tasks; i++) {
         const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
 
@@ -204,16 +192,10 @@ void AP_Scheduler::run(uint32_t time_available)
         // run it
         _task_time_started = now;
         hal.util->persistent_data.scheduler_task = i;
-        if (_debug > 1 && _perf_counters && _perf_counters[i]) {
-            hal.util->perf_begin(_perf_counters[i]);
-        }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         fill_nanf_stack();
 #endif
         task.function();
-        if (_debug > 1 && _perf_counters && _perf_counters[i]) {
-            hal.util->perf_end(_perf_counters[i]);
-        }
         hal.util->persistent_data.scheduler_task = -1;
 
         // record the tick counter when we ran. This drives
