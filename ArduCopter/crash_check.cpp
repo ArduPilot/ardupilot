@@ -282,7 +282,7 @@ void Copter::parachute_check()
 
     if (standby_active) {
         // in standby mode check for large angles
-        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > MAX(parachute.max_rp_ang(),copter.aparm.angle_max)) {
+        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > MAX(parachute.max_rp_ang(),copter.aparm.angle_max*0.01f)) {
             control_loss_count++;
         } else if (control_loss_count > 0) {
             control_loss_count--;
