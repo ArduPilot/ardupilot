@@ -180,7 +180,7 @@ AP_GyroFFT::AP_GyroFFT()
 }
 
 // initialize the FFT parameters and engine
-void AP_GyroFFT::init(uint32_t target_looptime_us)
+void AP_GyroFFT::init(uint16_t loop_rate_hz)
 {
     // if FFT analysis is not enabled we don't want to allocate any of the associated resources
     if (!_enable) {
@@ -226,7 +226,6 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
     if (_sample_mode == 0) {
         _fft_sampling_rate_hz = _ins->get_raw_gyro_rate_hz();
     } else {
-        const uint16_t loop_rate_hz = 1000*1000UL / target_looptime_us;
         _fft_sampling_rate_hz = loop_rate_hz / _sample_mode;
         for (uint8_t axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
             if (!_downsampled_gyro_data[axis].set_size(_window_size + _samples_per_frame)) {
