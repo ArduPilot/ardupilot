@@ -21,7 +21,9 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
+#ifndef EFI_ENABLED
 #define EFI_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
 
 #if EFI_ENABLED
 #include "AP_EFI_Backend.h"
