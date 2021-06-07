@@ -3,8 +3,5 @@
 
 def build(bld):
     bld.ap_example(
-        use=['ap','JEDEC_libs'],
+        use='ap',
     )
-    bld.ap_stlib(name= 'JEDEC_libs',
-                ap_vehicle='AP_Periph',
-                ap_libraries= ['AP_FlashIface'])
