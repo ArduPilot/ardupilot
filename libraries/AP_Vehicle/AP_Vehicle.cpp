@@ -152,7 +152,7 @@ void AP_Vehicle::setup()
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
-    gyro_fft.init(AP::scheduler().get_loop_period_us());
+    gyro_fft.init(AP::scheduler().get_loop_rate_hz());
 #endif
 #if HAL_RUNCAM_ENABLED
     runcam.init();
