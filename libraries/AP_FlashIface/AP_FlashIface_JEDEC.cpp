@@ -24,9 +24,11 @@
 #include "AP_FlashIface_JEDEC.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL_ChibiOS/QSPIDevice.h>
+#ifdef HAL_BOOTLOADER_BUILD
 #include "../../Tools/AP_Bootloader/support.h"
-
+#else
 extern const AP_HAL::HAL& hal;
+#endif
 
 struct supported_device {
     const char* name;
@@ -67,9 +69,13 @@ static const struct supported_device supported_devices[] = {
 
 #define SFDP_REV_1_6                        0x0106
 
+#ifdef HAL_BOOTLOADER_BUILD
+#define Debug(fmt, args ...)  do {uprintf("JEDEC: " fmt "\n", ## args);} while(0)
+#define Msg_Print(fmt, args ...)  do {uprintf("JEDEC: " fmt "\n", ## args);} while(0)
+#else
 #define Debug(fmt, args ...)  do {hal.console->printf("JEDEC: " fmt "\n", ## args);} while(0)
 #define Msg_Print(fmt, args ...)  do {hal.console->printf("JEDEC: " fmt "\n", ## args);} while(0)
-
+#endif
 #define MAX_READ_SIZE       1024UL
 
 static ChibiOS::QSPIDeviceManager qspi;
