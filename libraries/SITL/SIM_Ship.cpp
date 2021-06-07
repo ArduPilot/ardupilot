@@ -174,13 +174,13 @@ void ShipSim::send_report(void)
     Location loc = home;
     loc.offset_double(ship.position.x, ship.position.y);
 
-    int32_t alt = home.alt;  // assume home altitude
+    int32_t alt_mm = home.alt * 10;  // assume home altitude
 
 #if AP_TERRAIN_AVAILABLE
     auto terrain = AP::terrain();
     float height;
     if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height, true)) {
-        alt = height * 1000;
+        alt_mm = height * 1000;
     }
 #endif
 
@@ -194,7 +194,7 @@ void ShipSim::send_report(void)
                                               now,
                                               loc.lat,
                                               loc.lng,
-                                              alt,
+                                              alt_mm,
                                               0,
                                               vel.x*100,
                                               vel.y*100,
