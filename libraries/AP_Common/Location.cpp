@@ -120,7 +120,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     float alt_terr_cm = 0;
     if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
-        if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+        if (_terrain == nullptr || !_terrain->height_amsl(*this, alt_terr_cm, true)) {
             return false;
         }
         // convert terrain alt to cm
