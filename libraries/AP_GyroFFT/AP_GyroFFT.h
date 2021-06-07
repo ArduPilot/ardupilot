@@ -47,7 +47,7 @@ public:
     AP_GyroFFT(const AP_GyroFFT &other) = delete;
     AP_GyroFFT &operator=(const AP_GyroFFT&) = delete;
 
-    void init(uint32_t target_looptime);
+    void init(uint16_t loop_rate_hz);
 
     // cycle through the FFT steps - runs in the FFT thread
     uint16_t run_cycle();
