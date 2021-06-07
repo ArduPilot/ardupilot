@@ -2246,6 +2246,103 @@ function'''
 
         self.progress("Mission OK")
 
+    def fly_soaring_speed_to_fly(self):
+
+        model = "plane-soaring"
+
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=True)
+
+        self.load_mission('CMAC-soar.txt', strict=False)
+
+        # Turn of environmental thermals.
+        self.set_parameter("SIM_THML_SCENARI", 0)
+
+        # Get thermalling RC channel
+        rc_chan = 0
+        for i in range(8):
+            rcx_option = self.get_parameter('RC{0}_OPTION'.format(i+1))
+            if rcx_option == 88:
+                rc_chan = i+1
+                break
+
+        if rc_chan == 0:
+            raise NotAchievedException("Did not find soaring enable channel option.")
+
+        # Disable soaring
+        self.set_rc(rc_chan, 1100)
+
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Wait for to 400m before starting.
+        self.wait_altitude(390, 400, timeout=600, relative=True)
+
+        # Wait 10s to stabilize.
+        self.delay_sim_time(30)
+
+        # Enable soaring (no automatic thermalling)
+        self.set_rc(rc_chan, 1500)
+
+        # Enable speed to fly.
+        self.set_parameter("SOAR_CRSE_ARSPD", -1)
+
+        # Set appropriate McCready.
+        self.set_parameter("SOAR_VSPEED", 1)
+        self.set_parameter("SIM_WIND_SPD", 0)
+
+        # Wait a few seconds before determining the "trim" airspeed.
+        self.delay_sim_time(20)
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        trim_airspeed = m.airspeed
+
+        min_airspeed = self.get_parameter("ARSPD_FBW_MIN")
+        max_airspeed = self.get_parameter("ARSPD_FBW_MAX")
+
+        # Add updraft
+        self.set_parameter("SIM_WIND_SPD", 1)
+        self.set_parameter('SIM_WIND_DIR_Z', 90)
+        self.delay_sim_time(20)
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+
+        if not m.airspeed < trim_airspeed and trim_airspeed > min_airspeed:
+            raise NotAchievedException("Airspeed did not reduce in updraft")
+
+        # Add downdraft
+        self.set_parameter('SIM_WIND_DIR_Z', -90)
+        self.delay_sim_time(20)
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+
+        if not m.airspeed > trim_airspeed and trim_airspeed < max_airspeed:
+            raise NotAchievedException("Airspeed did not increase in downdraft")
+
+        # Zero the wind and increase McCready.
+        self.set_parameter("SIM_WIND_SPD", 0)
+        self.set_parameter("SOAR_VSPEED", 2)
+        self.delay_sim_time(20)
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+
+        if not m.airspeed > trim_airspeed and trim_airspeed < max_airspeed:
+            raise NotAchievedException("Airspeed did not increase with higher SOAR_VSPEED")
+
+        # Reduce McCready.
+        self.set_parameter("SOAR_VSPEED", 0)
+        self.delay_sim_time(20)
+        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+
+        if not m.airspeed < trim_airspeed and trim_airspeed > min_airspeed:
+            raise NotAchievedException("Airspeed did not reduce with lower SOAR_VSPEED")
+
+        # Disarm
+        self.disarm_vehicle()
+
+        self.progress("Mission OK")
+
     def test_airspeed_drivers(self):
         airspeed_sensors = [
             ("MS5525", 3, 1),
@@ -3499,6 +3596,10 @@ function'''
             ("MSP_DJI",
              "Test MSP DJI serial output",
              self.test_msp_dji),
+
+            ("SpeedToFly",
+             "Test soaring speed-to-fly",
+             self.fly_soaring_speed_to_fly),
 
             ("LogUpload",
              "Log upload",
