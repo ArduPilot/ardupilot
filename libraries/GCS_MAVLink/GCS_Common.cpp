@@ -1836,11 +1836,10 @@ void GCS_MAVLINK::send_sensor_offsets()
 
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
-    static uint8_t counter;
-    if (counter++ < 10) {
+    if (send_sensor_offsets_counter++ < 10) {
         return;
     }
-    counter = 0;
+    send_sensor_offsets_counter = 0;
 
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &accel_offsets = ins.get_accel_offsets(0);
