@@ -328,8 +328,8 @@ void Copter::parachute_manual_release()
     }
 
     // do not release if vehicle is landed
-    // land flag cannot be trusted if in standby mode
-    if (ap.land_complete && !standby_active) {
+    // land flag cannot be trusted if in standby mode, use armed status instead
+    if ((ap.land_complete && !standby_active) || (standby_active && !motors->armed())) {
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Landed");
         AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_LANDED);
