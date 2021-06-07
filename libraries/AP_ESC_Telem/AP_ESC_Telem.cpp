@@ -195,6 +195,11 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
     static_assert(ESC_TELEM_MAX_ESCS <= 12, "AP_ESC_Telem::send_esc_telemetry_mavlink() only supports up-to 12 motors");
 
+    if (!_have_data) {
+        // we've never had any data
+        return;
+    }
+
     uint32_t now = AP_HAL::millis();
     uint32_t now_us = AP_HAL::micros();
     // loop through 3 groups of 4 ESCs
@@ -268,6 +273,8 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
         return;
     }
 
+    _have_data = true;
+
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
         _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
     }
@@ -299,6 +306,9 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, c
     if (esc_index > ESC_TELEM_MAX_ESCS) {
         return;
     }
+
+    _have_data = true;
+
     const uint32_t now = AP_HAL::micros();
     volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
 

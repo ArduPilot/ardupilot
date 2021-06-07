@@ -80,6 +80,8 @@ private:
     uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
 
+    bool _have_data;
+
     static AP_ESC_Telem *_singleton;
 };
 
