@@ -120,6 +120,7 @@ public:
     // return the motor mask
     uint16_t get_motor_mask() const { return _motor_mask; }
 
+    // returns the configured PWM type
     uint8_t get_pwm_type() const { return _pwm_type; }
 
     // structure for holding motor limit flags
@@ -213,8 +214,8 @@ protected:
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
-    uint16_t _motor_mask;
-    frame_type _frame_type;
+    uint16_t _motor_mask;   // mask of motors configured with pwm_type
+    frame_type _frame_type; // frame type requested at initialisation
 
     // omni variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
