@@ -67,14 +67,7 @@ bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         acquire_bus(false);
         return false;
     }
-    wspi_command_t mode;
     bool ret = true;
-    mode.cmd   = _cmd_hdr.cmd;
-    mode.cfg   = _cmd_hdr.cfg;
-    mode.addr  = _cmd_hdr.addr;
-    mode.alt   = _cmd_hdr.alt;
-    mode.dummy = _cmd_hdr.dummy;
-
     if (send_len == 0 && recv_len == 0) {
         // This is just a command
         ret = !wspiCommand(qspi_devices[device_desc.bus].driver, &mode);
@@ -96,7 +89,11 @@ bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 
 void QSPIDevice::set_cmd_header(const CommandHeader& cmd_hdr)
 {
-    _cmd_hdr = cmd_hdr;
+    mode.cmd   = cmd_hdr.cmd;
+    mode.cfg   = cmd_hdr.cfg;
+    mode.addr  = cmd_hdr.addr;
+    mode.alt   = cmd_hdr.alt;
+    mode.dummy = cmd_hdr.dummy;
 }
 
 
@@ -119,6 +116,28 @@ bool QSPIDevice::acquire_bus(bool acquire)
     } else {
         wspiReleaseBus(qspi_devices[device_desc.bus].driver);
     }
+    return true;
+}
+
+
+// Enters Memory mapped or eXecution In Place or 0-4-4 mode
+bool QSPIDevice::enter_xip_mode(void** map_ptr)
+{
+    if (!acquire_bus(true)) {
+        return false;
+    }
+    wspiMapFlash(qspi_devices[device_desc.bus].driver, &mode, (uint8_t**)map_ptr);
+    acquire_bus(false);
+    return true;
+}
+
+bool QSPIDevice::exit_xip_mode()
+{
+    if (!acquire_bus(true)) {
+        return false;
+    }
+    wspiUnmapFlash(qspi_devices[device_desc.bus].driver);
+    acquire_bus(false);
     return true;
 }
 

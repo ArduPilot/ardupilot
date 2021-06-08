@@ -103,10 +103,14 @@ public:
 
     bool acquire_bus(bool acquire);
 
+    // Enters Memory mapped or eXecution In Place or 0-4-4 mode
+    bool enter_xip_mode(void** map_ptr) override;
+    bool exit_xip_mode() override;
+
 private:
     QSPIBus &bus;
     QSPIDesc &device_desc;
-    CommandHeader _cmd_hdr;
+    wspi_command_t mode;
 };
 
 class QSPIDeviceManager : public AP_HAL::QSPIDeviceManager
