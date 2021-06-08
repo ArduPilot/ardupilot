@@ -191,4 +191,7 @@ public:
      */
     virtual uint32_t min_erase_size() const = 0;
 
+    virtual bool start_xip_mode(void** addr) { return false; }
+
+    virtual bool stop_xip_mode() { return false; }
 };

@@ -204,6 +204,19 @@ public:
      */
     bool is_device_busy() override;
 
+
+    /**
+     * @details Starts execution in place mode
+     *
+     * @return                  if successfully entered XIP mode.
+     *
+     * @retval false            the device failed to enter XIP mode.
+     * @retval true             the device has entered XIP mode.
+     *
+     */
+    bool start_xip_mode(void** addr) override;
+
+    bool stop_xip_mode() override;
 protected:
     void reset_device();
 
@@ -237,6 +250,12 @@ protected:
 
     AP_HAL::OwnPtr<AP_HAL::QSPIDevice> _dev;
 
+    enum xip_entry_methods {
+        XIP_ENTRY_METHOD_1,
+        XIP_ENTRY_METHOD_2,
+        XIP_ENTRY_METHOD_3
+    };
+
     // Device description extracted from SFDP
     struct device_desc {
         uint16_t param_rev; //parameter revision
@@ -265,6 +284,9 @@ protected:
         bool quad_mode_rmw_seq; // use Read modify write sequence to enter 4-4-4 mode supported or not
         uint8_t status_read_ins; // read status of the chip, gets us if busy writing/erasing
         bool legacy_status_polling; // check if legacy status polling supported or not
+        bool is_xip_supported; // is execution in place or 0-4-4 mode supported
+        uint8_t fast_read_mode_clocks;
+        xip_entry_methods entry_method;
     } _desc;
 
     uint8_t _dev_list_idx;
