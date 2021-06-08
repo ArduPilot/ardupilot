@@ -149,6 +149,8 @@ public:
     void set_precland(SIM_Precland *_precland);
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 
+    float get_battery_voltage() const { return battery_voltage; }
+
 protected:
     SITL *sitl;
     Location home;
