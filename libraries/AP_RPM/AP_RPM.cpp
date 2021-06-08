@@ -121,7 +121,7 @@ void AP_RPM::init(void)
             drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
         }
 #endif
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
         if (type == RPM_TYPE_EFI) {
             drivers[i] = new AP_RPM_EFI(*this, i, state[i]);
         }
