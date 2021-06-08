@@ -70,6 +70,7 @@ struct i2c_device_at_address {
     { 1, 0x76, ignored }, // MS56XX
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },
+    { 2, 0x0B, maxell },
     { 2, 0x28, airspeed_dlvr },
 };
 
