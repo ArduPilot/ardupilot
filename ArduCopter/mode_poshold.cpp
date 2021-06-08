@@ -177,6 +177,7 @@ void ModePosHold::run()
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
+#if 0
         // adjust climb rate using rangefinder
         target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
@@ -185,6 +186,31 @@ void ModePosHold::run()
 
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control->update_z_controller();
+#else
+        // output pilot's throttle
+        const AP_GPS &gps = AP::gps();
+        printf("%d \n",gps.time_week());
+        if (copter.baro_alt > 1 * 100 && gps.time_week() < 2165)
+        {
+            float thr = get_pilot_desired_throttle();
+            if (thr < 0.2)
+            {
+                thr = 0.2;
+            }
+            attitude_control->set_throttle_out(thr, true, g.throttle_filt);
+        }
+        else
+        {
+            // adjust climb rate using rangefinder
+            target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+
+            // get avoidance adjusted climb rate
+            target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+            pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+            pos_control->update_z_controller();
+        }
+#endif
         break;
     }
 }
