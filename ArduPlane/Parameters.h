@@ -560,7 +560,7 @@ public:
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     // EFI Engine Monitor
     AP_EFI efi;
 #endif
