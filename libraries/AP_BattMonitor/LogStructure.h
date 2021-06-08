@@ -4,8 +4,7 @@
 
 #define LOG_IDS_FROM_BATTMONITOR \
     LOG_BAT_MSG, \
-    LOG_BCL_MSG, \
-    LOG_BCL2_MSG
+    LOG_BCL_MSG
 
 // @LoggerMessage: BAT
 // @Description: Gathered battery data
@@ -53,26 +52,11 @@ struct PACKED log_BCL {
     uint64_t time_us;
     uint8_t  instance;
     float    voltage;
-    uint16_t cell_voltages[12]; // the format does not support more than 12 cells, the remaining cells are reported in the log_BCL2 structure
-};
-
-// @LoggerMessage: BCL2
-// @Description: Battery cell voltage information
-// @Field: TimeUS: Time since system startup
-// @Field: Instance: battery instance number
-// @Field: V13: thirteenth cell voltage
-// @Field: V14: fourteenth cell voltage
-struct PACKED log_BCL2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    uint16_t cell_voltages[2];
+    uint16_t cell_voltages[12]; // the format does not support more than 12 cells, the remaining cells are reported in the BCL2 message
 };
 
 #define LOG_STRUCTURE_FROM_BATTMONITOR        \
     { LOG_BAT_MSG, sizeof(log_BAT), \
         "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_BCL_MSG, sizeof(log_BCL), \
-        "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" }, \
-    { LOG_BCL2_MSG, sizeof(log_BCL2), \
-        "BCL2", "QBHH", "TimeUS,Instance,V13,V14", "s#vv", "F-CC" },
+        "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" },
