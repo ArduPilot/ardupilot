@@ -73,9 +73,6 @@ public:
     /// release - release parachute
     void release(release_reason reason);
 
-    /// released - true if the parachute has been released (or release is in progress)
-    bool released() const { return _released; }
-
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
     bool release_initiated() const { return _release_initiated; }
 
@@ -112,6 +109,9 @@ private:
     // send user command long updating the parchute status
     void send_msg();
 
+    // Set servo or relay to off position
+    void release_off();
+
     // Structure to lookup for release reasons
     struct LookupTable{
        release_reason option;
@@ -147,7 +147,6 @@ private:
     bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
     bool        _release_setup:1;        // true if parchute release has been setup (vehicle disarmed, landing gear deployed)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
-    bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
     uint32_t    _fall_time_ms;           // system time that the vehicle stated falling lower faster _min_accel
