@@ -1390,8 +1390,7 @@ class AutoTest(ABC):
         self.progress("Applying default parameters file")
         # setup test parameters
         if self.params is None:
-            self.params = self.model_defaults_filepath(self.vehicleinfo_key(),
-                                                       self.frame)
+            self.params = self.model_defaults_filepath(self.frame)
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
 
@@ -10487,8 +10486,8 @@ switch value'''
 
         return psd
 
-    def model_defaults_filepath(self, vehicle, model):
-
+    def model_defaults_filepath(self, model):
+        vehicle = self.vehicleinfo_key()
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):
