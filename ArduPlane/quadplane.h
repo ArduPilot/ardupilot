@@ -687,6 +687,11 @@ private:
      */
     bool in_vtol_land_sequence(void) const;
 
+    /*
+      see if we are in the VTOL position control phase of a landing
+    */
+    bool in_vtol_land_poscontrol(void) const;
+    
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 

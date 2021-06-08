@@ -3938,6 +3938,18 @@ bool QuadPlane::in_vtol_land_sequence(void) const
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
 }
 
+/*
+  see if we are in the VTOL position control phase of a landing
+ */
+bool QuadPlane::in_vtol_land_poscontrol(void) const
+{
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+        poscontrol.get_state() >= QPOS_POSITION1) {
+        return true;
+    }
+    return false;
+}
+
 // return true if we should show VTOL view
 bool QuadPlane::show_vtol_view() const
 {
