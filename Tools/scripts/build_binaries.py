@@ -565,6 +565,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "fmuv5",
                 "mindpx-v2",
                 "erlebrain2",
+                "navigator",
                 "navio",
                 "navio2",
                 "edge",
