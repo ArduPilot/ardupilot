@@ -645,6 +645,8 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle()
         if not self.current_onboard_log_contains_message("BCL2"):
             raise NotAchievedException("Expected BCL2 message")
+        if not self.current_onboard_log_contains_message("BATI"):
+            raise NotAchievedException("Expected BATI message")
 
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
