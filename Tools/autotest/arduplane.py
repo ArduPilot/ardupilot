@@ -608,6 +608,27 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("LAND_TYPE", 0)
         self.fly_home_land_and_disarm(timeout=240)
 
+    def SmartBattery(self):
+        self.set_parameters({
+            "BATT_MONITOR": 16,
+            "BATT_BUS": 2,  # specified in SIM_I2C.cpp
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=10)
+        if m is None:
+            raise NotAchievedException("Did not get BATTERY_STATUS message")
+        if m.voltages_ext[0] == 65536:
+            raise NotAchievedException("Flag value rather than voltage")
+        if abs(m.voltages_ext[0] - 1000) > 300:
+            raise NotAchievedException("Did not get good ext voltage (got=%f)" %
+                                       (m.voltages_ext[0],))
+        self.arm_vehicle()
+        self.delay_sim_time(5)
+        self.disarm_vehicle()
+        if not self.current_onboard_log_contains_message("BCL2"):
+            raise NotAchievedException("Expected BCL2 message")
+
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
@@ -3043,6 +3064,10 @@ class AutoTestPlane(AutoTest):
             ("MAV_DO_AUX_FUNCTION",
              "Test triggering Auxillary Functions via mavlink",
              self.fly_aux_function),
+
+            ("SmartBattery",
+             "Test smart battery logging etc",
+             self.SmartBattery),
 
             ("LogUpload",
              "Log upload",
