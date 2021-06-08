@@ -17,7 +17,7 @@
 /*
     Implements Common Flash Interface Driver based on following
     standard published by JEDEC
-    * JEDEC Standard, JESD216, Serial Flash Discoverable Parameters (SFDP)
+    * JEDEC Standard, JESD216D, Serial Flash Discoverable Parameters (SFDP)
 */
 
 #include <AP_HAL/AP_HAL.h>
@@ -131,7 +131,7 @@ void AP_FlashIface_JEDEC::reset_device()
     cmd.cmd   = 0U;
     cmd.alt   = 0xFFU;
     cmd.addr  = 0U;
-    cmd.dummy = 6U;
+    cmd.dummy = 7U;
     cmd.cfg   = AP_HAL::QSPI::CFG_CMD_MODE_NONE |
                 AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
                 AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
@@ -143,7 +143,7 @@ void AP_FlashIface_JEDEC::reset_device()
 
     /// NOTE: This is Vendor specific, we haven't read the parameter table
     /// yet, so don't know how we can reset the chip.
-    // Various methods for Soft Reset are at Ref. JESD216 6.4.19
+    // Various methods for Soft Reset are at Ref. JESD216D 6.4.19
     /* Quad line CMD_RESET_ENABLE command.*/
     cmd.cmd   =  CMD_RESET_ENABLE;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
@@ -210,7 +210,7 @@ bool AP_FlashIface_JEDEC::detect_device()
         }
     }
 
-    // Read SFDP header to get information Ref. JESD216 4 and 6.2
+    // Read SFDP header to get information Ref. JESD216D 4 and 6.2
     {
         uint32_t sfdp_header[2];
 
@@ -248,7 +248,7 @@ bool AP_FlashIface_JEDEC::detect_device()
     }
 
 
-    // Read Param Header Ref. JESD216 6.4.1 6.4.2
+    // Read Param Header Ref. JESD216D 6.4.1 6.4.2
     {
         uint32_t param_header[2] {}; // read only first parameter header
         // Immediately after 2 DWORDS of SFDP Header
@@ -278,7 +278,7 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        // Flash Memory details Ref. JESD216 6.4.5 6.4.14
+        // Flash Memory details Ref. JESD216D 6.4.5 6.4.14
         if (SFDP_GET_BIT(param_table[1], 31)) {
             Debug("Unsupported Flash Size");
             return false;
@@ -291,7 +291,7 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        // Erase Flash Memory details Ref. JESD216 6.4.11 6.4.12
+        // Erase Flash Memory details Ref. JESD216D 6.4.11 6.4.12
         for (uint8_t i = 0; i < 4; i++) {
             uint32_t size = 1UL<<SFDP_GET_BITS(param_table[7 + (i/2)], 0 + 16*(i%2), 7 + 16*(i%2));
             uint8_t ins = SFDP_GET_BITS(param_table[7 + (i/2)], 8 + 16*(i%2), 15 + 16*(i%2));
@@ -344,8 +344,8 @@ bool AP_FlashIface_JEDEC::detect_device()
         _desc.mass_erase_delay_ms = (SFDP_GET_BITS(param_table[10], 24, 28) + 1)*unit;
         _desc.mass_erase_timeout_ms = timeout_mult*_desc.mass_erase_delay_ms;
 
-        // Setup Write Enable Instruction Ref. JESD216 6.4.19
-        // If needed legacy support Ref. JESD216 6.4.4 and implement that
+        // Setup Write Enable Instruction Ref. JESD216D 6.4.19
+        // If needed legacy support Ref. JESD216D 6.4.4 and implement that
         if (SFDP_GET_BIT(param_table[15], 0) ||
             SFDP_GET_BIT(param_table[15], 1)) {
             _desc.write_enable_ins = 0x06;
@@ -356,7 +356,7 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        // Setup Program timings Ref. JESD216 6.4.14
+        // Setup Program timings Ref. JESD216D 6.4.14
         // unit = SFDP_GET_BIT(param_table[10], 23)?1:8;
         // _desc.add_byte_prog_delay_us = (SFDP_GET_BITS(19, 22) + 1) * unit;
         // _desc.add_byte_prog_timeout_us = _desc.add_byte_prog_delay_us * timeout_mult;
@@ -372,7 +372,7 @@ bool AP_FlashIface_JEDEC::detect_device()
         _desc.page_prog_timeout_us = _desc.page_prog_delay_us * timeout_mult;
 
 
-        // Configure Quad Mode Enable and Read Sequence, Ref. JESD216 6.4.8 6.4.10 6.4.18
+        // Configure Quad Mode Enable and Read Sequence, Ref. JESD216D 6.4.8 6.4.10 6.4.18
         if (!SFDP_GET_BIT(param_table[4], 4)) {
             Debug("Quad mode unsupported");
             return false;
@@ -380,8 +380,8 @@ bool AP_FlashIface_JEDEC::detect_device()
 
         _desc.fast_read_ins = SFDP_GET_BITS(param_table[6], 24, 31);
         // we get number of dummy clocks cycles needed, also include mode bits
-        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[6], 16, 20) +
-                                       SFDP_GET_BITS(param_table[6], 21, 23);
+        _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[6], 21, 23);
+        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[6], 16, 20);
 
         uint8_t QER = SFDP_GET_BITS(param_table[14], 20, 22);
         if (QER != 0b000) {
@@ -408,7 +408,21 @@ bool AP_FlashIface_JEDEC::detect_device()
             _desc.quad_mode_rmw_seq = false;
         }
 
-        // Configure Status Polling Method Ref. JESD216 6.4.17
+        // Configure XIP mode Ref. JESD216D 6.4.18
+        if (SFDP_GET_BIT(param_table[14], 9)) {
+            _desc.is_xip_supported = true;
+        } else {
+            _desc.is_xip_supported = false;
+        }
+        if (_desc.is_xip_supported) {
+            if (SFDP_GET_BIT(param_table[14],17)) {
+                _desc.entry_method = AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2;
+            } else {
+                Debug("Unsupported XIP enable sequence");       
+            }
+        }
+
+        // Configure Status Polling Method Ref. JESD216D 6.4.17
         if (SFDP_GET_BIT(param_table[13], 3)) {
             _desc.legacy_status_polling = false;
             _desc.status_read_ins = 0x70;
@@ -427,7 +441,7 @@ bool AP_FlashIface_JEDEC::configure_device()
     AP_HAL::QSPIDevice::CommandHeader cmd;
     // Enable 4-4-4 mode and test it by fetching Device ID
     {
-        // Quad Mode Enable Sequence, Ref. JESD216 6.4.18
+        // Quad Mode Enable Sequence, Ref. JESD216D 6.4.18
         if (_desc.quad_mode_ins && !write_enable_called) {
             if (!send_cmd(_desc.quad_mode_ins, false)) {
                 return false;
@@ -838,7 +852,8 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
                         AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
         cmd.addr    =   read_ptr;
         cmd.alt     =   0;
-        cmd.dummy   =   _desc.fast_read_dummy_cycles;
+        // mode bits are 0 so might as well add them to dummy
+        cmd.dummy   =   _desc.fast_read_dummy_cycles + _desc.fast_read_mode_clocks; 
         _dev->set_cmd_header(cmd);
         if (!_dev->transfer(nullptr, 0, &data[read_ptr-offset], read_size)) { // Command only
             Debug("Failed to read flash");
@@ -866,4 +881,50 @@ bool AP_FlashIface_JEDEC::is_device_busy()
     } else {
         return !(status & 1<<7);
     }
+}
+
+bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
+{
+    if (!_desc.is_xip_supported) {
+        Debug("XIP mode unsupported on this chip");
+        return false;
+    }
+    switch(_desc.entry_method) {
+        case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2:
+        {
+            // set configuration register to start 0-4-4 mode
+            write_enable(true);
+            if (!modify_reg(0x85, 0x81, 1<<3, 0, true)) {
+                Debug("Failed to configure chip for XIP");
+                write_disable(true);
+                return false;
+            }
+            // Set QSPI module for XIP mode
+            AP_HAL::QSPIDevice::CommandHeader cmd;
+            cmd.cmd = _desc.fast_read_ins;
+            cmd.alt = 0;
+            cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
+                      AP_HAL::QSPI::CFG_ALT_SIZE_8 |
+                      AP_HAL::QSPI::CFG_SIOO;
+            cmd.addr = 0;
+            // correct dummy bytes because of addition of alt bytes
+            cmd.dummy = _desc.fast_read_dummy_cycles - 1;
+            _dev->set_cmd_header(cmd);
+            return _dev->enter_xip_mode(addr);
+        }
+        default:
+        {
+            Debug("Unsupported XIP Entry Method");
+            return false;
+        }
+    }
+}
+
+bool AP_FlashIface_JEDEC::stop_xip_mode()
+{
+    return _dev->exit_xip_mode();
 }
