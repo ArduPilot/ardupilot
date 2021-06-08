@@ -29,7 +29,9 @@
 #include "sdcard.h"
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
-
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_ENABLE_LIBUAVCAN_DRIVERS
+#include <AP_Notify/AP_Notify.h>
+#endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #endif
@@ -155,7 +157,6 @@ Util::safety_state Util::safety_switch_state(void)
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
 #endif
 
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
 uint8_t  Util::_toneAlarm_types = 0;
 
 bool Util::toneAlarm_init(uint8_t types)
@@ -165,7 +166,13 @@ bool Util::toneAlarm_init(uint8_t types)
     pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
 #endif
     _toneAlarm_types = types;
+
+#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_ENABLE_LIBUAVCAN_DRIVERS
+    // Nothing to do
+    return false;
+#else
     return true;
+#endif
 }
 
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
@@ -182,7 +189,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_PWM_ALARM
 #if HAL_DSHOT_ALARM
     // don't play the motors while flying
-    if (!(_toneAlarm_types & ALARM_DSHOT) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
         return;
     }
 
@@ -201,7 +208,6 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
     }
 #endif // HAL_DSHOT_ALARM
 }
-#endif
 
 /*
   set HW RTC in UTC microseconds
@@ -570,10 +576,26 @@ void Util::apply_persistent_params(void) const
 }
 #endif // HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 
+#if HAL_WITH_IO_MCU
+extern ChibiOS::UARTDriver uart_io;
+#endif
+
 // request information on uart I/O
 void Util::uart_info(ExpandingString &str)
 {
 #if !defined(HAL_NO_UARTDRIVER)    
-    ChibiOS::UARTDriver::uart_info(str);
+    // a header to allow for machine parsers to determine format
+    str.printf("UARTV1\n");
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart) {
+            str.printf("SERIAL%u ", i);
+            uart->uart_info(str);
+        }
+    }
+#if HAL_WITH_IO_MCU
+    str.printf("IOMCU   ");
+    uart_io.uart_info(str);
 #endif
+#endif // HAL_NO_UARTDRIVER
 }

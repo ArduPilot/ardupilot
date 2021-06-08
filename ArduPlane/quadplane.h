@@ -453,20 +453,29 @@ private:
     } landing_detect;
 
     // throttle mix acceleration filter
-    LowPassFilterVector3f throttle_mix_accel_ef_filter = LowPassFilterVector3f(1.0f);
+    LowPassFilterVector3f throttle_mix_accel_ef_filter{1.0};
 
     // time we last set the loiter target
     uint32_t last_loiter_ms;
 
     enum position_control_state {
+        QPOS_APPROACH,
+        QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
         QPOS_LAND_DESCEND,
         QPOS_LAND_FINAL,
         QPOS_LAND_COMPLETE
     };
-    struct {
-        enum position_control_state state;
+    class PosControlState {
+    public:
+        enum position_control_state get_state() const {
+            return state;
+        }
+        void set_state(enum position_control_state s);
+        uint32_t time_since_state_start_ms() const {
+            return AP_HAL::millis() - last_state_change_ms;
+        }
         float speed_scale;
         Vector2f target_velocity;
         float max_speed;
@@ -475,6 +484,11 @@ private:
         bool slow_descent:1;
         bool pilot_correction_active;
         bool pilot_correction_done;
+        uint32_t thrust_loss_start_ms;
+        uint32_t last_log_ms;
+    private:
+        uint32_t last_state_change_ms;
+        enum position_control_state state;
     } poscontrol;
 
     struct {
@@ -623,6 +637,7 @@ private:
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
         OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
         OPTION_THR_LANDING_CONTROL=(1<<15),
+        OPTION_DISABLE_APPROACH=(1<<16),
     };
 
     AP_Float takeoff_failure_scalar;
@@ -674,6 +689,37 @@ private:
 
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
+
+    /*
+      return true if we should use the fixed wing attitude control loop
+     */
+    bool use_fw_attitude_controllers(void) const;
+
+    /*
+      get the airspeed for landing approach
+     */
+    float get_land_airspeed(void);
+
+    /*
+      setup for landing approach
+     */
+    void poscontrol_init_approach(void);
+
+    /*
+      calculate our closing velocity vector on the landing
+      point. Takes account of the landing point having a velocity
+     */
+    Vector2f landing_closing_velocity();
+
+    /*
+      calculate our desired closing velocity vector on the landing point.
+    */
+    Vector2f landing_desired_closing_velocity();
+
+    /*
+      change spool state, providing easy hook for catching changes in debug
+     */
+    void set_desired_spool_state(AP_Motors::DesiredSpoolState state);
 
 public:
     void motor_test_output();

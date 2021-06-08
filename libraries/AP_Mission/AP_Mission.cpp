@@ -915,7 +915,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
         cmd.p1 = packet.param1;                         // abort target altitude(m)  (plane only)
-        cmd.content.location.loiter_ccw = is_negative(packet.param4); // yaw direction, (plane deepstall only)
+        if (!isnan(packet.param4)) {
+            cmd.content.location.loiter_ccw = is_negative(packet.param4); // yaw direction, (plane deepstall only)
+        }
         break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22

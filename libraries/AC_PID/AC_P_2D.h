@@ -14,6 +14,8 @@ public:
     // constructor
     AC_P_2D(float initial_p, float dt);
 
+    CLASS_NO_COPY(AC_P_2D);
+
     // set time step in seconds
     void set_dt(float dt) { _dt = dt; }
 

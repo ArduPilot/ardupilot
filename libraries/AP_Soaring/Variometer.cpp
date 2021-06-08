@@ -9,9 +9,6 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 Variometer::Variometer(const AP_Vehicle::FixedWing &parms) :
     _aparm(parms)
 {
-    _climb_filter = LowPassFilter<float>(1.0/60.0);
-
-    _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
 void Variometer::update(const float thermal_bank, const float polar_K, const float polar_Cd0, const float polar_B)

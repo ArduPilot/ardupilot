@@ -268,11 +268,6 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
     validOrigin = false;
-    takeoffExpectedSet_ms = 0;
-    expectTakeoff = false;
-    touchdownExpectedSet_ms = 0;
-    expectGndEffectTakeoff = false;
-    expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
@@ -459,7 +454,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     inhibitMagStates = true;
-    magSelectIndex = 0;
+    magSelectIndex = dal.compass().get_first_usable();
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;
@@ -901,10 +896,10 @@ void NavEKF3_core::calcOutputStates()
 
     // Detect fixed wing launch acceleration using latest data from IMU to enable early startup of filter functions
     // that use launch acceleration to detect start of flight
-    if (!inFlight && !expectTakeoff && assume_zero_sideslip()) {
+    if (!inFlight && !dal.get_takeoff_expected() && assume_zero_sideslip()) {
         const float launchDelVel = imuDataNew.delVel.x + GRAVITY_MSS * imuDataNew.delVelDT * Tbn_temp.c.x;
         if (launchDelVel > GRAVITY_MSS * imuDataNew.delVelDT) {
-            setTakeoffExpected(true);
+            dal.set_takeoff_expected();
         }
     }
 

@@ -162,7 +162,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @DisplayName: Rangefinder serial baudrate
     // @Description: Rangefinder serial baudrate.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Units: %
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
@@ -188,7 +187,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @DisplayName: ADSB serial baudrate
     // @Description: ADSB serial baudrate.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Units: %
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
@@ -260,6 +258,19 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
+#endif
+
+#if HAL_LOGGING_ENABLED
+    // @Group: LOG
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
+
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Bitmask: 2:GPS
+    // @User: Standard
+    GSCALAR(log_bitmask,    "LOG_BITMASK",          4),
 #endif
 
     AP_VAREND

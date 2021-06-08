@@ -17,6 +17,8 @@ public:
     // Constructor for PID
     AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz, float dt);
 
+    CLASS_NO_COPY(AC_PID_2D);
+
     // set time step in seconds
     void set_dt(float dt) { _dt = dt; }
 

@@ -39,6 +39,7 @@
 #include <AP_OLC/AP_OLC.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -976,6 +977,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(fence, "FENCE", 59, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RNGF_EN
+    // @DisplayName: RNGF_EN
+    // @Description: Displays a rangefinder's distance in cm
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RNGF_X
+    // @DisplayName: RNGF_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RNGF_Y
+    // @DisplayName: RNGF_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
@@ -1074,6 +1091,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_TERALT 0xEF
 #define SYM_FENCE_ENABLED 0xF5
 #define SYM_FENCE_DISABLED 0xF6
+#define SYM_RNGFD     0xF7
 
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
@@ -1623,7 +1641,9 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
     if (!AP::esc_telem().get_rpm(0, rpm)) {
         return;
     }
-    backend->write(x, y, false, "%3.1f%c%c", uint16_t(rpm) * 0.001f, SYM_KILO, SYM_RPM);
+    float krpm = rpm * 0.001f;
+    const char *format = krpm < 9.995 ? "%.2f%c%c" : (krpm < 99.95 ? "%.1f%c%c" : "%.0f%c%c");
+    backend->write(x, y, false, format, krpm, SYM_KILO, SYM_RPM);
 }
 
 void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
@@ -1752,7 +1772,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     AP_Stats *stats = AP::stats();
     if (stats) {
         uint32_t t = stats->get_flight_time_s();
-        backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
+        backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, unsigned(t/60), unsigned(t%60));
     }
 }
 
@@ -1874,7 +1894,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     uint8_t hour, min, sec;
     uint16_t ms;
     if (!rtc.get_local_time(hour, min, sec, ms)) {
-    backend->write(x, y, false, "%c--:--%", SYM_CLK);
+    backend->write(x, y, false, "%c--:--", SYM_CLK);
     } else {
     backend->write(x, y, false, "%c%02u:%02u", SYM_CLK, hour, min);
     }
@@ -1890,7 +1910,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
-        backend->write(x, y, false, buff);
+        backend->write(x, y, false, "%s", buff);
     }
 }
 #endif
@@ -1915,7 +1935,7 @@ void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
         }
     }
     if (callsign_data.str != nullptr) {
-        backend->write(x, y, false, callsign_data.str);
+        backend->write(x, y, false, "%s", callsign_data.str);
     }
 #endif
 }
@@ -1967,6 +1987,18 @@ void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
+{
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+       return;
+    }
+    if (rangefinder->status_orient(ROTATION_PITCH_270) <= RangeFinder::Status::NoData) {
+        backend->write(x, y, false, "%cNO DATA", SYM_RNGFD);
+    } else {
+        backend->write(x, y, false, "%c%2.2f%c", SYM_RNGFD, u_scale(DISTANCE, (rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f)), u_icon(DISTANCE));
+    }
+}
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
@@ -1989,6 +2021,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(hgt_abvterr);
 #endif
 
+    DRAW_SETTING(rngf);
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);

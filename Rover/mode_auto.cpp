@@ -560,8 +560,8 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_start_time = 0;
 
-    // this is the delay, stored in seconds
-    loiter_duration = cmd.p1;
+    // this is the delay, stored in seconds, checked such that commanded delays < 0 delay 0 seconds
+    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
 
     return true;
 }

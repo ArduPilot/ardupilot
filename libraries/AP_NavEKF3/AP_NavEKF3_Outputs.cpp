@@ -59,20 +59,6 @@ float NavEKF3_core::errorScore() const
     return score;
 }
 
-#if EK3_FEATURE_BODY_ODOM
-// return data for debugging body frame odometry fusion
-uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
-{
-    velInnov.x = innovBodyVel[0];
-    velInnov.y = innovBodyVel[1];
-    velInnov.z = innovBodyVel[2];
-    velInnovVar.x = varInnovBodyVel[0];
-    velInnovVar.y = varInnovBodyVel[1];
-    velInnovVar.z = varInnovBodyVel[2];
-    return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
-}
-#endif // EK3_FEATURE_BODY_ODOM
-
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -524,27 +510,6 @@ void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
 void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
 {
     status = filterStatus;
-}
-
-/*
-return filter gps quality check status
-*/
-void  NavEKF3_core::getFilterGpsStatus(nav_gps_status &faults) const
-{
-    // init return value
-    faults.value = 0;
-
-    // set individual flags
-    faults.flags.bad_sAcc           = gpsCheckStatus.bad_sAcc; // reported speed accuracy is insufficient
-    faults.flags.bad_hAcc           = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
-    faults.flags.bad_vAcc           = gpsCheckStatus.bad_vAcc; // reported vertical position accuracy is insufficient
-    faults.flags.bad_yaw            = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
-    faults.flags.bad_sats           = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
-    faults.flags.bad_horiz_drift    = gpsCheckStatus.bad_horiz_drift; // GPS horizontal drift is too large to start using GPS (check assumes vehicle is static)
-    faults.flags.bad_hdop           = gpsCheckStatus.bad_hdop; // reported HDoP is too large to start using GPS
-    faults.flags.bad_vert_vel       = gpsCheckStatus.bad_vert_vel; // GPS vertical speed is too large to start using GPS (check assumes vehicle is static)
-    faults.flags.bad_fix            = gpsCheckStatus.bad_fix; // The GPS cannot provide the 3D fix required
-    faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
 // send an EKF_STATUS message to GCS

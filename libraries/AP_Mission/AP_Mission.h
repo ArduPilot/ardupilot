@@ -12,6 +12,10 @@
  */
 #pragma once
 
+#ifndef HAL_MISSION_ENABLED
+#define HAL_MISSION_ENABLED 1
+#endif
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>

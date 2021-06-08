@@ -26,7 +26,12 @@
 #ifdef HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_Math/crc.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_Motors/AP_MotorsUGV.h>
+#else
 #include <AP_Motors/AP_Motors_Class.h>
+#endif
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -53,7 +58,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
     // @DisplayName: BLHeli auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
@@ -1355,12 +1360,16 @@ void AP_BLHeli::init(void)
         digital_mask = mask;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
     if (channel_auto.get() == 1) {
-        AP_Motors *motors = AP_Motors::get_singleton();
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+        AP_MotorsUGV *motors = AP::motors_ugv();
+#else
+        AP_Motors *motors = AP::motors();
+#endif
         if (motors) {
             uint16_t motormask = motors->get_motor_mask();
             // set the rest of the digital channels
@@ -1404,21 +1413,6 @@ void AP_BLHeli::init(void)
 }
 
 /*
-  implement the 8 bit CRC used by the BLHeli ESC telemetry protocol
- */
-uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
-{
-    uint8_t crc_u = crc;
-    crc_u ^= crc_seed;
-
-    for (uint8_t i=0; i<8; i++) {
-        crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
-    }
-
-    return crc_u;
-}
-
-/*
   read an ESC telemetry packet
  */
 void AP_BLHeli::read_telemetry_packet(void)
@@ -1432,7 +1426,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     // calculate crc
     uint8_t crc = 0;
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
-        crc = telem_crc8(buf[i], crc);
+        crc = crc8_dvb(buf[i], crc, 0x07);
     }
 
     if (buf[telem_packet_size-1] != crc) {
