@@ -5054,7 +5054,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_EFI_STATUS: {
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {
