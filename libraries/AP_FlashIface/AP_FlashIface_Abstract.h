@@ -191,4 +191,16 @@ public:
      */
     virtual uint32_t min_erase_size() const = 0;
 
+    /**
+     * @details Starts execution in place mode
+     *
+     * @return                  if successfully entered XIP mode.
+     *
+     * @retval false            the device failed to enter XIP mode.
+     * @retval true             the device has entered XIP mode.
+     *
+     */
+    virtual bool start_xip_mode(void** addr) { return false; }
+
+    virtual bool stop_xip_mode() { return false; }
 };

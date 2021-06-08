@@ -51,6 +51,22 @@ static UNUSED_FUNCTION void test_page_program()
             uprintf("Program Data Verified Good!\n");
         }
     }
+
+    // Now test XIP mode here as well
+    uint8_t *chip_data = nullptr;
+    if (!jedec_dev.start_xip_mode((void**)&chip_data)) {
+        uprintf("Failed to setup XIP mode\n");
+    }
+    if (chip_data == nullptr) {
+        uprintf("Invalid address!\n");
+    }
+    // Here comes the future!
+    if (memcmp(data, chip_data, jedec_dev.get_page_size()) != 0) {
+        uprintf("Program Data Mismatch in XIP mode!\n");
+    } else {
+        uprintf("Program Data Verified Good in XIP mode!\n");
+    }
+    jedec_dev.stop_xip_mode();
 }
 
 static UNUSED_FUNCTION void test_sector_erase()
@@ -135,8 +151,8 @@ int main()
         while (cin(0) < 0) {}
         uprintf("\n\n******************Starting Test********************\n");
         jedec_dev.init();
-        test_page_program();
         test_sector_erase();
+        test_page_program();
         // test_mass_erase();
         chThdSleep(chTimeMS2I(1000));
     }
