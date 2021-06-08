@@ -104,10 +104,10 @@ bool AP_FlashIface_JEDEC::init()
 
     // Configuring Device involved setting chip to correct WSPI mode
     // i.e. 4-4-4
-    if (!configure_device()) {
-        Msg_Print("Failed to config flash device: %s", supported_devices[_dev_list_idx].name);
-        return false;
-    }
+    // if (!configure_device()) {
+    //     Msg_Print("Failed to config flash device: %s", supported_devices[_dev_list_idx].name);
+    //     return false;
+    // }
 
     Msg_Print("Detected Flash Device: %s", supported_devices[_dev_list_idx].name);
     return true;
@@ -373,10 +373,15 @@ bool AP_FlashIface_JEDEC::detect_device()
 
 
         // Configure Quad Mode Enable and Read Sequence, Ref. JESD216D 6.4.8 6.4.10 6.4.18
-        if (!SFDP_GET_BIT(param_table[4], 4)) {
-            Debug("Quad mode unsupported");
+        if (!SFDP_GET_BIT(param_table[0], 21)) {
+            Debug("1-4-4 mode unsupported");
             return false;
         }
+
+        // if (!SFDP_GET_BIT(param_table[4], 4)) {
+        //     Debug("Quad mode unsupported");
+        //     return false;
+        // }
 
         _desc.fast_read_ins = SFDP_GET_BITS(param_table[6], 24, 31);
         // we get number of dummy clocks cycles needed, also include mode bits
@@ -393,20 +398,20 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        if (SFDP_GET_BIT(param_table[14], 5)) {
-            _desc.quad_mode_ins = 0x38;
-        } else if (SFDP_GET_BIT(param_table[14], 6)) {
-            _desc.quad_mode_ins = 0x35;
-        }
+        // if (SFDP_GET_BIT(param_table[14], 5)) {
+        //     _desc.quad_mode_ins = 0x38;
+        // } else if (SFDP_GET_BIT(param_table[14], 6)) {
+        //     _desc.quad_mode_ins = 0x35;
+        // }
 
-        if (SFDP_GET_BIT(param_table[14], 7)) {
-            Debug("Unsupported Quad enable seq");
-            return false;
-        } else if (SFDP_GET_BIT(param_table[14], 8)) {
-            _desc.quad_mode_rmw_seq = true;
-        } else {
-            _desc.quad_mode_rmw_seq = false;
-        }
+        // if (SFDP_GET_BIT(param_table[14], 7)) {
+        //     Debug("Unsupported Quad enable seq");
+        //     return false;
+        // } else if (SFDP_GET_BIT(param_table[14], 8)) {
+        //     _desc.quad_mode_rmw_seq = true;
+        // } else {
+        //     _desc.quad_mode_rmw_seq = false;
+        // }
 
         // Configure XIP mode Ref. JESD216D 6.4.18
         if (SFDP_GET_BIT(param_table[14], 9)) {
@@ -526,13 +531,13 @@ bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val, bool qua
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = read_ins;
-    if (quad_mode) {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
-    } else {
+    // if (quad_mode) {
+    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
+    //                   AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
+    // } else {
         cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
-    }
+    // }
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -549,13 +554,13 @@ bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val, bool qu
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = read_ins;
-    if (quad_mode) {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
-    } else {
+    // if (quad_mode) {
+    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
+    //                   AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
+    // } else {
         cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
-    }
+    // }
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -572,11 +577,11 @@ bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins, bool quad_mode)
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = ins;
-    if (quad_mode) {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
-    } else {
+    // if (quad_mode) {
+    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
+    // } else {
         cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
-    }
+    // }
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -607,7 +612,7 @@ bool AP_FlashIface_JEDEC::start_mass_erase(uint32_t &delay_ms, uint32_t &timeout
     write_enable(true);
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_MASS_ERASE;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
+    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr  =  0;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -698,8 +703,8 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
     write_enable(true);
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  ins;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-                 AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
+    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                 AP_HAL::QSPI::CFG_ADDR_MODE_ONE_LINE |
                  AP_HAL::QSPI::CFG_ADDR_SIZE_24;
     cmd.addr  =  offset;
     cmd.alt   =  0;
@@ -803,10 +808,10 @@ bool AP_FlashIface_JEDEC::start_program_offset(uint32_t offset, const uint8_t* d
     write_enable(true);
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_PAGE_PROGRAM;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-                 AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
+    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                 AP_HAL::QSPI::CFG_ADDR_MODE_ONE_LINE |
                  AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                 AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
+                 AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr  =  offset;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -846,7 +851,7 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         read_size = MIN((offset+size) - read_ptr, MAX_READ_SIZE);
         AP_HAL::QSPIDevice::CommandHeader cmd;
         cmd.cmd     =   _desc.fast_read_ins;
-        cmd.cfg     =   AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
+        cmd.cfg     =   AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                         AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                         AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
                         AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
@@ -904,7 +909,7 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             cmd.cmd = _desc.fast_read_ins;
             cmd.alt = 0;
             cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                      AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
