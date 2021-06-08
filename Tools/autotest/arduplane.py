@@ -2067,7 +2067,7 @@ class AutoTestPlane(AutoTest):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath("ArduPlane", model),
+            defaults_filepath=self.model_defaults_filepath(model),
             wipe=True)
 
         self.load_mission('CMAC-soar.txt', strict=False)

@@ -150,9 +150,6 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter-heli.parm",
                                             "default_params/copter-heli-dual.parm"],
             },
-            "heli-compound": {
-                "waf_target": "bin/arducopter-heli",
-            },
             "singlecopter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm",
@@ -177,6 +174,25 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
             },
+        },
+    },
+    "Helicopter": {
+        "default_frame": "heli",
+        "frames": {
+            "heli": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": "default_params/copter-heli.parm",
+            },
+            "heli-dual": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-dual.parm"],
+            },
+            # "heli-compound": {
+            #     "waf_target": "bin/arducopter-heli",
+            #     "default_params_filename": ["default_params/copter-heli.parm",
+            #                                 "default_params/copter-heli-compound.parm"],
+            # },
         },
     },
     "Blimp": {
