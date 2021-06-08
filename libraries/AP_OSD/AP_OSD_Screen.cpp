@@ -1772,7 +1772,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     AP_Stats *stats = AP::stats();
     if (stats) {
         uint32_t t = stats->get_flight_time_s();
-        backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
+        backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, unsigned(t/60), unsigned(t%60));
     }
 }
 
@@ -1894,7 +1894,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     uint8_t hour, min, sec;
     uint16_t ms;
     if (!rtc.get_local_time(hour, min, sec, ms)) {
-    backend->write(x, y, false, "%c--:--%", SYM_CLK);
+    backend->write(x, y, false, "%c--:--", SYM_CLK);
     } else {
     backend->write(x, y, false, "%c%02u:%02u", SYM_CLK, hour, min);
     }
@@ -1910,7 +1910,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
-        backend->write(x, y, false, buff);
+        backend->write(x, y, false, "%s", buff);
     }
 }
 #endif
@@ -1935,7 +1935,7 @@ void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
         }
     }
     if (callsign_data.str != nullptr) {
-        backend->write(x, y, false, callsign_data.str);
+        backend->write(x, y, false, "%s", callsign_data.str);
     }
 #endif
 }
