@@ -124,6 +124,13 @@ public:
      */
     virtual void set_cmd_header(const CommandHeader& cmd_hdr) {}
 
+    /*
+     * Sets up peripheral for execution in place mode
+     * Only relevant for Wide SPI setup.
+     */
+    virtual bool enter_xip_mode(void** map_ptr) { return false; }
+    virtual bool exit_xip_mode() { return false; }
+
     /**
      * Wrapper function over #transfer() to read recv_len registers, starting
      * by first_reg, into the array pointed by recv. The read flag passed to
