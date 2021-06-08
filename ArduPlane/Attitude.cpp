@@ -64,6 +64,15 @@ bool Plane::stick_mixing_enabled(void)
 #else
     const bool stickmixing = true;
 #endif
+    if (control_mode == &mode_qrtl &&
+        quadplane.poscontrol.get_state() >= QuadPlane::QPOS_POSITION1) {
+        // user may be repositioning
+        return false;
+    }
+    if (quadplane.in_vtol_land_poscontrol()) {
+        // user may be repositioning
+        return false;
+    }
     if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
