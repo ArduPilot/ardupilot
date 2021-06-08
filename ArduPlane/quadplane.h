@@ -638,6 +638,7 @@ private:
         OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
         OPTION_THR_LANDING_CONTROL=(1<<15),
         OPTION_DISABLE_APPROACH=(1<<16),
+        OPTION_REPOSITION_LANDING=(1<<17),
     };
 
     AP_Float takeoff_failure_scalar;

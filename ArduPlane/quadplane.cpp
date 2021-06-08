@@ -347,8 +347,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: quadplane options
-    // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming, ThrLandControl: enable throttle stick control of landing rate and horizontal position, DisableApproach: Disable use of approach and airbrake stages in VTOL landing
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach
+    // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming, ThrLandControl: enable throttle stick control of landing rate and horizontal position, DisableApproach: Disable use of approach and airbrake stages in VTOL landing, EnableLandResponsition: enable pilot controlled repositioning in AUTO land. Descent will pause while repositioning.
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -1453,6 +1453,12 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
             ret *= (thresh2 - thr_in)*scaling;
         }
     }
+
+    if (poscontrol.pilot_correction_active) {
+        // stop descent when repositioning
+        ret = MIN(0, ret);
+    }
+
     return ret;
 }
 
@@ -2525,7 +2531,7 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
  */
 void QuadPlane::update_land_positioning(void)
 {
-    if ((options & OPTION_THR_LANDING_CONTROL) == 0) {
+    if ((options & OPTION_REPOSITION_LANDING) == 0) {
         // not enabled
         poscontrol.pilot_correction_active = false;
         poscontrol.target_vel_cms.zero();
@@ -2534,12 +2540,7 @@ void QuadPlane::update_land_positioning(void)
     const float scale = 1.0 / 4500;
     float roll_in = plane.channel_roll->get_control_in() * scale;
     float pitch_in = plane.channel_pitch->get_control_in() * scale;
-    float thr_in = get_pilot_land_throttle();
-    const float dz = 0.15;
-    if (thr_in < 0.5-dz || thr_in>0.5+dz) {
-        // only allow pilot reposition when pilot has stopped descent
-        roll_in = pitch_in = 0;
-    }
+
     // limit correction speed to accel with stopping time constant of 0.5s
     const float speed_max_cms = wp_nav->get_wp_acceleration() * 0.5;
     const float dt = plane.scheduler.get_loop_period_s();
@@ -2549,7 +2550,7 @@ void QuadPlane::update_land_positioning(void)
 
     poscontrol.target_cm += poscontrol.target_vel_cms * dt;
 
-    poscontrol.pilot_correction_active = (!is_zero(roll_in)|| !is_zero(pitch_in));
+    poscontrol.pilot_correction_active = (!is_zero(roll_in) || !is_zero(pitch_in));
     if (poscontrol.pilot_correction_active) {
         poscontrol.pilot_correction_done = true;
     }
@@ -3545,7 +3546,11 @@ int8_t QuadPlane::forward_throttle_pct()
     vel_forward.last_ms = AP_HAL::millis();
     
     // work out the desired speed in forward direction
-    const Vector3f &desired_velocity_cms = pos_control->get_vel_desired_cms();
+    Vector3f desired_velocity_cms = pos_control->get_vel_desired_cms();
+
+    // convert to NED m/s
+    desired_velocity_cms.z *= -1;
+
     Vector3f vel_ned;
     if (!plane.ahrs.get_velocity_NED(vel_ned)) {
         // we don't know our velocity? EKF must be pretty sick
