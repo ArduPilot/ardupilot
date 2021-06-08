@@ -96,7 +96,7 @@ class AutoTestCopter(AutoTest):
         pass
 
     def defaults_filepath(self):
-        return self.model_defaults_filepath(self.vehicleinfo_key(), self.frame)
+        return self.model_defaults_filepath(self.frame)
 
     def wait_disarmed_default_wait_time(self):
         return 120
@@ -5646,7 +5646,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(self.model_defaults_filepath('ArduCopter', 'Callisto'))],
+                ["--defaults", ','.join(self.model_defaults_filepath('Callisto'))],
                 model="octa-quad:@ROMFS/models/Callisto.json",
                 wipe=True,
             )
@@ -6598,7 +6598,7 @@ class AutoTestCopter(AutoTest):
 
     def test_callisto(self):
         self.customise_SITL_commandline(
-            ["--defaults", ','.join(self.model_defaults_filepath('ArduCopter', 'Callisto')), ],
+            ["--defaults", ','.join(self.model_defaults_filepath('Callisto')), ],
             model="octa-quad:@ROMFS/models/Callisto.json",
             wipe=True,
         )
@@ -6632,7 +6632,7 @@ class AutoTestCopter(AutoTest):
             # should really have another entry in the vehicleinfo data
             # to carry the path to the JSON.
             actual_model = model.split(":")[0]
-            defaults = self.model_defaults_filepath("ArduCopter", actual_model)
+            defaults = self.model_defaults_filepath(actual_model)
             if type(defaults) != list:
                 defaults = [defaults]
             self.customise_SITL_commandline(
@@ -7313,6 +7313,9 @@ class AutoTestCopter(AutoTest):
 
 class AutoTestHeli(AutoTestCopter):
 
+    def vehicleinfo_key(self):
+        return 'Helicopter'
+
     def log_name(self):
         return "HeliCopter"
 
@@ -7425,6 +7428,70 @@ class AutoTestHeli(AutoTestCopter):
 
         self.progress("AVC mission completed: passed!")
 
+    def takeoff(self,
+                alt_min=30,
+                takeoff_throttle=1700,
+                require_absolute=True,
+                mode="STABILIZE",
+                timeout=120):
+        """Takeoff get to 30m altitude."""
+        self.progress("TAKEOFF")
+        self.change_mode(mode)
+        if not self.armed():
+            self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
+            self.zero_throttle()
+            self.arm_vehicle()
+
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1660, timeout=10)
+
+        if mode == 'GUIDED':
+            self.user_takeoff(alt_min=alt_min)
+        else:
+            self.set_rc(3, takeoff_throttle)
+        self.wait_for_alt(alt_min=alt_min, timeout=timeout)
+        self.hover()
+        self.progress("TAKEOFF COMPLETE")
+
+    def fly_each_frame(self):
+        vinfo = vehicleinfo.VehicleInfo()
+        vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        known_broken_frames = {
+        }
+        for frame in sorted(vinfo_options["frames"].keys()):
+            self.start_subtest("Testing frame (%s)" % str(frame))
+            if frame in known_broken_frames:
+                self.progress("Actually, no I'm not - it is known-broken (%s)" %
+                              (known_broken_frames[frame]))
+                continue
+            frame_bits = vinfo_options["frames"][frame]
+            print("frame_bits: %s" % str(frame_bits))
+            if frame_bits.get("external", False):
+                self.progress("Actually, no I'm not - it is an external simulation")
+                continue
+            model = frame_bits.get("model", frame)
+            # the model string for Callisto has crap in it.... we
+            # should really have another entry in the vehicleinfo data
+            # to carry the path to the JSON.
+            actual_model = model.split(":")[0]
+            defaults = self.model_defaults_filepath(actual_model)
+            if type(defaults) != list:
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                ["--defaults", ','.join(defaults), ],
+                model=model,
+                wipe=True,
+            )
+            self.takeoff(10)
+            self.do_RTL()
+            self.set_rc(8, 1000)
+
+    def hover(self):
+        self.progress("Setting hover collective")
+        self.set_rc(3, 1500)
+
     def fly_heli_poshold_takeoff(self):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
@@ -7453,8 +7520,7 @@ class AutoTestHeli(AutoTestCopter):
             self.progress("Pushing collective past half-way")
             self.set_rc(3, 1600)
             self.delay_sim_time(0.5)
-            self.progress("Bringing back to hover collective")
-            self.set_rc(3, 1500)
+            self.hover()
 
             # make sure we haven't already reached alt:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -7608,6 +7674,10 @@ class AutoTestHeli(AutoTestCopter):
             ("AutoRotation",
              "Fly AutoRotation",
              self.fly_autorotation),
+
+            ("FlyEachFrame",
+             "Fly each supported internal frame",
+             self.fly_each_frame),
 
             ("LogUpload",
              "Log upload",
