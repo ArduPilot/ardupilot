@@ -517,26 +517,6 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 #endif
 }
 
-// reset the current attitude, used on new IMU calibration
-void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
-{
-    // support locked access functions to AHRS data
-    WITH_SEMAPHORE(_rsem);
-    
-    AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
-    _dcm_attitude = {roll, pitch, yaw};
-#if HAL_NAVEKF2_AVAILABLE
-    if (_ekf2_started) {
-        _ekf2_started = EKF2.InitialiseFilter();
-    }
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    if (_ekf3_started) {
-        _ekf3_started = EKF3.InitialiseFilter();
-    }
-#endif
-}
-
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {

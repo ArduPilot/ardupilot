@@ -78,9 +78,6 @@ public:
     void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
-    // reset the current attitude, used on new IMU calibration
-    void reset_attitude(const float &roll, const float &pitch, const float &yaw) override;
-
     // dead-reckoning support
     bool get_position(struct Location &loc) const override;
 
