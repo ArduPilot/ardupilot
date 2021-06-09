@@ -13,10 +13,6 @@
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// HIL enumerations
-#define HIL_MODE_DISABLED 0
-#define HIL_MODE_SENSORS  1
-
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
