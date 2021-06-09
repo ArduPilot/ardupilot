@@ -459,6 +459,7 @@ private:
     uint32_t last_loiter_ms;
 
     enum position_control_state {
+        QPOS_NONE = 0,
         QPOS_APPROACH,
         QPOS_AIRBRAKE,
         QPOS_POSITION1,

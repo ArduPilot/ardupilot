@@ -2613,6 +2613,11 @@ void QuadPlane::vtol_position_controller(void)
     // horizontal position control
     switch (poscontrol.get_state()) {
 
+    case QPOS_NONE:
+        poscontrol.set_state(QPOS_POSITION1);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        break;
+
     case QPOS_APPROACH:
         if (in_vtol_mode()) {
             // this means we're not running update_transition() and
@@ -2909,6 +2914,11 @@ void QuadPlane::vtol_position_controller(void)
 
     // now height control
     switch (poscontrol.get_state()) {
+    case QPOS_NONE:
+        poscontrol.set_state(QPOS_POSITION1);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        break;
+
     case QPOS_APPROACH:
     case QPOS_AIRBRAKE:
         // we just want stability from the VTOL controller in these
