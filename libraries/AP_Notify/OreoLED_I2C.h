@@ -19,6 +19,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
 
+#ifndef HAL_OREO_LED_ENABLED
+#define HAL_OREO_LED_ENABLED 0
+#endif
+
 #define OREOLED_NUM_LEDS        4       // maximum number of individual LEDs connected to the oreo led cpu
 #define OREOLED_INSTANCE_ALL    0xff    // instance number to indicate all LEDs (used for set_rgb and set_macro)
 #define OREOLED_BRIGHT          0xff    // maximum brightness when flying (disconnected from usb)
@@ -196,4 +200,3 @@ private:
     uint32_t _last_boot_ms;
     uint32_t _last_sync_ms;
 };
-
