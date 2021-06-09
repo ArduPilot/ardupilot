@@ -12,7 +12,6 @@
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
-#include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
@@ -1194,13 +1193,6 @@ void Compass::_probe_external_i2c_compasses(void)
  */
 void Compass::_detect_backends(void)
 {
-#ifndef HAL_BUILD_AP_PERIPH
-    if (_hil_mode) {
-        _add_backend(AP_Compass_HIL::detect());
-        return;
-    }
-#endif
-
 #if HAL_EXTERNAL_AHRS_ENABLED
     if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
         ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
@@ -1235,8 +1227,6 @@ void Compass::_detect_backends(void)
 #if defined(HAL_MAG_PROBE_LIST)
     // driver probes defined by COMPASS lines in hwdef.dat
     HAL_MAG_PROBE_LIST;
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
-    ADD_BACKEND(DRIVER_SITL, AP_Compass_HIL::detect());
 #elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
@@ -1866,68 +1856,20 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
     return all_configured;
 }
 
-// Update raw magnetometer values from HIL data
-//
-void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
-{
-    Matrix3f R;
-
-    // create a rotation matrix for the given attitude
-    R.from_euler(roll, pitch, yaw);
-
-    if (!is_equal(_hil.last_declination,get_declination())) {
-        _setup_earth_field();
-        _hil.last_declination = get_declination();
-    }
-
-    // convert the earth frame magnetic vector to body frame, and
-    // apply the offsets
-    _hil.field[instance] = R.mul_transpose(_hil.Bearth);
-
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil.field[instance].rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _hil.field[instance].rotate((enum Rotation)_state[StateIndex(0)].orientation.get());
-
-    if (!_state[StateIndex(0)].external) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
-            _hil.field[instance] = *_custom_rotation * _hil.field[instance];
-        } else {
-            _hil.field[instance].rotate(_board_orientation);
-        }
-    }
-    _hil.healthy[instance] = true;
-}
-
-// Update raw magnetometer values from HIL mag vector
-//
-void Compass::setHIL(uint8_t instance, const Vector3f &mag, uint32_t update_usec)
-{
-    _hil.field[instance] = mag;
-    _hil.healthy[instance] = true;
-    _state[StateIndex(instance)].last_update_usec = update_usec;
-}
-
-const Vector3f& Compass::getHIL(uint8_t instance) const
-{
-    return _hil.field[instance];
-}
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // setup _Bearth
 void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
-    _hil.Bearth = {400, 0, 0};
+    _sitl.Bearth = {400, 0, 0};
 
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;
     R.from_euler(0, ToRad(66), get_declination());
-    _hil.Bearth = R * _hil.Bearth;
+    _sitl.Bearth = R * _sitl.Bearth;
 }
+#endif
 
 /*
   set the type of motor compensation to use
