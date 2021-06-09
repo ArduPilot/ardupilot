@@ -72,11 +72,7 @@ static bool hex2nibble_error;
 
 static uint8_t nibble2hex(uint8_t x)
 {
-    // Allocating in RAM because it's faster
-    static uint8_t ConversionTable[] = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-    };
-    return ConversionTable[x & 0x0F];
+    return (x & 0x0F) < 10 ? '0' + (x & 0x0F) : 'A' + (x & 0x0F);
 }
 
 static uint8_t hex2nibble(char c)
