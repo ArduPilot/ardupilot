@@ -85,6 +85,6 @@ protected:
     Vector2f    _predicted_accel;
     Vector2f    _predicted_euler_angle;
     Vector2f    _predicted_euler_rate;
-    float       _brake_timer;
-    float       _brake_accel;
+    uint32_t    _brake_timer;           // system time that brake was initiated
+    float       _brake_accel;           // acceleration due to braking from previous iteration (used for jerk limiting)
 };

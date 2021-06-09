@@ -99,6 +99,7 @@ void AC_Loiter::init_target(const Vector3f& position)
     _predicted_accel.zero();
     _desired_accel.zero();
     _predicted_euler_angle.zero();
+    _brake_accel = 0.0f;
 
     // set target position
     _pos_control.set_pos_target_xy_cm(position.x, position.y);
@@ -121,6 +122,7 @@ void AC_Loiter::init_target()
     _predicted_accel.y = _pos_control.get_accel_target_cmss().y;
     _predicted_euler_angle.x = radians(_pos_control.get_roll_cd()*0.01f);
     _predicted_euler_angle.y = radians(_pos_control.get_pitch_cd()*0.01f);
+    _brake_accel = 0.0f;
 }
 
 /// reduce response for landing
