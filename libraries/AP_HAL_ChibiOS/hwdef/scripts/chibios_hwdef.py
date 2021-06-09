@@ -1686,8 +1686,12 @@ def bootloader_path():
 def add_bootloader():
     '''added bootloader to ROMFS'''
     bp = bootloader_path()
-    if bp is not None:
+    if bp is not None and int(get_config('BOOTLOADER_EMBED', required=False, default='1')):
         romfs["bootloader.bin"] = bp
+        env_vars['BOOTLOADER_EMBED'] = 1
+    else:
+        env_vars['BOOTLOADER_EMBED'] = 0
+
 
 
 def write_ROMFS(outdir):
