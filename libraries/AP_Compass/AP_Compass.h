@@ -289,10 +289,6 @@ public:
     bool configured(uint8_t i);
     bool configured(char *failure_msg, uint8_t failure_msg_len);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    void        _setup_earth_field();
-#endif
-
     // return last update time in microseconds
     uint32_t last_update_usec(void) const { return last_update_usec(_first_usable); }
     uint32_t last_update_usec(uint8_t i) const { return _get_state(Priority(i)).last_update_usec; }
@@ -301,14 +297,6 @@ public:
     uint32_t last_update_ms(uint8_t i) const { return _get_state(Priority(i)).last_update_ms; }
 
     static const struct AP_Param::GroupInfo var_info[];
-
-    // HIL variables
-    struct {
-        Vector3f Bearth;
-        // float last_declination;
-        // bool healthy[COMPASS_MAX_INSTANCES];
-        // Vector3f field[COMPASS_MAX_INSTANCES];
-    } _sitl;
 
     enum LearnType {
         LEARN_NONE=0,
