@@ -395,10 +395,6 @@ float AP_Airspeed::get_pressure(uint8_t i)
     if (!enabled(i)) {
         return 0;
     }
-    if (state[i].hil_set) {
-        state[i].healthy = true;
-        return state[i].hil_pressure;
-    }
     float pressure = 0;
     if (sensor[i]) {
         state[i].healthy = sensor[i]->get_differential_pressure(pressure);
@@ -623,17 +619,6 @@ void AP_Airspeed::Log_Airspeed()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
-}
-
-void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
-{
-    state[0].raw_airspeed = airspeed;
-    state[0].airspeed = airspeed;
-    state[0].last_pressure = diff_pressure;
-    state[0].last_update_ms = AP_HAL::millis();
-    state[0].hil_pressure = diff_pressure;
-    state[0].hil_set = true;
-    state[0].healthy = true;
 }
 
 bool AP_Airspeed::use(uint8_t i) const
