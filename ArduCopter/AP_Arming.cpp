@@ -801,7 +801,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         AP::notify().update();
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
@@ -895,7 +895,7 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         return false;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
