@@ -1856,21 +1856,6 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
     return all_configured;
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-// setup _Bearth
-void Compass::_setup_earth_field(void)
-{
-    // assume a earth field strength of 400
-    _sitl.Bearth = {400, 0, 0};
-
-    // rotate _Bearth for inclination and declination. -66 degrees
-    // is the inclination in Canberra, Australia
-    Matrix3f R;
-    R.from_euler(0, ToRad(66), get_declination());
-    _sitl.Bearth = R * _sitl.Bearth;
-}
-#endif
-
 /*
   set the type of motor compensation to use
  */
