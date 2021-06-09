@@ -435,6 +435,17 @@ bool AP_Logger_File::StartNewLogOK() const
     if (recent_open_error()) {
         return false;
     }
+    if (hal.scheduler->in_main_thread() &&
+        hal.util->get_soft_armed() &&
+        AP_HAL::millis() - hal.util->get_last_armed_change() > 3000) {
+        // when we create the log while arming we are armed and the
+        // creation is in the main loop. We generally don't want to
+        // allow logs to start in main thread while armed, but we
+        // have an exception for the first 3s after arming to allow
+        // for the normal arming process to work. This can be removed
+        // when we move log creation to the logging thread
+        return false;
+    }
     return AP_Logger_Backend::StartNewLogOK();
 }
 
