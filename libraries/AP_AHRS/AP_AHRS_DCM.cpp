@@ -239,12 +239,6 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     _last_startup_ms = AP_HAL::millis();
 }
 
-// reset the current attitude, used by HIL
-void AP_AHRS_DCM::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
-{
-    _dcm_matrix.from_euler(_roll, _pitch, _yaw);
-}
-
 /*
  *  check the DCM matrix for pathological values
  */
