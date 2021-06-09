@@ -37,6 +37,8 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFr
 
 Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
 {
+    zero();
+
     // store alt and alt frame
     set_alt_cm(ekf_offset_neu.z, frame);
 
