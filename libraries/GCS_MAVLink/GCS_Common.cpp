@@ -877,16 +877,6 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // No ID we return true for may take more than a few hundred
     // microseconds to return!
 
-    if (in_hil_mode()) {
-        // in HIL we need to keep sending servo values to ensure
-        // the simulator doesn't pause, otherwise our sensor
-        // calibration could stall
-        if (id == MSG_SERVO_OUT ||
-            id == MSG_SERVO_OUTPUT_RAW) {
-            return true;
-        }
-    }
-
     switch (id) {
     case MSG_HEARTBEAT:
     case MSG_NEXT_PARAM:
@@ -2668,13 +2658,8 @@ bool GCS_MAVLINK::telemetry_delayed() const
 void GCS_MAVLINK::send_servo_output_raw()
 {
     uint16_t values[16] {};
-    if (in_hil_mode()) {
-        for (uint8_t i=0; i<16; i++) {
-            values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
-        }
-    } else {
-        hal.rcout->read(values, 16);
-    }
+    hal.rcout->read(values, 16);
+
     for (uint8_t i=0; i<16; i++) {
         if (values[i] == 65535) {
             values[i] = 0;
@@ -3216,7 +3201,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
     }
 }
 
-// allow override of RC channel values for HIL or for complete GCS
+// allow override of RC channel values for complete GCS
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
