@@ -2406,6 +2406,11 @@ class AutoTestPlane(AutoTest):
         if not bad_value:
             raise NotAchievedException("uncompensated IMUs did not vary enough")
 
+        # the above tests change the internal persistent state of the
+        # vehicle in ways that autotest doesn't track (magically set
+        # parameters).  So wipe the vehicle's eeprom:
+        self.reset_SITL_commandline()
+
     def ekf_lane_switch(self):
 
         self.context_push()
