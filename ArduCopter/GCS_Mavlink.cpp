@@ -55,10 +55,6 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // override if stick mixing is enabled
     _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
-
     // we are armed if we are not initialising
     if (copter.motors != nullptr && copter.motors->armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -372,8 +368,8 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
 
     // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate to ground station
-    // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
+    // @DisplayName: Unused
+    // @Description: Unused
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1
@@ -1252,53 +1248,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         break;
     }
 #endif
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
-    {
-        mavlink_hil_state_t packet;
-        mavlink_msg_hil_state_decode(&msg, &packet);
-
-        // sanity check location
-        if (!check_latlng(packet.lat, packet.lon)) {
-            break;
-        }
-
-        // set gps hil sensor
-        Location loc;
-        loc.lat = packet.lat;
-        loc.lng = packet.lon;
-        loc.alt = packet.alt/10;
-        Vector3f vel(packet.vx, packet.vy, packet.vz);
-        vel *= 0.01f;
-
-        gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                   packet.time_usec/1000,
-                   loc, vel, 10, 0);
-
-        // rad/sec
-        Vector3f gyros;
-        gyros.x = packet.rollspeed;
-        gyros.y = packet.pitchspeed;
-        gyros.z = packet.yawspeed;
-
-        // m/s/s
-        Vector3f accels;
-        accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
-        accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
-        accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
-
-        ins.set_gyro(0, gyros);
-
-        ins.set_accel(0, accels);
-
-        AP::baro().setHIL(packet.alt*0.001f);
-        copter.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
-        copter.compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-
-        break;
-    }
-#endif //  HIL_MODE != HIL_MODE_DISABLED
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109

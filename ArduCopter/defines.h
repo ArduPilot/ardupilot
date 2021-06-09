@@ -27,10 +27,6 @@ enum autopilot_yaw_mode {
 #define MULTICOPTER_FRAME 1
 #define HELI_FRAME 2
 
-// HIL enumerations
-#define HIL_MODE_DISABLED               0
-#define HIL_MODE_SENSORS                1
-
 // Tuning enumeration
 enum tuning_func {
     TUNING_NONE =                        0, //
