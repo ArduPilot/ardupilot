@@ -1,14 +1,8 @@
-#include "AP_Baro_HIL.h"
+#include "AP_Baro.h"
 
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
-
-AP_Baro_HIL::AP_Baro_HIL(AP_Baro &baro) :
-    AP_Baro_Backend(baro)
-{
-    _instance = _frontend.register_sensor();
-}
 
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
@@ -75,51 +69,4 @@ void AP_Baro::SimpleUnderWaterAtmosphere(
     const float seaTempSurface = 15.0f; // Celsius
     const float S = seaTempSurface * 0.338f;
     theta = 1.0f / ((1.8e-4f) * S * (alt * 1e3f) + 1.0f);
-}
-
-/*
-  convert an altitude in meters above sea level to a presssure and temperature
- */
-void AP_Baro::setHIL(float altitude_msl)
-{
-    float sigma, delta, theta;
-
-    SimpleAtmosphere(altitude_msl*0.001f, sigma, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = 303.16f * theta - C_TO_KELVIN; // Assume 30 degrees at sea level - converted to degrees Kelvin
-
-    _hil.pressure = p;
-    _hil.temperature = T;
-    _hil.updated = true;
-}
-
-/*
-  set HIL pressure and temperature for an instance
- */
-void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms)
-{
-    if (instance >= _num_sensors) {
-        // invalid
-        return;
-    }
-    _hil.pressure = pressure;
-    _hil.temperature = temperature;
-    _hil.altitude = altitude;
-    _hil.climb_rate = climb_rate;
-    _hil.updated = true;
-    _hil.have_alt = true;
-
-    if (last_update_ms != 0) {
-        _hil.last_update_ms = last_update_ms;
-        _hil.have_last_update = true;
-    }
-}
-
-// Read the sensor
-void AP_Baro_HIL::update(void)
-{
-    if (_frontend._hil.updated) {
-        _frontend._hil.updated = false;
-        _copy_to_frontend(0, _frontend._hil.pressure, _frontend._hil.temperature);
-    }
 }
