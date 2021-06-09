@@ -133,13 +133,6 @@ void Plane::ahrs_update()
 {
     arming.update_soft_armed();
 
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // update hil before AHRS update
-        gcs().update_receive();
-    }
-#endif
-
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
