@@ -199,12 +199,6 @@ void Blimp::ten_hz_logging_loop()
 // twentyfive_hz_logging - should be run at 25hz
 void Blimp::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL for a blimp needs very fast update of the servo values
-    gcs().send_message(MSG_SERVO_OUTPUT_RAW);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
     }
@@ -212,8 +206,6 @@ void Blimp::twentyfive_hz_logging()
     if (should_log(MASK_LOG_IMU)) {
         AP::ins().Write_IMU();
     }
-#endif
-
 }
 
 // three_hz_loop - 3.3hz loop
@@ -247,13 +239,6 @@ void Blimp::one_hz_loop()
 
 void Blimp::read_AHRS(void)
 {
-    // Perform IMU calculations and get attitude info
-    //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs().update();
-#endif
-
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
 }
