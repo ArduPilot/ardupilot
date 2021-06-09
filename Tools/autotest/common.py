@@ -5397,6 +5397,8 @@ class AutoTest(ABC):
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
                 self.arm_vehicle()
+                # statustexts are queued; give it a second to arrive:
+                self.delay_sim_time(5)
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
