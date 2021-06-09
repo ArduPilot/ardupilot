@@ -220,9 +220,6 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
 
-    // reset the current attitude, used on new IMU calibration
-    virtual void reset_attitude(const float &roll, const float &pitch, const float &yaw) = 0;
-
     // return the average size of the roll/pitch error estimate
     // since last call
     virtual float get_error_rp(void) const = 0;
