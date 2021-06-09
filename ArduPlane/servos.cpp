@@ -869,19 +869,6 @@ void Plane::set_servos(void)
         }
     }
 
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // get the servos to the GCS immediately for HIL
-        if (HAVE_PAYLOAD_SPACE(MAVLINK_COMM_0, RC_CHANNELS_SCALED)) {
-            send_servo_out(MAVLINK_COMM_0);
-        }
-        if (!g.hil_servos) {
-            // we don't run the output mixer
-            return;
-        }
-    }
-#endif
-
     if (landing.get_then_servos_neutral() > 0 &&
             control_mode == &mode_auto &&
             landing.get_disarm_delay() > 0 &&
