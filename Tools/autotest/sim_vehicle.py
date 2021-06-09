@@ -767,9 +767,7 @@ def start_mavproxy(opts, stuff):
                 else:
                     c.extend(["--out", "127.0.0.1:" + str(port)])
 
-        if opts.hil:
-            c.extend(["--load-module", "HIL"])
-        else:
+        if True:
             if opts.mcast:
                 c.extend(["--master", "mcast:"])
             else:
@@ -832,10 +830,6 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   default=False,
                   help="be compatible with the way sim_vehicle.sh works; "
                   "make this the first option")
-parser.add_option("-H", "--hil",
-                  action='store_true',
-                  default=False,
-                  help="start HIL")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
@@ -1118,20 +1112,6 @@ if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
     cmd_opts.jobs = 1
 
 # validate parameters
-if cmd_opts.hil:
-    if cmd_opts.valgrind:
-        print("May not use valgrind with hil")
-        sys.exit(1)
-    if cmd_opts.callgrind:
-        print("May not use callgrind with hil")
-        sys.exit(1)
-    if cmd_opts.gdb or cmd_opts.gdb_stopped or cmd_opts.lldb or cmd_opts.lldb_stopped:
-        print("May not use gdb or lldb with hil")
-        sys.exit(1)
-    if cmd_opts.strace:
-        print("May not use strace with hil")
-        sys.exit(1)
-
 if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped or cmd_opts.lldb or cmd_opts.lldb_stopped):
     print("May not use valgrind with gdb or lldb")
     sys.exit(1)
@@ -1226,9 +1206,8 @@ if cmd_opts.instances is not None:
 else:
     instances = range(cmd_opts.instance, cmd_opts.instance + cmd_opts.count)
 
-if not cmd_opts.hil:
-    if cmd_opts.instance == 0:
-        kill_tasks()
+if cmd_opts.instance == 0:
+    kill_tasks()
 
 if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
@@ -1275,20 +1254,7 @@ else:
         finally:
             instance_dir.append(i_dir)
 
-if cmd_opts.hil:
-    # (unlikely)
-    jsbsim_opts = [
-        os.path.join(autotest_dir,
-                     "jsb_sim/runsim.py"),
-        "--speedup=" + str(cmd_opts.speedup)
-    ]
-    for i in instances:
-        c = []
-        if spawns is not None:
-            c = ["--home", spawns[i]]
-        run_in_terminal_window("JSBSim", jsbsim_opts + c)
-
-else:
+if True:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(cmd_opts, frame_infos)
 
