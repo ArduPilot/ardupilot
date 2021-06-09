@@ -243,9 +243,6 @@ public:
     // Update the harmonic notch frequencies
     void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
 
-    // enable HIL mode
-    void set_hil_mode(void) { _hil_mode = true; }
-
     // get the gyro filter rate in Hz
     uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
@@ -300,17 +297,6 @@ public:
 
     // return true if harmonic notch enabled
     bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
-
-    /*
-      HIL set functions. The minimum for HIL is set_accel() and
-      set_gyro(). The others are option for higher fidelity log
-      playback
-     */
-    void set_accel(uint8_t instance, const Vector3f &accel);
-    void set_gyro(uint8_t instance, const Vector3f &gyro);
-    void set_delta_time(float delta_time);
-    void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
-    void set_delta_angle(uint8_t instance, const Vector3f &deltaa, float deltaat);
 
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
@@ -622,9 +608,6 @@ private:
     // has wait_for_sample() found a sample?
     bool _have_sample:1;
 
-    // are we in HIL mode?
-    bool _hil_mode:1;
-
     bool _backends_detected:1;
 
     // are gyros or accels currently being calibrated
@@ -666,13 +649,6 @@ private:
 
     // threshold for detecting stillness
     AP_Float _still_threshold;
-
-    /*
-      state for HIL support
-     */
-    struct {
-        float delta_time;
-    } _hil {};
 
     // Trim options
     AP_Int8 _acc_body_aligned;
