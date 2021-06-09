@@ -854,9 +854,6 @@ private:
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
 
-    // GCS_Mavlink.cpp
-    void send_servo_out(mavlink_channel_t chan);
-
     // Log.cpp
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);

@@ -740,32 +740,6 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
 
-#if HIL_SUPPORT
-    // @Param: HIL_MODE
-    // @DisplayName: HIL mode enable
-    // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    // @RebootRequired: True
-    GSCALAR(hil_mode,               "HIL_MODE",      0),
-#endif
-
-    // @Param: HIL_SERVOS
-    // @DisplayName: HIL Servos enable
-    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(hil_servos,            "HIL_SERVOS",      0),
-
-    // @Param: HIL_ERR_LIMIT
-    // @DisplayName: Limit of error in HIL attitude before reset
-    // @Description: This controls the maximum error in degrees on any axis before HIL will reset the DCM attitude to match the HIL_STATE attitude. This limit will prevent poor timing on HIL from causing a major attitude error. If the value is zero then no limit applies.
-    // @Units: deg
-    // @Range: 0 90
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
-
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
     // @Description: Automatically begin landing sequence after arriving at RTL location. This requires the addition of a DO_LAND_START mission item, which acts as a marker for the start of a landing sequence. The closest landing sequence will be chosen to the current location. 
