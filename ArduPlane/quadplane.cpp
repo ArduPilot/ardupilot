@@ -2772,8 +2772,22 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = stopping_speed;
 
         // maximum configured VTOL speed
-        const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+        float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
         const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
+
+        // limit WP speed to a lower speed when more than 20 degrees
+        // off pointing at the destination. quadplanes are often
+        // unstable when flying sideways or backwards
+        const float target_bearing = degrees(diff_wp.angle());
+        const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.yaw) - target_bearing));
+        if (yaw_difference > 20) {
+            // this gives a factor of 2x reduction in max speed when
+            // off by 90 degrees, and 3x when off by 180 degrees
+            const float speed_reduction = linear_interpolate(1, 3,
+                                                             yaw_difference,
+                                                             20, 160);
+            wp_speed /= speed_reduction;
+        }
 
         if (current_speed_sq < sq(wp_speed)) {
             // if we are below the WP speed then don't ask for more
