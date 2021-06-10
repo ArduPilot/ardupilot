@@ -35,11 +35,13 @@ void Copter::crash_check()
         return;
     }
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_FLIP_ENABLED == ENABLED
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
     if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
         crash_counter = 0;
         return;
     }
+#endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     //return immediately if in autorotation mode
