@@ -2801,7 +2801,10 @@ void QuadPlane::vtol_position_controller(void)
         // run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
-        Vector2f target_speed_xy = diff_wp.normalized() * target_speed;
+        Vector2f target_speed_xy;
+        if (distance > 0.1) {
+            target_speed_xy = diff_wp.normalized() * target_speed;
+        }
         pos_control->set_vel_desired_xy_cms(target_speed_xy * 100);
 
         // reset position controller xy target to current position
