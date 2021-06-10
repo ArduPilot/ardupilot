@@ -237,6 +237,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     }
 
     float current, consumed_mah, consumed_wh;
+    int32_t time_remaining;
     if (battery.current_amps(current, instance)) {
          current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
     } else {
@@ -250,6 +251,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     } else {
         consumed_wh = -1;
     }
+    if (!battery.time_remaining(time_remaining, instance)) {
+        time_remaining = 0;
+    }
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
                                     MAV_BATTERY_FUNCTION_UNKNOWN, // function
@@ -260,7 +264,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
-                                    0, // time remaining, seconds (not provided)
+                                    time_remaining, // time remaining, seconds
                                     battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_volts_ext); // Cell 11..14 voltages
 }
