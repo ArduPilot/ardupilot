@@ -1038,6 +1038,7 @@ void AP_IOMCU::check_iomcu_reset(void)
 
     if (dt_ms < max_delay) {
         // all OK
+        last_safety_off = reg_status.flag_safety_off;
         return;
     }
     detected_io_reset = true;
@@ -1045,11 +1046,16 @@ void AP_IOMCU::check_iomcu_reset(void)
     hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
                         unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
 
-    if (safety_forced_off && !reg_status.flag_safety_off && hal.util->get_soft_armed()) {
-        // IOMCU has reset while armed with safety off - force it off
-        // again so we can keep flying
-        force_safety_off();
+    if (last_safety_off && !reg_status.flag_safety_off && hal.util->get_soft_armed()) {
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+        uint16_t options = boardconfig?boardconfig->get_safety_button_options():0;
+        if (safety_forced_off || (options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) == 0) {
+            // IOMCU has reset while armed with safety off - force it off
+            // again so we can keep flying
+            force_safety_off();
+        }
     }
+    last_safety_off = reg_status.flag_safety_off;
 
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU

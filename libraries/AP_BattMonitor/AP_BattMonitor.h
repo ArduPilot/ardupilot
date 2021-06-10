@@ -214,6 +214,9 @@ public:
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
 
+    // Returns mavlink charge state
+    MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

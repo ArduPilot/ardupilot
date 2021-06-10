@@ -62,6 +62,8 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
     _RFRN.vehicle_class = ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
+    _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
+    _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
     _RFRN.ahrs_airspeed_sensor_enabled = AP::ahrs().airspeed_sensor_enabled();
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
@@ -96,6 +98,15 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _millis = _RFRH.time_us / 1000UL;
 
     force_write = false;
+#endif
+}
+
+// for EKF usage to enable takeoff expected to true
+void AP_DAL::set_takeoff_expected()
+{
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    AP_AHRS &ahrs = AP::ahrs();
+    ahrs.set_takeoff_expected(true);
 #endif
 }
 

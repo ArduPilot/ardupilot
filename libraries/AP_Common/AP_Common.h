@@ -45,6 +45,9 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
+// used to forbid copy of objects
+#define CLASS_NO_COPY(c) c(const c &other) = delete; c &operator=(const c&) = delete
+
 #ifdef __has_cpp_attribute
 #  if __has_cpp_attribute(fallthrough)
 #    define FALLTHROUGH [[fallthrough]]

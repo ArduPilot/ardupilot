@@ -218,7 +218,7 @@ void AP_VideoTX::set_enabled(bool enabled) {
     }
 }
 
-// peiodic update
+// periodic update
 void AP_VideoTX::update(void)
 {
 #if HAL_CRSF_TELEM_ENABLED
@@ -237,6 +237,27 @@ void AP_VideoTX::update(void)
             _options |= uint8_t(VideoOptions::VTX_PITMODE);
         }
     }
+}
+
+bool AP_VideoTX::update_options() const
+{
+    if (!_defaults_set) {
+        return false;
+    }
+    // check pitmode
+    if ((_options & uint8_t(VideoOptions::VTX_PITMODE))
+        != (_current_options & uint8_t(VideoOptions::VTX_PITMODE))) {
+        return true;
+    }
+
+    // check unlock only
+    if ((_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
+        && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0) {
+        return true;
+    }
+
+    // ignore everything else
+    return false;
 }
 
 bool AP_VideoTX::have_params_changed() const
@@ -335,6 +356,7 @@ void AP_VideoTX::announce_vtx_settings() const
 }
 
 // change the video power based on switch input
+// 6-pos range is in the middle of the available range
 void AP_VideoTX::change_power(int8_t position)
 {
     if (position < 0 || position > 5) {
@@ -345,7 +367,6 @@ void AP_VideoTX::change_power(int8_t position)
     // 0 or 25
     if (_max_power_mw < 100) {
         switch (position) {
-            case 2:
             case 3:
             case 4:
             case 5:
@@ -359,29 +380,28 @@ void AP_VideoTX::change_power(int8_t position)
     // 0, 25 or 100
     else if (_max_power_mw < 200) {
         switch (position) {
-            case 2:
-            case 3:
-                power = 25;
+            case 0:
+                power = 0;
                 break;
-            case 4:
             case 5:
                 power = 100;
                 break;
             default:
-                power = 0;
+                power = 25;
                 break;
         }
     }
     // 0, 25, 100 or 200
     else if (_max_power_mw < 500) {
         switch (position) {
+            case 1:
             case 2:
                 power = 25;
                 break;
             case 3:
+            case 4:
                 power = 100;
                 break;
-            case 4:
             case 5:
                 power = 200;
                 break;
@@ -394,15 +414,15 @@ void AP_VideoTX::change_power(int8_t position)
     else if (_max_power_mw < 800) {
         switch (position) {
             case 1:
+            case 2:
                 power = 25;
                 break;
-            case 2:
+            case 3:
                 power = 100;
                 break;
-            case 3:
+            case 4:
                 power = 200;
                 break;
-            case 4:
             case 5:
                 power = 500;
                 break;

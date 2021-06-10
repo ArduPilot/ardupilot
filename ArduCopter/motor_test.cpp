@@ -150,7 +150,6 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             EXPECT_DELAY_MS(3000);
             // enable and arm motors
             if (!motors->armed()) {
-                init_rc_out();
                 enable_motor_output();
                 motors->armed(true);
                 hal.util->set_soft_armed(true);

@@ -282,6 +282,18 @@ void Vector3<T>::rotate_inverse(enum Rotation rotation)
     (*this) = M.mul_transpose(*this);
 }
 
+// rotate vector by angle in radians in xy plane leaving z untouched
+template <typename T>
+void Vector3<T>::rotate_xy(float angle_rad)
+{
+    const float cs = cosf(angle_rad);
+    const float sn = sinf(angle_rad);
+    float rx = x * cs - y * sn;
+    float ry = x * sn + y * cs;
+    x = rx;
+    y = ry;
+}
+
 // vector cross product
 template <typename T>
 Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const

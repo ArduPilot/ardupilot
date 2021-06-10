@@ -735,12 +735,6 @@ void NavEKF3_core::readBaroData()
 
         baroDataNew.hgt = baro.get_altitude(selected_baro);
 
-        // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
-        // This prevents negative baro disturbances due to rotor wash ground interaction corrupting the EKF altitude during initial ascent
-        if (expectGndEffectTakeoff) {
-            baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
-        }
-
         // time stamp used to check for new measurement
         lastBaroReceived_ms = baro.get_last_update(selected_baro);
 

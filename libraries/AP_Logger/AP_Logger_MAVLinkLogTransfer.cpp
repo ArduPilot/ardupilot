@@ -22,6 +22,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h> // for LOG_ENTRY
 
+#ifndef HAL_NO_GCS
+
 extern const AP_HAL::HAL& hal;
 
 // We avoid doing log messages when timing is critical:
@@ -328,3 +330,5 @@ bool AP_Logger::handle_log_send_data()
     }
     return true;
 }
+
+#endif

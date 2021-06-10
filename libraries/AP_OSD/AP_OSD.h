@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
@@ -155,13 +155,11 @@ private:
     AP_OSD_Setting aspd1{false, 0, 0};
     AP_OSD_Setting aspd2{false, 0, 0};
     AP_OSD_Setting vspeed{true, 24, 9};
-
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     AP_OSD_Setting blh_temp {false, 24, 13};
     AP_OSD_Setting blh_rpm{false, 22, 12};
     AP_OSD_Setting blh_amps{false, 24, 14};
 #endif
-
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
     AP_OSD_Setting roll_angle{false, 0, 0};
@@ -183,7 +181,9 @@ private:
     AP_OSD_Setting clk{false, 0, 0};
     AP_OSD_Setting callsign{false, 0, 0};
     AP_OSD_Setting vtx_power{false, 0, 0};
-    AP_OSD_Setting hgt_abvterr{true, 23, 7};
+    AP_OSD_Setting hgt_abvterr{false, 23, 7};
+    AP_OSD_Setting fence{false, 14, 9};
+    AP_OSD_Setting rngf{false, 0, 0};
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
@@ -227,13 +227,11 @@ private:
     //helper functions
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
-
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     void draw_blh_temp(uint8_t x, uint8_t y);
     void draw_blh_rpm(uint8_t x, uint8_t y);
     void draw_blh_amps(uint8_t x, uint8_t y);
 #endif
-
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);
     void draw_roll_angle(uint8_t x, uint8_t y);
@@ -256,6 +254,8 @@ private:
     void draw_current2(uint8_t x, uint8_t y);
     void draw_vtx_power(uint8_t x, uint8_t y);
     void draw_hgt_abvterr(uint8_t x, uint8_t y);
+    void draw_fence(uint8_t x, uint8_t y);
+    void draw_rngf(uint8_t x, uint8_t y);
 
 
     struct {

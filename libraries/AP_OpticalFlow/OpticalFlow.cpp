@@ -52,8 +52,8 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @DisplayName: Flow sensor yaw alignment
     // @Description: Specifies the number of centi-degrees that the flow sensor is yawed relative to the vehicle. A sensor with its X-axis pointing to the right of the vehicle X axis has a positive yaw angle.
     // @Units: cdeg
-    // @Range: -18000 +18000
-    // @Increment: 1
+    // @Range: -17999 +18000
+    // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("_ORIENT_YAW", 3,  OpticalFlow,    _yawAngle_cd,   0),
 

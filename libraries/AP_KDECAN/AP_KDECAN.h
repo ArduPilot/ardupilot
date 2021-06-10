@@ -27,13 +27,14 @@
 #include <AP_HAL/Semaphores.h>
 
 #include <AP_Param/AP_Param.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #include <atomic>
 
 // there are 12 motor functions in SRV_Channel but CAN driver can't keep up
 #define KDECAN_MAX_NUM_ESCS 8
 
-class AP_KDECAN : public AP_CANDriver {
+class AP_KDECAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
 public:
     AP_KDECAN();
     
@@ -54,9 +55,6 @@ public:
     
     // check that arming can happen
     bool pre_arm_check(char* reason, uint8_t reason_len);
-
-    // send MAVLink telemetry packets
-    void send_mavlink(uint8_t chan);
 
     // caller checks that vehicle isn't armed
     // start_stop: true to start, false to stop
@@ -90,18 +88,6 @@ private:
     HAL_Semaphore _rc_out_sem;
     std::atomic<bool> _new_output;
     uint16_t _scaled_output[KDECAN_MAX_NUM_ESCS];
-
-    // telemetry input
-    HAL_Semaphore _telem_sem;
-    struct telemetry_info_t {
-        uint64_t time;
-        uint16_t voltage;
-        uint16_t current;
-        uint16_t rpm;
-        uint8_t temp;
-        bool new_data;
-    } _telemetry[KDECAN_MAX_NUM_ESCS];
-
 
     union frame_id_t {
         struct PACKED {

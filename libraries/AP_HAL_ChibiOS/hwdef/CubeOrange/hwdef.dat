@@ -4,8 +4,6 @@
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
 USB_PRODUCT 0x1016
 USB_STRING_MANUFACTURER "Hex/ProfiCNC"
-USB_STRING_PRODUCT "CubeOrange"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
@@ -302,9 +300,11 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # Enable RAMTROM parameter storage.
 define HAL_WITH_RAMTRON 1
 
-# Setup for the possibility of an IMU heater since the pixhawk2 cube has
-# an IMU heater.
+# Setup the IMU heater
 define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1

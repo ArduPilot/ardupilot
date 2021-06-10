@@ -493,8 +493,8 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
         const float speed_min = MIN(get_speed_along_track(), next_leg.get_speed_along_track());
         const float accel_min = MIN(get_accel_along_track(), next_leg.get_accel_along_track());
         if ((get_time_remaining() < next_leg.time_end() * 0.5f) && (turn_pos.length() < wp_radius) &&
-             (Vector2f(turn_vel.x, turn_vel.y).length() < speed_min) &&
-             (Vector2f(turn_accel.x, turn_accel.y).length() < 2.0f*accel_min)) {
+             (Vector2f{turn_vel.x, turn_vel.y}.length() < speed_min) &&
+             (Vector2f{turn_accel.x, turn_accel.y}.length() < 2.0f*accel_min)) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
     } else if (!is_zero(next_leg.get_time_elapsed())) {

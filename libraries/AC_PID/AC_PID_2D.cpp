@@ -72,8 +72,8 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
 //  update_all - set target and measured inputs to PID controller and calculate outputs
 //  target and error are filtered
 //  the derivative is then calculated and filtered
-//  the integral is then updated based on the setting of the limit flag
-Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measurement, bool limit)
+//  the integral is then updated if it does not increase in the direction of the limit vector
+Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measurement, const Vector2f &limit)
 {
     // don't process inf or NaN
     if (target.is_nan() || target.is_inf() ||
@@ -121,24 +121,49 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
     return _error * _kp + _integrator + _derivative * _kd + _target * _kff;
 }
 
-Vector2f AC_PID_2D::update_all(const Vector3f &target, const Vector3f &measurement, bool limit)
+Vector2f AC_PID_2D::update_all(const Vector3f &target, const Vector3f &measurement, const Vector3f &limit)
 {
-    return update_all(Vector2f{target.x, target.y}, Vector2f{measurement.x, measurement.y}, limit);
+    return update_all(Vector2f{target.x, target.y}, Vector2f{measurement.x, measurement.y}, Vector2f{limit.x, limit.y});
 }
 
 //  update_i - update the integral
-//  If the limit flag is set the integral is only allowed to shrink
-void AC_PID_2D::update_i(bool limit)
+//  If the limit is set the integral is only allowed to reduce in the direction of the limit
+void AC_PID_2D::update_i(const Vector2f &limit)
 {
-    float integrator_length_orig = _kimax;
-    if (limit) {
-        integrator_length_orig = MIN(integrator_length_orig, _integrator.length());
+    Vector2f limit_direction = limit;
+    Vector2f delta_integrator = (_error * _ki) * _dt;
+    if (!is_zero(limit_direction.length_squared())) {
+        // zero delta_vel if it will increase the velocity error
+        limit_direction.normalize();
+        if (is_positive(delta_integrator * limit)) {
+            delta_integrator.zero();
+        }
     }
-    _integrator += (_error * _ki) * _dt;
-    const float integrator_length_new = _integrator.length();
-    if (integrator_length_new > integrator_length_orig) {
-        _integrator *= (integrator_length_orig / integrator_length_new);
-    }
+
+    _integrator += delta_integrator;
+    _integrator.limit_length(_kimax);
+}
+
+Vector2f AC_PID_2D::get_p() const
+{
+    return _error * _kp;
+}
+
+const Vector2f& AC_PID_2D::get_i() const
+{
+    return _integrator;
+}
+
+Vector2f AC_PID_2D::get_d() const
+{
+    return _derivative * _kd;
+}
+
+Vector2f AC_PID_2D::get_ff()
+{
+    _pid_info_x.FF = _target.x * _kff;
+    _pid_info_y.FF = _target.y * _kff;
+    return _target * _kff;
 }
 
 // save_gains - save gains to eeprom

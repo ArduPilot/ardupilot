@@ -353,6 +353,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("EXTERN3",23, Compass, _state._priv_instance[2].external, 0),
 #endif // COMPASS_MAX_INSTANCES
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
     // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -388,6 +389,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state._priv_instance[0].offdiagonals, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: DIA2_X
@@ -476,6 +478,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OFFS_MAX
     // @DisplayName: Compass maximum offset
     // @Description: This sets the maximum allowed compass offset in calibration and arming checks
@@ -483,6 +486,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
+#endif
 
 #if COMPASS_MOT_ENABLED
     // @Group: PMOT
@@ -545,6 +549,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: SCALE
     // @DisplayName: Compass1 scale factor
     // @Description: Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
@@ -569,6 +574,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: 0 1.3
     AP_GROUPINFO("SCALE3", 42, Compass, _state._priv_instance[2].scale_factor, 0),
 #endif
+#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: OPTIONS
     // @DisplayName: Compass options
@@ -873,6 +879,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     _state[i].registered = true;
     _state[i].priority = priority;
     instance = uint8_t(i);
+    _compass_count = 1;
     return true;
 #else
     Priority priority;
@@ -1433,12 +1440,14 @@ bool Compass::is_replacement_mag(uint32_t devid) {
         return false;
     }
 
+#if COMPASS_MAX_UNREG_DEV > 0
     // Check that its not an unused additional mag
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if (_previously_unreg_mag[i] == devid) {
             return false;
         }
     }
+#endif
 
     // Check that its not previously setup mag
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -1458,12 +1467,14 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
         return;
     }
 
+#if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if ((uint32_t)extra_dev_id[i] == devid) {
             extra_dev_id[i].set_and_save(0);
             return;
         }
     }
+#endif
 #endif
 }
 
@@ -1479,7 +1490,7 @@ void Compass::_reset_compass_id()
         }
         if (!_get_state(i).registered) {
             _priority_did_stored_list[i].set_and_save(0);
-            gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu removed", uint8_t(i), (unsigned long)_priority_did_list[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu removed", uint8_t(i), (unsigned long)_priority_did_list[i]);
         }
     }
 
@@ -1551,11 +1562,19 @@ Compass::read(void)
         learn->update();
     }
 #endif
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         AP::logger().Write_Compass();
     }
 #endif
+
+    // Set _first_usable parameter
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_use_for_yaw[i]) {
+            _first_usable = uint8_t(i);
+            break;
+        }
+    }
     return healthy();
 }
 
@@ -1698,7 +1717,7 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return healthy(0) && use_for_yaw(0);
+    return healthy(_first_usable) && use_for_yaw(_first_usable);
 }
 
 /// return true if the specified compass can be used for yaw calculations
@@ -1763,7 +1782,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
     // Declination correction (if supplied)
     if ( fabsf(_declination) > 0.0f ) {

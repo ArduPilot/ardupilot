@@ -47,6 +47,8 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @DisplayName: Landing Pitch
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
     // @Units: cdeg
+    // @Range: -2000 2000
+    // @Increment: 10
     // @User: Advanced
     AP_GROUPINFO("PITCH_CD", 3, AP_Landing, pitch_cd, 0),
 
@@ -54,6 +56,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @DisplayName: Landing flare altitude
     // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC.
     // @Units: m
+    // @Range: 0 30
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FLARE_ALT", 4, AP_Landing, flare_alt, 3.0f),
@@ -62,6 +65,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @DisplayName: Landing flare time
     // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
     // @Units: s
+    // @Range: 0 10
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FLARE_SEC", 5, AP_Landing, flare_sec, 2.0f),
@@ -130,6 +134,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
     // @Range: 0 100
     // @Units: %
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("FLAP_PERCNT", 13, AP_Landing, flap_percent, 0),
 

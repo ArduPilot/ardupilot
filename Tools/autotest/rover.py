@@ -13,7 +13,6 @@ import copy
 import math
 import operator
 import os
-import shutil
 import sys
 import time
 
@@ -4943,40 +4942,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component,
         )
 
-    def script_example_source_path(self, scriptname):
-        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "examples", scriptname)
-
-    def script_test_source_path(self, scriptname):
-        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", scriptname)
-
-    def installed_script_path(self, scriptname):
-        return os.path.join("scripts", scriptname)
-
-    def install_script(self, source, scriptname):
-        dest = self.installed_script_path(scriptname)
-        destdir = os.path.dirname(dest)
-        if not os.path.exists(destdir):
-            os.mkdir(destdir)
-        self.progress("Copying (%s) to (%s)" % (source, dest))
-        shutil.copy(source, dest)
-
-    def install_example_script(self, scriptname):
-        source = self.script_example_source_path(scriptname)
-        self.install_script(source, scriptname)
-
-    def install_test_script(self, scriptname):
-        source = self.script_test_source_path(scriptname)
-        self.install_script(source, scriptname)
-
-    def remove_example_script(self, scriptname):
-        dest = self.installed_script_path(scriptname)
-        try:
-            os.unlink(dest)
-        except IOError:
-            pass
-        except OSError:
-            pass
-
     def test_scripting_simple_loop(self):
         self.start_subtest("Scripting simple loop")
         ex = None
@@ -5380,7 +5345,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.customise_SITL_commandline([],
                                         model=model,
-                                        defaults_filepath=self.model_defaults_filepath("Rover", model))
+                                        defaults_filepath=self.model_defaults_filepath(model))
 
         self.change_mode("MANUAL")
         self.wait_ready_to_arm()

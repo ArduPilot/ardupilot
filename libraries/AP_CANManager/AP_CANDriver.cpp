@@ -15,7 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_CANManager.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 

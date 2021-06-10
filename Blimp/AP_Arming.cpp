@@ -421,9 +421,6 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
     // Start the arming delay
     blimp.ap.in_arming_delay = true;
 
-    // assumed armed without a arming, switch. Overridden in switches.cpp
-    blimp.ap.armed_with_switch = false;
-
     // return success
     return true;
 }

@@ -4,7 +4,7 @@
 bool Sub::stabilize_init()
 {
     // set target altitude to zero for reporting
-    pos_control.set_alt_target(0);
+    pos_control.set_pos_target_z_cm(0);
     last_pilot_heading = ahrs.yaw_sensor;
 
     return true;

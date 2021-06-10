@@ -134,20 +134,20 @@ private:
     float _direction_true_raw;                      // wind's true direction in radians (0 = North)
     float _direction_true;                          // wind's true direction in radians (0 = North) - filtered
     float _direction_tack;                          // filtered apparent wind used to determin the current tack
-    LowPassFilterFloat _direction_apparent_sin_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _direction_apparent_cos_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _direction_true_sin_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _direction_true_cos_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _tack_sin_filt = LowPassFilterFloat(0.1f);
-    LowPassFilterFloat _tack_cos_filt = LowPassFilterFloat(0.1f);
+    LowPassFilterFloat _direction_apparent_sin_filt{2.0f};
+    LowPassFilterFloat _direction_apparent_cos_filt{2.0f};
+    LowPassFilterFloat _direction_true_sin_filt{2.0f};
+    LowPassFilterFloat _direction_true_cos_filt{2.0f};
+    LowPassFilterFloat _tack_sin_filt{0.1f};
+    LowPassFilterFloat _tack_cos_filt{0.1f};
 
     // wind speed variables
     float _speed_apparent_raw;                      // wind's apparent speed in m/s
     float _speed_apparent;                          // wind's apparent speed in m/s - filtered
     float _speed_true_raw;                          // wind's true estimated speed in m/s
     float _speed_true;                              // wind's true estimated speed in m/s - filtered
-    LowPassFilterFloat _speed_apparent_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _speed_true_filt = LowPassFilterFloat(2.0f);
+    LowPassFilterFloat _speed_apparent_filt{2.0f};
+    LowPassFilterFloat _speed_true_filt{2.0f};
 
     // current tack
     Sailboat_Tack _current_tack;

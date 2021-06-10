@@ -1,5 +1,46 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta3 24-May-2021
+Changes from 4.1.0-beta2
+1) Dshot bug fix for autopilots with I/O boards (CubeBlack, CubeOrange, etc)
+------------------------------------------------------------------
+Copter 4.1.0-beta2 19-May-2021
+Changes from 4.1.0-beta1
+1) Attitude control and Navigation
+    a) Auto mode Spline command fix when using terrain altitudes
+    b) Drift after takeoff fix if GPS position has moved
+    c) Feed forward angular velocity calculation fix
+    d) Guided mode option (GUID_OPTIONS) to configure how SET_ATTITUDE_TARGET's thrust field is interpreted
+    e) Improved position control during loss of yaw control by using thrust vector with heading
+    f) Standby mode disables hover learning
+2) BLHeli improvements and fixes
+    a) Bi-directional ESC telemetry fixes
+    b) Bi-directional dshot 1200 supported
+    c) Control of digital with non-digital outputs fixed
+    d) Support dshot commands for LED, buzzer and direction control
+    e) Passthru reliability improved
+3) New autopilot boards
+    a) PixC4-Pi and PixC4-Jetson
+4) Avoidance fixes
+    a) OBSTACLE_DISTANCE_3D boundary cleared after 0.75 seconds, allows easier multi-camera support
+    b) Simple avoidance logging re-enabled 
+5) Other enhancements
+    a) Auxiliary function logging shows how it was invoked (switch, button or scripting)
+    b) External IST8308 compass supported on CubeBlack
+    c) FLOW_TYPE parameter hides/displays other FLOW_ parameters
+    d) FrSky telem reports failsafe, terrain alt health and fence status
+    e) Harmonic notch support for CAN ESCs (KDECAN, PiccoloCAN, ToshibaCAN, UAVCAN)
+    f) OSD gets fence icon
+    g) RunCam OSD and camera control
+    h) Septentrio GPSs support GPS_SBAS_MOD parameter
+6) Bug fixes
+    a) Barometer averaging fixes for BMP380, BMP280, LPS2XH, SPL06 drivers
+    b) EKF3 fix to reset yaw after GPS-for-yaw recovers
+    c) KDECAN output range, motor order and pre-arm check messages fixed
+    d) Logging memory leak when finding last log fixed
+    e) Pixhawk4 mini safety switch fix
+    f) SD card slowdown with early mounts fixed
+------------------------------------------------------------------
 Copter 4.1.0-beta1 14-Apr-2021
 Changes from 4.0.7
 1) EKF changes:

@@ -26,12 +26,18 @@
 #ifdef HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_Math/crc.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_Motors/AP_MotorsUGV.h>
+#else
 #include <AP_Motors/AP_Motors_Class.h>
+#endif
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,9 +58,9 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
-    // @DisplayName: BLHeli auto-enable for multicopter motors
+    // @DisplayName: BLHeli pass-thru auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
@@ -1228,7 +1234,6 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
 
 /*
   update BLHeli
-  Used to install protocol handler
  */
 void AP_BLHeli::update(void)
 {
@@ -1265,34 +1270,43 @@ void AP_BLHeli::update(void)
         }
     }
 
-    // check the user hasn't goofed, this also prevents weird crashes on arming
-    if (!initialised && channel_mask.get() == 0 && channel_auto.get() == 0
-        && (channel_bidir_dshot_mask.get() != 0
-            || channel_reversible_mask.get() != 0
-            || channel_reversed_mask.get() != 0)) {
-        AP_BoardConfig::config_error("DSHOT needs SERVO_BLH_AUTO or _MASK");
-    }
-
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
             run_connection_test(run_test.get() - 1);
         }
-        return;
     }
+}
+
+/*
+  Initialize BLHeli, called by SRV_Channels::init()
+  Used to install protocol handler
+ */
+void AP_BLHeli::init(void)
+{
     initialised = true;
 
     run_test.set_and_notify(0);
 
-    if (last_control_port > 0 && last_control_port != control_port) {
-        gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+last_control_port), nullptr);
-        last_control_port = -1;
+    // only install pass-thru protocol handler if either auto or the motor mask are set
+    if (channel_mask.get() != 0 || channel_auto.get() != 0) {
+        if (last_control_port > 0 && last_control_port != control_port) {
+            gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+last_control_port), nullptr);
+            last_control_port = -1;
+        }
+        if (gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+control_port),
+                                            FUNCTOR_BIND_MEMBER(&AP_BLHeli::protocol_handler,
+                                                                bool, uint8_t, AP_HAL::UARTDriver *))) {
+            debug("BLHeli installed on port %u", (unsigned)control_port);
+            last_control_port = control_port;
+        }
     }
-    if (gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+control_port),
-                                           FUNCTOR_BIND_MEMBER(&AP_BLHeli::protocol_handler,
-                                                               bool, uint8_t, AP_HAL::UARTDriver *))) {
-        debug("BLHeli installed on port %u", (unsigned)control_port);
-        last_control_port = control_port;
+
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // with IOMCU the local (FMU) channels start at 8
+        chan_offset = 8;
     }
+#endif
 
     uint16_t mask = uint16_t(channel_mask.get());
 
@@ -1301,7 +1315,9 @@ void AP_BLHeli::update(void)
       rovers and subs, plus for quadplane fwd motors
      */
     AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
-    switch (AP_Motors::pwm_type(output_type.get())) {
+    AP_Motors::pwm_type otype = AP_Motors::pwm_type(output_type.get());
+
+    switch (otype) {
     case AP_Motors::PWM_TYPE_ONESHOT:
         mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
         break;
@@ -1330,28 +1346,42 @@ void AP_BLHeli::update(void)
         hal.rcout->set_output_mode(mask, mode);
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    uint16_t digital_mask = 0;
+    // setting the digital mask changes the min/max PWM values
+    // it's important that this is NOT done for non-digital channels as otherwise
+    // PWM min can result in motors turning. set for individual overrides first
+    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+        digital_mask = mask;
+    }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
-    if (channel_auto.get() == 1) {
-        AP_Motors *motors = AP_Motors::get_singleton();
-        if (motors) {
-            mask |= motors->get_motor_mask();
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    AP_MotorsUGV *motors = AP::motors_ugv();
+#else
+    AP_Motors *motors = AP::motors();
+#endif
+    if (motors) {
+        uint16_t motormask = motors->get_motor_mask();
+        // set the rest of the digital channels
+        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+            digital_mask |= motormask;
         }
+        mask |= motormask;
     }
 #endif
-
     // tell SRV_Channels about ESC capabilities
-    SRV_Channels::set_digital_mask(mask);
-    SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
-    // the dshot ESC type is required in order to set the reversed/reversible mask correctly
+    SRV_Channels::set_digital_outputs(digital_mask, uint16_t(channel_reversible_mask.get()) & digital_mask);
+    // the dshot ESC type is required in order to send the reversed/reversible dshot command correctly
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
-    hal.rcout->set_reversible_mask(channel_reversible_mask.get() & mask);
-    hal.rcout->set_reversed_mask(channel_reversed_mask.get() & mask);
+    hal.rcout->set_reversible_mask(uint16_t(channel_reversible_mask.get()) & digital_mask);
+    hal.rcout->set_reversed_mask(uint16_t(channel_reversed_mask.get()) & digital_mask);
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
-    hal.rcout->set_bidir_dshot_mask(channel_bidir_dshot_mask.get() & mask);
+    hal.rcout->set_motor_poles(motor_poles);
+    hal.rcout->set_bidir_dshot_mask(uint16_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
@@ -1372,86 +1402,6 @@ void AP_BLHeli::update(void)
             telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
         }
     }
-
-}
-
-// get the most recent telemetry data packet for a motor
-bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td)
-{
-    if (esc_index >= max_motors) {
-        return false;
-    }
-    if (last_telem[esc_index].timestamp_ms == 0) {
-        return false;
-    }
-    td = last_telem[esc_index];
-    return true;
-}
-
-// return the average motor frequency in Hz for dynamic filtering
-float AP_BLHeli::get_average_motor_frequency_hz() const
-{
-    float motor_freq = 0.0f;
-    const uint32_t now = AP_HAL::millis();
-    uint8_t valid_escs = 0;
-    // average the rpm of each motor as reported by BLHeli and convert to Hz
-    for (uint8_t i = 0; i < num_motors; i++) {
-        if (has_bidir_dshot(i)) {
-            uint16_t erpm = hal.rcout->get_erpm(motor_map[i]);
-            if (erpm > 0 && erpm < 0xFFFF) {
-                valid_escs++;
-                motor_freq += (erpm * 200 / motor_poles) / 60.f;
-            }
-        } else if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
-            valid_escs++;
-            // slew the update
-            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
-            motor_freq += (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
-        }
-    }
-    if (valid_escs > 0) {
-        motor_freq /= valid_escs;
-    }
-
-    return motor_freq;
-}
-
-// return all the motor frequencies in Hz for dynamic filtering
-uint8_t AP_BLHeli::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
-{
-    const uint32_t now = AP_HAL::millis();
-    uint8_t valid_escs = 0;
-
-    // average the rpm of each motor as reported by BLHeli and convert to Hz
-    for (uint8_t i = 0; i < num_motors && i < nfreqs; i++) {
-        if (has_bidir_dshot(i)) {
-            uint16_t erpm = hal.rcout->get_erpm(motor_map[i]);
-            if (erpm > 0 && erpm < 0xFFFF) {
-                freqs[valid_escs++] = (erpm * 200 / motor_poles) / 60.f;
-            }
-        } else if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
-            // slew the update
-            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
-            freqs[valid_escs++] = (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
-        }
-    }
-
-    return MIN(valid_escs, nfreqs);
-}
-
-/*
-  implement the 8 bit CRC used by the BLHeli ESC telemetry protocol
- */
-uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
-{
-    uint8_t crc_u = crc;
-    crc_u ^= crc_seed;
-
-    for (uint8_t i=0; i<8; i++) {
-        crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
-    }
-
-    return crc_u;
 }
 
 /*
@@ -1459,6 +1409,7 @@ uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
  */
 void AP_BLHeli::read_telemetry_packet(void)
 {
+#if HAL_WITH_ESC_TELEM
     uint8_t buf[telem_packet_size];
     if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
         // short read, we should have 10 bytes ready when this function is called
@@ -1468,7 +1419,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     // calculate crc
     uint8_t crc = 0;
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
-        crc = telem_crc8(buf[i], crc);
+        crc = crc8_dvb(buf[i], crc, 0x07);
     }
 
     if (buf[telem_packet_size-1] != crc) {
@@ -1476,69 +1427,43 @@ void AP_BLHeli::read_telemetry_packet(void)
         debug("Bad CRC on %u", last_telem_esc);
         return;
     }
-    struct telem_data td;
-    td.temperature = int8_t(buf[0]);
-    td.voltage = (buf[1]<<8) | buf[2];
-    td.current = (buf[3]<<8) | buf[4];
-    td.consumption = (buf[5]<<8) | buf[6];
-    td.rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
-    td.timestamp_ms = AP_HAL::millis();
     // record the previous rpm so that we can slew to the new one
-    prev_motor_rpm[last_telem_esc] = last_telem[last_telem_esc].rpm;
-
-    last_telem[last_telem_esc] = td;
-    last_telem[last_telem_esc].count++;
-    received_telem_data = true;
-
-    AP_Logger *logger = AP_Logger::get_singleton();
-
-    uint16_t trpm = td.rpm;
-    float terr = 0.0f;
-
+    uint16_t new_rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
     const uint8_t motor_idx = motor_map[last_telem_esc];
     // we have received valid data, mark the ESC as now active
     hal.rcout->set_active_escs_mask(1<<motor_idx);
+    update_rpm(motor_idx - chan_offset, new_rpm);
 
-    if (logger && logger->logging_enabled()
-        // log at 10Hz
-        && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
+    TelemetryData t {
+        .temperature_cdeg = int16_t(buf[0] * 100),
+        .voltage = float(uint16_t((buf[1]<<8) | buf[2])) * 0.01,
+        .current = float(uint16_t((buf[3]<<8) | buf[4])) * 0.01,
+        .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
+    };
 
-        if (has_bidir_dshot(last_telem_esc)) {
-            const uint16_t erpm = hal.rcout->get_erpm(motor_idx);
-            if (erpm != 0xFFFF) {   // don't log invalid values
-                trpm = erpm * 200 / motor_poles;
-            }
-            terr = hal.rcout->get_erpm_error_rate(motor_idx);
-        }
-
-        logger->Write_ESC(uint8_t(last_telem_esc),
-                      AP_HAL::micros64(),
-                      trpm*100U,
-                      td.voltage,
-                      td.current,
-                      td.temperature * 100U,
-                      td.consumption,
-                      0,
-                      terr);
-        last_log_ms[last_telem_esc] = td.timestamp_ms;
-    }
+    update_telem_data(motor_idx - chan_offset, t,
+        AP_ESC_Telem_Backend::TelemetryType::CURRENT
+            | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+            | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
+            | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
     if (debug_level >= 2) {
+        uint16_t trpm = new_rpm;
         if (has_bidir_dshot(last_telem_esc)) {
             trpm = hal.rcout->get_erpm(motor_idx);
             if (trpm != 0xFFFF) {
                 trpm = trpm * 200 / motor_poles;
             }
-            terr = hal.rcout->get_erpm_error_rate(motor_idx);
         }
-        hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u e=%.1f t=%u\n",
+        hal.console->printf("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
-                            td.temperature,
-                            td.voltage,
-                            td.current,
-                            td.consumption,
-                            trpm, terr, (unsigned)AP_HAL::millis());
+                            t.temperature_cdeg,
+                            t.voltage,
+                            t.current,
+                            t.consumption_mah,
+                            trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
     }
+#endif // HAL_WITH_ESC_TELEM
 }
 
 /*
@@ -1546,36 +1471,37 @@ void AP_BLHeli::read_telemetry_packet(void)
  */
 void AP_BLHeli::log_bidir_telemetry(void)
 {
-    AP_Logger *logger = AP_Logger::get_singleton();
-
     uint32_t now = AP_HAL::millis();
 
-    if (logger && logger->logging_enabled()
-        // log at 10Hz
-        && now - last_log_ms[last_telem_esc] > 100) {
-
+    if (debug_level >= 2 && now - last_log_ms[last_telem_esc] > 100) {
         if (has_bidir_dshot(last_telem_esc)) {
             const uint8_t motor_idx = motor_map[last_telem_esc];
             uint16_t trpm = hal.rcout->get_erpm(motor_idx);
             const float terr = hal.rcout->get_erpm_error_rate(motor_idx);
             if (trpm != 0xFFFF) {    // don't log invalid values as they are never used
                 trpm = trpm * 200 / motor_poles;
-
-                logger->Write_ESC(uint8_t(last_telem_esc),
-                        AP_HAL::micros64(),
-                        trpm*100U,
-                        0, 0, 0, 0,
-                        terr);
-                last_log_ms[last_telem_esc] = now;
             }
 
-            if (debug_level >= 2) {
-                hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());
-            }
+            last_log_ms[last_telem_esc] = now;
+            hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());
         }
     }
 
-    last_telem_esc = (last_telem_esc + 1) % num_motors;
+    if (!SRV_Channels::have_digital_outputs()) {
+        return;
+    }
+
+    // ask the next ESC for telemetry
+    uint8_t idx_pos = last_telem_esc;
+    uint8_t idx = (idx_pos + 1) % num_motors;
+    for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+        if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
+            break;
+        }
+    }
+    if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
+        last_telem_esc = idx;
+    }
 }
 
 /*
@@ -1590,7 +1516,7 @@ void AP_BLHeli::update_telemetry(void)
         log_bidir_telemetry();
     }
 #endif
-    if (!telem_uart) {
+    if (!telem_uart || !SRV_Channels::have_digital_outputs()) {
         return;
     }
     uint32_t now = AP_HAL::micros();
@@ -1635,54 +1561,18 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (now - last_telem_request_us >= telem_rate_us) {
         // ask the next ESC for telemetry
-        last_telem_esc = (last_telem_esc + 1) % num_motors;
-        uint16_t mask = 1U << motor_map[last_telem_esc];
-        hal.rcout->set_telem_request_mask(mask);
-        last_telem_request_us = now;
-    }
-}
-
-/*
-  send ESC telemetry messages over MAVLink
- */
-void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-    if (num_motors == 0) {
-        return;
-    }
-    uint8_t temperature[4] {};
-    uint16_t voltage[4] {};
-    uint16_t current[4] {};
-    uint16_t totalcurrent[4] {};
-    uint16_t rpm[4] {};
-    uint16_t count[4] {};
-    uint32_t now = AP_HAL::millis();
-    for (uint8_t i=0; i<num_motors; i++) {
-        uint8_t idx = i % 4;
-        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
-            temperature[idx]  = last_telem[i].temperature;
-            voltage[idx]      = last_telem[i].voltage;
-            current[idx]      = last_telem[i].current;
-            totalcurrent[idx] = last_telem[i].consumption;
-            rpm[idx]          = last_telem[i].rpm;
-            count[idx]        = last_telem[i].count;
-        } else {
-            temperature[idx] = 0;
-            voltage[idx] = 0;
-            current[idx] = 0;
-            totalcurrent[idx] = 0;
-            rpm[idx] = 0;
-            count[idx] = 0;
+        uint8_t idx_pos = last_telem_esc;
+        uint8_t idx = (idx_pos + 1) % num_motors;
+        for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+            if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
+                break;
+            }
         }
-        if (i % 4 == 3 || i == num_motors - 1) {
-            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                return;
-            }
-            if (i < 4) {
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-            } else {
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-            }
+        uint16_t mask = 1U << motor_map[idx];
+        if (SRV_Channels::have_digital_outputs(mask)) {
+            hal.rcout->set_telem_request_mask(mask);
+            last_telem_esc = idx;
+            last_telem_request_us = now;
         }
     }
 }

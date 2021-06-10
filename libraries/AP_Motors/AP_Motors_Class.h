@@ -291,7 +291,6 @@ private:
     bool _initialised_ok;    // 1 if initialisation was successful
 
     static AP_Motors *_singleton;
-
 };
 
 namespace AP {

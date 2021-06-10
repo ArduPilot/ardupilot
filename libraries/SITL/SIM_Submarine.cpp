@@ -62,6 +62,7 @@ Submarine::Submarine(const char *frame_str) :
         thrusters = vectored_6dof_thrusters;
         n_thrusters = 8;
     }
+    lock_step_scheduled = true;
 }
 
 // calculate rotational and linear accelerations

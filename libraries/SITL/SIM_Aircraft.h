@@ -173,6 +173,7 @@ protected:
     float battery_voltage = -1.0f;
     float battery_current;
     float local_ground_level;            // ground level at local position
+    bool lock_step_scheduled;
 
     // battery model
     Battery battery;

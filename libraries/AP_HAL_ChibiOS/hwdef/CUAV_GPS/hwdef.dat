@@ -134,7 +134,6 @@ define HAL_CAN_DEFAULT_NODE_ID 0
 define CAN_APP_NODE_NAME "org.ardupilot.cuav_gps"
 
 define HAL_NO_GCS
-define HAL_NO_LOGGING
 define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0

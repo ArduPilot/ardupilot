@@ -580,12 +580,6 @@ private:
     // last reported radio buffer percent available
     uint8_t          last_txbuf = 100;
 
-    // perf counters
-    AP_HAL::Util::perf_counter_t _perf_packet;
-    AP_HAL::Util::perf_counter_t _perf_update;
-    char _perf_packet_name[16];
-    char _perf_update_name[16];
-
     // outbound ("deferred message") queue.
 
     // "special" messages such as heartbeat, next_param etc are stored
@@ -1035,12 +1029,13 @@ private:
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static const uint8_t _status_capacity = 5;
+    static const uint8_t _status_capacity = 7;
 #else
     static const uint8_t _status_capacity = 30;
 #endif
 
-    // queue of outgoing statustext messages
+    // queue of outgoing statustext messages.  Each entry consumes 58
+    // bytes of RAM on stm32
     StatusTextQueue _statustext_queue{_status_capacity};
 
     // true if we have already allocated protocol objects:

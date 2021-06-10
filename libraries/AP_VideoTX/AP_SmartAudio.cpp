@@ -208,14 +208,18 @@ void AP_SmartAudio::update_vtx_params()
 
         // prioritize pitmode changes
         if (_vtx_options_change_pending) {
+            debug("update mode '%c%c%c%c'", (mode & 0x8) ? 'U' : 'L',
+                (mode & 0x4) ? 'N' : ' ', (mode & 0x2) ? 'O' : ' ', (mode & 0x1) ? 'I' : ' ');
             set_operation_mode(mode);
         } else if (_vtx_freq_change_pending) {
+            debug("update frequency");
             if (_vtx_use_set_freq) {
                 set_frequency(vtx.get_configured_frequency_mhz(), false);
             } else {
                 set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
             }
         } else if (_vtx_power_change_pending) {
+            debug("update power");
             switch (_protocol_version) {
             case SMARTAUDIO_SPEC_PROTOCOL_v21:
                 set_power(vtx.get_configured_power_dbm() | 0x80);
@@ -474,8 +478,14 @@ void AP_SmartAudio::print_bytes_to_hex_string(const char* msg, const uint8_t buf
 
 void AP_SmartAudio::print_settings(const Settings* settings)
 {
-    debug("SETTINGS: VER: %u, MD: 0x%x, CH: %u, PWR: %u, FREQ: %u, BND: %u",
-            settings->version, settings->mode, settings->channel, settings->power, settings->frequency, settings->band);
+    debug("SETTINGS: VER: %u, MD: '%c%c%c%c%c', CH: %u, PWR: %u, DBM: %u FREQ: %u, BND: %u",
+            settings->version,
+            (settings->mode & 0x10) ? 'U' : 'L',
+            (settings->mode & 0x8) ? 'O' : ' ',
+            (settings->mode & 0x4) ? 'I' : ' ',
+            (settings->mode & 0x2) ? 'P' : ' ',
+            (settings->mode & 0x1) ? 'F' : 'C',
+            settings->channel, settings->power, settings->power_in_dbm, settings->frequency, settings->band);
 }
 
 void AP_SmartAudio::update_vtx_settings(const Settings& settings)
@@ -496,7 +506,7 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
 
     // PITMODE | UNLOCKED
     // SmartAudio 2.1 dropped support for outband pitmode so we won't support it
-    uint8_t opts = ((settings.mode & 0x2) >> 1) | ((settings.mode & 0x10) >> 3);
+    uint8_t opts = ((settings.mode & 0x2) >> 1) | ((settings.mode & 0x10) >> 1);
     vtx.set_options(opts);
 
     // make sure the configured values now reflect reality

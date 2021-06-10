@@ -81,6 +81,8 @@ struct sitl_fdm {
         float speed;
         float direction;
     } wind_vane_apparent;
+
+    bool is_lock_step_scheduled;
 };
 
 // number of rc output channels
@@ -414,6 +416,9 @@ public:
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
+
+    // ESC telemetry
+    AP_Int8 esc_telem;
 
     struct {
         // LED state, for serial LED emulation

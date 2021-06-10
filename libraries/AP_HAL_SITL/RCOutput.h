@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 #include "AP_HAL_SITL.h"
+#include <AP_ESC_Telem/AP_ESC_Telem_SITL.h>
 
 class HALSITL::RCOutput : public AP_HAL::RCOutput {
 public:
@@ -36,6 +37,8 @@ public:
     
 private:
     SITL_State *_sitlState;
+    AP_ESC_Telem_SITL *esc_telem;
+
     uint16_t _freq_hz;
     uint16_t _enable_mask;
     bool _corked;

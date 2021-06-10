@@ -94,11 +94,16 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
     if (!blimp.flightmode->get_wp(target)) {
         return;
     }
+    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
+    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        0xFFF8, // ignore everything except the x/y/z components
+        TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
         target.alt * 0.01f, // altitude is sent as a float
@@ -129,11 +134,11 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f; // convert to metres
 //     } else if (guided_mode == Guided_Velocity) {
 //         type_mask = 0x0FC7; // ignore everything except velocity
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f; // convert to m/s
 //     } else {
 //         type_mask = 0x0FC0; // ignore everything except position & velocity
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f;
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f;
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f;
 //     }
 
 //     mavlink_msg_position_target_local_ned_send(

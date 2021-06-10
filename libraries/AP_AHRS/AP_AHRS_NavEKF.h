@@ -197,8 +197,6 @@ public:
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
-    void set_ekf_use(bool setting);
-
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
@@ -279,9 +277,6 @@ public:
 
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const override;
-
-    void setTakeoffExpected(bool val);
-    void setTouchdownExpected(bool val);
 
     bool getGpsGlitchStatus() const;
 
@@ -390,8 +385,7 @@ private:
         True = 1,
         UNKNOWN = 3,
     };
-    TriState touchdownExpectedState = TriState::UNKNOWN;
-    TriState takeoffExpectedState = TriState::UNKNOWN;
+
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
     EKFType last_active_ekf_type;

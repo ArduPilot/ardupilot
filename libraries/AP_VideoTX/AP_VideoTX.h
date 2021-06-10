@@ -99,7 +99,7 @@ public:
     uint8_t get_configured_options() const { return _options; }
     uint8_t get_options() const { return _current_options; }
     bool has_option(VideoOptions option) const { return _options.get() & uint8_t(option); }
-    bool update_options() const { return _defaults_set && _options != _current_options; }
+    bool update_options() const;
     // get / set whether the vtx is enabled
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }

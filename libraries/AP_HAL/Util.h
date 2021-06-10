@@ -125,15 +125,6 @@ public:
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }
 
-    /*
-        ToneAlarm Driver
-    */
-    enum ToneAlarmType {
-        ALARM_NONE=0,
-        ALARM_BUZZER=1<<0,
-        ALARM_DSHOT=1<<1
-    };
-
     virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
@@ -148,20 +139,6 @@ public:
     /* Support for an imu heating system */
     virtual void set_imu_target_temp(int8_t *target) {}
     
-    /*
-      performance counter calls - wrapper around original PX4 interface
-     */
-    enum perf_counter_type {
-        PC_COUNT,        /**< count the number of times an event occurs */
-        PC_ELAPSED,      /**< measure the time elapsed performing an event */
-        PC_INTERVAL      /**< measure the interval between instances of an event */
-    };
-    typedef void *perf_counter_t;
-    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return nullptr; }
-    virtual void perf_begin(perf_counter_t h) {}
-    virtual void perf_end(perf_counter_t h) {}
-    virtual void perf_count(perf_counter_t h) {}
-
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,

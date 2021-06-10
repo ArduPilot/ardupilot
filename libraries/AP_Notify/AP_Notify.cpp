@@ -94,12 +94,17 @@ AP_Notify *AP_Notify::_singleton;
 #endif // BUILD_DEFAULT_LED_TYPE
 
 #ifndef BUZZER_ENABLE_DEFAULT
-#define BUZZER_ENABLE_DEFAULT 1
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+// Enable Buzzer messages over UAVCAN
+#define BUZZER_ENABLE_DEFAULT (Notify_Buzz_Builtin | Notify_Buzz_UAVCAN)
+#else
+#define BUZZER_ENABLE_DEFAULT Notify_Buzz_Builtin
+#endif
 #endif
 
 #ifndef BUILD_DEFAULT_BUZZER_TYPE
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && HAL_DSHOT_ALARM
-  #define BUILD_DEFAULT_BUZZER_TYPE (BUZZER_ENABLE_DEFAULT | (HAL_DSHOT_ALARM << 1))
+  #define BUILD_DEFAULT_BUZZER_TYPE (BUZZER_ENABLE_DEFAULT | Notify_Buzz_DShot)
 #else
   #define BUILD_DEFAULT_BUZZER_TYPE BUZZER_ENABLE_DEFAULT
 #endif
@@ -134,7 +139,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: BUZZ_TYPES
     // @DisplayName: Buzzer Driver Types
     // @Description: Controls what types of Buzzer will be enabled
-    // @Bitmask: 0:Built-in buzzer, 1:DShot
+    // @Bitmask: 0:Built-in buzzer, 1:DShot, 2:UAVCAN
     // @User: Advanced
     AP_GROUPINFO("BUZZ_TYPES", 1, AP_Notify, _buzzer_type, BUILD_DEFAULT_BUZZER_TYPE),
 
@@ -291,7 +296,9 @@ void AP_Notify::add_backends(void)
                 }
                 break;
             case Notify_LED_NCP5623_I2C_Internal:
-                ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new NCP5623(b));
+                }
                 break;
 #endif
             case Notify_LED_PCA9685LED_I2C_External:

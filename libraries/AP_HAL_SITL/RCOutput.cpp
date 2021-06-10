@@ -85,6 +85,12 @@ void RCOutput::push(void)
         memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
         _corked = false;
     }
+    if (esc_telem == nullptr) {
+        esc_telem = new AP_ESC_Telem_SITL;
+    }
+    if (esc_telem != nullptr) {
+        esc_telem->update();
+    }
 }
 
 /*

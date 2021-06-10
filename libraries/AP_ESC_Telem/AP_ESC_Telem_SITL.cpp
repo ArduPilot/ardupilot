@@ -12,19 +12,40 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include <inttypes.h>
+#include "AP_ESC_Telem_SITL.h"
+#include "AP_ESC_Telem.h"
+#include <AP_HAL/AP_HAL.h>
+#include <SITL/SITL.h>
 
-#include "AP_HAL_Linux.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-namespace Linux {
+#include <AP_Math/AP_Math.h>
 
-class Perf_Lttng {
-public:
-    void begin(const char *name);
-    void end(const char *name);
-    void count(const char *name, uint64_t val);
-};
+extern const AP_HAL::HAL& hal;
+
+AP_ESC_Telem_SITL::AP_ESC_Telem_SITL()
+{
+}
+
+void AP_ESC_Telem_SITL::update()
+{
+    SITL::SITL* sitl = AP::sitl();
+
+    if (!sitl) {
+        return;
+    }
+
+    if (is_zero(sitl->throttle)) {
+        return;
+    }
+
+#if HAL_WITH_ESC_TELEM
+    for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
+        update_rpm(i, sitl->state.rpm[sitl->state.vtol_motor_start+i]);
+    }
+#endif
 
 }
+
+#endif

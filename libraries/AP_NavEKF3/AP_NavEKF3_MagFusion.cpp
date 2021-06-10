@@ -94,7 +94,7 @@ void NavEKF3_core::controlMagYawReset()
     if (magYawResetRequest && use_compass()) {
         // send initial alignment status to console
         if (!yawAlignComplete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u initial yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
         }
 
         // set yaw from a single mag sample
@@ -102,10 +102,10 @@ void NavEKF3_core::controlMagYawReset()
 
         // send in-flight yaw alignment status to console
         if (finalResetRequest) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u in-flight yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
         } else if (interimResetRequest) {
             magYawAnomallyCount++;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u MAG%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index, (unsigned)magSelectIndex);
         }
 
         // clear the complete flags if an interim reset has been performed to allow subsequent
@@ -264,13 +264,18 @@ void NavEKF3_core::SelectMagFusion()
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
                 alignYawAngle(yawAngDataDelayed);
                 yaw_source_reset = false;
+                have_fused_gps_yaw = true;
+                lastSynthYawTime_ms = imuSampleTime_ms;
+                last_gps_yaw_fuse_ms = imuSampleTime_ms;
             } else if (tiltAlignComplete && yawAlignComplete) {
-                fuseEulerYaw(yawFusionMethod::GPS);
+                have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS);
+                if (have_fused_gps_yaw) {
+                    last_gps_yaw_fuse_ms = imuSampleTime_ms;
+                }
             }
-            have_fused_gps_yaw = true;
-            last_gps_yaw_fusion_ms = imuSampleTime_ms;
+            last_gps_yaw_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete) {
-            // External yaw sources can take singificant time to start providing yaw data so
+            // External yaw sources can take significant time to start providing yaw data so
             // wuile waiting, fuse a 'fake' yaw observation at 7Hz to keeop the filter stable
             if(imuSampleTime_ms - lastSynthYawTime_ms > 140) {
                 yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
@@ -284,7 +289,11 @@ void NavEKF3_core::SelectMagFusion()
                 }
                 lastSynthYawTime_ms = imuSampleTime_ms;
             }
+        } else if (tiltAlignComplete && yawAlignComplete && onGround && imuSampleTime_ms - last_gps_yaw_fuse_ms > 10000) {
+            // handle scenario where we were using GPS yaw previously, but the yaw fusion has timed out.
+            yaw_source_reset = true;
         }
+
         if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS) {
             // no fallback
             return;
@@ -305,7 +314,7 @@ void NavEKF3_core::SelectMagFusion()
 
         // we don't have GPS yaw data and are configured for
         // fallback. If we've only just lost GPS yaw
-        if (imuSampleTime_ms - last_gps_yaw_fusion_ms < 10000) {
+        if (imuSampleTime_ms - last_gps_yaw_ms < 10000) {
             // don't fallback to magnetometer fusion for 10s
             return;
         }
@@ -315,7 +324,7 @@ void NavEKF3_core::SelectMagFusion()
             return;
         }
         if (!inFlight) {
-            // don't fall back if not flying
+            // don't fall back if not flying but reset to GPS yaw if it becomes available
             return;
         }
         if (!gps_yaw_mag_fallback_active) {

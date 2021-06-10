@@ -90,9 +90,6 @@ void Blimp::fast_loop()
     // update INS immediately to get current gyro data populated
     ins.update();
 
-    // run low level rate controllers that only require IMU data
-    // attitude_control->rate_controller_run();
-
     // send outputs to the motors library immediately
     motors_output();
 
@@ -113,10 +110,6 @@ void Blimp::fast_loop()
     // update home from EKF if necessary
     update_home_from_EKF();
 
-    // check if we've landed or crashed
-    // Skip for now since Blimp won't land
-    // update_land_and_crash_detectors();
-
     // log sensor health
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
@@ -129,63 +122,8 @@ void Blimp::fast_loop()
 //copied in from Copter's Attitude.cpp
 float Blimp::get_non_takeoff_throttle()
 {
-    // return MAX(0,motors->get_throttle_hover()/2.0f);
     return 0.0f; //MIR no idle throttle.
 }
-
-// start takeoff to given altitude (for use by scripting)
-// bool Blimp::start_takeoff(float alt)
-// {
-//     // exit if vehicle is not in Guided mode or Auto-Guided mode
-//     if (!flightmode->in_guided_mode()) {
-//         return false;
-//     }
-
-//     if (mode_guided.do_user_takeoff_start(alt * 100.0f)) {
-//         blimp.set_auto_armed(true);
-//         return true;
-//     }
-//     return false;
-// }
-
-// set target location (for use by scripting)
-// bool Blimp::set_target_location(const Location& target_loc)
-// {
-//     // exit if vehicle is not in Guided mode or Auto-Guided mode
-//     if (!flightmode->in_guided_mode()) {
-//         return false;
-//     }
-
-//     return mode_guided.set_destination(target_loc);
-// }
-
-// bool Blimp::set_target_velocity_NED(const Vector3f& vel_ned)
-// {
-//     // exit if vehicle is not in Guided mode or Auto-Guided mode
-//     if (!flightmode->in_guided_mode()) {
-//         return false;
-//     }
-
-//     // convert vector to neu in cm
-//     const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
-//     mode_guided.set_velocity(vel_neu_cms);
-//     return true;
-// }
-
-// bool Blimp::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs)
-// {
-//     // exit if vehicle is not in Guided mode or Auto-Guided mode
-//     if (!flightmode->in_guided_mode()) {
-//         return false;
-//     }
-
-//     Quaternion q;
-//     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
-
-//     mode_guided.set_angle(q, climb_rate_ms*100, use_yaw_rate, radians(yaw_rate_degs), false);
-//     return true;
-// }
-
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz

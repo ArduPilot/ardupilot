@@ -528,7 +528,7 @@ void AP_AutoTune::update_rmax(void)
     if (level > 0 && is_positive(current.FF)) {
         const float invtau = ((1.0f / target_tau) + (current.I / current.FF));
         if (is_positive(invtau)) {
-            target_tau = 1.0f / invtau;
+            target_tau = MAX(target_tau,1.0f / invtau);
         }
     }
 

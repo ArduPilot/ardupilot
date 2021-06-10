@@ -34,6 +34,10 @@
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
+#if NUM_SERVO_CHANNELS == 0
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
@@ -241,6 +245,10 @@ SRV_Channels::SRV_Channels(void)
 // SRV_Channels initialization
 void SRV_Channels::init(void)
 {
+    // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr->init();
+#endif
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 }
 
@@ -342,7 +350,7 @@ void SRV_Channels::push()
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {

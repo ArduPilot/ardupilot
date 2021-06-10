@@ -20,6 +20,10 @@
  */
 #pragma once
 
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 1
+#endif
+
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
 #include <AP_HAL/AP_HAL.h>
@@ -222,9 +226,6 @@ private:
     // time of last loop in seconds
     float _last_loop_time_s;
     
-    // performance counters
-    AP_HAL::Util::perf_counter_t *_perf_counters;
-
     // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
 

@@ -19,6 +19,12 @@ bool ModeThrow::init(bool ignore_checks)
     stage = Throw_Disarmed;
     nextmode_attempted = false;
 
+    // initialise pos controller speed and acceleration
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
+
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+
     return true;
 }
 
@@ -53,22 +59,16 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
 
-        // initialize vertical speed and acceleration limits
-        // use brake mode values for rapid response
-        pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
+        // initialise the z controller
+        pos_control->init_z_controller_no_descent();
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_alt_target(inertial_nav.get_altitude() - 100);
+            pos_control->set_pos_target_z_cm(inertial_nav.get_altitude() - 100);
         } else {
-            pos_control->set_alt_target(inertial_nav.get_altitude() + 300);
+            pos_control->set_pos_target_z_cm(inertial_nav.get_altitude() + 300);
         }
-
-        // set the initial velocity of the height controller demand to the measured velocity if it is going up
-        // if it is going down, set it to zero to enforce a very hard stop
-        pos_control->set_desired_velocity_z(fmaxf(inertial_nav.get_velocity_z(),0.0f));
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
@@ -77,9 +77,8 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         stage = Throw_PosHold;
 
-        // initialise the loiter target to the current position and velocity
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
+        // initialise position controller
+        pos_control->init_xy_controller();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
@@ -115,7 +114,7 @@ void ModeThrow::run()
         }
 
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         break;
@@ -130,7 +129,7 @@ void ModeThrow::run()
         }
 
         // Hold throttle at zero during the throw and continually reset the attitude controller
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
 
@@ -161,7 +160,7 @@ void ModeThrow::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
 
         // call height controller
-        pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
+        pos_control->set_pos_target_z_from_climb_rate_cm(0.0f, false);
         pos_control->update_z_controller();
 
         break;
@@ -171,14 +170,17 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // run loiter controller
-        loiter_nav->update();
+        // use position controller to stop
+        Vector3f vel;
+        Vector3f accel;
+        pos_control->input_vel_accel_xy(vel, accel);
+        pos_control->update_xy_controller();
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), 0.0f);
+        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
 
         // call height controller
-        pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
+        pos_control->set_pos_target_z_from_climb_rate_cm(0.0f, false);
         pos_control->update_z_controller();
 
         break;
@@ -282,12 +284,12 @@ bool ModeThrow::throw_attitude_good()
 bool ModeThrow::throw_height_good()
 {
     // Check that we are within 0.5m of the demanded height
-    return (pos_control->get_alt_error() < 50.0f);
+    return (pos_control->get_pos_error_z_cm() < 50.0f);
 }
 
 bool ModeThrow::throw_position_good()
 {
     // check that our horizontal position error is within 50cm
-    return (pos_control->get_pos_error_xy() < 50.0f);
+    return (pos_control->get_pos_error_xy_cm() < 50.0f);
 }
 #endif

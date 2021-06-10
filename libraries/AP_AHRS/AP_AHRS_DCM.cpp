@@ -116,6 +116,9 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     update_AOA_SSA();
 
     backup_attitude();
+
+    // update takeoff/touchdown flags
+    update_flags();
 }
 
 /*

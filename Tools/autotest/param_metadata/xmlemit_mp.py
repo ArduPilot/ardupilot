@@ -43,7 +43,7 @@ class XmlEmitMP(Emit):
     def emit(self, g):
         t = ""
         if not self.skip_name:
-            self.gname = g.name
+            self.gname = g.reference
             if self.gname == "ArduCopter":
                 self.gname = "ArduCopter2"
             if self.gname == "APMrover2" or self.gname == "Rover":

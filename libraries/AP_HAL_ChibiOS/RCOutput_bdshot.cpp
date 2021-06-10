@@ -521,7 +521,7 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     case MODE_PWM_DSHOT600:
         return 600000U * 5 / 4;
     case MODE_PWM_DSHOT1200:
-        return 120000U * 5 / 4;
+        return 1200000U * 5 / 4;
     default:
         // use 1 to prevent a possible divide-by-zero
         return 1;

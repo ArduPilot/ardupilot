@@ -17,25 +17,28 @@ public:
     // Constructor for PID
     AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz, float dt);
 
+    CLASS_NO_COPY(AC_PID_2D);
+
     // set time step in seconds
     void set_dt(float dt) { _dt = dt; }
 
     // update_all - set target and measured inputs to PID controller and calculate outputs
     // target and error are filtered
     // the derivative is then calculated and filtered
-    // the integral is then updated based on the setting of the limit flag
-    Vector2f update_all(const Vector2f &target, const Vector2f &measurement, bool limit = false);
-    Vector2f update_all(const Vector3f &target, const Vector3f &measurement, bool limit = false);
+    //  the integral is then updated if it does not increase in the direction of the limit vector
+    Vector2f update_all(const Vector2f &target, const Vector2f &measurement, const Vector2f &limit);
+    Vector2f update_all(const Vector3f &target, const Vector3f &measurement, const Vector3f &limit);
 
     // update the integral
     // if the limit flag is set the integral is only allowed to shrink
-    void update_i(bool limit);
+    void update_i(const Vector2f &limit);
 
     // get results from pid controller
     Vector2f get_p() const;
-    Vector2f get_i() const;
+    const Vector2f& get_i() const;
     Vector2f get_d() const;
     Vector2f get_ff();
+    const Vector2f& get_error() const { return _error; }
 
     // reset the integrator
     void reset_I() { _integrator.zero(); };
@@ -69,7 +72,7 @@ public:
     // integrator setting functions
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);
     void set_integrator(const Vector2f& error, const Vector2f& i);
-    void set_integrator(const Vector3f& i) { set_integrator(Vector2f(i.x, i.y)); }
+    void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }
     void set_integrator(const Vector2f& i);
 
     const AP_Logger::PID_Info& get_pid_info_x(void) const { return _pid_info_x; }
