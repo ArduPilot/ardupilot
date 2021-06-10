@@ -87,6 +87,9 @@ public:
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
         MPPT_PacketDigital         = 20,
+#if HAL_BATTMONITOR_UAVCAN_CBAT_ENABLED
+        UAVCAN_CBAT                = 21,
+#endif
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);

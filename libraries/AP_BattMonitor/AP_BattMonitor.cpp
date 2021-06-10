@@ -166,6 +166,13 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
 #endif
                 break;
+#if HAL_BATTMONITOR_UAVCAN_CBAT_ENABLED
+            case Type::UAVCAN_CBAT:
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_CBAT, _params[instance]);
+#endif
+                break;
+#endif
             case Type::BLHeliESC:
 #if HAL_WITH_ESC_TELEM && !defined(HAL_BUILD_AP_PERIPH)
                 drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
