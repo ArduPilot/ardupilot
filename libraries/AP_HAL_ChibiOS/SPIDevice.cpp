@@ -179,7 +179,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     bool ret = true;
 
 #if defined(HAL_SPI_USE_POLLED)
-    for (uint16_t i=0; i<len; i++) {
+    for (uint32_t i=0; i<len; i++) {
         uint8_t ret = spiPolledExchange(spi_devices[device_desc.bus].driver, send?send[i]:0);
         if (recv) {
             recv[i] = ret;
