@@ -26,6 +26,9 @@
  * 0...3        Lowest...Highest.
  */
 
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 /*
  * HAL driver system settings.
  */

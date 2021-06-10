@@ -25,6 +25,9 @@
 #define STM32_LSEDRV                (3U << 3U)
 #endif
 
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 /*
  * STM32G4xx drivers configuration.
  * The following settings override the default settings present in

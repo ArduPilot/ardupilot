@@ -103,6 +103,8 @@ def chibios_dma_define_name(key):
         return 'STM32_UART_%s_' % dma_key
     elif key.startswith('SDIO') or key.startswith('SDMMC'):
         return 'STM32_SDC_%s_' % dma_key
+    elif key.startswith('QUADSPI'):
+        return 'STM32_WSPI_%s_' % dma_key
     elif key.startswith('TIM'):
         return 'STM32_TIM_%s_' % dma_key
     else:

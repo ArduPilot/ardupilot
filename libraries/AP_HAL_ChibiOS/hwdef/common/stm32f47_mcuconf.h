@@ -52,6 +52,9 @@
 /*
  * HAL driver system settings.
  */
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 #define STM32_NO_INIT                       FALSE
 
 #ifndef STM32_HSI_ENABLED

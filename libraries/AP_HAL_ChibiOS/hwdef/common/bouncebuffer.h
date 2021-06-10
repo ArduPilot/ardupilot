@@ -16,13 +16,13 @@ struct bouncebuffer_t {
     uint8_t *orig_buf;
     uint32_t size;
     bool busy;
-    bool is_sdcard;
+    bool on_axi_sram;
 };
 
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool sdcard);
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool axi_sram);
 
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed

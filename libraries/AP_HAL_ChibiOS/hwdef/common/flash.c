@@ -56,6 +56,10 @@
 
 #include <assert.h>
 
+#if HAL_USE_WSPI
+#include <hal_serial_nor.h>
+#endif
+
 // #pragma GCC optimize("O0")
 
 /*
@@ -804,6 +808,44 @@ bool stm32_flash_recent_erase(void)
 {
     return hrt_millis32() - last_erase_ms < 3000U;
 }
+#endif
+
+#if HAL_USE_WSPI
+
+const WSPIConfig WSPIcfg1 = {
+  .end_cb           = NULL,
+  .error_cb         = NULL,
+  .dcr              = STM32_DCR_FSIZE(24U) |        /* 16MB device.         */
+                      STM32_DCR_CSHT(1U)            /* NCS 2 cycles delay.  */
+};
+
+const SNORConfig snorcfg1 = {
+  .busp             = &WSPID1,
+  .buscfg           = &WSPIcfg1
+};
+
+SNORDriver snor1;
+
+bool stm32_flash_qspi_init()
+{
+    snorObjectInit(&snor1);
+    snorStart(&snor1, &snorcfg1);
+
+    return true;
+}
+
+bool stm32_flash_qspi_memory_map(uint8_t** addr)
+{
+    snorMemoryMap(&snor1, addr);
+    return true;
+}
+
+bool stm32_flash_qspi_memory_unmap()
+{
+    snorMemoryUnmap(&snor1);
+    return true;
+}
+
 #endif
 
 #endif // HAL_NO_FLASH_SUPPORT
