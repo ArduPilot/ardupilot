@@ -1169,6 +1169,34 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
+    // ensure the GPS drivers are ready on any final changes
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
+        if (!AP::gps().prepare_for_arming()) {
+            return false;
+        }
+    }
+
+    // note that this will prepare AP_Logger to start logging
+    // so should be the last check to be done before arming
+    if (!mandatory_checks(true)) {
+        return false;
+    }
+
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->logging_present() &&
+        !logger->logging_started() &&
+        ((checks_to_perform & ARMING_CHECK_ALL) ||
+            (checks_to_perform & ARMING_CHECK_LOGGING))) {
+        check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");
+        return false;
+    }
+    return true;
+}
+
+// final mandatory checks that should always be called and always called last before arming
+bool AP_Arming::mandatory_checks(bool report)
+{
     // enable any pending dshot commands to be flushed before sending actual throttle values
     if (!hal.rcout->prepare_for_arming()) {
         return false;
@@ -1181,13 +1209,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         fft->prepare_for_arming();
     }
 #endif
-    // ensure the GPS drivers are ready on any final changes
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        if (!AP::gps().prepare_for_arming()) {
-            return false;
-        }
-    }
 
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
@@ -1196,7 +1217,7 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             fence->enable(true);
         }
     }
-    
+
     // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
 
@@ -1208,13 +1229,8 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     if (logger->logging_present()) {
         // If we're configured to log, prep it
         logger->PrepForArming();
-        if (!logger->logging_started() &&
-            ((checks_to_perform & ARMING_CHECK_ALL) ||
-             (checks_to_perform & ARMING_CHECK_LOGGING))) {
-            check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");
-            return false;
-        }
     }
+
     return true;
 }
 
