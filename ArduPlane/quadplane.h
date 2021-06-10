@@ -477,9 +477,6 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        float speed_scale;
-        Vector2f target_velocity;
-        float max_speed;
         Vector3f target_cm;
         Vector3f target_vel_cms;
         bool slow_descent:1;
