@@ -278,6 +278,7 @@ def kill_mac_terminal():
 def start_SITL(binary,
                valgrind=False,
                gdb=False,
+               gdb_no_tui=False,
                wipe=False,
                synthetic_clock=True,
                home=None,
@@ -332,6 +333,8 @@ def start_SITL(binary,
             f.write("b %s\n" % (breakpoint,))
         if disable_breakpoints:
             f.write("disable\n")
+        if not gdb_no_tui:
+            f.write("tui enable\n")
         f.write("r\n")
         f.close()
         if sys.platform == "darwin" and os.getenv('DISPLAY'):
