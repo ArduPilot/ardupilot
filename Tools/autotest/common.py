@@ -1196,6 +1196,7 @@ class AutoTest(ABC):
                  binary,
                  valgrind=False,
                  gdb=False,
+                 gdb_no_tui=False,
                  speedup=None,
                  frame=None,
                  params=None,
@@ -1220,6 +1221,7 @@ class AutoTest(ABC):
         self.binary = binary
         self.valgrind = valgrind
         self.gdb = gdb
+        self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
         self.frame = frame
         self.params = params
@@ -5929,6 +5931,7 @@ Also, ignores heartbeats not from our target system'''
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
             "gdb": self.gdb,
+            "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": self.sitl_home(),
