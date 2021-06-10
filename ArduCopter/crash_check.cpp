@@ -41,7 +41,7 @@ void Copter::crash_check()
         return;
     }
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if FRAME_CONFIG == HELI_FRAME
     //return immediately if in autorotation mode
     if (flightmode->mode_number() == Mode::Number::AUTOROTATE) {
         crash_counter = 0;
