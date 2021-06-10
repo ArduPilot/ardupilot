@@ -5650,9 +5650,12 @@ Also, ignores heartbeats not from our target system'''
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         try:
+            retries = 20
+            if self.gdb:
+                retries = 20000
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=20,
+                retries=retries,
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
