@@ -558,6 +558,10 @@ class sitl_periph_gps(sitl):
             APJ_BOARD_ID = 100,
             HAL_NO_GCS = 1,
             HAL_LOGGING_ENABLED = 0,
+            HAL_LOGGING_MAVLINK_ENABLED = 0,
+            HAL_MISSION_ENABLED = 0,
+            HAL_RALLY_ENABLED = 0,
+            HAL_SCHEDULER_ENABLED = 0,
         )
         # libcanard is written for 32bit platforms
         env.CXXFLAGS += [

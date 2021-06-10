@@ -144,13 +144,6 @@ bool GCS_MAVLINK::init(uint8_t instance)
 
     mavlink_comm_port[chan] = _port;
 
-    // create performance counters
-    snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
-    _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_packet_name);
-
-    snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
-    _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
-
     AP_SerialManager::SerialProtocol mavlink_protocol = serial_manager.get_mavlink_protocol(chan);
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
@@ -268,7 +261,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
-                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED,
+                                    battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_volts_ext); // Cell 11..14 voltages
 }
 
@@ -1417,8 +1410,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     uint32_t tstart_us = AP_HAL::micros();
     uint32_t now_ms = AP_HAL::millis();
 
-    hal.util->perf_begin(_perf_update);
-
     status.packet_rx_drop_count = 0;
 
     const uint16_t nbytes = _port->available();
@@ -1453,9 +1444,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
-            hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
-            hal.util->perf_end(_perf_packet);
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
@@ -1562,8 +1551,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         try_send_message_stats.statustext_last_sent_ms = now16_ms;
     }
 #endif
-
-    hal.util->perf_end(_perf_update);    
 }
 
 /*
@@ -5067,7 +5054,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_EFI_STATUS: {
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {

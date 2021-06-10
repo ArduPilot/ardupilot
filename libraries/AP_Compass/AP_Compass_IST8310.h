@@ -50,8 +50,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_HAL::Device::PeriodicHandle _periodic_handle;
-    AP_HAL::Util::perf_counter_t _perf_xfer_err;
-    AP_HAL::Util::perf_counter_t _perf_bad_data;
 
     enum Rotation _rotation;
     uint8_t _instance;

@@ -22,6 +22,7 @@ def build(bld):
         'AP_Math',
         'AP_BoardConfig',
         'AP_BattMonitor',
+        'AP_CANManager',
         'AP_Param',
         'StorageManager',
         'AP_FlashStorage',
@@ -40,6 +41,8 @@ def build(bld):
         'SRV_Channel',
         'AP_Notify',
         'AP_SerialLED',
+        'AP_Logger',
+        'AP_Filesystem',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'

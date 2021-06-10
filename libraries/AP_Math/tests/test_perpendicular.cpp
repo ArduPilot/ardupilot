@@ -37,8 +37,6 @@
         EXPECT_VECTOR3F_EQ(expected, result);           \
     } while (false)
 
-void foo();
-void foo() { }
 TEST(ThreatTests, Distance)
 {
 
@@ -53,7 +51,6 @@ TEST(ThreatTests, Distance)
     PERP_TEST_3D( 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f);
     PERP_TEST_3D( 0.0f,0.0f,0.0f, 1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f);
     PERP_TEST_3D( 2.0f,0.0f,0.0f, 1.0f,0.0f,0.0f, 0.0f,0.0f,0.0f);
-    foo();
     PERP_TEST_3D( 0.0f,2.0f,0.0f, 1.0f,0.0f,0.0f, 0.0f,2.0f,0.0f);
     PERP_TEST_3D( 0.0f,2.0f,0.0f, 1.0f,2.0f,0.0f, -0.8f,0.4f,0.0f);
     PERP_TEST_3D( 2.0f,0.0f,0.0f, 1.0f,2.0f,0.0f, 1.6f,-0.8f,0.0f);
@@ -70,6 +67,3 @@ TEST(ThreatTests, Distance)
 }
 
 AP_GTEST_MAIN()
-
-
-int hal = 0; // bizarrely, this fixes an undefined-symbol error but doesn't raise a type exception.  Yay.

@@ -248,6 +248,9 @@ inline constexpr uint32_t usec_to_hz(uint32_t usec)
 
 /*
   linear interpolation based on a variable in a range
+  return value will be in the range [var_low,var_high]
+
+  Either polarity is supported, so var_low can be higher than var_high
  */
 float linear_interpolate(float low_output, float high_output,
                          float var_value,

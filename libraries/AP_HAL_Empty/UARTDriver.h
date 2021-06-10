@@ -23,4 +23,7 @@ public:
     /* Empty implementations of Print virtual methods */
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
+
+    // request information on uart I/O for one uart
+    void uart_info(ExpandingString &str) override;
 };

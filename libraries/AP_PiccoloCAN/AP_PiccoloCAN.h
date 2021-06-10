@@ -19,7 +19,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANDriver.h>
-#include <AP_HAL/Semaphores.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
@@ -114,7 +113,6 @@ private:
     uint8_t _driver_index;
     AP_HAL::CANIface* _can_iface;
     HAL_EventHandle _event_handle;
-    HAL_Semaphore _telem_sem;
 
     struct PiccoloESC_Info_t {
 

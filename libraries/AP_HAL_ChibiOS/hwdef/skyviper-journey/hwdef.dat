@@ -136,3 +136,6 @@ env BUILD_ABIN True
 
 # need more space for default parameters
 define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+
+# Disable un-needed hardware drivers
+define HAL_WITH_ESC_TELEM 0

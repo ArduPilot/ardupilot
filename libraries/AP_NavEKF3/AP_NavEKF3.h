@@ -223,16 +223,6 @@ public:
     void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
 
     /*
-     * Return data for debugging body frame odometry fusion:
-     *
-     * velInnov are the XYZ body frame velocity innovations (m/s)
-     * velInnovVar are the XYZ body frame velocity innovation variances (m/s)**2
-     *
-     * Return the system time stamp of the last update (msec)
-     */
-    uint32_t getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const;
-
-    /*
      * Writes the measurement from a yaw angle sensor
      *
      * yawAngle: Yaw angle of the vehicle relative to true north in radians where a positive angle is
@@ -289,12 +279,6 @@ public:
      7 = filter is not initialised
     */
     void getFilterFaults(int8_t instance, uint16_t &faults) const;
-
-    /*
-    return filter gps quality check status for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-    */
-    void getFilterGpsStatus(int8_t instance, nav_gps_status &faults) const;
 
     /*
     return filter status flags for the specified instance

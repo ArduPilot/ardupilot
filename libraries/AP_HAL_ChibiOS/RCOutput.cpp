@@ -1356,12 +1356,12 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 #ifdef HAL_WITH_BIDIR_DSHOT
             // retrieve the last erpm values
             const uint16_t erpm = group.bdshot.erpm[i];
-
+#if HAL_WITH_ESC_TELEM
             // update the ESC telemetry data
             if (erpm < 0xFFFF && group.bdshot.enabled) {
                 update_rpm(chan, erpm * 200 / _bdshot.motor_poles, get_erpm_error_rate(chan));
             }
-
+#endif
             _bdshot.erpm[chan] = erpm;
 #endif
             uint16_t pwm = period[chan];

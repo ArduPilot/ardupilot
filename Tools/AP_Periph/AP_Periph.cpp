@@ -64,6 +64,23 @@ const struct app_descriptor app_descriptor __attribute__((section(".app_descript
 const struct app_descriptor app_descriptor;
 #endif
 
+AP_Periph_FW::AP_Periph_FW()
+#if HAL_LOGGING_ENABLED
+    : logger(g.log_bitmask)
+#endif
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Periph_FW must be singleton");
+    }
+    _singleton = this;
+}
+
+#if HAL_LOGGING_ENABLED
+const struct LogStructure AP_Periph_FW::log_structure[] = {
+    LOG_COMMON_STRUCTURES,
+};
+#endif
+
 void AP_Periph_FW::init()
 {
     
@@ -94,6 +111,10 @@ void AP_Periph_FW::init()
     AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
 #endif
 
+#if HAL_LOGGING_ENABLED
+    logger.Init(log_structure, ARRAY_SIZE(log_structure));
+#endif
+
     printf("Booting %08x:%08x %u/%u len=%u 0x%08x\n",
            app_descriptor.image_crc1,
            app_descriptor.image_crc2,
@@ -108,6 +129,10 @@ void AP_Periph_FW::init()
 #ifdef HAL_PERIPH_ENABLE_GPS
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
+#if HAL_LOGGING_ENABLED
+        #define MASK_LOG_GPS (1<<2)
+        gps.set_log_gps_bit(MASK_LOG_GPS);
+#endif
         gps.init(serial_manager);
     }
 #endif
@@ -343,6 +368,10 @@ void AP_Periph_FW::update()
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
+    logger.periodic_tasks();
+#endif
+
     can_update();
     hal.scheduler->delay(1);
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
@@ -424,6 +453,13 @@ void AP_Periph_FW::prepare_reboot()
         // delay to give the ACK a chance to get out, the LEDs to flash,
         // the IO board safety to be forced on, the parameters to flush,
         hal.scheduler->delay(40);
+}
+
+AP_Periph_FW *AP_Periph_FW::_singleton;
+
+AP_Periph_FW& AP::periph()
+{
+    return *AP_Periph_FW::get_singleton();
 }
 
 AP_HAL_MAIN();

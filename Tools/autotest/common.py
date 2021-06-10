@@ -1390,8 +1390,7 @@ class AutoTest(ABC):
         self.progress("Applying default parameters file")
         # setup test parameters
         if self.params is None:
-            self.params = self.model_defaults_filepath(self.vehicleinfo_key(),
-                                                       self.frame)
+            self.params = self.model_defaults_filepath(self.frame)
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
 
@@ -5398,6 +5397,8 @@ class AutoTest(ABC):
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
                 self.arm_vehicle()
+                # statustexts are queued; give it a second to arrive:
+                self.delay_sim_time(5)
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
@@ -8694,6 +8695,8 @@ switch value'''
                                         zero_time_base=True)
 
     def current_onboard_log_contains_message(self, messagetype):
+        self.progress("Checking (%s) for (%s)" %
+                      (self.current_onboard_log_filepath(), messagetype))
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type=messagetype)
         print("m=%s" % str(m))
@@ -10487,8 +10490,8 @@ switch value'''
 
         return psd
 
-    def model_defaults_filepath(self, vehicle, model):
-
+    def model_defaults_filepath(self, model):
+        vehicle = self.vehicleinfo_key()
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):

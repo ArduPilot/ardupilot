@@ -27,9 +27,6 @@
 #if HAL_SUPPORT_RCOUT_SERIAL
 
 #define HAVE_AP_BLHELI_SUPPORT
-#ifndef HAL_WITH_ESC_TELEM
-#define HAL_WITH_ESC_TELEM TRUE
-#endif
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 

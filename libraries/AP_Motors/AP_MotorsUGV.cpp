@@ -13,11 +13,16 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include "SRV_Channel/SRV_Channel.h"
+#include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
-#include "Rover.h"
+
+#define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
 extern const AP_HAL::HAL& hal;
+
+// singleton instance
+AP_MotorsUGV *AP_MotorsUGV::_singleton;
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
@@ -108,14 +113,18 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents) :
-        _relayEvents(relayEvents)
+AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller) :
+        _relayEvents(relayEvents),
+        _rate_controller(rate_controller)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    _singleton = this;
 }
 
-void AP_MotorsUGV::init()
+void AP_MotorsUGV::init(uint8_t ftype)
 {
+    _frame_type = frame_type(ftype);
+
     // setup servo output
     setup_servo_output();
 
@@ -126,7 +135,7 @@ void AP_MotorsUGV::init()
     setup_safety_output();
 
     // setup for omni vehicles
-    if (rover.get_frame_type() != FRAME_TYPE_UNDEFINED) {
+    if (_frame_type != FRAME_TYPE_UNDEFINED) {
         setup_omni();
     }
 }
@@ -500,39 +509,39 @@ void AP_MotorsUGV::sanity_check_parameters()
 // setup pwm output type
 void AP_MotorsUGV::setup_pwm_type()
 {
-    uint16_t motor_mask = 0;
+    _motor_mask = 0;
 
     // work out mask of channels assigned to motors
-    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttle);
-    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleLeft);
-    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleRight);
+    _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttle);
+    _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleLeft);
+    _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleRight);
     for (uint8_t i=0; i<_motors_num; i++) {
-        motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
+        _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
     }
 
     switch (_pwm_type) {
     case PWM_TYPE_ONESHOT:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
     case PWM_TYPE_ONESHOT125:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
     case PWM_TYPE_BRUSHED_WITH_RELAY:
     case PWM_TYPE_BRUSHED_BIPOLAR:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
-        hal.rcout->set_freq(motor_mask, uint16_t(_pwm_freq * 1000));
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_freq(_motor_mask, uint16_t(_pwm_freq * 1000));
         break;
     case PWM_TYPE_DSHOT150:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
         break;
     case PWM_TYPE_DSHOT300:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
         break;
     case PWM_TYPE_DSHOT600:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
         break;
     case PWM_TYPE_DSHOT1200:
-        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
+        hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
     default:
         // do nothing
@@ -549,7 +558,7 @@ void AP_MotorsUGV::setup_omni()
     }
 
     // hard coded factor configuration
-    switch (rover.get_frame_type()) {
+    switch (_frame_type) {
 
     //   FRAME TYPE NAME
     case FRAME_TYPE_UNDEFINED:
@@ -778,7 +787,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
 {
     // exit immediately if the frame type is set to UNDEFINED
-    if (rover.get_frame_type() == FRAME_TYPE_UNDEFINED) {
+    if (_frame_type == FRAME_TYPE_UNDEFINED) {
         return;
     }
 
@@ -962,13 +971,13 @@ float AP_MotorsUGV::get_rate_controlled_throttle(SRV_Channel::Aux_servo_function
     }
 
     // attempt to rate control left throttle
-    if ((function == SRV_Channel::k_throttleLeft) && rover.get_wheel_rate_control().enabled(0)) {
-        return rover.get_wheel_rate_control().get_rate_controlled_throttle(0, throttle, dt);
+    if ((function == SRV_Channel::k_throttleLeft) && _rate_controller.enabled(0)) {
+        return _rate_controller.get_rate_controlled_throttle(0, throttle, dt);
     }
 
     // rate control right throttle
-    if ((function == SRV_Channel::k_throttleRight) && rover.get_wheel_rate_control().enabled(1)) {
-        return rover.get_wheel_rate_control().get_rate_controlled_throttle(1, throttle, dt);
+    if ((function == SRV_Channel::k_throttleRight) && _rate_controller.enabled(1)) {
+        return _rate_controller.get_rate_controlled_throttle(1, throttle, dt);
     }
 
     // return throttle unchanged
@@ -995,3 +1004,12 @@ bool AP_MotorsUGV::active() const
 
     return false;
 }
+
+
+namespace AP {
+    AP_MotorsUGV *motors_ugv()
+    {
+        return AP_MotorsUGV::get_singleton();
+    }
+}
+

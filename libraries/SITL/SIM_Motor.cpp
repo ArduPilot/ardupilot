@@ -33,7 +33,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
                              float voltage)
 {
     // fudge factors
-    const float yaw_scale = radians(400);
+    const float yaw_scale = radians(40);
 
     const float pwm = input.servos[motor_offset+servo];
     float command = pwm_to_command(pwm);
@@ -97,16 +97,16 @@ void Motor::calculate_forces(const struct sitl_input &input,
     }
     last_change_usec = now;
 
+    // calculate torque in newton-meters
+    Vector3f torque = (arm % thrust) + rotor_torque;
+
     // possibly rotate the thrust vector and the rotor torque
     if (!is_zero(roll) || !is_zero(pitch)) {
         Matrix3f rotation;
         rotation.from_euler(radians(roll), radians(pitch), 0);
         thrust = rotation * thrust;
-        rotor_torque = rotation * rotor_torque;
+        torque = rotation * torque;
     }
-
-    // calculate torque in newton-meters
-    Vector3f torque = (arm % thrust) + rotor_torque;
 
     // calculate total rotational acceleration
     rot_accel.x = torque.x / moment_of_inertia.x;

@@ -261,7 +261,7 @@ void AP_OSD_ParamScreen::draw_parameter(uint8_t number, uint8_t x, uint8_t y)
             if (metadata != nullptr && val >= 0 && val < metadata->values_max) {
                 backend->write(value_pos, y, value_blink, "%s", metadata->values[val]);
             } else {
-                backend->write(value_pos, y, value_blink, "%d", val);
+                backend->write(value_pos, y, value_blink, "%d", (signed)val);
             }
             break;
         }
