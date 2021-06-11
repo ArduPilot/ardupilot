@@ -50,7 +50,9 @@
 #include "support.h"
 #include "can.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
-
+#if EXTERNAL_PROG_FLASH_MB
+#include <AP_FlashIface/AP_FlashIface_JEDEC.h>
+#endif
 // #pragma GCC optimize("O0")
 
 
@@ -106,6 +108,14 @@
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
 #define PROTO_SET_BAUD				0x33    // baud rate on uart
 
+// External Flash programming 
+#if EXTERNAL_PROG_FLASH_MB
+#define PROTO_EXTF_ERASE            0x34	// Erase sectors from external flash
+#define PROTO_EXTF_PROG_MULTI       0x35    // write bytes at external flash program address and increment
+#define PROTO_EXTF_READ_MULTI       0x36    // read bytes at address and increment
+#define PROTO_EXTF_GET_CRC          0x37	// compute & return a CRC of data in external flash
+#endif
+
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
@@ -137,6 +147,11 @@ volatile unsigned timer[NTIMERS];
 // keep back 32 bytes at the front of flash. This is long enough to allow for aligned
 // access on STM32H7
 #define RESERVE_LEAD_WORDS 8
+
+
+#if EXTERNAL_PROG_FLASH_MB
+extern AP_FlashIface_JEDEC ext_flash;
+#endif
 
 /*
   1ms timer tick callback
@@ -569,6 +584,70 @@ bootloader(unsigned timeout)
             led_set(LED_BLINK);
             break;
 
+        // program data from start of the flash
+        //
+        // command:		EXTF_ERASE/<len:4>/EOC
+        // success reply:	INSYNC/OK
+        // invalid reply:	INSYNC/INVALID
+        // readback failure:	INSYNC/FAILURE
+        //
+        case PROTO_EXTF_ERASE:
+#if EXTERNAL_PROG_FLASH_MB
+        {
+            if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+            uint32_t cmd_erase_bytes;
+            if (cin_word(&cmd_erase_bytes, 100)) {
+                goto cmd_bad;
+            }
+
+            // expect EOC
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+            uint32_t erased_bytes = 0;
+            uint32_t sector_number = 0;
+            uint8_t pct_done = 0;
+            if (cmd_erase_bytes > (ext_flash.get_sector_size() * ext_flash.get_sector_count())) {
+                uprintf("Requested to erase more than we can\n");
+                goto cmd_bad;
+            }
+            uprintf("Erase Command Received\n");
+            sync_response();
+            cout(&pct_done, sizeof(pct_done));
+            // Flash all sectors that encompass the erase_bytes
+            while (erased_bytes < cmd_erase_bytes) {
+                uint32_t delay_ms = 0, timeout_ms = 0;
+                if (!ext_flash.start_sector_erase(sector_number, delay_ms, timeout_ms)) {
+                    goto cmd_fail;
+                }
+                uint32_t next_check_ms = AP_HAL::millis() + delay_ms;
+                while (true) {
+                    cout(&pct_done, sizeof(pct_done));
+                    if (AP_HAL::millis() > next_check_ms) {
+                        if (!ext_flash.is_device_busy()) {
+                            pct_done = erased_bytes*100/cmd_erase_bytes;
+                            uprintf("PCT DONE: %d\n", pct_done);
+                            break;
+                        }
+                        if ((AP_HAL::millis() + timeout_ms) > next_check_ms) {
+                            // We are out of time, return error
+                            goto cmd_fail;
+                        }
+                        next_check_ms = AP_HAL::millis()+delay_ms;
+                    }
+                    chThdSleep(chTimeMS2I(delay_ms));
+                }
+                erased_bytes += ext_flash.get_sector_size();
+                sector_number++;
+            }
+        }
+#else
+            goto cmd_bad;
+#endif // EXTERNAL_PROG_FLASH_MB
+            break;
         // program bytes at current address
         //
         // command:		PROG_MULTI/<len:1>/<data:len>/EOC
