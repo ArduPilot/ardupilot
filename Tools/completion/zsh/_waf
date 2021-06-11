@@ -33,7 +33,7 @@ _waf() {
           '--sitl-osd[Enable SITL OSD]' \
           '--sitl-rgbled[Enable SITL RGBLed]' \
           '--build-dates[Include build date in binaries]' \
-          '--sitl-flash-storage[Building SITL with flash storage emulation.]' \
+          '--sitl-flash-storage[Use flash storage emulation.]' \
           '--upload[Upload applicable targets to a connected device]' \
           '--board[Board name]:board:_waf_boards' \
           '--target=[Target name]:target:_waf_targets' \
