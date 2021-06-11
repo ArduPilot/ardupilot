@@ -253,7 +253,7 @@ configuration in order to save typing.
     g.add_option('--sitl-flash-storage',
         action='store_true',
         default=False,
-        help='Configure for building SITL with flash storage emulation.')
+        help='Use flash storage emulation.')
 
     g.add_option('--disable-ekf2',
         action='store_true',
