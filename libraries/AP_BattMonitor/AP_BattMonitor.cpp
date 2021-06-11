@@ -151,6 +151,7 @@ AP_BattMonitor::init()
                                                                                             100000, true, 20));
                 break;
             case Type::Rotoye:
+                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
                 drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance],
                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
