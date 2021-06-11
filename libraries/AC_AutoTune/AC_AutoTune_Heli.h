@@ -112,7 +112,7 @@ private:
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is acheived
     void updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command);
-    void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, float gain_incr, float max_gain);
+    void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p);
     void updating_rate_d_up(float &tune_d, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_d);
     void updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
     void updating_angle_p_up_yaw(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
