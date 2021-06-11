@@ -205,6 +205,11 @@ class uploader(object):
     REBOOT          = b'\x30'
     SET_BAUD        = b'\x33'     # set baud
 
+    EXTF_ERASE      = b'\x34'	  # erase sectors from external flash
+    EXTF_PROG_MULTI = b'\x35'     # write bytes at external flash program address and increment
+    EXTF_READ_MULTI = b'\x36'     # read bytes at address and increment
+    EXTF_GET_CRC    = b'\x37'	  # compute & return a CRC of data in external flash
+
     INFO_BL_REV     = b'\x01'        # bootloader protocol revision
     BL_REV_MIN      = 2              # minimum supported bootloader protocol
     BL_REV_MAX      = 5              # maximum supported bootloader protocol
@@ -308,6 +313,11 @@ class uploader(object):
     def __recv_int(self):
         raw = self.__recv(4)
         val = struct.unpack("<I", raw)
+        return val[0]
+
+    def __recv_uint8(self):
+        raw = self.__recv(1)
+        val = struct.unpack("<B", raw)
         return val[0]
 
     def __getSync(self):
@@ -575,6 +585,24 @@ class uploader(object):
                     struct.pack("I", baud) +
                     uploader.EOC)
         self.__getSync()
+
+    def erase_extflash(self, size):
+        if runningPython3:
+            size_bytes = size.to_bytes(4, byteorder='little')
+        else:
+            size_bytes = chr(size)
+        self.__send(uploader.EXTF_ERASE + size_bytes + uploader.EOC)
+        self.__getSync()
+        last_pct = 0
+        while(True):
+            if last_pct < 90:
+                pct = self.__recv_uint8()
+                if last_pct != pct:
+                    self.__drawProgressBar('Erase ExtF', pct, 100)
+                    last_pct = pct
+            elif self.__trySync():
+                    self.__drawProgressBar('Erase ExtF', 10.0, 10.0)
+                    return
 
     # get basic data about the board
     def identify(self):
@@ -961,18 +989,19 @@ def main():
     )
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('--erase-extflash', type=lambda x: int(x,0), default=None, help="Erase sectors containing specified amount of bytes from ext flash")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
     # warn people about ModemManager which interferes badly with Pixhawk
     modemmanager_check()
 
-    if args.firmware is None and not args.identify:
+    if args.firmware is None and not args.identify and not args.erase_extflash:
         parser.error("Firmware filename required for upload or download")
         sys.exit(1)
 
     # Load the firmware file
-    if not args.download and not args.identify:
+    if not args.download and not args.identify and not args.erase_extflash:
         fw = firmware(args.firmware)
         print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." %
               (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
@@ -1018,6 +1047,9 @@ def main():
                         up.dump_board_info()
                     elif args.download:
                         up.download(args.firmware)
+                    elif args.erase_extflash:
+                        up.erase_extflash(args.erase_extflash)
+                        print("\nExtF Erase Finished")
                     else:
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)
 
