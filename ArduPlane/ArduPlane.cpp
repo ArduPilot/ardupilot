@@ -273,7 +273,7 @@ void Plane::one_second_loop()
     // make it possible to change orientation at runtime
     ahrs.update_orientation();
 #if HAL_ADSB_ENABLED
-    adsb.set_stall_speed_cm(aparm.airspeed_min);
+    adsb.set_stall_speed_cm(aparm.airspeed_min * 100); // convert m/s to cm/s
     adsb.set_max_speed(aparm.airspeed_max);
 #endif
     ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2),
