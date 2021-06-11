@@ -592,9 +592,6 @@ class sitl(Board):
                 cfg.fatal("Failed to find SFML Audio libraries")
             env.CXXFLAGS += ['-DWITH_SITL_TONEALARM']
 
-        if cfg.options.sitl_flash_storage:
-            env.CXXFLAGS += ['-DSTORAGE_USE_FLASH=1']
-
         if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [
                 'winmm',
