@@ -40,6 +40,7 @@ static const struct supported_device supported_devices[] = {
     {"mt25q", 0x20, 0xBA}
 };
 
+#define MAX_SUPPORTED_FLASH_SIZE 0x1FFFFFFUL
 // Vendor Specific Constants
 // Following Commands Sets were found here:
 // * JEDEC Standard JESD251-A1, Addendum No. 1 to JESD251, Optional x4 Quad I/O
@@ -284,6 +285,11 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
         _desc.flash_size = SFDP_GET_BITS(param_table[1], 0, 30)/8;
+        // But we only support 24bit (3Bytes) addressing right now
+        // So limit is upto 32MB addressing
+        if (_desc.flash_size >= MAX_SUPPORTED_FLASH_SIZE) {
+            _desc.flash_size = MAX_SUPPORTED_FLASH_SIZE;
+        }
         _desc.page_size = 1UL<<SFDP_GET_BITS(param_table[10], 4, 7);
         _desc.page_count = _desc.flash_size/_desc.page_size;
         if (_desc.page_count == 0) {
@@ -699,6 +705,10 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
         Debug("Requested Erase size is too small");
         return false;
     }
+    if ((offset+erase_size) > _desc.flash_size) {
+        Debug("Requested erase overflows supported flash size")
+        return false;
+    }
     // Start Erasing
     write_enable(true);
     AP_HAL::QSPIDevice::CommandHeader cmd;
@@ -888,6 +898,15 @@ bool AP_FlashIface_JEDEC::is_device_busy()
     }
 }
 
+/**
+ * @details Starts execution in place mode
+ *
+ * @return                  if successfully entered XIP mode.
+ *
+ * @retval false            the device failed to enter XIP mode.
+ * @retval true             the device has entered XIP mode.
+ *
+ */
 bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
 {
     if (!_desc.is_xip_supported) {
