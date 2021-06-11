@@ -2783,6 +2783,18 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_POSITION1: {
         setup_target_position();
 
+        if (is_tailsitter()) {
+            if (in_tailsitter_vtol_transition()) {
+                break;
+            }
+            poscontrol.set_state(QPOS_POSITION2);
+            poscontrol.pilot_correction_done = false;
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
+                                    (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
+            break;
+        }
+
+
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
 
@@ -2956,6 +2968,11 @@ void QuadPlane::vtol_position_controller(void)
         }
         break;
     case QPOS_POSITION1:
+        if (in_tailsitter_vtol_transition()) {
+            pos_control->relax_z_controller(0);
+            break;
+        }
+        FALLTHROUGH;
     case QPOS_POSITION2: {
         bool vtol_loiter_auto = false;
         if (plane.control_mode == &plane.mode_auto) {
