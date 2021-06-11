@@ -41,6 +41,14 @@ static const struct supported_device supported_devices[] = {
     {"w25q", 0xEF, 0x40}
 };
 
+#ifdef HAL_BOOTLOADER_BUILD
+#define DELAY_MILLIS(x)         do { chThdSleepMilliseconds(x); } while(0)
+#define DELAY_MICROS(x)         do { chThdSleepMicroseconds(x); } while(0)
+#else
+#define DELAY_MILLIS(x)         do { hal.scheduler->delay(x); } while(0)
+#define DELAY_MICROS(x)         do { hal.scheduler->delay_microseconds(x); } while(0)
+#endif
+
 #define MAX_SUPPORTED_FLASH_SIZE 0x1FFFFFFUL
 // Vendor Specific Constants
 // Following Commands Sets were found here:
@@ -103,13 +111,12 @@ bool AP_FlashIface_JEDEC::init()
         }
     }
 
-    hal.scheduler->delay(5); // required by w25q
-
+    DELAY_MILLIS(5); // required by w25q
     // Reset Device involves trying to soft reset the chip
     // as when system reboots the device might not have.
     reset_device();
 
-    hal.scheduler->delay_microseconds(30); // required by w25q
+    DELAY_MICROS(30); // required by w25q
 
     // Detecting Device involves trying to read Device ID and matching
     // with what we expect. Along with extracting info from SFDP
@@ -730,7 +737,7 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
         return false;
     }
     if ((offset+erase_size) > _desc.flash_size) {
-        Debug("Requested erase overflows supported flash size")
+        Debug("Requested erase overflows supported flash size");
         return false;
     }
     // Start Erasing
@@ -930,7 +937,7 @@ bool AP_FlashIface_JEDEC::is_device_busy()
 void AP_FlashIface_JEDEC::wait_ready()
 {
     while (is_device_busy()) {
-        hal.scheduler->delay_microseconds(100);
+        DELAY_MICROS(100);
     }
 }
 
