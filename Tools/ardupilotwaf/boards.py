@@ -513,6 +513,9 @@ class sitl(Board):
             HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
         )
 
+        cfg.define('HAL_WITH_SPI', 1)
+        cfg.define('HAL_WITH_RAMTRON', 1)
+
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)
