@@ -882,7 +882,6 @@ def write_mcu_config(f):
 #define HAL_NO_RCIN_THREAD
 #define HAL_NO_SHARED_DMA FALSE
 #define HAL_NO_ROMFS_SUPPORT TRUE
-#define HAL_NO_FLASH_SUPPORT TRUE
 ''')
         if not env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('''
