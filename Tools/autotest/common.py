@@ -5724,6 +5724,12 @@ Also, ignores heartbeats not from our target system'''
         '''called to move relevant log files from our working directory to the
         buildlogs directory'''
         to_dir = self.logs_dir
+        # move telemetry log files
+        for log in glob.glob("autotest-*.tlog"):
+            bname = os.path.basename(log)
+            newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
+            print("Renaming %s to %s" % (log, newname))
+            shutil.move(log, newname)
         # move binary log files
         for log in sorted(self.bin_logs()):
             bname = os.path.basename(log)
