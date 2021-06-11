@@ -3551,6 +3551,11 @@ class AutoTest(ABC):
         location.lng = lng
         print("new: %f %f" % (location.lat, location.lng))
 
+    def home_relative_loc_ne(self, n, e):
+        ret = self.home_position_as_mav_location()
+        self.location_offset_ne(ret, n, e)
+        return ret
+
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
