@@ -484,6 +484,7 @@ def run_step(step):
         "use_map": opts.map,
         "valgrind": opts.valgrind,
         "gdb": opts.gdb,
+        "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
@@ -902,6 +903,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under gdb')
+    group_sim.add_option("--gdb-no-tui",
+                         default=False,
+                         action='store_true',
+                         help='when running under GDB do NOT start in TUI mode')
     group_sim.add_option("--gdbserver",
                          default=False,
                          action='store_true',

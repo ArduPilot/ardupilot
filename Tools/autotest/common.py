@@ -1196,6 +1196,7 @@ class AutoTest(ABC):
                  binary,
                  valgrind=False,
                  gdb=False,
+                 gdb_no_tui=False,
                  speedup=None,
                  frame=None,
                  params=None,
@@ -1220,6 +1221,7 @@ class AutoTest(ABC):
         self.binary = binary
         self.valgrind = valgrind
         self.gdb = gdb
+        self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
         self.frame = frame
         self.params = params
@@ -3549,6 +3551,11 @@ class AutoTest(ABC):
         location.lng = lng
         print("new: %f %f" % (location.lat, location.lng))
 
+    def home_relative_loc_ne(self, n, e):
+        ret = self.home_position_as_mav_location()
+        self.location_offset_ne(ret, n, e)
+        return ret
+
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
@@ -5648,9 +5655,12 @@ Also, ignores heartbeats not from our target system'''
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         try:
+            retries = 20
+            if self.gdb:
+                retries = 20000
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=20,
+                retries=retries,
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
@@ -5929,6 +5939,7 @@ Also, ignores heartbeats not from our target system'''
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
             "gdb": self.gdb,
+            "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": self.sitl_home(),
