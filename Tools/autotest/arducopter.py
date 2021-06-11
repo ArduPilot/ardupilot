@@ -10845,6 +10845,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.context_pop()
 
+    def PSCDiscontinuity(self):
+        '''Ensure PSC Discontinuity doesn't return'''
+        self.check_mission_upload_download(self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 350, 50, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, -30, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ]))
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(3, 3)
+        self.wait_disarmed()
+
+        # check for bad stuff in logs
+        dfreader = self.dfreader_for_current_onboard_log()
+        m_count = 0
+        while True:
+            m = dfreader.recv_match(type="PSCN")
+            if m is None:
+                break
+            m_count += 1
+#            self.progress("m=%s" % str(m))
+            val = mavextra.diff(mavextra.diff(m.TVN, 1), 2)
+            if val > 0.1:
+                raise NotAchievedException("Discontinuity detected at message %s" % str(m))
+        if m_count == 0:
+            raise NotAchievedException("No PSCN messages in log")
+
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -14256,6 +14286,7 @@ RTL_ALT 111
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
+            self.PSCDiscontinuity,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL,
             self.SMART_RTL,
@@ -14440,6 +14471,7 @@ RTL_ALT 111
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
+            "PSCDiscontinuity": "detects a step-change in the PSC target vel",
         }
 
 
