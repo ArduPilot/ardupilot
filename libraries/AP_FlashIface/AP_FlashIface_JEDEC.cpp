@@ -895,15 +895,19 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         read_size = MIN((offset+size) - read_ptr, MAX_READ_SIZE);
         AP_HAL::QSPIDevice::CommandHeader cmd;
         cmd.cmd     =   _desc.fast_read_ins;
+        cmd.addr    =   read_ptr;
+        cmd.alt     =   0;
         cmd.cfg     =   AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                         AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                         AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
                         AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
                         AP_HAL::QSPI::CFG_ALT_SIZE_8 |
                         AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES;
-        cmd.addr    =   read_ptr;
-        cmd.alt     =   0;
-        cmd.dummy   =   _desc.fast_read_dummy_cycles;
+        if (_desc.fast_read_mode_clocks == 1){
+            cmd.dummy = _desc.fast_read_dummy_cycles - 1;
+        } else {
+            cmd.dummy = _desc.fast_read_dummy_cycles;
+        }
         _dev->set_cmd_header(cmd);
         if (!_dev->transfer(nullptr, 0, &data[read_ptr-offset], read_size)) { // Command only
             Debug("Failed to read flash");
