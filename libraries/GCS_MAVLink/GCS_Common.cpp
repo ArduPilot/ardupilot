@@ -17,6 +17,7 @@
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AP_ADSB/AP_ADSB.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Arming/AP_Arming.h>
@@ -4181,6 +4182,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_battery_reset(packet);
         break;
         
+#if HAL_ADSB_ENABLED
+    case MAV_CMD_DO_START_ADSB_OUT_IDENT:
+        if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
+            result = MAV_RESULT_ACCEPTED;
+        }
+        else {
+            result = MAV_RESULT_FAILED;
+        }
+        break;
+#endif
+
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
         break;
