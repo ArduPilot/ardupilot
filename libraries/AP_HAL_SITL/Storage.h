@@ -5,13 +5,13 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include <AP_FlashStorage/AP_FlashStorage.h>
 
-// define which storage system to use. This allows us to test flash storage with --sitl-flash-storage
-// configure option
 #ifndef STORAGE_USE_FLASH
-#define STORAGE_USE_FLASH 0
+#define STORAGE_USE_FLASH 1
 #endif
 
+#ifndef STORAGE_USE_POSIX
 #define STORAGE_USE_POSIX 1
+#endif
 
 #define STORAGE_LINE_SHIFT 3
 
@@ -28,7 +28,14 @@ public:
     bool healthy(void) override;
 
 private:
-    volatile bool _initialised;
+    enum class StorageBackend: uint8_t {
+        None,
+//        FRAM,
+        Flash,
+        SDCard,  // AKA POSIX
+    };
+    StorageBackend _initialisedType = StorageBackend::None;
+
     void _storage_create(void);
     void _storage_open(void);
     void _save_backup(void);
@@ -36,31 +43,29 @@ private:
     uint8_t _buffer[HAL_STORAGE_SIZE] __attribute__((aligned(4)));
     Bitmask<STORAGE_NUM_LINES> _dirty_mask;
 
+    uint32_t _last_empty_ms;
+
 #if STORAGE_USE_FLASH
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
     bool _flash_erase_sector(uint8_t sector);
     bool _flash_erase_ok(void);
-#endif
 
     bool _flash_failed;
     uint32_t _last_re_init_ms;
-    uint32_t _last_empty_ms;
 
-#if STORAGE_USE_FLASH
     AP_FlashStorage _flash{_buffer,
             HAL_FLASH_SECTOR_SIZE,
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
-#endif
-    
+
     void _flash_load(void);
     void _flash_write(uint16_t line);
+#endif
 
 #if STORAGE_USE_POSIX
-    bool using_filesystem;
     int log_fd;
 #endif
 };
