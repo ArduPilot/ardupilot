@@ -48,11 +48,13 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     nova_msg.header.data[1] = NOVA_PREAMBLE2;
     nova_msg.header.data[2] = NOVA_PREAMBLE3;
 
-    const char *init_str = _initialisation_blob[0];
-    const char *init_str1 = _initialisation_blob[1];
-    
-    port->write((const uint8_t*)init_str, strlen(init_str));
-    port->write((const uint8_t*)init_str1, strlen(init_str1));
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        const char *init_str = _initialisation_blob[0];
+        const char *init_str1 = _initialisation_blob[1];
+
+        port->write((const uint8_t*)init_str, strlen(init_str));
+        port->write((const uint8_t*)init_str1, strlen(init_str1));
+    }
 }
 
 const char* const AP_GPS_NOVA::_initialisation_blob[6] {
@@ -69,15 +71,17 @@ const char* const AP_GPS_NOVA::_initialisation_blob[6] {
 bool
 AP_GPS_NOVA::read(void)
 {
-    uint32_t now = AP_HAL::millis();
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        const uint32_t now = AP_HAL::millis();
 
-    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
-        const char *init_str = _initialisation_blob[_init_blob_index];
+        if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+            const char *init_str = _initialisation_blob[_init_blob_index];
 
-        if (now > _init_blob_time) {
-            port->write((const uint8_t*)init_str, strlen(init_str));
-            _init_blob_time = now + 200;
-            _init_blob_index++;
+            if (now > _init_blob_time) {
+                port->write((const uint8_t*)init_str, strlen(init_str));
+                _init_blob_time = now + 200;
+                _init_blob_index++;
+            }
         }
     }
 
@@ -97,8 +101,9 @@ AP_GPS_NOVA::parse(uint8_t temp)
     {
         default:
         case nova_msg_parser::PREAMBLE1:
-            if (temp == NOVA_PREAMBLE1)
+            if (temp == NOVA_PREAMBLE1) {
                 nova_msg.nova_state = nova_msg_parser::PREAMBLE2;
+            }
             nova_msg.read = 0;
             break;
         case nova_msg_parser::PREAMBLE2:
@@ -181,7 +186,7 @@ AP_GPS_NOVA::parse(uint8_t temp)
 bool
 AP_GPS_NOVA::process_message(void)
 {
-    uint16_t messageid = nova_msg.header.nova_headeru.messageid;
+    const uint16_t messageid = nova_msg.header.nova_headeru.messageid;
 
     Debug("NOVA process_message messid=%u\n",messageid);
 
