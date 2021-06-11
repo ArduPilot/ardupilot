@@ -260,6 +260,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_IRLOCK_PORT,
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
+        CMDLINE_SET_STORAGE_FLASH_ENABLED,
+        CMDLINE_SET_STORAGE_POSIX_ENABLED,
     };
 
     const struct GetOptLong::option options[] = {
@@ -307,6 +309,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
+        {"set-storage-flash-enabled", true,   0, CMDLINE_SET_STORAGE_FLASH_ENABLED},
+        {"set-storage-posix-enabled", true,   0, CMDLINE_SET_STORAGE_POSIX_ENABLED},
         {0, false, 0, 0}
     };
 
@@ -314,6 +318,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         model_str = "quad";
         HALSITL::UARTDriver::_console = true;
     }
+
+    // storage defaults are set here:
+    bool storage_posix_enabled = true;
+    bool storage_flash_enabled = false;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
@@ -459,6 +467,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
+        case CMDLINE_SET_STORAGE_POSIX_ENABLED:
+            storage_posix_enabled = atoi(gopt.optarg);
+            break;
+        case CMDLINE_SET_STORAGE_FLASH_ENABLED:
+            storage_flash_enabled = atoi(gopt.optarg);
+            break;
         case 'h':
             _usage();
             exit(0);
@@ -511,9 +525,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         exit(1);
     }
 
+    if (storage_posix_enabled && storage_flash_enabled) {
+        // this will change in the future!
+        printf("Only one of flash or posix storage may be selected");
+        exit(1);
+    }
+
     if (AP::sitl()) {
         // Set SITL start time.
         AP::sitl()->start_time_UTC = start_time_UTC;
+        AP::sitl()->set_storage_posix_enabled(storage_posix_enabled);
+        AP::sitl()->set_storage_flash_enabled(storage_flash_enabled);
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
