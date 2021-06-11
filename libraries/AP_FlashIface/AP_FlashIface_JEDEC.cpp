@@ -111,6 +111,10 @@ bool AP_FlashIface_JEDEC::init()
         }
     }
 
+    if (!_dev) {
+        AP_HAL::panic("Ext Flash Not Found!");
+    }
+
     DELAY_MILLIS(5); // required by w25q
     // Reset Device involves trying to soft reset the chip
     // as when system reboots the device might not have.
