@@ -64,6 +64,9 @@ template <typename T>
 class Matrix3;
 
 template <typename T>
+class Vector2;
+
+template <typename T>
 class Vector3
 {
 
@@ -189,6 +192,9 @@ public:
     // rotate vector by angle in radians in xy plane leaving z untouched
     void rotate_xy(float rotation_rad);
 
+    // return xy components of a vector3
+    Vector2<T> xy();
+    
     // gets the length of this vector squared
     T  length_squared() const
     {
