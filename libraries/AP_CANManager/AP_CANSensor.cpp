@@ -142,6 +142,7 @@ bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_
 
 void CANSensor::loop()
 {
+    hal.scheduler->delay(10);
     while (!hal.scheduler->is_system_initialized()) {
         // don't process packets till startup complete
         hal.scheduler->delay(1);
