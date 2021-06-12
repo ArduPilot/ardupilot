@@ -484,6 +484,7 @@ private:
         bool pilot_correction_done;
         uint32_t thrust_loss_start_ms;
         uint32_t last_log_ms;
+        bool reached_wp_speed;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
@@ -724,6 +725,11 @@ private:
       change spool state, providing easy hook for catching changes in debug
      */
     void set_desired_spool_state(AP_Motors::DesiredSpoolState state);
+
+    /*
+      get a scaled Q_WP_SPEED based on direction of movement
+     */
+    float get_scaled_wp_speed(float target_bearing_deg) const;
 
 public:
     void motor_test_output();

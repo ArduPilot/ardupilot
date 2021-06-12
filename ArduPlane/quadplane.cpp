@@ -2589,6 +2589,18 @@ void QuadPlane::poscontrol_init_approach(void)
  */
 void QuadPlane::PosControlState::set_state(enum position_control_state s)
 {
+    if (state != s) {
+        // handle resets needed for when the state changes
+        if (s == QPOS_POSITION1) {
+            reached_wp_speed = false;
+        } else if (s == QPOS_POSITION2) {
+            // POSITION2 changes target speed, so we need to change it
+            // back to normal
+            auto &qp = plane.quadplane;
+            qp.pos_control->set_max_speed_accel_xy(qp.wp_nav->get_default_speed_xy(),
+                                                   qp.wp_nav->get_wp_acceleration());
+        }
+    }
     state = s;
     last_state_change_ms = AP_HAL::millis();
 }
@@ -2772,30 +2784,21 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = stopping_speed;
 
         // maximum configured VTOL speed
-        float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+        const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
         const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
+        const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
 
-        // limit WP speed to a lower speed when more than 20 degrees
-        // off pointing at the destination. quadplanes are often
-        // unstable when flying sideways or backwards
-        const float target_bearing = degrees(diff_wp.angle());
-        const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.yaw) - target_bearing));
-        if (yaw_difference > 20) {
-            // this gives a factor of 2x reduction in max speed when
-            // off by 90 degrees, and 3x when off by 180 degrees
-            const float speed_reduction = linear_interpolate(1, 3,
-                                                             yaw_difference,
-                                                             20, 160);
-            wp_speed /= speed_reduction;
-        }
-
-        if (current_speed_sq < sq(wp_speed)) {
-            // if we are below the WP speed then don't ask for more
-            // than WP speed. The POSITION1 controller can be used
-            // when faster than WP speed if we are coming from fixed
-            // wing flight, but we don't want to accelerate to speeds
-            // beyond the configured max VTOL speed
-            target_speed = MIN(target_speed, wp_speed);
+        if (poscontrol.reached_wp_speed ||
+            current_speed_sq < sq(wp_speed) ||
+            wp_speed > 1.35*scaled_wp_speed) {
+            // once we get below the Q_WP_SPEED then we don't want to
+            // speed up again. At that point we should fly within the
+            // limits of the configured VTOL controller we also apply
+            // this limit when we are more than 45 degrees off the
+            // target in yaw, which is when we start to become
+            // unstable
+            target_speed = MIN(target_speed, scaled_wp_speed);
+            poscontrol.reached_wp_speed = true;
         }
 
         // run fixed wing navigation
@@ -2840,7 +2843,7 @@ void QuadPlane::vtol_position_controller(void)
             // stop integrator buildup
             pos_control->set_externally_limited_xy();
         }
-        
+
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
@@ -2873,6 +2876,16 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         update_land_positioning();
+
+        /*
+          apply the same asymmetric speed limits from POSITION1, so we
+          don't suddenly speed up when we change to POSITION2 and
+          LAND_DESCEND
+         */
+        const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
+        const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
+
+        pos_control->set_max_speed_accel_xy(scaled_wp_speed*100, wp_nav->get_wp_acceleration());
 
         run_xy_controller();
 
@@ -3008,6 +3021,26 @@ void QuadPlane::vtol_position_controller(void)
     }
 }
 
+
+/*
+  we want to limit WP speed to a lower speed when more than 20 degrees
+  off pointing at the destination. quadplanes are often
+  unstable when flying sideways or backwards
+*/
+float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
+{
+    const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.yaw) - target_bearing_deg));
+    const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+    if (yaw_difference > 20) {
+        // this gives a factor of 2x reduction in max speed when
+        // off by 90 degrees, and 3x when off by 180 degrees
+        const float speed_reduction = linear_interpolate(1, 3,
+                                                         yaw_difference,
+                                                         20, 160);
+        return wp_speed / speed_reduction;
+    }
+    return wp_speed;
+}
 
 /*
   setup the target position based on plane.next_WP_loc
@@ -3175,6 +3208,7 @@ void QuadPlane::init_qrtl(void)
     if (dist < 1.5*radius &&
         motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // we're close to destination and already running VTOL motors, don't transition
+        gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
         poscontrol.set_state(QPOS_POSITION1);
     }
     int32_t from_alt;
