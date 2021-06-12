@@ -498,10 +498,9 @@ class sitl(Board):
             'AP_HAL_SITL',
         ]
 
-        if not cfg.env.AP_PERIPH:
-            env.AP_LIBRARIES += [
-                'SITL',
-            ]
+        env.AP_LIBRARIES += [
+            'SITL',
+        ]
 
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
