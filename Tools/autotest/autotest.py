@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
- APM automatic test suite
- Andrew Tridgell, October 2011
+APM automatic test suite.
+
+Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
@@ -40,11 +41,12 @@ tester = None
 
 
 def buildlogs_dirpath():
+    """Return BUILDLOGS directory path."""
     return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
 
 def buildlogs_path(path):
-    """return a string representing path in the buildlogs directory"""
+    """Return a string representing path in the buildlogs directory."""
     bits = [buildlogs_dirpath()]
     if isinstance(path, list):
         bits.extend(path)
@@ -55,7 +57,6 @@ def buildlogs_path(path):
 
 def get_default_params(atype, binary):
     """Get default parameters."""
-
     # use rover simulator so SITL is not starved of input
     HOME = mavutil.location(40.071374969556928,
                             -105.22978898137808,
@@ -96,6 +97,7 @@ def get_default_params(atype, binary):
 
 
 def build_all_filepath():
+    """Get build_all.sh path."""
     return util.reltopdir('Tools/scripts/build_all.sh')
 
 
@@ -154,11 +156,13 @@ def build_unit_tests(**kwargs):
 
 
 def run_unit_test(test):
+    """Run unit test file."""
     print("Running (%s)" % test)
     subprocess.run([test], check=True)
 
 
 def run_unit_tests():
+    """Run all unit tests files."""
     binary_dir = util.reltopdir(os.path.join('build',
                                              'linux',
                                              'tests',
@@ -180,6 +184,7 @@ def run_unit_tests():
 
 
 def run_clang_scan_build():
+    """Run Clang Scan-build utility."""
     if util.run_cmd("scan-build python waf configure",
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-configure")
@@ -199,10 +204,12 @@ def run_clang_scan_build():
 
 
 def param_parse_filepath():
+    """Get param_parse.py script path."""
     return util.reltopdir('Tools/autotest/param_metadata/param_parse.py')
 
 
 def all_vehicles():
+    """Get all vehicles name."""
     return ('ArduPlane',
             'ArduCopter',
             'Rover',
@@ -222,6 +229,7 @@ def build_parameters():
 
 
 def mavtogpx_filepath():
+    """Get mavtogpx script path."""
     return util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py")
 
 
@@ -311,6 +319,7 @@ __bin_names = {
 
 
 def binary_path(step, debug=False):
+    """Get vehicle binary path."""
     try:
         vehicle = step.split(".")[1]
     except Exception:
@@ -341,6 +350,7 @@ def binary_path(step, debug=False):
 
 
 def split_specific_test_step(step):
+    """Extract test from argument."""
     print('step=%s' % str(step))
     m = re.match("((fly|drive|dive|test)[.][^.]+)[.](.*)", step)
     if m is None:
@@ -349,6 +359,7 @@ def split_specific_test_step(step):
 
 
 def find_specific_test_to_run(step):
+    """Find test to run in argument."""
     t = split_specific_test_step(step)
     if t is None:
         return None
@@ -384,6 +395,7 @@ suplementary_test_binary_map = {
 
 
 def run_specific_test(step, *args, **kwargs):
+    """Run a specific test."""
     t = split_specific_test_step(step)
     if t is None:
         return []
@@ -406,7 +418,6 @@ def run_specific_test(step, *args, **kwargs):
 
 def run_step(step):
     """Run one step."""
-
     # remove old logs
     util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
 
@@ -548,7 +559,9 @@ def run_step(step):
 
 class TestResult(object):
     """Test result class."""
+
     def __init__(self, name, result, elapsed):
+        """Init test result class."""
         self.name = name
         self.result = result
         self.elapsed = "%.1f" % elapsed
@@ -556,14 +569,18 @@ class TestResult(object):
 
 class TestFile(object):
     """Test result file."""
+
     def __init__(self, name, fname):
+        """Init test result file."""
         self.name = name
         self.fname = fname
 
 
 class TestResults(object):
     """Test results class."""
+
     def __init__(self):
+        """Init test results class."""
         self.date = time.asctime()
         self.githash = util.run_cmd('git rev-parse HEAD',
                                     output=True,
@@ -597,10 +614,7 @@ class TestResults(object):
             self.addimage(name, os.path.basename(f))
 
     def generate_badge(self):
-        """
-        Gets the badge template, populates and saves the result to buildlogs
-        path.
-        """
+        """Get the badge template, populates and saves the result to buildlogs path."""
         passed_tests = len([t for t in self.tests if "PASSED" in t.result])
         total_tests = len(self.tests)
         badge_color = "#4c1" if passed_tests == total_tests else "#e05d44"
@@ -803,7 +817,10 @@ if __name__ == "__main__":
         os.putenv('TMPDIR', util.reltopdir('tmp'))
 
     class MyOptionParser(optparse.OptionParser):
+        """Custom option parse class."""
+
         def format_epilog(self, formatter):
+            """Retun customized option parser epilog."""
             return self.epilog
 
     parser = MyOptionParser(
