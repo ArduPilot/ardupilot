@@ -592,6 +592,13 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
     return len;
 }
 
+// return xy components of a vector3
+template <typename T>
+Vector2<T> Vector3<T>::xy()
+{
+    return Vector2<T>{x,y};
+}
+
 // define for float and double
 template class Vector3<float>;
 template class Vector3<double>;
