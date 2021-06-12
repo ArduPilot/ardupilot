@@ -155,7 +155,7 @@ def build_unit_tests(**kwargs):
 
 def run_unit_test(test):
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    subprocess.run([test], check=True)
 
 
 def run_unit_tests():
@@ -165,12 +165,17 @@ def run_unit_tests():
                                              ))
     tests = glob.glob("%s/*" % binary_dir)
     success = True
+    fail_list = []
     for test in tests:
         try:
             run_unit_test(test)
-        except Exception as e:
-            print("Exception running (%s): %s" % (test, e.message))
+        except subprocess.CalledProcessError:
+            print("Exception running (%s)" % test)
+            fail_list.append(os.path.basename(test))
             success = False
+    print("Failing tests:")
+    for failure in fail_list:
+        print("  %s" % failure)
     return success
 
 
