@@ -10,6 +10,31 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+// Hit Target mode params
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+#ifndef HM_TARGET_ANGLE_DEFAULT
+# define HM_TARGET_ANGLE_DEFAULT      -45    // default value for target angle in hit mode
+#endif
+
+#ifndef HM_ALTITUDE_DIFFERENCE_DEFAULT
+# define HM_ALTITUDE_DIFFERENCE_DEFAULT      150    // default value for altitude difference after which vehicle should get restored
+#endif
+
+#ifndef HM_DEG_EPS_DEFAULT
+# define HM_DEG_EPS_DEFAULT      50    // default value for angle degree epsilon
+#endif
+
+#ifndef HM_MIN_ALT_DEFAULT
+# define HM_MIN_ALT_DEFAULT      150    // default value for minimum altitude
+#endif
+
+#ifndef HM_ATTACK_ANGLE_DEFAULT
+# define HM_ATTACK_ANGLE_DEFAULT      -8500    // default value for minimum altitude
+#endif
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // HARDWARE CONFIGURATION AND CONNECTIONS

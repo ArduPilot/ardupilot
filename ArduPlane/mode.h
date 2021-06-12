@@ -188,6 +188,11 @@ public:
     void update() override;
 
     void navigate() override;
+    bool stopRoll;
+    bool stopPitch;
+
+    int32_t currentBearing;
+    float targetAlt;
 
     virtual bool is_guided_mode() const override { return true; }
 
@@ -198,7 +203,11 @@ public:
     bool does_auto_throttle() const override { return true; }
 
 protected:
+    bool stopRoll;
+    bool stopPitch;
 
+    int32_t currentBearing;
+    float targetAlt;
     bool _enter() override;
 };
 
