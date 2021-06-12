@@ -1626,3 +1626,8 @@ bool NavEKF2::isExtNavUsedForYaw() const
     return false;
 }
 
+// return error score for currently active lane
+float NavEKF2::errorScore(void) const
+{
+    return core[primary].errorScore();
+}
