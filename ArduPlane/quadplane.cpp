@@ -2590,6 +2590,7 @@ void QuadPlane::poscontrol_init_approach(void)
 void QuadPlane::PosControlState::set_state(enum position_control_state s)
 {
     if (state != s) {
+        pilot_correction_done = false;
         // handle resets needed for when the state changes
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
@@ -2721,10 +2722,11 @@ void QuadPlane::vtol_position_controller(void)
              closing_speed > MAX(desired_closing_speed*1.2, desired_closing_speed+2) ||
              labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) > attitude_error_threshold_cd ||
              labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) > attitude_error_threshold_cd)) {
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 v=%.1f d=%.1f h=%.1f",
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 v=%.1f d=%.1f h=%.1f dc=%.1f",
                             (double)groundspeed,
                             (double)plane.auto_state.wp_distance,
-                            plane.relative_ground_altitude(plane.g.rangefinder_landing));
+                            plane.relative_ground_altitude(plane.g.rangefinder_landing),
+                            desired_closing_speed);
             poscontrol.set_state(QPOS_POSITION1);
 
             // switch to vfwd for throttle control
@@ -3030,7 +3032,7 @@ void QuadPlane::vtol_position_controller(void)
 float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 {
     const float yaw_difference = fabsf(wrap_180(degrees(plane.ahrs.yaw) - target_bearing_deg));
-    const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+    const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
     if (yaw_difference > 20) {
         // this gives a factor of 2x reduction in max speed when
         // off by 90 degrees, and 3x when off by 180 degrees
@@ -3465,27 +3467,39 @@ bool QuadPlane::verify_vtol_land(void)
     if (!available()) {
         return true;
     }
-    if (poscontrol.get_state() == QPOS_POSITION2 &&
-        plane.auto_state.wp_distance < 2 &&
-        plane.ahrs.groundspeed() < 3) {
-        poscontrol.set_state(QPOS_LAND_DESCEND);
-        poscontrol.pilot_correction_done = false;
+
+    if (poscontrol.get_state() == QPOS_POSITION2) {
+        // see if we should move onto the descend stage of landing
+        const float descend_dist_threshold = 2.0;
+        const float descend_speed_threshold = 3.0;
+        bool reached_position = false;
+        if (poscontrol.pilot_correction_done) {
+            reached_position = !poscontrol.pilot_correction_active;
+        } else {
+            const float dist = (inertial_nav.get_position() - poscontrol.target_cm).xy().length() * 0.01;
+            reached_position = dist < descend_dist_threshold;
+        }
+        if (reached_position &&
+            plane.ahrs.groundspeed() < descend_speed_threshold) {
+            poscontrol.set_state(QPOS_LAND_DESCEND);
+            poscontrol.pilot_correction_done = false;
 #if AC_FENCE == ENABLED
-        plane.fence.auto_disable_fence_for_landing();
+            plane.fence.auto_disable_fence_for_landing();
 #endif
 #if LANDING_GEAR_ENABLED == ENABLED
-        plane.g2.landing_gear.deploy_for_landing();
+            plane.g2.landing_gear.deploy_for_landing();
 #endif
-        last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
-        if (plane.control_mode == &plane.mode_auto) {
-            // set height to mission height, so we can use the mission
-            // WP height for triggering land final if no rangefinder
-            // available
-            plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
-        } else {
-            plane.set_next_WP(plane.next_WP_loc);
-            plane.next_WP_loc.alt = ahrs.get_home().alt;
+            last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+            gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
+            if (plane.control_mode == &plane.mode_auto) {
+                // set height to mission height, so we can use the mission
+                // WP height for triggering land final if no rangefinder
+                // available
+                plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
+            } else {
+                plane.set_next_WP(plane.next_WP_loc);
+                plane.next_WP_loc.alt = ahrs.get_home().alt;
+            }
         }
     }
 
