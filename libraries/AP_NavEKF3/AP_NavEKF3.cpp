@@ -1691,3 +1691,9 @@ void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
     }
 }
 
+// return error score for currently active lane
+float NavEKF3::errorScore(void) const
+{
+    return core[primary].errorScore();
+}
+

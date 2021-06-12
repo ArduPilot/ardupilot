@@ -385,6 +385,9 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
+    // return error score for currently active lane
+    float errorScore(void) const;
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
