@@ -86,6 +86,9 @@ public:
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return _bearing_to_target; }
 
+    // get system id
+    int16_t get_sysid() const { return _sysid; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
