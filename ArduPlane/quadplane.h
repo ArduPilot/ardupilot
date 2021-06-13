@@ -362,6 +362,7 @@ private:
         NONE,
         SWITCH_QRTL,
         VTOL_APPROACH_QRTL,
+        QRTL_ALWAYS,
     };
 
     // control if a VTOL GUIDED will be used
