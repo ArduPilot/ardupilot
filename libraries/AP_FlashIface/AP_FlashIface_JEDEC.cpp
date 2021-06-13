@@ -37,7 +37,8 @@ struct supported_device {
 };
 
 static const struct supported_device supported_devices[] = {
-    {"mt25q", 0x20, 0xBA}
+    {"mt25q", 0x20, 0xBA},
+    {"w25q", 0xEF, 0x40}
 };
 
 #define MAX_SUPPORTED_FLASH_SIZE 0x1FFFFFFUL
@@ -68,7 +69,10 @@ static const struct supported_device supported_devices[] = {
 #define SFDP_PARAM_DWORD_LEN(x)             SFDP_GET_BITS(x[0], 24, 31)
 #define SFDP_PARAM_POINTER(x)               SFDP_GET_BITS(x[1], 0, 23)
 
+#define SFDP_REV_1_5                        0x0105
 #define SFDP_REV_1_6                        0x0106
+// quad enable for winbond
+#define QUAD_ENABLE_B1R2                    0x4
 
 #ifdef HAL_BOOTLOADER_BUILD
 #define Debug(fmt, args ...)  do {uprintf("JEDEC: " fmt "\n", ## args);} while(0)
@@ -92,9 +96,14 @@ bool AP_FlashIface_JEDEC::init()
             break;
         }
     }
+
+    hal.scheduler->delay(5); // required by w25q
+
     // Reset Device involves trying to soft reset the chip
     // as when system reboots the device might not have.
     reset_device();
+
+    hal.scheduler->delay_microseconds(30); // required by w25q
 
     // Detecting Device involves trying to read Device ID and matching
     // with what we expect. Along with extracting info from SFDP
@@ -105,10 +114,10 @@ bool AP_FlashIface_JEDEC::init()
 
     // Configuring Device involved setting chip to correct WSPI mode
     // i.e. 4-4-4
-    // if (!configure_device()) {
-    //     Msg_Print("Failed to config flash device: %s", supported_devices[_dev_list_idx].name);
-    //     return false;
-    // }
+    if (!configure_device()) {
+         Msg_Print("Failed to config flash device: %s", supported_devices[_dev_list_idx].name);
+         return false;
+    }
 
     Msg_Print("Detected Flash Device: %s", supported_devices[_dev_list_idx].name);
     return true;
@@ -123,9 +132,9 @@ void AP_FlashIface_JEDEC::reset_device()
 {
     // Get chip out of XIP mode
     AP_HAL::QSPIDevice::CommandHeader cmd;
-    uint8_t buf[1];
     _dev->get_semaphore()->take_blocking();
-
+#if 0
+    uint8_t buf[1];
     /* Attempting a reset of the XIP mode, it could be in an unexpected state
      because a CPU reset does not reset the memory too.*/
     /* Resetting XIP mode by reading one byte without XIP confirmation bit.*/
@@ -162,7 +171,7 @@ void AP_FlashIface_JEDEC::reset_device()
     cmd.dummy =  0;
     _dev->set_cmd_header(cmd);
     _dev->transfer(nullptr, 0, nullptr, 0);
-
+#endif
     /* Single line CMD_RESET_MEMORY command.*/
     cmd.cmd    =  CMD_RESET_ENABLE;
     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
@@ -242,7 +251,7 @@ bool AP_FlashIface_JEDEC::detect_device()
         }
         // Read Revision
         _desc.param_rev = SFDP_HDR_PARAM_REV(sfdp_header);
-        if (_desc.param_rev != SFDP_REV_1_6) {
+        if (_desc.param_rev != SFDP_REV_1_6 && _desc.param_rev != SFDP_REV_1_5) {
             Debug("Unsupported revision %x", (unsigned int)_desc.param_rev);
             return false;
         }
@@ -373,8 +382,8 @@ bool AP_FlashIface_JEDEC::detect_device()
         // Implement above code if more precise delay and timeouts are needed while programming
         // otherwise fraction of page timings should be fine
         timeout_mult = 2*(SFDP_GET_BITS(param_table[10], 0, 3) + 1);
-        unit = SFDP_GET_BIT(param_table[10], 18)?8:64;
-        _desc.page_prog_delay_us = (SFDP_GET_BITS(param_table[10], 8, 13) + 1) * unit;
+        unit = SFDP_GET_BIT(param_table[10], 13)?64:8;
+        _desc.page_prog_delay_us = (SFDP_GET_BITS(param_table[10], 8, 12) + 1) * unit;
         _desc.page_prog_timeout_us = _desc.page_prog_delay_us * timeout_mult;
 
 
@@ -389,17 +398,17 @@ bool AP_FlashIface_JEDEC::detect_device()
         //     return false;
         // }
 
-        _desc.fast_read_ins = SFDP_GET_BITS(param_table[6], 24, 31);
+        _desc.fast_read_ins = SFDP_GET_BITS(param_table[2], 8, 15);
         // we get number of dummy clocks cycles needed, also include mode bits
-        _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[6], 21, 23);
-        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[6], 16, 20);
+        _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[2], 5, 7);
+        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[2], 0, 4);
 
-        uint8_t QER = SFDP_GET_BITS(param_table[14], 20, 22);
-        if (QER != 0b000) {
-            Debug("Unsupported Quad Enable Requirement");
+        _desc.quad_mode_enable = SFDP_GET_BITS(param_table[14], 20, 22);
+        if (_desc.quad_mode_enable != 0b000 && _desc.quad_mode_enable != QUAD_ENABLE_B1R2) {
+            Debug("Unsupported Quad Enable Requirement 0x%x", _desc.quad_mode_enable);
             return false;
         }
-        if (SFDP_GET_BIT(param_table[14], 4)) {
+        if (SFDP_GET_BIT(param_table[14], 4) && _desc.quad_mode_enable != QUAD_ENABLE_B1R2) {
             Debug("Unsupported Quad Enable Requirement: set QE bits");
             return false;
         }
@@ -426,10 +435,12 @@ bool AP_FlashIface_JEDEC::detect_device()
             _desc.is_xip_supported = false;
         }
         if (_desc.is_xip_supported) {
-            if (SFDP_GET_BIT(param_table[14],17)) {
+            if (SFDP_GET_BIT(param_table[14],16)) {
+                _desc.entry_method = AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_1;
+            } else if (SFDP_GET_BIT(param_table[14],17)) {
                 _desc.entry_method = AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2;
             } else {
-                Debug("Unsupported XIP enable sequence");       
+                Debug("Unsupported XIP enable sequence 0x%x", uint8_t(SFDP_GET_BITS(param_table[14],16, 19)));
             }
         }
 
@@ -449,45 +460,50 @@ bool AP_FlashIface_JEDEC::detect_device()
 // Configures device to normal working state, currently 4-4-4 QSPI
 bool AP_FlashIface_JEDEC::configure_device()
 {
-    AP_HAL::QSPIDevice::CommandHeader cmd;
     // Enable 4-4-4 mode and test it by fetching Device ID
-    {
-        // Quad Mode Enable Sequence, Ref. JESD216D 6.4.18
-        if (_desc.quad_mode_ins && !write_enable_called) {
-            if (!send_cmd(_desc.quad_mode_ins, false)) {
-                return false;
-            }
-        } else if (_desc.quad_mode_rmw_seq) {
-            write_enable(false);
-            if (!modify_reg(0x65, 0x61, (1<<7), 0, false)) {
-                write_disable(false);
-                return false;
-            }
-            write_disable(true);
+    if (_desc.quad_mode_enable == QUAD_ENABLE_B1R2) {
+        uint8_t reg1, reg2;
+        if (!read_reg(0x05, reg1, false)) {
+            Debug("Failed reg1 read");
+            return false;
         }
+        if (!read_reg(0x35, reg2, false)) {
+            Debug("Failed reg2 read");
+            return false;
+        }
+        write_enable(false);
 
-        uint8_t buf[3] {};
-        cmd.cmd    =  CMD_MULTILINE_READ_ID;
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
-        cmd.addr   =  0;
-        cmd.alt    =  0;
-        cmd.dummy  =  0;
+        AP_HAL::QSPIDevice::CommandHeader cmd {
+            .cmd    = 0x01,
+            .cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                       AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE,
+            .addr   =  0,
+            .alt    =  0,
+            .dummy  =  0
+        };
 
+        reg2 |= 0x2;    // enable QE bit
+        uint8_t write_val[2] { reg1, reg2 };
         _dev->set_cmd_header(cmd);
-        if (!_dev->transfer(nullptr, 0, buf, sizeof(buf))) {
-            Debug("Failed to switch to Quad mode");
+
+        if (!_dev->transfer(write_val, 2, nullptr, 0)) {
+            Debug("Failed QE write");
+            write_disable(false);
             return false;
         }
 
-        if (buf[0] != supported_devices[_dev_list_idx].manufacturer_id ||
-            buf[1] != supported_devices[_dev_list_idx].device_id) {
-            Debug("Device bad mfg_id(0x%x) and dev_id(0x%x)", (unsigned int)buf[0], (unsigned int)buf[1]);
+        write_disable(false);
+
+        if (!read_reg(0x35, reg2, false) || (reg2 & 0x2) == 0) {
+            Debug("Failed to set QE bit");
             return false;
         }
-        Debug("Device configured for 4-4-4 mode");
     }
-    // Hurray! We are in 4-4-4 mode
+
+    Debug("Device configured for 1-4-4 mode: QE bit 0x%x, fast read ins/cycles 0x%x/0x%x",
+        _desc.quad_mode_enable, _desc.fast_read_ins, _desc.fast_read_dummy_cycles);
+
+    // Hurray! We are in 1-4-4 mode
     _quad_spi_mode = true;
     return true;
 }
@@ -495,6 +511,8 @@ bool AP_FlashIface_JEDEC::configure_device()
 // Enables commands that modify flash data or settings
 bool AP_FlashIface_JEDEC::write_enable(bool quad_mode)
 {
+    wait_ready();
+
     if (_desc.write_enable_ins) {
         write_enable_called = true;
         return send_cmd(_desc.write_enable_ins, quad_mode);
@@ -856,6 +874,9 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         // reading more than what exists
         return false;
     }
+
+    wait_ready();
+
     uint32_t read_ptr, read_size;
     for (read_ptr = offset; read_ptr < (offset+size); read_ptr+=MAX_READ_SIZE) {
         read_size = MIN((offset+size) - read_ptr, MAX_READ_SIZE);
@@ -864,11 +885,12 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         cmd.cfg     =   AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                         AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                         AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                        AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
+                        AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
+                        AP_HAL::QSPI::CFG_ALT_SIZE_8 |
+                        AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES;
         cmd.addr    =   read_ptr;
         cmd.alt     =   0;
-        // mode bits are 0 so might as well add them to dummy
-        cmd.dummy   =   _desc.fast_read_dummy_cycles + _desc.fast_read_mode_clocks; 
+        cmd.dummy   =   _desc.fast_read_dummy_cycles;
         _dev->set_cmd_header(cmd);
         if (!_dev->transfer(nullptr, 0, &data[read_ptr-offset], read_size)) { // Command only
             Debug("Failed to read flash");
@@ -898,6 +920,15 @@ bool AP_FlashIface_JEDEC::is_device_busy()
     }
 }
 
+// wait for the chip to be ready for the next instruction
+void AP_FlashIface_JEDEC::wait_ready()
+{
+    while (is_device_busy()) {
+        hal.scheduler->delay_microseconds(100);
+    }
+}
+
+
 /**
  * @details Starts execution in place mode
  *
@@ -909,11 +940,31 @@ bool AP_FlashIface_JEDEC::is_device_busy()
  */
 bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
 {
+    wait_ready();
+
     if (!_desc.is_xip_supported) {
         Debug("XIP mode unsupported on this chip");
         return false;
     }
     switch(_desc.entry_method) {
+        case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_1:
+        {
+            // Set QSPI module for XIP mode
+            AP_HAL::QSPIDevice::CommandHeader cmd;
+            cmd.cmd = _desc.fast_read_ins;
+            cmd.alt = 0xA5;
+            cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                      AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
+                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
+                      AP_HAL::QSPI::CFG_ALT_SIZE_8 |
+                      AP_HAL::QSPI::CFG_SIOO;
+            cmd.addr = 0;
+            cmd.dummy = _desc.fast_read_dummy_cycles;
+            _dev->set_cmd_header(cmd);
+            return _dev->enter_xip_mode(addr);
+        }
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2:
         {
             // set configuration register to start 0-4-4 mode
