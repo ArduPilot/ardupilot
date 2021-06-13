@@ -1,5 +1,28 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta4 14-Jun-2021
+Changes from 4.1.0-beta3
+1) Minor enhancements (or changes)
+    a) CSRF telemetry improvements to power setting and pass param requests more quickly
+    b) CUAV X7/Nora supports ICM42688P IMU
+    c) Pix32v5 USB product string fixed and IMU heater enabled 
+    d) RunCam Hybrid supported (see RUNCAM_TYPE parameter)
+    e) VisualOdom feature removed from 1MB boards
+2) Bug fixes
+    a) BLHeli Auto only affects telemetry passthrough to ease setup
+    b) Circular complex fence radius not truncated
+    c) CubeOrange serial1/2 DMA fixed
+    d) EKF ground effect compensation fixed
+    e) ESC telemetry fixes including motor index on boards with I/O mcu
+    f) I/O MCU reset fix if user had disabled safety switch (recovery from reset would leave motors not spinning)
+    g) MSP temperature scaling fixed
+    h) Pilot yaw rate input during arming ignored
+    i) PreArm check of roll/pitch and yaw angle difference fixed
+    j) Serial port info file (@SYS/uarts.txt) easier to understand
+    k) Scheduler fix of premature run of tasks every 163 seconds
+    l) Visual odometry yaw alignment fixed
+    m) WPNAV_RADIUS never less than 5cm
+------------------------------------------------------------------
 Copter 4.1.0-beta3 24-May-2021
 Changes from 4.1.0-beta2
 1) Dshot bug fix for autopilots with I/O boards (CubeBlack, CubeOrange, etc)
