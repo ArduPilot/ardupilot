@@ -144,6 +144,9 @@ protected:
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
+    // check if we should rotate when arming
+    void arming_rotate_check(void);
+
     /*
       read a block
     */
