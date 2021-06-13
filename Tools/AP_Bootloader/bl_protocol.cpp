@@ -125,6 +125,7 @@
 #define PROTO_DEVICE_BOARD_REV	3	// board revision
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
+#define PROTO_DEVICE_EXTF_SIZE  6   // size of available external flash
 // all except PROTO_DEVICE_VEC_AREA and PROTO_DEVICE_BOARD_REV should be done
 #define CHECK_GET_DEVICE_FINISHED(x)   ((x & (0xB)) == 0xB)
 
@@ -151,6 +152,10 @@ volatile unsigned timer[NTIMERS];
 
 #if EXTERNAL_PROG_FLASH_MB
 extern AP_FlashIface_JEDEC ext_flash;
+#endif
+
+#ifndef BOOT_FROM_EXT_FLASH
+#define BOOT_FROM_EXT_FLASH 0
 #endif
 
 /*
@@ -404,6 +409,7 @@ bootloader(unsigned timeout)
 #endif
 
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
+    uint32_t	extf_address = board_info.extf_size;	/* force erase before upload will work */    
     uint32_t	read_address = 0;
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
@@ -526,6 +532,10 @@ bootloader(unsigned timeout)
 
                 break;
 
+            case PROTO_DEVICE_EXTF_SIZE:
+                cout((uint8_t *)&board_info.extf_size, sizeof(board_info.extf_size));
+                break;
+
             default:
                 goto cmd_bad;
             }
@@ -643,11 +653,101 @@ bootloader(unsigned timeout)
                 erased_bytes += ext_flash.get_sector_size();
                 sector_number++;
             }
+            pct_done = 100;
+            extf_address = 0;
+            cout(&pct_done, sizeof(pct_done));
         }
 #else
             goto cmd_bad;
 #endif // EXTERNAL_PROG_FLASH_MB
             break;
+
+        // program bytes at current external flash address
+        //
+        // command:		PROG_MULTI/<len:1>/<data:len>/EOC
+        // success reply:	INSYNC/OK
+        // invalid reply:	INSYNC/INVALID
+        // readback failure:	INSYNC/FAILURE
+        //
+        case PROTO_EXTF_PROG_MULTI:
+        {
+            if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+
+            // expect count
+            led_set(LED_OFF);
+
+            arg = cin(50);
+
+            if (arg < 0) {
+                goto cmd_bad;
+            }
+
+            if ((extf_address + arg) > board_info.extf_size) {
+                goto cmd_bad;
+            }
+
+            if (arg > sizeof(flash_buffer.c)) {
+                goto cmd_bad;
+            }
+
+            for (int i = 0; i < arg; i++) {
+                c = cin(1000);
+
+                if (c < 0) {
+                    goto cmd_bad;
+                }
+
+                flash_buffer.c[i] = c;
+            }
+
+            if (!wait_for_eoc(200)) {
+                goto cmd_bad;
+            }
+
+#if BOOT_FROM_EXT_FLASH
+            // save the first words and don't program it until everything else is done
+            if (extf_address < sizeof(first_words)) {
+                uint8_t n = MIN(sizeof(first_words)-extf_address, arg);
+                memcpy(&first_words[extf_address/4], &flash_buffer.w[0], n);
+                // replace first words with 1 bits we can overwrite later
+                memset(&flash_buffer.w[0], 0xFF, n);
+            }
+#endif
+            uint32_t size = arg;
+            uint32_t programming;
+            uint32_t offset = 0;
+            uint32_t delay_us = 0, timeout_us = 0;
+            uint64_t start_time_us;
+            while (true) {
+                if (size == 0) {
+                    extf_address += arg;
+                    break;
+                }
+                if (!ext_flash.start_program_offset(extf_address+offset, &flash_buffer.c[offset], size, programming, delay_us, timeout_us)) {
+                    // uprintf("ext flash write command failed\n");
+                    goto cmd_fail;
+                }
+                start_time_us = AP_HAL::micros64();
+                // prepare for next run
+                offset += programming;
+                size -= programming;
+                while (true) {
+                    if (AP_HAL::micros64() > (start_time_us+delay_us)) {
+                        if (!ext_flash.is_device_busy()) {
+                            // uprintf("flash program Successful, elapsed %ld us\n", uint32_t(AP_HAL::micros64() - start_time_us));
+                            break;
+                        } else {
+                            // uprintf("Typical flash program time reached, Still Busy?!\n");
+                        }
+                    }
+                }
+            }
+            break;
+        }
+
         // program bytes at current address
         //
         // command:		PROG_MULTI/<len:1>/<data:len>/EOC
@@ -742,6 +842,47 @@ bootloader(unsigned timeout)
                 sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
             }
 
+            cout_word(sum);
+            break;
+        }
+
+        // fetch CRC of the external flash area
+        //
+        // command:		    EXTF_GET_CRC/<len:4>/EOC
+        // reply:			<crc:4>/INSYNC/OK
+        //
+        case PROTO_EXTF_GET_CRC: {
+            // expect EOC
+            uint32_t cmd_verify_bytes;
+            if (cin_word(&cmd_verify_bytes, 100)) {
+                goto cmd_bad;
+            }
+
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+
+            // compute CRC of the programmed area
+            uint32_t sum = 0;
+            uint8_t rembytes = cmd_verify_bytes % 4;
+            for (unsigned p = 0; p < (cmd_verify_bytes-rembytes); p+=4) {
+                uint32_t bytes;
+
+#if BOOT_FROM_EXT_FLASH
+                if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                    bytes = first_words[p/4];
+                } else
+#endif
+                {
+                    ext_flash.read(p, (uint8_t *)&bytes, sizeof(bytes));
+                }
+                sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
+            }
+            if (rembytes) {
+                uint8_t bytes[3];
+                ext_flash.read(cmd_verify_bytes-rembytes, bytes, rembytes);
+                sum = crc32_small(sum, bytes, rembytes);
+            }
             cout_word(sum);
             break;
         }
