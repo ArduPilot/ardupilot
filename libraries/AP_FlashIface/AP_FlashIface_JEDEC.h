@@ -232,6 +232,9 @@ protected:
     // Disables commands that modify flash data or settings
     bool write_disable(bool quad_mode);
 
+    // wait for the chip to be ready for the next instruction
+    void wait_ready();
+
     // Read modify write register
     bool modify_reg(uint8_t read_ins, uint8_t write_ins,
                     uint8_t mask, uint8_t val, bool quad_mode);
@@ -281,6 +284,7 @@ protected:
         uint8_t fast_read_ins; // instruction to do fast read, i.e. read any number of bytes in single trx
         uint8_t fast_read_dummy_cycles; // number of dummy cycles after which the chip will respond with data
         uint8_t quad_mode_ins; // instruction to enter 4-4-4 mode
+        uint8_t quad_mode_enable;
         bool quad_mode_rmw_seq; // use Read modify write sequence to enter 4-4-4 mode supported or not
         uint8_t status_read_ins; // read status of the chip, gets us if busy writing/erasing
         bool legacy_status_polling; // check if legacy status polling supported or not
