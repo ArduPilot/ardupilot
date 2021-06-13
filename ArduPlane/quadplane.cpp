@@ -2590,14 +2590,15 @@ void QuadPlane::poscontrol_init_approach(void)
 void QuadPlane::PosControlState::set_state(enum position_control_state s)
 {
     if (state != s) {
+        auto &qp = plane.quadplane;
         pilot_correction_done = false;
         // handle resets needed for when the state changes
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
+            qp.attitude_control->reset_yaw_target_and_rate();
         } else if (s == QPOS_POSITION2) {
             // POSITION2 changes target speed, so we need to change it
             // back to normal
-            auto &qp = plane.quadplane;
             qp.pos_control->set_max_speed_accel_xy(qp.wp_nav->get_default_speed_xy(),
                                                    qp.wp_nav->get_wp_acceleration());
         }
