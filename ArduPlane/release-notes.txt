@@ -1,3 +1,57 @@
+Release 4.1.0beta1 14th June 2021
+---------------------------------
+
+This is a major release, with a lot of changes across almost all
+subsystems. Key changes include:
+
+ - major updates to quadplane control algorithms, including new
+   landing approach system, new input shaping system for all levels of
+   VTOL control and new filtering options.
+
+ - new PID system for fixed wing control, with much more flexible
+   filtering and true rate D term support.
+
+ - new fixed wing autotune system which on most aircraft produces a
+   much better tune than the previous autotune.
+
+There have also been a lot of changes at the low level system level as
+well.
+
+ - new DShot system, with much better timing and new features.
+
+ - improved support for GPS moving baseline yaw
+
+ - new unified ESC telemetry system for CAN, DShot and serial ESC
+   telemetry, allowing for ESC RPM driven notch filters on more ESC
+   types
+
+ - EKF3 is now the default estimator, with EKF2 also available on
+   systems with 2MByte of flash.
+
+ - external AHRS support, allowing for a serial connected AHRS system
+   (VectorNav-300 only at the moment)
+
+ - sensor affinity in EKF3, allowing for more robust handling of
+   sensor failure, especially for airspeed sensors
+
+ - rate PID slew limiting to to detect and suppress oscillations
+
+ - temperature calibration for IMUs, including factory calibration
+   support
+
+ - much improved notch filtering support, including double-notch and
+   realtime FFT based notch filtering
+
+ - lots of lua scripting improvements, with greatly expanded API
+
+ - much faster parameter download and mission upload/down using MAVFTP
+
+Many thanks to everyone who contributed to this release. It is our
+biggest release yet and has benefited from fantastic feedback from our
+user community and partners.
+
+We hope you enjoy this release! Happy flying!
+
 Release 4.0.9, 23rd February 2021
 ---------------------------------
 
