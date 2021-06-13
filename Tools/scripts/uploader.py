@@ -158,13 +158,20 @@ class firmware(object):
         f.close()
 
         self.image = bytearray(zlib.decompress(base64.b64decode(self.desc['image'])))
-
+        self.extf_image = bytearray(zlib.decompress(base64.b64decode(self.desc['extf_image'])))
         # pad image to 4-byte length
         while ((len(self.image) % 4) != 0):
             self.image.append('\xff')
+        # pad image to 4-byte length
+        while ((len(self.extf_image) % 4) != 0):
+            self.extf_image.append('\xff')
 
     def property(self, propname):
         return self.desc[propname]
+
+    def extf_crc(self, size):
+        state = crc32(self.extf_image[:size], int(0))
+        return state
 
     def crc(self, padlen):
         state = crc32(self.image, int(0))
@@ -216,6 +223,7 @@ class uploader(object):
     INFO_BOARD_ID   = b'\x02'        # board type
     INFO_BOARD_REV  = b'\x03'        # board revision
     INFO_FLASH_SIZE = b'\x04'        # max firmware size in bytes
+    INFO_EXTF_SIZE  = b'\x06'        # available external flash size
 
     PROG_MULTI_MAX  = 252            # protocol max is 255, must be multiple of 4
     READ_MULTI_MAX  = 252            # protocol max is 255
@@ -453,6 +461,20 @@ class uploader(object):
         self.__send(uploader.EOC)
         self.__getSync()
 
+    # send a PROG_EXTF_MULTI command to write a collection of bytes to external flash
+    def __program_multi_extf(self, data):
+
+        if runningPython3:
+            length = len(data).to_bytes(1, byteorder='big')
+        else:
+            length = chr(len(data))
+
+        self.__send(uploader.EXTF_PROG_MULTI)
+        self.__send(length)
+        self.__send(data)
+        self.__send(uploader.EOC)
+        self.__getSync()
+
     # verify multiple bytes in flash
     def __verify_multi(self, data):
 
@@ -586,7 +608,7 @@ class uploader(object):
                     uploader.EOC)
         self.__getSync()
 
-    def erase_extflash(self, size):
+    def erase_extflash(self, label, size):
         if runningPython3:
             size_bytes = size.to_bytes(4, byteorder='little')
         else:
@@ -598,11 +620,44 @@ class uploader(object):
             if last_pct < 90:
                 pct = self.__recv_uint8()
                 if last_pct != pct:
-                    self.__drawProgressBar('Erase ExtF', pct, 100)
+                    self.__drawProgressBar(label, pct, 100)
                     last_pct = pct
             elif self.__trySync():
-                    self.__drawProgressBar('Erase ExtF', 10.0, 10.0)
-                    return
+                self.__drawProgressBar(label, 10.0, 10.0)
+                return
+
+    def __program_extf(self, label, fw):
+        print("\n", end='')
+        code = fw.extf_image
+        groups = self.__split_len(code, uploader.PROG_MULTI_MAX)
+
+        uploadProgress = 0
+        for bytes in groups:
+            self.__program_multi_extf(bytes)
+
+            # Print upload progress (throttled, so it does not delay upload progress)
+            uploadProgress += 1
+            if uploadProgress % 32 == 0:
+                self.__drawProgressBar(label, uploadProgress, len(groups))
+        self.__drawProgressBar(label, 100, 100)
+
+    def __verify_extf(self, label, fw, size):
+        if runningPython3:
+            size_bytes = size.to_bytes(4, byteorder='little')
+        else:
+            size_bytes = chr(size)
+        print("\n", end='')
+        self.__drawProgressBar(label, 1, 100)
+        expect_crc = fw.extf_crc(size)
+        self.__send(uploader.EXTF_GET_CRC +
+                    size_bytes + uploader.EOC)
+        report_crc = self.__recv_int()
+        self.__getSync()
+        if report_crc != expect_crc:
+            print("\nExpected 0x%x" % expect_crc)
+            print("Got      0x%x" % report_crc)
+            raise RuntimeError("Program CRC failed")
+        self.__drawProgressBar(label, 100, 100)
 
     # get basic data about the board
     def identify(self):
@@ -618,6 +673,7 @@ class uploader(object):
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
+        self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
 
     def dump_board_info(self):
         # OTP added in v4:
@@ -713,6 +769,7 @@ class uploader(object):
 
         print("Info:")
         print("  flash size: %u" % self.fw_maxsize)
+        print("  ext flash size: %u" % self.extf_maxsize)
         name = self.board_name_for_board_id(self.board_type)
         if name is not None:
             print("  board_type: %u (%s)" % (self.board_type, name))
@@ -792,7 +849,7 @@ class uploader(object):
 
         self.dump_board_info()
 
-        if self.fw_maxsize < fw.property('image_size'):
+        if self.fw_maxsize < fw.property('image_size') or self.extf_maxsize < fw.property('extf_image_size'):
             raise RuntimeError("Firmware image is too large for this board")
 
         if self.baudrate_bootloader_flash != self.baudrate_bootloader:
@@ -801,13 +858,19 @@ class uploader(object):
             self.port.baudrate = self.baudrate_bootloader_flash
             self.__sync()
 
-        self.__erase("Erase  ")
-        self.__program("Program", fw)
+        if (fw.property('extf_image_size') > 0):
+            self.erase_extflash("Erase ExtF  ", fw.property('extf_image_size'))
+            self.__program_extf("Program ExtF", fw)
+            self.__verify_extf("Verify ExtF ", fw, fw.property('extf_image_size'))
 
-        if self.bl_rev == 2:
-            self.__verify_v2("Verify ", fw)
-        else:
-            self.__verify_v3("Verify ", fw)
+        if (fw.property('image_size') > 0):
+            self.__erase("Erase  ")
+            self.__program("Program", fw)
+
+            if self.bl_rev == 2:
+                self.__verify_v2("Verify ", fw)
+            else:
+                self.__verify_v3("Verify ", fw)
 
         if boot_delay is not None:
             self.__set_boot_delay(boot_delay)
@@ -989,7 +1052,8 @@ def main():
     )
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
-    parser.add_argument('--erase-extflash', type=lambda x: int(x,0), default=None, help="Erase sectors containing specified amount of bytes from ext flash")
+    parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
+                        help="Erase sectors containing specified amount of bytes from ext flash")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -1048,7 +1112,7 @@ def main():
                     elif args.download:
                         up.download(args.firmware)
                     elif args.erase_extflash:
-                        up.erase_extflash(args.erase_extflash)
+                        up.erase_extflash('Erase ExtF', args.erase_extflash)
                         print("\nExtF Erase Finished")
                     else:
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)
