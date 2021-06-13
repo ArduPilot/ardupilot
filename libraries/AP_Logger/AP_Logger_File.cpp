@@ -435,17 +435,11 @@ bool AP_Logger_File::StartNewLogOK() const
     if (recent_open_error()) {
         return false;
     }
-    if (hal.scheduler->in_main_thread() &&
-        hal.util->get_soft_armed() &&
-        AP_HAL::millis() - hal.util->get_last_armed_change() > 3000) {
-        // when we create the log while arming we are armed and the
-        // creation is in the main loop. We generally don't want to
-        // allow logs to start in main thread while armed, but we
-        // have an exception for the first 3s after arming to allow
-        // for the normal arming process to work. This can be removed
-        // when we move log creation to the logging thread
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+    if (hal.scheduler->in_main_thread()) {
         return false;
     }
+#endif
     return AP_Logger_Backend::StartNewLogOK();
 }
 
@@ -716,6 +710,36 @@ void AP_Logger_File::stop_logging(void)
 }
 
 /*
+  wrapper for PrepForArming to move start_new_log to the logger thread
+ */
+void AP_Logger_File::PrepForArming()
+{
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    AP_Logger_Backend::PrepForArming();
+#else
+    arming_rotate_check();
+    if (logging_started()) {
+        return;
+    }
+    uint32_t start_ms = AP_HAL::millis();
+    const uint32_t open_limit_ms = 250;
+
+    /*
+      log open happens in the io_timer thread. We allow for a maximum
+      of 250ms to complete the open
+     */
+    start_new_log_pending = true;
+    EXPECT_DELAY_MS(250);
+    while (AP_HAL::millis() - start_ms < open_limit_ms) {
+        if (logging_started()) {
+            break;
+        }
+        hal.scheduler->delay(1);
+    }
+#endif
+}
+
+/*
   start writing to a new log file
  */
 void AP_Logger_File::start_new_log(void)
@@ -865,6 +889,11 @@ void AP_Logger_File::flush(void)
 
 void AP_Logger_File::io_timer(void)
 {
+    if (start_new_log_pending) {
+        start_new_log();
+        start_new_log_pending = false;
+    }
+
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
 

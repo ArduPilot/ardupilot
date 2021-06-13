@@ -459,16 +459,25 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
     return true;
 }
 
-void AP_Logger_Backend::PrepForArming()
+// check if we should rotate when arming
+void AP_Logger_Backend::arming_rotate_check(void)
 {
     if (_rotate_pending) {
         _rotate_pending = false;
         stop_logging();
     }
-    if (logging_started()) {
-        return;
+}
+
+/*
+  setup for armed state, starting logging
+  This function is replaced in the File backend
+ */
+void AP_Logger_Backend::PrepForArming()
+{
+    arming_rotate_check();
+    if (!logging_started()) {
+        start_new_log();
     }
-    start_new_log();
 }
 
 bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
