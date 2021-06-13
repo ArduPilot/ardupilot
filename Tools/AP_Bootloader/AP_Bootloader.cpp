@@ -43,7 +43,8 @@ extern "C" {
 struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
-    .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024
+    .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
+    .extf_size = (EXTERNAL_PROG_FLASH_MB * 1024 * 1024)
 };
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
