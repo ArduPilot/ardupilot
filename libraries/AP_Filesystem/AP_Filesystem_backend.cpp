@@ -71,11 +71,6 @@ bool AP_Filesystem_Backend::file_op_allowed(void) const
     if (!hal.util->get_soft_armed() || !hal.scheduler->in_main_thread()) {
         return true;
     }
-    if (AP_HAL::millis() - hal.util->get_last_armed_change() < 3000) {
-        // allow file operations from main thread in first 3s after
-        // arming to allow for log file creation
-        return true;
-    }
     return false;
 }
 
