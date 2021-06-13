@@ -340,7 +340,7 @@ bool AP_Landing::is_ground_steering_allowed(void) const
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_is_on_approach();
+        return !type_slope_is_on_approach();
     case TYPE_DEEPSTALL:
         return false;
     default:
