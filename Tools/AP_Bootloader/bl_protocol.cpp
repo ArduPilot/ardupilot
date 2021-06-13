@@ -251,9 +251,11 @@ jump_to_app()
         return;
     }
 
+#if !EXTERNAL_PROG_FLASH_MB  // its very likely to happen when using external flash
     if (app_base[1] >= (APP_START_ADDRESS + board_info.fw_size)) {
         return;
     }
+#endif
 
 #if HAL_USE_CAN == TRUE ||  HAL_NUM_CAN_IFACES
     // for CAN firmware we start the watchdog before we run the
@@ -270,6 +272,12 @@ jump_to_app()
     flash_set_keep_unlocked(false);
     
     led_set(LED_OFF);
+
+    // If we have QSPI chip start it
+    uint8_t* ext_flash_start_addr;
+    if (!ext_flash.start_xip_mode((void**)&ext_flash_start_addr)) {
+        return;
+    }
 
     // resetting the clocks is needed for loading NuttX
 #if defined(STM32H7)
