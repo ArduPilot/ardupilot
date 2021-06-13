@@ -322,6 +322,7 @@ class Board:
             ]
         else:
             env.LINKFLAGS += [
+                '-fno-exceptions',
                 '-Wl,--gc-sections',
             ]
 
