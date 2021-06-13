@@ -22,8 +22,8 @@ uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
 #endif
 };
 
-#define SMBUS_READ_BLOCK_MAXIMUM_TRANSFER    0x20   // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
 #define SMBUS_CELL_COUNT_CHECK_TIMEOUT       15     // check cell count for up to 15 seconds
+#define SMBUS_INFO_READ_TIMEOUT              15     // try to read information registers for up to 15 seconds
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -49,13 +49,14 @@ AP_BattMonitor_SMBus_Generic::AP_BattMonitor_SMBus_Generic(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus_Generic::timer()
 {
-	// check if PEC is supported
-    if (!check_pec_support()) {
+    const uint32_t tnow = AP_HAL::micros();
+
+    // check if battery information registers have been read
+    if (!initialize(tnow)) {
         return;
     }
 
     uint16_t data;
-    uint32_t tnow = AP_HAL::micros();
 
     // read voltage (V)
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
@@ -77,6 +78,11 @@ void AP_BattMonitor_SMBus_Generic::timer()
             if (tnow - _cell_count_check_start_us > (SMBUS_CELL_COUNT_CHECK_TIMEOUT * 1e6)) {
                 // give up checking cell count after 15sec of continuous healthy battery reads
                 _cell_count_fixed = true;
+
+#if HAL_SMART_BATTERY_INFO_ENABLED
+                // set flag to log data upon cell count check being completed
+                _state.smart_batt_logging_flag = true;
+#endif
             }
         } else {
             // if battery becomes unhealthy restart cell count check
@@ -116,16 +122,47 @@ void AP_BattMonitor_SMBus_Generic::timer()
         _state.last_time_micros = tnow;
     }
 
-    read_full_charge_capacity();
-
     // FIXME: Perform current integration if the remaining capacity can't be requested
     read_remaining_capacity();
 
     read_temp();
+}
 
+// Read battery information messages  PEC, cycles, serial number, device name, manufacturer name, etc
+// Only returns false if pec check is not confirmed yet
+bool AP_BattMonitor_SMBus_Generic::initialize(uint32_t tnow)
+{
+    if(_info_read){
+        return true;
+    }
+
+    // always first check if PEC is supported
+    if (!check_pec_support()) {
+        return false;
+    }
+
+
+    read_full_charge_capacity();
     read_serial_number();
-
     read_cycle_count();
+
+#if HAL_SMART_BATTERY_INFO_ENABLED
+    read_design_capacity();
+    read_design_voltage();
+    read_manufacturer_name();
+    read_device_name();
+    read_manufacture_date();
+#endif
+
+    if (_info_read_start_us == 0) {
+        _info_read_start_us = tnow;
+    }
+    if ((tnow - _info_read_start_us) > (SMBUS_INFO_READ_TIMEOUT * 1e6)) {
+        // give up checking smart battery info register after SMBUS_INFO_READ_TIMEOUT seconds
+        _info_read = true;
+    }
+
+    return true;
 }
 
 // check if PEC supported with the version value in SpecificationInfo() function
@@ -169,3 +206,14 @@ bool AP_BattMonitor_SMBus_Generic::check_pec_support()
 	_pec_confirmed = true;
 	return true;
 }
+
+#if HAL_SMART_BATTERY_INFO_ENABLED
+bool AP_BattMonitor_SMBus_Generic::get_cells_in_series(uint8_t &cells_in_series) const
+{
+    if (!_cell_count_fixed) {
+        return false;
+    }
+    cells_in_series = _cell_count;
+    return true;
+}
+#endif

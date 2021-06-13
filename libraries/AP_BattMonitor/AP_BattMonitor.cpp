@@ -385,31 +385,63 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
 // read - For all active instances read voltage & current; log BAT, BCL, POWR
 void AP_BattMonitor::read()
 {
-#if HAL_LOGGING_ENABLED
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
-        logger->Write_Power();
-    }
-#endif
-
     for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
-
-#if HAL_LOGGING_ENABLED
-            if (logger != nullptr && logger->should_log(_log_battery_bit)) {
-                const uint64_t time_us = AP_HAL::micros64();
-                drivers[i]->Log_Write_BAT(i, time_us);
-                drivers[i]->Log_Write_BCL(i, time_us);
-            }
-#endif
         }
     }
 
+    log_data();
+
     check_failsafes();
-    
+
     checkPoweringOff();
+}
+
+void AP_BattMonitor::log_data()
+{
+#if HAL_LOGGING_ENABLED
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr || !logger->should_log(_log_battery_bit)) {
+        return;
+    }
+
+    logger->Write_Power();
+
+    for (uint8_t i=0; i<_num_instances; i++) {
+        if (drivers[i] == nullptr) {
+            continue;
+        }
+
+        const uint64_t time_us = AP_HAL::micros64();
+        drivers[i]->Log_Write_BAT(i, time_us);
+        drivers[i]->Log_Write_BCL(i, time_us);
+    }
+
+#if HAL_SMART_BATTERY_INFO_ENABLED
+    // Check if the log_count has changed as logging can open/close at anytime
+    const uint8_t log_count = AP::logger().get_log_start_count();
+    const bool log_count_changed = (log_count != _last_logging_count);
+
+    for (uint8_t i=0; i<_num_instances; i++) {
+        if (drivers[i] == nullptr) {
+            continue;
+        }
+
+        // log smart_battery_info if a new log file has been created or the flag has been set
+        if (state[i].smart_batt_logging_flag || log_count_changed) {
+            drivers[i]->Log_Write_BATI(i);
+            state[i].smart_batt_logging_flag = false;
+        }
+    }
+
+    if (log_count_changed) {
+        _last_logging_count = log_count;
+    }
+#endif // HAL_SMART_BATTERY_INFO_ENABLED
+
+#endif // HAL_LOGGING_ENABLED
 }
 
 // healthy - returns true if monitor is functioning
@@ -737,6 +769,19 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
         return 0;
     }
     return drivers[instance]->get_mavlink_fault_bitmask();
+}
+
+// send the mavlink smart_battery_info message
+// returns false only if an instance didn't have enough space available on the link
+bool AP_BattMonitor::send_mavlink_smart_battery_info(const uint8_t instance, const mavlink_channel_t chan) const
+{
+#if HAL_SMART_BATTERY_INFO_ENABLED
+    if (drivers[instance] != nullptr) {
+        return drivers[instance]->send_mavlink_smart_battery_info(instance, chan);
+    }
+#endif
+
+    return false;
 }
 
 namespace AP {
