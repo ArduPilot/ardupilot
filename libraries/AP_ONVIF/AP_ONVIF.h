@@ -25,24 +25,33 @@
 
 class AP_ONVIF {
 public:
+    AP_ONVIF();
+
+    /* Do not allow copies */
+    AP_ONVIF(const AP_ONVIF &other) = delete;
+    AP_ONVIF &operator=(const AP_ONVIF&) = delete;
+    
     bool init();
+    bool start(const char *user, const char *pass, const char *httphostname);
     void set_credentials();
     bool set_absolutemove(float pan, float tilt, float zoom);
     void set_pan_norm(float pan) { pan_norm = pan; }
     void set_tilt_norm(float tilt) { tilt_norm = tilt; }
+    void set_zoom_norm(float zoom) { zoom_norm = zoom; }
+    Vector2f get_pan_tilt_limit_max() const { return pan_tilt_limit_max; }
+    Vector2f get_pan_tilt_limit_min() const { return pan_tilt_limit_min; }
 
     // get singleton instance
-    // static AP_ONVIF *get_singleton() { return _singleton; }
+    static AP_ONVIF *get_singleton() { return _singleton; }
 
 private:
     void report_error();
     bool probe_onvif_server();
     void rand_nonce(char *nonce, size_t noncelen);
-    void update();
 
     Vector2f pan_tilt_limit_min;
     Vector2f pan_tilt_limit_max;
-    float pan_norm, tilt_norm;
+    float pan_norm, tilt_norm, zoom_norm;
     float last_pan_cmd, last_tilt_cmd;
 
     float zoom_min, zoom_max;
@@ -53,9 +62,17 @@ private:
     PTZBindingProxy    *proxy_ptz;
     static AP_ONVIF *_singleton;
     char* media_endpoint;
+    
+    std::string username;
+    std::string password;
+    std::string hostname;
+    
+    std::string DEVICE_ENDPOINT;
+    std::string MEDIA_ENDPOINT;
+    std::string PTZ_ENDPOINT;
 };
 
 
-// namespace AP {
-//     AP_ONVIF *onvif();
-// };
+ namespace AP {
+     AP_ONVIF &onvif();
+ };
