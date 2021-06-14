@@ -37,6 +37,7 @@
 
 #include "onvifhelpers.h"
 
+#ifdef __BYTE_ORDER
 #define SHA1_BLOCK_SIZE  64
 
 #define rotl32(x,n)   (((x) << n) | ((x) >> (32 - n)))
@@ -231,3 +232,4 @@ void sha1(unsigned char hval[], const unsigned char data[], unsigned long len)
 
     sha1_begin(cx); sha1_hash(data, len, cx); sha1_end(hval, cx);
 }
+#endif //#ifdef __BYTE_ORDER
