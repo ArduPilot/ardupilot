@@ -22,23 +22,6 @@
 // For ChibiOS we will use HW RND # generator
 #include <stdlib.h> //rand()
 
-
-#ifndef USERNAME
-#define USERNAME "admin"
-#endif
-
-#ifndef PASSWORD
-#define PASSWORD "admin"
-#endif
-
-#ifndef ONVIF_HOSTNAME
-#define ONVIF_HOSTNAME "http://10.211.55.3:10000"
-#endif
-
-#define DEVICE_ENDPOINT ONVIF_HOSTNAME"/onvif/device_service"
-#define MEDIA_ENDPOINT ONVIF_HOSTNAME"/onvif/media_service"
-#define PTZ_ENDPOINT ONVIF_HOSTNAME"/onvif/ptz_service"
-
 #ifndef PRINT
 #define PRINT(fmt,args...) do {printf(fmt "\n", ## args); } while(0)
 #endif
@@ -46,8 +29,17 @@
 const char *wsse_PasswordDigestURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest";
 const char *wsse_Base64BinaryURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
 
-// static AP _ONVIF *_singleton;
+AP_ONVIF *AP_ONVIF::_singleton;
 extern const AP_HAL::HAL &hal;
+
+// Default constructor
+AP_ONVIF::AP_ONVIF()
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_ONVIF must be singleton");
+    }
+    _singleton = this;
+}
 
 bool AP_ONVIF::init()
 {
@@ -65,41 +57,27 @@ bool AP_ONVIF::init()
         AP_HAL::panic("AP_ONVIF: Failed to allocate gSOAP Proxy objects.");
         return false;
     }
+    return true;
+}
+
+bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostname)
+{
+    username = user;
+    password = pass;
+    hostname = httphostname;
+    
+    DEVICE_ENDPOINT = hostname + "/onvif/device_service";
+    MEDIA_ENDPOINT = hostname + "/onvif/media_service";
+    PTZ_ENDPOINT = hostname + "/onvif/ptz_service";
     /// TODO: Need to find a way to store this in parameter system
     //  or it could be just storage, we will see
-    proxy_device->soap_endpoint = DEVICE_ENDPOINT;
+    proxy_device->soap_endpoint = DEVICE_ENDPOINT.c_str();
     if (!probe_onvif_server()) {
         PRINT("Failed to probe onvif server.");
         return false;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ONVIF::update, void), "onvif",
-                                                            4096, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
-        PRINT("Failed to create onvif thread");
-        return false;
-    }
     return true;
-}
-
-void AP_ONVIF::update()
-{
-    while(true) {
-        float pan = pan_norm;
-        float tilt = tilt_norm;
-
-        // translate them into actual commands using cmd limits
-        pan = ((pan + 1) * (pan_tilt_limit_max.x - pan_tilt_limit_min.x)/2.0) + pan_tilt_limit_min.x;
-        tilt = ((tilt + 1) * (pan_tilt_limit_max.y - pan_tilt_limit_min.y)/2.0) + pan_tilt_limit_min.y;
-        PRINT("PAN: %f TILT: %f", pan, tilt);
-        // don't send the same request again
-        if (uint32_t(pan*100.0) != uint32_t(last_pan_cmd*100.0) || uint32_t(tilt*100.0) != uint32_t(last_tilt_cmd*100.0)) {
-            // actually send the command
-            set_absolutemove(pan, tilt, 0.0);
-            last_pan_cmd = pan;
-            last_tilt_cmd = tilt;
-        }
-        hal.scheduler->delay(100);
-    }
 }
 
 void AP_ONVIF::report_error()
@@ -171,7 +149,7 @@ bool AP_ONVIF::probe_onvif_server()
     }
 
     // set the Media proxy endpoint to XAddr
-    proxy_media->soap_endpoint = MEDIA_ENDPOINT;
+    proxy_media->soap_endpoint = MEDIA_ENDPOINT.c_str();
 
     // get device profiles
     _trt__GetProfiles GetProfiles;
@@ -198,7 +176,7 @@ bool AP_ONVIF::probe_onvif_server()
     // Just use first one for now
     profile_token = GetProfilesResponse.Profiles[0]->token;
 
-    proxy_ptz->soap_endpoint = PTZ_ENDPOINT;
+    proxy_ptz->soap_endpoint = PTZ_ENDPOINT.c_str();
 
     // _tptz__GetServiceCapabilities GetCapabilities;
     // _tptz__GetServiceCapabilitiesResponse GetCapabilitiesResponse;
@@ -317,7 +295,7 @@ void AP_ONVIF::set_credentials()
 #else
     sha1_hash((const unsigned char*)nonce, 16, &ctx);
     sha1_hash((const unsigned char*)created, strlen(created), &ctx);
-    sha1_hash((const unsigned char*)PASSWORD, strlen(PASSWORD), &ctx);
+    sha1_hash((const unsigned char*)password.c_str(), strlen(password.c_str()), &ctx);
     nonceBase64 = (char*)base64_encode((unsigned char*)nonce, 16, &noncelen);
 #endif
     sha1_end((unsigned char*)HA, &ctx);
@@ -331,7 +309,7 @@ void AP_ONVIF::set_credentials()
 
     memcpy(HABase64fin, HABase64enc, HABase64len);
 
-    if (soap_wsse_add_UsernameTokenText(soap, "Auth", USERNAME, HABase64fin)) {
+    if (soap_wsse_add_UsernameTokenText(soap, "Auth", username.c_str(), HABase64fin)) {
         report_error();
     }
     /* populate the remainder of the password, nonce, and created */
