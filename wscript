@@ -164,6 +164,10 @@ submodules at specific revisions.
                  default=True,
                  help="Enable runtime scripting sanity checks")
 
+    g.add_option('--enable-onvif', action='store_true',
+                 default=False,
+                 help="Enables and sets up ONVIF camera control")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -527,6 +531,7 @@ def _build_dynamic_sources(bld):
             ]
         )
 
+
     def write_version_header(tsk):
         bld = tsk.generator.bld
         return bld.write_version_header(tsk.outputs[0].abspath())
@@ -599,6 +604,9 @@ def _build_recursion(bld):
             dirs_to_recurse.append('Tools/AP_Periph')
 
     dirs_to_recurse.append('libraries/AP_Scripting')
+
+    if bld.env.ENABLE_ONVIF:
+        dirs_to_recurse.append('libraries/AP_ONVIF')
 
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
