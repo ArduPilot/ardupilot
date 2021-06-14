@@ -23,16 +23,16 @@ public:
 
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
-    virtual bool get_los_body(Vector3f& dir_body) = 0;
+    bool get_los_body(Vector3f& dir_body) const;
 
     // returns system time in milliseconds of last los measurement
-    virtual uint32_t los_meas_time_ms() = 0;
+    uint32_t los_meas_time_ms() const { return _los_meas_time_ms; };
 
     // return true if there is a valid los measurement available
-    virtual bool have_los_meas() = 0;
+    bool have_los_meas() const { return _have_los_meas; };
 
     // returns distance to target in meters (0 means distance is not known)
-    virtual float distance_to_target() { return 0.0f; };
+    virtual float distance_to_target() const { return 0.0f; };
 
     // parses a mavlink message from the companion computer
     virtual void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) {};
@@ -43,4 +43,7 @@ public:
 protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
+    Vector3f _los_meas_body;                // unit vector in body frame pointing towards target
+    uint32_t _los_meas_time_ms;             // system time in milliseconds when los was measured
+    bool _have_los_meas;                    // true if there is a valid measurement from the camera
 };
