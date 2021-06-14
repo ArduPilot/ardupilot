@@ -3097,53 +3097,55 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("finished motor test")
         self.end_subtest("Testing percentage output")
 
-    def fly_precision_sitl(self):
-        """Use SITL PrecLand backend precision messages to land aircraft."""
+    def fly_precision_landing_drivers(self):
+        """Use PrecLand backends precision messages to land aircraft."""
 
         self.context_push()
 
-        ex = None
-        try:
-            self.set_parameter("PLND_ENABLED", 1)
-            self.set_parameter("PLND_TYPE", 4)
+        for backend in [4, 2]:  # SITL, SITL-IRLOCK
+            ex = None
+            try:
+                self.set_parameter("PLND_ENABLED", 1)
+                self.set_parameter("PLND_TYPE", backend)
 
-            self.set_analog_rangefinder_parameters()
-            self.set_parameter("SIM_SONAR_SCALE", 12)
+                self.set_analog_rangefinder_parameters()
+                self.set_parameter("SIM_SONAR_SCALE", 12)
 
-            start = self.mav.location()
-            target = start
-            (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
-            self.progress("Setting target to %f %f" % (target.lat, target.lng))
+                start = self.mav.location()
+                target = start
+                (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
+                self.progress("Setting target to %f %f" % (target.lat, target.lng))
 
-            self.set_parameter("SIM_PLD_ENABLE", 1)
-            self.set_parameter("SIM_PLD_LAT", target.lat)
-            self.set_parameter("SIM_PLD_LON", target.lng)
-            self.set_parameter("SIM_PLD_HEIGHT", 0)
-            self.set_parameter("SIM_PLD_ALT_LMT", 15)
-            self.set_parameter("SIM_PLD_DIST_LMT", 10)
+                self.set_parameter("SIM_PLD_ENABLE", 1)
+                self.set_parameter("SIM_PLD_LAT", target.lat)
+                self.set_parameter("SIM_PLD_LON", target.lng)
+                self.set_parameter("SIM_PLD_HEIGHT", 0)
+                self.set_parameter("SIM_PLD_ALT_LMT", 15)
+                self.set_parameter("SIM_PLD_DIST_LMT", 10)
 
+                self.reboot_sitl()
+
+                self.progress("Waiting for location")
+                self.zero_throttle()
+                self.takeoff(10, 1800, mode="LOITER")
+                self.change_mode("LAND")
+                self.zero_throttle()
+                self.wait_landed_and_disarmed()
+                self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                new_pos = self.mav.location()
+                delta = self.get_distance(target, new_pos)
+                self.progress("Landed %f metres from target position" % delta)
+                max_delta = 1
+                if delta > max_delta:
+                    raise NotAchievedException("Did not land close enough to target position (%fm > %fm" % (delta, max_delta))
+
+                if not self.current_onboard_log_contains_message("PL"):
+                    raise NotAchievedException("Did not see expected PL message")
+
+            except Exception as e:
+                self.print_exception_caught(e)
+                ex = e
             self.reboot_sitl()
-
-            self.progress("Waiting for location")
-            self.zero_throttle()
-            self.takeoff(10, 1800)
-            self.change_mode("LAND")
-            self.wait_landed_and_disarmed()
-            self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            new_pos = self.mav.location()
-            delta = self.get_distance(target, new_pos)
-            self.progress("Landed %f metres from target position" % delta)
-            max_delta = 1
-            if delta > max_delta:
-                raise NotAchievedException("Did not land close enough to target position (%fm > %fm" % (delta, max_delta))
-
-            if not self.current_onboard_log_contains_message("PL"):
-                raise NotAchievedException("Did not see expected PL message")
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
         self.zero_throttle()
         self.context_pop()
         self.reboot_sitl()
@@ -7006,8 +7008,8 @@ class AutoTestCopter(AutoTest):
              self.fly_precision_companion),  # 29s
 
             ("PrecisionLandingSITL",
-             "Precision Landing (SITL)",
-             self.fly_precision_sitl),  # 29s
+             "Precision Landing drivers (SITL)",
+             self.fly_precision_landing_drivers),  # 29s
 
             ("SetModesViaModeSwitch",
              "Set modes via modeswitch",
