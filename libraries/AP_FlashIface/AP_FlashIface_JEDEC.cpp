@@ -130,7 +130,7 @@ bool AP_FlashIface_JEDEC::init()
     }
 
     // Configuring Device involved setting chip to correct WSPI mode
-    // i.e. 4-4-4
+    // i.e. 1-4-4
     if (!configure_device()) {
          Msg_Print("Failed to config flash device: %s", supported_devices[_dev_list_idx].name);
          return false;
@@ -150,45 +150,7 @@ void AP_FlashIface_JEDEC::reset_device()
     // Get chip out of XIP mode
     AP_HAL::QSPIDevice::CommandHeader cmd;
     _dev->get_semaphore()->take_blocking();
-#if 0
-    uint8_t buf[1];
-    /* Attempting a reset of the XIP mode, it could be in an unexpected state
-     because a CPU reset does not reset the memory too.*/
-    /* Resetting XIP mode by reading one byte without XIP confirmation bit.*/
-    cmd.cmd   = 0U;
-    cmd.alt   = 0xFFU;
-    cmd.addr  = 0U;
-    cmd.dummy = 7U;
-    cmd.cfg   = AP_HAL::QSPI::CFG_CMD_MODE_NONE |
-                AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
-                AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |
-                AP_HAL::QSPI::CFG_ALT_SIZE_8;
-    _dev->set_cmd_header(cmd);
-    _dev->transfer(nullptr, 0, buf, 1);
 
-    /// NOTE: This is Vendor specific, we haven't read the parameter table
-    /// yet, so don't know how we can reset the chip.
-    // Various methods for Soft Reset are at Ref. JESD216D 6.4.19
-    /* Quad line CMD_RESET_ENABLE command.*/
-    cmd.cmd   =  CMD_RESET_ENABLE;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
-    cmd.addr  =  0;
-    cmd.alt   =  0;
-    cmd.dummy =  0;
-    _dev->set_cmd_header(cmd);
-    _dev->transfer(nullptr, 0, nullptr, 0);
-
-    /* Quad line CMD_RESET_MEMORY command.*/
-    cmd.cmd   =  CMD_RESET_MEMORY;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
-    cmd.addr  =  0;
-    cmd.alt   =  0;
-    cmd.dummy =  0;
-    _dev->set_cmd_header(cmd);
-    _dev->transfer(nullptr, 0, nullptr, 0);
-#endif
     /* Single line CMD_RESET_MEMORY command.*/
     cmd.cmd    =  CMD_RESET_ENABLE;
     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
@@ -430,21 +392,6 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        // if (SFDP_GET_BIT(param_table[14], 5)) {
-        //     _desc.quad_mode_ins = 0x38;
-        // } else if (SFDP_GET_BIT(param_table[14], 6)) {
-        //     _desc.quad_mode_ins = 0x35;
-        // }
-
-        // if (SFDP_GET_BIT(param_table[14], 7)) {
-        //     Debug("Unsupported Quad enable seq");
-        //     return false;
-        // } else if (SFDP_GET_BIT(param_table[14], 8)) {
-        //     _desc.quad_mode_rmw_seq = true;
-        // } else {
-        //     _desc.quad_mode_rmw_seq = false;
-        // }
-
         // Configure XIP mode Ref. JESD216D 6.4.18
         if (SFDP_GET_BIT(param_table[14], 9)) {
             _desc.is_xip_supported = true;
@@ -474,21 +421,21 @@ bool AP_FlashIface_JEDEC::detect_device()
     return true;
 }
 
-// Configures device to normal working state, currently 4-4-4 QSPI
+// Configures device to normal working state, currently 1-4-4 QSPI
 bool AP_FlashIface_JEDEC::configure_device()
 {
-    // Enable 4-4-4 mode and test it by fetching Device ID
+    // Enable 1-4-4 mode
     if (_desc.quad_mode_enable == QUAD_ENABLE_B1R2) {
         uint8_t reg1, reg2;
-        if (!read_reg(0x05, reg1, false)) {
+        if (!read_reg(0x05, reg1)) {
             Debug("Failed reg1 read");
             return false;
         }
-        if (!read_reg(0x35, reg2, false)) {
+        if (!read_reg(0x35, reg2)) {
             Debug("Failed reg2 read");
             return false;
         }
-        write_enable(false);
+        write_enable();
 
         AP_HAL::QSPIDevice::CommandHeader cmd {
             .cmd    = 0x01,
@@ -505,13 +452,13 @@ bool AP_FlashIface_JEDEC::configure_device()
 
         if (!_dev->transfer(write_val, 2, nullptr, 0)) {
             Debug("Failed QE write");
-            write_disable(false);
+            write_disable();
             return false;
         }
 
-        write_disable(false);
+        write_disable();
 
-        if (!read_reg(0x35, reg2, false) || (reg2 & 0x2) == 0) {
+        if (!read_reg(0x35, reg2) || (reg2 & 0x2) == 0) {
             Debug("Failed to set QE bit");
             return false;
         }
@@ -526,34 +473,34 @@ bool AP_FlashIface_JEDEC::configure_device()
 }
 
 // Enables commands that modify flash data or settings
-bool AP_FlashIface_JEDEC::write_enable(bool quad_mode)
+bool AP_FlashIface_JEDEC::write_enable()
 {
     wait_ready();
 
     if (_desc.write_enable_ins) {
         write_enable_called = true;
-        return send_cmd(_desc.write_enable_ins, quad_mode);
+        return send_cmd(_desc.write_enable_ins);
     }
     return true;
 }
 
 // Disables commands that modify flash data or settings
-bool AP_FlashIface_JEDEC::write_disable(bool quad_mode)
+bool AP_FlashIface_JEDEC::write_disable()
 {
     if (_desc.write_enable_ins) {
         write_enable_called = true;
-        return send_cmd(CMD_WRITE_DISABLE, quad_mode);
+        return send_cmd(CMD_WRITE_DISABLE);
     }
     return true;
 }
 
 // Read modify write register
 bool AP_FlashIface_JEDEC::modify_reg(uint8_t read_ins, uint8_t write_ins,
-                                     uint8_t mask, uint8_t val, bool quad_mode)
+                                     uint8_t mask, uint8_t val)
 {
     // Read
     uint8_t reg_val;
-    if (!read_reg(read_ins, reg_val, quad_mode)) {
+    if (!read_reg(read_ins, reg_val)) {
         return false;
     }
 
@@ -561,24 +508,19 @@ bool AP_FlashIface_JEDEC::modify_reg(uint8_t read_ins, uint8_t write_ins,
     reg_val = (reg_val & ~mask) | (val & mask);
 
     // Write
-    if (!write_reg(write_ins, reg_val, quad_mode)) {
+    if (!write_reg(write_ins, reg_val)) {
         return false;
     }
     return true;
 }
 
 // reads a register value of chip using instruction
-bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val, bool quad_mode)
+bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val)
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = read_ins;
-    // if (quad_mode) {
-    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-    //                   AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
-    // } else {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
-    // }
+    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                    AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -591,17 +533,12 @@ bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val, bool qua
 }
 
 // sends instruction to write a register value in the chip
-bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val, bool quad_mode)
+bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val)
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = read_ins;
-    // if (quad_mode) {
-    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES |
-    //                   AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES;
-    // } else {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
-    // }
+    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
+                    AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -614,15 +551,11 @@ bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val, bool qu
 }
 
 // Sends QSPI command without data
-bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins, bool quad_mode)
+bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins)
 {
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd = ins;
-    // if (quad_mode) {
-    //     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_FOUR_LINES;
-    // } else {
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
-    // }
+    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -650,7 +583,7 @@ bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins, bool quad_mode)
  */
 bool AP_FlashIface_JEDEC::start_mass_erase(uint32_t &delay_ms, uint32_t &timeout_ms)
 {
-    write_enable(true);
+    write_enable();
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_MASS_ERASE;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
@@ -659,13 +592,13 @@ bool AP_FlashIface_JEDEC::start_mass_erase(uint32_t &delay_ms, uint32_t &timeout
     cmd.dummy =  0;
     _dev->set_cmd_header(cmd);
     if (!_dev->transfer(nullptr, 0, nullptr, 0)) { // Command only
-        write_disable(true);
+        write_disable();
         Debug("Failed to send erase command");
         return false;
     }
     delay_ms = _desc.mass_erase_delay_ms;
     timeout_ms = _desc.mass_erase_timeout_ms;
-    write_disable(true);
+    write_disable();
     return true;
 }
 
@@ -745,7 +678,7 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
         return false;
     }
     // Start Erasing
-    write_enable(true);
+    write_enable();
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  ins;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
@@ -756,11 +689,11 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
     cmd.dummy =  0;
     _dev->set_cmd_header(cmd);
     if (!_dev->transfer(nullptr, 0, nullptr, 0)) { // Command only
-        write_disable(true);
+        write_disable();
         Debug("Failed to send erase command");
         return false;
     }
-    write_disable(true);
+    write_disable();
     erasing = erase_size;
     return true;
 }
@@ -850,7 +783,7 @@ bool AP_FlashIface_JEDEC::start_program_offset(uint32_t offset, const uint8_t* d
     // Ensure we don't go beyond the page of offset, while writing
     size = MIN(_desc.page_size - (offset % _desc.page_size), size);
 
-    write_enable(true);
+    write_enable();
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_PAGE_PROGRAM;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
@@ -862,11 +795,11 @@ bool AP_FlashIface_JEDEC::start_program_offset(uint32_t offset, const uint8_t* d
     cmd.dummy =  0;
     _dev->set_cmd_header(cmd);
     if (!_dev->transfer(data, size, nullptr, 0)) { // Command only
-        write_disable(true);
+        write_disable();
         Debug("Failed to send program command");
         return false;
     }
-    write_disable(true);
+    write_disable();
     programming = size;
     // we are mostly going to program in chunks so this will do
     delay_us = (_desc.page_prog_delay_us*size)/(_desc.page_size);
@@ -933,7 +866,7 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
 bool AP_FlashIface_JEDEC::is_device_busy()
 {
     uint8_t status;
-    read_reg(_desc.status_read_ins, status, true);
+    read_reg(_desc.status_read_ins, status);
     if (_desc.legacy_status_polling) {
         return (status & 0x1);
     } else {
@@ -989,10 +922,10 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2:
         {
             // set configuration register to start 0-4-4 mode
-            write_enable(true);
-            if (!modify_reg(0x85, 0x81, 1<<3, 0, true)) {
+            write_enable();
+            if (!modify_reg(0x85, 0x81, 1<<3, 0)) {
                 Debug("Failed to configure chip for XIP");
-                write_disable(true);
+                write_disable();
                 return false;
             }
             // Set QSPI module for XIP mode

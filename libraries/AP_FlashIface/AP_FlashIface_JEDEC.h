@@ -227,26 +227,26 @@ protected:
     bool configure_device();
 
     // Enables commands that modify flash data or settings
-    bool write_enable(bool quad_mode);
+    bool write_enable();
 
     // Disables commands that modify flash data or settings
-    bool write_disable(bool quad_mode);
+    bool write_disable();
 
     // wait for the chip to be ready for the next instruction
     void wait_ready();
 
     // Read modify write register
     bool modify_reg(uint8_t read_ins, uint8_t write_ins,
-                    uint8_t mask, uint8_t val, bool quad_mode);
+                    uint8_t mask, uint8_t va_list);
 
     // reads a register value of chip using instruction
-    bool read_reg(uint8_t read_ins, uint8_t &read_val, bool quad_mode);
+    bool read_reg(uint8_t read_ins, uint8_t &read_val);
 
     // sends instruction to write a register value in the chip
-    bool write_reg(uint8_t read_ins, uint8_t write_val, bool quad_mode);
+    bool write_reg(uint8_t read_ins, uint8_t write_val);
 
     // Sends QSPI command without data
-    bool send_cmd(uint8_t ins, bool quad_mode);
+    bool send_cmd(uint8_t ins);
 
     // Is device in quad spi mode
     bool _quad_spi_mode;
