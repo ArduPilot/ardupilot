@@ -326,6 +326,35 @@ void AP_Parachute::update()
     }
 }
 
+void AP_Parachute::write_log(uint16_t control_loss_count, float angle_error)
+{
+    if (_enabled <= 0) {
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if ((control_loss_count == 0) && (_sink_time_ms == 0) && (_fall_time_ms == 0) && (_abs_sink_time_ms == 0) && (now < (_last_log_ms + 100))) {
+        // if no thresholds are tripping log at 10hz, else log at loop rate
+        return;
+    }
+    _last_log_ms = now;
+
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
+        return;
+    }
+    logger->Write("PARA", "TimeUS,CL,AngEr,Snkms,AbsSnkms,Acclms,BM,Cancelms",
+                        "s-dsss-s", "F00CCC0C", "QHfIIIBI",
+                        AP_HAL::micros64(),
+                        control_loss_count,
+                        angle_error,
+                        (_sink_time_ms == 0) ? 0 : (now - _sink_time_ms),
+                        (_abs_sink_time_ms == 0) ? 0 : (now - _abs_sink_time_ms),
+                        (_fall_time_ms == 0) ? 0 : (now - _fall_time_ms),
+                        _release_reasons,
+                        (_cancel_timeout_ms == 0)  ? 0 : (_cancel_timeout_ms - now));
+}
+
 void AP_Parachute::release_off()
 {
     if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
