@@ -68,8 +68,8 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
     
     // @Param: CRT_SINK
-    // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
-    // @Description: Release parachute when critical sink rate is reached, 0 = disabled
+    // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute with saturate throttle
+    // @Description: Release parachute when critical sink rate is reached, if throttle is saturated, 0 = disabled
     // @Range: 0 15
     // @Units: m/s
     // @Increment: 1
@@ -111,6 +111,15 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SB_MX_ANG", 11, AP_Parachute, _sb_rp_ang_max, 80.0f),
 
+    // @Param: CRT_SNK_AB
+    // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
+    // @Description: Release parachute when critical sink rate is reached, no throttle check, 0 = disabled
+    // @Range: 0 15
+    // @Units: m/s
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRT_SNK_AB", 12, AP_Parachute, _abs_critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -125,6 +134,7 @@ void AP_Parachute::enabled(bool on_off)
     _cancel_timeout_ms = 0;
     _sink_time_ms = 0;
     _fall_time_ms = 0;
+    _abs_sink_time_ms = 0;
 
     AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
@@ -311,10 +321,11 @@ void AP_Parachute::update(const float sink_rate, const float accel, const bool u
     if (!_is_flying) {
         _sink_time_ms = 0;
         _fall_time_ms = 0;
+        _abs_sink_time_ms = 0;
         return;
     }
 
-    // sink rate is positive down
+    // sink rate is positive down, sink rate with throttle saturateion
     if (sink_rate <= _critical_sink || !is_positive(_critical_sink) || !upper_throttle_limit) {
         // reset sink_time if vehicle is not sinking too fast
         _sink_time_ms = 0;
@@ -323,6 +334,16 @@ void AP_Parachute::update(const float sink_rate, const float accel, const bool u
         _sink_time_ms = AP_HAL::millis();
     }
 
+    // sink rate only
+    if (sink_rate <= _abs_critical_sink || !is_positive(_abs_critical_sink)) {
+        // reset sink_time if vehicle is not sinking too fast
+        _abs_sink_time_ms = 0;
+    } else if (_abs_sink_time_ms == 0) {
+        // start time when sinking too fast
+        _abs_sink_time_ms = AP_HAL::millis();
+    }
+
+    // accel
     if (accel <= _min_accel || !is_positive(_min_accel)) {
         // reset fall time if vehicle is not falling too fast
         _fall_time_ms = 0;
@@ -344,9 +365,15 @@ void AP_Parachute::check()
     // if vehicle is sinking too fast for more than a second release parachute
     uint32_t now = AP_HAL::millis();
     if ((_sink_time_ms > 0) && ((now - _sink_time_ms) > 1000)) {
+        _sink_time_ms = 0;
+        release(release_reason::SINK_RATE);
+    }
+    if ((_abs_sink_time_ms > 0) && ((now - _abs_sink_time_ms) > 1000)) {
+        _abs_sink_time_ms = 0;
         release(release_reason::SINK_RATE);
     }
     if ((_fall_time_ms > 0) && ((now - _fall_time_ms) > 1000)) {
+        _fall_time_ms = 0;
         release(release_reason::ACCEL_FALLING);
     }
 }

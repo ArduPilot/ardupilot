@@ -134,12 +134,13 @@ private:
     AP_Int16    _servo_off_pwm; // PWM value to move servo to when shutter is deactivated
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
-    AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
+    AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute with throttle saturated
     AP_Float    _min_accel;          // critical earth frame Z acceleration
     AP_Int32    _options;            // bitmask of options
-    AP_Int32    _cancel_delay;
+    AP_Int32    _cancel_delay;       // ms delay to allow a cancel message between trigger and release
     AP_Float    _ang_error_max;       // Maximum roll/pitch error when aircraft not in standby
     AP_Float    _sb_rp_ang_max;       // Maximum absolute roll/pitch angle when aircraft in standby
+    AP_Float    _abs_critical_sink;   // critical sink rate to trigger emergency parachute, no throttle check
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
@@ -148,11 +149,12 @@ private:
     bool        _release_setup:1;        // true if parchute release has been setup (vehicle disarmed, landing gear deployed)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _is_flying:1;            // true if the vehicle is flying
-    uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
+    uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate, with throttle threshold
     uint32_t    _fall_time_ms;           // system time that the vehicle stated falling lower faster _min_accel
     uint8_t     _release_reasons;        // bitmask of the current reasons to release
     uint32_t    _cancel_timeout_ms;
     uint32_t    _last_msg_send_ms;
+    uint32_t    _abs_sink_time_ms;       // system time that the vehicle exceeded critical sink rate
 
 };
 
