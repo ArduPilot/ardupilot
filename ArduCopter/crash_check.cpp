@@ -240,7 +240,7 @@ void Copter::parachute_check()
     // pass sink rate to parachute library
     parachute.update(-inertial_nav.get_velocity_z() * 0.01f,
                     copter.ahrs.get_accel_ef().z,
-                    motors->get_throttle() < motors->get_throttle_hover());
+                    motors->limit.throttle_upper);
 
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
