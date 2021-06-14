@@ -96,7 +96,7 @@ public:
     void set_is_flying(const bool is_flying) { _is_flying = is_flying; }
 
     // update - set vehicle sink rate and earth frame Z accel
-    void update(const float sink_rate, const float accel, const bool upper_throttle_limit);
+    void update(const float sink_rate, const float accel, const bool upper_throttle_limit, const bool standby);
 
     // trigger parachute release thresholds
     void check();
