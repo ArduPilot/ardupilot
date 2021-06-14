@@ -1058,6 +1058,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
 
+#if RANGEFINDER_ENABLED == ENABLED
+    // @Param: RNGFND_FILT
+    // @DisplayName: Rangefinder filter
+    // @Description: Rangefinder filter to smooth distance.  Set to zero to disable filtering
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 0.05
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("RNGFND_FILT", 45, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT),
+#endif
+
     AP_GROUPEND
 };
 
