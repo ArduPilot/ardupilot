@@ -280,23 +280,22 @@ void Copter::parachute_check()
     // Check parachute thresholds
     parachute.check();
 
-    if (standby_active) {
-        // in standby mode check for large angles
-        if (degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > MAX(parachute.max_rp_ang(),copter.aparm.angle_max*0.01f)) {
-            control_loss_count++;
-        } else if (control_loss_count > 0) {
-            control_loss_count--;
-        }
+    const bool abs_angle = degrees(norm(copter.ahrs.get_roll(), copter.ahrs.get_pitch())) > MAX(parachute.max_rp_ang(),copter.aparm.angle_max*0.01f);
+    const bool control_angle = !standby_active && (attitude_control->get_att_error_angle_deg() >= parachute.max_ang_err());
 
-    } else {
-        // full control check for angle error
-        const float angle_error = attitude_control->get_att_error_angle_deg();
-        if (angle_error >= parachute.max_ang_err()) {
-            control_loss_count++;
-        } else if (control_loss_count > 0) {
-            control_loss_count--;
-        }
+    if (abs_angle && control_angle) {
+        // increment by two if both thresholds are exceeded
+        control_loss_count += 2;
+
+    } else if (abs_angle || control_angle) {
+        // increment by one if only a single threshold
+        control_loss_count += 1;
+
+    } else if (control_loss_count > 0) {
+        // decrement if neither thresholds are exceeded
+        control_loss_count -= 1;
     }
+
 
     // record baro alt if we have just started losing control
     if (control_loss_count == 1) {
