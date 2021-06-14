@@ -12,7 +12,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Siddharth Bharat Purohit
+ * Code by 
+ *         Andy Piper
+ *         Siddharth Bharat Purohit, Cubepilot Pty. Ltd.
  */
 /*
     Implements Common Flash Interface Driver based on
@@ -100,7 +102,7 @@ public:
     // Erase Methods
 
     /**
-     * @details Sends command to erase the entire chips.
+     * @details Sends command to erase the entire chip.
      *
      * @param[out] delay_ms     Time to wait until next is_device_busy call
      * @param[out] timeout_ms   Time by which the erase should have timedout

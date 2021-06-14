@@ -12,7 +12,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Siddharth Bharat Purohit
+ * Code by 
+ *         Andy Piper
+ *         Siddharth Bharat Purohit, Cubepilot Pty. Ltd.
  */
 /*
     Implements Common frontend methods for Flash Interface Driver
@@ -69,7 +71,7 @@ public:
      * @retval true             if the operation succeeded.
      *
      */
-    virtual bool start_program_page(uint32_t page, const uint8_t *data, uint32_t &delay_ms, uint32_t &timeout_ms) = 0;
+    virtual bool start_program_page(uint32_t page, const uint8_t *data, uint32_t &delay_us, uint32_t &timeout_us) = 0;
 
     /**
      * @details Tries to program as much as possible starting from the offset
@@ -88,7 +90,7 @@ public:
      *
      */
     virtual bool start_program_offset(uint32_t offset, const uint8_t* data, uint32_t size, uint32_t &programming,
-                                      uint32_t &delay_ms, uint32_t &timeout_ms)
+                                      uint32_t &delay_us, uint32_t &timeout_us)
     {
         return false;
     }

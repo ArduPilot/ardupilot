@@ -12,7 +12,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Siddharth Bharat Purohit
+ * Code by 
+ *         Andy Piper
+ *         Siddharth Bharat Purohit, Cubepilot Pty. Ltd.
  */
 /*
     Implements Common Flash Interface Driver based on
