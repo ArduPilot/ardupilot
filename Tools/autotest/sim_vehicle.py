@@ -298,6 +298,9 @@ def do_build(opts, frame_options):
     if opts.debug:
         cmd_configure.append("--debug")
 
+    if opts.enable_onvif and 'antennatracker' in frame_options["waf_target"]:
+        cmd_configure.append("--enable-onvif")
+
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-osd")
@@ -943,6 +946,9 @@ group_sim.add_option("-T", "--tracker",
                      action='store_true',
                      default=False,
                      help="start an antenna tracker instance")
+group_sim.add_option("", "--enable-onvif",
+                     action="store_true",
+                     help="enable onvif camera control sim using AntennaTracker")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
                      default=None,
