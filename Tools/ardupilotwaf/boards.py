@@ -67,7 +67,34 @@ class Board:
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_NO_GCS=1']
-            
+
+        # setup for supporting onvif cam control
+        if cfg.options.enable_onvif:
+            cfg.recurse('libraries/AP_ONVIF')
+            env.ENABLE_ONVIF = True
+            env.ROMFS_FILES += [('scripts/ONVIF_Camera_Control.lua',
+                                'libraries/AP_Scripting/applets/ONVIF_Camera_Control.lua')]
+            env.DEFINES.update(
+                ENABLE_ONVIF=1,
+                SCRIPTING_ENABLE_DEFAULT=1,
+            )
+            env.AP_LIBRARIES += [
+                'AP_ONVIF'
+            ]
+            env.CXXFLAGS += [
+                '-Wno-shadow',
+                '-Wno-undef',
+            ]
+            if 'clang++' not in cfg.env.COMPILER_CXX:
+                env.CXXFLAGS += [
+                    '-Wno-suggest-override',
+                ]
+        else:
+            env.ENABLE_ONVIF = False
+            env.DEFINES.update(
+                ENABLE_ONVIF=0,
+            )
+
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
@@ -443,7 +470,6 @@ class sitl(Board):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
-
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
