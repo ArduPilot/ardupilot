@@ -110,6 +110,15 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag, 0.02f), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
 
+    // @Param: FILT
+    // @DisplayName: Precision Landing output filter cutoff frequency
+    // @Description: Cutoff frequency for low pass filter applied to position and velocity estimate of landing target
+    // @Units: Hz
+    // @Range: 0 20
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("FILT", 10, AC_PrecLand, _cutoff_filt, 0.5f),
+
     AP_GROUPEND
 };
 
@@ -148,6 +157,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     if (_inertial_history == nullptr) {
         return;
     }
+
+    _filter_output_pos = new LowPassFilterVector2f{_cutoff_filt};
+    _filter_output_vel = new LowPassFilterVector2f{_cutoff_filt};
 
     // instantiate backend based on type parameter
     switch ((Type)(_type.get())) {
@@ -220,7 +232,13 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
 bool AC_PrecLand::target_acquired()
 {
+    const bool old_state = _target_acquired;
     _target_acquired = _target_acquired && (AP_HAL::millis()-_last_update_ms) < 2000;
+    if (!old_state && _target_acquired) {
+        // we just acquired the target, need to reset filter at the output
+        _filter_output_pos->reset();
+        _filter_output_vel->reset();
+    }
     return _target_acquired;
 }
 
@@ -446,7 +464,7 @@ void AC_PrecLand::run_output_prediction()
     _target_pos_rel_out_NE.y += imu_pos_ned.y;
 
     // Apply position correction for body-frame horizontal camera offset from CG, so that vehicle lands lens-to-target
-    Vector3f cam_pos_horizontal_ned = Tbn * Vector3f(_cam_offset.get().x, _cam_offset.get().y, 0);
+    Vector3f cam_pos_horizontal_ned = Tbn * Vector3f{_cam_offset.get().x, _cam_offset.get().y, 0};
     _target_pos_rel_out_NE.x -= cam_pos_horizontal_ned.x;
     _target_pos_rel_out_NE.y -= cam_pos_horizontal_ned.y;
 
@@ -456,9 +474,16 @@ void AC_PrecLand::run_output_prediction()
     _target_vel_rel_out_NE.y -= vel_ned_rel_imu.y;
 
     // Apply land offset
-    Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
+    Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f{_land_ofs_cm_x,_land_ofs_cm_y,0} * 0.01f;
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
+
+    const float dt = (*_inertial_history)[_inertial_history->available()-1]->dt;
+    // apply a low pass filter to the pos and vel outputs to make them smoother
+    _filter_output_pos->apply(_target_pos_rel_out_NE, dt);
+    _filter_output_vel->apply(_target_vel_rel_out_NE, dt);
+    _target_pos_rel_out_NE = _filter_output_pos->get();
+    _target_vel_rel_out_NE = _filter_output_vel->get();
 }
 
 // Write a precision landing entry
