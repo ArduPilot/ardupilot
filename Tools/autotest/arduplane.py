@@ -528,7 +528,7 @@ class AutoTestPlane(AutoTest):
         num_wp = self.load_mission(filename, strict=strict)-1
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode('AUTO')
-        self.wait_waypoint(1, num_wp, max_dist=60)
+        self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
@@ -2859,6 +2859,28 @@ class AutoTestPlane(AutoTest):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED
         )
 
+    def fly_landing_baro_drift(self):
+
+        self.customise_SITL_commandline([], wipe=True)
+        self.set_parameter("SIM_BARO_DRIFT", -0.02)
+
+        self.set_analog_rangefinder_parameters()
+
+        self.reboot_sitl()
+
+        # Enable rangefinder for landing (Plane only!)
+        self.set_parameter("SIM_TERRAIN", 0)
+
+        self.set_parameter("RNGFND_LANDING", 1)
+        self.set_parameter("RNGFND1_MAX_CM", 4000)
+        self.set_parameter("LAND_SLOPE_RCALC", 2)
+        self.set_parameter("LAND_ABORT_DEG", 2)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.fly_mission("ap-circuit.txt", mission_timeout=1200)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3043,6 +3065,10 @@ class AutoTestPlane(AutoTest):
             ("MAV_DO_AUX_FUNCTION",
              "Test triggering Auxillary Functions via mavlink",
              self.fly_aux_function),
+
+            ("Landing-Drift",
+             "Circuit with baro drift",
+             self.fly_landing_baro_drift),
 
             ("LogUpload",
              "Log upload",
