@@ -897,9 +897,7 @@ bool AP_FlashIface_JEDEC::is_device_busy()
 // wait for the chip to be ready for the next instruction
 void AP_FlashIface_JEDEC::wait_ready()
 {
-    while (is_device_busy()) {
-        DELAY_MICROS(1);
-    }
+    while (is_device_busy()) {}
 }
 
 
