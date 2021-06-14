@@ -2987,6 +2987,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("CHUTE_ENABLED", 1)
         self.set_parameter("CHUTE_TYPE", 10)
         self.set_parameter("CHUTE_CRT_SINK", 6)
+        self.set_parameter("CHUTE_CRT_SNK_AB", 6)
         self.set_parameter("SERVO9_FUNCTION", 27)
         self.set_parameter("SIM_PARA_ENABLE", 1)
         self.set_parameter("SIM_PARA_PIN", 9)
