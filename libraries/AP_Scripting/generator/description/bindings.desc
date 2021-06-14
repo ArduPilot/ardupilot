@@ -180,6 +180,10 @@ singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float -FLT_MAX FLT_MAX
 
+include AP_ONVIF/AP_ONVIF.h
+singleton AP_ONVIF alias onvif
+singleton AP_ONVIF method start boolean string string string
+
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle scheduler-semaphore
