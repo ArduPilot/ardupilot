@@ -245,6 +245,9 @@ void Copter::parachute_check()
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
 
+    // write a log
+    parachute.write_log(control_loss_count, attitude_control->get_att_error_angle_deg());
+
     if (!parachute.enabled()) {
         return;
     }
