@@ -436,6 +436,7 @@ bool AP_FlashIface_JEDEC::configure_device()
             return false;
         }
         write_enable();
+        wait_ready();
 
         AP_HAL::QSPIDevice::CommandHeader cmd {
             .cmd    = 0x01,
@@ -475,9 +476,8 @@ bool AP_FlashIface_JEDEC::configure_device()
 // Enables commands that modify flash data or settings
 bool AP_FlashIface_JEDEC::write_enable()
 {
-    wait_ready();
-
     if (_desc.write_enable_ins) {
+        wait_ready();
         write_enable_called = true;
         return send_cmd(_desc.write_enable_ins);
     }
@@ -488,6 +488,7 @@ bool AP_FlashIface_JEDEC::write_enable()
 bool AP_FlashIface_JEDEC::write_disable()
 {
     if (_desc.write_enable_ins) {
+        wait_ready();
         write_enable_called = true;
         return send_cmd(CMD_WRITE_DISABLE);
     }
@@ -584,6 +585,8 @@ bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins)
 bool AP_FlashIface_JEDEC::start_mass_erase(uint32_t &delay_ms, uint32_t &timeout_ms)
 {
     write_enable();
+    wait_ready();
+
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_MASS_ERASE;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
@@ -679,6 +682,8 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
     }
     // Start Erasing
     write_enable();
+    wait_ready();
+
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  ins;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
@@ -784,6 +789,8 @@ bool AP_FlashIface_JEDEC::start_program_offset(uint32_t offset, const uint8_t* d
     size = MIN(_desc.page_size - (offset % _desc.page_size), size);
 
     write_enable();
+    wait_ready();
+
     AP_HAL::QSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_PAGE_PROGRAM;
     cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
@@ -878,7 +885,7 @@ bool AP_FlashIface_JEDEC::is_device_busy()
 void AP_FlashIface_JEDEC::wait_ready()
 {
     while (is_device_busy()) {
-        DELAY_MICROS(100);
+        DELAY_MICROS(1);
     }
 }
 
@@ -912,8 +919,7 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
                       AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
-                      AP_HAL::QSPI::CFG_ALT_SIZE_8 |
-                      AP_HAL::QSPI::CFG_SIOO;
+                      AP_HAL::QSPI::CFG_ALT_SIZE_8;
             cmd.addr = 0;
             cmd.dummy = _desc.fast_read_dummy_cycles;
             _dev->set_cmd_header(cmd);
@@ -923,6 +929,8 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
         {
             // set configuration register to start 0-4-4 mode
             write_enable();
+            wait_ready();
+
             if (!modify_reg(0x85, 0x81, 1<<3, 0)) {
                 Debug("Failed to configure chip for XIP");
                 write_disable();
