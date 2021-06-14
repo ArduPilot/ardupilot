@@ -90,6 +90,8 @@ public:
 
     float max_rp_ang() const { return _sb_rp_ang_max.get(); }
 
+    float get_control_loss_seconds() const { return _control_loss_ms.get() * 0.001f; }
+
     /// set_is_flying - accessor to the is_flying flag
     void set_is_flying(const bool is_flying) { _is_flying = is_flying; }
 
@@ -141,6 +143,11 @@ private:
     AP_Float    _ang_error_max;       // Maximum roll/pitch error when aircraft not in standby
     AP_Float    _sb_rp_ang_max;       // Maximum absolute roll/pitch angle when aircraft in standby
     AP_Float    _abs_critical_sink;   // critical sink rate to trigger emergency parachute, no throttle check
+    // time threshold params for each check
+    AP_Int32    _sink_ms;
+    AP_Int32    _sink_abs_ms;
+    AP_Int32    _accel_ms;
+    AP_Int32    _control_loss_ms;
 
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.

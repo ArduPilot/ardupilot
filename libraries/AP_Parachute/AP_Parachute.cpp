@@ -120,6 +120,30 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CRT_SNK_AB", 12, AP_Parachute, _abs_critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
 
+    // @Param: SINK_MS
+    // @DisplayName: time in ms that the sink rate must be faster than CHUTE_CRT_SINK with throttle saturated
+    // @Description: time in ms that the sink rate must be faster than CHUTE_CRT_SINK with throttle saturated
+    // @User: Standard
+    AP_GROUPINFO("SINK_MS", 13, AP_Parachute, _sink_ms, 1000),
+
+    // @Param: SINK_AB_MS
+    // @DisplayName: time in ms that the sink rate must be faster than CHUTE_CRT_SINK_ABS
+    // @Description: time in ms that the sink rate must be faster than CHUTE_CRT_SINK_ABS
+    // @User: Standard
+    AP_GROUPINFO("SINK_AB_MS", 14, AP_Parachute, _sink_abs_ms, 1000),
+
+    // @Param: ACCEL_MS
+    // @DisplayName: time in ms that the sink rate must be lower than CHUTE_MIN_ACCEL
+    // @Description: time in ms that the sink rate must be lower than CHUTE_MIN_ACCEL
+    // @User: Standard
+    AP_GROUPINFO("ACCEL_MS", 15, AP_Parachute, _accel_ms, 1000),
+
+    // @Param: CNRL_LS_MS
+    // @DisplayName: the number of ms that control loss must have triggered
+    // @Description: the number of ms that control loss must have triggered, unlike other check this does not rest back to 0 when angle error is removed, it can also increas faster if both angle thresholds are exceeded, this is sort of a time, but not exactly
+    // @User: Standard
+    AP_GROUPINFO("CNRL_LS_MS", 16, AP_Parachute, _control_loss_ms, 1000),
+
     AP_GROUPEND
 };
 
@@ -364,15 +388,15 @@ void AP_Parachute::check()
 
     // if vehicle is sinking too fast for more than a second release parachute
     uint32_t now = AP_HAL::millis();
-    if ((_sink_time_ms > 0) && ((now - _sink_time_ms) > 1000)) {
+    if ((_sink_time_ms > 0) && ((now - _sink_time_ms) > uint32_t(_sink_ms.get()))) {
         _sink_time_ms = 0;
         release(release_reason::SINK_RATE);
     }
-    if ((_abs_sink_time_ms > 0) && ((now - _abs_sink_time_ms) > 1000)) {
+    if ((_abs_sink_time_ms > 0) && ((now - _abs_sink_time_ms) > uint32_t(_sink_abs_ms.get()))) {
         _abs_sink_time_ms = 0;
         release(release_reason::SINK_RATE);
     }
-    if ((_fall_time_ms > 0) && ((now - _fall_time_ms) > 1000)) {
+    if ((_fall_time_ms > 0) && ((now - _fall_time_ms) > uint32_t(_accel_ms.get()))) {
         _fall_time_ms = 0;
         release(release_reason::ACCEL_FALLING);
     }
