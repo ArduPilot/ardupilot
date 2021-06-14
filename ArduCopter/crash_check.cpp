@@ -307,7 +307,7 @@ void Copter::parachute_check()
         return;
 
     // check if loss of control for at least 1 second
-    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    } else if (control_loss_count >= (parachute.get_control_loss_seconds()*scheduler.get_loop_rate_hz())) {
         // reset control loss counter
         control_loss_count = 0;
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
