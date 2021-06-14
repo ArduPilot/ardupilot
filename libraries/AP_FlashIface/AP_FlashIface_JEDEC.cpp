@@ -12,7 +12,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Siddharth Bharat Purohit
+ * Code by
+ *         Andy Piper
+ *         Siddharth Bharat Purohit, Cubepilot Pty. Ltd.
  */
 /*
     Implements Common Flash Interface Driver based on following
@@ -37,7 +39,7 @@ struct supported_device {
 };
 
 static const struct supported_device supported_devices[] = {
-    {"mt25q", 0x20, 0xBA},
+    {"mt25q", 0x20, 0xBA}, // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
     {"w25q", 0xEF, 0x40}
 };
 
@@ -82,13 +84,24 @@ static const struct supported_device supported_devices[] = {
 // quad enable for winbond
 #define QUAD_ENABLE_B1R2                    0x4
 
+//#define DEBUG
+
 #ifdef HAL_BOOTLOADER_BUILD
+#ifdef DEBUG
 #define Debug(fmt, args ...)  do {uprintf("JEDEC: " fmt "\n", ## args);} while(0)
+#else
+#define Debug(fmt, args ...)
+#endif
 #define Msg_Print(fmt, args ...)  do {uprintf("JEDEC: " fmt "\n", ## args);} while(0)
 #else
+#ifdef DEBUG
 #define Debug(fmt, args ...)  do {hal.console->printf("JEDEC: " fmt "\n", ## args);} while(0)
-#define Msg_Print(fmt, args ...)  do {hal.console->printf("JEDEC: " fmt "\n", ## args);} while(0)
+#else
+#define Debug(fmt, args ...)
 #endif
+#define Msg_Print(fmt, args ...)  do {hal.console->printf("JEDEC: " fmt "\n", ## args);} while(0)
+#endif // #ifdef HAL_BOOTLOADER_BUILD
+
 #define MAX_READ_SIZE       1024UL
 
 #ifdef HAL_BOOTLOADER_BUILD
