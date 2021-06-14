@@ -16,6 +16,7 @@
  */
 
 #include "AP_ONVIF.h"
+#if ENABLE_ONVIF
 #include <AP_ONVIF/MediaBinding.nsmap>
 
 #include "onvifhelpers.h"
@@ -31,6 +32,7 @@ const char *wsse_Base64BinaryURI = "http://docs.oasis-open.org/wss/2004/01/oasis
 
 AP_ONVIF *AP_ONVIF::_singleton;
 extern const AP_HAL::HAL &hal;
+static AP_ONVIF onvif;
 
 // Default constructor
 AP_ONVIF::AP_ONVIF()
@@ -41,27 +43,26 @@ AP_ONVIF::AP_ONVIF()
     _singleton = this;
 }
 
-bool AP_ONVIF::init()
-{
-    srand ((time_t)(hal.util->get_hw_rtc()/1000000ULL));
-    soap = soap_new1(SOAP_XML_CANONICAL | SOAP_C_UTFSTRING);
-    soap->connect_timeout = soap->recv_timeout = soap->send_timeout = 30; // 30 sec
-
-    proxy_device = new DeviceBindingProxy(soap);
-    proxy_media = new MediaBindingProxy(soap);
-    proxy_ptz = new PTZBindingProxy(soap);
-
-    if (proxy_device == nullptr ||
-        proxy_media == nullptr ||
-        proxy_ptz == nullptr) {
-        AP_HAL::panic("AP_ONVIF: Failed to allocate gSOAP Proxy objects.");
-        return false;
-    }
-    return true;
-}
-
+// Start ONVIF client with username, password and service host url
 bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostname)
 {
+    if (!initialised) {
+        srand ((time_t)(hal.util->get_hw_rtc()/1000000ULL));
+        soap = soap_new1(SOAP_XML_CANONICAL | SOAP_C_UTFSTRING);
+        soap->connect_timeout = soap->recv_timeout = soap->send_timeout = 30; // 30 sec
+
+        proxy_device = new DeviceBindingProxy(soap);
+        proxy_media = new MediaBindingProxy(soap);
+        proxy_ptz = new PTZBindingProxy(soap);
+
+        if (proxy_device == nullptr ||
+            proxy_media == nullptr ||
+            proxy_ptz == nullptr) {
+            AP_HAL::panic("AP_ONVIF: Failed to allocate gSOAP Proxy objects.");
+        }
+        initialised = true;
+    }
+
     username = user;
     password = pass;
     hostname = httphostname;
@@ -104,6 +105,7 @@ void AP_ONVIF::report_error()
     }
 }
 
+// detect onvif server present on the network
 bool AP_ONVIF::probe_onvif_server()
 {
     _tds__GetDeviceInformation GetDeviceInformation;
@@ -250,6 +252,7 @@ bool AP_ONVIF::probe_onvif_server()
     return true;
 }
 
+// Generate Random Nonce value
 void AP_ONVIF::rand_nonce(char *nonce, size_t noncelen)
 {
     size_t i;
@@ -261,6 +264,7 @@ void AP_ONVIF::rand_nonce(char *nonce, size_t noncelen)
         (void)memcpy((void *)(nonce + i), (const void *)&r, 4);
     }
 }
+
 #define TEST_NONCE "LKqI6G/AikKCQrN0zqZFlg=="
 #define TEST_TIME "2010-09-16T07:50:45Z"
 #define TEST_PASS "userpassword"
@@ -326,6 +330,8 @@ void AP_ONVIF::set_credentials()
     security->UsernameToken->wsu__Created = soap_strdup(soap, created);
 }
 
+// Turn ONVIF camera to mentioned pan, tilt and zoom, normalised 
+// between limits
 bool AP_ONVIF::set_absolutemove(float x, float y, float z)
 {
     _tptz__AbsoluteMove AbsoluteMove;
@@ -353,3 +359,4 @@ bool AP_ONVIF::set_absolutemove(float x, float y, float z)
     soap_end(soap);
     return true;
 } 
+#endif //#if ENABLE_ONVIF

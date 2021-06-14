@@ -17,6 +17,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if ENABLE_ONVIF
 #include <AP_ONVIF/onvifDeviceBindingProxy.h>
 #include <AP_ONVIF/onvifMediaBindingProxy.h>
 #include <AP_ONVIF/onvifPTZBindingProxy.h>
@@ -31,22 +33,34 @@ public:
     AP_ONVIF(const AP_ONVIF &other) = delete;
     AP_ONVIF &operator=(const AP_ONVIF&) = delete;
     
-    bool init();
+    // Start ONVIF client with username, password and service host url
     bool start(const char *user, const char *pass, const char *httphostname);
-    void set_credentials();
+
+    // Turn ONVIF camera to mentioned pan, tilt and zoom, normalised 
+    // between limits
     bool set_absolutemove(float pan, float tilt, float zoom);
-    void set_pan_norm(float pan) { pan_norm = pan; }
-    void set_tilt_norm(float tilt) { tilt_norm = tilt; }
-    void set_zoom_norm(float zoom) { zoom_norm = zoom; }
+
+    // returns pan/tilt command max limit
     Vector2f get_pan_tilt_limit_max() const { return pan_tilt_limit_max; }
+
+    // returns pan/tilt command min limit
     Vector2f get_pan_tilt_limit_min() const { return pan_tilt_limit_min; }
 
     // get singleton instance
     static AP_ONVIF *get_singleton() { return _singleton; }
 
 private:
+
+    // prepares security header of SOAP message going to be sent immmediately after
+    void set_credentials();
+
+    // convert error message from gSOAP lib into human readable string and print
     void report_error();
+
+    // detect onvif server present on the network
     bool probe_onvif_server();
+
+    // Generate Random Nonce value
     void rand_nonce(char *nonce, size_t noncelen);
 
     Vector2f pan_tilt_limit_min;
@@ -70,9 +84,11 @@ private:
     std::string DEVICE_ENDPOINT;
     std::string MEDIA_ENDPOINT;
     std::string PTZ_ENDPOINT;
+    bool initialised;
 };
 
 
  namespace AP {
      AP_ONVIF &onvif();
  };
+#endif // #if ENABLE_ONVIF
