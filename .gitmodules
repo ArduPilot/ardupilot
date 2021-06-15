@@ -22,3 +22,6 @@
 [submodule "modules/gsoap"]
 	path = modules/gsoap
 	url = https://github.com/ArduPilot/gsoap
+[submodule "modules/Micro-XRCE-DDS-Client"]
+	path = modules/Micro-XRCE-DDS-Client
+	url = https://github.com/eProsima/Micro-XRCE-DDS-Client.git
