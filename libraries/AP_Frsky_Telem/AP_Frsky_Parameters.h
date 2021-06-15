@@ -37,6 +37,7 @@ private:
     AP_Int8 _dnlink_id;
     AP_Int8 _dnlink1_id;
     AP_Int8 _dnlink2_id;
+    AP_Int8 _options;
 };
 
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
