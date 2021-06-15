@@ -304,6 +304,10 @@ def _collect_autoconfig_files(cfg):
                 cfg.hash = Utils.h_list((cfg.hash, f.read()))
                 cfg.files.append(p)
 
+def add_xrce_linkers(cfg):
+    cfg.env.STLIB_MARKER += ',-lmicrocdr,-lmicroxrcedds_client'
+    cfg.env.SHLIB_MARKER += ',-lmicrocdr,-lmicroxrcedds_client'
+
 def configure(cfg):
 	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
@@ -445,6 +449,9 @@ def configure(cfg):
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
+    # add xrce linker flags in waf
+    add_xrce_linkers(cfg)
+    
     _collect_autoconfig_files(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
