@@ -3134,6 +3134,70 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_ENGINE_MUL", 1)
         self.reboot_sitl()
 
+    def test_parachute_standby(self):
+
+        # Initial setup
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("CHUTE_CRT_SINK", 6)
+        self.set_parameter("CHUTE_CRT_SNK_AB", 6)
+        self.set_parameter("CHUTE_SB_MX_ANG", 40)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+        self.set_parameter("RC10_OPTION", 76)
+        self.set_rc(10, 2000)
+        self.wait_statustext("Stand By Enabled", timeout=60)
+
+        # Test loss of control, should trip on SB angle error
+        self.progress("Motor failure one motor - test loss of control")
+        self.set_parameter("CHUTE_CRT_SINK", 0)
+        self.set_parameter("CHUTE_MIN_ACCEL", 0)
+        self.set_parameter("CHUTE_CRT_SNK_AB", 0)
+        self.takeoff(40, mode='LOITER', timeout=120)
+        # Enable chute via 3 pos switch
+        self.set_rc(9, 1500)
+
+        # Apply full pitch and roll sticks, should deploy in standby
+        self.set_rc(1, 2000)
+        self.set_rc(2, 2000)
+        # Total motor failure on motor 1 and 4 to cause tumbling
+        self.set_parameter("SIM_ENGINE_FAIL", 9)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        self.wait_statustext('loss of control', timeout=30)
+        self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.set_parameter("SIM_ENGINE_FAIL", 0)
+        self.set_parameter("SIM_ENGINE_MUL", 1)
+        self.reboot_sitl()
+
+        # Apply full pitch and roll sticks, should not deploy in standby
+        # set standby angle very large so it will not trip
+        self.set_parameter("CHUTE_SB_MX_ANG", 1000)
+        self.takeoff(40, mode='LOITER', timeout=120)
+        self.set_rc(1, 2000)
+        self.set_rc(2, 2000)
+        # Total motor failure on motor 1 and 4 to cause tumbling
+        self.set_parameter("SIM_ENGINE_FAIL", 9)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + 15:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "BANG" in m.text:
+                self.set_parameter("SIM_ENGINE_FAIL", 0)
+                self.set_parameter("SIM_ENGINE_MUL", 1)
+                self.set_rc(9, 1000)
+                self.reboot_sitl()
+                raise NotAchievedException("Parachute deployed when disabled")
+        self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def test_motortest(self, timeout=60):
         self.start_subtest("Testing PWM output")
         pwm_in = 1300
@@ -7490,6 +7554,10 @@ class AutoTestCopter(AutoTest):
             ("Parachute",
              "Test Parachute Functionality",
              self.test_parachute),
+
+            ("Parachute-SB",
+             "Test Parachute Functionality in standby",
+             self.test_parachute_standby),
 
             ("Weathervane",
              "Test Weathervane Functionality",
