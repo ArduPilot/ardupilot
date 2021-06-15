@@ -201,7 +201,9 @@ void Copter::init_ardupilot()
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
         AP_Notify::events.user_mode_change_failed = 1;
     }
-
+    
+    //initializing the xrce client
+    init_client();
     // flag that initialisation has completed
     ap.initialised = true;
 }
