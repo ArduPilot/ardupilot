@@ -139,6 +139,10 @@ protected:
     static const uint8_t SENSOR_ID_RPM             = 0xE4; // Sensor ID  4
     static const uint8_t SENSOR_ID_SP2UR           = 0xC6; // Sensor ID  6
 
+    enum frsky_options_e : uint8_t {
+        OPTION_AIRSPEED_AND_GROUNDSPEED = 1U<<0,
+    };
+
 private:
 
     void loop(void);
