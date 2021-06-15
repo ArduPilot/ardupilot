@@ -3189,12 +3189,57 @@ class AutoTestCopter(AutoTest):
             if m is None:
                 continue
             if "BANG" in m.text:
-                self.set_parameter("SIM_ENGINE_FAIL", 0)
-                self.set_parameter("SIM_ENGINE_MUL", 1)
                 self.set_rc(9, 1000)
                 self.reboot_sitl()
                 raise NotAchievedException("Parachute deployed when disabled")
+        self.set_parameter("SIM_ENGINE_FAIL", 0)
+        self.set_parameter("SIM_ENGINE_MUL", 1)
         self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        # Test that we cannot deploy the sink rate with throttle threshold when in standby
+        self.progress("Test should not trip sink rate with throttle check in SB")
+        self.set_parameter("CHUTE_CRT_SINK", 6)
+        # We only want to be able to trip sink with throttle so switch off all other thresholds or make them very large
+        self.set_parameter("CHUTE_MIN_ACCEL", 0)
+        self.set_parameter("CHUTE_CRT_SNK_AB", 0)
+        self.set_parameter("CHUTE_SB_MX_ANG", 1000)
+        self.set_parameter("CHUTE_ALT_MIN", 0)
+        # Take off to hover
+        self.takeoff(40, mode='LOITER', timeout=120)
+        # Total motor failure on all motors
+        self.set_parameter("SIM_ENGINE_FAIL", 15)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        while self.get_sim_time_cached() < tstart + 60:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "BANG" in m.text:
+                self.reboot_sitl()
+                raise NotAchievedException("Parachute deployed on sink rate with throttle in standby")
+        # reset for next test
+        self.set_parameter("SIM_ENGINE_FAIL", 0)
+        self.set_parameter("SIM_ENGINE_MUL", 1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        # Test that we can deploy on absolute sink rate in standby
+        self.progress("Test should trip abs sink rate check in SB")
+        self.set_parameter("CHUTE_CRT_SNK_AB", 8)
+        self.set_parameter("CHUTE_CRT_SINK", 0)
+        self.set_parameter("CHUTE_MIN_ACCEL", 0)
+        self.set_parameter("CHUTE_SB_MX_ANG", 1000)
+        self.set_parameter("CHUTE_ALT_MIN", 0)
+        # Take off to hover
+        self.takeoff(40, mode='LOITER', timeout=120)
+        # Total failure on motor 1 and 4 for tumbling
+        self.set_parameter("SIM_ENGINE_FAIL", 9)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        self.wait_statustext('sink rate', timeout=30)
+        # reset for next test
+        self.set_parameter("SIM_ENGINE_FAIL", 0)
+        self.set_parameter("SIM_ENGINE_MUL", 1)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
