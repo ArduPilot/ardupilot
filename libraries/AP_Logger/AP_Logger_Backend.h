@@ -144,8 +144,10 @@ protected:
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
-    // check if we should rotate when arming
-    void arming_rotate_check(void);
+    // called by PrepForArming to actually start logging
+    virtual void PrepForArming_start_logging(void) {
+        start_new_log();
+    }
 
     /*
       read a block

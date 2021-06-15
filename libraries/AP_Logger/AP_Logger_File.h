@@ -61,7 +61,7 @@ protected:
 
     bool WritesOK() const override;
     bool StartNewLogOK() const override;
-    void PrepForArming() override;
+    void PrepForArming_start_logging() override;
 
 private:
     int _write_fd = -1;

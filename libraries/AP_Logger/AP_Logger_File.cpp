@@ -710,17 +710,14 @@ void AP_Logger_File::stop_logging(void)
 }
 
 /*
-  wrapper for PrepForArming to move start_new_log to the logger thread
+  does start_new_log in the logger thread
  */
-void AP_Logger_File::PrepForArming()
+void AP_Logger_File::PrepForArming_start_logging()
 {
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
-    AP_Logger_Backend::PrepForArming();
-#else
-    arming_rotate_check();
     if (logging_started()) {
         return;
     }
+
     uint32_t start_ms = AP_HAL::millis();
     const uint32_t open_limit_ms = 250;
 
@@ -736,7 +733,6 @@ void AP_Logger_File::PrepForArming()
         }
         hal.scheduler->delay(1);
     }
-#endif
 }
 
 /*
