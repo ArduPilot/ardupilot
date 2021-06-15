@@ -1,0 +1,6 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interace/msg/Num.msg
+// generated code does not contain a copyright notice
+struct Num {
+	long num;
+};

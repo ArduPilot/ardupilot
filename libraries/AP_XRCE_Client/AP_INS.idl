@@ -1,0 +1,7 @@
+struct AP_INS{
+    long accel_count;
+    long gyro_count;
+    float accel_offsets[3];
+    float accel_scale[3];
+    float gyro_offsets[3];
+};
