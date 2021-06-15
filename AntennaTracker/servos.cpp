@@ -74,7 +74,7 @@ void Tracker::update_pitch_position_servo()
     // PITCH2SRV_IMAX   4000.000000
 
     // calculate new servo position
-    float new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.update_error(nav_status.angle_error_pitch);
+    float new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.update_all(nav_status.pidP_target, nav_status.pidP_measurement);
 
     // position limit pitch servo
     if (new_servo_out <= pitch_min_cd) {
@@ -125,7 +125,7 @@ void Tracker::update_pitch_onoff_servo(float pitch) const
 */
 void Tracker::update_pitch_cr_servo(float pitch)
 {
-    const float pitch_out = constrain_float(g.pidPitch2Srv.update_error(nav_status.angle_error_pitch), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
+    const float pitch_out = constrain_float(g.pidPitch2Srv.update_all(nav_status.pidP_target, nav_status.pidP_measurement), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, pitch_out);
 }
 
@@ -187,9 +187,11 @@ void Tracker::update_yaw_position_servo()
       right direction
      */
 
-    float servo_change = g.pidYaw2Srv.update_error(nav_status.angle_error_yaw);
+    float servo_change = g.pidYaw2Srv.update_all(nav_status.pidY_target,
+                                                 nav_status.pidY_measurement);
     servo_change = constrain_float(servo_change, -18000, 18000);
-    float new_servo_out = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_yaw) + servo_change, -18000, 18000);
+    float old_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_yaw);
+    float new_servo_out = constrain_float(old_servo_out + servo_change, -18000, 18000);
 
     // position limit yaw servo
     if (new_servo_out <= -yaw_limit_cd) {
@@ -238,6 +240,6 @@ void Tracker::update_yaw_onoff_servo(float yaw) const
  */
 void Tracker::update_yaw_cr_servo(float yaw)
 {
-    const float yaw_out = constrain_float(-g.pidYaw2Srv.update_error(nav_status.angle_error_yaw), -g.yaw_range * 100/2, g.yaw_range * 100/2);
+    const float yaw_out = constrain_float(-g.pidYaw2Srv.update_all(nav_status.pidY_target, nav_status.pidY_measurement), -g.yaw_range * 100/2, g.yaw_range * 100/2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
 }
