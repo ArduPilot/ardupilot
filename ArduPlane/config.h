@@ -20,8 +20,8 @@
 # define HM_TARGET_ANGLE_DEFAULT      -45    // default value for target angle in hit mode
 #endif
 
-#ifndef HM_ALTITUDE_DIFFERENCE_DEFAULT
-# define HM_ALTITUDE_DIFFERENCE_DEFAULT      150    // default value for altitude difference after which vehicle should get restored
+#ifndef HM_ALT_DIFF_DEFAULT
+# define HM_ALT_DIFF_DEFAULT      150    // default value for altitude difference after which vehicle should get restored
 #endif
 
 #ifndef HM_DEG_EPS_DEFAULT
@@ -33,7 +33,7 @@
 #endif
 
 #ifndef HM_ATTACK_ANGLE_DEFAULT
-# define HM_ATTACK_ANGLE_DEFAULT      -8500    // default value for minimum altitude
+# define HM_ATTACK_ANGLE_DEFAULT      -85    // default value for minimum altitude
 #endif
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////

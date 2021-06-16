@@ -30,11 +30,11 @@ const AP_Param::Info Plane::var_info[] = {
         // @User: Advanced
         GSCALAR(hm_min_alt,         "HM_MIN_ALT", HM_MIN_ALT_DEFAULT),
 
-        // @Param: HM_ALTITUDE_DIFFERENCE
+        // @Param: HM_ALT_DIFF
         // @DisplayName: Hit Mode Altitude Difference
         // @Description: Altitude difference after which vehicle should restore
         // @User: Advanced
-        GSCALAR(hm_altitude_difference,         "HM_ALTITUDE_DIFFERENCE", HM_ALTITUDE_DIFFERENCE_DEFAULT),
+        GSCALAR(hm_alt_diff,         "HM_ALT_DIFF", HM_ALT_DIFF_DEFAULT),
 
         // @Param: HM_DEG_EPS
         // @DisplayName: Hit Mode Angle degree epsilon

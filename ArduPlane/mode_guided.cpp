@@ -22,7 +22,7 @@ bool ModeGuided::_enter()
     const int32_t targetAngle = plane.g.hm_target_angle;
 
     currentBearing = plane.ahrs.yaw_sensor + targetAngle * 100;
-    targetAlt = plane.relative_altitude - plane.g.hm_altitude_difference;
+    targetAlt = plane.relative_altitude - plane.g.hm_alt_diff;
 
     printf("current heading: %d ; target heading %d\n", plane.ahrs.yaw_sensor, currentBearing);
     printf("current altitude: %f \n", plane.relative_altitude);
@@ -52,7 +52,7 @@ void ModeGuided::update()
         else if(plane.relative_altitude > targetAlt && plane.relative_altitude > 150) {
             printf("current altitude: %f \n", plane.relative_altitude);
             stopRoll = true;
-            plane.guided_state.forced_rpy_cd.y = plane.g.hm_attack_angle;
+            plane.guided_state.forced_rpy_cd.y = plane.g.hm_attack_angle * 100;
             plane.guided_state.last_forced_rpy_ms.y = now;
 
             plane.guided_state.forced_rpy_cd.x = 1;

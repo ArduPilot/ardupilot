@@ -347,7 +347,7 @@ public:
         // 254,255: reserved
 
         k_param_hm_target_angle = 256,
-        k_param_hm_altitude_difference,
+        k_param_hm_alt_diff,
         k_param_hm_deg_eps,
         k_param_hm_min_alt,
         k_param_hm_attack_angle
@@ -360,7 +360,7 @@ public:
     };
 
     AP_Int32 hm_target_angle;
-    AP_Int32 hm_altitude_difference;
+    AP_Int32 hm_alt_diff;
     AP_Int32 hm_deg_eps;
     AP_Int32 hm_min_alt;
     AP_Int32 hm_attack_angle;
