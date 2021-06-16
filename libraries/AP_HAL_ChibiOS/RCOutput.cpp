@@ -480,18 +480,6 @@ void RCOutput::disable_ch(uint8_t chan)
     }
 }
 
-bool RCOutput::prepare_for_arming()
-{
-    // force all the ESCs to be active, in the future consider returning false
-    // if ESCs are not active that we require
-    _active_escs_mask = (en_mask << chan_offset);
-#ifdef DISABLE_DSHOT
-    return true;
-#else
-    return _dshot_command_queue.is_empty();
-#endif
-}
-
 void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
     if (chan >= max_channels) {
@@ -1167,7 +1155,6 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
         // send a dshot command
         if (!hal.util->get_soft_armed()
             && is_dshot_protocol(group.current_mode)
-            && group_escs_active(group) // only send when someone is listening
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
