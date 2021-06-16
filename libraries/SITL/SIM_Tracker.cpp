@@ -84,6 +84,13 @@ void Tracker::update(const struct sitl_input &input)
     if (yaw_current_relative < -180) {
         yaw_current_relative += 360;
     }
+
+    if (onoff) {
+        update_onoff_servos(yaw_rate, pitch_rate);
+    } else {
+        update_position_servos(delta_time, yaw_rate, pitch_rate);
+    }
+
     if (yaw_rate > 0 && yaw_current_relative >= yaw_range) {
         yaw_rate = 0;
     }
@@ -96,13 +103,6 @@ void Tracker::update(const struct sitl_input &input)
     if (pitch_rate < 0 && pitch_current_relative <= -pitch_range) {
         pitch_rate = 0;
     }
-
-    if (onoff) {
-        update_onoff_servos(yaw_rate, pitch_rate);
-    } else {
-        update_position_servos(delta_time, yaw_rate, pitch_rate);
-    }
-
 
     // keep it level
     float roll_rate = 0 - roll_current;
