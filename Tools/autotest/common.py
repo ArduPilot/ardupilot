@@ -9043,13 +9043,15 @@ switch value'''
             if m.fix_type >= fix_type:
                 break
 
-    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10):
+    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10, minimum_duration=2):
         '''wait for an attitude (degrees)'''
         if desroll is None and despitch is None:
             raise ValueError("despitch or desroll must be supplied")
         tstart = self.get_sim_time()
+        pass_start = None
         while True:
-            if self.get_sim_time_cached() - tstart > 2:
+            now = self.get_sim_time_cached()
+            if now - tstart > 2:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll_deg = math.degrees(m.roll)
@@ -9062,13 +9064,24 @@ switch value'''
                 s.append("pitch=%f wantpitch=%s" % (pitch_deg, despitch))
             if desyaw is not None:
                 s.append("yaw=%f wantyaw=%s" % (yaw_deg, desyaw))
+            s.append("ps=%s" % str(pass_start))
             self.progress("wait_att: %s" % " ".join(s))
 
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
+                pass_start = None
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
+                pass_start = None
                 continue
             if desyaw is not None and abs(yaw_deg - desyaw) > tolerance:
+                pass_start = None
+                continue
+            if minimum_duration is None:
+                return
+            if pass_start is None:
+                pass_start = now
+                continue
+            if now - pass_start < minimum_duration:
                 continue
             return
 
