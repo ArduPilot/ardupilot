@@ -146,6 +146,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 {
     switch(ch_option) {
     // the following functions do not need to be initialised:
+    case AUX_FUNC::AIRBRAKE:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
     case AUX_FUNC::FLAP:
@@ -241,6 +242,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_soaring_3pos(ch_flag);
         break;
 
+    case AUX_FUNC::AIRBRAKE:
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
         break; // input labels, nothing to do
