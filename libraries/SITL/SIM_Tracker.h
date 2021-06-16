@@ -42,8 +42,8 @@ private:
     const float yawrate = 9.0f;
     const float pitchrate = 1.0f;
     const float pitch_range = 45;
-    const float yaw_range = 170;
-    const float zero_yaw = 270;  // yaw direction at startup
+    const float yaw_range = 90;  // degrees either side of zero_yaw
+    const float zero_yaw = 270;  // yaw direction at startup i.e. directly east
     const float zero_pitch = 10; // pitch at startup
     uint64_t last_debug_us;
 
