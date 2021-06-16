@@ -851,6 +851,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4758,6 +4759,46 @@ void GCS_MAVLINK::send_generator_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_water_depth() const
+{
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr || !rangefinder->has_data_orient(ROTATION_PITCH_270)) {
+        // no rangefinder or not facing downwards
+        return;
+    }
+
+    const bool sensor_healthy = (rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good);
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_position(loc));
+
+    // get temperature
+    float temp_C = 0.0f;
+    IGNORE_RETURN(rangefinder->get_temp(ROTATION_PITCH_270, temp_C));
+
+    mavlink_msg_water_depth_send(
+        chan,
+        AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+        0,                  // sensor id always zero
+        sensor_healthy,     // sensor healthy
+        loc.lat,            // latitude of vehicle
+        loc.lng,            // longitude of vehicle
+        loc.alt * 0.01f,    // altitude of vehicle (MSL)
+        ahrs.get_roll(),    // roll in radians
+        ahrs.get_pitch(),   // pitch in radians
+        ahrs.get_yaw(),     // yaw in radians
+        rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f,    // distance in meters
+        temp_C);            // temperature in degC
+#endif
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5064,6 +5105,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
+        break;
+
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
         break;
 
     default:
