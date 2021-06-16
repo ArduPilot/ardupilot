@@ -589,12 +589,10 @@ void NavEKF3_core::SelectVelPosFusion()
 void NavEKF3_core::FuseVelPosNED()
 {
     // health is set bad until test passed
-    bool velHealth = false; // boolean true if velocity measurements have passed innovation consistency check
     bool posHealth = false; // boolean true if position measurements have passed innovation consistency check
     bool hgtHealth = false; // boolean true if height measurements have passed innovation consistency check
 
-    // declare variables used to check measurement errors
-    Vector3f velInnov;
+    bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
 
     // declare variables used to control access to arrays
     bool fuseData[6] = {false,false,false,false,false,false};
@@ -734,47 +732,47 @@ void NavEKF3_core::FuseVelPosNED()
             }
         }
 
-        // test velocity measurements
+        // Test velocity measurements
         if (fuseVelData) {
-            // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if disabled in sources or not available
             if ((!frontend->sources.haveVelZSource() || PV_AidingMode != AID_ABSOLUTE ||
                  !gpsDataDelayed.have_vz) && !useExtNavVel) {
                 imax = 1;
             }
+
+            // Apply an innovation consistency threshold test
             float innovVelSumSq = 0; // sum of squares of velocity innovations
             float varVelSum = 0; // sum of velocity innovation variances
             for (uint8_t i = 0; i<=imax; i++) {
-                // velocity states start at index 4
                 stateIndex   = i + 4;
-                // calculate innovations using blended and single IMU predicted states
-                velInnov[i]  = stateStruct.velocity[i] - velPosObs[i]; // blended
-                // calculate innovation variance
+                const float innovation = stateStruct.velocity[i] - velPosObs[i];
+                innovVelSumSq += sq(innovation);
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS_DATA_CHECKS[i];
-                // sum the innovation and innovation variances
-                innovVelSumSq += sq(velInnov[i]);
                 varVelSum += varInnovVelPos[i];
             }
-            // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            // calculate the test ratio
             velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01f * (float)frontend->_gpsVelInnovGate, 1.0f)));
-            // fail if the ratio is greater than 1
-            velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // use velocity data if healthy, timed out, or in constant position mode
-            if (velHealth || velTimeout) {
-                velHealth = true;
-                // restart the timeout count
+            if (velTestRatio < 1.0f) {
+                velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
+            }
+
+            // Use velocity data if healthy, timed out or when IMU fault has been detected
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (velCheckPassed || velTimeout || badIMUdata) {
                 // If we are doing full aiding and velocity fusion times out, reset to the external sensor velocity
                 if (PV_AidingMode == AID_ABSOLUTE && velTimeout) {
-                    // reset the velocity to the external sensor velocity
                     ResetVelocity(resetDataSource::DEFAULT);
-                    // don't fuse external sensor velocity data on this time step
+
+                    // Don't fuse the same data we have used to reset states.
                     fuseVelData = false;
+
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     velTestRatio = 0.0f;
                 }
+            } else {
+                fuseVelData = false;
             }
         }
 
@@ -819,7 +817,7 @@ void NavEKF3_core::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && velHealth) {
+        if (fuseVelData) {
             fuseData[0] = true;
             fuseData[1] = true;
             if (useGpsVertVel || useExtNavVel) {
