@@ -191,6 +191,7 @@ void SRV_Channels::update_aux_servo_function(void)
 }
 
 /// Should be called after the the servo functions have been initialized
+/// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
     hal.rcout->set_default_rate(uint16_t(_singleton->default_rate.get()));
@@ -220,6 +221,9 @@ void SRV_Channels::enable_aux_servos()
             c.output_ch();
         }
     }
+
+    // propagate channel masks to the ESCS
+    hal.rcout->update_channel_masks();
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr->update();
