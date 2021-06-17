@@ -96,6 +96,11 @@ public:
     bool use(uint8_t i) const;
     bool use(void) const { return use(primary); }
 
+    // force disabling of all airspeed sensors
+    void force_disable_use(bool value) {
+        _force_disable_use = value;
+    }
+
     // return true if airspeed is enabled
     bool enabled(uint8_t i) const {
         if (i < AIRSPEED_MAX_SENSORS) {
@@ -235,6 +240,9 @@ private:
     } state[AIRSPEED_MAX_SENSORS];
 
     bool calibration_enabled;
+
+    // can be set to true to disable the use of the airspeed sensor
+    bool _force_disable_use;
 
     // current primary sensor
     uint8_t primary;
