@@ -234,7 +234,7 @@ private:
         } failures;
     } state[AIRSPEED_MAX_SENSORS];
 
-    bool calibration_enabled = false;
+    bool calibration_enabled;
 
     // current primary sensor
     uint8_t primary;
