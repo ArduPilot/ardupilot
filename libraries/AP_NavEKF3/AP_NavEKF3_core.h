@@ -86,7 +86,8 @@
 
 // maximum number of times the vertical velocity variance can hit the lower limit before the
 // associated states, variances and covariances are reset
-#define VERT_VEL_VAR_CLIP_COUNT_LIM 5
+#define EKF_TARGET_RATE_HZ uint32_t(1.0f / EKF_TARGET_DT)
+#define VERT_VEL_VAR_CLIP_COUNT_LIM (5 * EKF_TARGET_RATE_HZ)
 
 class NavEKF3_core : public NavEKF_core_common
 {
@@ -944,7 +945,7 @@ private:
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
-    uint8_t vertVelVarClipCount;    // number of times the vertical velocity variance has exveeded the lower limit and been clipped since the last reset
+    uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Matrix24 P;                     // covariance matrix

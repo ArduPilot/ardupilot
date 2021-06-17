@@ -232,7 +232,7 @@ void NavEKF3_core::InitialiseVariables()
     hgtTimeout = true;
     tasTimeout = true;
     badIMUdata = false;
-    vertVelVarClipCount = 0;
+    vertVelVarClipCounter = 0;
     finalInflightYawInit = false;
     dtIMUavg = ins.get_loop_delta_t();
     dtEkfAvg = EKF_TARGET_DT;
@@ -1717,6 +1717,10 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
     // constrain values to prevent ill-conditioning
     ConstrainVariances();
 
+    if (vertVelVarClipCounter > 0) {
+        vertVelVarClipCounter--;
+    }
+
     calcTiltErrorVariance();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1806,8 +1810,11 @@ void NavEKF3_core::ConstrainVariances()
     // check for collapse of the vertical velocity variance
     if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
         P[6][6] = VEL_STATE_MIN_VARIANCE;
-        vertVelVarClipCount++;
-        if (vertVelVarClipCount > VERT_VEL_VAR_CLIP_COUNT_LIM) {
+        // this counter is decremented by 1 each prediction cycle in CovariancePrediction
+        // resulting in the count from each clip event fading to zero over 1 second which
+        // is sufficient to capture collapse from fusion of the lowest update rate sensor
+        vertVelVarClipCounter += EKF_TARGET_RATE_HZ;
+        if (vertVelVarClipCounter > VERT_VEL_VAR_CLIP_COUNT_LIM) {
             // reset the corresponding covariances
             zeroRows(P,6,6);
             zeroCols(P,6,6);
@@ -1821,7 +1828,7 @@ void NavEKF3_core::ConstrainVariances()
             {
                 P[6][6] = sq(frontend->_gpsVertVelNoise);
             }
-            vertVelVarClipCount = 0;
+            vertVelVarClipCounter = 0;
         }
     }
 
