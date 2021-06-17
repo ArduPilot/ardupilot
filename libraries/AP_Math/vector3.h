@@ -85,6 +85,12 @@ public:
         , y(y0)
         , z(z0) {}
 
+    //Create a Vector3 from a Vector2 with z
+    constexpr Vector3<T>(const Vector2<T> &v0, const T z0)
+        : x(v0.x)
+        , y(v0.y)
+        , z(z0) {}
+
     // test for equality
     bool operator ==(const Vector3<T> &v) const;
 
