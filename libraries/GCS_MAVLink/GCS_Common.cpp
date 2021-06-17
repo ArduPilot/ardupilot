@@ -1075,11 +1075,6 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
 
 void GCS_MAVLINK::update_send()
 {
-    if (!hal.scheduler->in_delay_callback()) {
-        // AP_Logger will not send log data if we are armed.
-        AP::logger().handle_log_send();
-    }
-
     send_ftp_replies();
 
     if (!deferred_messages_initialised) {
