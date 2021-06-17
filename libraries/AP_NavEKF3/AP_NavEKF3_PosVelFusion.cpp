@@ -100,9 +100,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.y = gps_corrected.pos.y  + 0.001f*gps_corrected.vel.y*(float(imuDataDelayed.time_ms) - float(gps_corrected.time_ms));
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
-            // clear the timeout flags and counters
-            posTimeout = false;
-            lastPosPassTime_ms = imuSampleTime_ms;
         } else if ((imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
             // use the range beacon data as a second preference
             stateStruct.position.x = receiverPos.x;
@@ -110,9 +107,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances from the beacon alignment filter
             P[7][7] = receiverPosCov[0][0];
             P[8][8] = receiverPosCov[1][1];
-            // clear the timeout flags and counters
-            rngBcnTimeout = false;
-            lastRngBcnPassTime_ms = imuSampleTime_ms;
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
             // use external nav data as the third preference
@@ -120,9 +114,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.y = extNavDataDelayed.pos.y;
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
-            // clear the timeout flags and counters
-            posTimeout = false;
-            lastPosPassTime_ms = imuSampleTime_ms;
 #endif // EK3_FEATURE_EXTERNAL_NAV
         }
     }
@@ -141,6 +132,10 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+
+    // clear the timeout flags and counters
+    posTimeout = false;
+    lastPosPassTime_ms = imuSampleTime_ms;
 }
 
 // reset the stateStruct's NE position to the specified position
@@ -711,7 +706,6 @@ void NavEKF3_core::FuseVelPosNED()
             // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
             // from the measurement un-opposed if test threshold is exceeded.
             if (posCheckPassed || posTimeout || badIMUdata) {
-                lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
