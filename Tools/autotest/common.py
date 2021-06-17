@@ -3681,15 +3681,20 @@ class AutoTest(ABC):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.drain_mav()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                     1,  # ARM
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=timeout)
+        try:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                         1,  # ARM
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         timeout=timeout)
+        except ValueError as e:
+            # statustexts are queued; give it a second to arrive:
+            self.delay_sim_time(5)
+            raise e
         try:
             self.wait_armed()
         except AutoTestTimeoutException:
@@ -5404,8 +5409,6 @@ class AutoTest(ABC):
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
                 self.arm_vehicle()
-                # statustexts are queued; give it a second to arrive:
-                self.delay_sim_time(5)
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
