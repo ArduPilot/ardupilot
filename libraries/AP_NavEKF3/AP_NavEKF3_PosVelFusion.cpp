@@ -590,9 +590,9 @@ void NavEKF3_core::FuseVelPosNED()
 {
     // health is set bad until test passed
     bool posHealth = false; // boolean true if position measurements have passed innovation consistency check
-    bool hgtHealth = false; // boolean true if height measurements have passed innovation consistency check
 
     bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
+    bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to control access to arrays
     bool fuseData[6] = {false,false,false,false,false,false};
@@ -776,43 +776,47 @@ void NavEKF3_core::FuseVelPosNED()
             }
         }
 
-        // test height measurements
+        // Test height measurements
         if (fuseHgtData) {
-            // calculate height innovations
+            // Calculate height innovations
             innovVelPos[5] = stateStruct.position.z - velPosObs[5];
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
-            // calculate the innovation consistency test ratio
+
+            // Calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
 
-            // when on ground we accept a larger test ratio to allow
-            // the filter to handle large switch on IMU bias errors
-            // without rejecting the height sensor
-            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0 : 1.0;
+            // When on ground we accept a larger test ratio to allow the filter to handle large switch on IMU
+            // bias errors without rejecting the height sensor.
+            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0f : 1.0f;
+            if (hgtTestRatio < maxTestRatio) {
+                hgtCheckPassed = true;
+                lastHgtPassTime_ms = imuSampleTime_ms;
+            }
 
-            // fail if the ratio is > 1, but don't fail if bad IMU data
-            hgtHealth = ((hgtTestRatio < maxTestRatio) || badIMUdata);
-
-            // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout) {
+            // Use height data if innovation check passed or timed out or if bad IMU data
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (hgtCheckPassed || hgtTimeout || badIMUdata) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
-                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
+                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3f;
                     const float hgtInnovFiltTC = 2.0f;
-                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
-                    hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
+                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0f, 1.0f);
+                    hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState)*alpha;
                 } else {
                     hgtInnovFiltState = 0.0f;
                 }
 
-                // if timed out, reset the height
                 if (hgtTimeout) {
                     ResetHeight();
+
+                    // Don't fuse the same data we have used to reset states.
+                    fuseHgtData = false;
                 }
 
-                // If we have got this far then declare the height data as healthy and reset the timeout counter
-                hgtHealth = true;
-                lastHgtPassTime_ms = imuSampleTime_ms;
+            } else {
+                fuseHgtData = false;
             }
         }
 
@@ -828,7 +832,7 @@ void NavEKF3_core::FuseVelPosNED()
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if (fuseHgtData && hgtHealth) {
+        if (fuseHgtData) {
             fuseData[5] = true;
         }
 
