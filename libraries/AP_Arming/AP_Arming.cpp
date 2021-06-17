@@ -578,6 +578,10 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         check_failed(ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
         check_passed = false;
     }
+    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
+    }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
         if (!rc().arming_skip_checks_rpy()) {
