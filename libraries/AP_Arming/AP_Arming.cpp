@@ -105,7 +105,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
                                                                                            AP_PARAM_FRAME_ROVER |
                                                                                            AP_PARAM_FRAME_COPTER |
                                                                                            AP_PARAM_FRAME_TRICOPTER |
-                                                                                           AP_PARAM_FRAME_HELI),
+                                                                                           AP_PARAM_FRAME_HELI |
+                                                                                           AP_PARAM_FRAME_BLIMP),
 
     // @Param: MIS_ITEMS
     // @DisplayName: Required mission items
