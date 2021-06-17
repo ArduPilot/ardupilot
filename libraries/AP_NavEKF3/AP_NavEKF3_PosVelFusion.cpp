@@ -274,6 +274,7 @@ void NavEKF3_core::ResetHeight(void)
     {
         P[6][6] = sq(frontend->_gpsVertVelNoise);
     }
+    vertVelVarClipCount = 0;
 }
 
 // Zero the EKF height datum

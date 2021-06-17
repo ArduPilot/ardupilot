@@ -80,6 +80,14 @@
 // number of continuous valid GSF yaw estimates required to confirm valid hostory
 #define GSF_YAW_VALID_HISTORY_THRESHOLD 5
 
+// minimum variances allowed for velocity and position states
+#define VEL_STATE_MIN_VARIANCE 1E-4f
+#define POS_STATE_MIN_VARIANCE 1E-4f
+
+// maximum number of times the vertical velocity variance can hit the lower limit before the
+// associated states, variances and covariances are reset
+#define VERT_VEL_VAR_CLIP_COUNT_LIM 5
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -936,6 +944,7 @@ private:
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
+    uint8_t vertVelVarClipCount;    // number of times the vertical velocity variance has exveeded the lower limit and been clipped since the last reset
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Matrix24 P;                     // covariance matrix
