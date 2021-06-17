@@ -113,7 +113,6 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
-
     return true;
 }
 

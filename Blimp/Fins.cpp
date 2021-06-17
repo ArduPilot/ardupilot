@@ -1,6 +1,6 @@
 #include "Blimp.h"
 
-// This is the scale used for RC inputs so that they can be scaled to the float point values used in the sin wave code.
+// This is the scale used for RC inputs so that they can be scaled to the float point values used in the sine wave code.
 #define FIN_SCALE_MAX 1000
 
 /*
@@ -44,8 +44,6 @@ void Fins::setup_fins()
     SRV_Channels::set_angle(SRV_Channel::k_motor2, FIN_SCALE_MAX);
     SRV_Channels::set_angle(SRV_Channel::k_motor3, FIN_SCALE_MAX);
     SRV_Channels::set_angle(SRV_Channel::k_motor4, FIN_SCALE_MAX);
-
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MIR: All fins have been added.");
 }
 
 void Fins::add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float down_amp_fac, float yaw_amp_fac,
@@ -92,7 +90,7 @@ void Fins::output()
                    fabsf(_down_amp_factor[i]*down_out) + fabsf(_yaw_amp_factor[i]*yaw_out);
         _off[i] = _right_off_factor[i]*right_out + _front_off_factor[i]*front_out +
                   _down_off_factor[i]*down_out + _yaw_off_factor[i]*yaw_out;
-        _omm[i] = 1;
+        _freq[i] = 1;
 
         _num_added = 0;
         if (max(0,_right_amp_factor[i]*right_out) > 0.0f) {
@@ -119,12 +117,11 @@ void Fins::output()
         if (turbo_mode) {
             //double speed fins if offset at max...
             if (_amp[i] <= 0.6 && fabsf(_off[i]) >= 0.4) {
-                _omm[i] = 2;
+                _freq[i] = 2;
             }
         }
-
         // finding and outputting current position for each servo from sine wave
-        _pos[i]= _amp[i]*cosf(freq_hz * _omm[i] * _time * 2 * M_PI) + _off[i];
+        _pos[i]= _amp[i]*cosf(freq_hz * _freq[i] * _time * 2 * M_PI) + _off[i];
         SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _pos[i] * FIN_SCALE_MAX);
     }
 
@@ -141,12 +138,3 @@ void Fins::output_min()
     yaw_out   = 0;
     Fins::output();
 }
-
-// TODO - Probably want to completely get rid of the desired spool state thing.
-void Fins::set_desired_spool_state(DesiredSpoolState spool)
-{
-    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
-        // Set DesiredSpoolState only if it is either armed or it wants to shut down.
-        _spool_desired = spool;
-    }
-};

@@ -154,24 +154,8 @@ bool AP_Arming_Blimp::parameter_checks(bool display_failure)
                 return false;
             }
         }
-        if (blimp.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
-            // FS_GCS_ENABLE == 2 has been removed
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
-        }
-
-        // lean angle parameter check
-        if (blimp.aparm.angle_max < 1000 || blimp.aparm.angle_max > 8000) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check ANGLE_MAX");
-            return false;
-        }
-
-        // pilot-speed-up parameter check
-        if (blimp.g.pilot_speed_up <= 0) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
-            return false;
-        }
     }
-
+    
     return true;
 }
 
