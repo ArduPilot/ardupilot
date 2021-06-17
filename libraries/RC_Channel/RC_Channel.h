@@ -511,6 +511,13 @@ public:
         return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
 
+    // check if flight mode channel is assigned RC option
+    // return true if assigned
+    bool flight_mode_channel_conflicts_with_rc_option();
+
+    // flight_mode_channel_number must be overridden in vehicle specific code
+    virtual int8_t flight_mode_channel_number() const = 0;
+
 protected:
 
     enum class Option {
@@ -542,8 +549,6 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
 
-    // flight_mode_channel_number must be overridden in vehicle specific code
-    virtual int8_t flight_mode_channel_number() const = 0;
     RC_Channel *flight_mode_channel();
 
     // Allow override by default at start
