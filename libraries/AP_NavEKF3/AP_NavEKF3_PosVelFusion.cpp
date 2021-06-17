@@ -589,9 +589,8 @@ void NavEKF3_core::SelectVelPosFusion()
 void NavEKF3_core::FuseVelPosNED()
 {
     // health is set bad until test passed
-    bool posHealth = false; // boolean true if position measurements have passed innovation consistency check
-
     bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
+    bool posCheckPassed = false; // boolean true if position measurements have passed innovation consistency check
     bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to control access to arrays
@@ -689,46 +688,60 @@ void NavEKF3_core::FuseVelPosNED()
             }
         }
 
-        // calculate innovations and check GPS data validity using an innovation consistency check
-        // test position measurements
+        // Test horizontal position measurements
         if (fusePosData) {
-            // test horizontal position measurements
             innovVelPos[3] = stateStruct.position.x - velPosObs[3];
             innovVelPos[4] = stateStruct.position.y - velPosObs[4];
             varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
-            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+
+            // Apply an innovation consistency threshold test
+            // Don't allow test to fail if not navigating and using a constant position
+            // assumption to constrain tilt errors because innovations can become large
+            // due to vehicle motion.
             float maxPosInnov2 = sq(MAX(0.01f * (float)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
-            posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // use position data if healthy or timed out
-            if (PV_AidingMode == AID_NONE) {
-                posHealth = true;
+            if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
+                posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
-            } else if (posHealth || posTimeout) {
-                posHealth = true;
+            }
+
+            // Use position data if healthy or timed out or bad IMU data
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (posCheckPassed || posTimeout || badIMUdata) {
+                posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
-                    // don't fuse external sensor data on this time step
+
+                    // Don't fuse the same data we have used to reset states.
                     fusePosData = false;
+
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
                     P[7][7] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
                     P[8][8] = P[7][7];
+
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
-                    // also reset velocity if it has timed out
+
+                    // Reset velocity if it has timed out
                     if (velTimeout) {
-                        // reset the velocity to the external sensor velocity
                         ResetVelocity(resetDataSource::DEFAULT);
+
+                        // Don't fuse the same data we have used to reset states.
                         fuseVelData = false;
+
+                        // Reset the normalised innovation to avoid failing the bad fusion tests
                         velTestRatio = 0.0f;
                     }
                 }
+            } else {
+                fusePosData = false;
             }
         }
 
@@ -828,7 +841,7 @@ void NavEKF3_core::FuseVelPosNED()
                 fuseData[2] = true;
             }
         }
-        if (fusePosData && posHealth) {
+        if (fusePosData) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
