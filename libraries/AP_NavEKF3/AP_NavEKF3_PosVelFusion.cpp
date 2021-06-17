@@ -595,7 +595,7 @@ void NavEKF3_core::FuseVelPosNED()
     bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to control access to arrays
-    bool fuseData[6] = {false,false,false,false,false,false};
+    bool fuseData[6] {};
     uint8_t stateIndex;
     uint8_t obsIndex;
 
