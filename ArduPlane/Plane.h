@@ -1079,12 +1079,6 @@ private:
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
 
-    // setup.cpp
-    void report_compass();
-    void print_blanks(int16_t num);
-    void print_divider(void);
-    void print_enabled(bool b);
-
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
