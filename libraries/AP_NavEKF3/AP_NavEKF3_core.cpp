@@ -232,6 +232,7 @@ void NavEKF3_core::InitialiseVariables()
     hgtTimeout = true;
     tasTimeout = true;
     badIMUdata = false;
+    vertVelVarClipCount = 0;
     finalInflightYawInit = false;
     dtIMUavg = ins.get_loop_delta_t();
     dtEkfAvg = EKF_TARGET_DT;
@@ -1800,9 +1801,31 @@ void NavEKF3_core::ForceSymmetry()
 void NavEKF3_core::ConstrainVariances()
 {
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0f); // attitude error
-    for (uint8_t i=4; i<=6; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // velocities
-    for (uint8_t i=7; i<=8; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e6f);
-    P[9][9] = constrain_float(P[9][9],0.0f,1.0e6f); // vertical position
+    for (uint8_t i=4; i<=5; i++) P[i][i] = constrain_float(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3f); // NE velocity
+
+    // check for collapse of the vertical velocity variance
+    if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
+        P[6][6] = VEL_STATE_MIN_VARIANCE;
+        vertVelVarClipCount++;
+        if (vertVelVarClipCount > VERT_VEL_VAR_CLIP_COUNT_LIM) {
+            // reset the corresponding covariances
+            zeroRows(P,6,6);
+            zeroCols(P,6,6);
+
+            // set the variances to the measurement variance
+        #if EK3_FEATURE_EXTERNAL_NAV
+            if (useExtNavVel) {
+                P[6][6] = sq(extNavVelDelayed.err);
+            } else
+        #endif
+            {
+                P[6][6] = sq(frontend->_gpsVertVelNoise);
+            }
+            vertVelVarClipCount = 0;
+        }
+    }
+
+    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_float(P[i][i], POS_STATE_MIN_VARIANCE, 1.0e6f); // NED position
 
     if (!inhibitDelAngBiasStates) {
         for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_float(P[i][i],0.0f,sq(0.175f * dtEkfAvg));
