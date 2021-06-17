@@ -6845,6 +6845,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode('LAND')
         self.wait_disarmed()
         durations = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        self.progress("touchdown-durations: %s" % str(durations))
         duration = durations[0]
         self.progress("takeoff-expected-duration %f" % (duration,))
         want_lt = 5
@@ -6866,11 +6867,12 @@ class AutoTestCopter(AutoTest):
         self.change_mode('LAND')
         self.wait_disarmed()
 
-        gots = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
-        got = gots[2]
+        durations = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        self.progress("touchdown-durations: %s" % str(durations))
+        duration = durations[-1]
         expected = 23  # this is the time in the final descent phase of LAND
-        if abs(got - expected) > 5:
-            raise NotAchievedException("Was expecting roughly %fs of touchdown expected, got %f" % (expected, got))
+        if abs(duration - expected) > 5:
+            raise NotAchievedException("Was expecting roughly %fs of touchdown expected, got %f" % (expected, duration))
 
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
