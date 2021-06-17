@@ -146,4 +146,5 @@ NotchFilterParams::NotchFilterParams(void)
    instantiate template classes
  */
 template class NotchFilter<float>;
+template class NotchFilter<Vector2f>;
 template class NotchFilter<Vector3f>;
