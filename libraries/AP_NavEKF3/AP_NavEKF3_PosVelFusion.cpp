@@ -711,7 +711,6 @@ void NavEKF3_core::FuseVelPosNED()
             // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
             // from the measurement un-opposed if test threshold is exceeded.
             if (posCheckPassed || posTimeout || badIMUdata) {
-                posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
