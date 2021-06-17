@@ -89,7 +89,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: s
     // @Range: 0 30
     // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+    GSCALAR(telem_delay, "TELEM_DELAY",     0),
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
@@ -112,49 +112,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 100 900
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
-
-    // @Param: WP_YAW_BEHAVIOR
-    // @DisplayName: Yaw behaviour during missions
-    // @Description: Determines how the autopilot controls the yaw during missions and RTL
-    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
-    // @User: Standard
-    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
-
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: LAND_SPEED_HIGH
-    // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
-    // @Units: cm/s
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
-
-    // @Param: PILOT_SPEED_UP
-    // @DisplayName: Pilot maximum vertical speed ascending
-    // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
-
-    // @Param: PILOT_ACCEL_Z
-    // @DisplayName: Pilot vertical acceleration
-    // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
@@ -271,39 +228,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
 
-    // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 1000 8000
-    // @User: Advanced
-    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
-
-    // @Param: PHLD_BRAKE_RATE
-    // @DisplayName: PosHold braking rate
-    // @Description: PosHold flight mode's rotation rate during braking in deg/sec
-    // @Units: deg/s
-    // @Range: 4 12
-    // @User: Advanced
-    GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
-
-    // @Param: PHLD_BRAKE_ANGLE
-    // @DisplayName: PosHold braking angle max
-    // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 2000 4500
-    // @User: Advanced
-    GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
-
-    // @Param: LAND_REPOSITION
-    // @DisplayName: Land repositioning
-    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
-    // @Values: 0:No repositioning, 1:Repositioning
-    // @User: Advanced
-    GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
-
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
@@ -334,25 +258,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
-    // @Param: ACRO_RP_P
-    // @DisplayName: Acro Roll and Pitch P gain
-    // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-    GSCALAR(acro_rp_p,                 "ACRO_RP_P",           ACRO_RP_P),
-
-    // @Param: ACRO_YAW_P
-    // @DisplayName: Acro Yaw P gain
-    // @Description: Converts pilot yaw input into a desired rate of rotation.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-    GSCALAR(acro_yaw_p,                 "ACRO_YAW_P",           ACRO_YAW_P),
-
     // variables not in the g class which contain EEPROM saved variables
-
-    // @Group: RELAY_
-    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY_", AP_Relay),
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
@@ -361,26 +267,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,            "INS_", AP_InertialSensor),
-
-    // // @Group: WPNAV_
-    // // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    // GOBJECTPTR(wp_nav, "WPNAV_",       AC_WPNav),
-
-    // // @Group: LOIT_
-    // // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
-    // GOBJECTPTR(loiter_nav, "LOIT_", AC_Loiter),
-
-    // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
-    // #if FRAME_CONFIG == HELI_FRAME
-    //     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Heli),
-    // #else
-    //     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
-    // #endif
-
-    // @Group: PSC
-    // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    // GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -453,9 +339,9 @@ const AP_Param::Info Blimp::var_info[] = {
     GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -505,28 +391,12 @@ const AP_Param::Info Blimp::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: WP_NAVALT_MIN
-    // @DisplayName: Minimum navigation altitude
-    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
-
     // @Param: DEV_OPTIONS
     // @DisplayName: Development options
     // @Description: Bitmask of developer options. The meanings of the bit fields in this parameter may vary at any time. Developers should check the source code for current meaning
-    // @Bitmask: 0:ADSBMavlinkProcessing,1:DevOptionVFR_HUDRelativeAlt,2:SetAttitudeTarget_ThrustAsThrust
+    // @Bitmask: 0:Unknown
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
-
-    // @Param: ACRO_Y_EXPO
-    // @DisplayName: Acro Yaw Expo
-    // @Description: Acro yaw expo to allow faster rotation when stick at edges
-    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
-    // @Range: -0.5 1.0
-    // @User: Advanced
-    AP_GROUPINFO("ACRO_Y_EXPO", 9, ParametersG2, acro_y_expo, ACRO_Y_EXPO_DEFAULT),
-
 
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
@@ -543,8 +413,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
-    // @Description: Controls major frame class for multiblimp component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca
+    // @Description: Controls major frame class for blimp.
+    // @Values: 0:Finnedblimp
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),
@@ -557,12 +427,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels_Blimp),
 
-    // // 18 was used by AP_VisualOdom
-
-    // // @Group: TCAL
-    // // @Path: ../libraries/AP_TempCalibration/AP_TempCalibration.cpp
-    // AP_SUBGROUPINFO(temp_calibration, "TCAL", 19, ParametersG2, AP_TempCalibration),
-
     // @Param: PILOT_SPEED_DN
     // @DisplayName: Pilot maximum vertical speed descending
     // @Description: The maximum vertical descending velocity the pilot may request in cm/s
@@ -571,15 +435,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
-
-    // @Param: LAND_ALT_LOW
-    // @DisplayName: Land alt low
-    // @Description: Altitude during Landing at which vehicle slows to LAND_SPEED
-    // @Units: cm
-    // @Range: 100 10000
-    // @Increment: 10
-    // @User: Advanced
-    AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low, 1000),
 
 #ifdef ENABLE_SCRIPTING
     // @Group: SCR_
@@ -633,7 +488,6 @@ ParametersG2::ParametersG2(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
-
 
 void Blimp::load_parameters(void)
 {
