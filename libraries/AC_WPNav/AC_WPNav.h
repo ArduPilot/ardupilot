@@ -155,10 +155,6 @@ public:
     /// spline methods
     ///
 
-    // get target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() const { return _pos_control.get_yaw_cd(); }
-    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
-
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     ///     next_destination should be the next segment's destination
@@ -195,6 +191,10 @@ public:
     float get_roll() const { return _pos_control.get_roll_cd(); }
     float get_pitch() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
+
+    // get target yaw in centi-degrees
+    float get_yaw() const { return _pos_control.get_yaw_cd(); }
+    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
