@@ -452,7 +452,6 @@ void Blimp::log_init(void)
 
 #else // LOGGING_ENABLED
 
-void Blimp::Log_Write_Control_Tuning() {}
 void Blimp::Log_Write_Performance() {}
 void Blimp::Log_Write_Attitude(void) {}
 void Blimp::Log_Write_EKF_POS() {}

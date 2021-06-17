@@ -1,11 +1,9 @@
 #include "Blimp.h"
-
 /*
- * Init and run calls for stabilize flight mode
+ * Init and run calls for land flight mode
  */
 
-// manual_run - runs the main manual controller
-// should be called at 100hz or more
+// Runs the main land controller
 void ModeLand::run()
 {
     //stop moving

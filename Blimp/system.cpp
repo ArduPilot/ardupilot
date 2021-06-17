@@ -213,13 +213,8 @@ void Blimp::update_auto_armed()
             set_auto_armed(false);
             return;
         }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
+        // if in a manual flight mode and throttle is zero, auto-armed should become false
         if (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
-            set_auto_armed(false);
-        }
-        // if heliblimps are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if (ap.land_complete && motors->get_spool_state() != Fins::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
     }

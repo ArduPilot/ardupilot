@@ -154,13 +154,5 @@ void Blimp::set_throttle_zero_flag(int16_t throttle_control)
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
         ap.throttle_zero = true;
     }
-    //MIR What does this mean??
-}
-
-/*
-  return the throttle input for mid-stick as a control-in value
- */
-int16_t Blimp::get_throttle_mid(void)
-{
-    return channel_down->get_control_mid();
+    //TODO: This may not be needed
 }
