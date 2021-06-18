@@ -204,10 +204,10 @@ template <typename T>
 bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const Vector2<T>& seg_end, const Vector2<T>& circle_center, float radius, Vector2<T>& intersection)
 {
     // calculate segment start and end as offsets from circle's center
-    const Vector2f seg_start_local = seg_start - circle_center;
+    const Vector2<T> seg_start_local = seg_start - circle_center;
 
     // calculate vector from start to end
-    const Vector2f seg_end_minus_start = seg_end - seg_start;
+    const Vector2<T> seg_end_minus_start = seg_end - seg_start;
 
     const float a = sq(seg_end_minus_start.x) + sq(seg_end_minus_start.y);
     const float b = 2 * ((seg_end_minus_start.x * seg_start_local.x) + (seg_end_minus_start.y * seg_start_local.y));
@@ -448,8 +448,21 @@ void Vector2<T>::rotate(float angle_rad)
     y = ry;
 }
 
-// only define for float
+template <typename T>
+Vector2<double> Vector2<T>::todouble(void) const
+{
+    return Vector2d{x,y};
+}
+
+template <typename T>
+Vector2<float> Vector2<T>::tofloat(void) const
+{
+    return Vector2f{float(x),float(y)};
+}
+
+// define for float and double
 template class Vector2<float>;
+template class Vector2<double>;
 
 // define some ops for int and long
 template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
