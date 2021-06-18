@@ -274,7 +274,7 @@ protected:
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
 
     // position, velocity and acceleration targets passed to position controller
-    float       _pos_terrain_offset;
+    postype_t   _pos_terrain_offset;
     float       _vel_terrain_offset;
     float       _accel_terrain_offset;
 

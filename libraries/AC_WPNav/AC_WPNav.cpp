@@ -398,14 +398,18 @@ void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_wp_stopping_point_xy(Vector2f& stopping_point) const
 {
-	_pos_control.get_stopping_point_xy_cm(stopping_point);
+    Vector2p stop;
+    _pos_control.get_stopping_point_xy_cm(stop);
+    stopping_point = stop.tofloat();
 }
 
 /// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
 void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy_cm(stopping_point.xy());
-    _pos_control.get_stopping_point_z_cm(stopping_point.z);
+    Vector3p stop;
+    _pos_control.get_stopping_point_xy_cm(stop.xy());
+    _pos_control.get_stopping_point_z_cm(stop.z);
+    stopping_point = stop.tofloat();
 }
 
 /// advance_wp_target_along_track - move target location along track from origin to destination
@@ -463,9 +467,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     // input shape the terrain offset
     shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
-        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
-        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
-        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), 0.05f, dt);
+                        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
+                        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
+                        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), 0.05f, dt);
 
     update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
 
@@ -475,7 +479,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel.z += _accel_terrain_offset;
 
     // pass new target to the position controller
-    _pos_control.set_pos_vel_accel(target_pos, target_vel, target_accel);
+    _pos_control.set_pos_vel_accel(target_pos.topostype(), target_vel, target_accel);
 
     // check if we've reached the waypoint
     if (!_flags.reached_destination) {
