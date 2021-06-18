@@ -448,18 +448,6 @@ void Vector2<T>::rotate(float angle_rad)
     y = ry;
 }
 
-template <typename T>
-Vector2<double> Vector2<T>::todouble(void) const
-{
-    return Vector2d{x,y};
-}
-
-template <typename T>
-Vector2<float> Vector2<T>::tofloat(void) const
-{
-    return Vector2f{float(x),float(y)};
-}
-
 // define for float and double
 template class Vector2<float>;
 template class Vector2<double>;

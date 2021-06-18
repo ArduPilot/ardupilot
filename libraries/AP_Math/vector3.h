@@ -268,8 +268,12 @@ public:
     /*
       conversion to/from double
      */
-    Vector3<float> tofloat() const;
-    Vector3<double> todouble() const;
+    Vector3<float> tofloat() const {
+        return Vector3<float>{float(x),float(y),float(z)};
+    }
+    Vector3<double> todouble() const {
+        return Vector3<double>{x,y,z};
+    }
 
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the

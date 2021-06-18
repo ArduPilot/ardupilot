@@ -165,8 +165,12 @@ struct Vector2
     /*
       conversion to/from double
      */
-    Vector2<float> tofloat() const;
-    Vector2<double> todouble() const;
+    Vector2<float> tofloat() const {
+        return Vector2<float>{float(x),float(y)};
+    }
+    Vector2<double> todouble() const {
+        return Vector2<double>{x,y};
+    }
     
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
