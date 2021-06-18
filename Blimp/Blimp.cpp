@@ -145,6 +145,9 @@ void Blimp::full_rate_logging()
     if (should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
         Log_Write_Attitude();
     }
+    if (should_log(MASK_LOG_PID)) {
+        Log_Write_PIDs();
+    }
 }
 
 // ten_hz_logging_loop
@@ -220,6 +223,14 @@ void Blimp::read_AHRS(void)
 {
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
+    
+    IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_home(pos_ned));
+
+    vel_yaw = ahrs.get_yaw_rate_earth();
+    Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
+    vel_ned_filtd = {vel_xy_filtd.x, vel_xy_filtd.y, vel_z_filter.apply(vel_ned.z)};
+    vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
 }
 
 // read baro and log control tuning
@@ -237,6 +248,21 @@ void Blimp::update_altitude()
     }
 }
 
+//Conversions are in 2D so that up remains up in world frame when the blimp is not exactly level.
+void Blimp::rotate_BF_to_NE(float &x, float &y)
+{
+    float ne_x = x*ahrs.cos_yaw() - y*ahrs.sin_yaw();
+    float ne_y = x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
+    x = ne_x;
+    y = ne_y;
+}
+
+void Blimp::rotate_NE_to_BF(float &x, float &y)
+{
+    float bf_x = x*ahrs.cos_yaw() + y*ahrs.sin_yaw();
+    float bf_y = -x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
+    x = bf_x;
+    y = bf_y;
 
 }
 

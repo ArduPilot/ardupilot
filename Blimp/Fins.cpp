@@ -80,6 +80,12 @@ void Fins::output()
 
     blimp.Write_FINI(right_out, front_out, down_out, yaw_out);
 
+    //Constrain after logging so as to still show when sub-optimal tuning is causing massive overshoots.
+    right_out = constrain_float(right_out, -1, 1);
+    front_out = constrain_float(front_out, -1, 1);
+    down_out = constrain_float(down_out, -1, 1);
+    yaw_out = constrain_float(yaw_out, -1, 1);
+
     _time = AP_HAL::micros() * 1.0e-6;
 
     for (int8_t i=0; i<NUM_FINS; i++) {
