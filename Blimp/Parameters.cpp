@@ -249,6 +249,66 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
 
+    // @Param: MAX_VEL_XY
+    // @DisplayName: Max XY Velocity
+    // @Description: Sets the maximum XY velocity, in m/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_vel_xy, "MAX_VEL_XY", 0.5),
+
+    // @Param: MAX_VEL_Z
+    // @DisplayName: Max Z Velocity
+    // @Description: Sets the maximum Z velocity, in m/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_vel_z, "MAX_VEL_Z", 0.4),
+ 
+    // @Param: MAX_VEL_YAW
+    // @DisplayName: Max yaw Velocity
+    // @Description: Sets the maximum yaw velocity, in rad/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_vel_yaw, "MAX_VEL_YAW", 0.5),
+
+    // @Param: MAX_POS_XY
+    // @DisplayName: Max XY Position change
+    // @Description: Sets the maximum XY position change, in m/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_pos_xy, "MAX_POS_XY", 0.2),
+
+    // @Param: MAX_POS_Z
+    // @DisplayName: Max Z Position change
+    // @Description: Sets the maximum Z position change, in m/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_pos_z, "MAX_POS_Z", 0.15),
+
+    // @Param: MAX_POS_YAW
+    // @DisplayName: Max Yaw Position change
+    // @Description: Sets the maximum Yaw position change, in rad/s
+    // @Values: 
+    // @User: Standard
+    GSCALAR(max_pos_yaw, "MAX_POS_YAW", 0.3),
+
+    // @Param: SIMPLE_MODE
+    // @DisplayName: Simple mode
+    // @Description: Simple mode for Position control - "forward" moves blimp in +ve X direction world-frame
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    GSCALAR(simple_mode, "SIMPLE_MODE", 0),
+
+    // @Param: DIS_MASK
+    // @DisplayName: Disable output mask
+    // @Description: Mask for disabling one or more of the 4 output axis in mode Velocity or Loiter
+    // @Values: 0:All enabled,1:Right,2:Front,4:Down,8:Yaw,3:Down and Yaw only,12:Front & Right only
+    // @Bitmask: 0:Right,1:Front,2:Down,3:Yaw
+    // @User: Standard
+    GSCALAR(dis_mask, "DIS_MASK", 0),
+
+    GSCALAR(notch_bw, "NOTCH_BW", 2),
+    GSCALAR(notch_att, "NOTCH_ATT", 15),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
@@ -378,6 +438,329 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Group: FINS_
     // @Path: Fins.cpp
     GOBJECTPTR(motors, "FINS_", Fins),
+
+    // @Param: VELXY_P
+    // @DisplayName: Velocity (horizontal) P gain
+    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELXY_I
+    // @DisplayName: Velocity (horizontal) I gain
+    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELXY_D
+    // @DisplayName: Velocity (horizontal) D gain
+    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELXY_IMAX
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELXY_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELXY_D_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELXY_FF
+    // @DisplayName: Velocity (horizontal) feed forward gain
+    // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_xy, "VELXY_", AC_PID_2D),
+
+    // @Param: VELZ_P
+    // @DisplayName: Velocity (vertical) P gain
+    // @Description: Velocity (vertical) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELZ_I
+    // @DisplayName: Velocity (vertical) I gain
+    // @Description: Velocity (vertical) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELZ_D
+    // @DisplayName: Velocity (vertical) D gain
+    // @Description: Velocity (vertical) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELZ_IMAX
+    // @DisplayName: Velocity (vertical) integrator maximum
+    // @Description: Velocity (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELZ_FILT
+    // @DisplayName: Velocity (vertical) input filter
+    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELZ_D_FILT
+    // @DisplayName: Velocity (vertical) input filter
+    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELZ_FF
+    // @DisplayName: Velocity (vertical) feed forward gain
+    // @Description: Velocity (vertical) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_z, "VELZ_", AC_PID_Basic),
+
+    // @Param: VELYAW_P
+    // @DisplayName: Velocity (yaw) P gain
+    // @Description: Velocity (yaw) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELYAW_I
+    // @DisplayName: Velocity (yaw) I gain
+    // @Description: Velocity (yaw) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELYAW_D
+    // @DisplayName: Velocity (yaw) D gain
+    // @Description: Velocity (yaw) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELYAW_IMAX
+    // @DisplayName: Velocity (yaw) integrator maximum
+    // @Description: Velocity (yaw) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELYAW_FILT
+    // @DisplayName: Velocity (yaw) input filter
+    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELYAW_D_FILT
+    // @DisplayName: Velocity (yaw) input filter
+    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELYAW_FF
+    // @DisplayName: Velocity (yaw) feed forward gain
+    // @Description: Velocity (yaw) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_yaw, "VELYAW_", AC_PID_Basic),
+
+    // @Param: POSXY_P
+    // @DisplayName: Position (horizontal) P gain
+    // @Description: Position (horizontal) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: POSXY_I
+    // @DisplayName: Position (horizontal) I gain
+    // @Description: Position (horizontal) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POSXY_D
+    // @DisplayName: Position (horizontal) D gain
+    // @Description: Position (horizontal) D gain.  Corrects short-term changes in position
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSXY_IMAX
+    // @DisplayName: Position (horizontal) integrator maximum
+    // @Description: Position (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: POSXY_FILT
+    // @DisplayName: Position (horizontal) input filter
+    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSXY_D_FILT
+    // @DisplayName: Position (horizontal) input filter
+    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSXY_FF
+    // @DisplayName: Position (horizontal) feed forward gain
+    // @Description: Position (horizontal) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_pos_xy, "POSXY_", AC_PID_2D),
+
+    // @Param: POSZ_P
+    // @DisplayName: Position (vertical) P gain
+    // @Description: Position (vertical) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: POSZ_I
+    // @DisplayName: Position (vertical) I gain
+    // @Description: Position (vertical) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POSZ_D
+    // @DisplayName: Position (vertical) D gain
+    // @Description: Position (vertical) D gain.  Corrects short-term changes in position
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSZ_IMAX
+    // @DisplayName: Position (vertical) integrator maximum
+    // @Description: Position (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: POSZ_FILT
+    // @DisplayName: Position (vertical) input filter
+    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSZ_D_FILT
+    // @DisplayName: Position (vertical) input filter
+    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSZ_FF
+    // @DisplayName: Position (vertical) feed forward gain
+    // @Description: Position (vertical) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_pos_z, "POSZ_", AC_PID_Basic),
+
+    // @Param: POSYAW_P
+    // @DisplayName: Position (yaw) axis controller P gain
+    // @Description: Position (yaw) axis controller P gain.
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSYAW_I
+    // @DisplayName: Position (yaw) axis controller I gain
+    // @Description: Position (yaw) axis controller I gain.
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSYAW_IMAX
+    // @DisplayName: Position (yaw) axis controller I gain maximum
+    // @Description: Position (yaw) axis controller I gain maximum.
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: d%
+    // @User: Standard
+
+    // @Param: POSYAW_D
+    // @DisplayName: Position (yaw) axis controller D gain
+    // @Description: Position (yaw) axis controller D gain.
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSYAW_FF
+    // @DisplayName: Position (yaw) axis controller feed forward
+    // @Description: Position (yaw) axis controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSYAW_FLTT
+    // @DisplayName: Position (yaw) target frequency filter in Hz
+    // @Description: Position (yaw) target frequency filter in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_FLTE
+    // @DisplayName: Position (yaw) error frequency filter in Hz
+    // @Description: Position (yaw) error frequency filter in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_FLTD
+    // @DisplayName: Position (yaw) derivative input filter in Hz
+    // @Description: Position (yaw) derivative input filter in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_SMAX
+    // @DisplayName: Yaw slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. 
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+    GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
