@@ -34,7 +34,7 @@ public:
     AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
                     AP_BattMonitor_Params &params,
-                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                    uint8_t i2c_bus);
 
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
@@ -53,6 +53,8 @@ public:
     bool get_cycle_count(uint16_t &cycles) const override;
 
     virtual void init(void) override;
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
@@ -99,4 +101,9 @@ protected:
     virtual void timer(void) = 0;   // timer function to read from the battery
 
     AP_HAL::Device::PeriodicHandle timer_handle;
+
+    // Parameters
+    AP_Int8  _bus;          // I2C bus number
+    AP_Int8  _address;      // I2C address
+
 };
