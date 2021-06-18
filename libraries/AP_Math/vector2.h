@@ -162,6 +162,12 @@ struct Vector2
     // rotate vector by angle in radians
     void rotate(float angle_rad);
 
+    /*
+      conversion to/from double
+     */
+    Vector2<float> tofloat() const;
+    Vector2<double> todouble() const;
+    
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
     static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1);
@@ -269,3 +275,4 @@ typedef Vector2<uint16_t>       Vector2ui;
 typedef Vector2<int32_t>        Vector2l;
 typedef Vector2<uint32_t>       Vector2ul;
 typedef Vector2<float>          Vector2f;
+typedef Vector2<double>          Vector2d;
