@@ -598,8 +598,13 @@ void NavEKF2_core::readGpsData()
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
+                Location gpsloc_fieldelevation = gpsloc;
+                // if flying, correct for height change from takeoff so that the origin is at field elevation
+                if (inFlight) {
+                    gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+                }
 
-                if (!setOrigin(gpsloc)) {
+                if (!setOrigin(gpsloc_fieldelevation)) {
                     // set an error as an attempt was made to set the origin more than once
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return;
