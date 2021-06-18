@@ -16,10 +16,10 @@ bool ModeSmartRTL::init(bool ignore_checks)
         wp_nav->wp_and_spline_init();
 
         // set current target to a reasonable stopping point
-        Vector3f stopping_point;
+        Vector3p stopping_point;
         pos_control->get_stopping_point_xy_cm(stopping_point.xy());
         pos_control->get_stopping_point_z_cm(stopping_point.z);
-        wp_nav->set_wp_destination(stopping_point);
+        wp_nav->set_wp_destination(stopping_point.tofloat());
 
         // initialise yaw to obey user parameter
         auto_yaw.set_mode_to_default(true);

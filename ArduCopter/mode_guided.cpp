@@ -13,7 +13,7 @@
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
-static Vector3f guided_pos_target_cm;       // position target (used by posvel controller only)
+static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
 static Vector3f guided_vel_target_cms;      // velocity target (used by velocity controller and posvel controller)
 static uint32_t posvel_update_time_ms;      // system time of last target update to posvel controller (i.e. position and velocity update)
 static uint32_t vel_update_time_ms;         // system time of last target update to velocity controller
@@ -347,7 +347,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     posvel_update_time_ms = millis();
-    guided_pos_target_cm = destination;
+    guided_pos_target_cm = destination.topostype();
     guided_vel_target_cms = velocity;
 
     copter.pos_control->set_pos_vel_accel(guided_pos_target_cm, guided_vel_target_cms, Vector3f());
@@ -554,11 +554,13 @@ void ModeGuided::posvel_control_run()
     }
 
     // advance position target using velocity target
-    guided_pos_target_cm += guided_vel_target_cms * pos_control->get_dt();
+    guided_pos_target_cm += (guided_vel_target_cms * pos_control->get_dt()).topostype();
 
     // send position and velocity targets to position controller
     pos_control->input_pos_vel_accel_xy(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), Vector2f());
-    pos_control->input_pos_vel_accel_z(guided_pos_target_cm.z, guided_vel_target_cms.z, 0);
+    float pz = guided_pos_target_cm.z;
+    pos_control->input_pos_vel_accel_z(pz, guided_vel_target_cms.z, 0);
+    guided_pos_target_cm.z = pz;
 
     // run position controllers
     pos_control->update_xy_controller();
