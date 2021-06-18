@@ -383,6 +383,8 @@ def generate_hwdef_h(env):
         os.mkdir(hwdef_out)
     python = sys.executable
     cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    if env.HWDEF_EXTRA:
+        cmd += " --extra-hwdef '{0}'".format(env.HWDEF_EXTRA)
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
