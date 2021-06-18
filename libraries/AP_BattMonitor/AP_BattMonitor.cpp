@@ -69,8 +69,50 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[8], "9_", 31, AP_BattMonitor, AP_BattMonitor_Params),
 
+    #if HAL_BATTMON_SMBUS_ENABLE
+    // @Group: _
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "_", 32, AP_BattMonitor, backend_smbus_var_info[0]),
+
+    // @Group: 2_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 33, AP_BattMonitor, backend_smbus_var_info[1]),
+
+    // @Group: 3_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 34, AP_BattMonitor, backend_smbus_var_info[2]),
+
+    // @Group: 4_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 35, AP_BattMonitor, backend_smbus_var_info[3]),
+
+    // @Group: 5_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_", 36, AP_BattMonitor, backend_smbus_var_info[4]),
+
+    // @Group: 6_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[5], "6_", 37, AP_BattMonitor, backend_smbus_var_info[5]),
+
+    // @Group: 7_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[6], "7_", 38, AP_BattMonitor, backend_smbus_var_info[6]),
+
+    // @Group: 8_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[7], "8_", 39, AP_BattMonitor, backend_smbus_var_info[7]),
+
+    // @Group: 9_
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 40, AP_BattMonitor, backend_smbus_var_info[8]),
+#endif // HAL_BATTMON_SMBUS_ENABLE
+
     AP_GROUPEND
 };
+
+#if HAL_BATTMON_SMBUS_ENABLE
+const AP_Param::GroupInfo *AP_BattMonitor::backend_smbus_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
+#endif
 
 // Default constructor.
 // Note that the Vector/Matrix constructors already implicitly zero
@@ -121,45 +163,25 @@ AP_BattMonitor::init()
                 break;
 #if HAL_BATTMON_SMBUS_ENABLE
             case Type::SOLO:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL);
-                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance],
-                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                          100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
                 break;
             case Type::SMBus_Generic:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
-                drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance],
-                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                             100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
                 break;
             case Type::SUI3:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
-                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance],
-                                                                 hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                          100000, true, 20), 3);
+                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 3);
                 break;
             case Type::SUI6:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
-                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance],
-                                                                 hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                         100000, true, 20), 6);
+                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 6);
                 break;
             case Type::MAXELL:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
-                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                            100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance]);
                 break;
             case Type::Rotoye:
-                drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance],
-                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                            100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance]);
                 break;
             case Type::NeoDesign:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
-                drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance],
-                                                                 hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                         100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_SMBUS_ENABLE
             case Type::BEBOP:
@@ -188,7 +210,6 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_FUEL_ENABLE
-
 #if GENERATOR_ENABLED
             case Type::GENERATOR_ELEC:
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
@@ -207,6 +228,20 @@ AP_BattMonitor::init()
                 break;
         }
 
+#if HAL_BATTMON_SMBUS_ENABLE
+    // if the backend has some local parameters then make those available in the tree
+    if (drivers[instance] && state[instance].var_info) {
+        Type type = get_type(instance);
+        if ((type == Type::MAXELL) || (type == Type::NeoDesign) || (type == Type::Rotoye) || (type == Type::SMBus_Generic) ||
+            (type == Type::SOLO)   || (type == Type::SUI3)      || (type == Type::SUI6)) {
+            backend_smbus_var_info[instance] = state[instance].var_info;
+            AP_Param::load_object_from_eeprom(drivers[instance], backend_smbus_var_info[instance]);
+        }
+        // param count could have changed
+        AP_Param::invalidate_count();
+    }
+#endif
+
         // call init function for each backend
         if (drivers[instance] != nullptr) {
             drivers[instance]->init();
@@ -215,7 +250,60 @@ AP_BattMonitor::init()
             // there will be a gap, but as we always check for drivers[instances] being nullptr
             // this is safe
             _num_instances = instance + 1;
+
+            // Convert the old analog & Bus parameters to the new dynamic parameter groups
+            convert_dynamic_param_groups(instance);
         }
+    }
+}
+
+void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
+{
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+
+    char param_prefix[6] {};
+    char param_name[17] {};
+    info.new_name = param_name;
+
+    const uint8_t param_instance = instance + 1;
+    // first battmonitor does not have '1' in the param name
+    if(param_instance == 1) {
+        hal.util->snprintf(param_prefix, sizeof(param_prefix), "BATT");
+    } else {
+        hal.util->snprintf(param_prefix, sizeof(param_prefix), "BATT%X", param_instance);
+    }
+    param_prefix[sizeof(param_prefix)-1] = '\0';
+
+    hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, "MONITOR");
+    param_name[sizeof(param_name)-1] = '\0';
+
+    // Find the index of the BATTn_MONITOR which is not moving to index the moving parameters off from
+    AP_Param::ParamToken token = AP_Param::ParamToken {};
+    ap_var_type type;
+    AP_Param* param = AP_Param::find_by_name(param_name, &type, &token);
+    const uint8_t battmonitor_index = 1;
+    if( param == nullptr) {
+        // BATTn_MONITOR not found
+        return;
+    }
+
+    const struct convert_table {
+        uint32_t old_group_element;
+        ap_var_type type;
+        const char* new_name;
+    }  conversion_table[] = {
+            { 20, AP_PARAM_INT8,  "I2C_BUS"   },
+        };
+
+    for (const auto & elem : conversion_table) {
+        info.old_group_element = token.group_element + ((elem.old_group_element - battmonitor_index) * 64);;
+        info.type = elem.type;
+
+        hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, elem.new_name);
+        AP_Param::convert_old_parameter(&info, 1.0f, 0);
     }
 }
 
