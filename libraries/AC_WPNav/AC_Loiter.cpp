@@ -174,7 +174,9 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
 /// get vector to stopping point based on a horizontal position and velocity
 void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
+    Vector2p stop;
+    _pos_control.get_stopping_point_xy_cm(stop);
+    stopping_point = stop.tofloat();
 }
 
 /// get maximum lean angle when using loiter
@@ -287,11 +289,10 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     }
 
     // get loiters desired velocity from the position controller where it is being stored.
-    const Vector3f &target_pos_3d = _pos_control.get_pos_target_cm();
-    Vector2f target_pos{target_pos_3d.x, target_pos_3d.y};
+    Vector2p target_pos = _pos_control.get_pos_target_cm().xy();
 
     // update the target position using our predicted velocity
-    target_pos += desired_vel * nav_dt;
+    target_pos += (desired_vel * nav_dt).topostype();
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_pos_vel_accel_xy(target_pos, desired_vel, _desired_accel);
