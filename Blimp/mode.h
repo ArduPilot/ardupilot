@@ -15,6 +15,8 @@ public:
     enum class Number : uint8_t {
         MANUAL =        0,  // manual control
         LAND =          1,  // currently just stops moving
+        VELOCITY =      2,  // velocity mode
+        LOITER =        3,  // loiter mode (position hold)  
     };
 
     // constructor
@@ -226,6 +228,93 @@ protected:
 
 private:
 
+};
+
+class ModeVelocity : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return false;
+        //TODO
+    }
+
+protected:
+
+    const char *name() const override
+    {
+        return "VELOCITY";
+    }
+    const char *name4() const override
+    {
+        return "VELY";
+    }
+
+private:
+
+};
+
+class ModeLoiter : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return false;
+        //TODO
+    }
+
+protected:
+
+    const char *name() const override
+    {
+        return "LOITER";
+    }
+    const char *name4() const override
+    {
+        return "LOIT";
+    }
+
+private:
+    Vector3f target_pos;
+    float target_yaw;
+    float loop_period;
 };
 
 class ModeLand : public Mode

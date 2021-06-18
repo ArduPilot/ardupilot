@@ -90,7 +90,13 @@ public:
         k_param_adsb,                   // 72
         k_param_notify,                 // 73
 
-
+        //PID Controllers
+        k_param_pid_vel_xy,
+        k_param_pid_pos_xy,
+        k_param_pid_vel_z,
+        k_param_pid_vel_yaw,
+        k_param_pid_pos_z,
+        k_param_pid_pos_yaw,
         //
         // 90: misc2
         //
@@ -173,6 +179,19 @@ public:
         //
         // 220: Misc
         //
+        k_param_fs_ekf_action = 220,
+        k_param_max_vel_xy,
+        k_param_arming,
+        k_param_max_vel_z, 
+        k_param_simple_mode,
+        k_param_dis_mask, //225
+        k_param_notch_bw,
+        k_param_notch_att,
+        k_param_max_vel_yaw,
+        k_param_max_pos_xy,
+        k_param_max_pos_z,
+        k_param_max_pos_yaw,
+        
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
@@ -223,6 +242,18 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+
+    AP_Float        max_vel_xy;
+    AP_Float        max_vel_z;
+    AP_Float        max_vel_yaw;
+    AP_Float        max_pos_xy;
+    AP_Float        max_pos_z;
+    AP_Float        max_pos_yaw;
+
+    AP_Int8         simple_mode;
+    AP_Int16        dis_mask;
+    AP_Float        notch_bw;
+    AP_Float        notch_att;
 
     AP_Int8         rtl_alt_type;
 

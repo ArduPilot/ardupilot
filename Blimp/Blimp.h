@@ -49,6 +49,10 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <AC_PID/AC_PID_2D.h>
+#include <AC_PID/AC_PID_Basic.h>
+#include <AC_PID/AC_PID.h>
+#include <Filter/NotchFilter.h>
 
 // Configuration
 #include "defines.h"
@@ -90,6 +94,8 @@ public:
     friend class Mode;
     friend class ModeManual;
     friend class ModeLand;
+    friend class ModeVelocity;
+    friend class ModeLoiter;
 
     friend class Fins;
 
@@ -232,17 +238,27 @@ private:
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
+    Vector3f vel_ned;
+    Vector3f vel_ned_filtd;
+    
+    Vector3f pos_ned;
+    float vel_yaw;
+    float vel_yaw_filtd;
+    NotchFilterVector2f vel_xy_filter;
+    NotchFilterFloat vel_z_filter;
+    NotchFilterFloat vel_yaw_filter;
 
     // Inertial Navigation
     AP_InertialNav_NavEKF inertial_nav;
+    
+    // Vel & pos PIDs
+    AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3, 0.02}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
+    AC_PID_Basic pid_vel_z{7, 1.5, 0, 0, 1, 3, 3, 0.02};
+    AC_PID_Basic pid_vel_yaw{3, 0.4, 0, 0, 0.2, 3, 3, 0.02};
 
-    // Attitude, Position and Waypoint navigation objects
-    // To-Do: move inertial nav up or other navigation variables down here
-    // AC_AttitudeControl_t *attitude_control;
-    // AC_PosControl *pos_control;
-    // AC_WPNav *wp_nav;
-    // AC_Loiter *loiter_nav;
-
+    AC_PID_2D pid_pos_xy{1, 0.05, 0, 0, 0.1, 3, 3, 0.02};
+    AC_PID_Basic pid_pos_z{0.7, 0, 0, 0, 0, 3, 3, 0.02}; 
+    AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3, 0.02}; //p, i, d, ff, imax, filt_t, filt_e, filt_d, dt, opt srmax, opt srtau
 
     // System Timers
     // --------------
@@ -314,6 +330,8 @@ private:
     void one_hz_loop();
     void read_AHRS(void);
     void update_altitude();
+    void rotate_NE_to_BF(float &x, float &y);
+    void rotate_BF_to_NE(float &x, float &y);
 
     // commands.cpp
     void update_home_from_EKF();
@@ -446,6 +464,8 @@ private:
     Mode *flightmode;
     ModeManual mode_manual;
     ModeLand mode_land;
+    ModeVelocity mode_velocity;
+    ModeLoiter mode_loiter;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
