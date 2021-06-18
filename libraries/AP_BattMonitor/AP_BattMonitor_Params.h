@@ -40,7 +40,6 @@ public:
     AP_Int8  _volt_pin;                 /// board pin used to measure battery voltage
     AP_Int8  _curr_pin;                 /// board pin used to measure battery current
     AP_Int8  _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
-    AP_Int8  _i2c_bus;                  /// I2C bus number
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe

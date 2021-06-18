@@ -17,9 +17,8 @@ extern const AP_HAL::HAL& hal;
 AP_BattMonitor_SMBus_SUI::AP_BattMonitor_SMBus_SUI(AP_BattMonitor &mon,
         AP_BattMonitor::BattMonitor_State &mon_state,
         AP_BattMonitor_Params &params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
         uint8_t _cell_count)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev)),
+    : AP_BattMonitor_SMBus(mon, mon_state, params, AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
       cell_count(_cell_count)
 {
     _pec_supported = false;
@@ -84,7 +83,7 @@ bool AP_BattMonitor_SMBus_SUI::read_block(uint8_t reg, uint8_t* data, uint8_t le
     }
 
     // check PEC
-    uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
+    uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
     if (pec != buff[bufflen+1]) {
         return false;
     }
