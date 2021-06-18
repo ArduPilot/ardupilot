@@ -2547,7 +2547,7 @@ void QuadPlane::update_land_positioning(void)
     poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
     poscontrol.target_vel_cms.rotate_xy(ahrs_view->yaw);
 
-    poscontrol.target_cm += poscontrol.target_vel_cms * dt;
+    poscontrol.target_cm += (poscontrol.target_vel_cms * dt).topostype();
 
     poscontrol.pilot_correction_active = (!is_zero(roll_in) || !is_zero(pitch_in));
     if (poscontrol.pilot_correction_active) {
@@ -3091,7 +3091,7 @@ void QuadPlane::setup_target_position(void)
     if (!loc.same_latlon_as(last_auto_target) ||
         plane.next_WP_loc.alt != last_auto_target.alt ||
         now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination(poscontrol.target_cm);
+        wp_nav->set_wp_destination(poscontrol.target_cm.tofloat());
         last_auto_target = loc;
     }
     last_loiter_ms = now;
@@ -3500,7 +3500,7 @@ bool QuadPlane::verify_vtol_land(void)
         if (poscontrol.pilot_correction_done) {
             reached_position = !poscontrol.pilot_correction_active;
         } else {
-            const float dist = (inertial_nav.get_position() - poscontrol.target_cm).xy().length() * 0.01;
+            const float dist = (inertial_nav.get_position().topostype() - poscontrol.target_cm).xy().length() * 0.01;
             reached_position = dist < descend_dist_threshold;
         }
         if (reached_position &&
