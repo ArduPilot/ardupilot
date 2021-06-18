@@ -121,9 +121,9 @@ AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl
     _singleton = this;
 }
 
-void AP_MotorsUGV::init(uint8_t ftype)
+void AP_MotorsUGV::init(uint8_t frtype)
 {
-    _frame_type = frame_type(ftype);
+    _frame_type = frame_type(frtype);
 
     // setup servo output
     setup_servo_output();
