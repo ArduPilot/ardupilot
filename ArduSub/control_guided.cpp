@@ -11,7 +11,7 @@
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
-static Vector3f posvel_pos_target_cm;
+static Vector3p posvel_pos_target_cm;
 static Vector3f posvel_vel_target_cms;
 static uint32_t posvel_update_time_ms;
 static uint32_t vel_update_time_ms;
@@ -214,11 +214,13 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
 #endif
 
     posvel_update_time_ms = AP_HAL::millis();
-    posvel_pos_target_cm = destination;
+    posvel_pos_target_cm = destination.topostype();
     posvel_vel_target_cms = velocity;
 
     pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
-    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm.z, posvel_vel_target_cms.z, 0);
+    float dz = posvel_pos_target_cm.z;
+    pos_control.input_pos_vel_accel_z(dz, posvel_vel_target_cms.z, 0);
+    posvel_pos_target_cm.z = dz;
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, velocity);
@@ -418,11 +420,13 @@ void Sub::guided_posvel_control_run()
     }
 
     // advance position target using velocity target
-    posvel_pos_target_cm += posvel_vel_target_cms * pos_control.get_dt();
+    posvel_pos_target_cm += (posvel_vel_target_cms * pos_control.get_dt()).topostype();
 
     // send position and velocity targets to position controller
     pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
-    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm.z, posvel_vel_target_cms.z, 0);
+    float pz = posvel_pos_target_cm.z;
+    pos_control.input_pos_vel_accel_z(pz, posvel_vel_target_cms.z, 0);
+    posvel_pos_target_cm.z = pz;
 
     // run position controller
     pos_control.update_xy_controller();
