@@ -54,7 +54,7 @@ public:
     /// input_pos_vel_accel_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-    void input_pos_vel_accel_xyz(const Vector3f& pos);
+    void input_pos_vel_accel_xyz(const Vector3p& pos);
 
     ///
     /// Lateral position controller
@@ -96,7 +96,7 @@ public:
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
     ///     The function alters the pos and vel to be the kinematic path based on accel
-    void input_pos_vel_accel_xy(Vector2f& pos, Vector2f& vel, const Vector2f& accel);
+    void input_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel);
 
     // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
     bool is_active_xy() const;
@@ -190,8 +190,8 @@ public:
     ///
 
     /// set commanded position (cm), velocity (cm/s) and acceleration (cm/s/s) inputs when the path is created externally.
-    void set_pos_vel_accel(const Vector3f& pos, const Vector3f& vel, const Vector3f& accel);
-    void set_pos_vel_accel_xy(const Vector2f& pos, const Vector2f& vel, const Vector2f& accel);
+    void set_pos_vel_accel(const Vector3p& pos, const Vector3f& vel, const Vector3f& accel);
+    void set_pos_vel_accel_xy(const Vector2p& pos, const Vector2f& vel, const Vector2f& accel);
 
 
     /// Position
@@ -200,7 +200,7 @@ public:
     void set_pos_target_xy_cm(float pos_x, float pos_y) { _pos_target.x = pos_x; _pos_target.y = pos_y; }
 
     /// get_pos_target_cm - returns the position target in NEU cm from home
-    const Vector3f& get_pos_target_cm() const { return _pos_target; }
+    const Vector3p& get_pos_target_cm() const { return _pos_target; }
 
     /// set_pos_target_z_cm - set altitude target in cm above home
     void set_pos_target_z_cm(float pos_target) { _pos_target.z = pos_target; }
@@ -209,13 +209,13 @@ public:
     float get_pos_target_z_cm() const { return _pos_target.z; }
 
     /// get_stopping_point_xy_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-    void get_stopping_point_xy_cm(Vector2f &stopping_point) const;
+    void get_stopping_point_xy_cm(Vector2p &stopping_point) const;
 
     /// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-    void get_stopping_point_z_cm(float &stopping_point) const;
+    void get_stopping_point_z_cm(postype_t &stopping_point) const;
 
     /// get_pos_error_cm - get position error vector between the current and target position
-    const Vector3f get_pos_error_cm() const { return _pos_target - _inav.get_position(); }
+    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position().topostype()).tofloat(); }
 
     /// get_pos_error_xy_cm - get the length of the position error vector in the xy plane
     float get_pos_error_xy_cm() const { return norm(_pos_target.x - _inav.get_position().x, _pos_target.y - _inav.get_position().y); }
@@ -396,7 +396,7 @@ protected:
     float       _yaw_rate_target;       // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
-    Vector3f    _pos_target;            // target location in NEU cm from home
+    Vector3p    _pos_target;            // target location in NEU cm from home
     Vector3f    _vel_desired;           // desired velocity in NEU cm/s
     Vector3f    _vel_target;            // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
