@@ -22,6 +22,8 @@ parser.add_argument(
     'hwdef', type=str, default=None, help='hardware definition file')
 parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
+parser.add_argument(
+    '--extra-hwdef', type=str, default=None, help='Extra hwdef.dat file for custom build.')
 
 args = parser.parse_args()
 
@@ -2203,28 +2205,29 @@ def process_line(line):
         env_vars[a[1]] = ' '.join(a[2:])
 
 
-def process_file(filename):
+def process_file(fname,extra_hwdef):
     '''process a hwdef.dat file'''
-    try:
-        f = open(filename, "r")
-    except Exception:
-        error("Unable to open file %s" % filename)
-    for line in f.readlines():
-        line = line.split('#')[0] # ensure we discard the comments
-        line = line.strip()
-        if len(line) == 0 or line[0] == '#':
-            continue
-        a = shlex.split(line)
-        if a[0] == "include" and len(a) > 1:
-            include_file = a[1]
-            if include_file[0] != '/':
-                dir = os.path.dirname(filename)
-                include_file = os.path.normpath(
-                    os.path.join(dir, include_file))
-            print("Including %s" % include_file)
-            process_file(include_file)
-        else:
-            process_line(line)
+    for filename in [fname,extra_hwdef]:
+        try:
+            f = open(filename, "r")
+        except Exception:
+            error("Unable to open file %s" % filename)
+        for line in f.readlines():
+            line = line.split('#')[0] # ensure we discard the comments
+            line = line.strip()
+            if len(line) == 0 or line[0] == '#':
+                continue
+            a = shlex.split(line)
+            if a[0] == "include" and len(a) > 1:
+                include_file = a[1]
+                if include_file[0] != '/':
+                    dir = os.path.dirname(filename)
+                    include_file = os.path.normpath(
+                        os.path.join(dir, include_file))
+                print("Including %s" % include_file)
+                process_file(include_file)
+            else:
+                process_line(line)
 
 def add_apperiph_defaults(f):
     '''add default defines for peripherals'''
@@ -2258,7 +2261,7 @@ def add_apperiph_defaults(f):
             
 
 # process input file
-process_file(args.hwdef)
+process_file(args.hwdef,args.extra_hwdef)
 
 outdir = args.outdir
 if outdir is None:
