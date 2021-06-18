@@ -412,10 +412,10 @@ void ModeRTL::land_run(bool disarm_on_land)
 void ModeRTL::build_path()
 {
     // origin point is our stopping point
-    Vector3f stopping_point;
+    Vector3p stopping_point;
     pos_control->get_stopping_point_xy_cm(stopping_point.xy());
     pos_control->get_stopping_point_z_cm(stopping_point.z);
-    rtl_path.origin_point = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
+    rtl_path.origin_point = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
     rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
     // compute return target
