@@ -75,6 +75,21 @@ public:
   //Get tag attitude
   Vector3f get_tag_att(){return _tag_est.tag_att_cd;};
 
+  //Tether timed out
+  bool is_tether_timed_out() { return ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000); };
+
+  //Tether cable spool out
+  float get_tether_cable_out_m() { return _tether_status.cable_out_m; };
+
+  //Tether high tension
+  bool is_tether_high_tension() { return _tether_status.high_tension; };
+
+  //Tether altitude on high-tension entry. 0 if not high tension
+  float get_high_tension_entry_alt_cm() { return _tether_status.high_tension_alt_cm; };
+
+  //Tether tag altitude on high-tension entry. 0 if not high tension or wasn't tracking tag
+  float get_high_tension_entry_tag_alt_cm() { return _tether_status.high_tension_tag_alt_cm; };
+
 private:
 
   struct
@@ -109,6 +124,16 @@ private:
     Vector3f tag_att_cd = Vector3f(0,0,0);
     uint32_t timestamp_us = 0;
   }_tag_est;
+
+  struct
+  {
+    uint32_t timestamp_ms = 0;
+    float cable_out_m = 0;
+    bool high_tension = false;
+    uint32_t high_tension_timestamp_ms = 0;
+    float high_tension_tag_alt_cm =0;
+    float high_tension_alt_cm = 0;
+  }_tether_status;
 
   mavlink_channel_t _chan = MAVLINK_COMM_1;
 

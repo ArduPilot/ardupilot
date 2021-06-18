@@ -1,6 +1,7 @@
 #include <AC_Planck/AC_Planck.h>
 #include <AP_HAL/AP_HAL.h>
 #include "../ArduCopter/defines.h"
+#include <AP_Logger/AP_Logger.h>
 
 void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const mavlink_message_t *mav_msg,
     AP_AHRS &ahrs)
@@ -139,6 +140,57 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
       _tag_est.tag_att_cd.z = ToDeg(pl.yaw) * 100.;
 
       _tag_est.timestamp_us = pl.ap_timestamp_us;
+      break;
+    }
+
+    case MAVLINK_MSG_ID_PLANCK_DECK_TETHER_STATUS:
+    {
+      mavlink_planck_deck_tether_status_t ts;
+      mavlink_msg_planck_deck_tether_status_decode(mav_msg, &ts);
+      _tether_status.timestamp_ms = AP_HAL::millis();
+      _tether_status.cable_out_m = ts.CABLE_OUT * 0.3048; //feet to meters
+
+      bool high_tension =  (ts.SPOOL_STATUS == PLANCK_DECK_SPOOL_LOCKED) && (ts.CABLE_TENSION > 75);
+
+      //If we've transitioned into high tension, record altitude and timestamps
+      if(high_tension && !_tether_status.high_tension) {
+        _tether_status.high_tension_timestamp_ms = AP_HAL::millis();
+
+        if(_status.tracking_tag) {
+          _tether_status.high_tension_tag_alt_cm = _tag_est.tag_pos_cm.z;
+        } else {
+          _tether_status.high_tension_tag_alt_cm = 0;
+        }
+
+        Location current_loc;
+        ahrs.get_position(current_loc);
+        int32_t alt_above_home_cm = 0;
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+          float posD;
+          ahrs.get_relative_position_D_home(posD);
+          alt_above_home_cm = -posD*100;
+        }
+        _tether_status.high_tension_alt_cm = alt_above_home_cm;
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: High Tension");
+      }
+
+      //If transitioning out of high tension, reset recorded values
+      if(!high_tension && _tether_status.high_tension) {
+        _tether_status.high_tension_timestamp_ms = 0;
+        _tether_status.high_tension_tag_alt_cm = 0;
+        _tether_status.high_tension_alt_cm = 0;
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: Nominal");
+      }
+
+      _tether_status.high_tension = high_tension;
+
+      AP::logger().Write("PDTS", "TimeUS,TSct,TSss,tsHT,tsCO", "QBBBf",
+                         AP_HAL::micros64(),
+                         (uint8_t)ts.CABLE_TENSION,
+                         (uint8_t)ts.SPOOL_STATUS,
+                         (uint8_t)_tether_status.high_tension,
+                         (float)_tether_status.cable_out_m);
+      break;
     }
 
     default:
