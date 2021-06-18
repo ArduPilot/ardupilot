@@ -11,6 +11,9 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_Fence/AC_Fence.h>
 #include <GCS_MAVLink/GCS.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_WindVane/AP_WindVane.h>
+#endif
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #include "AP_Frsky_MAVlite.h"
@@ -67,6 +70,12 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_RNGFND_OFFSET    21
 // for terrain data
 #define TERRAIN_UNHEALTHY_OFFSET    13
+// for wind data
+#define WIND_ANGLE_LIMIT            0x7F
+#define WIND_SPEED_OFFSET           7
+#define WIND_APPARENT_ANGLE_OFFSET  15
+#define WIND_APPARENT_SPEED_OFFSET  23
+
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_SPort_Passthrough *AP_Frsky_SPort_Passthrough::singleton;
@@ -121,6 +130,7 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
     set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
+    set_scheduler_entry(WIND, 700, 500);        // 0x500C wind data
     set_scheduler_entry(UDATA, 5000, 200);      // user data
 
     // initialize default sport sensor ID
@@ -221,6 +231,23 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
 #endif
         }
         break;
+    case WIND:
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
+    {
+        float a;
+        WITH_SEMAPHORE(AP::ahrs().get_semaphore());
+        if (AP::ahrs().airspeed_estimate_true(a)) {
+            // if we have an airspeed estimate then we have a valid wind estimate
+            packet_ready = true;
+        }
+    }
+#else
+    {
+        const AP_WindVane* windvane = AP_WindVane::get_singleton();
+        packet_ready = windvane != nullptr && windvane->enabled();
+    }
+#endif
+        break;
     case UDATA:
         // when using fport user data is sent by scheduler
         // when using sport user data is sent responding to custom polling
@@ -292,6 +319,9 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
         break;
     case TERRAIN: // 0x500B terrain data
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0B, calc_terrain());
+        break;
+    case WIND: // 0x500C terrain data
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0C, calc_wind());
         break;
     case UDATA: // user data
         {
@@ -540,13 +570,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
         ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
     }
     // signed throttle [-100,100] scaled down to [-63,63] on 7 bits, MSB for sign + 6 bits for 0-63
-    int16_t throttle = gcs().get_hud_throttle();
-    uint8_t scaled_throttle = constrain_int16(abs(throttle*0.63f),0,63);
-    // add sign
-    if (throttle < 0) {
-        scaled_throttle |= 0x1<<6;
-    }
-    ap_status |= scaled_throttle<<AP_THROTTLE_OFFSET;
+    ap_status |= prep_number(gcs().get_hud_throttle()*0.63, 2, 0)<<AP_THROTTLE_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
     return ap_status;
@@ -689,6 +713,41 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_terrain(void)
     }
     // terrain unhealthy flag
     value |= (uint8_t)(terrain->status() == AP_Terrain::TerrainStatus::TerrainStatusUnhealthy) << TERRAIN_UNHEALTHY_OFFSET;
+#endif
+    return value;
+}
+
+/*
+ * prepare wind data
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ * wind direction = 0 means North
+ */
+uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
+    Vector3f v;
+    {
+        AP_AHRS &ahrs = AP::ahrs();
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        v = ahrs.wind_estimate();
+    }
+    // wind angle in 3 degree increments 0,360 (unsigned)
+    uint32_t value = prep_number(roundf(wrap_360(degrees(atan2f(-v.y, -v.x))) * (1.0f/3.0f)), 2, 0);
+    // wind speed in dm/s
+    value |= prep_number(roundf(v.length() * 10), 2, 1) << WIND_SPEED_OFFSET;
+#else
+    const AP_WindVane* windvane = AP_WindVane::get_singleton();
+    uint32_t value = 0;
+    if (windvane != nullptr && windvane->enabled()) {
+        // true wind angle in 3 degree increments 0,360 (unsigned)
+        value = prep_number(roundf(wrap_360(degrees(windvane->get_true_wind_direction_rad())) * (1.0f/3.0f)), 2, 0);
+        // true wind speed in dm/s
+        value |= prep_number(roundf(windvane->get_true_wind_speed() * 10), 2, 1) << WIND_SPEED_OFFSET;
+        // apparent wind angle in 3 degree increments -180,180 (signed)
+        value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0);
+        // apparent wind speed in dm/s
+        value |= prep_number(roundf(windvane->get_apparent_wind_speed() * 10), 2, 1) << WIND_APPARENT_SPEED_OFFSET;
+    }
 #endif
     return value;
 }
