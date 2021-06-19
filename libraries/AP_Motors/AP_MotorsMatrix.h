@@ -30,7 +30,7 @@ public:
     }
 
     // init
-    void                init(motor_frame_class frame_class, motor_frame_type frame_type) override;
+    virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
 #ifdef ENABLE_SCRIPTING
     // Init to be called from scripting
@@ -61,7 +61,7 @@ public:
     bool                output_test_num(uint8_t motor, int16_t pwm);
 
     // output_to_motors - sends minimum values out to the motors
-    void                output_to_motors() override;
+    virtual void        output_to_motors() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
