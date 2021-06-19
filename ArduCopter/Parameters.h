@@ -224,6 +224,7 @@ public:
 
         // 127: Planck Params
         k_param_planck_land_kp_z, // 127
+        k_param_planck_emergency_throttle, // 128
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -470,6 +471,7 @@ public:
 
     // planck Parameters
     AP_Float                planck_land_kp_z;
+    AP_Float                planck_emergency_throttle;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

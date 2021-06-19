@@ -801,3 +801,8 @@
  #define PLANCK_LAND_KP_ALT          .1     // Proportional alt gain used in planck land
  #define PLANCK_NOM_KP_ALT           1
 #endif
+
+// Emergency Mode Throttle setting
+#ifndef PLANCK_EMT_THR
+ #define PLANCK_EMT_THR              .65
+#endif
