@@ -390,6 +390,8 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
+    // Temp variable for min gndspd commanded changes in AUTO mode
+    int32_t min_gndspd_cm;
 
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
