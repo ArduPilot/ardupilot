@@ -79,6 +79,32 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
+/*
+  send a text message to all GCS only
+ */
+void GCS::send_textv_gcsonly(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
+{
+    uint8_t mask = statustext_send_channel_mask();
+    if (!update_send_has_been_called) {
+        // we have not yet initialised the streaming-channel-mask,
+        // which is done as part of the update() call.  So just send
+        // it to all channels:
+        mask = (1<<_num_gcs)-1;
+    }
+    send_textv_gcsonly(severity, fmt, arg_list, mask);
+}
+
+/*
+  send a text message to all GCS only
+ */
+void GCS::send_text_gcsonly(MAV_SEVERITY severity, const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    send_textv_gcsonly(severity, fmt, arg_list);
+    va_end(arg_list);
+}
+
 void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
 {
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
