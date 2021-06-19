@@ -4,7 +4,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+int hal = 0;
 
 
 class DummyAHRS: AP_AHRS_NavEKF {

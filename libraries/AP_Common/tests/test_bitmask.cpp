@@ -1,15 +1,20 @@
 #include <AP_gtest.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_Common/Bitmask.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 TEST(Bitmask, Tests)
 {
     Bitmask<49> x;
-
+    EXPECT_EQ(0, x.count());
     EXPECT_EQ(-1, x.first_set());
     x.set(5);
+    EXPECT_EQ(1, x.count());
     EXPECT_EQ(5, x.first_set());
     x.clear(5);
+    EXPECT_EQ(0, x.count());
     EXPECT_EQ(-1, x.first_set());
 
     EXPECT_EQ(-1, x.first_set());
@@ -23,6 +28,7 @@ TEST(Bitmask, Tests)
     x.set(5);
     x.set(6);
     x.set(48);
+    EXPECT_EQ(4, x.count());
     EXPECT_EQ(0, x.first_set());
     EXPECT_EQ(0, x.first_set());
     x.clear(0);
@@ -36,6 +42,13 @@ TEST(Bitmask, Tests)
     EXPECT_EQ(48, x.first_set());
     x.clear(48);
     EXPECT_EQ(-1, x.first_set());
+
+    Bitmask<49> x2;
+    x2 = x;
+    x.set(50);
+    for (uint8_t i=0; i<50; i++) {
+        EXPECT_EQ(x2.get(i), x.get(i));
+    }
 }
 
 TEST(Bitmask, SetAll)
@@ -75,5 +88,3 @@ TEST(Bitmask, Assignment)
 }
 
 AP_GTEST_MAIN()
-
-int hal = 0; // bizarrely, this fixes an undefined-symbol error but doesn't raise a type exception.  Yay.
