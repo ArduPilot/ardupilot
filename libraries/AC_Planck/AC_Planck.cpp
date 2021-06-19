@@ -164,13 +164,7 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
 
         Location current_loc;
         ahrs.get_position(current_loc);
-        int32_t alt_above_home_cm = 0;
-        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
-          float posD;
-          ahrs.get_relative_position_D_home(posD);
-          alt_above_home_cm = -posD*100;
-        }
-        _tether_status.high_tension_alt_cm = alt_above_home_cm;
+        _tether_status.high_tension_alt_cm = current_loc.alt;
         gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: High Tension");
       }
 
@@ -337,4 +331,43 @@ bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, 
   is_yaw_rate = _cmd.is_yaw_rate;
   _cmd.is_new = false;
   return true;
+}
+
+bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
+  //No comms from the tether
+  bool tether_comms_failed = is_tether_timed_out();
+
+  //Determine if high tension has been or should have been triggered
+  bool high_tension_triggered = _tether_status.high_tension || tether_comms_failed;
+
+  //Hasn't failed if not triggered
+  if(!high_tension_triggered) {
+    return false;
+  }
+
+  //Check for a timeout. Has it been 15s since the tether indicated high tension,
+  //or 15s since we last heard the tether comms timed out
+  bool timeout = false;
+  if(!tether_comms_failed) {
+    timeout = (AP_HAL::millis() - _tether_status.high_tension_timestamp_ms) > 15000;
+  } else { //Tether comms have failed
+    timeout = (AP_HAL::millis() - _tether_status.timestamp_ms) > 20000; //15s + 5s timeout
+  }
+
+  //If no timeout, it hasn't failed yet
+  if(!timeout) {
+    return false;
+  }
+
+  //Check if the altitude stayed the same or increased. Add a 2m buffer
+  float alt_threshold = _tether_status.high_tension_alt_cm - 200.;
+  bool alt_increased = ((float)alt_cm >= alt_threshold);
+
+  //Check if the tag altitude stayed the same or increased. Add a 2m buffer
+  float tag_alt_threshold = _tether_status.high_tension_tag_alt_cm - 200.;
+  bool tag_alt_increased = _status.tracking_tag ? (_tag_est.tag_pos_cm.z >= tag_alt_threshold) : false;
+
+  //At this point, its been 15s since we should have been pulled down.
+  //If the altitude hasn't decreased, the tensioner likely failed
+  return (alt_increased || tag_alt_increased);
 }

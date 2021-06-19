@@ -90,6 +90,9 @@ public:
   //Tether tag altitude on high-tension entry. 0 if not high tension or wasn't tracking tag
   float get_high_tension_entry_tag_alt_cm() { return _tether_status.high_tension_tag_alt_cm; };
 
+  //Determine if the tether tensioner may have failed
+  bool check_if_high_tension_failed(const int32_t alt_cm);
+
 private:
 
   struct
