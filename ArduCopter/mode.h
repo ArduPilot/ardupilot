@@ -786,8 +786,8 @@ public:
     using Mode::Mode;
 
     bool init(bool ignore_checks) override;
-    void run() override { this->run(false); };
-    void run(bool high_jerk_z);
+    void run() override { this->run(false, false); };
+    void run(bool high_jerk_z, bool force_positive_throttle);
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
@@ -815,7 +815,7 @@ public:
     GuidedMode mode() const { return guided_mode; }
 
     void angle_control_start();
-    void angle_control_run(bool high_jerk_z = false);
+    void angle_control_run(bool high_jerk_z = false, bool force_positive_throttle = false);
 
 protected:
 

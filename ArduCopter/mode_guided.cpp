@@ -332,7 +332,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-void ModeGuided::run(bool high_jerk_z)
+void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 {
     // call the correct auto controller
     switch (guided_mode) {
@@ -359,7 +359,7 @@ void ModeGuided::run(bool high_jerk_z)
 
     case Guided_Angle:
         // run angle controller
-        angle_control_run(high_jerk_z);
+        angle_control_run(high_jerk_z, force_positive_throttle);
         break;
     }
  }
@@ -572,7 +572,7 @@ void ModeGuided::posvel_control_run()
 
 // guided_angle_control_run - runs the guided angle controller
 // called from guided_run
-void ModeGuided::angle_control_run(bool high_jerk_z)
+void ModeGuided::angle_control_run(bool high_jerk_z, bool force_positive_throttle)
 {
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
@@ -633,8 +633,12 @@ void ModeGuided::angle_control_run(bool high_jerk_z)
     }
 
     // call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
-    pos_control->update_z_controller();
+    if(force_positive_throttle) {
+        attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+    } else {
+        pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
+        pos_control->update_z_controller();
+    }
 }
 
 // helper function to update position controller's desired velocity while respecting acceleration limits
