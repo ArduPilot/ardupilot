@@ -82,6 +82,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--disable-watchdog',
+        action='store_true',
+        default=False,
+        help='Build with watchdog disabled.')
+
     g.add_option('--coverage',
                  action='store_true',
                  default=False,

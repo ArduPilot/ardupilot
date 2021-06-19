@@ -722,6 +722,14 @@ class chibios(Board):
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
 
+
+        if cfg.options.disable_watchdog:
+            cfg.msg("Disabling Watchdog", "yes")
+            env.CFLAGS += [ '-DDISABLE_WATCHDOG' ]
+            env.CXXFLAGS += [ '-DDISABLE_WATCHDOG' ]
+        else:
+            cfg.msg("Disabling Watchdog", "no")
+
         if cfg.env.ENABLE_MALLOC_GUARD:
             cfg.msg("Enabling malloc guard", "yes")
             env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
