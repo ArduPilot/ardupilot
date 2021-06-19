@@ -336,6 +336,8 @@ protected:
 
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
+    bool is_no_such_mode(void* mode, uint8_t mode_num);
+
 private:
 
     // delay() callback that processing MAVLink packets
