@@ -226,6 +226,39 @@ float Location::get_distance(const struct Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
+// return ETA (Estimated Time of Arrival) from Location to loc2 in Seconds taking current Wind & Airspeed estimates into account
+// Should be used with caution - the return value's sliding average of a reasonably long time period (ie 5..30 seconds) is suggested for estimation
+// Negative return value should never be considered as part of any sliding average, as -1 is used to indicate infinately long ETA
+// Note that AP::ahrs().wind_estimate() only appears to provide realistic estimate after flying a course including at least 180 degree turns - currently
+// Note that this implementation does not (yet) take into account the turning phase - considered negligable compared to distance between waypoints
+// Note that max airspeed available to fight wind is considered currently equal to currently achieved airspeed (by using calc_gndspee_undershoot); should be refined later
+float Location::get_ETA(const struct Location &loc2) const
+{
+	float airspeed_measured;
+	float c_ETA=-1; //Assume first that location is unreachable; use -1 to indicate infinitely long flying due to headwind>=max airspeed; update if location is reachable
+    if (AP::ahrs().airspeed_estimate(airspeed_measured)) {
+	    if (airspeed_measured>0) {
+		  float airspeed_available = airspeed_measured; //Assume that our available max airspeed to fight wind is equal to currently achieved airspeed (by using calc_gndspee_undershoot); should be refined later
+		  Vector3f nedWind = AP::ahrs().wind_estimate();
+		  Vector2f horizontal_wind_vect; //use only the horizontal components for this calculation
+		  horizontal_wind_vect.x = nedWind.x;  
+		  horizontal_wind_vect.y = nedWind.y;
+		  float l_bearing = radians(get_bearing_to(loc2)*0.01f); //radians
+		  float w_bearing = atan2f(-horizontal_wind_vect.y,-horizontal_wind_vect.x); //wind vector direction
+          float l_dis = get_distance(loc2); //distance to location in meters
+		  float angle_diff = l_bearing-w_bearing; //difference between bearing angle to location VS wind vector direction
+		  float wind_on_bearing = cosf(angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component along the bearing-to-location direction
+		  float wind_prep_to_bearing = sinf(angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component prependicular to the bearing-to-location direction - we need to compensate this by heading
+		  float wind_counter_angle = acosf(wind_prep_to_bearing / airspeed_available); //Get the Heading angle correction eeded to compensate the effect of wind vector
+		  float airspeed_on_bearing = airspeed_available*sinf(wind_counter_angle); //Get the Airspeed component we have remaining after wind-compensation - we can use this to proceed towards target location
+		  float expected_groundspeed_towards_location = airspeed_on_bearing-wind_on_bearing; //We still have to find Wind (projected component in lint with bearing-to-location vector)
+		  if (expected_groundspeed_towards_location>0) { //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
+		      c_ETA= l_dis / expected_groundspeed_towards_location; //Current Estimated Time of Arrival to currently examined loc2, taking Wind speed & direction into account
+			}
+		}
+	}
+	return(c_ETA); //-1 if locations appears to be unreachable because of headwind component is larger than airspeed - Should be averaged over a reasonable period of time!
+}
 
 /*
   return the distance in meters in North/East plane as a N/E vector

@@ -62,6 +62,14 @@ public:
     // return distance in meters between two locations
     float get_distance(const struct Location &loc2) const;
 
+    // return ETA (Estimated Time of Arrival) from Location to loc2 in Seconds taking current Wind & Airspeed estimates into account
+    // Should be used with caution - the return value's sliding average of a reasonably long time period (ie 5..30 seconds) is suggested for estimation
+    // Negative return value should never be considered as part of any sliding average, as -1 is used to indicate infinately long ETA
+	// Note that AP::ahrs().wind_estimate() only appears to provide realistic estimate after flying a course including at least 180 degree turns - currently
+    // Note that this implementation does not (yet) take into account the turning phase - considered negligable compared to distance between waypoints
+    // Note that max airspeed available to fight wind is considered currently equal to currently achieved airspeed (by using calc_gndspee_undershoot); should be refined later
+	float get_ETA(const struct Location &loc2) const;
+
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     Vector3f get_distance_NED(const Location &loc2) const;
 
