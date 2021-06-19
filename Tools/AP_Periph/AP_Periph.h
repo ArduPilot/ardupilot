@@ -130,7 +130,7 @@ public:
 #if HAL_NUM_CAN_IFACES >= 2
     // This allows you to change the protocol and it continues to use the one at boot.
     // Without this, changing away from UAVCAN causes loss of comms and you can't
-    // change the rest of your params or veryofy it suceeded.
+    // change the rest of your params or verify it succeeded.
     AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
