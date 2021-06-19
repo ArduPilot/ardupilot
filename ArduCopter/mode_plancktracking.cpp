@@ -222,7 +222,8 @@ void ModePlanckTracking::run() {
     }
 
     //Run the guided mode controller
-    ModeGuided::run(true); //use high-jerk
+    bool use_positive_throttle = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
+    ModeGuided::run(true, use_positive_throttle); //use high-jerk, positive throttle if necessary
 }
 
 bool ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
