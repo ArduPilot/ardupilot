@@ -354,7 +354,7 @@ void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 
     case Guided_PosVel:
         // run position-velocity controller
-        posvel_control_run();
+        posvel_control_run(force_positive_throttle);
         break;
 
     case Guided_Angle:
@@ -513,7 +513,7 @@ void ModeGuided::vel_control_run(bool force_positive_throttle)
 
 // guided_posvel_control_run - runs the guided spline controller
 // called from guided_run
-void ModeGuided::posvel_control_run()
+void ModeGuided::posvel_control_run(bool force_positive_throttle)
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -561,7 +561,14 @@ void ModeGuided::posvel_control_run()
 
     // run position controllers
     pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+
+    // call position controller
+    if(force_positive_throttle) {
+        attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+        pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
+    } else {
+        pos_control->update_z_controller();
+    }
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
