@@ -279,8 +279,7 @@ bool Plane::set_mode(const uint8_t new_mode, const ModeReason reason)
 {
     static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
     Mode *mode = plane.mode_from_mode_num(static_cast<Mode::Number>(new_mode));
-    if (mode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Error: invalid mode number: %u", (unsigned)new_mode);
+    if (is_no_such_mode((void*)mode, new_mode)) {
         return false;
     }
     return set_mode(*mode, reason);
@@ -289,8 +288,7 @@ bool Plane::set_mode(const uint8_t new_mode, const ModeReason reason)
 bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason)
 {
     Mode *new_mode = plane.mode_from_mode_num(new_mode_number);
-    if (new_mode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Error: invalid mode number: %d", new_mode_number);
+    if (is_no_such_mode((void*)new_mode, new_mode_number)) {
         return false;
     }
     return set_mode(*new_mode, reason);
