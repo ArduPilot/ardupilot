@@ -136,6 +136,7 @@ private:
     uint32_t high_tension_timestamp_ms = 0;
     float high_tension_tag_alt_cm =0;
     float high_tension_alt_cm = 0;
+    bool sent_failed_message = false;
   }_tether_status;
 
   mavlink_channel_t _chan = MAVLINK_COMM_1;

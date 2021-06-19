@@ -342,6 +342,7 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
 
   //Hasn't failed if not triggered
   if(!high_tension_triggered) {
+    _tether_status.sent_failed_message = false;
     return false;
   }
 
@@ -356,6 +357,7 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
 
   //If no timeout, it hasn't failed yet
   if(!timeout) {
+    _tether_status.sent_failed_message = false;
     return false;
   }
 
@@ -369,5 +371,10 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
 
   //At this point, its been 15s since we should have been pulled down.
   //If the altitude hasn't decreased, the tensioner likely failed
-  return (alt_increased || tag_alt_increased);
+  bool failed = (alt_increased || tag_alt_increased);
+  if(failed && !_tether_status.sent_failed_message) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether tensioner failure detection");
+    _tether_status.sent_failed_message = true;
+  }
+  return failed;
 }
