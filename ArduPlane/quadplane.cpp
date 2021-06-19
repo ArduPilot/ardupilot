@@ -149,7 +149,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: TailSitter, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: TailSitter, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix, 17:Dynamic Scripting Matrix
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
@@ -726,6 +726,8 @@ bool QuadPlane::setup(void)
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
+    case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
+    case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
         break;
     default:
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
@@ -745,6 +747,12 @@ bool QuadPlane::setup(void)
             if (tilt.tilt_type != TILT_TYPE_BICOPTER) {
                 rotation = ROTATION_PITCH_90;
             }
+            break;
+        case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
+#ifdef ENABLE_SCRIPTING
+            motors = new AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
+#endif // ENABLE_SCRIPTING
             break;
         default:
             motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
