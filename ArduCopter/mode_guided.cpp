@@ -334,6 +334,8 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 // should be called at 100hz or more
 void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 {
+    _force_positive_throttle = force_positive_throttle;
+
     // call the correct auto controller
     switch (guided_mode) {
 
@@ -349,17 +351,17 @@ void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 
     case Guided_Velocity:
         // run velocity controller
-        vel_control_run(force_positive_throttle);
+        vel_control_run();
         break;
 
     case Guided_PosVel:
         // run position-velocity controller
-        posvel_control_run(force_positive_throttle);
+        posvel_control_run();
         break;
 
     case Guided_Angle:
         // run angle controller
-        angle_control_run(high_jerk_z, force_positive_throttle);
+        angle_control_run(high_jerk_z);
         break;
     }
  }
@@ -455,7 +457,7 @@ void ModeGuided::pos_control_run()
 
 // guided_vel_control_run - runs the guided velocity controller
 // called from guided_run
-void ModeGuided::vel_control_run(bool force_positive_throttle)
+void ModeGuided::vel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -489,7 +491,7 @@ void ModeGuided::vel_control_run(bool force_positive_throttle)
         set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
     }
 
-    if(force_positive_throttle) {
+    if(_force_positive_throttle) {
       pos_control->update_vel_controller_xy();
       attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
       pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
@@ -513,7 +515,7 @@ void ModeGuided::vel_control_run(bool force_positive_throttle)
 
 // guided_posvel_control_run - runs the guided spline controller
 // called from guided_run
-void ModeGuided::posvel_control_run(bool force_positive_throttle)
+void ModeGuided::posvel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -563,7 +565,7 @@ void ModeGuided::posvel_control_run(bool force_positive_throttle)
     pos_control->update_xy_controller();
 
     // call position controller
-    if(force_positive_throttle) {
+    if(_force_positive_throttle) {
         attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
         pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
     } else {
@@ -585,7 +587,7 @@ void ModeGuided::posvel_control_run(bool force_positive_throttle)
 
 // guided_angle_control_run - runs the guided angle controller
 // called from guided_run
-void ModeGuided::angle_control_run(bool high_jerk_z, bool force_positive_throttle)
+void ModeGuided::angle_control_run(bool high_jerk_z)
 {
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
@@ -646,7 +648,7 @@ void ModeGuided::angle_control_run(bool high_jerk_z, bool force_positive_throttl
     }
 
     // call position controller
-    if(force_positive_throttle) {
+    if(_force_positive_throttle) {
         attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
