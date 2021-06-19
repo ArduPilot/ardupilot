@@ -86,7 +86,9 @@ void AP_Periph_FW::init()
     
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
+#ifndef DISABLE_WATCHDOG
     stm32_watchdog_init();
+#endif
 
     stm32_watchdog_pat();
 
