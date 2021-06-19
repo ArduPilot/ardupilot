@@ -2601,6 +2601,9 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             // back to normal
             qp.pos_control->set_max_speed_accel_xy(qp.wp_nav->get_default_speed_xy(),
                                                    qp.wp_nav->get_wp_acceleration());
+        } else if (s == QPOS_AIRBRAKE) {
+            // start with zero integrator on vertical throttle
+            qp.pos_control->get_accel_z_pid().set_integrator(0);
         }
     }
     state = s;
@@ -2680,6 +2683,10 @@ void QuadPlane::vtol_position_controller(void)
         plane.calc_nav_roll();
 
         const float stop_distance = stopping_distance();
+
+        if (poscontrol.get_state() == QPOS_AIRBRAKE) {
+            hold_hover(0);
+        }
 
         /*
           see if we should start airbraking stage. For non-tailsitters
@@ -4061,7 +4068,8 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
         in_vtol_mode() &&
-        !is_tailsitter()) {
+        !is_tailsitter() &&
+        poscontrol.get_state() != QPOS_AIRBRAKE) {
         // we want the desired rates for fixed wing slaved to the
         // multicopter rates
         return false;
