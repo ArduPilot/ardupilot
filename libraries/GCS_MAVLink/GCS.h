@@ -446,6 +446,9 @@ protected:
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
+    //Get planck ptr
+    virtual void* get_planck_ptr() { return nullptr; };
+
 private:
 
     // reduce effect of vehicle Yaw and gimbal pitch with increasing camera zoom

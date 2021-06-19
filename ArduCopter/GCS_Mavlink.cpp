@@ -1449,3 +1449,8 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
     }
     return MAV_LANDED_STATE_IN_AIR;
 }
+
+void* GCS_MAVLINK_Copter::get_planck_ptr()
+{
+    return (void*)(&(copter.planck_interface));
+}
