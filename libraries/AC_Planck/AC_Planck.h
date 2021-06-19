@@ -93,6 +93,12 @@ public:
   //Determine if the tether tensioner may have failed
   bool check_if_high_tension_failed(const int32_t alt_cm);
 
+  //Override any commands from ACE with zero-velocity commands
+  void override_with_zero_vel_cmd();
+
+  //Override any commands from ACE with zero-attitude commands
+  void override_with_zero_att_cmd();
+
 private:
 
   struct
@@ -105,6 +111,14 @@ private:
     uint32_t timestamp_ms = 0;
     bool is_new = false;
     cmd_type type = NONE;
+    void zero() {
+      pos.zero();
+      vel_cms.zero();
+      accel_cmss.zero();
+      att_cd.zero();
+      is_yaw_rate = true;
+      type = NONE;
+    }
   }_cmd;
 
   struct

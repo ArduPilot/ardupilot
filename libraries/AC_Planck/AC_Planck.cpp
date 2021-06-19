@@ -378,3 +378,17 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
   }
   return failed;
 }
+
+void AC_Planck::override_with_zero_vel_cmd() {
+  _cmd.zero();
+  _cmd.type = VELOCITY;
+  _cmd.timestamp_ms = AP_HAL::millis();
+  _cmd.is_new = true;
+}
+
+void AC_Planck::override_with_zero_att_cmd() {
+  _cmd.zero();
+  _cmd.type = ATTITUDE;
+  _cmd.timestamp_ms = AP_HAL::millis();
+  _cmd.is_new = true;
+}
