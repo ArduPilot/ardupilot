@@ -53,6 +53,22 @@ void ModePlanckTracking::run() {
             relative_angle);
     }
 
+    //Check for tether high tension
+    bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
+    if(high_tension) {
+        //While in high tension:
+        // - If actively tracking the tag, continue to do so, but use pos throttle
+        // - If not tracking the tag, but tracking the ground GPS, continue to do so, but use pos throttle
+        // - If not tracking tag or ground GPS, use zero velocity command (if gps available, zero attitude if not) with pos throttle
+        if(!copter.planck_interface.get_tag_tracking_state() && !copter.planck_interface.get_commbox_state()) {
+            if(copter.position_ok()) {
+              copter.planck_interface.override_with_zero_vel_cmd();
+            } else {
+              copter.planck_interface.override_with_zero_att_cmd();
+            }
+        }
+    }
+
     //If there is new command data, send it to Guided
     if(copter.planck_interface.new_command_available()) {
         switch(copter.planck_interface.get_cmd_type()) {
@@ -222,8 +238,7 @@ void ModePlanckTracking::run() {
     }
 
     //Run the guided mode controller
-    bool use_positive_throttle = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
-    ModeGuided::run(true, use_positive_throttle); //use high-jerk, positive throttle if necessary
+    ModeGuided::run(true, high_tension); //use high-jerk, positive throttle if necessary
 }
 
 bool ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
