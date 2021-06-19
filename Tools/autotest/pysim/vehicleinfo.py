@@ -360,6 +360,7 @@ class VehicleInfo(object):
         "frames": {
             "tracker": {
                 "waf_target": "bin/antennatracker",
+                "default_params_filename": "default_params/tracker.parm",
             },
         },
     },

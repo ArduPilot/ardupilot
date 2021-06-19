@@ -17,6 +17,9 @@ void Tracker::Log_Write_Attitude()
     sitl.Log_Write_SIMSTATE();
 #endif
     ahrs.Write_POS();
+
+    logger.Write_PID(LOG_PIDY_MSG, g.pidYaw2Srv.get_pid_info());
+    logger.Write_PID(LOG_PIDP_MSG, g.pidPitch2Srv.get_pid_info());
 }
 
 struct PACKED log_Vehicle_Baro {
