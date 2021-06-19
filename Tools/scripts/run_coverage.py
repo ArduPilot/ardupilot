@@ -237,6 +237,7 @@ class CoverageRunner(object):
                                     root_dir + "/build/sitl_periph_gps/libraries/*",
                                     root_dir + "/build/sitl_periph_gps/modules/*",
                                     root_dir + "/libraries/*/examples/*",
+                                    root_dir + "/libraries/*/tests/*",
                                     "-o", self.INFO_FILE
                                     ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
                     if self.verbose:
