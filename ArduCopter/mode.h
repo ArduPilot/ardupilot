@@ -833,7 +833,7 @@ private:
     void posvel_control_start();
     void takeoff_run();
     void pos_control_run();
-    void vel_control_run();
+    void vel_control_run(bool force_positive_throttle = false);
     void posvel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);

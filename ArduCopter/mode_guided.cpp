@@ -349,7 +349,7 @@ void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 
     case Guided_Velocity:
         // run velocity controller
-        vel_control_run();
+        vel_control_run(force_positive_throttle);
         break;
 
     case Guided_PosVel:
@@ -455,7 +455,7 @@ void ModeGuided::pos_control_run()
 
 // guided_vel_control_run - runs the guided velocity controller
 // called from guided_run
-void ModeGuided::vel_control_run()
+void ModeGuided::vel_control_run(bool force_positive_throttle)
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -489,8 +489,14 @@ void ModeGuided::vel_control_run()
         set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
     }
 
-    // call velocity controller which includes z axis controller
-    pos_control->update_vel_controller_xyz();
+    if(force_positive_throttle) {
+      pos_control->update_vel_controller_xy();
+      attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+      pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
+    } else {
+      // call velocity controller which includes z axis controller
+      pos_control->update_vel_controller_xyz();
+    }
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
