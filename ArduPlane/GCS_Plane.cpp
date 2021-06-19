@@ -114,7 +114,8 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
 
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    if (millis() - plane.failsafe.last_valid_rc_ms < 200) {
+    uint32_t last_valid = plane.failsafe.last_valid_rc_ms;
+    if (millis() - last_valid < 200) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
 
