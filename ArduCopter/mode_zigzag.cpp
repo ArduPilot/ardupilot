@@ -26,14 +26,6 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     AP_GROUPINFO("SPRAYER", 2, ModeZigZag, _spray_enabled, 0),
 #endif // SPRAYER_ENABLED == ENABLED
 
-    // @Param: WP_DELAY
-    // @DisplayName: The delay for zigzag waypoint
-    // @Description: Waiting time after reached the destination
-    // @Units: s
-    // @Range: 1 127
-    // @User: Advanced
-    AP_GROUPINFO("WP_DELAY", 3, ModeZigZag, _wp_delay, 1),
-
     // @Param: SIDE_DIST
     // @DisplayName: Sideways distance in ZigZag auto
     // @Description: The distance to move sideways in ZigZag mode
@@ -399,12 +391,7 @@ bool ModeZigZag::reached_destination()
         return false;
     }
 
-    // wait at time which is set in zigzag_wp_delay
-    uint32_t now = AP_HAL::millis();
-    if (reach_wp_time_ms == 0) {
-        reach_wp_time_ms = now;
-    }
-    return ((now - reach_wp_time_ms) > (uint16_t)constrain_int16(_wp_delay, 1, 127) * 1000);
+    return true;
 }
 
 // calculate next destination according to vector A-B and current position
