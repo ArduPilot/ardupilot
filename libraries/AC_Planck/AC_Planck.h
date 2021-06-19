@@ -78,17 +78,8 @@ public:
   //Tether timed out
   bool is_tether_timed_out() { return ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000); };
 
-  //Tether cable spool out
-  float get_tether_cable_out_m() { return _tether_status.cable_out_m; };
-
   //Tether high tension
   bool is_tether_high_tension() { return _tether_status.high_tension; };
-
-  //Tether altitude on high-tension entry. 0 if not high tension
-  float get_high_tension_entry_alt_cm() { return _tether_status.high_tension_alt_cm; };
-
-  //Tether tag altitude on high-tension entry. 0 if not high tension or wasn't tracking tag
-  float get_high_tension_entry_tag_alt_cm() { return _tether_status.high_tension_tag_alt_cm; };
 
   //Determine if the tether tensioner may have failed
   bool check_if_high_tension_failed(const int32_t alt_cm);
