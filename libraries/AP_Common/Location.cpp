@@ -184,7 +184,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
     }
-    return false;
+    return false;  // LCOV_EXCL_LINE  - not reachable
 }
 
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
