@@ -650,6 +650,7 @@ void ModeGuided::angle_control_run(bool high_jerk_z)
     // call position controller
     if(_force_positive_throttle) {
         attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+        pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
         pos_control->update_z_controller();
