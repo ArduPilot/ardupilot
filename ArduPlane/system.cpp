@@ -151,6 +151,8 @@ void Plane::init_ardupilot()
     Location::set_terrain(&terrain);
 #endif
 
+    //Code added by Cole, initialize AS5600 sensor
+    aoa_sensor.init();
 }
 
 //********************************************************************************
