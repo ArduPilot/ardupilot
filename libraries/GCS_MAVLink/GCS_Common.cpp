@@ -3470,7 +3470,9 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_RALLY_POINT:
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
+#if HAL_RALLY_ENABLED
         handle_common_rally_message(msg);
+#endif
         break;
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -5375,9 +5377,11 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
     }
 
+#if HAL_RALLY_ENABLED
     if (AP::rally()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
     }
+#endif
 
     if (AP::fence()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
