@@ -80,9 +80,6 @@ void ModePlanckTracking::run() {
                 return;
             }
         }
-    } else {
-        //Record the hover throttle up until a high tension event
-        copter.planck_interface.record_hover_throttle();
     }
 
     //If there is new command data, send it to Guided

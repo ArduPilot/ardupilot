@@ -65,6 +65,8 @@ void Copter::update_throttle_hover()
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
     }
+
+    copter.planck_interface.record_hover_throttle();
 #endif
 }
 
