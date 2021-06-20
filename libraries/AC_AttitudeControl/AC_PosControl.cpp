@@ -481,6 +481,20 @@ void AC_PosControl::init_xy()
     _last_update_xy_us = AP_HAL::micros64();
 }
 
+/// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
+///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
+///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
+///     The time constant also defines the time taken to achieve the maximum acceleration.
+void AC_PosControl::input_accel_xy(const Vector3f& accel)
+{
+    // check for ekf xy position reset
+    handle_ekf_xy_reset();
+
+    update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy());
+    shape_accel_xy(accel, _accel_desired, _accel_max_xy_cmss, _tc_xy_s, _dt);
+}
+
 /// input_vel_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
