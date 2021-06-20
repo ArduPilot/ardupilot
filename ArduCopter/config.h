@@ -803,6 +803,6 @@
 #endif
 
 // Emergency Mode Throttle setting
-#ifndef PLANCK_EMT_THR
- #define PLANCK_EMT_THR              .65
+#ifndef PLANCK_HT_THR_B
+ #define PLANCK_HT_THR_B              .15 //15%
 #endif

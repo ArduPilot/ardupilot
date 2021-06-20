@@ -430,12 +430,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(planck_land_kp_z, "PLANCK_LAND_KP_Z",                 PLANCK_LAND_KP_ALT),
 
-        // @Param: PLANCK_EMERGENCY_THROTTLE
-    // @DisplayName: Planck Emergency Throttle Setting
-    // @Description: Fixed throttle setting when comms or pos ref is lost
+    // @Param: planck_high_tension_throttle_boost
+    // @DisplayName: Planck High Tension throttle boost
+    // @Description: Amount to increase the hover throttle during high tension events
     // @Range: 0 1
     // @User: Advanced
-    GSCALAR(planck_emergency_throttle, "PLANCK_EMT_THR",                 PLANCK_EMT_THR),
+    GSCALAR(planck_high_tension_throttle_boost, "PLANCK_HT_THR_B", PLANCK_HT_THR_B),
 
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
