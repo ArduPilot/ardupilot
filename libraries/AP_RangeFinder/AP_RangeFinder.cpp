@@ -540,7 +540,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 
     case Type::UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
         /*
           the UAVCAN driver gets created when we first receive a
           measurement. We take the instance slot now, even if we don't
