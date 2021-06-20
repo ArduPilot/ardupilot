@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
+#include "GCS_MAVLink.h"
 
 // Global parameter class.
 //
@@ -45,6 +46,7 @@ public:
         k_param_can_protocol0,
         k_param_can_protocol1,
         k_param_can_protocol2,
+        k_param_sysid_this_mav,
     };
 
     AP_Int16 format_version;
@@ -105,6 +107,10 @@ public:
 
 #if HAL_LOGGING_ENABLED
     AP_Int32        log_bitmask;
+#endif
+
+#ifndef HAL_NO_GCS
+    AP_Int16 sysid_this_mav;
 #endif
 
     Parameters() {}
