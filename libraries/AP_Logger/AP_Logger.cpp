@@ -874,6 +874,7 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
 }
 
+#if HAL_RALLY_ENABLED
 void AP_Logger::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
@@ -885,6 +886,7 @@ void AP_Logger::Write_Rally()
 {
     FOR_EACH_BACKEND(Write_Rally());
 }
+#endif
 
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
