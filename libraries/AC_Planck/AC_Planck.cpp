@@ -350,7 +350,7 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
   //Check for a timeout. Has it been 15s since the tether indicated high tension,
   //or 15s since we last heard the tether comms timed out
   bool timeout = false;
-  if(!tether_comms_failed) {
+  if(_tether_status.high_tension) {
     timeout = (AP_HAL::millis() - _tether_status.high_tension_timestamp_ms) > 15000;
   } else { //Tether comms have failed
     timeout = (AP_HAL::millis() - _tether_status.timestamp_ms) > 20000; //15s + 5s timeout

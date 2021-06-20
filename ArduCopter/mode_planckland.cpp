@@ -6,7 +6,7 @@ bool ModePlanckLand::init(bool ignore_checks){
     if(copter.ap.land_complete)
       return false;
 
-    if(copter.pos_control->get_pos_z_p().kP().get() != _kpz_nom){
+    if(!is_equal(copter.pos_control->get_pos_z_p().kP().get(),_kpz_nom)){
       _kpz_nom = copter.pos_control->get_pos_z_p().kP().get();
     }
 
