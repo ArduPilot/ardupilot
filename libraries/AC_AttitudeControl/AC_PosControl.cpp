@@ -384,22 +384,16 @@ void AC_PosControl::input_pos_vel_accel_xyz(const Vector3f& pos)
 ///
 
 /// set_max_speed_accel_xy - set the maximum horizontal speed in cm/s and acceleration in cm/s/s and position controller correction acceleration limit
-void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss, float accel_limit_cmss)
+void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
 {
     // return immediately if no change
-    if (is_equal(_vel_max_xy_cms, speed_cms) && is_equal(_accel_max_xy_cmss, accel_cmss) && is_equal(_accel_limit_xy_cmss, accel_limit_cmss)) {
+    if ((is_equal(_vel_max_xy_cms, speed_cms) && is_equal(_accel_max_xy_cmss, accel_cmss))) {
         return;
     }
     _vel_max_xy_cms = speed_cms;
     _accel_max_xy_cmss = accel_cmss;
-    _accel_limit_xy_cmss = accel_limit_cmss;
 
-    if (is_positive(_accel_limit_xy_cmss)) {
-        // Use half the maximum acceleration for the position controller approach limit to ensure velocity controller has sufficient head room to operate effectively.
-        accel_cmss = MIN(_accel_max_xy_cmss, 0.5f * _accel_limit_xy_cmss);
-    }
-
-    _p_pos_xy.set_limits(_vel_max_xy_cms, accel_cmss, 0.0f);
+    _p_pos_xy.set_limits(_vel_max_xy_cms, _accel_max_xy_cmss, 0.0f);
 
     // ensure the horizontal time constant is not less than the vehicle is capable of
     const float lean_angle = _accel_max_xy_cmss / (GRAVITY_MSS * 100.0 * M_PI / 18000.0);
@@ -608,15 +602,6 @@ void AC_PosControl::update_xy_controller()
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ekfNavVelGainScaler;
 
-    _limit_vector.x = 0.0f;
-    _limit_vector.y = 0.0f;
-    if (!is_zero(_accel_limit_xy_cmss)) {
-        if (accel_target.limit_length(_accel_limit_xy_cmss)) {
-            _limit_vector.x = accel_target.x;
-            _limit_vector.y = accel_target.y;
-        }
-    }
-
     // pass the correction acceleration to the target acceleration output
     _accel_target.x = accel_target.x;
     _accel_target.y = accel_target.y;
@@ -628,6 +613,8 @@ void AC_PosControl::update_xy_controller()
     // Acceleration Controller
 
     // limit acceleration using maximum lean angles
+    _limit_vector.x = 0.0f;
+    _limit_vector.y = 0.0f;
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
     float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
     if (_accel_target.limit_length_xy(accel_max)) {
