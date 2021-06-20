@@ -743,6 +743,7 @@ bool AP_Arming::rangefinder_checks(bool report)
 
 bool AP_Arming::servo_checks(bool report) const
 {
+#if NUM_SERVO_CHANNELS
     bool check_passed = true;
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
@@ -769,6 +770,9 @@ bool AP_Arming::servo_checks(bool report) const
 #endif
 
     return check_passed;
+#else
+    return false;
+#endif
 }
 
 bool AP_Arming::board_voltage_checks(bool report)
@@ -870,6 +874,7 @@ bool AP_Arming::can_checks(bool report)
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
         char fail_msg[50] = {};
+        (void)fail_msg; // might be left unused
         uint8_t num_drivers = AP::can().get_num_drivers();
 
         for (uint8_t i = 0; i < num_drivers; i++) {
@@ -902,10 +907,12 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_CANManager::Driver_Type_UAVCAN:
                 {
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
                     if (!AP::uavcan_dna_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
                         return false;
                     }
+#endif
                     break;
                 }
                 case AP_CANManager::Driver_Type_ToshibaCAN:
