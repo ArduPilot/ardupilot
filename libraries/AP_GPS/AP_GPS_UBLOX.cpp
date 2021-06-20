@@ -36,7 +36,9 @@
 
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
+#ifndef CONFIGURE_PPS_PIN
 #define CONFIGURE_PPS_PIN 0
+#endif
 
 // this is number of epochs per output. A higher value will reduce
 // the uart bandwidth needed and allow for higher latency
