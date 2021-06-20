@@ -160,7 +160,7 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
         if(_status.tracking_tag) {
           _tether_status.high_tension_tag_alt_cm = _tag_est.tag_pos_cm.z;
         } else {
-          _tether_status.high_tension_tag_alt_cm = 0;
+          _tether_status.high_tension_tag_alt_cm = 0.0f;
         }
 
         Location current_loc;
@@ -172,8 +172,8 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
       //If transitioning out of high tension, reset recorded values
       if(!high_tension && _tether_status.high_tension) {
         _tether_status.high_tension_timestamp_ms = 0;
-        _tether_status.high_tension_tag_alt_cm = 0;
-        _tether_status.high_tension_alt_cm = 0;
+        _tether_status.high_tension_tag_alt_cm = 0.0f;
+        _tether_status.high_tension_alt_cm = 0.0f;
         gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: Nominal");
       }
 
@@ -367,8 +367,11 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
   bool alt_increased = ((float)alt_cm >= alt_threshold);
 
   //Check if the tag altitude stayed the same or increased. Add a 2m buffer
-  float tag_alt_threshold = _tether_status.high_tension_tag_alt_cm - 200.;
-  bool tag_alt_increased = _status.tracking_tag ? (_tag_est.tag_pos_cm.z >= tag_alt_threshold) : false;
+  bool tag_alt_increased = false;
+  if(!is_equal(_tether_status.high_tension_tag_alt_cm,0.0f)) {
+      float tag_alt_threshold = _tether_status.high_tension_tag_alt_cm - 200.;
+      tag_alt_increased = _status.tracking_tag ? (_tag_est.tag_pos_cm.z >= tag_alt_threshold) : false;
+  }
 
   //At this point, its been 15s since we should have been pulled down.
   //If the altitude hasn't decreased, the tensioner likely failed
