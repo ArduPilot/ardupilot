@@ -93,8 +93,8 @@ public:
   //Record the hover throttle position. Call this regularly
   void record_hover_throttle();
 
-  //Get the recorded hover throttle prior to high tension events
-  float get_hover_throttle_before_high_tension() { return _hover_throttle_before_high_tension; };
+  //Calculate the desired pos throttle for high tension events
+  float calculate_pos_throttle(const float boost_pct);
 
 private:
 

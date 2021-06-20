@@ -493,7 +493,7 @@ void ModeGuided::vel_control_run()
 
     if(_force_positive_throttle) {
       pos_control->update_vel_controller_xy();
-      attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+      attitude_control->set_throttle_out(copter.planck_interface.calculate_pos_throttle(copter.g.planck_emergency_throttle), true, g.throttle_filt);
       pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
     } else {
       // call velocity controller which includes z axis controller
@@ -566,7 +566,7 @@ void ModeGuided::posvel_control_run()
 
     // call position controller
     if(_force_positive_throttle) {
-        attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+        attitude_control->set_throttle_out(copter.planck_interface.calculate_pos_throttle(copter.g.planck_emergency_throttle), true, g.throttle_filt);
         pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
     } else {
         pos_control->update_z_controller();
@@ -649,7 +649,7 @@ void ModeGuided::angle_control_run(bool high_jerk_z)
 
     // call position controller
     if(_force_positive_throttle) {
-        attitude_control->set_throttle_out(g.planck_emergency_throttle, true, g.throttle_filt);
+        attitude_control->set_throttle_out(copter.planck_interface.calculate_pos_throttle(copter.g.planck_emergency_throttle), true, g.throttle_filt);
         pos_control->relax_alt_hold_controllers(attitude_control->get_throttle_in());
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);

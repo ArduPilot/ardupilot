@@ -399,3 +399,7 @@ void AC_Planck::record_hover_throttle() {
     _hover_throttle_before_high_tension = AP_Motors::get_singleton()->get_throttle_hover();
   }
 }
+
+float AC_Planck::calculate_pos_throttle(const float boost_pct) {
+  return constrain_float(_hover_throttle_before_high_tension + boost_pct, _hover_throttle_before_high_tension, 1.);
+}
