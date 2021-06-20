@@ -6,6 +6,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <StorageManager/StorageManager.h>
 
+#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
@@ -199,3 +200,4 @@ AP_Rally *rally()
 }
 
 }
+#endif //HAL_RALLY_ENABLED
