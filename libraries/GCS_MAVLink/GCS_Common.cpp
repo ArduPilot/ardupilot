@@ -3813,7 +3813,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_l
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
         return MAV_RESULT_TEMPORARILY_REJECTED;
