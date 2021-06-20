@@ -64,8 +64,7 @@ public:
     ///
 
     /// set_max_speed_accel_xy - set the maximum horizontal speed in cm/s and acceleration in cm/s/s
-    /// If set accel_limit_cmss limits the maximum correction from the position controller to be less than the maximum lean angle
-    void set_max_speed_accel_xy(float speed_cms, float accel_cmss, float accel_limit_cmss = 0.0f);
+    void set_max_speed_accel_xy(float speed_cms, float accel_cmss);
 
     /// get_max_speed_xy_cms - get the maximum horizontal speed in cm/s
     float get_max_speed_xy_cms() const { return _vel_max_xy_cms; }
@@ -401,7 +400,6 @@ protected:
     float       _vel_max_up_cms;        // max climb rate in cm/s
     float       _vel_max_down_cms;      // max descent rate in cm/s
     float       _accel_max_xy_cmss;     // max horizontal acceleration in cm/s/s
-    float       _accel_limit_xy_cmss;   // max horizontal acceleration in cm/s/s
     float       _accel_max_z_cmss;      // max vertical acceleration in cm/s/s
     float       _vel_z_control_ratio = 2.0f;    // confidence that we have control in the vertical axis
 
