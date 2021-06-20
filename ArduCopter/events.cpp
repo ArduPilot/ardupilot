@@ -285,12 +285,13 @@ void Copter::gpsglitch_check()
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {
         ap.gps_glitching = gps_glitching;
+        MAV_SEVERITY level = flightmode->requires_GPS() ? MAV_SEVERITY_CRITICAL : MAV_SEVERITY_INFO;
         if (gps_glitching) {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+            gcs().send_text(level,"GPS Glitch");
         } else {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+            gcs().send_text(level,"GPS Glitch cleared");
         }
     }
 }
