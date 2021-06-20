@@ -90,6 +90,12 @@ public:
   //Override any commands from ACE with zero-attitude commands
   void override_with_zero_att_cmd();
 
+  //Record the hover throttle position. Call this regularly
+  void record_hover_throttle();
+
+  //Get the recorded hover throttle prior to high tension events
+  float get_hover_throttle_before_high_tension() { return _hover_throttle_before_high_tension; };
+
 private:
 
   struct
@@ -143,6 +149,8 @@ private:
     float high_tension_alt_cm = 0;
     bool sent_failed_message = false;
   }_tether_status;
+
+  float _hover_throttle_before_high_tension = 0.5;
 
   mavlink_channel_t _chan = MAVLINK_COMM_1;
 

@@ -2,6 +2,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "../ArduCopter/defines.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Motors/AP_Motors.h>
 
 void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const mavlink_message_t *mav_msg,
     AP_AHRS &ahrs)
@@ -391,4 +392,10 @@ void AC_Planck::override_with_zero_att_cmd() {
   _cmd.type = ATTITUDE;
   _cmd.timestamp_ms = AP_HAL::millis();
   _cmd.is_new = true;
+}
+
+void AC_Planck::record_hover_throttle() {
+  if(!is_tether_high_tension() && !is_tether_timed_out()) {
+    _hover_throttle_before_high_tension = AP_Motors::get_singleton()->get_throttle_hover();
+  }
 }
