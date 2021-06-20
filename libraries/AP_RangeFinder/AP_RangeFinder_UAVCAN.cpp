@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 
 #include "AP_RangeFinder_UAVCAN.h"
 
@@ -180,5 +180,5 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_CANMANAGER_ENABLED
 
