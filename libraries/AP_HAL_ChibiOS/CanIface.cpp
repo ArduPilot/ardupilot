@@ -70,7 +70,7 @@
 #define CAN2_RX1_IRQ_Handler     STM32_CAN2_RX1_HANDLER
 #endif // #if defined(STM32F3XX)
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANIface", fmt, ##args); } while (0)
 #else
 #define Debug(fmt, args...)
