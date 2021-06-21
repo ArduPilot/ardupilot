@@ -217,8 +217,8 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
     posvel_pos_target_cm = destination;
     posvel_vel_target_cms = velocity;
 
-    pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm, posvel_vel_target_cms, Vector3f());
-    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm, posvel_vel_target_cms, Vector3f());
+    pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
+    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm.z, posvel_vel_target_cms.z, 0);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, destination, velocity);
@@ -421,8 +421,8 @@ void Sub::guided_posvel_control_run()
     posvel_pos_target_cm += posvel_vel_target_cms * pos_control.get_dt();
 
     // send position and velocity targets to position controller
-    pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm, posvel_vel_target_cms, Vector3f());
-    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm, posvel_vel_target_cms, Vector3f());
+    pos_control.input_pos_vel_accel_xy(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
+    pos_control.input_pos_vel_accel_z(posvel_pos_target_cm.z, posvel_vel_target_cms.z, 0);
 
     // run position controller
     pos_control.update_xy_controller();
