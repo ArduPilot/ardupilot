@@ -366,18 +366,17 @@ bool AC_Planck::check_for_high_tension_timeout() {
 
   //The amount of time to wait for high tension to timeout is a function of
   //initial altitude when the high tension event ocurred. Use tag altitude if available
-  float timeout_ms = 0;
+  float timeout_s = 0;
   const float reel_rate_cms = 60.96; //~2ft/s
   if(!is_equal(_tether_status.high_tension_tag_alt_cm,0.0f)) {
-    timeout_ms = 100. * (_tether_status.high_tension_tag_alt_cm / reel_rate_cms);
+    timeout_s = _tether_status.high_tension_tag_alt_cm / reel_rate_cms;
   } else {
-    timeout_ms = 100. * (_tether_status.high_tension_alt_cm / reel_rate_cms);
+    timeout_s = _tether_status.high_tension_alt_cm / reel_rate_cms;
   }
   //Add a 5s buffer, limit
-  timeout_ms += 500.;
-  timeout_ms = constrain_float(timeout_ms, 500., 12000.); //5s to 2 minutes
+  timeout_s = constrain_float((timeout_s + 5.), 5., 120.); //5s to 2 minutes
 
-  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + (uint32_t)timeout_ms;
+  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + (uint32_t)(timeout_s * 1000.);
   bool timed_out = AP_HAL::millis() > timeout_time_ms;
 
   if(timed_out && !_tether_status.sent_failed_message) {
