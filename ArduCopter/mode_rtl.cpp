@@ -263,7 +263,7 @@ void ModeRTL::descent_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
 
     // initialise altitude target to stopping point
     pos_control->init_z_controller_stopping_point();
@@ -356,7 +356,7 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -413,8 +413,8 @@ void ModeRTL::build_path()
 {
     // origin point is our stopping point
     Vector3f stopping_point;
-    pos_control->get_stopping_point_xy_cm(stopping_point);
-    pos_control->get_stopping_point_z_cm(stopping_point);
+    pos_control->get_stopping_point_xy_cm(stopping_point.xy());
+    pos_control->get_stopping_point_z_cm(stopping_point.z);
     rtl_path.origin_point = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
     rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
