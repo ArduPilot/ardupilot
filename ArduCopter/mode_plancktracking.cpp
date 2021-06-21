@@ -57,28 +57,23 @@ void ModePlanckTracking::run() {
     bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
     bool use_positive_throttle = high_tension;
     if(high_tension) {
-        if(!copter.planck_interface.check_if_high_tension_failed(copter.current_loc.alt)) { //High tension hasn't failed
+        if(!copter.planck_interface.check_for_high_tension_timeout()) { //High tension hasn't failed
             //While in high tension:
             // - If actively tracking the tag, continue to do so, but use pos throttle
-            // - If not tracking the tag, but tracking the ground GPS, continue to do so, but use pos throttle
-            // - If not tracking tag or ground GPS, use zero velocity command (if gps available, zero attitude if not) with pos throttle
-            if(!copter.planck_interface.get_tag_tracking_state() && !copter.planck_interface.get_commbox_state()) {
+            // - If not tracking the tag, but have GPS, command zero velocity but use pos throttle
+            // - If not tracking tag or and no GPS, use zero attitude with pos throttle
+            if(!copter.planck_interface.get_tag_tracking_state()) {
                 if(copter.position_ok()) {
                   copter.planck_interface.override_with_zero_vel_cmd();
                 } else {
                   copter.planck_interface.override_with_zero_att_cmd();
                 }
             }
-        } else { //High tension has failed
+        } else { //High tension has timed out
             //If high tension has failed, attempt to use a planck land or regular land
-            if(copter.planck_interface.ready_for_land()) {
-                copter.set_mode_planck_RTB_or_planck_land(ModeReason::GCS_FAILSAFE);
-                use_positive_throttle = false; //Use normal altitude control
-            } else {
-                copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE);
-                copter.mode_land.run();
-                return;
-            }
+            copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE);
+            copter.mode_land.run();
+            return;
         }
     }
 
