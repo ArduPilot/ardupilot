@@ -469,7 +469,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
                         _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
                         0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
-                        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), 0.05f, dt);
+                        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), _pos_control.get_shaping_tc_z_s(), dt);
 
     update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
 
