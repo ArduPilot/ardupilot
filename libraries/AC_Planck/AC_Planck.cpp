@@ -152,9 +152,20 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
       _tether_status.cable_out_m = ts.CABLE_OUT * 0.3048; //feet to meters
 
       bool high_tension =  (ts.SPOOL_STATUS == PLANCK_DECK_SPOOL_LOCKED) && (ts.CABLE_TENSION > 75);
+      bool entered_high_tension = high_tension && !_tether_status.high_tension;
+      bool exited_high_tension = !high_tension && _tether_status.high_tension;
 
       //If we've transitioned into high tension, record altitude and timestamps
-      if(high_tension && !_tether_status.high_tension) {
+      if(entered_high_tension) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: High Tension");
+      } else if(exited_high_tension) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: Nominal");
+      }
+
+      //Always update the latest altitudes when we get new tension information.
+      //This allows us to know the altitudes when the high tension event ocurred, or
+      //when we lost comms with the ground
+      if(!high_tension || entered_high_tension) {
         _tether_status.high_tension_timestamp_ms = AP_HAL::millis();
 
         if(_status.tracking_tag) {
@@ -166,15 +177,6 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
         Location current_loc;
         ahrs.get_position(current_loc);
         _tether_status.high_tension_alt_cm = current_loc.alt;
-        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: High Tension");
-      }
-
-      //If transitioning out of high tension, reset recorded values
-      if(!high_tension && _tether_status.high_tension) {
-        _tether_status.high_tension_timestamp_ms = 0;
-        _tether_status.high_tension_tag_alt_cm = 0.0f;
-        _tether_status.high_tension_alt_cm = 0.0f;
-        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: Nominal");
       }
 
       _tether_status.high_tension = high_tension;
@@ -334,7 +336,7 @@ bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, 
   return true;
 }
 
-bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
+bool AC_Planck::check_for_high_tension_timeout() {
   //No comms from the tether
   bool tether_comms_failed = is_tether_timed_out();
 
@@ -362,25 +364,27 @@ bool AC_Planck::check_if_high_tension_failed(const int32_t alt_cm) {
     return false;
   }
 
-  //Check if the altitude stayed the same or increased. Add a 2m buffer
-  float alt_threshold = _tether_status.high_tension_alt_cm - 200.;
-  bool alt_increased = ((float)alt_cm >= alt_threshold);
-
-  //Check if the tag altitude stayed the same or increased. Add a 2m buffer
-  bool tag_alt_increased = false;
+  //The amount of time to wait for high tension to timeout is a function of
+  //initial altitude when the high tension event ocurred. Use tag altitude if available
+  float timeout_ms = 0;
+  const float reel_rate_cms = 60.96; //~2ft/s
   if(!is_equal(_tether_status.high_tension_tag_alt_cm,0.0f)) {
-      float tag_alt_threshold = _tether_status.high_tension_tag_alt_cm - 200.;
-      tag_alt_increased = _status.tracking_tag ? (_tag_est.tag_pos_cm.z >= tag_alt_threshold) : false;
+    timeout_ms = 100. * (_tether_status.high_tension_tag_alt_cm / reel_rate_cms);
+  } else {
+    timeout_ms = 100. * (_tether_status.high_tension_alt_cm / reel_rate_cms);
   }
+  //Add a 5s buffer, limit
+  timeout_ms += 500.;
+  timeout_ms = constrain_float(timeout_ms, 500., 12000.); //5s to 2 minutes
 
-  //At this point, its been 15s since we should have been pulled down.
-  //If the altitude hasn't decreased, the tensioner likely failed
-  bool failed = (alt_increased || tag_alt_increased);
-  if(failed && !_tether_status.sent_failed_message) {
+  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + (uint32_t)timeout_ms;
+  bool timed_out = AP_HAL::millis() > timeout_time_ms;
+
+  if(timed_out && !_tether_status.sent_failed_message) {
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether tensioner failure detection");
     _tether_status.sent_failed_message = true;
   }
-  return failed;
+  return timed_out;
 }
 
 void AC_Planck::override_with_zero_vel_cmd() {
