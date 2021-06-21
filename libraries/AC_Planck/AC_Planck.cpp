@@ -337,6 +337,11 @@ bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, 
 }
 
 bool AC_Planck::check_for_high_tension_timeout() {
+  //No failure if not flying
+  if(AP_Motors::get_singleton()->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+    return false;
+  }
+
   //No comms from the tether
   bool tether_comms_failed = is_tether_timed_out();
 
