@@ -213,10 +213,11 @@ bool AC_Circle::update(float climb_rate_cms)
     }
 
     // update position controller target
-    Vector3f zero;
-    _pos_control.input_pos_vel_accel_xy(target, zero, zero);
-    if(_terrain_alt) {
-        _pos_control.input_pos_vel_accel_z(target, zero, zero);
+    Vector2f zero;
+    _pos_control.input_pos_vel_accel_xy(target.xy(), zero, zero);
+    if (_terrain_alt) {
+        float zero2 = 0;
+        _pos_control.input_pos_vel_accel_z(target.z, zero2, 0);
     } else {
         _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms,  false);
     }
@@ -244,14 +245,12 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
     }
 
     // get current position
-    Vector3f stopping_point;
+    Vector2f stopping_point;
     _pos_control.get_stopping_point_xy_cm(stopping_point);
 
     // calc vector from stopping point to circle center
-    Vector2f vec;   // vector from circle center to current location
-    vec.x = (stopping_point.x - _center.x);
-    vec.y = (stopping_point.y - _center.y);
-    float dist = norm(vec.x, vec.y);
+    Vector2f vec = stopping_point - _center.xy();
+    float dist = vec.length();
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
