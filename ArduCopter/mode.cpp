@@ -593,7 +593,6 @@ void Mode::land_run_horizontal_control()
             target_vel_rel.y = -inertial_nav.get_velocity().y;
         }
         pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
-        pos_control->override_vehicle_velocity_xy(-target_vel_rel);
     }
 #endif
 
