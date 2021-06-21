@@ -68,6 +68,8 @@ public:
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
+    Vector2d get_distance_NE_double(const Location &loc2) const;
+    Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
@@ -122,8 +124,11 @@ public:
     bool initialised() const { return (lat !=0 || lng != 0 || alt != 0); }
 
     // wrap longitude at -180e7 to 180e7
-    static int32_t wrap_longitude(int32_t lon);
+    static int32_t wrap_longitude(int64_t lon);
 
+    // limit lattitude to -90e7 to 90e7
+    static int32_t limit_lattitude(int32_t lat);
+    
     // get lon1-lon2, wrapping at -180e7 to 180e7
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
     
