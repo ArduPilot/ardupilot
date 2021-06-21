@@ -249,9 +249,6 @@ public:
     // get_vel_target_cms - returns the target velocity in NEU cm/s
     const Vector3f& get_vel_target_cms() const { return _vel_target; }
 
-    // get_vel_target_cms - returns the target velocity in NEU cm/s
-    const Vector3f& get_vel_error_cms() const { return _vel_error; }
-
     /// set_vel_desired_z_cms - sets desired velocity in cm/s in z axis
     void set_vel_desired_z_cms(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
@@ -413,10 +410,8 @@ protected:
     Vector3f    _pos_target;            // target location in NEU cm from home
     Vector3f    _vel_desired;           // desired velocity in NEU cm/s
     Vector3f    _vel_target;            // velocity target in NEU cm/s calculated by pos_to_rate step
-    Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
     Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in NEU cm/s/s
-    Vector3f    _accel_error;           // acceleration error in NEU cm/s/s
     Vector3f    _limit_vector;          // the direction that the position controller is limited, zero when not limited
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
 

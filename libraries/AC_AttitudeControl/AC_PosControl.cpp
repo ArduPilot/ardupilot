@@ -423,11 +423,16 @@ void AC_PosControl::init_xy_controller()
 void AC_PosControl::init_xy_controller_stopping_point()
 {
     init_xy();
-    get_stopping_point_xy_cm(_pos_target);
+
+    // desired velocity must be set to zero before calculating stopping point
     _vel_desired.x = 0.0f;
     _vel_desired.y = 0.0f;
+    get_stopping_point_xy_cm(_pos_target);
+
     _accel_desired.x = 0.0f;
     _accel_desired.y = 0.0f;
+    _accel_target.x = 0.0f;
+    _accel_target.y = 0.0f;
 
     // set resultant acceleration to current attitude target
     Vector3f accel_target;
@@ -443,10 +448,9 @@ void AC_PosControl::relax_velocity_controller_xy()
 
     // decay resultant acceleration and therefore current attitude target to zero
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
-    _accel_target.x *= decay;
-    _accel_target.y *= decay;
-    _accel_desired.x = _accel_target.x;
-    _accel_desired.y = _accel_target.y;
+    Vector3f accel_target;
+    lean_angles_to_accel_xy(accel_target.x, accel_target.y);
+    _pid_vel_xy.set_integrator(accel_target * decay - _accel_desired);
 }
 
 /// init_xy - initialise the position controller to the current position, velocity and acceleration.
@@ -701,8 +705,9 @@ void AC_PosControl::init_z_controller_stopping_point()
     // Initialise the position controller to the current throttle, position, velocity and acceleration.
     init_z_controller();
 
+    // desired velocity must be set to zero before calculating stopping point
+    _vel_desired.z = 0.0f;
     get_stopping_point_z_cm(_pos_target);
-    _vel_target.z = 0.0f;
 
     // Set accel PID I term based on the current throttle
     _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
@@ -897,7 +902,7 @@ void AC_PosControl::update_z_controller()
     // Check for vertical controller health
 
     // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _vel_error.z / _vel_max_down_cms;
+    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
     _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
     _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 
@@ -1003,8 +1008,8 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector3f &stopping_point) const
 
     // add velocity error to current velocity
     if (is_active_xy()) {
-        curr_vel.x += _vel_error.x;
-        curr_vel.y += _vel_error.y;
+        curr_vel.x -= _vel_desired.x;
+        curr_vel.y -= _vel_desired.y;
     }
 
     // calculate current velocity
@@ -1043,8 +1048,8 @@ float AC_PosControl::get_throttle_with_vibration_override()
     const float thr_per_accelz_cmss = _motors.get_throttle_hover() / (GRAVITY_MSS * 100.0f);
     // during vibration compensation use feed forward with manually calculated gain
     // ToDo: clear pid_info P, I and D terms for logging
-    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_z.get_i()) && is_negative(_vel_error.z)) || (is_negative(_pid_accel_z.get_i()) && is_positive(_vel_error.z)))) {
-        _pid_accel_z.set_integrator(_pid_accel_z.get_i() + _dt * thr_per_accelz_cmss * 1000.0f * _vel_error.z * _pid_vel_z.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
+    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_z.get_i()) && is_negative(_pid_vel_z.get_error())) || (is_negative(_pid_accel_z.get_i()) && is_positive(_pid_vel_z.get_error())))) {
+        _pid_accel_z.set_integrator(_pid_accel_z.get_i() + _dt * thr_per_accelz_cmss * 1000.0f * _pid_vel_z.get_error() * _pid_vel_z.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
     }
     return POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accelz_cmss * _accel_target.z + _pid_accel_z.get_i() * 0.001f;
 }
