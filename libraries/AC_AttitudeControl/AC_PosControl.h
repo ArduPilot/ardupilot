@@ -56,7 +56,6 @@ public:
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
     ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
-    ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
     void input_pos_vel_accel_xyz(const Vector3f& pos);
 
     ///
