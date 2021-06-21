@@ -406,3 +406,14 @@ void AC_Planck::record_hover_throttle() {
 float AC_Planck::calculate_pos_throttle(const float boost_pct) {
   return constrain_float(_hover_throttle_before_high_tension + boost_pct, _hover_throttle_before_high_tension, 1.);
 }
+
+bool AC_Planck::is_tether_timed_out() {
+  bool timed_out = ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000);
+  if(timed_out && !_tether_status.comms_timed_out) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether comms timed out");
+  } else if (!timed_out && _tether_status.comms_timed_out) {
+    gcs().send_text(MAV_SEVERITY_INFO, "Tether comms restored");
+  }
+  _tether_status.comms_timed_out = timed_out;
+  return timed_out;
+}

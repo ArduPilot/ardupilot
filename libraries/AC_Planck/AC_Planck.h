@@ -76,7 +76,7 @@ public:
   Vector3f get_tag_att(){return _tag_est.tag_att_cd;};
 
   //Tether timed out
-  bool is_tether_timed_out() { return ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000); };
+  bool is_tether_timed_out();
 
   //Tether high tension
   bool is_tether_high_tension() { return _tether_status.high_tension; };
@@ -148,6 +148,7 @@ private:
     float high_tension_tag_alt_cm =0;
     float high_tension_alt_cm = 0;
     bool sent_failed_message = false;
+    bool comms_timed_out = false;
   }_tether_status;
 
   float _hover_throttle_before_high_tension = 0.5;
