@@ -191,6 +191,9 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
+    // Write velocity data from an Prec Land system
+    void writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms) override;
+
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 

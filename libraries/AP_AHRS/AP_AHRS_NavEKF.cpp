@@ -1886,6 +1886,14 @@ void AP_AHRS_NavEKF::writeExtNavVelData(const Vector3f &vel, float err, uint32_t
 #endif
 }
 
+// Write velocity data from an Prec Land system
+void AP_AHRS_NavEKF::writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.writePrecLandVelData(vel, err, timeStamp_ms);
+#endif
+}
+
 // get speed limit
 void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
