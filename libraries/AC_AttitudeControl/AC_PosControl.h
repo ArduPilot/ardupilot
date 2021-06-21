@@ -46,6 +46,9 @@ public:
     /// get_dt - gets time delta in seconds for all position controllers
     float get_dt() const { return _dt; }
 
+    /// get_shaping_tc_z_s - gets the time constant of the z kinimatic path generation in seconds
+    float get_shaping_tc_z_s() const { return _shaping_tc_z_s; }
+
 
     ///
     /// 3D position shaper
