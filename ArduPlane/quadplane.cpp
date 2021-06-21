@@ -1158,8 +1158,7 @@ void QuadPlane::check_yaw_reset(void)
 
 void QuadPlane::set_climb_rate_cms(float target_climb_rate_cms, bool force_descend)
 {
-    Vector3f vel{0,0,target_climb_rate_cms};
-    pos_control->input_vel_accel_z(vel, Vector3f(), force_descend);
+    pos_control->input_vel_accel_z(target_climb_rate_cms, 0, force_descend);
 }
 
 /*
@@ -2887,11 +2886,11 @@ void QuadPlane::vtol_position_controller(void)
         if (poscontrol.pilot_correction_done) {
             // if the pilot has repositioned the vehicle then we switch to velocity control.  This prevents the vehicle
             // shifting position in the event of GPS glitches.
-            Vector3f zero;
-            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms, zero);
+            Vector2f zero;
+            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms.xy(), zero);
         } else {
-            Vector3f zero;
-            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm, zero, zero);
+            Vector2f zero;
+            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), zero, zero);
         }
 
         // also run fixed wing navigation
@@ -2930,8 +2929,8 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->relax_velocity_controller_xy();
         } else {
             // we use velocity control in QPOS_LAND_FINAL to allow for GPS glitch handling
-            Vector3f zero;
-            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms, zero);
+            Vector2f zero;
+            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms.xy(), zero);
         }
 
         run_xy_controller();
@@ -3010,9 +3009,9 @@ void QuadPlane::vtol_position_controller(void)
                 target_altitude_cm += MAX(terrain_altitude_offset_cm*100,0);
             }
 #endif
-            Vector3f pos{0,0,float(target_altitude_cm)};
-            Vector3f zero;
-            pos_control->input_pos_vel_accel_z(pos, zero, zero);
+            float zero = 0;
+            float target_z = target_altitude_cm;
+            pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else {
             set_climb_rate_cms(0, false);
         }
@@ -3118,7 +3117,7 @@ void QuadPlane::takeoff_controller(void)
     pos_control->set_accel_desired_xy_cmss(Vector2f());
 
     // set position control target and update
-    Vector3f zero;
+    Vector2f zero;
     pos_control->input_vel_accel_xy(zero, zero);
 
     run_xy_controller();
