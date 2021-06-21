@@ -94,11 +94,11 @@ void update_pos_vel_accel_xy(Vector2f& pos, Vector2f& vel, const Vector2f& accel
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+ The function alters the input accel to be jerk limited
 */
-void shape_accel(float accel_input, float& accel,
-    float accel_min, float accel_max,
-    float tc, float dt)
+void shape_accel(const float accel_input, float& accel,
+                 const float accel_min, const float accel_max,
+                 const float tc, const float dt)
 {
     // sanity check tc
     if (!is_positive(tc)) {
@@ -177,14 +177,15 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+ The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time and alters the accel
+ to be jerk limited
  The accel_max limit can be removed by setting it to zero.
 */
-void shape_vel_accel(float &vel_input, float accel_input,
-                     float vel, float& accel,
-                     float vel_min, float vel_max,
-                     float accel_min, float accel_max,
-                     float tc, float dt)
+void shape_vel_accel(float &vel_input, const float accel_input,
+                     const float vel, float& accel,
+                     const float vel_min, const float vel_max,
+                     const float accel_min, const float accel_max,
+                     const float tc, const float dt)
 {
     // sanity check tc
     if (!is_positive(tc)) {
@@ -220,12 +221,13 @@ void shape_vel_accel(float &vel_input, float accel_input,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+ The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time and alters the accel to be jerk limited
  This function operates on the x and y axis of both Vector2f or Vector3f inputs.
  The accel_max limit can be removed by setting it to zero.
 */
 void shape_vel_accel_xy(Vector2f &vel_input, const Vector2f& accel_input,
-                        const Vector2f& vel, Vector2f& accel, float vel_max, float accel_max, float tc, float dt)
+                        const Vector2f& vel, Vector2f& accel,
+                        const float vel_max, const float accel_max, const float tc, const float dt)
 {
     // sanity check tc
     if (!is_positive(tc)) {
@@ -261,13 +263,13 @@ void shape_vel_accel_xy(Vector2f &vel_input, const Vector2f& accel_input,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
+ The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time and alters the accel to be jerk limited
  The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
 */
-void shape_pos_vel_accel(float &pos_input, float vel_input, float accel_input,
-                         float pos, float vel, float& accel,
-                         float vel_correction_max, float vel_min, float vel_max,
-                         float accel_min, float accel_max, float tc, float dt)
+void shape_pos_vel_accel(float &pos_input, const float vel_input, const float accel_input,
+                         const float pos, const float vel, float& accel,
+                         const float vel_correction_max, const float vel_min, const float vel_max,
+                         const float accel_min, const float accel_max, const float tc, const float dt)
 {
     // sanity check tc
     if (!is_positive(tc)) {
@@ -304,13 +306,12 @@ void shape_pos_vel_accel(float &pos_input, float vel_input, float accel_input,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
- This function operates on the x and y axis of both Vector2f or Vector3f inputs.
+ The function alters the accel to be jerk limited
  The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
 */
 void shape_pos_vel_accel_xy(const Vector2f& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
-    const Vector2f& pos, const Vector2f& vel, Vector2f& accel,
-    float vel_correction_max, float vel_max, float accel_max, float tc, float dt)
+                            const Vector2f& pos, const Vector2f& vel, Vector2f& accel,
+                            const float vel_correction_max, const float vel_max, const float accel_max, const float tc, const float dt)
 {
     if (!is_positive(tc)) {
         return;
