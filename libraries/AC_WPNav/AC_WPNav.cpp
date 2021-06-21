@@ -384,21 +384,19 @@ void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
     _pos_control.relax_velocity_controller_xy();
 
     // get current and target locations
-    Vector3f stopping_point;
+    Vector2f stopping_point;
     get_wp_stopping_point_xy(stopping_point);
 
     // shift origin and destination horizontally
-    _origin.x = stopping_point.x;
-    _origin.y = stopping_point.y;
-    _destination.x = stopping_point.x;
-    _destination.y = stopping_point.y;
+    _origin.xy() = stopping_point;
+    _destination.xy() = stopping_point;
 
     // move pos controller target horizontally
     _pos_control.set_pos_target_xy_cm(stopping_point.x, stopping_point.y);
 }
 
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
-void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
+void AC_WPNav::get_wp_stopping_point_xy(Vector2f& stopping_point) const
 {
 	_pos_control.get_stopping_point_xy_cm(stopping_point);
 }
@@ -406,8 +404,8 @@ void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 /// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
 void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
-    _pos_control.get_stopping_point_z_cm(stopping_point);
+    _pos_control.get_stopping_point_xy_cm(stopping_point.xy());
+    _pos_control.get_stopping_point_z_cm(stopping_point.z);
 }
 
 /// advance_wp_target_along_track - move target location along track from origin to destination
