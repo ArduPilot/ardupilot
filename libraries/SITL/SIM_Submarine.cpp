@@ -138,7 +138,7 @@ void Submarine::calculate_buoyancy_torque(Vector3f &torque)
  * @param position
  * @return float
  */
-float Submarine::calculate_sea_floor_depth(const Vector3f &/*position*/)
+float Submarine::calculate_sea_floor_depth(const Vector3d &/*position*/)
 {
     return 50;
 }
