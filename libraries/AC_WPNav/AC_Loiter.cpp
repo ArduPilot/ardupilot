@@ -86,7 +86,7 @@ AC_Loiter::AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 }
 
 /// init_target to a position in cm from ekf origin
-void AC_Loiter::init_target(const Vector3f& position)
+void AC_Loiter::init_target(const Vector2f& position)
 {
     sanity_check_params();
 
@@ -172,7 +172,7 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
 }
 
 /// get vector to stopping point based on a horizontal position and velocity
-void AC_Loiter::get_stopping_point_xy(Vector3f& stopping_point) const
+void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 {
     _pos_control.get_stopping_point_xy_cm(stopping_point);
 }
