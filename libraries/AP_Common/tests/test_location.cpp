@@ -127,6 +127,33 @@ TEST(Location, LatLngWrapping)
     }
 }
 
+TEST(Location, LocOffsetDouble)
+{
+    struct {
+        int32_t home_lat;
+        int32_t home_lng;
+        Vector2d delta_metres_ne1;
+        Vector2d delta_metres_ne2;
+        Vector2d expected_pos_change;
+    } tests[] {
+               -353632620, 1491652373,
+               Vector2d{4682795.4576701336, 5953662.7673837934},
+               Vector2d{4682797.1904749088, 5953664.1586009059},
+               Vector2d{1.7365739867091179,1.7025913001452864},
+    };
+
+    for (auto &test : tests) {
+        Location home{test.home_lat, test.home_lng, 0, Location::AltFrame::ABOVE_HOME};
+        Location loc1 = home;
+        Location loc2 = home;
+        loc1.offset_double(test.delta_metres_ne1.x, test.delta_metres_ne1.y);
+        loc2.offset_double(test.delta_metres_ne2.x, test.delta_metres_ne2.y);
+        Vector2d diff = loc1.get_distance_NE_double(loc2);
+        EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
+        EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
+    }
+}
+
 TEST(Location, Tests)
 {
     Location test_location;

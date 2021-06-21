@@ -253,22 +253,34 @@ Vector3d Location::get_distance_NED_double(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+Vector2d Location::get_distance_NE_double(const Location &loc2) const
+{
+    return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale());
+}
+
+Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
+{
+    return Vector2F((loc2.lat - lat) * ftype(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * ftype(LOCATION_SCALING_FACTOR) * longitude_scale());
+}
+
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset(float ofs_north, float ofs_east)
 {
     const int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-    const int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
+    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
     lat += dlat;
-    lng += dlng;
-    lng = wrap_longitude(lng);
+    lat = limit_lattitude(lat);
+    lng = wrap_longitude(dlng+lng);
 }
 
 void Location::offset_double(double ofs_north, double ofs_east)
 {
-    const int32_t dlat = ofs_north * double(LOCATION_SCALING_FACTOR_INV);
-    const int32_t dlng = (ofs_east * double(LOCATION_SCALING_FACTOR_INV)) / longitude_scale();
-    lat += dlat;
-    lng += dlng;
+    const int64_t dlat = ofs_north * double(LOCATION_SCALING_FACTOR_INV);
+    const int64_t dlng = (ofs_east * double(LOCATION_SCALING_FACTOR_INV)) / longitude_scale();
+    lat = limit_lattitude(int64_t(lat)+dlat);
+    lng = wrap_longitude(int64_t(lng)+dlng);
 }
 
 /*
@@ -393,14 +405,14 @@ float Location::line_path_proportion(const Location &point1, const Location &poi
 /*
   wrap longitude for -180e7 to 180e7
  */
-int32_t Location::wrap_longitude(int32_t lon)
+int32_t Location::wrap_longitude(int64_t lon)
 {
     if (lon > 1800000000L) {
-        lon = int32_t(int64_t(lon)-3600000000LL);
+        lon = int32_t(lon-3600000000LL);
     } else if (lon < -1800000000L) {
-        lon = int32_t(int64_t(lon)+3600000000LL);
+        lon = int32_t(lon+3600000000LL);
     }
-    return lon;
+    return int32_t(lon);
 }
 
 /*
@@ -419,4 +431,17 @@ int32_t Location::diff_longitude(int32_t lon1, int32_t lon2)
         dlon += 3600000000LL;
     }
     return int32_t(dlon);
+}
+
+/*
+  limit lattitude to -90e7 to 90e7
+ */
+int32_t Location::limit_lattitude(int32_t lat)
+{
+    if (lat > 900000000L) {
+        lat = 1800000000LL - lat;
+    } else if (lat < -900000000L) {
+        lat = -(1800000000LL + lat);
+    }
+    return lat;
 }
