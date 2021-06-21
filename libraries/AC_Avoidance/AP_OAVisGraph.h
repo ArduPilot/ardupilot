@@ -36,7 +36,7 @@ public:
     struct VisGraphItem {
         OAItemID id1;       // first item's id
         OAItemID id2;       // second item's id
-        float distance_cm;  // distance between the items
+        float distance;  	// distance (in m) between the items
     };
 
     // clear all elements from graph
@@ -45,8 +45,8 @@ public:
     // get number of items in visibility graph table
     uint16_t num_items() const { return _num_items; }
 
-    // add item to visiblity graph, returns true on success, false if graph is full
-    bool add_item(const OAItemID &id1, const OAItemID &id2, float distance_cm);
+    // add item to visibility graph, returns true on success, false if graph is full
+    bool add_item(const OAItemID &id1, const OAItemID &id2, float distance_m);
 
     // allow accessing graph as an array, 0 indexed
     // Note: no protection against out-of-bounds accesses so use with num_items()
