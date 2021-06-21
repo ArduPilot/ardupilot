@@ -19,11 +19,9 @@ parser.add_argument(
 parser.add_argument(
     '--bootloader', action='store_true', default=False, help='configure for bootloader')
 parser.add_argument(
-    'hwdef', type=str, default=None, help='hardware definition file')
+    'hwdef', type=str, nargs='+', default=None, help='hardware definition file')
 parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
-parser.add_argument(
-    '--extra-hwdef', type=str, default=None, help='Extra hwdef.dat file for custom build.')
 
 args = parser.parse_args()
 
@@ -1736,7 +1734,7 @@ def bootloader_path():
     # always embed a bootloader if it is available
     this_dir = os.path.realpath(__file__)
     rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
-    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef[0]))
     bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
     bootloader_path = os.path.join(rootdir,
                                    "Tools",
@@ -2048,8 +2046,8 @@ def write_env_py(filename):
     '''write out env.py for environment variables to control the build process'''
 
     # see if board has a defaults.parm file or a --default-parameters file was specified
-    defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
-    defaults_path = os.path.join(os.path.dirname(args.hwdef), args.params)
+    defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
+    defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
     if not args.bootloader:
         if os.path.exists(defaults_path):
@@ -2082,7 +2080,7 @@ def romfs_wildcard(pattern):
 def romfs_add_dir(subdirs):
     '''add a filesystem directory to ROMFS'''
     for dirname in subdirs:
-        romfs_dir = os.path.join(os.path.dirname(args.hwdef), dirname)
+        romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
         if not args.bootloader and os.path.exists(romfs_dir):
             for root, d, files in os.walk(romfs_dir):
                 for f in files:
@@ -2260,11 +2258,8 @@ def add_apperiph_defaults(f):
             
 
 # process input file
-if args.hwdef != None:
-    for filename in [args.hwdef,args.extra_hwdef]:
-        process_file(filename)
-else:
-    process_file(args.hwdef)
+for fname in args.hwdef:
+    process_file(fname)
 
 outdir = args.outdir
 if outdir is None:
@@ -2294,6 +2289,6 @@ write_ROMFS(outdir)
 
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
-copy_common_linkerscript(outdir, args.hwdef)
+copy_common_linkerscript(outdir, args.hwdef[0])
 
 write_env_py(os.path.join(outdir, "env.py"))
