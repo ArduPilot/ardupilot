@@ -95,7 +95,7 @@ public:
     ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-    void input_vel_accel_xy(Vector3f& vel, const Vector3f& accel);
+    void input_vel_accel_xy(Vector2f& vel, const Vector2f& accel);
 
     /// input_pos_vel_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -103,7 +103,7 @@ public:
     ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-    void input_pos_vel_accel_xy(Vector3f& pos, Vector3f& vel, const Vector3f& accel);
+    void input_pos_vel_accel_xy(Vector2f& pos, Vector2f& vel, const Vector2f& accel);
 
     // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
     bool is_active_xy() const;
@@ -168,12 +168,12 @@ public:
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The function alters the input velocitiy to be the velocity that the system could reach zero acceleration in the minimum time.
     ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
-    virtual void input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend);
+    virtual void input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit);
 
     /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a climb rate in cm/s
     ///     using the default position control kinimatic path.
     ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
-    void set_pos_target_z_from_climb_rate_cm(const float vel, bool force_descend);
+    void set_pos_target_z_from_climb_rate_cm(const float vel, bool ignore_descent_limit);
 
     /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -181,7 +181,7 @@ public:
     ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-    void input_pos_vel_accel_z(Vector3f& pos, Vector3f& vel, const Vector3f& accel);
+    void input_pos_vel_accel_z(float &pos, float &vel, float accel);
 
     /// set_alt_target_with_slew - adjusts target up or down using a commanded altitude in cm
     ///     using the default position control kinimatic path.
@@ -222,10 +222,10 @@ public:
     float get_pos_target_z_cm() const { return _pos_target.z; }
 
     /// get_stopping_point_xy_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-    void get_stopping_point_xy_cm(Vector3f &stopping_point) const;
+    void get_stopping_point_xy_cm(Vector2f &stopping_point) const;
 
     /// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-    void get_stopping_point_z_cm(Vector3f& stopping_point) const;
+    void get_stopping_point_z_cm(float &stopping_point) const;
 
     /// get_pos_error_cm - get position error vector between the current and target position
     const Vector3f get_pos_error_cm() const { return _pos_target - _inav.get_position(); }
@@ -243,7 +243,7 @@ public:
     void set_vel_desired_cms(const Vector3f &des_vel) { _vel_desired = des_vel; }
 
     /// set_vel_desired_xy_cms - sets horizontal desired velocity in NEU cm/s
-    void set_vel_desired_xy_cms(const Vector2f &vel) {_vel_desired.x = vel.x; _vel_desired.y = vel.y; }
+    void set_vel_desired_xy_cms(const Vector2f &vel) {_vel_desired.xy() = vel; }
 
     /// get_vel_desired_cms - returns desired velocity (i.e. feed forward) in cm/s in NEU
     const Vector3f& get_vel_desired_cms() { return _vel_desired; }
@@ -261,7 +261,7 @@ public:
     /// Acceleration
 
     // set_accel_desired_xy_cmss set desired acceleration in cm/s in xy axis
-    void set_accel_desired_xy_cmss(const Vector2f &accel_cms) { _accel_desired.x = accel_cms.x; _accel_desired.y = accel_cms.y; }
+    void set_accel_desired_xy_cmss(const Vector2f &accel_cms) { _accel_desired.xy() = accel_cms; }
 
     // get_accel_target_cmss - returns the target acceleration in NEU cm/s/s
     const Vector3f& get_accel_target_cmss() const { return _accel_target; }
