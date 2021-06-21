@@ -101,7 +101,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     AP_GROUPEND
 };
 
-void SIM_Precland::update(const Location &loc, const Vector3f &position)
+void SIM_Precland::update(const Location &loc, const Vector3d &position)
 {
     if (!_enable) {
         _healthy = false;
@@ -162,7 +162,7 @@ void SIM_Precland::update(const Location &loc, const Vector3f &position)
             break;
         }
     }
-    _target_pos = position - Vector3f(center.x, center.y, origin_height_m);
+    _target_pos = position - Vector3d(center.x, center.y, origin_height_m);
     _healthy = true;
 }
 
