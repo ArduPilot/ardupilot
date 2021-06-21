@@ -5,3 +5,8 @@ def build(bld):
     bld.ap_find_tests(
         use='ap',
     )
+
+# location test needs double precision
+def configure(cfg):
+    cfg.env.DOUBLE_PRECISION_SOURCES['AP_Common'] = ['tests/test_location.cpp']
+
