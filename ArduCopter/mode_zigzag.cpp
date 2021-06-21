@@ -241,7 +241,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
-            loiter_nav->init_target(wp_dest);
+            loiter_nav->init_target(wp_dest.xy());
             if (wp_nav->origin_and_destination_are_terrain_alt()) {
                 copter.surface_tracking.set_target_alt_cm(wp_dest.z);
             }

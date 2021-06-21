@@ -557,8 +557,8 @@ void ModeGuided::posvel_control_run()
     guided_pos_target_cm += guided_vel_target_cms * pos_control->get_dt();
 
     // send position and velocity targets to position controller
-    pos_control->input_pos_vel_accel_xy(guided_pos_target_cm, guided_vel_target_cms, Vector3f());
-    pos_control->input_pos_vel_accel_z(guided_pos_target_cm, guided_vel_target_cms, Vector3f());
+    pos_control->input_pos_vel_accel_xy(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), Vector2f());
+    pos_control->input_pos_vel_accel_z(guided_pos_target_cm.z, guided_vel_target_cms.z, 0);
 
     // run position controllers
     pos_control->update_xy_controller();
@@ -670,8 +670,8 @@ void ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const Vector3f
 #endif
 
     // update position controller with new target
-    pos_control->input_vel_accel_xy(curr_vel_des, Vector3f());
-    pos_control->input_vel_accel_z(curr_vel_des, Vector3f(), false);
+    pos_control->input_vel_accel_xy(curr_vel_des.xy(), Vector2f());
+    pos_control->input_vel_accel_z(curr_vel_des.z, 0, false);
 }
 
 // helper function to set yaw state and targets
