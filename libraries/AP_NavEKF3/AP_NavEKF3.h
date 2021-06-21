@@ -260,6 +260,15 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    /*
+    * Write velocity data from Prec Land into buffers
+    *
+    * vel : velocity in NE (m)
+    * err : velocity error (m/s)
+    * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+    */
+    void writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms);
+
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise

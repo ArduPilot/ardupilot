@@ -1081,6 +1081,41 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
 }
 
 /*
+    * Write velocity data from Prec Land into buffers
+    *
+    * vel : velocity in NE (m)
+    * err : velocity error (m/s)
+    * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+*/
+void NavEKF3_core::writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms)
+{
+    // sanity check for NaNs
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
+    if ((timeStamp_ms - precLandVelMeasTime_ms) < precLandIntervalMin_ms) {
+        // do not let the buffer fill up too quickly
+        return;
+    }
+
+    precLandVelMeasTime_ms = timeStamp_ms;
+
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
+
+    prec_land_vel_elements precLandVelNew;
+    precLandVelNew.time_ms = timeStamp_ms;
+    precLandVelNew.vel = vel;
+    precLandVelNew.err = err;
+
+    // push all the data into buffer
+    storedPrecLandVel.push(precLandVelNew);
+}
+
+/*
   update the GPS selection
  */
 void NavEKF3_core::update_gps_selection(void)

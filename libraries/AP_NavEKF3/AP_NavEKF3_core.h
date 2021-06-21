@@ -291,6 +291,15 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    /*
+     * Write velocity data from Prec Land into buffers
+     *
+     * vel : velocity in NE (m)
+     * err : velocity error (m/s)
+     * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+    */
+    void writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms);
+
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -561,6 +570,11 @@ private:
         Vector3f vel;               // velocity in NED (m/s)
         float err;                  // velocity measurement error (m/s)
         bool corrected;             // true when the velocity has been corrected for sensor position
+    };
+
+    struct prec_land_vel_elements : EKF_obs_element_t {
+        Vector2f vel;               // velocity in NED (m/s)
+        float err;                  // velocity measurement error (m/s)
     };
 
     struct drag_elements : EKF_obs_element_t {
@@ -1318,6 +1332,13 @@ private:
     uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
     bool useExtNavVel;                  // true if external nav velocity should be used
+
+    EKF_obs_buffer_t<prec_land_vel_elements> storedPrecLandVel; // Prec Land velocity data buffer
+    bool precLandDataToFuse;                                    // True if prec land data is available to fuse
+    prec_land_vel_elements precLandVelData;                     // prec land velocity data at the fusion time horizon.
+    uint32_t precLandVelMeasTime_ms;                            // time prec land velocity measurements were accepted for input to the data buffer (msec)
+    const uint8_t precLandIntervalMin_ms = 50;                  // The minimum allowed time between measurements from external navigation sensors (msec)
+
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

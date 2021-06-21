@@ -1546,6 +1546,22 @@ void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
     }
 }
 
+/*
+    * Write velocity data from Prec Land into buffers
+    *
+    * vel : velocity in NE (m)
+    * err : velocity error (m/s)
+    * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+*/
+void NavEKF3::writePrecLandVelData(const Vector2f &vel, float err, uint32_t timeStamp_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writePrecLandVelData(vel, err, timeStamp_ms);
+        }
+    }
+}
+
 // return data for debugging optical flow fusion
 /*
  * Write body frame linear and angular displacement measurements from a visual odometry sensor

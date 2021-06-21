@@ -441,6 +441,8 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 
+    precLandDataToFuse = storedPrecLandVel.recall(precLandVelData, imuDataDelayed.time_ms);
+
     // Read GPS data from the sensor
     readGpsData();
 
@@ -503,6 +505,13 @@ void NavEKF3_core::SelectVelPosFusion()
         velPosObs[2] = extNavVelDelayed.vel.z;
     }
 #endif
+
+    if (precLandDataToFuse) {
+        // we have not fused any other velocity in this loop, and we have prec land vel to fuse
+        fuseVelData = true;
+        velPosObs[0] = precLandVelData.vel.x;
+        velPosObs[1] = precLandVelData.vel.y;
+    }
 
     // we have GPS data to fuse and a request to align the yaw using the GPS course
     if (gpsYawResetRequest) {
@@ -647,6 +656,9 @@ void NavEKF3_core::FuseVelPosNED()
                 R_OBS[0] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
                 R_OBS[2] = sq(constrain_float(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
             }
+            if (precLandDataToFuse) {
+                R_OBS[2] = R_OBS[0] = sq(constrain_float(precLandVelData.err, 0.05f, 5.0f));
+            }
             R_OBS[1] = R_OBS[0];
             // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
             if (gpsPosAccuracy > 0.0f) {
@@ -671,6 +683,11 @@ void NavEKF3_core::FuseVelPosNED()
             {
                 obs_data_chk = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
             }
+
+            if (precLandDataToFuse) {
+                obs_data_chk = sq(constrain_float(precLandVelData.err, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+            }
+
             R_OBS_DATA_CHECKS[0] = R_OBS_DATA_CHECKS[1] = R_OBS_DATA_CHECKS[2] = obs_data_chk;
         }
         R_OBS[5] = posDownObsNoise;

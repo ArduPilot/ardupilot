@@ -147,6 +147,11 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
+
+    if(!storedPrecLandVel.init(extnav_buffer_length)) {
+       return false;
+    }
+
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
