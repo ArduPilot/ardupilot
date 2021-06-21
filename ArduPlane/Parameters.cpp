@@ -209,9 +209,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
-    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages. Reverse thrust is always used in MANUAL mode if enabled with THR_MIN < 0. In non-autothrottle controlled modes, if reverse thrust is not used, then THR_MIN is effectively set to 0 for that mode.
-    // @Values: 0:MANUAL ONLY,1:AutoAlways,2:AutoLanding
-    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AUTO_LANDING_PATTERN,12:FBWA,13:ACRO,14:STABILIZE,15:THERMAL
+    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. The most commonly used value for USE_REV_THRUST is 2, which means Auto landings only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages. Reverse thrust is always used in MANUAL mode if enabled with THR_MIN < 0. In non-autothrottle controlled modes, if reverse thrust is not used, then THR_MIN is effectively set to 0 for that mode.
+    // @Values: 0:MANUAL mode only,1:AutoAlways,2:AutoLand,4:AutoLoiterToAlt,8:AutoLoiterAll,16:AutoWaypoints,32:LOITER,64:RTL,128:CIRCLE,256:CRUISE,512:FBWB,1024:GUIDED,2048:AutoLandingPattern,4096:FBWA,8192:ACRO,16384:STABILIZE,32768:THERMAL
+    // @Bitmask: 0:AutoAlways,1:AutoLand,2:AutoLoiterToAlt,3:AutoLoiterAll,4:AutoWaypoints,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AutoLandingPattern,12:FBWA,13:ACRO,14:STABILIZE,15:THERMAL
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
@@ -1107,6 +1107,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
     // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor.
+    // @Values: 0:None, 1:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro), 2:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 4:Disable attitude check for takeoff arming, 8:Force target airspeed to trim airspeed in Cruise or FBWB, 16: Climb to ALT_HOLD_RTL before turning for RTL, 32: Enable yaw damper in acro mode, 64: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor.
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
