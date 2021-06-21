@@ -132,7 +132,7 @@ bool Aircraft::on_ground() const
 void Aircraft::update_position(void)
 {
     location = home;
-    location.offset(position.x, position.y);
+    location.offset_double(position.x, position.y);
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
 
@@ -552,7 +552,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     const bool was_on_ground = on_ground();
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
 
     // velocity relative to air mass, in earth frame
     velocity_air_ef = velocity_ef + wind_ef;
@@ -700,7 +700,7 @@ void Aircraft::update_wind(const struct sitl_input &input)
 void Aircraft::smooth_sensors(void)
 {
     uint64_t now = time_now_us;
-    Vector3f delta_pos = position - smoothing.position;
+    Vector3d delta_pos = position - smoothing.position;
     if (smoothing.last_update_us == 0 || delta_pos.length() > 10) {
         smoothing.position = position;
         smoothing.rotation_b2e = dcm;
@@ -719,7 +719,7 @@ void Aircraft::smooth_sensors(void)
 
     // calculate required accel to get us to desired position and velocity in the time_constant
     const float time_constant = 0.1f;
-    Vector3f dvel = (velocity_ef - smoothing.velocity_ef) + (delta_pos / time_constant);
+    Vector3f dvel = (velocity_ef - smoothing.velocity_ef) + (delta_pos / time_constant).tofloat();
     Vector3f accel_e = dvel / time_constant + (dcm * accel_body + Vector3f(0.0f, 0.0f, GRAVITY_MSS));
     const float accel_limit = 14 * GRAVITY_MSS;
     accel_e.x = constrain_float(accel_e.x, -accel_limit, accel_limit);
@@ -779,7 +779,7 @@ void Aircraft::smooth_sensors(void)
 
     // integrate to get new position
     smoothing.velocity_ef += accel_e * delta_time;
-    smoothing.position += smoothing.velocity_ef * delta_time;
+    smoothing.position += (smoothing.velocity_ef * delta_time).todouble();
 
     smoothing.location = home;
     smoothing.location.offset(smoothing.position.x, smoothing.position.y);
@@ -843,7 +843,7 @@ void Aircraft::extrapolate_sensors(float delta_time)
 
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
     velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 }
@@ -928,7 +928,7 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
     }
 }
 
-float Aircraft::get_local_updraft(Vector3f currentPos)
+float Aircraft::get_local_updraft(const Vector3d &currentPos)
 {
     int scenario = sitl->thermal_scenario;
 
@@ -973,10 +973,10 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
     float w = 0.0f;
     float r2;
     for (iThermal=0;iThermal<n_thermals;iThermal++) {
-        Vector3f thermalPos(thermals_x[iThermal] + driftX/thermals_w[iThermal],
+        Vector3d thermalPos(thermals_x[iThermal] + driftX/thermals_w[iThermal],
                             thermals_y[iThermal] + driftY/thermals_w[iThermal],
                             0);
-        Vector3f relVec = currentPos - thermalPos;
+        Vector3d relVec = currentPos - thermalPos;
         r2 = relVec.x*relVec.x + relVec.y*relVec.y;
         w += thermals_w[iThermal]*exp(-r2/(thermals_r[iThermal]*thermals_r[iThermal]));
     }

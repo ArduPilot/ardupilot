@@ -412,7 +412,7 @@ void FlightAxis::update(const struct sitl_input &input)
     velocity_ef = Vector3f(state.m_velocityWorldU_MPS,
                              state.m_velocityWorldV_MPS,
                              state.m_velocityWorldW_MPS);
-    position = Vector3f(state.m_aircraftPositionY_MTR,
+    position = Vector3d(state.m_aircraftPositionY_MTR,
                         state.m_aircraftPositionX_MTR,
                         -state.m_altitudeASL_MTR - home.alt*0.01);
 

@@ -515,7 +515,7 @@ void Webots::update(const struct sitl_input &input)
                             +state.velocity.world_linear_velocity[1],
                             -state.velocity.world_linear_velocity[2]);
         
-        position = Vector3f(state.gps.x, state.gps.y, -state.gps.z);
+        position = Vector3d(state.gps.x, state.gps.y, -state.gps.z);
         
 
         // limit to 16G to match pixhawk1
