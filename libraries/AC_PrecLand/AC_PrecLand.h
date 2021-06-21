@@ -116,6 +116,8 @@ private:
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
+    AP_Int8                     _fuse_vel;          // Fuse estimated velocity into main EKF
+    AP_Float                    _pos_var;           // Precision Landing sensor position variance
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized
@@ -154,4 +156,5 @@ private:
     // write out PREC message to log:
     void Write_Precland();
     uint32_t last_log_ms;  // last time we logged
+    uint32_t timer_ms;
 };

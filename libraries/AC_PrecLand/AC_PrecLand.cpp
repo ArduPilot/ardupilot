@@ -13,7 +13,7 @@
 extern const AP_HAL::HAL& hal;
 
 static const uint32_t EKF_INIT_TIME_MS = 2000; // EKF initialisation requires this many milliseconds of good sensor data
-static const uint32_t EKF_INIT_SENSOR_MIN_UPDATE_MS = 500; // Sensor must update within this many ms during EKF init, else init will fail
+static const uint32_t EKF_INIT_SENSOR_MIN_UPDATE_MS = 1000; // Sensor must update within this many ms during EKF init, else init will fail
 static const uint32_t LANDING_TARGET_TIMEOUT_MS = 2000; // Sensor must update within this many ms, else prec landing will be switched off
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
@@ -113,6 +113,20 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag, 0.02f), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
+
+    // @Param: FUSE_VEL
+    // @DisplayName: Precision Land fuse estimated velocity into main EKF
+    // @Description: Setting this to 1 will fuse the velocity estimate from landing target into main EKF
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("FUSE_VEL", 10, AC_PrecLand, _fuse_vel, 0),
+
+    // @Param: POS_VAR
+    // @DisplayName: Precision Landing sensor position variance
+    // @Description: Precision Landing sensor position variance, higher values would weight the input from the camera less
+    // @Range: 0.01 0.10
+    // @User: Advanced
+    AP_GROUPINFO("POS_VAR", 11, AC_PrecLand, _pos_var, 0.02f),
 
     AP_GROUPEND
 };
@@ -326,7 +340,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
         }
         case EstimatorType::KALMAN_FILTER: {
             // Predict
-            if (target_acquired()) {
+            if (_estimator_initialized || target_acquired()) {
                 const float& dt = inertial_data_delayed->dt;
                 const Vector3f& vehicleDelVel = inertial_data_delayed->correctedVehicleDeltaVelocityNED;
 
@@ -336,7 +350,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 
             // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
-                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
+                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(_pos_var + 0.02f*AP::ahrs().get_gyro().length()) + 0.02f);
                 if (!_estimator_initialized) {
                     // start init of EKF. We will let the filter consume the data for a while before it available for consumption
                     // reset filter state
@@ -374,7 +388,6 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 _target_pos_rel_est_NE.y = _ekf_y.getPos();
                 _target_vel_rel_est_NE.x = _ekf_x.getVel();
                 _target_vel_rel_est_NE.y = _ekf_y.getVel();
-
                 run_output_prediction();
             }
             break;
@@ -494,6 +507,10 @@ void AC_PrecLand::run_output_prediction()
     Vector3f land_ofs_ned_m = _ahrs.get_rotation_body_to_ned() * Vector3f(_land_ofs_cm_x,_land_ofs_cm_y,0) * 0.01f;
     _target_pos_rel_out_NE.x += land_ofs_ned_m.x;
     _target_pos_rel_out_NE.y += land_ofs_ned_m.y;
+
+    if (_fuse_vel) {
+        AP::ahrs().writePrecLandVelData(-_target_vel_rel_out_NE, 0.3, AP_HAL::millis());
+    }
 }
 
 // Write a precision landing entry
@@ -518,8 +535,8 @@ void AC_PrecLand::Write_Precland()
         target_acquired : target_acquired(),
         pos_x           : target_pos_rel.x,
         pos_y           : target_pos_rel.y,
-        vel_x           : target_vel_rel.x,
-        vel_y           : target_vel_rel.y,
+        vel_x           : -target_vel_rel.x,
+        vel_y           : -target_vel_rel.y,
         meas_x          : target_pos_meas.x,
         meas_y          : target_pos_meas.y,
         meas_z          : target_pos_meas.z,
