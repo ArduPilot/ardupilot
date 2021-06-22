@@ -423,16 +423,16 @@ void AC_PosControl::init_xy_controller()
 void AC_PosControl::init_xy_controller_stopping_point()
 {
     init_xy();
-    get_stopping_point_xy_cm(_pos_target);
+
+    // set desired velocity to zero before calculating the stopping point
     _vel_desired.x = 0.0f;
     _vel_desired.y = 0.0f;
+    get_stopping_point_xy_cm(_pos_target);
+
     _accel_desired.x = 0.0f;
     _accel_desired.y = 0.0f;
 
-    // set resultant acceleration to current attitude target
-    Vector3f accel_target;
-    lean_angles_to_accel_xy(accel_target.x, accel_target.y);
-    _pid_vel_xy.set_integrator(accel_target);
+    _pid_vel_xy.set_integrator(_accel_target);
 }
 
 // relax_velocity_controller_xy - initialise the position controller to the current position and velocity with decaying acceleration.
@@ -443,10 +443,10 @@ void AC_PosControl::relax_velocity_controller_xy()
 
     // decay resultant acceleration and therefore current attitude target to zero
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
+
     _accel_target.x *= decay;
     _accel_target.y *= decay;
-    _accel_desired.x = _accel_target.x;
-    _accel_desired.y = _accel_target.y;
+    _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 }
 
 /// init_xy - initialise the position controller to the current position, velocity and acceleration.
@@ -470,15 +470,16 @@ void AC_PosControl::init_xy()
     _vel_target.x = curr_vel.x;
     _vel_target.y = curr_vel.y;
 
-    // initialise I terms from lean angles
-    _pid_vel_xy.reset_filter();
-    _pid_vel_xy.reset_I();
 
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
     _accel_desired.x = curr_accel.x;
     _accel_desired.y = curr_accel.y;
-    _accel_target.x = curr_accel.x;
-    _accel_target.y = curr_accel.y;
+
+    lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+
+    // initialise I terms from lean angles
+    _pid_vel_xy.reset_filter();
+    _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 
     // initialise ekf xy reset handler
     init_ekf_xy_reset();
