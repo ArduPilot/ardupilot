@@ -265,6 +265,13 @@ public:
     
     // normalize a rotation matrix
     void        normalize(void);
+
+    Matrix3<double> todouble(void) const {
+        return Matrix3<double>(a.todouble(), b.todouble(), c.todouble());
+    }
+    Matrix3<float> tofloat(void) const {
+        return Matrix3<float>(a.tofloat(), b.tofloat(), c.tofloat());
+    }
 };
 
 typedef Matrix3<int16_t>                Matrix3i;
