@@ -755,12 +755,13 @@ void AC_PosControl::init_z()
 ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
 ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
 ///     The time constant also defines the time taken to achieve the maximum acceleration.
-void AC_PosControl::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend)
+///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+void AC_PosControl::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool ignore_descent_limit)
 {
     // check for ekf z position reset
     handle_ekf_z_reset();
 
-    if (force_descend) {
+    if (ignore_descent_limit) {
         // turn off limits in the negative z direction
         _limit_vector.z = MAX(_limit_vector.z, 0.0f);
     }
@@ -788,10 +789,11 @@ void AC_PosControl::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool
 
 /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
 ///     using the default position control kinimatic path.
-void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool force_descend)
+///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ignore_descent_limit)
 {
     Vector3f vel_3f = Vector3f{0.0f, 0.0f, vel};
-    input_vel_accel_z(vel_3f, Vector3f{0.0f, 0.0f, 0.0f}, force_descend);
+    input_vel_accel_z(vel_3f, Vector3f{0.0f, 0.0f, 0.0f}, ignore_descent_limit);
 }
 
 /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
