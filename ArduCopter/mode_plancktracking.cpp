@@ -58,7 +58,7 @@ void ModePlanckTracking::run() {
     bool use_positive_throttle = high_tension;
     if(high_tension) {
         //If we ever enter high tension, make sure ACE is landing
-        if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb)) {
+        if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb) && copter.planck_interface.ready_for_land()) {
             copter.set_mode_planck_RTB_or_planck_land(ModeReason::GCS_FAILSAFE);
         }
 
