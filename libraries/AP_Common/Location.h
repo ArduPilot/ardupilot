@@ -64,12 +64,14 @@ public:
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     Vector3f get_distance_NED(const Location &loc2) const;
+    Vector3d get_distance_NED_double(const Location &loc2) const;
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
+    void offset_double(double ofs_north, double ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(float bearing_deg, float distance);
