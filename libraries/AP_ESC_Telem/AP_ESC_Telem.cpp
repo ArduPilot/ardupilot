@@ -74,16 +74,28 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
     return MIN(valid_escs, nfreqs);
 }
 
+// get mask of ESCs that sent valid telemetry data in the last
+// ESC_TELEM_DATA_TIMEOUT_MS
+uint16_t AP_ESC_Telem::get_active_esc_mask() const {
+    uint16_t ret = 0;
+    const uint32_t now = AP_HAL::millis();
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS) {
+            continue;
+        }
+        if (_telem_data[i].last_update_ms == 0) {
+            // have never seen telem from this ESC
+            continue;
+        }
+        ret |= (1U << i);
+    }
+    return ret;
+}
+
 // return number of active ESCs present
 uint8_t AP_ESC_Telem::get_num_active_escs() const {
-    uint8_t nmotors = 0;
-    uint32_t now = AP_HAL::millis();
-    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-        if (now - _telem_data[i].last_update_ms < ESC_TELEM_DATA_TIMEOUT_MS) {
-            nmotors++;
-        }
-    }
-    return nmotors;
+    uint16_t active = get_active_esc_mask();
+    return __builtin_popcount(active);
 }
 
 // get an individual ESC's slewed rpm if available, returns true on success
