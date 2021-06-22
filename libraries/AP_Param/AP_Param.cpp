@@ -257,6 +257,20 @@ bool AP_Param::duplicate_key(uint16_t vindex, uint16_t key)
     return false;
 }
 
+// check for duplicate group ids
+bool AP_Param::duplicate_id(const struct GroupInfo* group_info)
+{
+    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+        for (uint8_t j=i+1; group_info[j].type != AP_PARAM_NONE; j++) {
+            if (group_id(group_info,0,i,0) == group_id(group_info,0,j,0)) {
+                // no duplicate group_ids allowed
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /*
   get group_info pointer for a group
  */
@@ -299,6 +313,11 @@ bool AP_Param::check_var_info(void)
             if (!check_group_info(group_info, &total_size, 0, strlen(_var_info[i].name))) {
                 return false;
             }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (duplicate_id(group_info)) {
+                return false;
+            }
+#endif
         } else {
             uint8_t size = type_size((enum ap_var_type)type);
             if (size == 0) {

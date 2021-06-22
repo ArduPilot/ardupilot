@@ -593,6 +593,7 @@ private:
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
+    static bool                 duplicate_id(const struct GroupInfo *group_info);
 
     static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
     static bool get_base(const struct Info &info, ptrdiff_t &base);
