@@ -519,7 +519,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: Fast sampling mask
     // @Description: Mask of IMUs to enable fast sampling on, if available
     // @User: Advanced
-    // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
@@ -535,7 +534,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: IMU enable mask
     // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
-    // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU,7:FirstSecondAndThirdIMU,127:AllIMUs
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
