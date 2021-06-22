@@ -3693,8 +3693,8 @@ class AutoTestCopter(AutoTest):
             self.progress("Received local target: %s" % str(m))
 
         # Check the last received message
-        if not (m.type_mask == 0xFFC7 or m.type_mask == 0x0FC7):
-            raise NotAchievedException("Did not receive proper mask: expected=65479 or 4039, got=%u" % m.type_mask)
+        if not (m.type_mask == 0xFE07 or m.type_mask == 0x0E07):
+            raise NotAchievedException("Did not receive proper mask: expected=65031 or 3591, got=%u" % m.type_mask)
 
         if vx - m.vx > 0.1:
             raise NotAchievedException("Did not receive proper target velocity vx: wanted=%f got=%f" % (vx, m.vx))
