@@ -46,14 +46,16 @@ void NavEKF3_core::SelectFlowFusion()
         flowDataValid = true;
     }
 
-    // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
-    if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
+    // Fuse flow and/or range finder data into a 1-state EKF to estimate terrain vertical
+    // position wrt EKF origin
+    const bool tryToUseFlowForTerrain = flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN);
+    if ((tryToUseFlowForTerrain || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset(ofDataDelayed);
     }
 
     // Fuse optical flow data into the main filter
-    if (flowDataToFuse && tiltOK) {
+    if (flowDataToFuse && tiltOK && (gndOffsetValid || relyingOnFlowData)) {
         if ((frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
             // Set the flow noise used by the fusion processes
             R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
