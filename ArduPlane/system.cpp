@@ -61,6 +61,9 @@ void Plane::init_ardupilot()
 
     rpm_sensor.init();
 
+    //initialise AS5600_AOA sensor
+    aoa_sensor.init();
+
     // setup telem slots with serial ports
     gcs().setup_uarts();
 

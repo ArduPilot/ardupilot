@@ -64,6 +64,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinder,       50,    100),
     SCHED_TASK_CLASS(AP_ICEngine, &plane.g2.ice_control, update, 10, 100),
     SCHED_TASK_CLASS(Compass,          &plane.compass,              cal_update, 50, 50),
+    SCHED_TASK_CLASS(AS5600_AOA, &plane.aoa_sensor, update, 10, 200),
     SCHED_TASK(accel_cal_update,       10,    50),
 #if OPTFLOW == ENABLED
     SCHED_TASK_CLASS(OpticalFlow, &plane.optflow, update,    50,    50),
@@ -189,6 +190,14 @@ void Plane::update_compass(void)
         ahrs.set_compass(&compass);
     }
 }
+
+/*
+ * Read and log Angle of Attack
+ */
+
+//void Plane::read_aoa(void){
+//    aoa_sensor.getRawAngle();
+//}
 
 /*
   do 10Hz logging

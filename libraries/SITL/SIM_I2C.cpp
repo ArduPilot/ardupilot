@@ -28,6 +28,7 @@
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_ICM40609.h"
+#include "SIM_AS5600.h"
 
 #include <signal.h>
 
@@ -54,6 +55,7 @@ static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 static ICM40609 icm40609;
+static AS5600 as5600;  // AoA sensor
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -72,6 +74,7 @@ struct i2c_device_at_address {
     { 1, 0x0B, rotoye },
     { 2, 0x0B, maxell },
     { 2, 0x28, airspeed_dlvr },
+    { 1, 0x36, as5600 },
 };
 
 void I2C::init()
