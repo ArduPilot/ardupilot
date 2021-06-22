@@ -323,6 +323,9 @@ def do_build(opts, frame_options):
     if opts.disable_ekf3:
         cmd_configure.append("--disable-ekf3")
 
+    if opts.postype_single:
+        cmd_configure.append("--postype-single")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -1049,6 +1052,9 @@ group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
                      help="Set SYSID_THISMAV")
+group_sim.add_option("--postype-single",
+                     action='store_true',
+                     help="force single precision postype_t")
 parser.add_option_group(group_sim)
 
 
