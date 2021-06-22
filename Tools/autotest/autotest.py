@@ -158,7 +158,7 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.run([test], check=True)
+    subprocess.check_call([test])
 
 
 def run_unit_tests():
