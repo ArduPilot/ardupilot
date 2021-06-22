@@ -1215,7 +1215,6 @@ private:
     uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
     float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
     bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
-    bool rngBcnTimeout;                 // boolean true if range beacon measurements have failed innovation consistency checks for too long
     float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
     float innovRngBcn;                  // range beacon observation innovation (m)
     uint32_t lastTimeRngBcn_ms[4];      // last time we received a range beacon measurement (msec)

@@ -342,7 +342,6 @@ void NavEKF3_core::InitialiseVariables()
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
     rngBcnHealth = false;
-    rngBcnTimeout = true;
     varInnovRngBcn = 0.0f;
     innovRngBcn = 0.0f;
     memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
