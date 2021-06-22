@@ -57,6 +57,11 @@ void ModePlanckTracking::run() {
     bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
     bool use_positive_throttle = high_tension;
     if(high_tension) {
+        //If we ever enter high tension, make sure ACE is landing
+        if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb)) {
+            copter.set_mode_planck_RTB_or_planck_land(ModeReason::GCS_FAILSAFE);
+        }
+
         if(!copter.planck_interface.check_for_high_tension_timeout()) { //High tension hasn't failed
             //While in high tension:
             // - If actively tracking the tag, continue to do so, but use pos throttle
