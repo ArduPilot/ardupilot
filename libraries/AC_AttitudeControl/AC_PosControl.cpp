@@ -897,7 +897,7 @@ void AC_PosControl::update_z_controller()
     // Check for vertical controller health
 
     // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _vel_error.z / _vel_max_down_cms;
+    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
     _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
     _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 
@@ -922,7 +922,7 @@ void AC_PosControl::get_stopping_point_z_cm(Vector3f& stopping_point) const
     const float curr_pos_z = _inav.get_position().z;
     float curr_vel_z = _inav.get_velocity().z;
 
-    // if position controller is active add current velocity error to avoid sudden jump in acceleration
+    // if position controller is active remove the desired velocity component
     if (is_active_z()) {
         curr_vel_z -= _vel_desired.z;
     }
@@ -1001,10 +1001,10 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector3f &stopping_point) const
 
     Vector3f curr_vel = _inav.get_velocity();
 
-    // add velocity error to current velocity
+    // if position controller is active remove the desired velocity component
     if (is_active_xy()) {
-        curr_vel.x += _vel_error.x;
-        curr_vel.y += _vel_error.y;
+        curr_vel.x -= _vel_desired.x;
+        curr_vel.y -= _vel_desired.y;
     }
 
     // calculate current velocity
@@ -1039,12 +1039,11 @@ int32_t AC_PosControl::get_bearing_to_target_cd() const
 // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
 float AC_PosControl::get_throttle_with_vibration_override()
 {
-    _accel_desired.z = 0.0f;
     const float thr_per_accelz_cmss = _motors.get_throttle_hover() / (GRAVITY_MSS * 100.0f);
     // during vibration compensation use feed forward with manually calculated gain
     // ToDo: clear pid_info P, I and D terms for logging
-    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_z.get_i()) && is_negative(_vel_error.z)) || (is_negative(_pid_accel_z.get_i()) && is_positive(_vel_error.z)))) {
-        _pid_accel_z.set_integrator(_pid_accel_z.get_i() + _dt * thr_per_accelz_cmss * 1000.0f * _vel_error.z * _pid_vel_z.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
+    if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_z.get_i()) && is_negative(_pid_vel_z.get_error())) || (is_negative(_pid_accel_z.get_i()) && is_positive(_pid_vel_z.get_error())))) {
+        _pid_accel_z.set_integrator(_pid_accel_z.get_i() + _dt * thr_per_accelz_cmss * 1000.0f * _pid_vel_z.get_error() * _pid_vel_z.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
     }
     return POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accelz_cmss * _accel_target.z + _pid_accel_z.get_i() * 0.001f;
 }
