@@ -276,6 +276,10 @@ def process_library(vehicle, library, pathprefix=None):
                 value = re.sub('@PREFIX@', library.name, field[2])
                 setattr(p, field[0], value)
 
+            if (getattr(p, 'Values', None) is not None and
+                    getattr(p, 'Bitmask', None) is not None):
+                error("Both @Values and @Bitmask present")
+
             if (getattr(p, 'Values', None) is None and
                     getattr(p, 'Bitmask', None) is None):
                 # values and Bitmask available for this vehicle
