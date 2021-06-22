@@ -96,6 +96,8 @@ public:
     float get_throttle()
     {
         //Only for Mavlink - essentially just an indicator of how hard the fins are working.
+        //Note that this is the unconstrained version, so if the higher level control gives too high input, 
+        //throttle will be displayed as more than 100.
         return fmaxf(fmaxf(fabsf(down_out),fabsf(front_out)), fmaxf(fabsf(right_out),fabsf(yaw_out)));
     }
 

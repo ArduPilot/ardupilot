@@ -142,7 +142,7 @@ void Blimp::update_batt_compass(void)
 // Full rate logging of attitude, rate and pid loops
 void Blimp::full_rate_logging()
 {
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
     }
     if (should_log(MASK_LOG_PID)) {
@@ -155,7 +155,7 @@ void Blimp::full_rate_logging()
 void Blimp::ten_hz_logging_loop()
 {
     // log attitude data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
     }
     // log EKF attitude data
@@ -223,7 +223,7 @@ void Blimp::read_AHRS(void)
 {
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
-    
+
     IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
     IGNORE_RETURN(ahrs.get_relative_position_NED_home(pos_ned));
 
@@ -249,20 +249,20 @@ void Blimp::update_altitude()
 }
 
 //Conversions are in 2D so that up remains up in world frame when the blimp is not exactly level.
-void Blimp::rotate_BF_to_NE(float &x, float &y)
+void Blimp::rotate_BF_to_NE(Vector2f &vec)
 {
-    float ne_x = x*ahrs.cos_yaw() - y*ahrs.sin_yaw();
-    float ne_y = x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
-    x = ne_x;
-    y = ne_y;
+    float ne_x = vec.x*ahrs.cos_yaw() - vec.y*ahrs.sin_yaw();
+    float ne_y = vec.x*ahrs.sin_yaw() + vec.y*ahrs.cos_yaw();
+    vec.x = ne_x;
+    vec.y = ne_y;
 }
 
-void Blimp::rotate_NE_to_BF(float &x, float &y)
+void Blimp::rotate_NE_to_BF(Vector2f &vec)
 {
-    float bf_x = x*ahrs.cos_yaw() + y*ahrs.sin_yaw();
-    float bf_y = -x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
-    x = bf_x;
-    y = bf_y;
+    float bf_x = vec.x*ahrs.cos_yaw() + vec.y*ahrs.sin_yaw();
+    float bf_y = -vec.x*ahrs.sin_yaw() + vec.y*ahrs.cos_yaw();
+    vec.x = bf_x;
+    vec.y = bf_y;
 
 }
 

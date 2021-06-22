@@ -16,7 +16,7 @@ public:
         MANUAL =        0,  // manual control
         LAND =          1,  // currently just stops moving
         VELOCITY =      2,  // velocity mode
-        LOITER =        3,  // loiter mode (position hold)  
+        LOITER =        3,  // loiter mode (position hold)
     };
 
     // constructor
@@ -44,10 +44,6 @@ public:
         return false;
     }
     virtual bool in_guided_mode() const
-    {
-        return false;
-    }
-    virtual bool logs_attitude() const
     {
         return false;
     }

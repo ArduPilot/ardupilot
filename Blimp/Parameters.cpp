@@ -252,42 +252,42 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: MAX_VEL_XY
     // @DisplayName: Max XY Velocity
     // @Description: Sets the maximum XY velocity, in m/s
-    // @Values: 
+    // @Range: 0.2 5
     // @User: Standard
     GSCALAR(max_vel_xy, "MAX_VEL_XY", 0.5),
 
     // @Param: MAX_VEL_Z
     // @DisplayName: Max Z Velocity
     // @Description: Sets the maximum Z velocity, in m/s
-    // @Values: 
+    // @Range: 0.2 5
     // @User: Standard
     GSCALAR(max_vel_z, "MAX_VEL_Z", 0.4),
- 
+
     // @Param: MAX_VEL_YAW
     // @DisplayName: Max yaw Velocity
     // @Description: Sets the maximum yaw velocity, in rad/s
-    // @Values: 
+    // @Range: 0.2 5
     // @User: Standard
     GSCALAR(max_vel_yaw, "MAX_VEL_YAW", 0.5),
 
     // @Param: MAX_POS_XY
     // @DisplayName: Max XY Position change
     // @Description: Sets the maximum XY position change, in m/s
-    // @Values: 
+    // @Range: 0.1 5
     // @User: Standard
     GSCALAR(max_pos_xy, "MAX_POS_XY", 0.2),
 
     // @Param: MAX_POS_Z
     // @DisplayName: Max Z Position change
     // @Description: Sets the maximum Z position change, in m/s
-    // @Values: 
+    // @Range: 0.1 5
     // @User: Standard
     GSCALAR(max_pos_z, "MAX_POS_Z", 0.15),
 
     // @Param: MAX_POS_YAW
     // @DisplayName: Max Yaw Position change
     // @Description: Sets the maximum Yaw position change, in rad/s
-    // @Values: 
+    // @Range: 0.1 5
     // @User: Standard
     GSCALAR(max_pos_yaw, "MAX_POS_YAW", 0.3),
 
@@ -305,9 +305,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Bitmask: 0:Right,1:Front,2:Down,3:Yaw
     // @User: Standard
     GSCALAR(dis_mask, "DIS_MASK", 0),
-
-    GSCALAR(notch_bw, "NOTCH_BW", 2),
-    GSCALAR(notch_att, "NOTCH_ATT", 15),
 
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
@@ -756,7 +753,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: POSYAW_SMAX
     // @DisplayName: Yaw slew rate limit
-    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. 
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains.
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
