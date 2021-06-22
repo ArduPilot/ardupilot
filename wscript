@@ -257,6 +257,11 @@ configuration in order to save typing.
         default=False,
         help='Force a static build')
 
+    g.add_option('--postype-single',
+        action='store_true',
+        default=False,
+        help='force single precision postype_t')
+    
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
