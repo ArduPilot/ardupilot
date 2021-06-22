@@ -513,7 +513,7 @@ public:
 
     // check if flight mode channel is assigned RC option
     // return true if assigned
-    bool flight_mode_channel_conflicts_with_rc_option();
+    bool flight_mode_channel_conflicts_with_rc_option() const;
 
     // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
@@ -549,7 +549,7 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
 
-    RC_Channel *flight_mode_channel();
+    RC_Channel *flight_mode_channel() const;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
