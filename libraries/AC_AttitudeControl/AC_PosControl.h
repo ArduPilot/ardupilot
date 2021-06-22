@@ -167,10 +167,12 @@ public:
     ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The function alters the input velocitiy to be the velocity that the system could reach zero acceleration in the minimum time.
+    ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
     virtual void input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend);
 
     /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a climb rate in cm/s
     ///     using the default position control kinimatic path.
+    ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
     void set_pos_target_z_from_climb_rate_cm(const float vel, bool force_descend);
 
     /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
