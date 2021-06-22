@@ -150,35 +150,26 @@ private:
     // Documentation of Globals:
     typedef union {
         struct {
-            uint8_t unused1                 : 1; // 0
-            uint8_t pre_arm_rc_check        : 1; // 3       // true if rc input pre-arm checks have been completed successfully
-            uint8_t pre_arm_check           : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
-            uint8_t logging_started         : 1; // 6       // true if logging has started
-            uint8_t land_complete           : 1; // 7       // true if we have detected a landing
-            uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
-            uint8_t usb_connected_unused    : 1; // 9       // UNUSED
-            uint8_t rc_receiver_present     : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
-            uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
-            uint8_t motor_test              : 1; // 12      // true if we are currently performing the motors test
-            uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
-            uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
-            uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
-            uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
-            uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
-            uint8_t land_repo_active        : 1; // 21      // true if the pilot is overriding the landing position
-            uint8_t motor_interlock_switch  : 1; // 22      // true if pilot is requesting motor interlock enable
-            uint8_t in_arming_delay         : 1; // 23      // true while we are armed but waiting to spin motors
-            uint8_t initialised_params      : 1; // 24      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
-            uint8_t unused3                 : 1; // 25      // was compass_init_location; true when the compass's initial location has been set
-            uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
-            uint8_t unused4                 : 1; // 27      // was "we armed using a arming switch"
+            uint8_t pre_arm_rc_check        : 1; // 1       // true if rc input pre-arm checks have been completed successfully
+            uint8_t pre_arm_check           : 1; // 2       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+            uint8_t auto_armed              : 1; // 3       // stops auto missions from beginning until throttle is raised
+            uint8_t logging_started         : 1; // 4       // true if logging has started
+            uint8_t land_complete           : 1; // 5       // true if we have detected a landing
+            uint8_t new_radio_frame         : 1; // 6       // Set true if we have new PWM data to act on from the Radio
+            uint8_t rc_receiver_present     : 1; // 7       // true if we have an rc receiver present (i.e. if we've ever received an update
+            uint8_t compass_mot             : 1; // 8       // true if we are currently performing compassmot calibration
+            uint8_t motor_test              : 1; // 9       // true if we are currently performing the motors test
+            uint8_t initialised             : 1; // 10      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
+            uint8_t land_complete_maybe     : 1; // 11      // true if we may have landed (less strict version of land_complete)
+            uint8_t throttle_zero           : 1; // 12      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down
+            uint8_t gps_glitching           : 1; // 13      // true if GPS glitching is affecting navigation accuracy
+            uint8_t in_arming_delay         : 1; // 14      // true while we are armed but waiting to spin motors
+            uint8_t initialised_params      : 1; // 15      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
         };
         uint32_t value;
     } ap_t;
 
-    ap_t ap; //MIR Set of general variables
+    ap_t ap;
 
     static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
@@ -240,7 +231,7 @@ private:
     Location current_loc;
     Vector3f vel_ned;
     Vector3f vel_ned_filtd;
-    
+
     Vector3f pos_ned;
     float vel_yaw;
     float vel_yaw_filtd;
@@ -250,14 +241,14 @@ private:
 
     // Inertial Navigation
     AP_InertialNav_NavEKF inertial_nav;
-    
+
     // Vel & pos PIDs
     AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3, 0.02}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
     AC_PID_Basic pid_vel_z{7, 1.5, 0, 0, 1, 3, 3, 0.02};
     AC_PID_Basic pid_vel_yaw{3, 0.4, 0, 0, 0.2, 3, 3, 0.02};
 
     AC_PID_2D pid_pos_xy{1, 0.05, 0, 0, 0.1, 3, 3, 0.02};
-    AC_PID_Basic pid_pos_z{0.7, 0, 0, 0, 0, 3, 3, 0.02}; 
+    AC_PID_Basic pid_pos_z{0.7, 0, 0, 0, 0, 3, 3, 0.02};
     AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3, 0.02}; //p, i, d, ff, imax, filt_t, filt_e, filt_d, dt, opt srmax, opt srtau
 
     // System Timers
@@ -330,8 +321,8 @@ private:
     void one_hz_loop();
     void read_AHRS(void);
     void update_altitude();
-    void rotate_NE_to_BF(float &x, float &y);
-    void rotate_BF_to_NE(float &x, float &y);
+    void rotate_NE_to_BF(Vector2f &vec);
+    void rotate_BF_to_NE(Vector2f &vec);
 
     // commands.cpp
     void update_home_from_EKF();

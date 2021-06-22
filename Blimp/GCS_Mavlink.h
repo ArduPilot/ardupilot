@@ -67,10 +67,10 @@ private:
 
     //This is 1-indexed, unlike most enums for consistency with the mavlink PID_TUNING enums.
     enum PID_SEND : uint8_t {
-        VELX =        1,  
-        VELY =        2, 
+        VELX =        1,
+        VELY =        2,
         VELZ =        3,
-        VELYAW =      4, 
+        VELYAW =      4,
         POSX =        5,
         POSY =        6,
         POSZ =        7,

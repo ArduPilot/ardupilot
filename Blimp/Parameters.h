@@ -67,10 +67,10 @@ public:
         k_param_parachute,
 
         // Landing gear object
-        k_param_landinggear,    // 18
+        k_param_landinggear,
 
         // Input Management object
-        k_param_input_manager,  // 19
+        k_param_input_manager,
 
         // Misc
         k_param_gps_hdop_good,
@@ -84,19 +84,30 @@ public:
         k_param_log_bitmask,
         k_param_throttle_filt,
         k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, // 64
+        k_param_pilot_takeoff_alt,
 
         // AP_ADSB Library
-        k_param_adsb,                   // 72
-        k_param_notify,                 // 73
+        k_param_adsb,
+        k_param_notify,
 
         //PID Controllers
-        k_param_pid_vel_xy,
-        k_param_pid_pos_xy,
+        k_param_pid_vel_xy = 32,
         k_param_pid_vel_z,
         k_param_pid_vel_yaw,
+        k_param_pid_pos_xy,
         k_param_pid_pos_z,
         k_param_pid_pos_yaw,
+
+        //Position & Velocity controller params
+        k_param_max_vel_xy = 50,
+        k_param_max_vel_z,
+        k_param_max_vel_yaw,
+        k_param_max_pos_xy,
+        k_param_max_pos_z,
+        k_param_max_pos_yaw,
+        k_param_simple_mode,
+        k_param_dis_mask,
+
         //
         // 90: misc2
         //
@@ -180,18 +191,8 @@ public:
         // 220: Misc
         //
         k_param_fs_ekf_action = 220,
-        k_param_max_vel_xy,
         k_param_arming,
-        k_param_max_vel_z, 
-        k_param_simple_mode,
-        k_param_dis_mask, //225
-        k_param_notch_bw,
-        k_param_notch_att,
-        k_param_max_vel_yaw,
-        k_param_max_pos_xy,
-        k_param_max_pos_z,
-        k_param_max_pos_yaw,
-        
+
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
@@ -252,8 +253,6 @@ public:
 
     AP_Int8         simple_mode;
     AP_Int16        dis_mask;
-    AP_Float        notch_bw;
-    AP_Float        notch_att;
 
     AP_Int8         rtl_alt_type;
 

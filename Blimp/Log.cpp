@@ -355,10 +355,10 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: R: Right
     // @Field: F: Front
     // @Field: D: Down
-    // @Field: Y: Yaw 
+    // @Field: Y: Yaw
 
     { LOG_FINI_MSG, sizeof(log_FINI),
-      "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"  }, 
+      "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"  },
 
     // @LoggerMessage: FINO
     // @Description: Fin output
