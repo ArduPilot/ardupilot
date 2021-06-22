@@ -9,9 +9,7 @@ MCU STM32F4xx STM32F405xx
 HAL_CHIBIOS_ARCH_F405 1
 
 # board ID for firmware load
-# copied from the same board, must be changed in the future
-# to avoid conflicts
-APJ_BOARD_ID 1019
+APJ_BOARD_ID 146
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
