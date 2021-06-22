@@ -76,7 +76,7 @@ void ModePlanckTracking::run() {
             }
         } else { //High tension has timed out
             //If high tension has failed, attempt to use a planck land or regular land
-            copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE);
+            copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE, false);
             copter.mode_land.run();
             return;
         }
