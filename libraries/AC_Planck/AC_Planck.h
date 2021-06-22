@@ -90,12 +90,6 @@ public:
   //Override any commands from ACE with zero-attitude commands
   void override_with_zero_att_cmd();
 
-  //Record the hover throttle position. Call this regularly
-  void record_hover_throttle();
-
-  //Calculate the desired pos throttle for high tension events
-  float calculate_pos_throttle(const float boost_pct);
-
 private:
 
   struct

@@ -405,16 +405,6 @@ void AC_Planck::override_with_zero_att_cmd() {
   _cmd.is_new = true;
 }
 
-void AC_Planck::record_hover_throttle() {
-  if(!is_tether_high_tension() && !is_tether_timed_out()) {
-    _hover_throttle_before_high_tension = AP_Motors::get_singleton()->get_throttle_hover();
-  }
-}
-
-float AC_Planck::calculate_pos_throttle(const float boost_pct) {
-  return constrain_float(_hover_throttle_before_high_tension + boost_pct, 0.5, 1.);
-}
-
 bool AC_Planck::is_tether_timed_out() {
   bool timed_out = ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000);
   if(timed_out && !_tether_status.comms_timed_out) {

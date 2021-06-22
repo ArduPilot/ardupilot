@@ -335,7 +335,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 {
     if(!_force_positive_throttle && force_positive_throttle) {
-        float throttle = copter.planck_interface.calculate_pos_throttle(copter.g.planck_high_tension_throttle_boost);
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
         gcs().send_text(MAV_SEVERITY_INFO,"POSTHR: %f\n", throttle);
     }
     _force_positive_throttle = force_positive_throttle;
@@ -497,7 +497,7 @@ void ModeGuided::vel_control_run()
 
     if(_force_positive_throttle) {
       pos_control->update_vel_controller_xy();
-      float throttle = copter.planck_interface.calculate_pos_throttle(copter.g.planck_high_tension_throttle_boost);
+      float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
       attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
       pos_control->relax_alt_hold_controllers(throttle);
     } else {
@@ -571,7 +571,7 @@ void ModeGuided::posvel_control_run()
 
     // call position controller
     if(_force_positive_throttle) {
-        float throttle = copter.planck_interface.calculate_pos_throttle(copter.g.planck_high_tension_throttle_boost);
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
         attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
         pos_control->relax_alt_hold_controllers(throttle);
     } else {
@@ -655,7 +655,7 @@ void ModeGuided::angle_control_run(bool high_jerk_z)
 
     // call position controller
     if(_force_positive_throttle) {
-        float throttle = copter.planck_interface.calculate_pos_throttle(copter.g.planck_high_tension_throttle_boost);
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
         attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
         pos_control->relax_alt_hold_controllers(throttle);
     } else {
