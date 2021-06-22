@@ -412,7 +412,7 @@ void AC_Planck::record_hover_throttle() {
 }
 
 float AC_Planck::calculate_pos_throttle(const float boost_pct) {
-  return constrain_float(_hover_throttle_before_high_tension + boost_pct, _hover_throttle_before_high_tension, 1.);
+  return constrain_float(_hover_throttle_before_high_tension + boost_pct, 0.5, 1.);
 }
 
 bool AC_Planck::is_tether_timed_out() {
