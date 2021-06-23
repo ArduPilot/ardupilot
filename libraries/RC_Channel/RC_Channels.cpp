@@ -225,7 +225,8 @@ bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
     if (chan == nullptr) {
         return false;
     }
-    return (RC_Channel::aux_func_t)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
+    
+    return (flight_mode_channel_number() < 5) || (RC_Channel::aux_func_t)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
 }
 
 /*
