@@ -564,7 +564,6 @@ uint8_t AP_InertialSensor_Invensensev2::_register_read(uint16_t reg)
 
 void AP_InertialSensor_Invensensev2::_register_write(uint16_t reg, uint8_t val, bool checked)
 {
-    (void)checked;
     _dev->write_bank_register(GET_BANK(reg), GET_REG(reg), val, checked);
 }
 
