@@ -136,25 +136,6 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
-    if (method == AP_Arming::Method::RUDDER) {
-        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
-
-        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-            //parameter disallows rudder arming/disabling
-
-            // if we emit a message here then someone doing surface
-            // checks may be bothered by the message being emitted.
-            // check_failed(true, "Rudder arming disabled");
-            return false;
-        }
-
-        // if throttle is not down, then pilot cannot rudder arm/disarm
-        if (plane.get_throttle_input() != 0){
-            check_failed(true, "Non-zero throttle");
-            return false;
-        }
-    }
-
     if (!plane.control_mode->allows_arming()) {
         check_failed(true, "Mode does not allow arming");
         return false;
@@ -220,11 +201,6 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
         // don't allow rudder-disarming in flight:
         if (plane.is_flying()) {
             // obviously this could happen in-flight so we can't warn about it
-            return false;
-        }
-        // option must be enabled:
-        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
             return false;
         }
     }

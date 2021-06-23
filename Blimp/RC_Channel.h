@@ -42,8 +42,20 @@ public:
         return &obj_channels[chan];
     }
 
+    // auto-trim functionality; adjust ahrstrim based on momentary RC Input
+    void save_trim();
+    void auto_trim();
+
 protected:
 
     int8_t flight_mode_channel_number() const override;
+
+private:
+
+    // Used to exit the roll and pitch auto trim function
+    void auto_trim_cancel();
+
+    uint8_t auto_trim_counter;
+    bool auto_trim_started = false;
 
 };

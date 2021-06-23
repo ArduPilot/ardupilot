@@ -632,6 +632,16 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+#if TOY_MODE_ENABLED == ENABLED
+        if (g2.toy_mode.enabled()) {
+            // not armed with sticks in toy mode
+            check_failed(true, "Rudder-arming: disabled in toy mode");
+            return false;
+        }
+#endif
+    }
+
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
 
     // always check if inertial nav has started and is ready
@@ -889,6 +899,12 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         method == AP_Arming::Method::MAVLINK &&
         !copter.ap.land_complete) {
         return false;
+    }
+
+    if (method == AP_Arming::Method::RUDDER) {
+        if (!copter.flightmode->has_manual_throttle() && !copter.ap.land_complete) {
+            return false;
+        }
     }
 
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
