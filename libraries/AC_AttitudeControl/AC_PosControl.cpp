@@ -336,9 +336,6 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
 void AC_PosControl::input_pos_vel_accel_xyz(const Vector3p& pos)
 {
-    // check for ekf xy position reset
-    handle_ekf_xy_reset();
-    handle_ekf_z_reset();
     Vector3f dest_vector = (pos - _pos_target).tofloat();
 
     // calculated increased maximum acceleration if over speed
@@ -490,9 +487,6 @@ void AC_PosControl::init_xy()
 ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
 void AC_PosControl::input_vel_accel_xy(Vector2f& vel, const Vector2f& accel)
 {
-    // check for ekf xy position reset
-    handle_ekf_xy_reset();
-
     update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy());
 
     shape_vel_accel_xy(vel, accel, _vel_desired.xy(), _accel_desired.xy(),
@@ -507,9 +501,6 @@ void AC_PosControl::input_vel_accel_xy(Vector2f& vel, const Vector2f& accel)
 ///     The function alters the pos and vel to be the kinematic path based on accel
 void AC_PosControl::input_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel)
 {
-    // check for ekf xy position reset
-    handle_ekf_xy_reset();
-
     update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy());
 
     shape_pos_vel_accel_xy(pos, vel, accel, _pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(),
@@ -556,6 +547,9 @@ bool AC_PosControl::is_active_xy() const
 ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
 void AC_PosControl::update_xy_controller()
 {
+    // check for ekf xy position reset
+    handle_ekf_xy_reset();
+
     // Check for position control time out
     if ( !is_active_xy() ) {
         init_xy_controller();
@@ -748,9 +742,6 @@ void AC_PosControl::init_z()
 ///     The function alters the vel to be the kinematic path based on accel
 void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit)
 {
-    // check for ekf z position reset
-    handle_ekf_z_reset();
-
     if (ignore_descent_limit) {
         // turn off limits in the negative z direction
         _limit_vector.z = MAX(_limit_vector.z, 0.0f);
@@ -792,9 +783,6 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ig
 ///     The function alters the pos and vel to be the kinematic path based on accel
 void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float accel)
 {
-    // check for ekf z position reset
-    handle_ekf_z_reset();
-
     // calculated increased maximum acceleration if over speed
     float accel_z_cmss = _accel_max_z_cmss;
     if (_vel_desired.z < _vel_max_down_cms && !is_zero(_vel_max_down_cms)) {
@@ -839,6 +827,9 @@ bool AC_PosControl::is_active_z() const
 ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
 void AC_PosControl::update_z_controller()
 {
+    // check for ekf z-axis position reset
+    handle_ekf_z_reset();
+
     // Check for z_controller time out
     if (!is_active_z()) {
         init_z_controller();
