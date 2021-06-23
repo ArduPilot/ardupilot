@@ -121,6 +121,12 @@ public:
 
     bool initialised() const { return (lat !=0 || lng != 0 || alt != 0); }
 
+    // wrap longitude at -180e7 to 180e7
+    static int32_t wrap_longitude(int32_t lon);
+
+    // get lon1-lon2, wrapping at -180e7 to 180e7
+    static int32_t diff_longitude(int32_t lon1, int32_t lon2);
+    
 private:
     static AP_Terrain *_terrain;
 
