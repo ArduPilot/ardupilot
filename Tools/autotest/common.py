@@ -7811,7 +7811,8 @@ Also, ignores heartbeats not from our target system'''
 
             self.reboot_sitl(required_bootcount=1)
             self.progress("Waiting for 'Config error'")
-            self.wait_statustext("Config error")
+            # SYSTEM_TIME not sent in config error loop:
+            self.wait_statustext("Config error", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
         except Exception as e:
