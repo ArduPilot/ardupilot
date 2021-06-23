@@ -372,7 +372,7 @@ bool AC_Planck::check_for_high_tension_timeout() {
   //The amount of time to wait for high tension to timeout is a function of
   //initial altitude when the high tension event ocurred. Use tag altitude if available
   float timeout_s = 0;
-  const float reel_rate_cms = 60.96; //~2ft/s
+  const float reel_rate_cms = 38.1; //~1.25ft/s
   if(!is_equal(_tether_status.high_tension_tag_alt_cm,0.0f)) {
     timeout_s = _tether_status.high_tension_tag_alt_cm / reel_rate_cms;
   } else {
