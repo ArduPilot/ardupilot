@@ -84,6 +84,10 @@ void Plane::init_ardupilot()
     g2.efi.init();
 #endif
 
+#if AP_TERRAIN_AVAILABLE
+    Location::set_terrain(&terrain);
+#endif
+
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
