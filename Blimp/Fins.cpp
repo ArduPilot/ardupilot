@@ -34,9 +34,9 @@ Fins::Fins(uint16_t loop_rate) :
 
 void Fins::setup_fins()
 {
-    //amp r   f   d     y,off r   f   d      y               right, front, down, yaw
-    add_fin(0,  0, -1, 0.5,   0,    0,  0, -0.5,    0); //Back(?)
-    add_fin(1,  0,  1, 0.5,   0,    0,  0, -0.5,    0); //Front(?)
+    //fin   #   r   f   d     y,    r   f     d     y               right, front, down, yaw for amplitude then for offset
+    add_fin(0,  0,  1, 0.5,   0,    0,  0,  0.5,    0); //Back
+    add_fin(1,  0, -1, 0.5,   0,    0,  0,  0.5,    0); //Front
     add_fin(2, -1,  0,   0, 0.5,    0,  0,    0,  0.5); //Right
     add_fin(3,  1,  0,   0, 0.5,    0,  0,    0, -0.5); //Left
 
@@ -78,25 +78,21 @@ void Fins::output()
         yaw_out   = 0;
     }
 
-    right_out /= RC_SCALE;
-    front_out /= RC_SCALE;
-    down_out  /= RC_SCALE;
-    yaw_out   /= RC_SCALE;
 
     _time = AP_HAL::micros() * 1.0e-6;
 
     for (int8_t i=0; i<NUM_FINS; i++) {
-        _amp[i] =  max(0,_right_amp_factor[i]*right_out) + max(0,_front_amp_factor[i]*front_out) +
+        _amp[i] =  fmaxf(0,_right_amp_factor[i]*right_out) + fmaxf(0,_front_amp_factor[i]*front_out) +
                    fabsf(_down_amp_factor[i]*down_out) + fabsf(_yaw_amp_factor[i]*yaw_out);
         _off[i] = _right_off_factor[i]*right_out + _front_off_factor[i]*front_out +
                   _down_off_factor[i]*down_out + _yaw_off_factor[i]*yaw_out;
         _freq[i] = 1;
 
         _num_added = 0;
-        if (max(0,_right_amp_factor[i]*right_out) > 0.0f) {
+        if (fmaxf(0,_right_amp_factor[i]*right_out) > 0.0f) {
             _num_added++;
         }
-        if (max(0,_front_amp_factor[i]*front_out) > 0.0f) {
+        if (fmaxf(0,_front_amp_factor[i]*front_out) > 0.0f) {
             _num_added++;
         }
         if (fabsf(_down_amp_factor[i]*down_out) > 0.0f) {
