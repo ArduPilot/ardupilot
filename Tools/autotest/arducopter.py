@@ -4370,7 +4370,7 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         try:
-            self.set_parameter("SIM_SHOVE_TIME", 500, retries=3)
+            self.set_parameter("SIM_SHOVE_TIME", 500)
         except ValueError:
             # the shove resets this to zero
             pass
