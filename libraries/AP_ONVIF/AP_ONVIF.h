@@ -19,10 +19,13 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if ENABLE_ONVIF
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <AP_ONVIF/onvifDeviceBindingProxy.h>
 #include <AP_ONVIF/onvifMediaBindingProxy.h>
 #include <AP_ONVIF/onvifPTZBindingProxy.h>
 #include <plugin/wsseapi-lite.h>
+#pragma pop
 #include <AP_Math/AP_Math.h>
 
 class AP_ONVIF {
@@ -52,7 +55,7 @@ public:
 private:
 
     // prepares security header of SOAP message going to be sent immmediately after
-    void set_credentials();
+    bool set_credentials();
 
     // convert error message from gSOAP lib into human readable string and print
     void report_error();
@@ -69,21 +72,21 @@ private:
     float last_pan_cmd, last_tilt_cmd;
 
     float zoom_min, zoom_max;
-    std::string profile_token;
+    char* profile_token;
+    size_t profile_token_size;
     struct soap *soap;
     DeviceBindingProxy *proxy_device;
     MediaBindingProxy  *proxy_media;
     PTZBindingProxy    *proxy_ptz;
     static AP_ONVIF *_singleton;
+    
+    const char* username;
+    const char* password;
+    const char* hostname;
+    
+    char* device_endpoint;
     char* media_endpoint;
-    
-    std::string username;
-    std::string password;
-    std::string hostname;
-    
-    std::string DEVICE_ENDPOINT;
-    std::string MEDIA_ENDPOINT;
-    std::string PTZ_ENDPOINT;
+    char* ptz_endpoint;
     bool initialised;
 };
 

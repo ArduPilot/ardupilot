@@ -22,18 +22,27 @@
 #include "onvifhelpers.h"
 // For ChibiOS we will use HW RND # generator
 #include <stdlib.h> //rand()
+#include <GCS_MAVLink/GCS.h>
 
-#ifndef PRINT
-#define PRINT(fmt,args...) do {printf(fmt "\n", ## args); } while(0)
+extern const AP_HAL::HAL &hal;
+
+#if 0
+#define DEBUG_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_INFO ,"AP_ONVIF:" fmt "\n", ## args); } while(0)
+#else
+#define DEBUG_PRINT(fmt,args...)
 #endif
+
+#define ERROR_PRINT(fmt,args...) do {GCS_SEND_TEXT(MAV_SEVERITY_ERROR , "AP_ONVIF:" fmt "\n", ## args); } while(0)
 
 const char *wsse_PasswordDigestURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest";
 const char *wsse_Base64BinaryURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
 
 AP_ONVIF *AP_ONVIF::_singleton;
-extern const AP_HAL::HAL &hal;
 static AP_ONVIF onvif;
 
+#define DEVICE_ENDPOINT_LOC "/onvif/device_service"
+#define MEDIA_ENDPOINT_LOC  "/onvif/media_service"
+#define PTZ_ENDPOINT_LOC    "/onvif/ptz_service"
 // Default constructor
 AP_ONVIF::AP_ONVIF()
 {
@@ -49,16 +58,27 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostnam
     if (!initialised) {
         srand ((time_t)(hal.util->get_hw_rtc()/1000000ULL));
         soap = soap_new1(SOAP_XML_CANONICAL | SOAP_C_UTFSTRING);
+        if (soap == nullptr) {
+            ERROR_PRINT("AP_ONVIF: Failed to allocate soap");
+            return false;
+        }
         soap->connect_timeout = soap->recv_timeout = soap->send_timeout = 30; // 30 sec
 
-        proxy_device = new DeviceBindingProxy(soap);
-        proxy_media = new MediaBindingProxy(soap);
-        proxy_ptz = new PTZBindingProxy(soap);
+        if (proxy_device == nullptr) {
+            proxy_device = new DeviceBindingProxy(soap);
+        }
+        if (proxy_media == nullptr) {
+            proxy_media = new MediaBindingProxy(soap);
+        }
+        if (proxy_ptz == nullptr) {
+            proxy_ptz = new PTZBindingProxy(soap);
+        }
 
         if (proxy_device == nullptr ||
             proxy_media == nullptr ||
             proxy_ptz == nullptr) {
-            AP_HAL::panic("AP_ONVIF: Failed to allocate gSOAP Proxy objects.");
+            ERROR_PRINT("AP_ONVIF: Failed to allocate gSOAP Proxy objects.");
+            return false;
         }
         initialised = true;
     }
@@ -66,15 +86,33 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostnam
     username = user;
     password = pass;
     hostname = httphostname;
-    
-    DEVICE_ENDPOINT = hostname + "/onvif/device_service";
-    MEDIA_ENDPOINT = hostname + "/onvif/media_service";
-    PTZ_ENDPOINT = hostname + "/onvif/ptz_service";
+
+    if (device_endpoint == nullptr) {
+        device_endpoint = (char*)malloc(strlen(hostname) + strlen(DEVICE_ENDPOINT_LOC) + 1);
+    }
+    if (media_endpoint == nullptr) {
+        media_endpoint = (char*)malloc(strlen(hostname) + strlen(MEDIA_ENDPOINT_LOC) + 1);
+    }
+    if (ptz_endpoint == nullptr) {
+        ptz_endpoint = (char*)malloc(strlen(hostname) + strlen(PTZ_ENDPOINT_LOC) + 1);
+    }
+
+    if (device_endpoint == nullptr ||
+        media_endpoint == nullptr ||
+        ptz_endpoint == nullptr) {
+        ERROR_PRINT("Failed to Allocate endpoint strings");
+        return false;
+    }
+
+    snprintf(device_endpoint, strlen(hostname) + strlen(DEVICE_ENDPOINT_LOC) + 1, "%s" DEVICE_ENDPOINT_LOC, hostname);
+    snprintf(media_endpoint, strlen(hostname) + strlen(MEDIA_ENDPOINT_LOC) + 1, "%s" MEDIA_ENDPOINT_LOC, hostname);
+    snprintf(ptz_endpoint, strlen(hostname) + strlen(PTZ_ENDPOINT_LOC) + 1, "%s" PTZ_ENDPOINT_LOC, hostname);
+
     /// TODO: Need to find a way to store this in parameter system
     //  or it could be just storage, we will see
-    proxy_device->soap_endpoint = DEVICE_ENDPOINT.c_str();
+    proxy_device->soap_endpoint = device_endpoint;
     if (!probe_onvif_server()) {
-        PRINT("Failed to probe onvif server.");
+        ERROR_PRINT("Failed to probe onvif server.");
         return false;
     }
 
@@ -83,9 +121,9 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostnam
 
 void AP_ONVIF::report_error()
 {
-    PRINT("ONVIF ERROR:\n");
+    ERROR_PRINT("ONVIF ERROR:");
     if (soap_check_state(soap)) {
-        PRINT("Error: soap struct state not initialized");
+        ERROR_PRINT("Error: soap struct state not initialized");
     } else if (soap->error) {
         const char **c, *v = NULL, *s, *d;
         c = soap_faultcode(soap);
@@ -98,7 +136,7 @@ void AP_ONVIF::report_error()
         }
         s = soap_fault_string(soap);
         d = soap_fault_detail(soap);
-        PRINT("%s%d fault %s [%s]\n%s\nDetail: %s",(soap->version ? "SOAP 1." : "Error "),
+        ERROR_PRINT("%s%d fault %s [%s]\n%s\nDetail: %s",(soap->version ? "SOAP 1." : "Error "),
                                                       (soap->version ? (int)soap->version : soap->error),
                                                       *c, (v ? v : "no subcode"), (s ? s : "[no reason]"),
                                                       (d ? d : "[no detail]"));
@@ -108,148 +146,177 @@ void AP_ONVIF::report_error()
 // detect onvif server present on the network
 bool AP_ONVIF::probe_onvif_server()
 {
-    _tds__GetDeviceInformation GetDeviceInformation;
-    _tds__GetDeviceInformationResponse GetDeviceInformationResponse;
-    set_credentials();
-    if (proxy_device->GetDeviceInformation(&GetDeviceInformation, GetDeviceInformationResponse)) {
-        PRINT("Failed to fetch Device Information");
-        report_error();
-        return false;
-    }
+    {
+        _tds__GetDeviceInformation GetDeviceInformation;
+        _tds__GetDeviceInformationResponse GetDeviceInformationResponse;
+        if (!set_credentials()) {
+            ERROR_PRINT("Failed to setup credentials");
+            goto err;
+        }
+        if (proxy_device->GetDeviceInformation(&GetDeviceInformation, GetDeviceInformationResponse)) {
+            ERROR_PRINT("Failed to fetch Device Information");
+            report_error();
+            goto err;
+        }
 
-    PRINT("Manufacturer:    %s",GetDeviceInformationResponse.Manufacturer.c_str());
-    PRINT("Model:           %s",GetDeviceInformationResponse.Model.c_str());
-    PRINT("FirmwareVersion: %s",GetDeviceInformationResponse.FirmwareVersion.c_str());
-    PRINT("SerialNumber:    %s",GetDeviceInformationResponse.SerialNumber.c_str());
-    PRINT("HardwareId:      %s",GetDeviceInformationResponse.HardwareId.c_str());
+        DEBUG_PRINT("Manufacturer:    %s",GetDeviceInformationResponse.Manufacturer);
+        DEBUG_PRINT("Model:           %s",GetDeviceInformationResponse.Model);
+        DEBUG_PRINT("FirmwareVersion: %s",GetDeviceInformationResponse.FirmwareVersion);
+        DEBUG_PRINT("SerialNumber:    %s",GetDeviceInformationResponse.SerialNumber);
+        DEBUG_PRINT("HardwareId:      %s",GetDeviceInformationResponse.HardwareId);
+    }
 
     // get device capabilities and print media
-    _tds__GetCapabilities GetCapabilities;
-    _tds__GetCapabilitiesResponse GetCapabilitiesResponse;
-    set_credentials();
-    if (proxy_device->GetCapabilities(&GetCapabilities, GetCapabilitiesResponse)) {
-        PRINT("Failed to fetch Device Capabilities");
-        report_error();
-        return false;
-    }
+    {
+        _tds__GetCapabilities GetCapabilities;
+        _tds__GetCapabilitiesResponse GetCapabilitiesResponse;
+        if (!set_credentials()) {
+            ERROR_PRINT("Failed to setup credentials");
+            goto err;
+        }
+        if (proxy_device->GetCapabilities(&GetCapabilities, GetCapabilitiesResponse)) {
+            ERROR_PRINT("Failed to fetch Device Capabilities");
+            report_error();
+            goto err;
+        }
 
-    if (!GetCapabilitiesResponse.Capabilities || !GetCapabilitiesResponse.Capabilities->Media) {
-        PRINT("Missing device capabilities info");
-    } else {
-        PRINT("XAddr:        %s", GetCapabilitiesResponse.Capabilities->Media->XAddr.c_str());
-        if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities) {
-            if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTPMulticast) {
-                PRINT("RTPMulticast: %s",(*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTPMulticast ? "yes" : "no"));
-            }
-            if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORETCP) {
-                PRINT("RTP_TCP:      %s", (*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORETCP ? "yes" : "no"));
-            }
-            if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORERTSP_USCORETCP) {
-                PRINT("RTP_RTSP_TCP: %s", (*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORERTSP_USCORETCP ? "yes" : "no"));
+        if (!GetCapabilitiesResponse.Capabilities || !GetCapabilitiesResponse.Capabilities->Media) {
+            ERROR_PRINT("Missing device capabilities info");
+            goto err;
+        } else {
+            DEBUG_PRINT("XAddr:        %s", GetCapabilitiesResponse.Capabilities->Media->XAddr);
+            if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities) {
+                if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTPMulticast) {
+                    DEBUG_PRINT("RTPMulticast: %s",(*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTPMulticast ? "yes" : "no"));
+                }
+                if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORETCP) {
+                    DEBUG_PRINT("RTP_TCP:      %s", (*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORETCP ? "yes" : "no"));
+                }
+                if (GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORERTSP_USCORETCP) {
+                    DEBUG_PRINT("RTP_RTSP_TCP: %s", (*GetCapabilitiesResponse.Capabilities->Media->StreamingCapabilities->RTP_USCORERTSP_USCORETCP ? "yes" : "no"));
+                }
             }
         }
-    }
 
-    // set the Media proxy endpoint to XAddr
-    proxy_media->soap_endpoint = MEDIA_ENDPOINT.c_str();
+        // set the Media proxy endpoint to XAddr
+        proxy_media->soap_endpoint = media_endpoint;
+    }
 
     // get device profiles
-    _trt__GetProfiles GetProfiles;
-    _trt__GetProfilesResponse GetProfilesResponse;
-    set_credentials();
-    if (proxy_media->GetProfiles(&GetProfiles, GetProfilesResponse)){
-        PRINT("Failed to fetch profiles");
-        report_error();
-        return false;
-    }
-    
-    if (GetProfilesResponse.Profiles.size()) {
-        PRINT("Profiles Received %lu", GetProfilesResponse.Profiles.size());
-    } else {
-        PRINT("Error: No Profiles Received");
-        return false;
-    }
-    
-    // for each profile get snapshot
-    for (uint32_t i = 0; i < GetProfilesResponse.Profiles.size(); i++) {
-        PRINT("Profile name: %s", GetProfilesResponse.Profiles[i]->Name.c_str());
-    }
-    
-    // Just use first one for now
-    profile_token = GetProfilesResponse.Profiles[0]->token;
+    {
+        _trt__GetProfiles GetProfiles;
+        _trt__GetProfilesResponse GetProfilesResponse;
+        if (!set_credentials()) {
+            ERROR_PRINT("Failed to setup credentials");
+            goto err;
+        }
+        if (proxy_media->GetProfiles(&GetProfiles, GetProfilesResponse)){
+            ERROR_PRINT("Failed to fetch profiles");
+            report_error();
+            goto err;
+        }
+        
+        if (GetProfilesResponse.__sizeProfiles > 0) {
+            DEBUG_PRINT("Profiles Received %lu", (unsigned long)GetProfilesResponse.__sizeProfiles);
+        } else {
+            ERROR_PRINT("Error: No Profiles Received");
+            goto err;
+        }
+        
+        // for each profile get snapshot
+        for (uint32_t i = 0; i < (uint32_t)GetProfilesResponse.__sizeProfiles; i++) {
+            DEBUG_PRINT("Profile name: %s", GetProfilesResponse.Profiles[i]->Name);
+        }
+        
+        // Just use first one for now
+        if (profile_token_size < (strlen(GetProfilesResponse.Profiles[0]->token) + 1)) {
+            if (profile_token != nullptr) {
+                free(profile_token);
+            }
+            profile_token = (char*)malloc(strlen(GetProfilesResponse.Profiles[0]->token) + 1);
+            profile_token_size = strlen(GetProfilesResponse.Profiles[0]->token) + 1;
+            if (profile_token == nullptr) {
+                goto err;
+            }
+        }
 
-    proxy_ptz->soap_endpoint = PTZ_ENDPOINT.c_str();
+        strcpy(profile_token, GetProfilesResponse.Profiles[0]->token);
 
-    // _tptz__GetServiceCapabilities GetCapabilities;
-    // _tptz__GetServiceCapabilitiesResponse GetCapabilitiesResponse;
-    // GetCapabilities.Category = tt__CapabilityCategory__PTZ;
-    // set_credentials();
-    // if (proxy_ptz->GetServiceCapabilities(&GetCapabilities, GetCapabilitiesResponse)) {
-    //     PRINT("Failed to fetch PTZ Capabilities");
-    //     report_error();
-    //     return false;
-    // }
-    // if (!GetCapabilitiesResponse.Capabilities) {
-
-    // }
-    //     GetCapabilitiesResponse.Capabilities->PTZ
+        proxy_ptz->soap_endpoint = ptz_endpoint;
+    }
 
     // get PTZ Token
-    _tptz__GetConfigurations GetConfigurations;
-    _tptz__GetConfigurationsResponse GetConfigurationsResponse;
-    set_credentials();
-    if (proxy_ptz->GetConfigurations(&GetConfigurations, GetConfigurationsResponse)) {
-        PRINT("Failed to fetch Configurations");
-        report_error();
-        return false;
-    }
-    
-    if (GetConfigurationsResponse.PTZConfiguration.size()) {
-        PRINT("PTZ Tokens Received");
-    } else {
-        PRINT("Error: No Profiles Received");
-        return false;
-    }
-    
-    for (uint32_t i = 0; i < GetConfigurationsResponse.PTZConfiguration.size(); i++) {
-        PRINT("PTZ: %s", GetConfigurationsResponse.PTZConfiguration[i]->Name.c_str());
-    }
-    //GetConfigurationsResponse.PTZConfiguration[0]->token
-    pan_tilt_limit_max = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Max,
-                        GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Max);
-    pan_tilt_limit_min = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Min,
-                        GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Min);
-    zoom_min = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Min;
-    zoom_max = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Max;
+    {
+        _tptz__GetConfigurations GetConfigurations;
+        _tptz__GetConfigurationsResponse GetConfigurationsResponse;
+        if (!set_credentials()) {
+            ERROR_PRINT("Failed to setup credentials");
+            goto err;
+        }
+        if (proxy_ptz->GetConfigurations(&GetConfigurations, GetConfigurationsResponse)) {
+            ERROR_PRINT("Failed to fetch Configurations");
+            report_error();
+            goto err;
+        }
+        
+        if (GetConfigurationsResponse.__sizePTZConfiguration > 0) {
+            DEBUG_PRINT("PTZ Tokens Received");
+        } else {
+            ERROR_PRINT("Error: No Profiles Received");
+            goto err;
+        }
+        
+        for (uint32_t i = 0; i < (uint32_t)GetConfigurationsResponse.__sizePTZConfiguration; i++) {
+            DEBUG_PRINT("PTZ: %s", GetConfigurationsResponse.PTZConfiguration[i]->Name);
+        }
+        //GetConfigurationsResponse.PTZConfiguration[0]->token
+        pan_tilt_limit_max = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Max,
+                            GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Max);
+        pan_tilt_limit_min = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Min,
+                            GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Min);
+        zoom_min = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Min;
+        zoom_max = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Max;
 
-    PRINT("Pan: %f %f Tilt: %f %f", pan_tilt_limit_min.x, pan_tilt_limit_max.x,
-                                    pan_tilt_limit_min.y, pan_tilt_limit_max.y);
+        DEBUG_PRINT("Pan: %f %f Tilt: %f %f", pan_tilt_limit_min.x, pan_tilt_limit_max.x,
+                                        pan_tilt_limit_min.y, pan_tilt_limit_max.y);
+    }
+
     // Get PTZ status
-    _tptz__GetStatus GetStatus;
-    _tptz__GetStatusResponse GetStatusResponse;
-    GetStatus.ProfileToken = profile_token;
-    set_credentials();
-    if (proxy_ptz->GetStatus(&GetStatus, GetStatusResponse)) {
-        PRINT("Failed to recieve PTZ status");
-        return false;
-    }
+    {
+        _tptz__GetStatus GetStatus;
+        _tptz__GetStatusResponse GetStatusResponse;
 
-    if (GetStatusResponse.PTZStatus->Error) {
-        PRINT("ErrorStatus: %s", GetStatusResponse.PTZStatus->Error->c_str());
+        GetStatus.ProfileToken = profile_token;
+        if (!set_credentials()) {
+            ERROR_PRINT("Failed to setup credentials");
+            goto err;
+        }
+        if (proxy_ptz->GetStatus(&GetStatus, GetStatusResponse)) {
+            DEBUG_PRINT("Failed to recieve PTZ status");
+            goto err;
+        }
+
+        if (GetStatusResponse.PTZStatus->Error) {
+            DEBUG_PRINT("ErrorStatus: %s", GetStatusResponse.PTZStatus->Error);
+        }
+        if (GetStatusResponse.PTZStatus->MoveStatus->PanTilt) {
+            DEBUG_PRINT("PTStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->PanTilt);
+        }
+        if (GetStatusResponse.PTZStatus->MoveStatus->Zoom) {
+            DEBUG_PRINT("ZoomStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->Zoom);
+        }
+        DEBUG_PRINT("Pan: %f Tilt: %f", GetStatusResponse.PTZStatus->Position->PanTilt->x,
+                                GetStatusResponse.PTZStatus->Position->PanTilt->y);
+        DEBUG_PRINT("Zoom: %f", GetStatusResponse.PTZStatus->Position->Zoom->x);
     }
-    if (GetStatusResponse.PTZStatus->MoveStatus->PanTilt) {
-        PRINT("PTStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->PanTilt);
-    }
-    if (GetStatusResponse.PTZStatus->MoveStatus->Zoom) {
-        PRINT("ZoomStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->Zoom);
-    }
-    PRINT("Pan: %f Tilt: %f", GetStatusResponse.PTZStatus->Position->PanTilt->x,
-                              GetStatusResponse.PTZStatus->Position->PanTilt->y);
-    PRINT("Zoom: %f", GetStatusResponse.PTZStatus->Position->Zoom->x);
 
     soap_destroy(soap);
     soap_end(soap);
     return true;
+err:
+    soap_destroy(soap);
+    soap_end(soap);
+    return false;
 }
 
 // Generate Random Nonce value
@@ -270,7 +337,7 @@ void AP_ONVIF::rand_nonce(char *nonce, size_t noncelen)
 #define TEST_PASS "userpassword"
 #define TEST_RESULT "tuOSpGlFlIXsozq4HFNeeGeFLEI="
 #define TEST 0
-void AP_ONVIF::set_credentials()
+bool AP_ONVIF::set_credentials()
 {
     soap_wsse_delete_Security(soap);
     soap_wsse_add_Timestamp(soap, "Time", 60);
@@ -295,25 +362,29 @@ void AP_ONVIF::set_credentials()
     sha1_hash((const unsigned char*)TEST_TIME, strlen(TEST_TIME), &ctx);
     sha1_hash((const unsigned char*)TEST_PASS, strlen(TEST_PASS), &ctx);
     nonceBase64 = (char*)base64_encode((unsigned char*)test_nonce, 16, &noncelen);
-    PRINT("Created:%s Hash64:%s", TEST_TIME, HABase64fin);
+    DEBUG_PRINT("Created:%s Hash64:%s", TEST_TIME, HABase64fin);
 #else
     sha1_hash((const unsigned char*)nonce, 16, &ctx);
     sha1_hash((const unsigned char*)created, strlen(created), &ctx);
-    sha1_hash((const unsigned char*)password.c_str(), strlen(password.c_str()), &ctx);
+    sha1_hash((const unsigned char*)password, strlen(password), &ctx);
     nonceBase64 = (char*)base64_encode((unsigned char*)nonce, 16, &noncelen);
 #endif
     sha1_end((unsigned char*)HA, &ctx);
     HABase64enc = (char*)base64_encode((unsigned char*)HA, SHA1_DIGEST_SIZE, &HABase64len);
+    if (HABase64enc == nullptr) {
+        return false;
+    }
     if (HABase64len > 29) {
         //things have gone truly bad time to panic
-        PRINT("Error: Invalid Base64 Encode!");
+        ERROR_PRINT("Error: Invalid Base64 Encode!");
         free(HABase64enc);
-        return;
+        return false;
     }
 
     memcpy(HABase64fin, HABase64enc, HABase64len);
+    free(HABase64enc);
 
-    if (soap_wsse_add_UsernameTokenText(soap, "Auth", username.c_str(), HABase64fin)) {
+    if (soap_wsse_add_UsernameTokenText(soap, "Auth", username, HABase64fin)) {
         report_error();
     }
     /* populate the remainder of the password, nonce, and created */
@@ -322,12 +393,14 @@ void AP_ONVIF::set_credentials()
     security->UsernameToken->Salt = NULL;
     security->UsernameToken->Iteration = NULL;
     if (!security->UsernameToken->Nonce) {
-        return;
+        ERROR_PRINT("Failed to allocate NONCE");
+        return false;
     }
     soap_default_wsse__EncodedString(soap, security->UsernameToken->Nonce);
     security->UsernameToken->Nonce->__item = nonceBase64;
     security->UsernameToken->Nonce->EncodingType = (char*)wsse_Base64BinaryURI;
     security->UsernameToken->wsu__Created = soap_strdup(soap, created);
+    return true;
 }
 
 // Turn ONVIF camera to mentioned pan, tilt and zoom, normalised 
@@ -337,26 +410,44 @@ bool AP_ONVIF::set_absolutemove(float x, float y, float z)
     _tptz__AbsoluteMove AbsoluteMove;
     _tptz__AbsoluteMoveResponse AbsoluteMoveResponse;
     AbsoluteMove.Position = soap_new_tt__PTZVector(soap);
+    if (AbsoluteMove.Position == nullptr) {
+        ERROR_PRINT("Failed to allocate AbsoluteMove.Position");
+        goto err;
+    }
     AbsoluteMove.Position->PanTilt = soap_new_tt__Vector2D(soap);
+    if (AbsoluteMove.Position->PanTilt == nullptr) {
+        ERROR_PRINT("Failed to allocate AbsoluteMove.Position->PanTilt");
+        goto err;
+    }
     AbsoluteMove.Position->Zoom = soap_new_tt__Vector1D(soap);
+    if (AbsoluteMove.Position->Zoom == nullptr) {
+        ERROR_PRINT("Failed to allocate AbsoluteMove.Position->Zoom");
+        goto err;
+    }
+
     AbsoluteMove.Position->PanTilt->x = constrain_float(x, pan_tilt_limit_min.x, pan_tilt_limit_max.x);
     AbsoluteMove.Position->PanTilt->y = constrain_float(y, pan_tilt_limit_min.y, pan_tilt_limit_max.y);
     AbsoluteMove.Position->Zoom->x = constrain_float(z, zoom_min, zoom_max);
     AbsoluteMove.Speed = NULL;
     AbsoluteMove.ProfileToken = profile_token;
-    // PRINT("Setting AbsoluteMove: %f %f %f", AbsoluteMove.Position->PanTilt->x,
+    // DEBUG_PRINT("Setting AbsoluteMove: %f %f %f", AbsoluteMove.Position->PanTilt->x,
                                             // AbsoluteMove.Position->PanTilt->y,
                                             // AbsoluteMove.Position->Zoom->x);
-    set_credentials();
+    if (!set_credentials()) {
+        ERROR_PRINT("Failed to setup credentials");
+        goto err;
+    }
     if (proxy_ptz->AbsoluteMove(&AbsoluteMove, AbsoluteMoveResponse)) {
-        PRINT("Failed to sent AbsoluteMove cmd");
+        ERROR_PRINT("Failed to sent AbsoluteMove cmd");
         report_error();
-        soap_destroy(soap);
-        soap_end(soap);
-        return false;
+        goto err;
     }
     soap_destroy(soap);
     soap_end(soap);
     return true;
+err:
+    soap_destroy(soap);
+    soap_end(soap);
+    return false;
 } 
 #endif //#if ENABLE_ONVIF

@@ -36,6 +36,7 @@
 #include <string.h>     /* for memcpy() etc.        */
 
 #include "onvifhelpers.h"
+#include <endian.h>
 
 #ifdef __BYTE_ORDER
 #define SHA1_BLOCK_SIZE  64
