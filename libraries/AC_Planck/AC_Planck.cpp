@@ -385,7 +385,7 @@ bool AC_Planck::check_for_high_tension_timeout() {
   }
 
   if(timed_out && !_tether_status.sent_failed_message) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether tensioner failure. DT: %lu", timeout_time_ms);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether high-tension timeout");
     _tether_status.sent_failed_message = true;
   }
   return timed_out;
