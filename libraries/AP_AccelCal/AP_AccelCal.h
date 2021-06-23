@@ -4,6 +4,14 @@
 #include "AccelCalibrator.h"
 #include "AP_Vehicle/AP_Vehicle_Type.h"
 
+#ifndef HAL_INS_ACCELCAL_ENABLED
+#ifndef HAL_NO_GCS
+#define HAL_INS_ACCELCAL_ENABLED 1
+#else
+#define HAL_INS_ACCELCAL_ENABLED 0
+#endif
+#endif
+
 #define AP_ACCELCAL_MAX_NUM_CLIENTS 4
 class GCS_MAVLINK;
 class AP_AccelCal_Client;
