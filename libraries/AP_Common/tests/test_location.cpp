@@ -95,6 +95,38 @@ EXPECT_NEAR(v1[1], v2[1], acc);          \
 EXPECT_NEAR(v1[2], v2[2], acc);          \
 } while (false);
 
+TEST(Location, LatLngWrapping)
+{
+    struct {
+        int32_t start_lat;
+        int32_t start_lng;
+        Vector2f delta_metres_ne;
+        int32_t expected_lat;
+        int32_t expected_lng;
+    } tests[] {
+        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860775}
+    };
+
+    for (auto &test : tests) {
+        // forward
+        {
+            Location loc{test.start_lat, test.start_lng, 0, Location::AltFrame::ABOVE_HOME};
+            loc.offset(test.delta_metres_ne[0], test.delta_metres_ne[1]);
+            EXPECT_EQ(test.expected_lat, loc.lat);
+            EXPECT_EQ(test.expected_lng, loc.lng);
+            EXPECT_EQ(0, loc.alt);
+        }
+        // and now reverse
+        {
+            Location rev{test.expected_lat, test.expected_lng, 0, Location::AltFrame::ABOVE_HOME};
+            rev.offset(-test.delta_metres_ne[0], -test.delta_metres_ne[1]);
+            EXPECT_EQ(rev.lat, test.start_lat);
+            EXPECT_EQ(rev.lng, test.start_lng);
+            EXPECT_EQ(0, rev.alt);
+        }
+    }
+}
+
 TEST(Location, Tests)
 {
     Location test_location;
