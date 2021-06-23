@@ -2,6 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#if HAL_INS_ENABLED
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
 #include <AP_Math/AP_Math.h>
@@ -2293,3 +2294,6 @@ AP_InertialSensor &ins()
 }
 
 };
+
+#endif //#if HAL_INS_ENABLED
+
