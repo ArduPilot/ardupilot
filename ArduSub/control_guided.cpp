@@ -13,8 +13,7 @@
 
 static Vector3p posvel_pos_target_cm;
 static Vector3f posvel_vel_target_cms;
-static uint32_t posvel_update_time_ms;
-static uint32_t vel_update_time_ms;
+static uint32_t update_time_ms;
 
 struct {
     uint32_t update_time_ms;
@@ -189,7 +188,7 @@ void Sub::guided_set_velocity(const Vector3f& velocity)
         guided_vel_control_start();
     }
 
-    vel_update_time_ms = AP_HAL::millis();
+    update_time_ms = AP_HAL::millis();
 
     // set position controller velocity target
     pos_control.set_vel_desired_cms(velocity);
@@ -213,7 +212,7 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
     }
 #endif
 
-    posvel_update_time_ms = AP_HAL::millis();
+    update_time_ms = AP_HAL::millis();
     posvel_pos_target_cm = destination.topostype();
     posvel_vel_target_cms = velocity;
 
@@ -358,7 +357,7 @@ void Sub::guided_vel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_vel_desired_cms().is_zero()) {
+    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_vel_desired_cms().is_zero()) {
         pos_control.set_vel_desired_cms(Vector3f(0,0,0));
     }
 
@@ -415,7 +414,7 @@ void Sub::guided_posvel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_cms.is_zero()) {
+    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_cms.is_zero()) {
         posvel_vel_target_cms.zero();
     }
 
