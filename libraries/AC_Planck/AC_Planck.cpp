@@ -176,7 +176,11 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
 
         Location current_loc;
         ahrs.get_position(current_loc);
-        _tether_status.high_tension_alt_cm = current_loc.alt;
+        int32_t alt_above_home_cm = 3048; //100ft default
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+          alt_above_home_cm = 3048;
+        }
+        _tether_status.high_tension_alt_cm = (float)alt_above_home_cm;
       }
 
       _tether_status.high_tension = high_tension;
@@ -364,18 +368,21 @@ bool AC_Planck::check_for_high_tension_timeout() {
     timeout_s = _tether_status.high_tension_alt_cm / reel_rate_cms;
   }
 
-  //Account for the 10s spent in "locked" mode
-  timeout_s += 10.;
+  //Account for the 10s spent in "locked" mode, but only in a comms or position loss state
+  bool pos_reference_good = get_commbox_state() || get_tag_tracking_state();
+  if(!pos_reference_good || tether_comms_failed) {
+    timeout_s += 10.;
+  }
 
   //If this was due to a comms loss, add an additional 5s for the comm loss timeout
   if(!_tether_status.high_tension) { //did not get a high-tension indication from DECK due to comms loss
     timeout_s += 5.;
   }
 
-  //Add a 5s buffer, limit
-  timeout_s = constrain_float((timeout_s + 5.), 5., 120.); //5s to 2 minutes
+  //Add a 2s buffer, limit
+  timeout_s = constrain_float((timeout_s + 2.), 5., 120.); //5s to 2 minutes
 
-  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + (uint32_t)(timeout_s * 1000.);
+  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + ((int)(timeout_s) * 1000);
   bool timed_out = AP_HAL::millis() > timeout_time_ms;
 
   //If no timeout, it hasn't failed yet
@@ -385,7 +392,7 @@ bool AC_Planck::check_for_high_tension_timeout() {
   }
 
   if(timed_out && !_tether_status.sent_failed_message) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether high-tension timeout");
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether high-tension timeout!");
     _tether_status.sent_failed_message = true;
   }
   return timed_out;
