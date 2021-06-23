@@ -489,8 +489,6 @@ void AC_PosControl::init_xy()
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-///     The time constant also defines the time taken to achieve the maximum acceleration.
 void AC_PosControl::input_vel_accel_xy(Vector2f& vel, const Vector2f& accel)
 {
     // check for ekf xy position reset
@@ -507,9 +505,7 @@ void AC_PosControl::input_vel_accel_xy(Vector2f& vel, const Vector2f& accel)
 /// input_pos_vel_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
 ///     The pos and vel are projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-///     The time constant also defines the time taken to achieve the maximum acceleration.
+///     The function alters the pos and vel to be the kinematic path based on accel
 void AC_PosControl::input_pos_vel_accel_xy(Vector2f& pos, Vector2f& vel, const Vector2f& accel)
 {
     // check for ekf xy position reset
@@ -750,10 +746,7 @@ void AC_PosControl::init_z()
 /// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
-///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-///     The time constant also defines the time taken to achieve the maximum acceleration.
-///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+///     The function alters the vel to be the kinematic path based on accel
 void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit)
 {
     // check for ekf z position reset
@@ -797,9 +790,7 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ig
 /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
 ///     The pos and vel are projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
-///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-///     The time constant also defines the time taken to achieve the maximum acceleration.
+///     The function alters the pos and vel to be the kinematic path based on accel
 void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float accel)
 {
     // check for ekf z position reset

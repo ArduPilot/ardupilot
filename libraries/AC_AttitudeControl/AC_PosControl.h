@@ -54,8 +54,6 @@ public:
     /// input_pos_vel_accel_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-    ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-    ///     The time constant also defines the time taken to achieve the maximum acceleration.
     void input_pos_vel_accel_xyz(const Vector3f& pos);
 
     ///
@@ -91,17 +89,13 @@ public:
     /// input_vel_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-    ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-    ///     The time constant also defines the time taken to achieve the maximum acceleration.
-    ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+    ///     The function alters the vel to be the kinematic path based on accel
     void input_vel_accel_xy(Vector2f& vel, const Vector2f& accel);
 
     /// input_pos_vel_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-    ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-    ///     The time constant also defines the time taken to achieve the maximum acceleration.
-    ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+    ///     The function alters the pos and vel to be the kinematic path based on accel
     void input_pos_vel_accel_xy(Vector2f& pos, Vector2f& vel, const Vector2f& accel);
 
     // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
@@ -163,10 +157,7 @@ public:
     /// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
-    ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-    ///     The time constant also defines the time taken to achieve the maximum acceleration.
-    ///     The function alters the input velocitiy to be the velocity that the system could reach zero acceleration in the minimum time.
-    ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+    ///     The function alters the vel to be the kinematic path based on accel
     virtual void input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit);
 
     /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a climb rate in cm/s
@@ -176,10 +167,7 @@ public:
 
     /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-    ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
-    ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-    ///     The time constant also defines the time taken to achieve the maximum acceleration.
-    ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+    ///     The function alters the pos and vel to be the kinematic path based on accel
     void input_pos_vel_accel_z(float &pos, float &vel, float accel);
 
     /// set_alt_target_with_slew - adjusts target up or down using a commanded altitude in cm
