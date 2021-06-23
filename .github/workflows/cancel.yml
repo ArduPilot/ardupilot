@@ -1,0 +1,27 @@
+name: Cancel
+on:
+  workflow_run:
+    workflows: [
+        "Cygwin Build",
+        "Notify users based on issue labels",
+        "test chibios",
+        "test Linux SBC",
+        "test replay",
+        "test copter",
+        "test ap_periph",
+        "test plane",
+        "test rover",
+        "test sub",
+        "test tracker",
+        "test size",
+        "test unit tests and Python cleanliness",
+        ]
+    types:
+      - requested
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: styfle/cancel-workflow-action@0.9.0
+      with:
+        workflow_id: ${{ github.event.workflow.id }}
