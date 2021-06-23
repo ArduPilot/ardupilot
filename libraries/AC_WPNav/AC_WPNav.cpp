@@ -421,6 +421,14 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         return false;
     }
 
+    // input shape the terrain offset
+    shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
+        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
+        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
+        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), _pos_control.get_shaping_tc_z_s(), dt);
+
+    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
+
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
     const Vector3f &curr_pos = _inav.get_position() - Vector3f{0, 0, terr_offset};
 
@@ -464,14 +472,6 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         _spline_this_leg.advance_target_along_track(_track_scalar_dt * dt, target_pos, target_vel);
         s_finished = _spline_this_leg.reached_destination();
     }
-
-    // input shape the terrain offset
-    shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
-                        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
-                        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
-                        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), _pos_control.get_shaping_tc_z_s(), dt);
-
-    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
 
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_terrain_offset;
