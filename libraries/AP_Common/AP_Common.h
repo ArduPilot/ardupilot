@@ -162,3 +162,51 @@ template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
      static_assert(std::is_integral<T>::value, "Integral required.");
      ((value) &= ~((T)(1U) << (bitnumber)));
  }
+
+
+// helper macro to mark all variables in a varargs list to be marked as unused:
+// based on https://stackoverflow.com/questions/1872220/is-it-possible-to-iterate-over-arguments-in-variadic-macros
+#define UNUSED_VARARG_1(x)         \
+    (x)
+
+#define UNUSED_VARARG_2(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_1(__VA_ARGS__);
+
+#define UNUSED_VARARG_3(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_2(__VA_ARGS__);
+
+#define UNUSED_VARARG_4(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_3( __VA_ARGS__);
+
+#define UNUSED_VARARG_5(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_4( __VA_ARGS__);
+
+#define UNUSED_VARARG_6(x, ...)    \
+  (x);                          \
+  UNUSED_VARARG_5( __VA_ARGS__);
+
+#define UNUSED_VARARG_7(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_6( __VA_ARGS__);
+
+#define UNUSED_VARARG_8(x, ...)    \
+    (x);                        \
+    UNUSED_VARARG_7( __VA_ARGS__);
+
+
+#define UV_CONCATENATE(arg1, arg2)   UV_CONCATENATE1(arg1, arg2)
+#define UV_CONCATENATE1(arg1, arg2)  UV_CONCATENATE2(arg1, arg2)
+#define UV_CONCATENATE2(arg1, arg2)  arg1##arg2
+
+#define UNUSED_VARARG_NARG(...) UNUSED_VARARG_NARG_(__VA_ARGS__, UNUSED_VARARG_RSEQ_N())
+#define UNUSED_VARARG_NARG_(...) UNUSED_VARARG_ARG_N(__VA_ARGS__)
+#define UNUSED_VARARG_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
+#define UNUSED_VARARG_RSEQ_N() 8, 7, 6, 5, 4, 3, 2, 1, 0
+
+#define UNUSED_VARARG_(N, ...) UV_CONCATENATE(UNUSED_VARARG_, N)(__VA_ARGS__)
+#define UNUSED_VARARG(...) UNUSED_VARARG_(UNUSED_VARARG_NARG(__VA_ARGS__), __VA_ARGS__)
+#define UNUSED_VARARGS UNUSED_VARARG  // also allow the plural
