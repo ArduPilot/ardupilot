@@ -184,6 +184,7 @@ class Context(object):
         self.collections = {}
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
+        self.reboot_occured = False
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -1613,12 +1614,14 @@ class AutoTest(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None):
+    def reboot_sitl(self, required_bootcount=None, add_to_context=True):
         """Reboot SITL instance and wait for it to reconnect."""
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount)
         self.do_heartbeats(force=True)
         self.assert_simstate_location_is_at_startup_location()
+        if add_to_context:
+            self.context_get().reboot_occured = True
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -4173,6 +4176,10 @@ class AutoTest(ABC):
         self.set_parameters(dead_parameters_dict, add_to_context=False)
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
+        if dead.sitl_commandline_customised:
+            self.reset_SITL_commandline()
+        elif dead.reboot_occured:
+            self.reboot_sitl(add_to_context=False)
 
     class Context(object):
         def __init__(self, testsuite):
@@ -5875,9 +5882,6 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
 
-        if reset_needed:
-            self.reset_SITL_commandline()
-
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
@@ -7141,12 +7145,22 @@ Also, ignores heartbeats not from our target system'''
             if numlogs != 2 or log_num != 1 or size <= 0:
                 raise NotAchievedException("Unexpected log information %d %d %d" % (log_num, numlogs, lastlog))
             self.progress("Log size: %d" % size)
+            self.progress("LOG_DISARMED is %f" % self.get_parameter("LOG_DISARMED"))
             self.reboot_sitl()
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time
             self.wait_ready_to_arm()
             # Third log created here
             mavproxy.send("log list\n")
-            mavproxy.expect("Log 1  numLogs 3 lastLog 3 size")
+            mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+            log_num = int(mavproxy.match.group(1))
+            numlogs = int(mavproxy.match.group(2))
+            lastlog = int(mavproxy.match.group(3))
+            if log_num != 1:
+                raise NotAchievedException("Wanted log_num == 1 got %u" % log_num)
+            if numlogs != 3:
+                raise NotAchievedException("Wanted numlogs == 3 got %u" % numlogs)
+            if lastlog != 3:
+                raise NotAchievedException("Wanted lastlog == 3 got %u" % lastlog)
 
             # Download second and third logs
             mavproxy.send("log download 2 logs/dataflash-log-002.BIN\n")
