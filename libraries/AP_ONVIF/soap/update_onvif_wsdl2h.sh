@@ -1,5 +1,5 @@
 cp ../../../modules/gsoap/gsoap/typemap.dat .
-wsdl2h -O4 -P -x -o onvif.h \
+wsdl2h -O4 -P -s -x -o onvif.h \
   http://www.onvif.org/onvif/ver10/device/wsdl/devicemgmt.wsdl \
   http://www.onvif.org/onvif/ver10/media/wsdl/media.wsdl \
   http://www.onvif.org/onvif/ver20/ptz/wsdl/ptz.wsdl
