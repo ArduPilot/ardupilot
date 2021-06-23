@@ -70,6 +70,11 @@ void ModePlanckTracking::run() {
             if(!copter.planck_interface.get_tag_tracking_state()) {
                 if(copter.position_ok()) {
                   copter.planck_interface.override_with_zero_vel_cmd();
+
+                  //Force the position controller to use the current position
+                  const Vector3f& curr_pos = inertial_nav.get_position();
+                  // set target position to current position
+                  pos_control->set_xy_target(curr_pos.x, curr_pos.y);
                 } else {
                   copter.planck_interface.override_with_zero_att_cmd();
                 }
