@@ -5814,7 +5814,6 @@ Also, ignores heartbeats not from our target system'''
             self.context_pop()
         except Exception as e:
             self.print_exception_caught(e, send_statustext=False)
-            self.progress("Not alive after test", send_statustext=False)
             passed = False
 
         ardupilot_alive = False
@@ -5823,6 +5822,7 @@ Also, ignores heartbeats not from our target system'''
             ardupilot_alive = True
         except Exception:
             # process is dead
+            self.progress("Not alive after test", send_statustext=False)
             passed = False
             reset_needed = True
 
