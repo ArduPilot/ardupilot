@@ -354,21 +354,6 @@ bool AC_Planck::check_for_high_tension_timeout() {
     return false;
   }
 
-  //Check for a timeout. Has it been 15s since the tether indicated high tension,
-  //or 15s since we last heard the tether comms timed out
-  bool timeout = false;
-  if(_tether_status.high_tension) {
-    timeout = (AP_HAL::millis() - _tether_status.high_tension_timestamp_ms) > 15000;
-  } else { //Tether comms have failed
-    timeout = (AP_HAL::millis() - _tether_status.timestamp_ms) > 20000; //15s + 5s timeout
-  }
-
-  //If no timeout, it hasn't failed yet
-  if(!timeout) {
-    _tether_status.sent_failed_message = false;
-    return false;
-  }
-
   //The amount of time to wait for high tension to timeout is a function of
   //initial altitude when the high tension event ocurred. Use tag altitude if available
   float timeout_s = 0;
@@ -378,14 +363,29 @@ bool AC_Planck::check_for_high_tension_timeout() {
   } else {
     timeout_s = _tether_status.high_tension_alt_cm / reel_rate_cms;
   }
+
+  //Account for the 10s spent in "locked" mode
+  timeout_s += 10.;
+
+  //If this was due to a comms loss, add an additional 5s for the comm loss timeout
+  if(!_tether_status.high_tension) { //did not get a high-tension indication from DECK due to comms loss
+    timeout_s += 5.;
+  }
+
   //Add a 5s buffer, limit
   timeout_s = constrain_float((timeout_s + 5.), 5., 120.); //5s to 2 minutes
 
   uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + (uint32_t)(timeout_s * 1000.);
   bool timed_out = AP_HAL::millis() > timeout_time_ms;
 
+  //If no timeout, it hasn't failed yet
+  if(!timed_out) {
+    _tether_status.sent_failed_message = false;
+    return false;
+  }
+
   if(timed_out && !_tether_status.sent_failed_message) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether tensioner failure detection");
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether tensioner failure. DT: %lu", timeout_time_ms);
     _tether_status.sent_failed_message = true;
   }
   return timed_out;
