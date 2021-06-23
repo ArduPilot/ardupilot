@@ -1089,7 +1089,7 @@ void can_printf(const char *fmt, ...);
 
 #else // HAL_NO_GCS
 // empty send text when we have no GCS
-#define GCS_SEND_TEXT(severity, format, args...)
+#define GCS_SEND_TEXT(severity, format, args...) while (0) { (void)severity, (void)format, UNUSED_VARARGS(args); }
 
 #endif // HAL_NO_GCS
 
