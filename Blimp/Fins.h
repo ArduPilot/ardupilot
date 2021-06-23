@@ -84,15 +84,6 @@ public:
     bool _interlock;         // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     bool _initialised_ok;    // 1 if initialisation was successful
 
-    float max(float one, float two)
-    {
-        if (one >= two) {
-            return one;
-        } else {
-            return two;
-        }
-    }
-
     void output_min();
 
     void add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac,
@@ -104,7 +95,8 @@ public:
 
     float get_throttle()
     {
-        return 0.1f;    //TODO
+        //Only for Mavlink - essentially just an indicator of how hard the fins are working.
+        return fmaxf(fmaxf(fabsf(down_out),fabsf(front_out)), fmaxf(fabsf(right_out),fabsf(yaw_out)));
     }
 
     void rc_write(uint8_t chan, uint16_t pwm);
