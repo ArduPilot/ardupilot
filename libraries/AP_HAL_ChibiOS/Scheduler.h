@@ -79,6 +79,10 @@
 #define MONITOR_THD_WA_SIZE 512
 #endif
 
+#ifndef HAL_MAX_THREADS
+#define HAL_MAX_THREADS 32
+#endif
+
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
 public:
@@ -139,6 +143,9 @@ public:
     // pat the watchdog
     void watchdog_pat(void);
 
+    // Get thread name by index, used by assert failure logging
+    const char* thread_name_by_index(uint8_t idx) override;
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;
@@ -171,8 +178,13 @@ private:
     binary_semaphore_t _io_semaphore;
 #endif
 
+    thread_t *_thread_registry[HAL_MAX_THREADS];
+    uint8_t _thread_count;
+
     // calculates an integer to be used as the priority for a newly-created thread
     uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
+
+    thread_t* static_thread_create(void *wsp, size_t size, tprio_t prio, tfunc_t pf);
 
     static void _timer_thread(void *arg);
     static void _rcout_thread(void *arg);

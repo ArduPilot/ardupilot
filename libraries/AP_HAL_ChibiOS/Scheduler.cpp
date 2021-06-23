@@ -76,59 +76,65 @@ void Scheduler::init()
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
+    _thread_registry[0] = chThdGetSelfX();
+    _thread_registry[0]->index = _thread_count++;
+
+
 #ifndef HAL_NO_MONITOR_THREAD
     // setup the monitor thread - this is used to detect software lockups
-    _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
+    _monitor_thread_ctx = static_thread_create(_monitor_thread_wa,
                      sizeof(_monitor_thread_wa),
                      APM_MONITOR_PRIORITY,        /* Initial priority.    */
-                     _monitor_thread,             /* Thread function.     */
-                     this);                     /* Thread parameter.    */
+                     _monitor_thread);             /* Thread function.     */
 #endif
 
 #ifndef HAL_NO_TIMER_THREAD
     // setup the timer thread - this will call tasks at 1kHz
-    _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
+    _timer_thread_ctx = static_thread_create(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
                      APM_TIMER_PRIORITY,        /* Initial priority.    */
-                     _timer_thread,             /* Thread function.     */
-                     this);                     /* Thread parameter.    */
+                     _timer_thread);             /* Thread function.     */
 #endif
 
 #ifndef HAL_NO_RCOUT_THREAD
     // setup the RCOUT thread - this will call tasks at 1kHz
-    _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
+    _rcout_thread_ctx = static_thread_create(_rcout_thread_wa,
                      sizeof(_rcout_thread_wa),
                      APM_RCOUT_PRIORITY,        /* Initial priority.    */
-                     _rcout_thread,             /* Thread function.     */
-                     this);                     /* Thread parameter.    */
+                     _rcout_thread);             /* Thread function.     */
 #endif
 
 #ifndef HAL_NO_RCIN_THREAD
     // setup the RCIN thread - this will call tasks at 1kHz
-    _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
+    _rcin_thread_ctx = static_thread_create(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
-                     _rcin_thread,             /* Thread function.     */
-                     this);                     /* Thread parameter.    */
+                     _rcin_thread);             /* Thread function.     */
 #endif
 #ifndef HAL_USE_EMPTY_IO
     // the IO thread runs at lower priority
-    _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
+    _io_thread_ctx = static_thread_create(_io_thread_wa,
                      sizeof(_io_thread_wa),
                      APM_IO_PRIORITY,        /* Initial priority.      */
-                     _io_thread,             /* Thread function.       */
-                     this);                  /* Thread parameter.      */
+                     _io_thread);             /* Thread function.       */
 #endif
 
 #ifndef HAL_USE_EMPTY_STORAGE
     // the storage thread runs at just above IO priority
-    _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
+    _storage_thread_ctx = static_thread_create(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
-                     _storage_thread,             /* Thread function.       */
-                     this);                  /* Thread parameter.      */
+                     _storage_thread);             /* Thread function.       */
 #endif
 
+}
+
+thread_t* Scheduler::static_thread_create(void *wsp, size_t size,
+                                     tprio_t prio, tfunc_t pf) {
+    thread_t* ctx = chThdCreateStatic(wsp, size, prio, pf, this);
+    _thread_registry[_thread_count] = ctx;
+    ctx->index = _thread_count++;
+    return ctx;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
@@ -679,7 +685,17 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         free(tproc);
         return false;
     }
+    // register thread in our list
+    _thread_registry[_thread_count] = thread_ctx;
+    thread_ctx->index = _thread_count++;
     return true;
+}
+
+const char* Scheduler::thread_name_by_index(uint8_t idx) {
+    if (idx > _thread_count) {
+        return nullptr;
+    }
+    return _thread_registry[idx]->name;
 }
 
 /*

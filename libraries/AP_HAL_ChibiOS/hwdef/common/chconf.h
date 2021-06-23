@@ -67,8 +67,47 @@ extern "C" {
 #endif
 #define osalDbgAssert(c, remark) do { if (!(c)) { fault_printf("%s:%d: %s", __FILE__, __LINE__, remark ); chDbgAssert(c, remark); } } while (0)
 #endif
-
 #endif // HAL_CHIBIOS_ENABLE_ASSERTS
+
+#if !defined(__ASSEMBLER__)
+#include <stdint.h>
+#ifdef __cplusplus
+#include <atomic>
+using namespace std;
+#define _Atomic(x) std::atomic<x>
+#else
+#include <stdatomic.h>
+#endif
+
+extern uint8_t chsys_initialised;
+
+#if HAL_LOG_ASSERT_ENABLED
+
+extern _Atomic(uint32_t) assert_log_addr;
+extern const char __start_assert_strings;
+#define LINE_STRINGIZE(x) LINE_STRINGIZE2(x)
+#define LINE_STRINGIZE2(x) #x
+#define LINE_STRING LINE_STRINGIZE(__LINE__)
+
+#define LOG_ASSERT(condition, msg) do { \
+    static const char _msg[] __attribute__((section("assert_strings"))) = __FILE__ ":" LINE_STRING ":" msg; \
+    if (!(condition)) { \
+        static uint8_t cnt; \
+        uint8_t thd_id = 0; \
+        if (chsys_initialised && chThdGetSelfX()!=NULL) { \
+            thd_id = chThdGetSelfX()->index; \
+        } \
+        assert_log_addr = ((cnt++) << 24) | \
+                          ((thd_id&0xFF) << 16) | \
+                          ((_msg - &__start_assert_strings) & 0xFFFF); \
+    } \
+} while(0)
+
+#define osalDbgAssert(c, remark) LOG_ASSERT(c, remark)
+#endif //#if HAL_LOG_ASSERT_ENABLED
+#endif //#if !defined(__ASSEMBLER__)
+
+
 
 #if HAL_ENABLE_THREAD_STATISTICS
 #define CH_DBG_STATISTICS TRUE
@@ -680,7 +719,7 @@ extern "C" {
  *          just before interrupts are enabled globally.
  */
 #define CH_CFG_SYSTEM_INIT_HOOK() {                                         \
-  /* Add threads initialization code here.*/                                \
+      chsys_initialised = true;                                             \
 }
 
 /**
@@ -688,6 +727,8 @@ extern "C" {
  * @details User fields added to the end of the @p thread_t structure.
  */
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
+    uint8_t index;
+
   /* Add threads custom fields here.*/
 
 /**

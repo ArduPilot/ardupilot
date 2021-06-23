@@ -49,7 +49,7 @@ static T* matrix_multiply(const T *A, const T *B, uint16_t n)
 }
 
 template<typename T>
-static inline void swap(T &a, T &b)
+static inline void swap_vals(T &a, T &b)
 {
     T c;
     c = a;
@@ -90,7 +90,7 @@ static void mat_pivot(const T* A, T* pivot, uint16_t n)
 
         if(max_j != i) {
             for(uint16_t k = 0; k < n; k++) {
-                swap(pivot[i*n + k], pivot[max_j*n + k]);
+                swap_vals(pivot[i*n + k], pivot[max_j*n + k]);
             }
         }
     }
