@@ -3977,18 +3977,19 @@ class AutoTest(ABC):
     def set_parameter(self, name, value, **kwargs):
         self.set_parameters({name: value}, **kwargs)
 
-    def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, retries=None, verbose=True):
+    def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, verbose=True, attempts=None):
         """Set parameters from vehicle."""
+
         want = copy.copy(parameters)
         self.progress("set_parameters: (%s)" % str(want))
         self.drain_mav()
         if len(want) == 0:
             return
 
-        if retries is None:
+        if attempts is None:
             # we can easily fill ArduPilot's param-set/param-get queue
             # which is quite short.  So we retry *a lot*.
-            retries = (len(want)+1) * 5
+            attempts = len(want) * 5
 
         param_value_messages = []
 
@@ -4002,7 +4003,7 @@ class AutoTest(ABC):
 
         original_values = {}
         autopilot_values = {}
-        for i in range(retries):
+        for i in range(attempts):
             self.drain_mav(quiet=True)
             received = set()
             for (name, value) in want.items():
@@ -4011,7 +4012,7 @@ class AutoTest(ABC):
                 if name not in autopilot_values:
                     self.send_get_parameter_direct(name)
                     if verbose:
-                        self.progress("Requesting (%s) (retry=%u)" % (name, i))
+                        self.progress("Requesting (%s) (attempt=%u/%u)" % (name, i+1, attempts))
                     continue
                 delta = abs(autopilot_values[name] - value)
                 if delta <= epsilon_pct*0.01*abs(value):
@@ -8898,7 +8899,7 @@ switch value'''
         old_mt = self.get_parameter("MIS_TOTAL", attempts=20) # retries to avoid seeming race condition with MAVProxy
         ex = None
         try:
-            self.set_parameter("MIS_TOTAL", 17, retries=0)
+            self.set_parameter("MIS_TOTAL", 17, attempts=1)
         except ValueError as e:
             ex = e
         if ex is None:
