@@ -111,11 +111,20 @@ int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
  */
 void GCS_MAVLINK_Blimp::send_pid_tuning()
 {
-    static const PID_TUNING_AXIS axes[] = {
-        PID_TUNING_ROLL,
-        PID_TUNING_PITCH,
-        PID_TUNING_YAW,
-        PID_TUNING_ACCZ
+    if(blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::LAND) {
+        //No PIDs are used in Manual or Land mode.
+        return;
+    }
+    
+    static const int8_t axes[] = {
+        PID_SEND::VELX,
+        PID_SEND::VELY,
+        PID_SEND::VELZ,
+        PID_SEND::VELYAW,
+        PID_SEND::POSX,
+        PID_SEND::POSY,
+        PID_SEND::POSZ,
+        PID_SEND::POSYAW
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
         if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
@@ -125,19 +134,31 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             return;
         }
         const AP_Logger::PID_Info *pid_info = nullptr;
-        switch (axes[i]) { //TODO This should probably become an acceleration controller?
-        // case PID_TUNING_ROLL:
-        //     pid_info = &blimp.attitude_control->get_rate_roll_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_PITCH:
-        //     pid_info = &blimp.attitude_control->get_rate_pitch_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_YAW:
-        //     pid_info = &blimp.attitude_control->get_rate_yaw_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_ACCZ:
-        //     pid_info = &blimp.pos_control->get_accel_z_pid().get_pid_info();
-        //     break;
+        switch (axes[i]) {
+        case PID_SEND::VELX:
+            pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            break;
+        case PID_SEND::VELY:
+            pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+            break;
+        case PID_SEND::VELZ:
+            pid_info = &blimp.pid_vel_z.get_pid_info();
+            break;
+        case PID_SEND::VELYAW:
+            pid_info = &blimp.pid_vel_yaw.get_pid_info();
+            break;
+        case PID_SEND::POSX:
+            pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            break;
+        case PID_SEND::POSY:
+            pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+            break;
+        case PID_SEND::POSZ:
+            pid_info = &blimp.pid_pos_z.get_pid_info();
+            break;
+        case PID_SEND::POSYAW:
+            pid_info = &blimp.pid_pos_yaw.get_pid_info();
+            break;
         default:
             continue;
         }
