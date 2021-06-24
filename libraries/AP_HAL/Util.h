@@ -182,6 +182,9 @@ public:
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
 
+    // generate Random values
+    virtual bool get_random_vals(uint8_t* data, size_t size) { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
