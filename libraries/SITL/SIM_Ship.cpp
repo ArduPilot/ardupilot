@@ -85,7 +85,7 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
         return Vector2f(0,0);
     }
     Location shiploc = home;
-    shiploc.offset(ship.position.x, ship.position.y);
+    shiploc.offset_double(ship.position.x, ship.position.y);
     if (loc.get_distance(shiploc) > deck_size) {
         yaw_rate = 0;
         return Vector2f(0,0);
@@ -172,7 +172,7 @@ void ShipSim::send_report(void)
       send a GLOBAL_POSITION_INT messages
      */
     Location loc = home;
-    loc.offset(ship.position.x, ship.position.y);
+    loc.offset_double(ship.position.x, ship.position.y);
 
     int32_t alt;
     bool have_alt = false;
