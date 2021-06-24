@@ -40,7 +40,7 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75),
     SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,           accumulate,      50,  90),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(fourhundred_hz_logging,400,    50),
+    SCHED_TASK(full_rate_logging,     50,    50),
 #endif
     SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90),
     SCHED_TASK(one_hz_loop,            1,    100),
@@ -140,8 +140,7 @@ void Blimp::update_batt_compass(void)
 }
 
 // Full rate logging of attitude, rate and pid loops
-// should be run at 400hz
-void Blimp::fourhundred_hz_logging()
+void Blimp::full_rate_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
         Log_Write_Attitude();
