@@ -71,7 +71,7 @@ git reset --hard origin/master
 git pull
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
-cp ../config.mk .
+-e ../config.mk && cp ../config.mk .
 popd
 
 echo "Updating MAVProxy"
