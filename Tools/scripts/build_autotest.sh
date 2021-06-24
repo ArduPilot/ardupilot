@@ -91,6 +91,8 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
+WEB_BOILTERPLATE="$PWD/APM/Tools/autotest/web-firmware"
+
 killall -9 JSBSim || /bin/true
 
 # raise core limit
@@ -132,7 +134,7 @@ pushd $BUILDLOGS
   mkdir -p "$HISTORY_DIR"
 
   # populate index.html etc from the repository:
-  rsync -a APM/Tools/autotest/web-firmware/ "$HISTORY_DIR"
+  rsync -aPH "$WEB_BOILTERPLATE/" "$HISTORY_DIR"
 
   # create a link so people can see what we're currently doing:
   ln -sfn "$HISTORY_DIR" currently-building
