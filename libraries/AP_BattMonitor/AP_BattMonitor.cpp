@@ -33,43 +33,97 @@ AP_BattMonitor *AP_BattMonitor::_singleton;
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // 0 - 18, 20- 22 used by old parameter indexes
 
+    // Monitor 1
+
     // @Group: _
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: _
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "_", 41, AP_BattMonitor, backend_analog_var_info[0]),
+
+    // Monitor 2
 
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 24, AP_BattMonitor, AP_BattMonitor_Params),
 
+    // @Group: 2_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 42, AP_BattMonitor, backend_analog_var_info[1]),
+
+    // Monitor 3
+
     // @Group: 3_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[2], "3_", 25, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 3_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 43, AP_BattMonitor, backend_analog_var_info[2]),
+
+    // Monitor 4
 
     // @Group: 4_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[3], "4_", 26, AP_BattMonitor, AP_BattMonitor_Params),
 
+    // @Group: 4_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 44, AP_BattMonitor, backend_analog_var_info[3]),
+
+    // Monitor 5
+
     // @Group: 5_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[4], "5_", 27, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 5_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_", 45, AP_BattMonitor, backend_analog_var_info[4]),
+
+    // Monitor 6
 
     // @Group: 6_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[5], "6_", 28, AP_BattMonitor, AP_BattMonitor_Params),
 
+    // @Group: 6_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[5], "6_", 46, AP_BattMonitor, backend_analog_var_info[5]),
+
+    // Monitor 7
+
     // @Group: 7_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[6], "7_", 29, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 7_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[6], "7_", 47, AP_BattMonitor, backend_analog_var_info[6]),
+
+    // Monitor 8
 
     // @Group: 8_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[7], "8_", 30, AP_BattMonitor, AP_BattMonitor_Params),
 
+    // @Group: 8_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[7], "8_", 48, AP_BattMonitor, backend_analog_var_info[7]),
+
+    // Monitor 9
+
     // @Group: 9_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[8], "9_", 31, AP_BattMonitor, AP_BattMonitor_Params),
 
-    #if HAL_BATTMON_SMBUS_ENABLE
+    // @Group: 9_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_analog_var_info[8]),
+
+#if HAL_BATTMON_SMBUS_ENABLE
     // @Group: _
     // @Path: AP_BattMonitor_SMBus.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_", 32, AP_BattMonitor, backend_smbus_var_info[0]),
@@ -109,6 +163,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     AP_GROUPEND
 };
+
+const AP_Param::GroupInfo *AP_BattMonitor::backend_analog_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
 #if HAL_BATTMON_SMBUS_ENABLE
 const AP_Param::GroupInfo *AP_BattMonitor::backend_smbus_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
@@ -228,19 +284,24 @@ AP_BattMonitor::init()
                 break;
         }
 
-#if HAL_BATTMON_SMBUS_ENABLE
     // if the backend has some local parameters then make those available in the tree
     if (drivers[instance] && state[instance].var_info) {
         Type type = get_type(instance);
-        if ((type == Type::MAXELL) || (type == Type::NeoDesign) || (type == Type::Rotoye) || (type == Type::SMBus_Generic) ||
+        if((type == Type::ANALOG_VOLTAGE_AND_CURRENT) || (type == Type::ANALOG_VOLTAGE_ONLY) ||
+            (type == Type::FuelFlow) || (type == Type::FuelLevel_PWM)) {
+            backend_analog_var_info[instance] = state[instance].var_info;
+            AP_Param::load_object_from_eeprom(drivers[instance], backend_analog_var_info[instance]);
+        }
+#if HAL_BATTMON_SMBUS_ENABLE
+        else if ((type == Type::MAXELL) || (type == Type::NeoDesign) || (type == Type::Rotoye) || (type == Type::SMBus_Generic) ||
             (type == Type::SOLO)   || (type == Type::SUI3)      || (type == Type::SUI6)) {
             backend_smbus_var_info[instance] = state[instance].var_info;
             AP_Param::load_object_from_eeprom(drivers[instance], backend_smbus_var_info[instance]);
         }
+#endif
         // param count could have changed
         AP_Param::invalidate_count();
     }
-#endif
 
         // call init function for each backend
         if (drivers[instance] != nullptr) {
@@ -295,6 +356,11 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
         ap_var_type type;
         const char* new_name;
     }  conversion_table[] = {
+            { 2,  AP_PARAM_INT8,  "VOLT_PIN"  },
+            { 3,  AP_PARAM_INT8,  "CURR_PIN"  },
+            { 4,  AP_PARAM_FLOAT, "VOLT_MULT" },
+            { 5,  AP_PARAM_FLOAT, "AMP_PERVLT"},
+            { 6,  AP_PARAM_FLOAT, "AMP_OFFSET"},
             { 20, AP_PARAM_INT8,  "I2C_BUS"   },
         };
 
