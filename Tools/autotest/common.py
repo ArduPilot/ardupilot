@@ -3989,7 +3989,7 @@ class AutoTest(ABC):
         if attempts is None:
             # we can easily fill ArduPilot's param-set/param-get queue
             # which is quite short.  So we retry *a lot*.
-            attempts = len(want) * 5
+            attempts = len(want) * 10
 
         param_value_messages = []
 
