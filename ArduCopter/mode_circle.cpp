@@ -12,11 +12,9 @@ bool ModeCircle::init(bool ignore_checks)
     pilot_yaw_override = false;
     speed_changing = false;
 
-    // initialize speeds and accelerations
-    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
-    pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
-    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_max_accel_z(g.pilot_accel_z);
+    // set speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
@@ -28,11 +26,9 @@ bool ModeCircle::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeCircle::run()
 {
-    // initialize speeds and accelerations
-    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
-    pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
-    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_max_accel_z(g.pilot_accel_z);
+    // set speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // get pilot's desired yaw rate (or zero if in radio failsafe)
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -107,21 +103,13 @@ void ModeCircle::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    copter.failsafe_terrain_set_status(copter.circle_nav->update());
+    copter.failsafe_terrain_set_status(copter.circle_nav->update(target_climb_rate));
 
     // call attitude controller
     if (pilot_yaw_override) {
         attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
     } else {
         attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), copter.circle_nav->get_yaw());
-    }
-
-    // update altitude target and call position controller
-    // protects heli's from inflight motor interlock disable
-    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !copter.ap.land_complete) {
-        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-    } else {
-        pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
     }
     pos_control->update_z_controller();
 }

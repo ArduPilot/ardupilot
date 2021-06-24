@@ -129,14 +129,11 @@ public:
     // reset rate controller I terms smoothly to zero in 0.5 seconds
     void reset_rate_controller_I_terms_smoothly();
 
-    // Sets attitude target to vehicle attitude
-    void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target); }
+    // Sets attitude target to vehicle attitude and sets all rates to zero
+    void reset_target_and_rate();
 
-    // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _euler_angle_target.z) * 100.0f); }
-
-    // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
-    void shift_ef_yaw_target(float yaw_shift_cd);
+    // Sets yaw target to vehicle heading and sets yaw rate to zero
+    void reset_yaw_target_and_rate();
 
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();
@@ -170,8 +167,8 @@ public:
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
-    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
+    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
+    virtual void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
     void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
 
     // Converts thrust vector and heading angle to quaternion rotation in the earth frame

@@ -1,13 +1,16 @@
 #pragma once
 
-#include "defines.h"
-#include "AP_Arming.h"
+#include <AP_Arming/AP_Arming.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_WheelEncoder/AP_WheelRateControl.h>
 
 class AP_MotorsUGV {
 public:
     // Constructor
-    AP_MotorsUGV(AP_ServoRelayEvents &relayEvents);
+    AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller);
+
+    // singleton support
+    static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
 
     enum pwm_type {
         PWM_TYPE_NORMAL = 0,
@@ -39,7 +42,7 @@ public:
     };
 
     // initialise motors
-    void init();
+    void init(uint8_t ftype);
 
     // return true if motors are active
     bool active() const;
@@ -114,6 +117,12 @@ public:
     //  returns true if checks pass, false if they fail.  display_failure argument should be true to send text messages to GCS
     bool pre_arm_check(bool report) const;
 
+    // return the motor mask
+    uint16_t get_motor_mask() const { return _motor_mask; }
+
+    // returns the configured PWM type
+    uint8_t get_pwm_type() const { return _pwm_type; }
+
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
         uint8_t steer_left      : 1; // we have reached the steering controller's left most limit
@@ -177,6 +186,7 @@ protected:
 
     // external references
     AP_ServoRelayEvents &_relayEvents;
+    AP_WheelRateControl &_rate_controller;
 
     static const int8_t AP_MOTORS_NUM_MOTORS_MAX = 4;
 
@@ -204,10 +214,18 @@ protected:
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
+    uint16_t _motor_mask;   // mask of motors configured with pwm_type
+    frame_type _frame_type; // frame type requested at initialisation
 
     // omni variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
     uint8_t   _motors_num;
+
+    static AP_MotorsUGV *_singleton;
+};
+
+namespace AP {
+    AP_MotorsUGV *motors_ugv();
 };

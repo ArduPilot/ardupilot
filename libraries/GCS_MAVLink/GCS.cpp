@@ -12,6 +12,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+// if this assert fails then fix it and the comment in GCS.h where
+// _statustext_queue is declared
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+assert_storage_size<GCS::statustext_t, 58> _assert_statustext_t_size;
+#endif
+
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
                                   uint32_t &health)

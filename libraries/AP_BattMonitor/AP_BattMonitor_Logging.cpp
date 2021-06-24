@@ -29,19 +29,43 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
     if (!has_cell_voltages()) {
         return;
     }
-    
+
     struct log_BCL cell_pkt{
         LOG_PACKET_HEADER_INIT(LOG_BCL_MSG),
         time_us             : time_us,
         instance            : instance,
         voltage             : _state.voltage
     };
-    for (uint8_t i = 0; i < ARRAY_SIZE(_state.cell_voltages.cells); i++) {
-        cell_pkt.cell_voltages[i] = _state.cell_voltages.cells[i] + 1;
+
+    // we pack the entire BCL message - we must have at least that
+    // many supported cells or the loop below will over-read
+    static_assert(ARRAY_SIZE(_state.cell_voltages.cells) >= ARRAY_SIZE(cell_pkt.cell_voltages));
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(cell_pkt.cell_voltages); i++) {
+        cell_pkt.cell_voltages[i] = _state.cell_voltages.cells[i] + 1; // add 1mv
     }
     AP::logger().WriteBlock(&cell_pkt, sizeof(cell_pkt));
 
-    // check battery structure can hold all cells  
-    static_assert(ARRAY_SIZE(_state.cell_voltages.cells) == ARRAY_SIZE(cell_pkt.cell_voltages),
-                    "Battery cell number doesn't match in library and log structure");
+#if AP_BATT_MONITOR_CELLS_MAX > 12
+    if (_state.cell_voltages.cells[12] != UINT16_MAX || _state.cell_voltages.cells[13] != UINT16_MAX)
+    {
+// @LoggerMessage: BCL2
+// @Description: Battery cell voltage information
+// @Field: TimeUS: Time since system startup
+// @Field: Instance: battery instance number
+// @Field: V13: thirteenth cell voltage
+// @Field: V14: fourteenth cell voltage
+        AP::logger().Write(
+            "BCL2",
+            "TimeUS,Instance,V13,V14",
+            "s#vv",
+            "F-CC",
+            "QBHH",
+            time_us,
+            instance,
+            _state.cell_voltages.cells[ARRAY_SIZE(cell_pkt.cell_voltages)+0] + 1, // add 1mv
+            _state.cell_voltages.cells[ARRAY_SIZE(cell_pkt.cell_voltages)+1] + 1  // add 1mv
+            );
+    }
+#endif
 }

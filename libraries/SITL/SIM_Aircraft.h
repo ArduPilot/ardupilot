@@ -149,6 +149,8 @@ public:
     void set_precland(SIM_Precland *_precland);
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 
+    float get_battery_voltage() const { return battery_voltage; }
+
 protected:
     SITL *sitl;
     Location home;
@@ -173,6 +175,7 @@ protected:
     float battery_voltage = -1.0f;
     float battery_current;
     float local_ground_level;            // ground level at local position
+    bool lock_step_scheduled;
 
     // battery model
     Battery battery;
@@ -316,7 +319,7 @@ private:
         Location location;
     } smoothing;
 
-    LowPassFilterFloat servo_filter[4];
+    LowPassFilterFloat servo_filter[5];
 
     Buzzer *buzzer;
     Sprayer *sprayer;

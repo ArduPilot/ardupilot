@@ -112,7 +112,6 @@ FLASH_SIZE_KB 2048
 
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
-USB_STRING_PRODUCT "%BOARD%"
 
 # Now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the

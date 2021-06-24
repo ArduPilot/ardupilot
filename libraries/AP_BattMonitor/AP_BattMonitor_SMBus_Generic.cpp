@@ -16,7 +16,12 @@ uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
                              0x37,  // cell 9
                              0x36,  // cell 10
                              0x35,  // cell 11
-                             0x34}; // cell 12
+                             0x34,  // cell 12
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                             0x33,  // cell 13
+                             0x32   // cell 14
+#endif
+};
 
 #define SMBUS_READ_BLOCK_MAXIMUM_TRANSFER    0x20   // A Block Read or Write is allowed to transfer a maximum of 32 data bytes.
 #define SMBUS_CELL_COUNT_CHECK_TIMEOUT       15     // check cell count for up to 15 seconds
@@ -80,6 +85,12 @@ void AP_BattMonitor_SMBus_Generic::timer()
             _cell_count_check_start_us = 0;
         }
     }
+
+    // we loop over something limted by
+    // BATTMONITOR_SMBUS_NUM_CELLS_MAX but assign into something
+    // limited by AP_BATT_MONITOR_CELLS_MAX - so make sure we won't
+    // over-write:
+    static_assert(BATTMONITOR_SMBUS_NUM_CELLS_MAX <= ARRAY_SIZE(_state.cell_voltages.cells), "BATTMONITOR_SMBUS_NUM_CELLS_MAX must be <= number of cells in state voltages");
 
     // read cell voltages
     for (uint8_t i = 0; i < (_cell_count_fixed ? _cell_count : BATTMONITOR_SMBUS_NUM_CELLS_MAX); i++) {

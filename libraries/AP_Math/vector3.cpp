@@ -282,6 +282,18 @@ void Vector3<T>::rotate_inverse(enum Rotation rotation)
     (*this) = M.mul_transpose(*this);
 }
 
+// rotate vector by angle in radians in xy plane leaving z untouched
+template <typename T>
+void Vector3<T>::rotate_xy(float angle_rad)
+{
+    const float cs = cosf(angle_rad);
+    const float sn = sinf(angle_rad);
+    float rx = x * cs - y * sn;
+    float ry = x * sn + y * cs;
+    x = rx;
+    y = ry;
+}
+
 // vector cross product
 template <typename T>
 Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
@@ -500,12 +512,12 @@ Vector3<T> Vector3<T>::point_on_line_closest_to_other_point(const Vector3<T> &w1
     return (closest_point + w1);
 }
 
-// Shortest distance between two line segments
+// Closest point between two line segments
 // This implementation is borrowed from: http://geomalgorithms.com/a07-_distance.html
 // INPUT: 4 points corresponding to start and end of two line segments
-// OUTPUT: shortest distance, and closest point on segment 2, from segment 1, gets passed on reference as "intersection" 
+// OUTPUT: closest point on segment 2, from segment 1, gets passed on reference as "closest_point"
 template <typename T>
-float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& intersection)
+void Vector3<T>::segment_to_segment_closest_point(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& closest_point)
 {
     // direction vectors
     const Vector3<T> line1 = seg1_end - seg1_start;
@@ -520,24 +532,24 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
     const float e = line2*diff;
 
     const float discriminant = (a*c) - (b*b);
-    float sc, sN, sD = discriminant;       // sc = sN / sD, default sD = D >= 0
+    float sN, sD = discriminant;           // default sD = D >= 0
     float tc, tN, tD = discriminant;       // tc = tN / tD, default tD = D >= 0 
-    
+
     if (discriminant < FLT_EPSILON) {
         sN = 0.0;         // force using point seg1_start on line 1
         sD = 1.0;         // to prevent possible division by 0.0 later
         tN = e;
         tD = c;
-    } else {                 
+    } else {
         // get the closest points on the infinite lines
         sN = (b*e - c*d);
         tN = (a*e - b*d);
-        if (sN < 0.0) {        
+        if (sN < 0.0) {
             // sc < 0 => the s=0 edge is visible
             sN = 0.0;
             tN = e;
             tD = c;
-        } else if (sN > sD) {  
+        } else if (sN > sD) {
             // sc > 1  => the s=1 edge is visible
             sN = sD;
             tN = e + b;
@@ -545,7 +557,7 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
         }
     }
 
-    if (tN < 0.0) {            
+    if (tN < 0.0) {
         // tc < 0 => the t=0 edge is visible
         tN = 0.0;
         // recompute sc for this edge
@@ -557,7 +569,7 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
             sN = -d;
             sD = a;
         }
-    } else if (tN > tD) {      
+    } else if (tN > tD) {
         // tc > 1  => the t=1 edge is visible
         tN = tD;
         // recompute sc for this edge
@@ -570,14 +582,46 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
             sD = a;
         }
     }
-    // finally do the division to get sc and tc
-    sc = (fabsf(sN) < FLT_EPSILON ? 0.0 : sN / sD);
+    // finally do the division to get tc
     tc = (fabsf(tN) < FLT_EPSILON ? 0.0 : tN / tD);
 
-    const Vector3<T> closest_line_segment = diff + (line1*sc) - (line2*tc);
-    const float len = closest_line_segment.length();
-    intersection = seg2_start + line2*tc;
-    return len;
+    // closest point on seg2
+    closest_point = seg2_start + line2*tc;
+}
+
+// Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
+template <typename T>
+bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point)
+{
+    Vector3<T> u = seg_end - seg_start;
+    Vector3<T> w = seg_start - plane_point;
+
+    float D = plane_normal * u;
+    float N = -(plane_normal * w);
+
+    if (fabsf(D) < FLT_EPSILON) {
+        if (::is_zero(N)) {
+            // segment lies in this plane
+            return true;
+        } else {
+            // does not intersect
+            return false;
+        }
+    }
+    const float sI = N / D;
+    if (sI < 0 || sI > 1) {
+        // does not intersect
+        return false;
+    }
+    // intersects at unique point
+    return true;
+}
+
+// return xy components of a vector3
+template <typename T>
+Vector2<T> Vector3<T>::xy()
+{
+    return Vector2<T>{x,y};
 }
 
 // define for float and double

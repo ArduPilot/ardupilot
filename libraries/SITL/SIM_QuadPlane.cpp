@@ -95,6 +95,7 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->set_mass(mass);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
+    lock_step_scheduled = true;
 }
 
 /*

@@ -168,6 +168,11 @@ void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
             INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
             reset_count = 0;
         }
+    } else if (log_error &&
+        !hal.scheduler->in_expected_delay() &&
+        now - last_reset_ms > 10000) {
+        //if last reset was more than 10s ago consider this the first reset
+        reset_count = 1;
     }
     last_reset_ms = now;
 

@@ -9,7 +9,6 @@ AP_Compass_SITL::AP_Compass_SITL()
     : _sitl(AP::sitl())
 {
     if (_sitl != nullptr) {
-        _compass._setup_earth_field();
         for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
             uint32_t dev_id = _sitl->mag_devid[i];
             if (dev_id == 0) {

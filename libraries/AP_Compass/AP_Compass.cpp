@@ -12,7 +12,6 @@
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
-#include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
 #include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
@@ -879,6 +878,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     _state[i].registered = true;
     _state[i].priority = priority;
     instance = uint8_t(i);
+    _compass_count = 1;
     return true;
 #else
     Priority priority;
@@ -1193,13 +1193,6 @@ void Compass::_probe_external_i2c_compasses(void)
  */
 void Compass::_detect_backends(void)
 {
-#ifndef HAL_BUILD_AP_PERIPH
-    if (_hil_mode) {
-        _add_backend(AP_Compass_HIL::detect());
-        return;
-    }
-#endif
-
 #if HAL_EXTERNAL_AHRS_ENABLED
     if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
         ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
@@ -1234,8 +1227,6 @@ void Compass::_detect_backends(void)
 #if defined(HAL_MAG_PROBE_LIST)
     // driver probes defined by COMPASS lines in hwdef.dat
     HAL_MAG_PROBE_LIST;
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
-    ADD_BACKEND(DRIVER_SITL, AP_Compass_HIL::detect());
 #elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
@@ -1439,12 +1430,14 @@ bool Compass::is_replacement_mag(uint32_t devid) {
         return false;
     }
 
+#if COMPASS_MAX_UNREG_DEV > 0
     // Check that its not an unused additional mag
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if (_previously_unreg_mag[i] == devid) {
             return false;
         }
     }
+#endif
 
     // Check that its not previously setup mag
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -1464,12 +1457,14 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
         return;
     }
 
+#if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
         if ((uint32_t)extra_dev_id[i] == devid) {
             extra_dev_id[i].set_and_save(0);
             return;
         }
     }
+#endif
 #endif
 }
 
@@ -1485,7 +1480,7 @@ void Compass::_reset_compass_id()
         }
         if (!_get_state(i).registered) {
             _priority_did_stored_list[i].set_and_save(0);
-            gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu removed", uint8_t(i), (unsigned long)_priority_did_list[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu removed", uint8_t(i), (unsigned long)_priority_did_list[i]);
         }
     }
 
@@ -1557,11 +1552,19 @@ Compass::read(void)
         learn->update();
     }
 #endif
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         AP::logger().Write_Compass();
     }
 #endif
+
+    // Set _first_usable parameter
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_use_for_yaw[i]) {
+            _first_usable = uint8_t(i);
+            break;
+        }
+    }
     return healthy();
 }
 
@@ -1704,7 +1707,7 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return healthy(0) && use_for_yaw(0);
+    return healthy(_first_usable) && use_for_yaw(_first_usable);
 }
 
 /// return true if the specified compass can be used for yaw calculations
@@ -1769,7 +1772,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
 
     // magnetic heading
     // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
-    float heading = constrain_float(atan2f(-headY,headX), -3.15f, 3.15f);
+    float heading = constrain_float(atan2f(-headY,headX), -M_PI, M_PI);
 
     // Declination correction (if supplied)
     if ( fabsf(_declination) > 0.0f ) {
@@ -1851,69 +1854,6 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
         snprintf(failure_msg, failure_msg_len, "Compass not calibrated");
     }
     return all_configured;
-}
-
-// Update raw magnetometer values from HIL data
-//
-void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
-{
-    Matrix3f R;
-
-    // create a rotation matrix for the given attitude
-    R.from_euler(roll, pitch, yaw);
-
-    if (!is_equal(_hil.last_declination,get_declination())) {
-        _setup_earth_field();
-        _hil.last_declination = get_declination();
-    }
-
-    // convert the earth frame magnetic vector to body frame, and
-    // apply the offsets
-    _hil.field[instance] = R.mul_transpose(_hil.Bearth);
-
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil.field[instance].rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _hil.field[instance].rotate((enum Rotation)_state[StateIndex(0)].orientation.get());
-
-    if (!_state[StateIndex(0)].external) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
-            _hil.field[instance] = *_custom_rotation * _hil.field[instance];
-        } else {
-            _hil.field[instance].rotate(_board_orientation);
-        }
-    }
-    _hil.healthy[instance] = true;
-}
-
-// Update raw magnetometer values from HIL mag vector
-//
-void Compass::setHIL(uint8_t instance, const Vector3f &mag, uint32_t update_usec)
-{
-    _hil.field[instance] = mag;
-    _hil.healthy[instance] = true;
-    _state[StateIndex(instance)].last_update_usec = update_usec;
-}
-
-const Vector3f& Compass::getHIL(uint8_t instance) const
-{
-    return _hil.field[instance];
-}
-
-// setup _Bearth
-void Compass::_setup_earth_field(void)
-{
-    // assume a earth field strength of 400
-    _hil.Bearth = {400, 0, 0};
-
-    // rotate _Bearth for inclination and declination. -66 degrees
-    // is the inclination in Canberra, Australia
-    Matrix3f R;
-    R.from_euler(0, ToRad(66), get_declination());
-    _hil.Bearth = R * _hil.Bearth;
 }
 
 /*

@@ -53,10 +53,6 @@ MAV_MODE GCS_MAVLINK_Blimp::base_mode() const
     // override if stick mixing is enabled
     _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
-
     // we are armed if we are not initialising
     if (blimp.motors != nullptr && blimp.motors->armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -134,11 +130,11 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f; // convert to metres
 //     } else if (guided_mode == Guided_Velocity) {
 //         type_mask = 0x0FC7; // ignore everything except velocity
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f; // convert to m/s
 //     } else {
 //         type_mask = 0x0FC0; // ignore everything except position & velocity
 //         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f;
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f;
+//         target_vel = blimp.flightmode->get_vel_desired_cms() * 0.01f;
 //     }
 
 //     mavlink_msg_position_target_local_ned_send(
@@ -304,8 +300,8 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
 
     // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate to ground station
-    // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
+    // @DisplayName: Unused
+    // @Description: Unused
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1

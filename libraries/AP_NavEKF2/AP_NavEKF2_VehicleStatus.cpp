@@ -417,43 +417,6 @@ void NavEKF2_core::detectFlight()
 }
 
 
-// determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
-bool NavEKF2_core::getTakeoffExpected()
-{
-    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectGndEffectTakeoff = false;
-    }
-
-    return expectGndEffectTakeoff;
-}
-
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2_core::setTakeoffExpected(bool val)
-{
-    takeoffExpectedSet_ms = imuSampleTime_ms;
-    expectGndEffectTakeoff = val;
-}
-
-
-// determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
-bool NavEKF2_core::getTouchdownExpected()
-{
-    if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectGndEffectTouchdown = false;
-    }
-
-    return expectGndEffectTouchdown;
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2_core::setTouchdownExpected(bool val)
-{
-    touchdownExpectedSet_ms = imuSampleTime_ms;
-    expectGndEffectTouchdown = val;
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
 // cannot be used as a height reference. Use to prevent range finder operation otherwise

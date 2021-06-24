@@ -35,6 +35,7 @@ extern const AP_HAL::HAL &hal;
  */
 
 #define GSCALAR(v, name, def) { periph.g.v.vtype, name, Parameters::k_param_ ## v, &periph.g.v, {def_value : def} }
+#define GARRAY(v, index, name, def) { periph.g.v[index].vtype, name, Parameters::k_param_ ## v ## index, &periph.g.v[index], {def_value : def} }
 #define ASCALAR(v, name, def) { periph.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&periph.aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &periph.g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&periph.v, {group_info : class::var_info} }
@@ -61,7 +62,51 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 10000 1000000
     // @User: Advanced
     // @RebootRequired: True
-    GSCALAR(can_baudrate,     "CAN_BAUDRATE", 1000000),
+    GARRAY(can_baudrate,     0, "CAN_BAUDRATE", 1000000),
+
+#if HAL_NUM_CAN_IFACES >= 2
+    // @Param: CAN_PROTOCOL
+    // @DisplayName: Enable use of specific protocol to be used on this port
+    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
+    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,9:PacketDigital
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    
+    // @Param: CAN2_BAUDRATE
+    // @DisplayName: Bitrate of CAN2 interface
+    // @Description: Bit rate can be set up to from 10000 to 1000000
+    // @Range: 10000 1000000
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_baudrate,     1, "CAN2_BAUDRATE", 1000000),
+
+    // @Param: CAN2_PROTOCOL
+    // @DisplayName: Enable use of specific protocol to be used on this port
+    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
+    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,9:PacketDigital
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+#endif
+
+#if HAL_NUM_CAN_IFACES >= 3
+    // @Param: CAN3_BAUDRATE
+    // @DisplayName: Bitrate of CAN3 interface
+    // @Description: Bit rate can be set up to from 10000 to 1000000
+    // @Range: 10000 1000000
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_baudrate,    2, "CAN3_BAUDRATE", 1000000),
+
+    // @Param: CAN3_PROTOCOL
+    // @DisplayName: Enable use of specific protocol to be used on this port
+    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
+    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,9:PacketDigital
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+#endif
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     // @Param: FLASH_BOOTLOADER
@@ -162,7 +207,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @DisplayName: Rangefinder serial baudrate
     // @Description: Rangefinder serial baudrate.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Units: %
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
@@ -188,7 +232,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @DisplayName: ADSB serial baudrate
     // @Description: ADSB serial baudrate.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
-    // @Units: %
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
@@ -260,6 +303,19 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
+#endif
+
+#if HAL_LOGGING_ENABLED
+    // @Group: LOG
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
+
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Bitmask: 2:GPS
+    // @User: Standard
+    GSCALAR(log_bitmask,    "LOG_BITMASK",          4),
 #endif
 
     AP_VAREND

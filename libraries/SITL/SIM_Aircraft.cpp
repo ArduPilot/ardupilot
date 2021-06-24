@@ -330,6 +330,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         // initialise home
         fdm.home = home;
     }
+    fdm.is_lock_step_scheduled = lock_step_scheduled;
     fdm.latitude  = location.lat * 1.0e-7;
     fdm.longitude = location.lng * 1.0e-7;
     fdm.altitude  = location.alt * 1.0e-2;
@@ -798,6 +799,11 @@ float Aircraft::filtered_idx(float v, uint8_t idx)
     }
     const float cutoff = 1.0f / (2 * M_PI * sitl->servo_speed);
     servo_filter[idx].set_cutoff_frequency(cutoff);
+
+    if (idx >= ARRAY_SIZE(servo_filter)) {
+        AP_HAL::panic("Attempt to filter invalid servo at offset %u", (unsigned)idx);
+    }
+
     return servo_filter[idx].apply(v, frame_time_us * 1.0e-6f);
 }
 

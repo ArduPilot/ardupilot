@@ -67,6 +67,8 @@ struct log_RFRN {
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
     uint8_t wheelencoder_enabled:1;
+    uint8_t takeoff_expected:1;
+    uint8_t touchdown_expected:1;
     uint8_t _end;
 };
 
@@ -242,6 +244,7 @@ struct log_RMGH {
     uint8_t num_enabled;
     bool learn_offsets_enabled;
     bool consistent;
+    uint8_t first_usable;
     uint8_t _end;
 };
 
@@ -398,7 +401,7 @@ struct log_RBOH {
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
       "RGPJ", "IffffffiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,Lat,Lon,Alt,HA,VA,HD,I", "-------------#", "--------------" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
-      "RMGH", "BBfBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C", "------", "------" },  \
+      "RMGH", "BBfBBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C,FUsable", "-------", "-------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \

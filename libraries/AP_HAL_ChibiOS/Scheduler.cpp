@@ -264,7 +264,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     }
 #endif
 
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     //stop logging
     if (AP_Logger::get_singleton()) {
         AP::logger().StopLogging();
@@ -387,7 +387,7 @@ void Scheduler::_monitor_thread(void *arg)
         sched->delay(100);
     }
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     uint8_t log_wd_counter = 0;
 #endif
 
@@ -405,7 +405,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
                 AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
@@ -428,7 +428,7 @@ void Scheduler::_monitor_thread(void *arg)
             INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
 
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
         log_wd_counter = 0;
         // log watchdog message once a second
@@ -450,7 +450,7 @@ void Scheduler::_monitor_thread(void *arg)
                                    pd.fault_lr,
                                    pd.thread_name4);
     }
-#endif // HAL_NO_LOGGING
+#endif // HAL_LOGGING_ENABLED
 
 #ifndef IOMCU_FW
     // setup GPIO interrupt quotas
@@ -501,7 +501,7 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     uint32_t last_sd_start_ms = AP_HAL::millis();
 #endif
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -513,11 +513,11 @@ void Scheduler::_io_thread(void* arg)
         // run registered IO processes
         sched->_run_io();
 
-#if !defined(HAL_NO_LOGGING) || CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE
         uint32_t now = AP_HAL::millis();
 #endif
 
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed

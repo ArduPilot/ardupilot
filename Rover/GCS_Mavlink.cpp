@@ -38,10 +38,6 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
-
     // we are armed if we are not initialising
     if (rover.control_mode != &rover.mode_initializing && rover.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -538,14 +534,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
-bool GCS_MAVLINK_Rover::in_hil_mode() const
-{
-#if HIL_MODE != HIL_MODE_DISABLED
-    return rover.g.hil_mode == 1;
-#endif
-    return false;
-}
-
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (!rover.control_mode->in_guided_mode()) {
@@ -754,12 +742,6 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
         handle_set_position_target_global_int(msg);
         break;
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    case MAVLINK_MSG_ID_HIL_STATE:
-        handle_hil_state(msg);
-        break;
-#endif
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
@@ -1055,49 +1037,6 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }
 }
-
-#if HIL_MODE != HIL_MODE_DISABLED
-void GCS_MAVLINK_Rover::handle_hil_state(const mavlink_message_t &msg)
-{
-    mavlink_hil_state_t packet;
-    mavlink_msg_hil_state_decode(&msg, &packet);
-
-    // sanity check location
-    if (!check_latlng(packet.lat, packet.lon)) {
-        return;
-    }
-
-    // set gps hil sensor
-    Location loc;
-    loc.lat = packet.lat;
-    loc.lng = packet.lon;
-    loc.alt = packet.alt/10;
-    Vector3f vel(packet.vx, packet.vy, packet.vz);
-    vel *= 0.01f;
-
-    gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-               packet.time_usec/1000,
-               loc, vel, 10, 0);
-
-    // rad/sec
-    Vector3f gyros;
-    gyros.x = packet.rollspeed;
-    gyros.y = packet.pitchspeed;
-    gyros.z = packet.yawspeed;
-
-    // m/s/s
-    Vector3f accels;
-    accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
-    accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
-    accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
-
-    ins.set_gyro(0, gyros);
-
-    ins.set_accel(0, accels);
-    compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
-    compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-}
-#endif  // HIL_MODE
 
 void GCS_MAVLINK_Rover::handle_radio(const mavlink_message_t &msg)
 {

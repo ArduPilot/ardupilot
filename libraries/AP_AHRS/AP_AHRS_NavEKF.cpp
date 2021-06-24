@@ -517,26 +517,6 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 #endif
 }
 
-// reset the current attitude, used on new IMU calibration
-void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
-{
-    // support locked access functions to AHRS data
-    WITH_SEMAPHORE(_rsem);
-    
-    AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
-    _dcm_attitude = {roll, pitch, yaw};
-#if HAL_NAVEKF2_AVAILABLE
-    if (_ekf2_started) {
-        _ekf2_started = EKF2.InitialiseFilter();
-    }
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    if (_ekf3_started) {
-        _ekf3_started = EKF3.InitialiseFilter();
-    }
-#endif
-}
-
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
@@ -2026,17 +2006,21 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs ekf2
     for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
         Quaternion ekf2_quat;
-        Vector3f angle_diff;
         EKF2.getQuaternionBodyToNED(i, ekf2_quat);
-        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
-        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+
+        // check roll and pitch difference
+        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
+        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
             return false;
         }
-        diff = fabsf(angle_diff.z);
-        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(diff));
+
+        // check yaw difference
+        Vector3f angle_diff;
+        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+        const float yaw_diff = fabsf(angle_diff.z);
+        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
             return false;
         }
     }
@@ -2047,17 +2031,21 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs ekf3
     for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
         Quaternion ekf3_quat;
-        Vector3f angle_diff;
         EKF3.getQuaternionBodyToNED(i, ekf3_quat);
-        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
-        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+
+        // check roll and pitch difference
+        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
+        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
             return false;
         }
-        diff = fabsf(angle_diff.z);
-        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(diff));
+
+        // check yaw difference
+        Vector3f angle_diff;
+        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+        const float yaw_diff = fabsf(angle_diff.z);
+        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
             return false;
         }
     }
@@ -2067,12 +2055,12 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs dcm
     if (!always_use_EKF() || (total_ekf_cores == 1)) {
         Quaternion dcm_quat;
-        Vector3f angle_diff;
         dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
-        primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
-        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
-        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+
+        // check roll and pitch difference
+        const float rp_diff_rad = primary_quat.roll_pitch_difference(dcm_quat);
+        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
             return false;
         }
 
@@ -2083,9 +2071,11 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
         using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
 #endif
         if (!always_use_EKF() && !using_external_yaw) {
-            diff = fabsf(angle_diff.z);
-            if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+            Vector3f angle_diff;
+            primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
+            const float yaw_diff = fabsf(angle_diff.z);
+            if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
                 return false;
             }
         }
@@ -2579,58 +2569,6 @@ bool AP_AHRS_NavEKF::get_vel_innovations_and_variances_for_source(uint8_t source
     }
 
     return false;
-}
-
-void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
-{
-    switch (takeoffExpectedState) {
-    case TriState::UNKNOWN:
-        break;
-    case TriState::True:
-        if (val) {
-            return;
-        }
-        break;
-    case TriState::False:
-        if (!val) {
-            return;
-        }
-        break;
-    }
-    takeoffExpectedState = (TriState)val;
-
-#if HAL_NAVEKF2_AVAILABLE
-    EKF2.setTakeoffExpected(val);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    EKF3.setTakeoffExpected(val);
-#endif
-}
-
-void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
-{
-    switch (touchdownExpectedState) {
-    case TriState::UNKNOWN:
-        break;
-    case TriState::True:
-        if (val) {
-            return;
-        }
-        break;
-    case TriState::False:
-        if (!val) {
-            return;
-        }
-        break;
-    }
-    touchdownExpectedState = (TriState)val;
-
-#if HAL_NAVEKF2_AVAILABLE
-    EKF2.setTouchdownExpected(val);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    EKF3.setTouchdownExpected(val);
-#endif
 }
 
 bool AP_AHRS_NavEKF::getGpsGlitchStatus() const

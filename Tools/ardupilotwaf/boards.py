@@ -164,6 +164,19 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
+        if cfg.env.COVERAGE:
+            env.CFLAGS += [
+                '-fprofile-arcs',
+                '-ftest-coverage',
+            ]
+            env.CXXFLAGS += [
+                '-fprofile-arcs',
+                '-ftest-coverage',
+            ]
+            env.LINKFLAGS += [
+                '-lgcov',
+                '-coverage',
+            ]
 
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
@@ -404,11 +417,7 @@ Please use a replacement build as follows:
 
         boards = _board_classes.keys()
         if not ctx.env.BOARD in boards:
-            ctx.fatal(
-                "Invalid board '%s': choices are\n%sInvalid board '%s'.  Options shown above this line." %
-                (ctx.env.BOARD,
-                 ''.join(["  %s\n" % x for x in sorted(boards, key=str.lower)]),
-                 ctx.env.BOARD))
+            ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(sorted(boards, key=str.lower))))
         _board = _board_classes[ctx.env.BOARD]()
     return _board
 
@@ -548,7 +557,11 @@ class sitl_periph_gps(sitl):
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
             HAL_NO_GCS = 1,
-            HAL_NO_LOGGING = 1,
+            HAL_LOGGING_ENABLED = 0,
+            HAL_LOGGING_MAVLINK_ENABLED = 0,
+            HAL_MISSION_ENABLED = 0,
+            HAL_RALLY_ENABLED = 0,
+            HAL_SCHEDULER_ENABLED = 0,
         )
         # libcanard is written for 32bit platforms
         env.CXXFLAGS += [

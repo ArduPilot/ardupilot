@@ -52,7 +52,7 @@ struct PACKED log_BCL {
     uint64_t time_us;
     uint8_t  instance;
     float    voltage;
-    uint16_t cell_voltages[12];
+    uint16_t cell_voltages[12]; // the format does not support more than 12 cells, the remaining cells are reported in the BCL2 message
 };
 
 #define LOG_STRUCTURE_FROM_BATTMONITOR        \

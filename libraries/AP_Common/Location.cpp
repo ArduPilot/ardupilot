@@ -37,6 +37,8 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFr
 
 Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
 {
+    zero();
+
     // store alt and alt frame
     set_alt_cm(ekf_offset_neu.z, frame);
 
@@ -105,7 +107,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!initialised()) {
-        AP_HAL::panic("Should not be called on invalid location");
+        AP_HAL::panic("Should not be called on invalid location: Location cannot be (0, 0, 0)");
     }
 #endif
     Location::AltFrame frame = get_alt_frame();
@@ -120,7 +122,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     float alt_terr_cm = 0;
     if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
-        if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+        if (_terrain == nullptr || !_terrain->height_amsl(*this, alt_terr_cm, true)) {
             return false;
         }
         // convert terrain alt to cm
@@ -259,20 +261,20 @@ void Location::offset(float ofs_north, float ofs_east)
  * positions, so it keeps the accuracy even when dealing with small
  * distances and floating point numbers
  */
-void Location::offset_bearing(float bearing, float distance)
+void Location::offset_bearing(float bearing_deg, float distance)
 {
-    const float ofs_north = cosf(radians(bearing)) * distance;
-    const float ofs_east  = sinf(radians(bearing)) * distance;
+    const float ofs_north = cosf(radians(bearing_deg)) * distance;
+    const float ofs_east  = sinf(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
 }
 
 // extrapolate latitude/longitude given bearing, pitch and distance
-void Location::offset_bearing_and_pitch(float bearing, float pitch, float distance)
+void Location::offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance)
 {
-    const float ofs_north =  cosf(radians(pitch)) * cosf(radians(bearing)) * distance;
-    const float ofs_east  =  cosf(radians(pitch)) * sinf(radians(bearing)) * distance;
+    const float ofs_north =  cosf(radians(pitch_deg)) * cosf(radians(bearing_deg)) * distance;
+    const float ofs_east  =  cosf(radians(pitch_deg)) * sinf(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
-    const int32_t dalt =  sinf(radians(pitch)) * distance *100.0f;
+    const int32_t dalt =  sinf(radians(pitch_deg)) * distance *100.0f;
     alt += dalt; 
 }
 

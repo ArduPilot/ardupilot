@@ -18,7 +18,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -789,6 +789,7 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
  */
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
+#if HAL_WITH_ESC_TELEM
     const uint8_t esc_index = cb.msg->esc_index;
 
     if (!is_esc_data_index_valid(esc_index)) {
@@ -806,6 +807,7 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
             | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+#endif
 }
 
 bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
@@ -821,7 +823,7 @@ bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
  */
 void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     const auto &msg = *cb.msg;
     if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
         // log to onboard log and mavlink

@@ -71,7 +71,7 @@ void Plane::fence_check()
             g.auto_trim.set(saved_auto_trim);
 
             if (fence.get_return_rally() != 0 || fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
-                guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+                guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
             } else {
                 //return to fence return point, not a rally point
                 guided_WP_loc = {};

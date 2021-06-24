@@ -83,22 +83,15 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
-
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location::set_terrain(&terrain);
     wp_nav.set_terrain(&terrain);
 #endif
 
-    pos_control.set_dt(MAIN_LOOP_SECONDS);
-
-    // init the optical flow sensor
 #if OPTFLOW == ENABLED
-    init_optflow();
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
 #endif
 
 #if HAL_MOUNT_ENABLED

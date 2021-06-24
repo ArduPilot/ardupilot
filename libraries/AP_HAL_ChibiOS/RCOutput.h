@@ -207,7 +207,7 @@ public:
     /*
       mark escs as active for the purpose of sending dshot commands
      */
-    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= chanmask; }
+    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= (chanmask >> chan_offset); }
 
     /*
       Send a dshot command, if command timout is 0 then 10 commands are sent
@@ -294,7 +294,10 @@ private:
         // below this line is not initialised by hwdef.h
         enum output_mode current_mode;
         uint16_t frequency_hz;
+        // mask of channels that are able to be enabled
         uint16_t ch_mask;
+        // mask of channels that are enabled and active
+        uint16_t en_mask;
         const stm32_dma_stream_t *dma;
         Shared_DMA *dma_handle;
         uint32_t *dma_buffer;
@@ -388,7 +391,7 @@ private:
 
         // return whether the group channel is both enabled in the group and for output
         bool is_chan_enabled(uint8_t c) const {
-          return chan[c] != CHAN_DISABLED && (ch_mask & (1U << chan[c]));
+          return chan[c] != CHAN_DISABLED && (en_mask & (1U << chan[c]));
         }
     };
     /*
@@ -531,7 +534,7 @@ private:
 
     // are all the ESCs returning data
     bool group_escs_active(const pwm_group& group) const {
-      return group.ch_mask > 0 && (group.ch_mask & _active_escs_mask) == group.ch_mask;
+      return group.en_mask > 0 && (group.en_mask & _active_escs_mask) == group.en_mask;
     }
 
     // find a channel group given a channel number

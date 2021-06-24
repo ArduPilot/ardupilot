@@ -645,6 +645,10 @@ public:
 
     AP_Int32 flight_options;
 
+#if RANGEFINDER_ENABLED == ENABLED
+    AP_Float rangefinder_filt;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

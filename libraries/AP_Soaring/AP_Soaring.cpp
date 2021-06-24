@@ -149,9 +149,6 @@ SoaringController::SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle:
     _throttle_suppressed(true)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    _position_x_filter = LowPassFilter<float>(1.0/60.0);
-    _position_y_filter = LowPassFilter<float>(1.0/60.0);
 }
 
 void SoaringController::get_target(Location &wp)

@@ -226,7 +226,7 @@ class uploader(object):
             source_component = 1
 
         # open the port, keep the default timeout short so we can poll quickly
-        self.port = serial.Serial(portname, baudrate_bootloader, timeout=1.0)
+        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0)
         self.baudrate_bootloader = baudrate_bootloader
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash

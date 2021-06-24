@@ -342,8 +342,6 @@ public:
 
 protected:
 
-    virtual bool in_hil_mode() const { return false; }
-
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
 
@@ -465,6 +463,7 @@ protected:
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
 
+    MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_flash_bootloader(const mavlink_command_long_t &packet);
 
@@ -579,12 +578,6 @@ private:
     uint16_t         stream_slowdown_ms;
     // last reported radio buffer percent available
     uint8_t          last_txbuf = 100;
-
-    // perf counters
-    AP_HAL::Util::perf_counter_t _perf_packet;
-    AP_HAL::Util::perf_counter_t _perf_update;
-    char _perf_packet_name[16];
-    char _perf_update_name[16];
 
     // outbound ("deferred message") queue.
 
@@ -856,6 +849,12 @@ private:
 
     uint8_t last_battery_status_idx;
 
+    // send_sensor_offsets decimates its send rate using this counter:
+    // FIXME: decimate this instead when initialising the message
+    // intervals from the stream rates.  Consider the implications of
+    // doing so vis-a-vis the fact it will consume a bucket.
+    uint8_t send_sensor_offsets_counter;
+
     // if we've ever sent a DISTANCE_SENSOR message out of an
     // orientation we continue to send it out, even if it is not
     // longer valid.
@@ -1035,12 +1034,13 @@ private:
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static const uint8_t _status_capacity = 5;
+    static const uint8_t _status_capacity = 7;
 #else
     static const uint8_t _status_capacity = 30;
 #endif
 
-    // queue of outgoing statustext messages
+    // queue of outgoing statustext messages.  Each entry consumes 58
+    // bytes of RAM on stm32
     StatusTextQueue _statustext_queue{_status_capacity};
 
     // true if we have already allocated protocol objects:

@@ -72,10 +72,10 @@ public:
     void offset(float ofs_north, float ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
-    void offset_bearing(float bearing, float distance);
+    void offset_bearing(float bearing_deg, float distance);
     
     // extrapolate latitude/longitude given bearing, pitch and distance
-    void offset_bearing_and_pitch(float bearing, float pitch, float distance);
+    void offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance);
 
     // longitude_scale - returns the scaler to compensate for
     // shrinking longitude as you move north or south from the equator

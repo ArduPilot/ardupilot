@@ -124,6 +124,8 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
 
+    // passthrough default sensor id
+    uint8_t downlink_sensor_id = 0x1B;
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     // bidirectional sport telemetry

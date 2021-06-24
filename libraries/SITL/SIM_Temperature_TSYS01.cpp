@@ -125,7 +125,7 @@ uint32_t SITL::TSYS01::calculate_adc(float temperature) const
 
     // temperature_for_adc(9378708);  // should be 10.59
 
-    while (labs(max_adc - min_adc) > 1 && current_error > 0.05) {
+    while (labs(int32_t(max_adc - min_adc)) > 1 && current_error > 0.05) {
         uint32_t candidate_adc;
         if (bisect_down) {
             candidate_adc = (min_adc+(uint64_t)current_adc)/2;

@@ -10,6 +10,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @DisplayName: Hover Roll Trim
     // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover
     // @Units: cdeg
+    // @Increment: 10
     // @Range: 0 1000
     // @User: Advanced
     AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
@@ -17,14 +18,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.35
+    // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_RLL_I
     // @DisplayName: Roll axis rate controller I gain
     // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
-    // @Range: 0.01 0.6
+    // @Range: 0.0 0.6
     // @Increment: 0.01
     // @User: Standard
 
@@ -44,14 +45,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.03
+    // @Range: 0.0 0.03
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: RAT_RLL_VFF
     // @DisplayName: Roll axis rate controller feed forward
     // @Description: Roll axis rate controller feed forward
-    // @Range: 0 0.5
+    // @Range: 0.05 0.5
     // @Increment: 0.001
     // @User: Standard
 
@@ -91,14 +92,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.35
+    // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.6
+    // @Range: 0.0 0.6
     // @Increment: 0.01
     // @User: Standard
 
@@ -118,14 +119,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.03
+    // @Range: 0.0 0.03
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: RAT_PIT_VFF
     // @DisplayName: Pitch axis rate controller feed forward
     // @Description: Pitch axis rate controller feed forward
-    // @Range: 0 0.5
+    // @Range: 0.05 0.5
     // @Increment: 0.001
     // @User: Standard
 
@@ -172,7 +173,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.01 0.06
+    // @Range: 0.01 0.2
     // @Increment: 0.01
     // @User: Standard
 

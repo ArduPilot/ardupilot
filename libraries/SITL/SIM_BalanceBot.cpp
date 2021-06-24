@@ -28,6 +28,7 @@ BalanceBot::BalanceBot(const char *frame_str) :
     skid_turn_rate(0.15708) // meters/sec
 {
     dcm.from_euler(0,0,0); // initial yaw, pitch and roll in radians
+    lock_step_scheduled = true;
     printf("Balance Bot Simulation Started\n");
 }
 

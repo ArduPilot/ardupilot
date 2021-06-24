@@ -34,7 +34,6 @@
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
 #include "AP_Baro_SPL06.h"
-#include "AP_Baro_HIL.h"
 #include "AP_Baro_KellerLD.h"
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_ICM20789.h"
@@ -423,9 +422,6 @@ float AP_Baro::get_air_density_ratio(void)
 // note that this relies on read() being called regularly to get new data
 float AP_Baro::get_climb_rate(void)
 {
-    if (_hil.have_alt) {
-        return _hil.climb_rate;
-    }
     // we use a 7 point derivative filter on the climb rate. This seems
     // to produce somewhat reasonable results on real hardware
     return _climb_rate_filter.slope() * 1.0e3f;
@@ -526,12 +522,6 @@ void AP_Baro::init(void)
     // zero bus IDs before probing
     for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
         sensors[i].bus_id.set(0);
-    }
-
-    if (_hil_mode) {
-        drivers[0] = new AP_Baro_HIL(*this);
-        _num_drivers = 1;
-        return;
     }
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -636,9 +626,6 @@ void AP_Baro::init(void)
     for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
-#elif HAL_BARO_DEFAULT == HAL_BARO_HIL
-    drivers[0] = new AP_Baro_HIL(*this);
-    _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H_IMU_I2C
 	ADD_BACKEND(AP_Baro_LPS2XH::probe_InvensenseIMU(*this,
                                                     std::move(GET_I2C_DEVICE(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR)),
@@ -837,10 +824,8 @@ void AP_Baro::update(void)
         _alt_offset_active = _alt_offset;
     }
 
-    if (!_hil_mode) {
-        for (uint8_t i=0; i<_num_drivers; i++) {
-            drivers[i]->backend_update(i);
-        }
+    for (uint8_t i=0; i<_num_drivers; i++) {
+        drivers[i]->backend_update(i);
     }
 
     for (uint8_t i=0; i<_num_sensors; i++) {
@@ -868,12 +853,6 @@ void AP_Baro::update(void)
                 sensors[i].altitude = altitude + _alt_offset_active;
             }
         }
-        if (_hil.have_alt) {
-            sensors[0].altitude = _hil.altitude;
-        }
-        if (_hil.have_last_update) {
-            sensors[0].last_update_ms = _hil.last_update_ms;
-        }
     }
 
     // ensure the climb rate filter is updated
@@ -895,7 +874,7 @@ void AP_Baro::update(void)
     }
 
     // logging
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (should_log()) {
         Write_Baro();
     }

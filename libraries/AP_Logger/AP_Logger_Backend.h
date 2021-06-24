@@ -144,6 +144,11 @@ protected:
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
+    // called by PrepForArming to actually start logging
+    virtual void PrepForArming_start_logging(void) {
+        start_new_log();
+    }
+
     /*
       read a block
     */

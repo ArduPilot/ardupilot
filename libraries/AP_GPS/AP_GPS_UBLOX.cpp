@@ -698,7 +698,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -724,7 +724,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -745,7 +745,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -773,7 +773,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -1876,7 +1876,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
 
 void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 
     if (_have_version) {

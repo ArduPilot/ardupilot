@@ -35,7 +35,7 @@ public:
     virtual void write(uint8_t x, uint8_t y, const char* text) = 0;
 
     //draw formatted text to framebuffer
-    virtual void write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...);
+    virtual void write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...) FMT_PRINTF(5, 6);
 
     //initilize framebuffer and underlying hardware
     virtual bool init() = 0;

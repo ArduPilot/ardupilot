@@ -144,13 +144,6 @@ bool GCS_MAVLINK::init(uint8_t instance)
 
     mavlink_comm_port[chan] = _port;
 
-    // create performance counters
-    snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
-    _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_packet_name);
-
-    snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
-    _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
-
     AP_SerialManager::SerialProtocol mavlink_protocol = serial_manager.get_mavlink_protocol(chan);
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
@@ -268,7 +261,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
-                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED,
+                                    battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_volts_ext); // Cell 11..14 voltages
 }
 
@@ -884,16 +877,6 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // No ID we return true for may take more than a few hundred
     // microseconds to return!
 
-    if (in_hil_mode()) {
-        // in HIL we need to keep sending servo values to ensure
-        // the simulator doesn't pause, otherwise our sensor
-        // calibration could stall
-        if (id == MSG_SERVO_OUT ||
-            id == MSG_SERVO_OUTPUT_RAW) {
-            return true;
-        }
-    }
-
     switch (id) {
     case MSG_HEARTBEAT:
     case MSG_NEXT_PARAM:
@@ -1417,8 +1400,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     uint32_t tstart_us = AP_HAL::micros();
     uint32_t now_ms = AP_HAL::millis();
 
-    hal.util->perf_begin(_perf_update);
-
     status.packet_rx_drop_count = 0;
 
     const uint16_t nbytes = _port->available();
@@ -1453,9 +1434,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
-            hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
-            hal.util->perf_end(_perf_packet);
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
@@ -1562,8 +1541,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         try_send_message_stats.statustext_last_sent_ms = now16_ms;
     }
 #endif
-
-    hal.util->perf_end(_perf_update);    
 }
 
 /*
@@ -1849,11 +1826,10 @@ void GCS_MAVLINK::send_sensor_offsets()
 
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
-    static uint8_t counter;
-    if (counter++ < 10) {
+    if (send_sensor_offsets_counter++ < 10) {
         return;
     }
-    counter = 0;
+    send_sensor_offsets_counter = 0;
 
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &accel_offsets = ins.get_accel_offsets(0);
@@ -2682,13 +2658,8 @@ bool GCS_MAVLINK::telemetry_delayed() const
 void GCS_MAVLINK::send_servo_output_raw()
 {
     uint16_t values[16] {};
-    if (in_hil_mode()) {
-        for (uint8_t i=0; i<16; i++) {
-            values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
-        }
-    } else {
-        hal.rcout->read(values, 16);
-    }
+    hal.rcout->read(values, 16);
+
     for (uint8_t i=0; i<16; i++) {
         if (values[i] == 65535) {
             values[i] = 0;
@@ -3230,7 +3201,7 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
     }
 }
 
-// allow override of RC channel values for HIL or for complete GCS
+// allow override of RC channel values for complete GCS
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
@@ -3831,6 +3802,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_long_t &packet)
+{
+    if (hal.util->get_soft_armed()) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    (void)AP::arming().pre_arm_checks(true);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -4200,6 +4180,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
+        break;
+
+    case MAV_CMD_RUN_PREARM_CHECKS:
+        result = handle_command_run_prearm_checks(packet);
         break;
 
     case MAV_CMD_FLASH_BOOTLOADER:
@@ -5067,7 +5051,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_EFI_STATUS: {
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {

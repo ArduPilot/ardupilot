@@ -26,7 +26,7 @@
 
    APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 */
 
 #include "Rover.h"
@@ -230,11 +230,6 @@ void Rover::stats_update(void)
 void Rover::ahrs_update()
 {
     arming.update_soft_armed();
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before AHRS update
-    gcs().update();
-#endif
 
     // AHRS may use movement to calculate heading
     update_ahrs_flyforward();

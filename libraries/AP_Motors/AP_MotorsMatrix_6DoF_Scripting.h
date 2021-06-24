@@ -46,7 +46,6 @@ protected:
     // nothing to do for setup, scripting will mark as initalized when done
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override {};
 
-    float _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];     // each motors contribution to up thrust
     float _forward_factor[AP_MOTORS_MAX_NUM_MOTORS];      // each motors contribution to forward thrust
     float _right_factor[AP_MOTORS_MAX_NUM_MOTORS];        // each motors contribution to right thrust
 

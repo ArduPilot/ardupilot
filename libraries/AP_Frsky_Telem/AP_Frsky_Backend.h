@@ -102,16 +102,28 @@ protected:
     static const uint8_t DATA_ID_GPS_LONG_EW       = 0x22;
     static const uint8_t DATA_ID_GPS_LAT_NS        = 0x23;
     static const uint8_t DATA_ID_CURRENT           = 0x28;
-    static const uint8_t DATA_ID_VARIO             = 0x30;
     static const uint8_t DATA_ID_VFAS              = 0x39;
 
     static const uint8_t START_STOP_D              = 0x5E;
     static const uint8_t BYTESTUFF_D               = 0x5D;
 
-    // FrSky data IDs;
+    /*
+      for FrSky X protocol (X-receivers)
+    */
+    // FrSky 2 bytes DATA IDs;
+    static const uint16_t ALT_ID                    = 0x010F;
+    static const uint16_t VARIO_ID                  = 0x011F;
+    static const uint16_t CURR_ID                   = 0x020F;
+    static const uint16_t VFAS_ID                   = 0x021F;
+    static const uint16_t TEMP1_ID                  = 0x040F;
+    static const uint16_t TEMP2_ID                  = 0x041F;
     static const uint16_t RPM1_ID                   = 0x050E;
     static const uint16_t RPM2_ID                   = 0x050F;
+    static const uint16_t FUEL_ID                   = 0x060F;
     static const uint16_t GPS_LONG_LATI_FIRST_ID    = 0x0800;
+    static const uint16_t GPS_ALT_ID                = 0x082F;
+    static const uint16_t GPS_SPEED_ID              = 0x083F;
+    static const uint16_t GPS_COURS_ID              = 0x084F;
     static const uint16_t DIY_FIRST_ID              = 0x5000;
 
     static const uint8_t FRAME_HEAD                = 0x7E;
@@ -126,7 +138,6 @@ protected:
     static const uint8_t SENSOR_ID_GPS             = 0x83; // Sensor ID  3
     static const uint8_t SENSOR_ID_RPM             = 0xE4; // Sensor ID  4
     static const uint8_t SENSOR_ID_SP2UR           = 0xC6; // Sensor ID  6
-    static const uint8_t SENSOR_ID_27              = 0x1B; // Sensor ID 27
 
 private:
 

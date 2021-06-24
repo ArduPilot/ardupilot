@@ -432,7 +432,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 7 was used by AP_VisualOdometry
 
     // @Group: MOT_
-    // @Path: AP_MotorsUGV.cpp
+    // @Path: ../libraries/AP_Motors/AP_MotorsUGV.cpp
     AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
 
     // @Group: WENC
@@ -690,7 +690,7 @@ ParametersG2::ParametersG2(void)
     afs(rover.mode_auto.mission),
 #endif
     beacon(rover.serial_manager),
-    motors(rover.ServoRelayEvents),
+    motors(rover.ServoRelayEvents, wheel_rate_control),
     wheel_rate_control(wheel_encoder),
     attitude_control(rover.ahrs),
     smart_rtl(),

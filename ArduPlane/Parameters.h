@@ -79,7 +79,7 @@ public:
         k_param_takeoff_throttle_min_accel,
         k_param_takeoff_heading_hold, // unused
         k_param_level_roll_limit,
-        k_param_hil_servos,
+        k_param_hil_servos_unused,  // unused
         k_param_vtail_output, // unused
         k_param_nav_controller,
         k_param_elevon_output, // unused
@@ -94,7 +94,7 @@ public:
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
-        k_param_hil_err_limit,
+        k_param_hil_err_limit_unused,  // unused
         k_param_sonar_old, // unused
         k_param_log_bitmask,
         k_param_BoardConfig,
@@ -130,7 +130,7 @@ public:
         k_param_optflow,
         k_param_cli_enabled_old, // unused - CLI removed
         k_param_trim_rc_at_start, // unused
-        k_param_hil_mode,
+        k_param_hil_mode_unused,  // unused
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_glide_slope_threshold,
         k_param_rudder_only,
@@ -361,8 +361,6 @@ public:
     AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
 
-    AP_Float hil_err_limit;
-
     AP_Int8  rtl_autoland;
 
     AP_Int8  crash_accel_threshold;
@@ -410,7 +408,7 @@ public:
     AP_Int8 throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
-    AP_Int16 use_reverse_thrust;
+    AP_Int32 use_reverse_thrust;
 
     // Failsafe
     AP_Int8 fs_action_short;
@@ -449,10 +447,6 @@ public:
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
-    AP_Int8  hil_servos;
-#if HIL_SUPPORT
-    AP_Int8  hil_mode;
-#endif
 
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
@@ -560,7 +554,7 @@ public:
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     // EFI Engine Monitor
     AP_EFI efi;
 #endif

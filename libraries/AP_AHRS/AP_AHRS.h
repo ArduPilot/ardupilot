@@ -24,7 +24,6 @@
 #include <inttypes.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
@@ -96,6 +95,18 @@ public:
         return _flags.fly_forward;
     }
 
+    void set_takeoff_expected(bool b);
+
+    bool get_takeoff_expected(void) const {
+        return _flags.takeoff_expected;
+    }
+
+    void set_touchdown_expected(bool b);
+
+    bool get_touchdown_expected(void) const {
+        return _flags.touchdown_expected;
+    }
+
     AHRS_VehicleClass get_vehicle_class(void) const {
         return _vehicle_class;
     }
@@ -115,14 +126,6 @@ public:
 
     const Compass* get_compass() const {
         return _compass;
-    }
-
-    void set_optflow(const OpticalFlow *optflow) {
-        _optflow = optflow;
-    }
-
-    const OpticalFlow* get_optflow() const {
-        return _optflow;
     }
 
     // allow for runtime change of orientation
@@ -216,9 +219,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
-
-    // reset the current attitude, used on new IMU calibration
-    virtual void reset_attitude(const float &roll, const float &pitch, const float &yaw) = 0;
 
     // return the average size of the roll/pitch error estimate
     // since last call
@@ -649,6 +649,8 @@ protected:
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
+        uint8_t takeoff_expected        : 1;    // 1 if the vehicle is in a state that takeoff might be expected.  Ground effect may be in play.
+        uint8_t touchdown_expected      : 1;    // 1 if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     } _flags;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
@@ -663,11 +665,11 @@ protected:
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
 
+    // update takeoff/touchdown flags
+    void update_flags();
+
     // pointer to compass object, if available
     Compass         * _compass;
-
-    // pointer to OpticalFlow object, if available
-    const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
 
@@ -719,6 +721,9 @@ private:
     static AP_AHRS *_singleton;
 
     AP_NMEA_Output* _nmea_out;
+
+    uint32_t takeoff_expected_start_ms;
+    uint32_t touchdown_expected_start_ms;
 };
 
 #include "AP_AHRS_DCM.h"
