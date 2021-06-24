@@ -430,6 +430,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(planck_land_kp_z, "PLANCK_LAND_KP_Z",                 PLANCK_LAND_KP_ALT),
 
+    // @Param: planck_high_tension_throttle
+    // @DisplayName: Planck High Tension throttle 
+    // @Description: fixed throttle value during high tension events
+    // @Range: 0.5 1
+    // @User: Advanced
+    GSCALAR(planck_high_tension_throttle, "PLANCK_HT_THR", PLANCK_HT_THR),
+
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
     // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.

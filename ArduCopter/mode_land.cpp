@@ -145,10 +145,10 @@ void ModeLand::do_not_use_GPS()
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-void Copter::set_mode_land_with_pause(ModeReason reason)
+void Copter::set_mode_land_with_pause(ModeReason reason, bool pause)
 {
     set_mode(Mode::Number::LAND, reason);
-    land_pause = true;
+    land_pause = pause;
 
     // alert pilot to mode change
     AP_Notify::events.failsafe_mode_change = 1;

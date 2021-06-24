@@ -64,4 +64,6 @@ private:
 
     void send_pid_tuning() override;
 
+    void* get_planck_ptr() override;
+
 };

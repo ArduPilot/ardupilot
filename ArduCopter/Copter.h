@@ -822,7 +822,7 @@ private:
     void notify_flight_mode();
 
     // mode_land.cpp
-    void set_mode_land_with_pause(ModeReason reason);
+    void set_mode_land_with_pause(ModeReason reason, bool pause=true);
     bool landing_with_GPS();
 
     // motor_test.cpp

@@ -1,6 +1,8 @@
 #include <AC_Planck/AC_Planck.h>
 #include <AP_HAL/AP_HAL.h>
 #include "../ArduCopter/defines.h"
+#include <AP_Logger/AP_Logger.h>
+#include <AP_Motors/AP_Motors.h>
 
 void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const mavlink_message_t *mav_msg,
     AP_AHRS &ahrs)
@@ -139,6 +141,57 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
       _tag_est.tag_att_cd.z = ToDeg(pl.yaw) * 100.;
 
       _tag_est.timestamp_us = pl.ap_timestamp_us;
+      break;
+    }
+
+    case MAVLINK_MSG_ID_PLANCK_DECK_TETHER_STATUS:
+    {
+      mavlink_planck_deck_tether_status_t ts;
+      mavlink_msg_planck_deck_tether_status_decode(mav_msg, &ts);
+      _tether_status.timestamp_ms = AP_HAL::millis();
+      _tether_status.cable_out_m = ts.CABLE_OUT * 0.3048; //feet to meters
+
+      bool high_tension =  (ts.SPOOL_STATUS == PLANCK_DECK_SPOOL_LOCKED) && (ts.CABLE_TENSION > 75);
+      bool entered_high_tension = high_tension && !_tether_status.high_tension;
+      bool exited_high_tension = !high_tension && _tether_status.high_tension;
+
+      //If we've transitioned into high tension, record altitude and timestamps
+      if(entered_high_tension) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: High Tension");
+      } else if(exited_high_tension) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tether Tension Mode Change: Nominal");
+      }
+
+      //Always update the latest altitudes when we get new tension information.
+      //This allows us to know the altitudes when the high tension event ocurred, or
+      //when we lost comms with the ground
+      if(!high_tension || entered_high_tension) {
+        _tether_status.high_tension_timestamp_ms = AP_HAL::millis();
+
+        if(_status.tracking_tag) {
+          _tether_status.high_tension_tag_alt_cm = _tag_est.tag_pos_cm.z;
+        } else {
+          _tether_status.high_tension_tag_alt_cm = 0.0f;
+        }
+
+        Location current_loc;
+        ahrs.get_position(current_loc);
+        int32_t alt_above_home_cm = 3048; //100ft default
+        if(!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
+          alt_above_home_cm = 3048;
+        }
+        _tether_status.high_tension_alt_cm = (float)alt_above_home_cm;
+      }
+
+      _tether_status.high_tension = high_tension;
+
+      AP::logger().Write("PDTS", "TimeUS,TSct,TSss,tsHT,tsCO", "QBBBf",
+                         AP_HAL::micros64(),
+                         (uint8_t)ts.CABLE_TENSION,
+                         (uint8_t)ts.SPOOL_STATUS,
+                         (uint8_t)_tether_status.high_tension,
+                         (float)_tether_status.cable_out_m);
+      break;
     }
 
     default:
@@ -285,4 +338,88 @@ bool AC_Planck::get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, 
   is_yaw_rate = _cmd.is_yaw_rate;
   _cmd.is_new = false;
   return true;
+}
+
+bool AC_Planck::check_for_high_tension_timeout() {
+  //No failure if not flying
+  if(AP_Motors::get_singleton()->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+    return false;
+  }
+
+  //No comms from the tether
+  bool tether_comms_failed = is_tether_timed_out();
+
+  //Determine if high tension has been or should have been triggered
+  bool high_tension_triggered = _tether_status.high_tension || tether_comms_failed;
+
+  //Hasn't failed if not triggered
+  if(!high_tension_triggered) {
+    _tether_status.sent_failed_message = false;
+    return false;
+  }
+
+  //The amount of time to wait for high tension to timeout is a function of
+  //initial altitude when the high tension event ocurred. Use tag altitude if available
+  float timeout_s = 0;
+  const float reel_rate_cms = 38.1; //~1.25ft/s
+  if(!is_equal(_tether_status.high_tension_tag_alt_cm,0.0f)) {
+    timeout_s = _tether_status.high_tension_tag_alt_cm / reel_rate_cms;
+  } else {
+    timeout_s = _tether_status.high_tension_alt_cm / reel_rate_cms;
+  }
+
+  //Account for the 10s spent in "locked" mode, but only in a comms or position loss state.
+  //Note: we only check the commbox state, as thats what the tether logic uses
+  bool pos_reference_good = get_commbox_state() || get_tag_tracking_state();
+  if(!pos_reference_good || tether_comms_failed) {
+    timeout_s += 10.;
+  }
+
+  //If this was due to a comms loss, add an additional 5s for the comm loss timeout
+  if(!_tether_status.high_tension) { //did not get a high-tension indication from DECK due to comms loss
+    timeout_s += 5.;
+  }
+
+  //Add a 2s buffer, limit
+  timeout_s = constrain_float((timeout_s + 2.), 5., 120.); //5s to 2 minutes
+
+  uint32_t timeout_time_ms = _tether_status.high_tension_timestamp_ms + ((int)(timeout_s) * 1000);
+  bool timed_out = AP_HAL::millis() > timeout_time_ms;
+
+  //If no timeout, it hasn't failed yet
+  if(!timed_out) {
+    _tether_status.sent_failed_message = false;
+    return false;
+  }
+
+  if(timed_out && !_tether_status.sent_failed_message) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether high-tension timeout!");
+    _tether_status.sent_failed_message = true;
+  }
+  return timed_out;
+}
+
+void AC_Planck::override_with_zero_vel_cmd() {
+  _cmd.zero();
+  _cmd.type = VELOCITY;
+  _cmd.timestamp_ms = AP_HAL::millis();
+  _cmd.is_new = true;
+}
+
+void AC_Planck::override_with_zero_att_cmd() {
+  _cmd.zero();
+  _cmd.type = ATTITUDE;
+  _cmd.timestamp_ms = AP_HAL::millis();
+  _cmd.is_new = true;
+}
+
+bool AC_Planck::is_tether_timed_out() {
+  bool timed_out = ((AP_HAL::millis() - _tether_status.timestamp_ms) > 5000);
+  if(timed_out && !_tether_status.comms_timed_out) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Tether comms timed out");
+  } else if (!timed_out && _tether_status.comms_timed_out) {
+    gcs().send_text(MAV_SEVERITY_INFO, "Tether comms restored");
+  }
+  _tether_status.comms_timed_out = timed_out;
+  return timed_out;
 }

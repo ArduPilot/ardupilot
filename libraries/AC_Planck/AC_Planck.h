@@ -75,6 +75,21 @@ public:
   //Get tag attitude
   Vector3f get_tag_att(){return _tag_est.tag_att_cd;};
 
+  //Tether timed out
+  bool is_tether_timed_out();
+
+  //Tether high tension
+  bool is_tether_high_tension() { return _tether_status.high_tension; };
+
+  //Determine if the tether tensioner may have failed
+  bool check_for_high_tension_timeout();
+
+  //Override any commands from ACE with zero-velocity commands
+  void override_with_zero_vel_cmd();
+
+  //Override any commands from ACE with zero-attitude commands
+  void override_with_zero_att_cmd();
+
 private:
 
   struct
@@ -87,6 +102,14 @@ private:
     uint32_t timestamp_ms = 0;
     bool is_new = false;
     cmd_type type = NONE;
+    void zero() {
+      pos.zero();
+      vel_cms.zero();
+      accel_cmss.zero();
+      att_cd.zero();
+      is_yaw_rate = true;
+      type = NONE;
+    }
   }_cmd;
 
   struct
@@ -109,6 +132,20 @@ private:
     Vector3f tag_att_cd = Vector3f(0,0,0);
     uint32_t timestamp_us = 0;
   }_tag_est;
+
+  struct
+  {
+    uint32_t timestamp_ms = 0;
+    float cable_out_m = 0;
+    bool high_tension = false;
+    uint32_t high_tension_timestamp_ms = 0;
+    float high_tension_tag_alt_cm =0;
+    float high_tension_alt_cm = 0;
+    bool sent_failed_message = false;
+    bool comms_timed_out = false;
+  }_tether_status;
+
+  float _hover_throttle_before_high_tension = 0.5;
 
   mavlink_channel_t _chan = MAVLINK_COMM_1;
 

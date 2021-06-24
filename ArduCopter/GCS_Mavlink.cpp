@@ -945,6 +945,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_PLANCK_STATUS:
     case MAVLINK_MSG_ID_PLANCK_CMD_MSG:
     case MAVLINK_MSG_ID_PLANCK_LANDING_TAG_ESTIMATE_NED:
+    case MAVLINK_MSG_ID_PLANCK_DECK_TETHER_STATUS:
         copter.planck_interface.handle_planck_mavlink_msg(chan, &msg, copter.ahrs);
         break;
 
@@ -1447,4 +1448,9 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
         return MAV_LANDED_STATE_TAKEOFF;
     }
     return MAV_LANDED_STATE_IN_AIR;
+}
+
+void* GCS_MAVLINK_Copter::get_planck_ptr()
+{
+    return (void*)(&(copter.planck_interface));
 }

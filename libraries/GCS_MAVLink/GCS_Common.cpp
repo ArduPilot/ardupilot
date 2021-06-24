@@ -63,6 +63,7 @@
 
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AC_Planck/AC_Planck.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -2193,7 +2194,13 @@ void GCS_MAVLINK::send_planck_stateinfo()
     if(landed_state() != MAV_LANDED_STATE_ON_GROUND)
       status |= 0x02;
 
-    if(vehicle_system_status() == MAV_STATE_CRITICAL)
+    AC_Planck* planck = (AC_Planck*)get_planck_ptr();
+    bool tether_high_tension = false;
+    if(planck) {
+      tether_high_tension = planck->is_tether_high_tension() || planck->is_tether_timed_out();
+    }
+
+    if(vehicle_system_status() == MAV_STATE_CRITICAL || tether_high_tension)
       status |= 0x04;
 
     const AP_AHRS &ahrs = AP::ahrs();

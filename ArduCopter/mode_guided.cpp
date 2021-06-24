@@ -332,8 +332,14 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-void ModeGuided::run(bool high_jerk_z)
+void ModeGuided::run(bool high_jerk_z, bool force_positive_throttle)
 {
+    if(!_force_positive_throttle && force_positive_throttle) {
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
+        gcs().send_text(MAV_SEVERITY_INFO,"POSTHR: %f\n", throttle);
+    }
+    _force_positive_throttle = force_positive_throttle;
+
     // call the correct auto controller
     switch (guided_mode) {
 
@@ -489,8 +495,15 @@ void ModeGuided::vel_control_run()
         set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
     }
 
-    // call velocity controller which includes z axis controller
-    pos_control->update_vel_controller_xyz();
+    if(_force_positive_throttle) {
+      pos_control->update_vel_controller_xy();
+      float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
+      attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
+      pos_control->relax_alt_hold_controllers(throttle);
+    } else {
+      // call velocity controller which includes z axis controller
+      pos_control->update_vel_controller_xyz();
+    }
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
@@ -555,7 +568,15 @@ void ModeGuided::posvel_control_run()
 
     // run position controllers
     pos_control->update_xy_controller();
-    pos_control->update_z_controller();
+
+    // call position controller
+    if(_force_positive_throttle) {
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
+        attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
+        pos_control->relax_alt_hold_controllers(throttle);
+    } else {
+        pos_control->update_z_controller();
+    }
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
@@ -633,8 +654,14 @@ void ModeGuided::angle_control_run(bool high_jerk_z)
     }
 
     // call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
-    pos_control->update_z_controller();
+    if(_force_positive_throttle) {
+        float throttle = constrain_float(g.planck_high_tension_throttle, 0.5, 1.0);
+        attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
+        pos_control->relax_alt_hold_controllers(throttle);
+    } else {
+        pos_control->set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false, high_jerk_z);
+        pos_control->update_z_controller();
+    }
 }
 
 // helper function to update position controller's desired velocity while respecting acceleration limits

@@ -53,6 +53,40 @@ void ModePlanckTracking::run() {
             relative_angle);
     }
 
+    //Check for tether high tension
+    bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
+    bool use_positive_throttle = high_tension;
+    if(high_tension) {
+        //If we ever enter high tension, make sure ACE is landing
+        if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb) && copter.planck_interface.ready_for_land()) {
+            copter.set_mode_planck_RTB_or_planck_land(ModeReason::GCS_FAILSAFE);
+        }
+
+        if(!copter.planck_interface.check_for_high_tension_timeout()) { //High tension hasn't failed
+            //While in high tension:
+            // - If actively tracking the tag, continue to do so, but use pos throttle
+            // - If not tracking the tag, but have GPS, command zero velocity but use pos throttle
+            // - If not tracking tag or and no GPS, use zero attitude with pos throttle
+            if(!copter.planck_interface.get_tag_tracking_state()) {
+                if(copter.position_ok()) {
+                  copter.planck_interface.override_with_zero_vel_cmd();
+
+                  //Force the position controller to use the current position
+                  const Vector3f& curr_pos = inertial_nav.get_position();
+                  // set target position to current position
+                  pos_control->set_xy_target(curr_pos.x, curr_pos.y);
+                } else {
+                  copter.planck_interface.override_with_zero_att_cmd();
+                }
+            }
+        } else { //High tension has timed out
+            //If high tension has failed, attempt to use a planck land or regular land
+            copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE, false);
+            copter.mode_land.run();
+            return;
+        }
+    }
+
     //If there is new command data, send it to Guided
     if(copter.planck_interface.new_command_available()) {
         switch(copter.planck_interface.get_cmd_type()) {
@@ -222,7 +256,7 @@ void ModePlanckTracking::run() {
     }
 
     //Run the guided mode controller
-    ModeGuided::run(true); //use high-jerk
+    ModeGuided::run(true, use_positive_throttle); //use high-jerk, positive throttle if necessary
 }
 
 bool ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
