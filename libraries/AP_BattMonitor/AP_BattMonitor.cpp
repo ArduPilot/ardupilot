@@ -33,82 +33,137 @@ AP_BattMonitor *AP_BattMonitor::_singleton;
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // 0 - 18, 20- 22 used by old parameter indexes
 
+    // Monitor 1
+
     // @Group: _
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: _
-    // @Path: AP_BattMonitor_SMBus.cpp
+    // @Path: AP_BattMonitor_Analog.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_", 32, AP_BattMonitor, backend_var_info[0]),
+
+    // @Group: _
+    // @Path: AP_BattMonitor_SMBus.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "_", 33, AP_BattMonitor, backend_smbus_var_info[0]),
+
+    // Monitor 2
 
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 24, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 2_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 34, AP_BattMonitor, backend_var_info[1]),
+
+    // @Group: 2_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[1], "2_", 33, AP_BattMonitor, backend_var_info[1]),
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 35, AP_BattMonitor, backend_smbus_var_info[1]),
+
+    // Monitor 3
 
     // @Group: 3_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[2], "3_", 25, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 3_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 36, AP_BattMonitor, backend_var_info[2]),
+
+    // @Group: 3_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[2], "3_", 34, AP_BattMonitor, backend_var_info[2]),
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 37, AP_BattMonitor, backend_smbus_var_info[2]),
+
+    // Monitor 4
 
     // @Group: 4_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[3], "4_", 26, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 4_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 38, AP_BattMonitor, backend_var_info[3]),
+
+    // @Group: 4_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[3], "4_", 35, AP_BattMonitor, backend_var_info[3]),
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 39, AP_BattMonitor, backend_smbus_var_info[3]),
+
+    // Monitor 5
 
     // @Group: 5_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[4], "5_", 27, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 5_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_", 40, AP_BattMonitor, backend_var_info[4]),
+
+    // @Group: 5_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[4], "5_", 36, AP_BattMonitor, backend_var_info[4]),
+    AP_SUBGROUPVARPTR(drivers[4], "5_", 41, AP_BattMonitor, backend_smbus_var_info[4]),
+
+    // Monitor 6
 
     // @Group: 6_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[5], "6_", 28, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 6_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[5], "6_", 42, AP_BattMonitor, backend_var_info[5]),
+
+    // @Group: 6_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[5], "6_", 37, AP_BattMonitor, backend_var_info[5]),
+    AP_SUBGROUPVARPTR(drivers[5], "6_", 43, AP_BattMonitor, backend_smbus_var_info[5]),
+
+    // Monitor 7
 
     // @Group: 7_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[6], "7_", 29, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 7_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[6], "7_", 44, AP_BattMonitor, backend_var_info[6]),
+
+    // @Group: 7_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[6], "7_", 38, AP_BattMonitor, backend_var_info[6]),
+    AP_SUBGROUPVARPTR(drivers[6], "7_", 45, AP_BattMonitor, backend_smbus_var_info[6]),
+
+    // Monitor 8
 
     // @Group: 8_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[7], "8_", 30, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 8_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[7], "8_", 46, AP_BattMonitor, backend_var_info[7]),
+
+    // @Group: 8_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[7], "8_",  39, AP_BattMonitor, backend_var_info[7]),
+    AP_SUBGROUPVARPTR(drivers[7], "8_", 47, AP_BattMonitor, backend_smbus_var_info[7]),
+
+    // Monitor 9
 
     // @Group: 9_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[8], "9_", 31, AP_BattMonitor, AP_BattMonitor_Params),
 
+    // @Group: 8_
+    // @Path: AP_BattMonitor_Analog.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 48, AP_BattMonitor, backend_var_info[8]),
+
     // @Group: 9_
     // @Path: AP_BattMonitor_SMBus.cpp
-    AP_SUBGROUPVARPTR(drivers[8], "9_", 40, AP_BattMonitor, backend_var_info[8]),
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_smbus_var_info[8]),
 
     AP_GROUPEND
 };
 
 const AP_Param::GroupInfo *AP_BattMonitor::backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
+const AP_Param::GroupInfo *AP_BattMonitor::backend_smbus_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
 // Default constructor.
 // Note that the Vector/Matrix constructors already implicitly zero

@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 AP_BattMonitor_FuelFlow::AP_BattMonitor_FuelFlow(AP_BattMonitor &mon,
                                                  AP_BattMonitor::BattMonitor_State &mon_state,
                                                  AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params)
+    AP_BattMonitor_Analog(mon, mon_state, params)
 {
     _state.voltage = 1.0; // show a fixed voltage of 1v
 
@@ -56,7 +56,7 @@ void AP_BattMonitor_FuelFlow::irq_handler(uint8_t pin, bool pin_state, uint32_t 
 */
 void AP_BattMonitor_FuelFlow::read()
 {
-    int8_t pin = _params._curr_pin;
+    int8_t pin = _curr_pin;
     if (last_pin != pin) {
         // detach from last pin
         if (last_pin != -1) {
@@ -107,7 +107,7 @@ void AP_BattMonitor_FuelFlow::read()
         litres = 0;
         litres_pec_sec = 0;
     } else {
-        litres = state.pulse_count * _params._curr_amp_per_volt * 0.001f;
+        litres = state.pulse_count * _curr_amp_per_volt * 0.001f;
         litres_pec_sec = litres / irq_dt;
     }
 
