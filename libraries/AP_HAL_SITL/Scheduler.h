@@ -45,9 +45,12 @@ public:
     static void timer_event() {
         _run_timer_procs();
         _run_io_procs();
+        _run_tasks();
     }
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
+
+    static void _run_tasks();
 
     static void _run_io_procs();
     static bool _should_reboot;
@@ -58,6 +61,17 @@ public:
      */
     bool thread_create(AP_HAL::MemberProc, const char *name,
                        uint32_t stack_size, priority_base base, int8_t priority) override;
+
+    /*
+      create a new task (may create a thread)
+     */
+    bool task_create(
+        AP_HAL::MemberProc proc_init,
+        AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority) override;
 
     void set_in_semaphore_take_wait(bool value) { _in_semaphore_take_wait = value; }
     /*
@@ -109,5 +123,18 @@ private:
     };
     static struct thread_attr *threads;
     static const uint8_t stackfill = 0xEB;
+
+    struct task_attr {
+        AP_HAL::MemberProc init;
+        AP_HAL::Scheduler::TaskBodyMemberProc body;
+        const char *name;
+
+        bool have_run_init;
+        uint32_t delay_us;
+        uint32_t last_run_us;
+        struct task_attr *next;
+    };
+
+    static struct task_attr *_tasks;
 };
 #endif  // CONFIG_HAL_BOARD

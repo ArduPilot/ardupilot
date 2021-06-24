@@ -616,6 +616,26 @@ void Scheduler::restore_interrupts(void *state)
     chSysRestoreStatusX((syssts_t)(uintptr_t)state);
 }
 
+struct task_ctx {
+    AP_HAL::MemberProc *init;
+    AP_HAL::Scheduler::TaskBodyMemberProc *body;
+};
+
+/*
+  trampoline for thread create
+*/
+void Scheduler::task_create_thread_trampoline(void *ctx)
+{
+    task_ctx *t = (task_ctx *)ctx;
+    t->init[0]();
+    while (true) {
+        // the body returns us a delay after which the body should be
+        // called again
+        const uint32_t delay_us = t->body[0]();
+        hal.scheduler->delay_microseconds(delay_us);
+    }
+}
+
 /*
   trampoline for thread create
 */
@@ -680,6 +700,54 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         return false;
     }
     return true;
+}
+
+/*
+  create a new task
+*/
+bool Scheduler::task_create(
+        AP_HAL::MemberProc proc_init,
+        AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority)
+{
+    // take a copy of the Procs, they are freed after thread exits
+    task_ctx *tctx = (task_ctx*)malloc(sizeof(task_ctx));
+    if (tctx == nullptr) {
+        return false;
+    }
+
+    tctx->init = (AP_HAL::MemberProc *)malloc(sizeof(proc_init));
+    tctx->body = (AP_HAL::Scheduler::Scheduler::TaskBodyMemberProc *)malloc(sizeof(proc_body));
+
+    if (tctx->init == nullptr ||
+        tctx->body == nullptr) {
+        free(tctx->init);
+        free(tctx->body);
+        free(tctx);
+    }
+
+    *(tctx->init) = proc_init;
+    *(tctx->body) = proc_body;
+
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+    thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
+                                               name,
+                                               thread_priority,
+                                               task_create_thread_trampoline,
+                                               tctx);
+    if (thread_ctx != nullptr) {
+        return true;
+    }
+
+    free(tctx->init);
+    free(tctx->body);
+    free(tctx);
+
+    return false;
 }
 
 /*

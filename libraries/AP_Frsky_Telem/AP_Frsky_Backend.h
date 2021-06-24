@@ -141,6 +141,7 @@ protected:
 
 private:
 
-    void loop(void);
+    void thread_init();
+    uint32_t thread_loop_body();
 
 };
