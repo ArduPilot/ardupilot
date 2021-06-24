@@ -782,7 +782,7 @@ void Aircraft::smooth_sensors(void)
     smoothing.position += (smoothing.velocity_ef * delta_time).todouble();
 
     smoothing.location = home;
-    smoothing.location.offset(smoothing.position.x, smoothing.position.y);
+    smoothing.location.offset_double(smoothing.position.x, smoothing.position.y);
     smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
 
     smoothing.last_update_us = now;
