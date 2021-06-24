@@ -4008,11 +4008,12 @@ class AutoTest(ABC):
             received = set()
             for (name, value) in want.items():
                 if verbose:
-                    self.progress("%s want=%f autopilot=%s" % (name, value, autopilot_values.get(name, 'None')))
+                    self.progress("%s want=%f autopilot=%s (attempt=%u/%u)" %
+                                  (name, value, autopilot_values.get(name, 'None'), i+1, attempts))
                 if name not in autopilot_values:
                     self.send_get_parameter_direct(name)
                     if verbose:
-                        self.progress("Requesting (%s) (attempt=%u/%u)" % (name, i+1, attempts))
+                        self.progress("Requesting (%s)" % (name,))
                     continue
                 delta = abs(autopilot_values[name] - value)
                 if delta <= epsilon_pct*0.01*abs(value):
