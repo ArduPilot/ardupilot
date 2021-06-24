@@ -1,3 +1,25 @@
+Release 4.1.0beta2 24th June 2021
+---------------------------------
+
+This is a minor update over the 4.0.1beta1 release. It has a few
+important fixes for beta testers:
+
+ - Fixed a bug in attitude control during the airbrake phase of
+   quadplane landing approach
+
+ - skip POSITION1 stage of landing approach for tailsitters
+
+ - fixed handling of corrupted filesystems on arming, where a long
+   delay during log file creation could cause a watchdog reset
+
+ - fixed build of VRUBrain-v51 board
+
+ - re-enable soaring on MatekF405-Wing
+
+ - fixed calculation of battery consumption on a commanded reset
+
+Please report all test results, and happy flying!
+
 Release 4.1.0beta1 14th June 2021
 ---------------------------------
 
