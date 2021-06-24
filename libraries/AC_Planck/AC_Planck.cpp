@@ -368,7 +368,8 @@ bool AC_Planck::check_for_high_tension_timeout() {
     timeout_s = _tether_status.high_tension_alt_cm / reel_rate_cms;
   }
 
-  //Account for the 10s spent in "locked" mode, but only in a comms or position loss state
+  //Account for the 10s spent in "locked" mode, but only in a comms or position loss state.
+  //Note: we only check the commbox state, as thats what the tether logic uses
   bool pos_reference_good = get_commbox_state() || get_tag_tracking_state();
   if(!pos_reference_good || tether_comms_failed) {
     timeout_s += 10.;
