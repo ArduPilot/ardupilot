@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 set -x
 
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
@@ -123,7 +124,7 @@ fi
 mkdir -p $BUILDLOGS
 
 # update index.html from the repository:
-rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
+rsync -a APM/Tools/autotest/web-firmware/ "$BUILDLOGS/binaries/"
 
 pushd $BUILDLOGS
 
@@ -146,7 +147,7 @@ pushd $BUILDLOGS
     if [ -n "$(which timelimit)" ]; then
         TIMELIMIT="timelimit $TIMELIMIT_TIME_LIMIT"
     fi
-    $TIMELIMIT "$AUTOTEST" --timeout=300000 > "autotest-output.txt" 2>&1
+    $TIMELIMIT "$AUTOTEST" --autotest-server --timeout=300000 > "autotest-output.txt" 2>&1
   popd
 
   # autotest is done, so update the link to the most-recent build
