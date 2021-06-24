@@ -121,6 +121,7 @@ truename_map = {
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
     "AP_Periph": "AP_Periph",
+    "Blimp": "Blimp",
 }
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
