@@ -206,6 +206,8 @@ private:
 
     AP_Int32 _srv_bm;       //! Servo selection bitmask
     AP_Int16 _srv_hz;       //! Servo update rate (Hz)
+
+    HAL_Semaphore _telem_sem;
 };
 
 #endif // HAL_PICCOLO_CAN_ENABLE
