@@ -794,6 +794,7 @@ is bob we will attempt to checkout bob-AVR'''
         out = os.getenv("BUILD_BINARIES_BUILDLOGS_DIR", None)
         if out is not None:
             return out
+        raise ValueError("Expected BUILD_BINARIES_BUILDLOGS_DIR")
         return os.getenv("BUILDLOGS",
                          os.path.join(os.getcwd(), "..", "buildlogs"))
 

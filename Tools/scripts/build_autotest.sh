@@ -123,9 +123,6 @@ fi
 
 mkdir -p $BUILDLOGS
 
-# update index.html from the repository:
-rsync -a APM/Tools/autotest/web-firmware/ "$BUILDLOGS/binaries/"
-
 pushd $BUILDLOGS
 
   export BUILD_BINARIES_BUILDLOGS_DIR="$PWD"
@@ -133,6 +130,9 @@ pushd $BUILDLOGS
 
   HISTORY_DIR="history/$hdate"
   mkdir -p "$HISTORY_DIR"
+
+  # populate index.html etc from the repository:
+  rsync -a APM/Tools/autotest/web-firmware/ "$HISTORY_DIR"
 
   # create a link so people can see what we're currently doing:
   ln -sfn "$HISTORY_DIR" currently-building

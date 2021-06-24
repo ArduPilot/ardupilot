@@ -1126,7 +1126,7 @@ if __name__ == "__main__":
     lck = util.lock_file(lckfile)
 
     if lck is None:
-        # we shouldn't get here as build_all.sh should have it locked out
+        # we shouldn't get here as autotest should be run once in a directory...
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
         sys.exit(0)
 
