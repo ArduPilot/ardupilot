@@ -78,6 +78,7 @@ void Fins::output()
         yaw_out   = 0;
     }
 
+    blimp.Write_FINI(right_out, front_out, down_out, yaw_out);
 
     _time = AP_HAL::micros() * 1.0e-6;
 
@@ -121,9 +122,7 @@ void Fins::output()
         SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _pos[i] * FIN_SCALE_MAX);
     }
 
-    //For debugging purposes. Displays in the debug terminal so it doesn't flood the GCS.
-    ::printf("FINS (amp %.1f %.1f %.1f %.1f   off %.1f %.1f %.1f %.1f   omm %.1f %.1f %.1f %.1f)\n",
-             _amp[0], _amp[1], _amp[2], _amp[3], _off[0], _off[1], _off[2], _off[3], _omm[0], _omm[1], _omm[2], _omm[3]);
+    blimp.Write_FINO(_amp, _off);
 }
 
 void Fins::output_min()

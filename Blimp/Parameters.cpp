@@ -95,9 +95,9 @@ const AP_Param::Info Blimp::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw,8:AccelZ
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
-    GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+    // @Values: 0:None,1:VELX,2:VELY,4:VELZ,8:VELYAW,16:POSX,32:POSY,64:POSZ,128:POSYAW,15:Vel only,51:XY only,204:ZYaw only,240:Pos only,255:All
+    // @Bitmask: 0:VELX,1:VELY,2:VELZ;3:VELYAW;4:POSX,5:POSY;6:POZ;7:POSYAW
+    GSCALAR(gcs_pid_mask, "GCS_PID_MASK",     0),
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
@@ -520,6 +520,5 @@ void Blimp::load_parameters(void)
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     // setup AP_Param frame type flags
-    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
-
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_BLIMP);
 }

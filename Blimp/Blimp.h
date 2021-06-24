@@ -307,7 +307,7 @@ private:
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
-    void fourhundred_hz_logging();
+    void full_rate_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
     void three_hz_loop();
@@ -361,6 +361,7 @@ private:
     // Log.cpp
     void Log_Write_Performance();
     void Log_Write_Attitude();
+    void Log_Write_PIDs();
     void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
     void Log_Write_Data(LogDataID id, int32_t value);
@@ -375,6 +376,8 @@ private:
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
+    void Write_FINI(float right, float front, float down, float yaw);
+    void Write_FINO(float *amp, float *off);
 
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
