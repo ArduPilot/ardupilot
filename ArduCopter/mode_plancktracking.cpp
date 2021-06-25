@@ -80,14 +80,19 @@ void ModePlanckTracking::run() {
 
         }
       }
-      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
-                               AP_HAL::micros64(),
-                         (float)yaw_rate_for_logging_cds,
-                         (float)auto_yaw.yaw(),
-                         (float)mount->get_follow_yaw_rate(),
-                         (uint8_t)mount->mount_yaw_follow_mode,
-                         (uint8_t)mount->has_pan_control(),
-                         (uint8_t)auto_yaw.mode());
+      static uint32_t next_yaw_report_t_ms = 0;
+      if(AP_HAL::millis() > next_yaw_report_t_ms) {
+          gcs().send_text(MAV_SEVERITY_INFO, "Yaw rate: %f %f %f %i %i %i",yaw_rate_for_logging_cds, auto_yaw.yaw(), mount->get_follow_yaw_rate(), mount->mount_yaw_follow_mode, mount->has_pan_control(), auto_yaw.mode());
+          next_yaw_report_t_ms = AP_HAL::millis() + 500;
+      }
+//      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
+//                               AP_HAL::micros64(),
+//                         (float)yaw_rate_for_logging_cds,
+//                         (float)auto_yaw.yaw(),
+//                         (float)mount->get_follow_yaw_rate(),
+//                         (uint8_t)mount->mount_yaw_follow_mode,
+//                         (uint8_t)mount->has_pan_control(),
+//                         (uint8_t)auto_yaw.mode());
     }
 
     //Check for tether high tension
