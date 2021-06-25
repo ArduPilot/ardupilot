@@ -26,9 +26,8 @@
 // Constructor
 AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
-                                                   AP_BattMonitor_Params &params,
-                                                   AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
+                                                   AP_BattMonitor_Params &params)
+    : AP_BattMonitor_SMBus(mon, mon_state, params, AP_BATTMONITOR_SMBUS_BUS_INTERNAL)
 {
     _pec_supported = true;
 }
@@ -116,7 +115,7 @@ uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_
     }
 
     // check PEC
-    uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
+    uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
     if (pec != buff[bufflen+1]) {
         return 0;
     }

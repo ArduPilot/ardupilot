@@ -615,7 +615,8 @@ class AutoTestPlane(AutoTest):
     def SmartBattery(self):
         self.set_parameters({
             "BATT_MONITOR": 16,
-            "BATT_BUS": 2,  # specified in SIM_I2C.cpp
+            "BATT_I2C_BUS": 2,  # specified in SIM_I2C.cpp
+            "BATT_I2C_ADDR": 11,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()

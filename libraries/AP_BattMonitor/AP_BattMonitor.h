@@ -128,7 +128,11 @@ public:
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
+        const struct AP_Param::GroupInfo *var_info;
     };
+
+    static const struct AP_Param::GroupInfo *backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
+    static const struct AP_Param::GroupInfo *backend_smbus_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
     // Return the number of battery monitor instances
     uint8_t num_instances(void) const { return _num_instances; }
