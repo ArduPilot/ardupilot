@@ -314,6 +314,8 @@ def configure(cfg):
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
 
     cfg.env.HWDEF_EXTRA = cfg.options.extra_hwdef
+    if cfg.env.HWDEF_EXTRA:
+        cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
