@@ -29,7 +29,7 @@ public:
     ///     The time constant also defines the time taken to achieve the maximum acceleration.
     ///     The time constant must be positive.
     ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-    void input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend) override;
+    void input_vel_accel_z(float &vel, float accel, bool force_descend) override;
 
 private:
     float       _alt_max; // max altitude - should be updated from the main code with altitude limit from fence

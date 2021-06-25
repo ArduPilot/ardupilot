@@ -24,12 +24,12 @@ AC_P_2D::AC_P_2D(float initial_p, float dt) :
 
 // update_all - set target and measured inputs to P controller and calculate outputs
 // limit is set true if the target has been moved to limit the maximum position error
-Vector2f AC_P_2D::update_all(float &target_x, float &target_y, const Vector2f &measurement, bool &limit)
+Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement, bool &limit)
 {
     limit = false;
 
     // calculate distance _error
-    _error = Vector2f{target_x, target_y} - measurement;
+    _error = (Vector2p{target_x, target_y} - measurement.topostype()).tofloat();
 
     // Constrain _error and target position
     // Constrain the maximum length of _vel_target to the maximum position correction velocity

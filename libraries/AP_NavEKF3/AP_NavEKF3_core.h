@@ -80,6 +80,15 @@
 // number of continuous valid GSF yaw estimates required to confirm valid hostory
 #define GSF_YAW_VALID_HISTORY_THRESHOLD 5
 
+// minimum variances allowed for velocity and position states
+#define VEL_STATE_MIN_VARIANCE 1E-4f
+#define POS_STATE_MIN_VARIANCE 1E-4f
+
+// maximum number of times the vertical velocity variance can hit the lower limit before the
+// associated states, variances and covariances are reset
+#define EKF_TARGET_RATE_HZ uint32_t(1.0f / EKF_TARGET_DT)
+#define VERT_VEL_VAR_CLIP_COUNT_LIM (5 * EKF_TARGET_RATE_HZ)
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -176,8 +185,7 @@ public:
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
+    // returns false if Absolute aiding and GPS is being used or if the origin is already set
     bool setOriginLLH(const Location &loc);
 
     // return estimated height above ground level
@@ -806,8 +814,10 @@ private:
     // Control reset of yaw and magnetic field states
     void controlMagYawReset();
 
-    // Set the NED origin to be used until the next filter reset
-    void setOrigin(const Location &loc);
+    // set the latitude and longitude and height used to set the NED origin
+    // All NED positions calculated by the filter will be relative to this location
+    // returns false if the origin has already been set
+    bool setOrigin(const Location &loc);
 
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
@@ -936,6 +946,7 @@ private:
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
+    uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Matrix24 P;                     // covariance matrix
@@ -1205,7 +1216,6 @@ private:
     uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
     float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
     bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
-    bool rngBcnTimeout;                 // boolean true if range beacon measurements have failed innovation consistency checks for too long
     float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
     float innovRngBcn;                  // range beacon observation innovation (m)
     uint32_t lastTimeRngBcn_ms[4];      // last time we received a range beacon measurement (msec)

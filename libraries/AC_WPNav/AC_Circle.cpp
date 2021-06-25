@@ -58,7 +58,7 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 /// init - initialise circle controller setting center specifically
 ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-void AC_Circle::init(const Vector3f& center, bool terrain_alt)
+void AC_Circle::init(const Vector3p& center, bool terrain_alt)
 {
     _center = center;
     _terrain_alt = terrain_alt;
@@ -86,7 +86,7 @@ void AC_Circle::init()
     _pos_control.init_z_controller_stopping_point();
 
     // get stopping point
-    const Vector3f& stopping_point = _pos_control.get_pos_target_cm();
+    const Vector3p& stopping_point = _pos_control.get_pos_target_cm();
 
     // set circle center to circle_radius ahead of stopping point
     _center = stopping_point;
@@ -189,7 +189,7 @@ bool AC_Circle::update(float climb_rate_cms)
     }
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
-    Vector3f target {
+    Vector3p target {
         _center.x,
         _center.y,
         target_z_cm
@@ -200,7 +200,7 @@ bool AC_Circle::update(float climb_rate_cms)
         target.y += - _radius * sinf(-_angle);
 
         // heading is from vehicle to center of circle
-        _yaw = get_bearing_cd(_inav.get_position(), _center);
+        _yaw = get_bearing_cd(_inav.get_position(), _center.tofloat());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw += is_positive(_rate)?-9000.0f:9000.0f;
@@ -213,10 +213,12 @@ bool AC_Circle::update(float climb_rate_cms)
     }
 
     // update position controller target
-    Vector3f zero;
-    _pos_control.input_pos_vel_accel_xy(target, zero, zero);
-    if(_terrain_alt) {
-        _pos_control.input_pos_vel_accel_z(target, zero, zero);
+    Vector2f zero;
+    _pos_control.input_pos_vel_accel_xy(target.xy(), zero, zero);
+    if (_terrain_alt) {
+        float zero2 = 0;
+        float target_zf = target.z;
+        _pos_control.input_pos_vel_accel_z(target_zf, zero2, 0);
     } else {
         _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms,  false);
     }
@@ -239,19 +241,17 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
 {
     // return center if radius is zero
     if (_radius <= 0) {
-        result = _center;
+        result = _center.tofloat();
         return;
     }
 
     // get current position
-    Vector3f stopping_point;
+    Vector2p stopping_point;
     _pos_control.get_stopping_point_xy_cm(stopping_point);
 
     // calc vector from stopping point to circle center
-    Vector2f vec;   // vector from circle center to current location
-    vec.x = (stopping_point.x - _center.x);
-    vec.y = (stopping_point.y - _center.y);
-    float dist = norm(vec.x, vec.y);
+    Vector2f vec = (stopping_point - _center.xy()).tofloat();
+    float dist = vec.length();
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
@@ -314,7 +314,7 @@ void AC_Circle::init_start_angle(bool use_heading)
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         const Vector3f &curr_pos = _inav.get_position();
-        if (is_equal(curr_pos.x,_center.x) && is_equal(curr_pos.y,_center.y)) {
+        if (is_equal(curr_pos.x,float(_center.x)) && is_equal(curr_pos.y,float(_center.y))) {
             _angle = wrap_PI(_ahrs.yaw-M_PI);
         } else {
             // get bearing from circle center to vehicle in radians

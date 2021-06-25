@@ -94,7 +94,7 @@ AP_Notify *AP_Notify::_singleton;
 #endif // BUILD_DEFAULT_LED_TYPE
 
 #ifndef BUZZER_ENABLE_DEFAULT
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 // Enable Buzzer messages over UAVCAN
 #define BUZZER_ENABLE_DEFAULT (Notify_Buzz_Builtin | Notify_Buzz_UAVCAN)
 #else
@@ -320,9 +320,9 @@ void AP_Notify::add_backends(void)
 #endif
                 break;
             case Notify_LED_UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
                 ADD_BACKEND(new UAVCAN_RGB_LED(0));
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_CANMANAGER_ENABLED
                 break;
 
             case Notify_LED_Scripting:

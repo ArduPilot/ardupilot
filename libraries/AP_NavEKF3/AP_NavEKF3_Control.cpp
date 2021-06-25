@@ -328,14 +328,12 @@ void NavEKF3_core::setAidingMode()
                 PV_AidingMode = AID_NONE;
                 posTimeout = true;
                 velTimeout = true;
-                rngBcnTimeout = true;
                 tasTimeout = true;
                 gpsNotAvailable = true;
              } else if (posAidLossCritical) {
                 // if the loss of position is critical, declare all sources of position aiding as being timed out
                 posTimeout = true;
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
-                rngBcnTimeout = true;
                 gpsNotAvailable = true;
 
             }
@@ -585,30 +583,28 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
     return dal.get_fly_forward() && dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
 }
 
-// set the LLH location of the filters NED origin
+// sets the local NED origin using a LLH location (latitude, longitude, height)
+// returns false if absolute aiding and GPS is being used or if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
     if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
-        // reject attempt to set origin if GPS is being used
+        // reject attempts to set the origin if GPS is being used or if the origin is already set
+        return false;
+    }
+
+    return setOrigin(loc);
+}
+
+// sets the local NED origin using a LLH location (latitude, longitude, height)
+// returns false is the origin has already been set
+bool NavEKF3_core::setOrigin(const Location &loc)
+{
+    // if the origin is valid reject setting a new origin
+    if (validOrigin) {
         return false;
     }
 
     EKF_origin = loc;
-    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
-    // define Earth rotation vector in the NED navigation frame at the origin
-    calcEarthRateNED(earthRateNED, loc.lat);
-    validOrigin = true;
-    return true;
-}
-
-// Set the NED origin to be used until the next filter reset
-void NavEKF3_core::setOrigin(const Location &loc)
-{
-    EKF_origin = loc;
-    // if flying, correct for height change from takeoff so that the origin is at field elevation
-    if (inFlight) {
-        EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
-    }
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
@@ -618,6 +614,8 @@ void NavEKF3_core::setOrigin(const Location &loc)
     // put origin in frontend as well to ensure it stays in sync between lanes
     frontend->common_EKF_origin = EKF_origin;
     frontend->common_origin_valid = true;
+
+    return true;
 }
 
 // record a yaw reset event

@@ -37,8 +37,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: THST_EXPO
     // @DisplayName: Thrust Curve Expo
-    // @Description: Motor thrust curve exponent (from 0 for linear to 1.0 for second order curve)
-    // @Range: 0.25 0.8
+    // @Description: Motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)
+    // @Range: -1.0 1.0
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 8, AP_MotorsMulticopter, _thrust_curve_expo, AP_MOTORS_THST_EXPO_DEFAULT),
 
@@ -339,13 +339,13 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) const
 {
     float throttle_ratio = thrust;
-    // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
+    // apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
-    if (fabsf(thrust_curve_expo) < 0.001) {
+    if (is_zero(thrust_curve_expo)) {
         // zero expo means linear, avoid floating point exception for small values
-        return thrust;
+        return _lift_max * thrust;
     }
-    if (!is_zero(_batt_voltage_filt.get())) {
+    if (is_positive(_batt_voltage_filt.get())) {
         throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo * _batt_voltage_filt.get());
     } else {
         throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo);

@@ -158,7 +158,7 @@ void SimRover::update(const struct sitl_input &input)
     velocity_ef += accel_earth * delta_time;
 
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
 
     update_external_payload(input);
 

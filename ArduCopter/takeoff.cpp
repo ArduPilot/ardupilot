@@ -79,15 +79,11 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         return;
     }
 
-    Vector3f pos;
-    Vector3f vel;
-    Vector3f accel;
-
-    pos.z = take_off_complete_alt ;
-    vel.z = pilot_climb_rate_cm;
+    float pos_z = take_off_complete_alt;
+    float vel_z = pilot_climb_rate_cm;
 
     // command the aircraft to the take off altitude and current pilot climb rate
-    copter.pos_control->input_pos_vel_accel_z(pos, vel, accel);
+    copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
 
     // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
     if (is_negative(pilot_climb_rate_cm) ||

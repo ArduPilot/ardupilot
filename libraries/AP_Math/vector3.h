@@ -192,9 +192,15 @@ public:
     // rotate vector by angle in radians in xy plane leaving z untouched
     void rotate_xy(float rotation_rad);
 
-    // return xy components of a vector3
-    Vector2<T> xy();
-    
+    // return xy components of a vector3 as a vector2.
+    // this returns a reference to the original vector3 xy data
+    const Vector2<T> &xy() const {
+        return *(const Vector2<T> *)this;
+    }
+    Vector2<T> &xy() {
+        return *(Vector2<T> *)this;
+    }
+
     // gets the length of this vector squared
     T  length_squared() const
     {
@@ -258,7 +264,17 @@ public:
 
     // extrapolate position given bearing and pitch (in degrees) and distance
     void offset_bearing(float bearing, float pitch, float distance);
-    
+
+    /*
+      conversion to/from double
+     */
+    Vector3<float> tofloat() const {
+        return Vector3<float>{float(x),float(y),float(z)};
+    }
+    Vector3<double> todouble() const {
+        return Vector3<double>{x,y,z};
+    }
+
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the
     // zero vector the return from the function will always be the

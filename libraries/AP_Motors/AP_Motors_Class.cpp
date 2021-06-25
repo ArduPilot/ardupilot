@@ -48,6 +48,17 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _thrust_balanced = true;
 };
 
+void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
+{
+    const char *frame_str = get_frame_string();
+    const char *type_str = get_type_string();
+    if (type_str != nullptr && strlen(type_str)) {
+        hal.util->snprintf(buffer, buflen, "Frame: %s/%s", frame_str, type_str);
+    } else {
+        hal.util->snprintf(buffer, buflen, "Frame: %s", frame_str);
+    }
+}
+
 void AP_Motors::armed(bool arm)
 {
     if (_armed != arm) {

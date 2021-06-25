@@ -64,6 +64,11 @@ public:
     virtual void     set_reversed_mask(uint16_t chanmask) {}
 
     /*
+     * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
+     */
+    virtual void     update_channel_masks() {}
+
+    /*
      * Delay subsequent calls to write() going to the underlying hardware in
      * order to group related writes together. When all the needed writes are
      * done, call push() to commit the changes.
@@ -273,10 +278,6 @@ public:
      */
     virtual void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) {}
 
-    /*
-      If not already done flush any dshot commands still pending
-     */
-    virtual bool prepare_for_arming() { return true; }
     /*
       set the number of motor poles to be used in rpm calculations
      */

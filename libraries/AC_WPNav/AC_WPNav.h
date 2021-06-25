@@ -128,7 +128,7 @@ public:
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
-    void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point_xy(Vector2f& stopping_point) const;
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
@@ -154,10 +154,6 @@ public:
     ///
     /// spline methods
     ///
-
-    // get target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() const { return _pos_control.get_yaw_cd(); }
-    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -195,6 +191,10 @@ public:
     float get_roll() const { return _pos_control.get_roll_cd(); }
     float get_pitch() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
+
+    // get target yaw in centi-degrees
+    float get_yaw() const { return _pos_control.get_yaw_cd(); }
+    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
@@ -274,7 +274,7 @@ protected:
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
 
     // position, velocity and acceleration targets passed to position controller
-    float       _pos_terrain_offset;
+    postype_t   _pos_terrain_offset;
     float       _vel_terrain_offset;
     float       _accel_terrain_offset;
 

@@ -255,7 +255,7 @@ void ModeAuto::wp_start(const Location& dest_loc)
 void ModeAuto::land_start()
 {
     // set target to stopping point
-    Vector3f stopping_point;
+    Vector2f stopping_point;
     loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific land start function
@@ -263,7 +263,7 @@ void ModeAuto::land_start()
 }
 
 // auto_land_start - initialises controller to implement a landing
-void ModeAuto::land_start(const Vector3f& destination)
+void ModeAuto::land_start(const Vector2f& destination)
 {
     _mode = SubMode::LAND;
 
@@ -324,7 +324,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const Vector3f &circle_center_neu = copter.circle_nav->get_center();
+        const Vector3p &circle_center_neu = copter.circle_nav->get_center();
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         // initialise yaw
@@ -392,7 +392,7 @@ bool ModeAuto::is_taking_off() const
 void ModeAuto::payload_place_start()
 {
     // set target to stopping point
-    Vector3f stopping_point;
+    Vector2f stopping_point;
     loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific place start function
@@ -988,7 +988,7 @@ void ModeAuto::loiter_to_alt_run()
 }
 
 // auto_payload_place_start - initialises controller to implement placement of a load
-void ModeAuto::payload_place_start(const Vector3f& destination)
+void ModeAuto::payload_place_start(const Vector2f& destination)
 {
     _mode = SubMode::NAV_PAYLOAD_PLACE;
     nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
@@ -1253,7 +1253,7 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        copter.wp_nav->get_wp_stopping_point_xy(temp_pos);
+        copter.wp_nav->get_wp_stopping_point_xy(temp_pos.xy());
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -1588,7 +1588,7 @@ bool ModeAuto::verify_land()
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
                 // get destination so we can use it for loiter target
-                const Vector3f& dest = copter.wp_nav->get_wp_destination();
+                const Vector2f& dest = copter.wp_nav->get_wp_destination().xy();
 
                 // initialise landing controller
                 land_start(dest);

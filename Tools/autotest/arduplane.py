@@ -20,6 +20,7 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 from pymavlink.rotmat import Vector3
+from pysim import vehicleinfo
 
 import operator
 
@@ -522,7 +523,7 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def fly_mission(self, filename, mission_timeout=60.0, strict=True):
+    def fly_mission(self, filename, mission_timeout=60.0, strict=True, quadplane=False):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename, strict=strict)-1
@@ -530,7 +531,10 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
-        self.wait_statustext("Auto disarmed", timeout=60)
+        if quadplane:
+            self.wait_statustext("Throttle disarmed", timeout=60)
+        else:
+            self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
 
     def fly_do_reposition(self):
@@ -2880,6 +2884,71 @@ class AutoTestPlane(AutoTest):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED
         )
 
+    def fly_each_frame(self):
+        vinfo = vehicleinfo.VehicleInfo()
+        vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        known_broken_frames = {
+            "firefly": "falls out of sky after transition",
+            "plane-tailsitter": "does not take off; immediately emits 'AP: Transition VTOL done' while on ground",
+            "quadplane-cl84": "falls out of sky instead of transitioning",
+            "quadplane-tilttri": "falls out of sky instead of transitioning",
+            "quadplane-tilttrivec": "loses attitude control and crashes",
+        }
+        for frame in sorted(vinfo_options["frames"].keys()):
+            self.start_subtest("Testing frame (%s)" % str(frame))
+            if frame in known_broken_frames:
+                self.progress("Actually, no I'm not - it is known-broken (%s)" %
+                              (known_broken_frames[frame]))
+                continue
+            frame_bits = vinfo_options["frames"][frame]
+            print("frame_bits: %s" % str(frame_bits))
+            if frame_bits.get("external", False):
+                self.progress("Actually, no I'm not - it is an external simulation")
+                continue
+            model = frame_bits.get("model", frame)
+            # the model string for Callisto has crap in it.... we
+            # should really have another entry in the vehicleinfo data
+            # to carry the path to the JSON.
+            actual_model = model.split(":")[0]
+            defaults = self.model_defaults_filepath(actual_model)
+            if type(defaults) != list:
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                ["--defaults", ','.join(defaults), ],
+                model=model,
+                wipe=True,
+            )
+            mission_file = "basic.txt"
+            quadplane = self.get_parameter('Q_ENABLE')
+            if quadplane:
+                mission_file = "basic-quadplane.txt"
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.fly_mission(mission_file, strict=False, quadplane=quadplane)
+            self.wait_disarmed()
+
+    def RCDisableAirspeedUse(self):
+        self.set_parameter("RC9_OPTION", 106)
+        self.delay_sim_time(5)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+        self.set_rc(9, 2000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            False,
+            True)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3068,6 +3137,14 @@ class AutoTestPlane(AutoTest):
             ("SmartBattery",
              "Test smart battery logging etc",
              self.SmartBattery),
+
+            ("FlyEachFrame",
+             "Fly each supported internal frame",
+             self.fly_each_frame),
+
+            ("RCDisableAirspeedUse",
+             "Test RC DisableAirspeedUse option",
+             self.RCDisableAirspeedUse),
 
             ("LogUpload",
              "Log upload",
