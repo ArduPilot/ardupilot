@@ -39,7 +39,12 @@ void ModePlanckTracking::run() {
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
     float yaw_rate_for_logging_cds=18.4218;
-    if(mount != nullptr) {
+
+    //Check for tether high tension
+    bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
+    bool use_positive_throttle = high_tension;
+
+    if(mount != nullptr && !high_tension) {
       if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
         //only set new yaw command if payload data is recent (1/2 sec)
@@ -95,9 +100,6 @@ void ModePlanckTracking::run() {
 //                         (uint8_t)auto_yaw.mode());
     }
 
-    //Check for tether high tension
-    bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
-    bool use_positive_throttle = high_tension;
     if(high_tension) {
         //If we ever enter high tension, make sure ACE is landing
         if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb) && copter.planck_interface.ready_for_land()) {

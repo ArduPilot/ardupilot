@@ -615,7 +615,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     switch (packet.command) {
 #if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-        if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
+        if((!copter.camera_mount.has_pan_control() || (mount == nullptr))
+           && (copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out())
+           && (copter.flightmode == &copter.mode_plancktracking)) {
 //            copter.flightmode->auto_yaw.set_fixed_yaw(
 //                (float)packet.param3 * 0.01f,
 //                0.0f,
