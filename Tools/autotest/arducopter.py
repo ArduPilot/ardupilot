@@ -1561,6 +1561,32 @@ class AutoTestCopter(AutoTest):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
+    def fly_gps_glitch_loiter_test2(self):
+        """test vehicle handles GPS glitch (aka EKF Reset) without twitching"""
+        self.context_push()
+        self.takeoff(10, mode="LOITER")
+
+        # wait for vehicle to level
+        self.wait_attitude(desroll=0, despitch=0, timeout=10, tolerance=1)
+
+        # apply glitch
+        self.set_parameter("SIM_GPS_GLITCH_X", 0.001)
+
+        # check lean angles remain stable for 20 seconds
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 20:
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            roll_deg = math.degrees(m.roll)
+            pitch_deg = math.degrees(m.pitch)
+            self.progress("checking att: roll=%f pitch=%f " % (roll_deg, pitch_deg))
+            if abs(roll_deg) > 2 or abs(pitch_deg) > 2:
+                raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
+
+        # RTL, remove glitch and reboot sitl
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
     # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
     def fly_gps_glitch_auto_test(self, timeout=180):
         # set-up gps glitch array
@@ -7110,6 +7136,10 @@ class AutoTestCopter(AutoTest):
             ("GPSGlitchLoiter",
              "GPS Glitch Loiter Test",
              self.fly_gps_glitch_loiter_test),  # 30s
+
+            ("GPSGlitchLoiter2",
+             "GPS Glitch Loiter Test2",
+             self.fly_gps_glitch_loiter_test2),  # 30s
 
             ("GPSGlitchAuto",
              "GPS Glitch Auto Test",
