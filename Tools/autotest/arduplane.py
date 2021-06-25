@@ -614,10 +614,17 @@ class AutoTestPlane(AutoTest):
 
     def SmartBattery(self):
         self.set_parameters({
-            "BATT_MONITOR": 16,
-            "BATT_BUS": 2,  # specified in SIM_I2C.cpp
+            "BATT_MONITOR": 16, # Maxell battery monitor
+        })
+
+        # Must reboot sitl after setting montior type for SMBus parameters to be set due to dynamic group
+        self.reboot_sitl()
+        self.set_parameters({
+            "BATT_I2C_BUS": 2,      # specified in SIM_I2C.cpp
+            "BATT_I2C_ADDR": 11,    # specified in SIM_I2C.cpp
         })
         self.reboot_sitl()
+
         self.wait_ready_to_arm()
         m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=10)
         if m is None:
