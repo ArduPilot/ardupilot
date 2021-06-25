@@ -615,9 +615,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     switch (packet.command) {
 #if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-        if((!copter.camera_mount.has_pan_control() || (mount == nullptr))
-           && (copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out())
-           && (copter.flightmode == &copter.mode_plancktracking)) {
+    {
+        bool has_mount_pan_control = (!copter.camera_mount.has_pan_control() || (mount == nullptr));
+        bool is_normal_tension_planck_tracking =
+            !(copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out())
+            && (copter.flightmode == &copter.mode_plancktracking);
+
+        if(has_mount_pan_control && is_normal_tension_planck_tracking) {
 //            copter.flightmode->auto_yaw.set_fixed_yaw(
 //                (float)packet.param3 * 0.01f,
 //                0.0f,
@@ -632,13 +636,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
         else {
             mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
         }
-//        AP::logger().Write("HCMT", "TimeUS,P3,Myfm,MHPan,CHPan", "QfBBB",
-//                                  AP_HAL::micros64(),
-//                                  (float)packet.param3,
-//                                  (uint8_t)mount->mount_yaw_follow_mode,
-//                                  (uint8_t)mount->has_pan_control(),
-//                                  (uint8_t)copter.camera_mount.has_pan_control());
+        AP::logger().Write("HCMT", "TimeUS,P3,Myfm,MHPan,CHPan", "QfBBB",
+                                  AP_HAL::micros64(),
+                                  (float)packet.param3,
+                                  (uint8_t)mount->mount_yaw_follow_mode,
+                                  (uint8_t)mount->has_pan_control(),
+                                  (uint8_t)copter.camera_mount.has_pan_control());
         break;
+    }
 #endif
     default:
         break;
