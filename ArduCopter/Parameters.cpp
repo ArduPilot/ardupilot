@@ -1063,7 +1063,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Rangefinder filter
     // @Description: Rangefinder filter to smooth distance.  Set to zero to disable filtering
     // @Units: Hz
-    // @Range: 0 50
+    // @Range: 0 5
     // @Increment: 0.05
     // @User: Standard
     // @RebootRequired: True

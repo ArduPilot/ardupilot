@@ -86,7 +86,7 @@
 #endif
 
 #ifndef RANGEFINDER_FILT_DEFAULT
- # define RANGEFINDER_FILT_DEFAULT 0.25f    // filter for rangefinder distance
+ # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_VELZ_MAX
