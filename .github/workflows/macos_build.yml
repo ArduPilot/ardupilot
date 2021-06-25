@@ -1,0 +1,23 @@
+name: Macos Build
+
+on: [push, pull_request, workflow_dispatch]
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: 'macos-latest'
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Prerequisites
+        shell: bash
+        run: |
+          Tools/environment_install/install-prereqs-mac.sh -y
+          source ~/.bash_profile
+          echo $PATH
+          ./waf configure --board CubeOrange
+          ./waf plane
+          ./waf configure --board sitl
+          ./waf plane
