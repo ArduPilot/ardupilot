@@ -152,6 +152,14 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Flying:
+        if(copter.is_change_alt) {
+            float curr_alt = pos_control->get_pos_target_z_cm();
+            float target_alt = copter.gcs_target_alt;
+            pos_control->set_alt_target_with_slew(target_alt);
+            if(is_zero(floorf(fabs(curr_alt - target_alt)))) {
+                copter.is_change_alt = false;
+            }
+        }
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 

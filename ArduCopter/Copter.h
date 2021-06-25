@@ -442,6 +442,10 @@ private:
     AP_OSD osd;
 #endif
 
+    // Modify altitude by GCS 
+    bool is_change_alt = false; 
+    float gcs_target_alt = 0.0; // gcs target alt in cm
+
     // Altitude
     int32_t baro_alt;            // barometer altitude in cm above home
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
