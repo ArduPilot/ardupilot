@@ -52,10 +52,9 @@ AP_ONVIF::AP_ONVIF()
 }
 
 // Start ONVIF client with username, password and service host url
-bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostname)
+bool AP_ONVIF::start(const char *user, const char *pass, const char *hostname)
 {
     if (!initialised) {
-        srand ((time_t)(hal.util->get_hw_rtc()/1000000ULL));
         soap = soap_new1(SOAP_XML_CANONICAL | SOAP_C_UTFSTRING);
         if (soap == nullptr) {
             ERROR_PRINT("AP_ONVIF: Failed to allocate soap");
@@ -82,30 +81,70 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *httphostnam
         initialised = true;
     }
 
-    username = user;
-    password = pass;
-    hostname = httphostname;
+    if (strlen(user) > username_len) {
+        if (username != nullptr) {
+            free(username);
+            username = nullptr;
+        }
+    }
+    username_len = strlen(user);
+    if (username == nullptr) {
+        username = (char*)malloc(username_len + 1);
+    }
+
+    if (strlen(pass) > password_len) {
+        if (password != nullptr) {
+            free(password);
+            password = nullptr;
+        }
+    }
+    password_len = strlen(pass);
+    if (password == nullptr) {
+        password = (char*)malloc(password_len+1);
+    }
+
+    if (strlen(hostname) > hostname_len) {
+        // free if not nullptr
+        if (device_endpoint != nullptr) {
+            free(device_endpoint);
+            device_endpoint = nullptr;
+        }
+        if (media_endpoint != nullptr) {
+            free(media_endpoint);
+            media_endpoint = nullptr;
+        }
+        if (ptz_endpoint != nullptr) {
+            free(ptz_endpoint);
+            ptz_endpoint = nullptr;
+        }
+    }
+
+    hostname_len = strlen(hostname);
 
     if (device_endpoint == nullptr) {
-        device_endpoint = (char*)malloc(strlen(hostname) + strlen(DEVICE_ENDPOINT_LOC) + 1);
+        device_endpoint = (char*)malloc(hostname_len + strlen(DEVICE_ENDPOINT_LOC) + 1);
     }
     if (media_endpoint == nullptr) {
-        media_endpoint = (char*)malloc(strlen(hostname) + strlen(MEDIA_ENDPOINT_LOC) + 1);
+        media_endpoint = (char*)malloc(hostname_len + strlen(MEDIA_ENDPOINT_LOC) + 1);
     }
     if (ptz_endpoint == nullptr) {
-        ptz_endpoint = (char*)malloc(strlen(hostname) + strlen(PTZ_ENDPOINT_LOC) + 1);
+        ptz_endpoint = (char*)malloc(hostname_len + strlen(PTZ_ENDPOINT_LOC) + 1);
     }
 
     if (device_endpoint == nullptr ||
         media_endpoint == nullptr ||
-        ptz_endpoint == nullptr) {
-        ERROR_PRINT("Failed to Allocate endpoint strings");
+        ptz_endpoint == nullptr ||
+        username == nullptr ||
+        password == nullptr) {
+        ERROR_PRINT("Failed to Allocate strings");
         return false;
     }
 
-    snprintf(device_endpoint, strlen(hostname) + strlen(DEVICE_ENDPOINT_LOC) + 1, "%s" DEVICE_ENDPOINT_LOC, hostname);
-    snprintf(media_endpoint, strlen(hostname) + strlen(MEDIA_ENDPOINT_LOC) + 1, "%s" MEDIA_ENDPOINT_LOC, hostname);
-    snprintf(ptz_endpoint, strlen(hostname) + strlen(PTZ_ENDPOINT_LOC) + 1, "%s" PTZ_ENDPOINT_LOC, hostname);
+    strcpy(username, user);
+    strcpy(password, pass);
+    snprintf(device_endpoint, hostname_len + strlen(DEVICE_ENDPOINT_LOC) + 1, "%s" DEVICE_ENDPOINT_LOC, hostname);
+    snprintf(media_endpoint, hostname_len + strlen(MEDIA_ENDPOINT_LOC) + 1, "%s" MEDIA_ENDPOINT_LOC, hostname);
+    snprintf(ptz_endpoint, hostname_len + strlen(PTZ_ENDPOINT_LOC) + 1, "%s" PTZ_ENDPOINT_LOC, hostname);
 
     /// TODO: Need to find a way to store this in parameter system
     //  or it could be just storage, we will see

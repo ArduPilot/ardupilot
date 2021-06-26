@@ -21,6 +21,7 @@
 #if ENABLE_ONVIF
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <AP_ONVIF/onvifDeviceBindingProxy.h>
 #include <AP_ONVIF/onvifMediaBindingProxy.h>
 #include <AP_ONVIF/onvifPTZBindingProxy.h>
@@ -80,9 +81,13 @@ private:
     PTZBindingProxy    *proxy_ptz;
     static AP_ONVIF *_singleton;
     
-    const char* username;
-    const char* password;
-    const char* hostname;
+    char* username;
+    size_t username_len;
+    
+    char* password;
+    size_t password_len;
+    
+    size_t hostname_len;
     
     char* device_endpoint;
     char* media_endpoint;

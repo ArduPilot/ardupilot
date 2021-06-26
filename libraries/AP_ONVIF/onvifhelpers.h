@@ -60,6 +60,7 @@ void sha1_end(unsigned char hval[], sha1_ctx ctx[1]);
 void sha1(unsigned char hval[], const unsigned char data[], unsigned long len);
 uint8_t* base64_encode(const uint8_t *src, uint16_t len, uint16_t *out_len);
 uint8_t* base64_decode(const uint8_t *src, uint16_t len, uint16_t *out_len);
+uint8_t* base64url_encode(const uint8_t *src, uint16_t len, uint16_t *out_len);
 
 #ifdef __cplusplus
 }
