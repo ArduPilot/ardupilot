@@ -64,7 +64,7 @@ private:
     bool probe_onvif_server();
 
     // Generate Random Nonce value
-    void rand_nonce(char *nonce, size_t noncelen);
+    bool rand_nonce(char *nonce, size_t noncelen);
 
     Vector2f pan_tilt_limit_min;
     Vector2f pan_tilt_limit_max;
