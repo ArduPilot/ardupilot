@@ -2569,6 +2569,9 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
 {
+    if (isnan(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
     const uint32_t mavlink_id = (uint32_t)packet.param1;
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
