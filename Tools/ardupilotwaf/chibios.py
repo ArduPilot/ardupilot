@@ -252,10 +252,6 @@ def setup_canmgr_build(cfg):
 
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
-    env.CXXFLAGS += [
-        '-Wno-error=cast-align',
-        ]
-
     env.DEFINES += [
         'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
         'UAVCAN_NO_ASSERTIONS=1',
