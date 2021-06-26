@@ -334,9 +334,12 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
 ///     The time constant also defines the time taken to achieve the maximum acceleration.
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-void AC_PosControl::input_pos_xyz(const Vector3p& pos)
+void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z)
 {
-    Vector3f dest_vector = (pos - _pos_target).tofloat();
+    // remove terrain offsets for flat earth assumption
+    _pos_target.z -= _pos_offset_z;
+    _vel_desired.z -= _vel_offset_z;
+    _accel_desired.z -= _accel_offset_z;
 
     // calculated increased maximum acceleration if over speed
     float accel_z_cmss = _accel_max_z_cmss;
@@ -349,31 +352,41 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos)
 
     update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy());
 
-    // adjust desired alt if motors have not hit their limits
+    // adjust desired altitude if motors have not hit their limits
     update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z);
 
-    float vel_max_xy_cms = _vel_max_xy_cms;
+    // calculate the horizontal and vertical velocity limits to travel directly to the destination defined by pos
+    float vel_max_xy_cms = 0.0f;
     float vel_max_z_cms = 0.0f;
+    Vector3f dest_vector = (pos - _pos_target).tofloat();
     if (is_positive(dest_vector.length_squared()) ) {
         dest_vector.normalize();
         float dest_vector_xy_length = dest_vector.xy().length();
 
         float vel_max_cms = kinematic_limit(dest_vector, _vel_max_xy_cms, _vel_max_up_cms, _vel_max_down_cms);
         vel_max_xy_cms = vel_max_cms * dest_vector_xy_length;
-        vel_max_z_cms = vel_max_cms * dest_vector.z;
+        vel_max_z_cms = fabsf(vel_max_cms * dest_vector.z);
     }
-
 
     Vector2f vel;
     Vector2f accel;
     shape_pos_vel_accel_xy(pos.xy(), vel, accel, _pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(),
                            vel_max_xy_cms, _vel_max_xy_cms, _accel_max_xy_cmss, _tc_xy_s, _dt);
+
     float posz = pos.z;
     shape_pos_vel_accel(posz, 0, 0,
                         _pos_target.z, _vel_desired.z, _accel_desired.z,
                         vel_max_z_cms, _vel_max_down_cms, _vel_max_up_cms,
                         -constrain_float(accel_z_cmss, 0.0f, 750.0f), accel_z_cmss,
                         _tc_z_s, _dt);
+
+    // update the vertical position, velocity and acceleration offsets
+    update_pos_offset_z(pos_offset_z);
+
+    // add terrain offsets
+    _pos_target.z += _pos_offset_z;
+    _vel_desired.z += _vel_offset_z;
+    _accel_desired.z += _accel_offset_z;
 }
 
 ///
@@ -743,6 +756,11 @@ void AC_PosControl::init_z()
     _accel_target.z = -(curr_accel.z + GRAVITY_MSS) * 100.0f;
     _pid_accel_z.reset_filter();
 
+    // initialise vertical offsets
+    _pos_offset_z = 0.0;
+    _vel_offset_z = 0.0;
+    _accel_offset_z = 0.0;
+
     // initialise ekf z reset handler
     init_ekf_z_reset();
 
@@ -806,7 +824,7 @@ void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float ac
         accel_z_cmss *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _vel_max_up_cms;
     }
 
-    // adjust desired alt if motors have not hit their limits
+    // adjust desired altitude if motors have not hit their limits
     update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z);
 
     shape_pos_vel_accel(pos, vel, accel,
@@ -827,6 +845,21 @@ void AC_PosControl::set_alt_target_with_slew(const float& pos)
     float posf = pos;
     float zero = 0;
     input_pos_vel_accel_z(posf, zero, 0);
+}
+
+/// update_pos_offset_z - updates the vertical offsets used by terrain following
+void AC_PosControl::update_pos_offset_z(float pos_offset_z)
+{
+
+    postype_t posp_z = _pos_offset_z;
+    update_pos_vel_accel(posp_z, _vel_offset_z, _accel_offset_z, _dt, MIN(_limit_vector.z, 0.0f));
+    _pos_offset_z = posp_z;
+
+    // input shape the terrain offset
+    shape_pos_vel_accel(pos_offset_z, 0.0f, 0.0f,
+        _pos_offset_z, _vel_offset_z, _accel_offset_z,
+        0.0f, get_max_speed_down_cms(), get_max_speed_up_cms(),
+        -get_max_accel_z_cmss(), get_max_accel_z_cmss(), _tc_z_s, _dt);
 }
 
 // is_active_z - returns true if the z position controller has been run in the previous 5 loop times
@@ -857,7 +890,9 @@ void AC_PosControl::update_z_controller()
     const float curr_alt = _inav.get_position().z;
     // calculate the target velocity correction
     float pos_target_zf = _pos_target.z;
+
     _vel_target.z = _p_pos_z.update_all(pos_target_zf, curr_alt, _limit.pos_down, _limit.pos_up);
+
     _pos_target.z = pos_target_zf;
 
     // add feed forward component
@@ -868,6 +903,7 @@ void AC_PosControl::update_z_controller()
     const Vector3f& curr_vel = _inav.get_velocity();
     _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel.z, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
 
+    // add feed forward component
     _accel_target.z += _accel_desired.z;
 
     // Acceleration Controller
