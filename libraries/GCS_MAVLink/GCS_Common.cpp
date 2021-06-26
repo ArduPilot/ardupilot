@@ -4275,18 +4275,18 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.command = in.command;
     out.current = 0;
     out.autocontinue = 0;
-    out.param1 = in.param1;
-    out.param2 = in.param2;
-    out.param3 = in.param3;
-    out.param4 = in.param4;
+    out.param1 = isnan(in.param1)?std::numeric_limits<double>::quiet_NaN():in.param1;
+    out.param2 = isnan(in.param2)?std::numeric_limits<double>::quiet_NaN():in.param2;
+    out.param3 = isnan(in.param3)?std::numeric_limits<double>::quiet_NaN():in.param3;
+    out.param4 = isnan(in.param4)?std::numeric_limits<double>::quiet_NaN():in.param4;
     if (command_long_stores_location((MAV_CMD)in.command)) {
         out.x = in.param5 *1e7;
         out.y = in.param6 *1e7;
     } else {
-        out.x = in.param5;
-        out.y = in.param6;
+        out.x = isnan(in.param5)?std::numeric_limits<double>::quiet_NaN():in.param5;
+        out.y = isnan(in.param6)?std::numeric_limits<double>::quiet_NaN():in.param6;
     }
-    out.z = in.param7;
+    out.z = isnan(in.param7)?std::numeric_limits<double>::quiet_NaN():in.param7;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
