@@ -14,6 +14,7 @@
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
 static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
+bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
 static Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
 static Vector3f guided_accel_target_cmss;   // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
 static uint32_t update_time_ms;             // system time of last target update to pos_vel_accel, vel_accel or accel controller
@@ -270,17 +271,36 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         pos_control_start();
     }
 
+    // initialise terrain following if needed
+    if (terrain_alt) {
+        // get current alt above terrain
+        float origin_terr_offset;
+        if (!wp_nav->get_terrain_offset(origin_terr_offset)) {
+            // if we don't have terrain altitude then stop
+            init(true);
+            return false;
+        }
+        // convert origin to alt-above-terrain if necessary
+        if (!guided_pos_terrain_alt) {
+            // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
+            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+        }
+    } else {
+        pos_control->set_pos_offset_z_cm(0.0);
+    }
+
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // set position target and zero velocity and acceleration
     guided_pos_target_cm = destination.topostype();
+    guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
     update_time_ms = millis();
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
 
     send_notification = true;
 
@@ -320,17 +340,36 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set position target and zero velocity and acceleration
     Vector3f pos_target_f;
-    if (!dest_loc.get_vector_from_origin_NEU(pos_target_f)) {
-        guided_pos_target_cm = pos_control->get_pos_target_cm();
-    } else {
-        guided_pos_target_cm = pos_target_f.topostype();
+    bool terrain_alt;
+    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
+        return false;
     }
 
+    // initialise terrain following if needed
+    if (terrain_alt) {
+        // get current alt above terrain
+        float origin_terr_offset;
+        if (!wp_nav->get_terrain_offset(origin_terr_offset)) {
+            // if we don't have terrain altitude then stop
+            init(true);
+            return false;
+        }
+        // convert origin to alt-above-terrain if necessary
+        if (!guided_pos_terrain_alt) {
+            // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
+            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+        }
+    } else {
+        pos_control->set_pos_offset_z_cm(0.0);
+    }
+
+    guided_pos_target_cm = pos_target_f.topostype();
+    guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
 
     send_notification = true;
 
@@ -350,13 +389,14 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
+    guided_pos_terrain_alt = false;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss = acceleration;
     update_time_ms = millis();
 
     // log target
     if (log_request) {
-        copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_vel_target_cms, guided_accel_target_cmss);
+        copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
     }
 }
 
@@ -379,13 +419,14 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 
     // set velocity and acceleration targets and zero position
     guided_pos_target_cm.zero();
+    guided_pos_terrain_alt = false;
     guided_vel_target_cms = velocity;
     guided_accel_target_cmss = acceleration;
     update_time_ms = millis();
 
     // log target
     if (log_request) {
-        copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_vel_target_cms, guided_accel_target_cmss);
+        copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
     }
 }
 
@@ -419,11 +460,12 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
 
     update_time_ms = millis();
     guided_pos_target_cm = destination.topostype();
+    guided_pos_terrain_alt = false;
     guided_vel_target_cms = velocity;
     guided_accel_target_cmss = acceleration;
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_GuidedTarget(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
     return true;
 }
 
@@ -475,6 +517,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
+                           false,
                            Vector3f(0.0f, 0.0f, climb_rate_cms_or_thrust), Vector3f());
 }
 
@@ -516,13 +559,21 @@ void ModeGuided::pos_control_run()
         return;
     }
 
+    // calculate terrain adjustments
+    float terr_offset = 0.0f;
+    if (guided_pos_terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
+        // if we don't have terrain altitude then stop
+        init(true);
+        return;
+    }
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // send position and velocity targets to position controller
     guided_accel_target_cmss.zero();
     guided_vel_target_cms.zero();
-    pos_control->input_pos_xyz(guided_pos_target_cm);
+    pos_control->input_pos_xyz(guided_pos_target_cm, terr_offset);
 
     // run position controllers
     pos_control->update_xy_controller();
@@ -750,6 +801,11 @@ void ModeGuided::posvelaccel_control_run()
     } else if (!stabilizing_pos_xy()) {
         // set position errors to zero
         pos_control->stop_pos_xy_stabilisation();
+    }
+
+    // guided_pos_target z-axis should never be a terrain altitude
+    if (guided_pos_terrain_alt) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 
     float pz = guided_pos_target_cm.z;
