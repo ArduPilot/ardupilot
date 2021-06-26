@@ -374,6 +374,7 @@ struct PACKED log_GuidedTarget {
     float pos_target_x;
     float pos_target_y;
     float pos_target_z;
+    uint8_t terrain;
     float vel_target_x;
     float vel_target_y;
     float vel_target_z;
@@ -384,8 +385,9 @@ struct PACKED log_GuidedTarget {
 
 // Write a Guided mode target
 // pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
+// terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target is cm/s
-void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, const Vector3f& vel_target, const Vector3f& accel_target)
+void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
@@ -394,6 +396,7 @@ void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vecto
         pos_target_x    : pos_target.x,
         pos_target_y    : pos_target.y,
         pos_target_z    : pos_target.z,
+        terrain         : terrain_alt,
         vel_target_x    : vel_target.x,
         vel_target_y    : vel_target.y,
         vel_target_z    : vel_target.z,
@@ -542,6 +545,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: pX: Target position, X-Axis
 // @Field: pY: Target position, Y-Axis
 // @Field: pZ: Target position, Z-Axis
+// @Field: Terrain: Target position, Z-Axis is alt above terrain
 // @Field: vX: Target velocity, X-Axis
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
@@ -550,7 +554,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aZ: Target acceleration, Z-Axis
 
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBfffffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ,aX,aY,aZ", "s-mmmnnnooo", "F-BBBBBBBBB" },
+      "GUID",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
@@ -582,7 +586,7 @@ void Copter::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Copter::Log_Write_Data(LogDataID id, float value) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Copter::Log_Sensor_Health() {}
-void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, const Vector3f& vel_target, const Vector3f& accel_target) {}
+void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target) {}
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}
