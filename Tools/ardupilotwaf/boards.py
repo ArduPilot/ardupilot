@@ -81,14 +81,6 @@ class Board:
             env.AP_LIBRARIES += [
                 'AP_ONVIF'
             ]
-            env.CXXFLAGS += [
-                '-Wno-shadow',
-                '-Wno-undef',
-            ]
-            if 'clang++' not in cfg.env.COMPILER_CXX:
-                env.CXXFLAGS += [
-                    '-Wno-suggest-override',
-                ]
         else:
             env.ENABLE_ONVIF = False
             env.DEFINES.update(
