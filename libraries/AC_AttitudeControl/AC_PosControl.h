@@ -57,7 +57,7 @@ public:
     /// input_pos_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_xy and time constant.
-    void input_pos_xyz(const Vector3p& pos);
+    void input_pos_xyz(const Vector3p& pos, float pos_offset_z);
 
     ///
     /// Lateral position controller
@@ -184,6 +184,9 @@ public:
     ///     using the default position control kinimatic path.
     void set_alt_target_with_slew(const float& pos);
 
+    /// update_pos_offset_z - updates the vertical offsets used by terrain following
+    void update_pos_offset_z(float pos_offset);
+
     // is_active_z - returns true if the z position controller has been run in the previous 5 loop times
     bool is_active_z() const;
 
@@ -215,7 +218,7 @@ public:
     /// set_pos_target_z_cm - set altitude target in cm above home
     void set_pos_target_z_cm(float pos_target) { _pos_target.z = pos_target; }
 
-    /// get_pos_target_z_cm - get desired altitude (in cm above home)
+    /// get_pos_target_z_cm - get target altitude (in cm above home)
     float get_pos_target_z_cm() const { return _pos_target.z; }
 
     /// get_stopping_point_xy_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
@@ -262,6 +265,12 @@ public:
 
     // get_accel_target_cmss - returns the target acceleration in NEU cm/s/s
     const Vector3f& get_accel_target_cmss() const { return _accel_target; }
+
+
+    /// Offset
+
+    /// set_pos_offset_z_cm - set altitude offset in cm above home
+    void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z; }
 
 
     /// Outputs
@@ -413,10 +422,13 @@ protected:
     Vector3f    _accel_target;          // acceleration target in NEU cm/s/s
     Vector3f    _limit_vector;          // the direction that the position controller is limited, zero when not limited
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
+    float       _pos_offset_z;          // vertical position offset in NEU cm from home
+    float       _vel_offset_z;          // vertical velocity offset in NEU cm/s calculated by pos_to_rate step
+    float       _accel_offset_z;        // vertical acceleration offset in NEU cm/s/s
 
     // ekf reset handling
-    uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
-    uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
+    uint32_t    _ekf_xy_reset_ms;       // system time of last recorded ekf xy position reset
+    uint32_t    _ekf_z_reset_ms;        // system time of last recorded ekf altitude reset
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
