@@ -247,7 +247,26 @@ def double_precision_check(tasks):
                     t.env.CXXFLAGS.remove(single_precision_option)
                 t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
 
-    
+
+def gsoap_library_check(bld, tasks):
+    '''check for tasks marked as gSOAP library source'''
+
+    for t in tasks:
+        if len(t.inputs) == 1:
+            gsoap_tasks = []
+            for s in t.env.AP_LIB_EXTRA_SOURCES["AP_ONVIF"]:
+                gsoap_tasks.append(bld.bldnode.find_or_declare(os.path.join('libraries', "AP_ONVIF", s)))
+
+            if t.inputs[0] in gsoap_tasks:
+                t.env.CXXFLAGS += [
+                    '-Wno-shadow',
+                ]
+                if 'clang++' not in t.env.COMPILER_CXX:
+                    t.env.CXXFLAGS += [
+                        '-Wno-suggest-override',
+                    ]
+
+
 @feature('ap_library_object')
 @after_method('process_source')
 def ap_library_register_for_check(self):
@@ -255,6 +274,8 @@ def ap_library_register_for_check(self):
         return
 
     double_precision_check(self.compiled_tasks)
+    if self.env.ENABLE_ONVIF:
+        gsoap_library_check(self.bld, self.compiled_tasks)
 
     if not self.env.ENABLE_HEADER_CHECKS:
         return
