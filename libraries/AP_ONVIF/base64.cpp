@@ -40,7 +40,7 @@ static const uint8_t base64url_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij
  * nul terminated to make it easier to use as a C string. The nul terminator is
  * not included in out_len.
  */
-uint8_t* base64_encode_global(const uint8_t *src, uint16_t len, uint16_t *out_len, const uint8_t* table, bool urlsafe)
+static uint8_t* base64_encode_global(const uint8_t *src, uint16_t len, uint16_t *out_len, const uint8_t* table, bool urlsafe)
 {
 	uint8_t *out, *pos;
 	const uint8_t *end, *in;

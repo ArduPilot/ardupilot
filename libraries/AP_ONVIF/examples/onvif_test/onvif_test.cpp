@@ -7,8 +7,9 @@
 
 void setup();
 void loop();
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+#if ENABLE_ONVIF
 
 AP_ONVIF onvif;
 
@@ -41,5 +42,8 @@ void loop()
     }
     hal.scheduler->delay(10000);
 }
-
+#else
+void setup() {}
+void loop() {}
+#endif
 AP_HAL_MAIN();
