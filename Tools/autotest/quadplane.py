@@ -595,6 +595,7 @@ class AutoTestQuadPlane(AutoTest):
             "FRSkyPassThrough": "Currently failing",
             "CPUFailsafe": "servo channel values not scaled like ArduPlane",
             "GyroFFT": "flapping test",
+            "ConfigErrorLoop": "failing because RC values not settable",
         }
 
     def test_pilot_yaw(self):
