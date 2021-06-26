@@ -21,7 +21,6 @@
 
 #include "onvifhelpers.h"
 // For ChibiOS we will use HW RND # generator
-#include <stdlib.h> //rand()
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
@@ -320,16 +319,15 @@ err:
 }
 
 // Generate Random Nonce value
-void AP_ONVIF::rand_nonce(char *nonce, size_t noncelen)
+bool AP_ONVIF::rand_nonce(char *nonce, size_t noncelen)
 {
-    size_t i;
+    if (noncelen <= 4) {
+        // invalid size
+        return false;
+    }
     uint32_t r = (uint32_t)(hal.util->get_hw_rtc()/1000000ULL);
     (void)memcpy((void *)nonce, (const void *)&r, 4);
-    for (i = 4; i < noncelen; i += 4)
-    {
-        r = rand();
-        (void)memcpy((void *)(nonce + i), (const void *)&r, 4);
-    }
+    return hal.util->get_random_vals((uint8_t*)&nonce[4], noncelen - 4);
 }
 
 #define TEST_NONCE "LKqI6G/AikKCQrN0zqZFlg=="
@@ -346,14 +344,18 @@ bool AP_ONVIF::set_credentials()
     const char *created = soap_dateTime2s(soap, (time_t)(hal.util->get_hw_rtc()/1000000ULL));
     char HA[SHA1_DIGEST_SIZE] {};
     char HABase64fin[29] {};
-    char nonce[16], *nonceBase64;
+    char nonce[16];
+    char *nonceBase64enc = nullptr;
+    char *nonceBase64fin;
     sha1_ctx ctx;
     uint16_t HABase64len;
-    char *HABase64enc;
+    char *HABase64enc = nullptr;
     uint16_t noncelen; 
 
     /* generate a nonce */
-    rand_nonce(nonce, 16);
+    if (!rand_nonce(nonce, 16)) {
+        return false;
+    }
 
     sha1_begin(&ctx);
 #if TEST
@@ -361,14 +363,22 @@ bool AP_ONVIF::set_credentials()
     sha1_hash((const unsigned char*)test_nonce, noncelen, &ctx);
     sha1_hash((const unsigned char*)TEST_TIME, strlen(TEST_TIME), &ctx);
     sha1_hash((const unsigned char*)TEST_PASS, strlen(TEST_PASS), &ctx);
-    nonceBase64 = (char*)base64_encode((unsigned char*)test_nonce, 16, &noncelen);
+    nonceBase64enc = (char*)base64_encode((unsigned char*)test_nonce, 16, &noncelen); // this call also mallocs
     DEBUG_PRINT("Created:%s Hash64:%s", TEST_TIME, HABase64fin);
 #else
     sha1_hash((const unsigned char*)nonce, 16, &ctx);
     sha1_hash((const unsigned char*)created, strlen(created), &ctx);
     sha1_hash((const unsigned char*)password, strlen(password), &ctx);
-    nonceBase64 = (char*)base64_encode((unsigned char*)nonce, 16, &noncelen);
+    nonceBase64enc = (char*)base64_encode((unsigned char*)nonce, 16, &noncelen); // this call also mallocs
 #endif
+    if (nonceBase64enc == nullptr) {
+        return false;
+    }
+    // move to something we can track
+    nonceBase64fin = (char*)soap_malloc(soap, noncelen);
+    memcpy(nonceBase64fin, nonceBase64enc, noncelen);
+    free(nonceBase64enc);
+
     sha1_end((unsigned char*)HA, &ctx);
     HABase64enc = (char*)base64_encode((unsigned char*)HA, SHA1_DIGEST_SIZE, &HABase64len);
     if (HABase64enc == nullptr) {
@@ -386,6 +396,7 @@ bool AP_ONVIF::set_credentials()
 
     if (soap_wsse_add_UsernameTokenText(soap, "Auth", username, HABase64fin)) {
         report_error();
+        return false;
     }
     /* populate the remainder of the password, nonce, and created */
     security->UsernameToken->Password->Type = (char*)wsse_PasswordDigestURI;
@@ -397,7 +408,7 @@ bool AP_ONVIF::set_credentials()
         return false;
     }
     soap_default_wsse__EncodedString(soap, security->UsernameToken->Nonce);
-    security->UsernameToken->Nonce->__item = nonceBase64;
+    security->UsernameToken->Nonce->__item = nonceBase64fin;
     security->UsernameToken->Nonce->EncodingType = (char*)wsse_Base64BinaryURI;
     security->UsernameToken->wsu__Created = soap_strdup(soap, created);
     return true;
