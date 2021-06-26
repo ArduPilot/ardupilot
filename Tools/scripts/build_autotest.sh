@@ -149,7 +149,7 @@ pushd $BUILDLOGS
     if [ -n "$(which timelimit)" ]; then
         TIMELIMIT="timelimit $TIMELIMIT_TIME_LIMIT"
     fi
-    $TIMELIMIT "$AUTOTEST" --autotest-server --timeout=300000 > "$PWD/autotest-output.txt" 2>&1
+    $TIMELIMIT "$AUTOTEST" --autotest-server --timeout=300000 > "$PWD/autotest-output.txt" 2>&1 || true  # ignore test failure
   popd
 
   # autotest is done, so update the link to the most-recent build
