@@ -40,7 +40,7 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
 
     // we pack the entire BCL message - we must have at least that
     // many supported cells or the loop below will over-read
-    static_assert(ARRAY_SIZE(_state.cell_voltages.cells) >= ARRAY_SIZE(cell_pkt.cell_voltages));
+    static_assert(ARRAY_SIZE(_state.cell_voltages.cells) >= ARRAY_SIZE(cell_pkt.cell_voltages), "must have at least ARRAY_SIZE(log_BCL.cell_voltages) cells");
 
     for (uint8_t i = 0; i < ARRAY_SIZE(cell_pkt.cell_voltages); i++) {
         cell_pkt.cell_voltages[i] = _state.cell_voltages.cells[i] + 1; // add 1mv
