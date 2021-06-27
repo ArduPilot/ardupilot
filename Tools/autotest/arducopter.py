@@ -9223,6 +9223,53 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_square_mission_around_location(self, loc):
+        self.customise_SITL_commandline([
+        ], home=self.mavutil_location_to_str(loc)
+        )
+        ex = None
+        try:
+            self.upload_square_mission_items_around_location(loc)
+            self.change_mode('AUTO')
+            self.set_parameter('AUTO_OPTIONS', 3)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_disarmed()
+        except Exception as e:
+            ex = e
+
+        self.customise_SITL_commandline([])
+
+        if ex is not None:
+            raise ex
+
+    def LongitudeWrap(self):
+        '''fly a mission across the wrap from +180 to -179'''
+        middle = mavutil.location(-16.51273251, 179.999999999, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def Equator(self):
+        '''fly a mission across the equator (crossing 0)'''
+        middle = mavutil.location(0, 40, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def CMAC(self):
+        '''fly a mission around CMAC'''
+        middle = mavutil.location(-35.362938, 149.165085, 584, 270)
+        self.fly_square_mission_around_location(middle)
+
+    def Rabi(self):
+        '''fly a mission around a very terrainy location'''
+        middle = mavutil.location(-16.51273251, 179.97642023, 7.5, 90)
+        self.fly_square_mission_around_location(middle)
+
+    def ZeroZero(self):
+        '''fly a mission around 0 lat and 0 lng'''
+        # the 1 here is so we don't accidentally trigger ArduPilot's
+        # 0,0,0 check.  One place on earth the yaw makes no sense
+        middle = mavutil.location(0.000001, 0.000001, 1, 45)
+        self.fly_square_mission_around_location(middle)
+
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITDE_FAST is set we get many messages'''
         self.context_push()
@@ -9656,6 +9703,11 @@ class AutoTestCopter(AutoTest):
              self.SetpointBadVel,
              self.SplineTerrain,
              self.TakeoffCheck,
+             self.ZeroZero,
+             self.LongitudeWrap,
+             self.Equator,
+             self.CMAC,
+             self.Rabi,
         ])
         return ret
 

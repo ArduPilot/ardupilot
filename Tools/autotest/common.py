@@ -1613,7 +1613,9 @@ class AutoTest(ABC):
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
     def sitl_home(self):
-        HOME = self.sitl_start_location()
+        return self.mavutil_location_to_str(self.sitl_start_location())
+
+    def mavutil_location_to_str(self, HOME):
         return "%f,%f,%u,%u" % (HOME.lat,
                                 HOME.lng,
                                 HOME.alt,
@@ -3042,6 +3044,7 @@ class AutoTest(ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
+                                   home=None,
                                    binary=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
@@ -3051,7 +3054,8 @@ class AutoTest(ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        home=home)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -4948,7 +4952,7 @@ class AutoTest(ABC):
 
     def location_offset_ne(self, location, north, east):
         '''move location in metres'''
-        print("old: %f %f" % (location.lat, location.lng))
+        print("old: %f %f (n=%f e=%f)" % (location.lat, location.lng, north, east))
         (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
         location.lat = lat
         location.lng = lng
