@@ -166,6 +166,13 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
 #endif
                 break;
+#if HAL_BATTMONITOR_UAVCAN_CBAT_ENABLED
+            case Type::UAVCAN_CBAT:
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_CBAT, _params[instance]);
+#endif
+                break;
+#endif
             case Type::BLHeliESC:
 #if HAL_WITH_ESC_TELEM && !defined(HAL_BUILD_AP_PERIPH)
                 drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
@@ -384,6 +391,16 @@ uint8_t AP_BattMonitor::capacity_remaining_pct(uint8_t instance) const
     } else {
         return 0;
     }
+}
+
+/// time_remaining - returns remaining battery time
+bool AP_BattMonitor::time_remaining(int32_t &seconds, uint8_t instance) const
+{
+    if (instance < _num_instances && drivers[instance] != nullptr && drivers[instance]->has_time_remaining()) {
+        seconds = state[instance].time_remaining;
+        return true;
+    }
+    return false;
 }
 
 /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
