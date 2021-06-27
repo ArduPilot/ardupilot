@@ -176,6 +176,33 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 
+    // @Param: EMG_VOLT
+    // @DisplayName: Emergency battery voltage
+    // @Description: Battery voltage that triggers a emergency battery failsafe. Set to 0 to disable. If the battery voltage drops below this voltage continuously for more then the period specified by the @PREFIX@LOW_TIMER parameter then the vehicle will perform the failsafe specified by the @PREFIX@FS_EMG_ACT parameter.
+    // @Units: V
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("EMG_VOLT", 22, AP_BattMonitor_Params, _emergency_voltage, 0),
+
+    // @Param: EMG_MAH
+    // @DisplayName: Battery emergency capacity
+    // @Description: Battery capacity at which the emergency battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@_FS_EMG_ACT parameter.
+    // @Units: mAh
+    // @Increment: 50
+    // @User: Standard
+    AP_GROUPINFO("EMG_MAH", 23, AP_BattMonitor_Params, _emergency_capacity, 0),
+
+    // @Param: FS_EMG_ACT
+    // @DisplayName: Emergency battery failsafe action
+    // @Description: What action the vehicle should perform if it hits a emergency battery failsafe
+    // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute
+    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate
+    // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
+    // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
+    // @Values{Tracker}: 0:None
+    // @User: Standard
+    AP_GROUPINFO("FS_EMG_ACT", 24, AP_BattMonitor_Params, _failsafe_emergency_action, 0),
+
     AP_GROUPEND
 
 };

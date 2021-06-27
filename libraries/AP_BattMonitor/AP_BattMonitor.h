@@ -67,7 +67,8 @@ public:
     enum class Failsafe : uint8_t {
         None = 0,
         Low,
-        Critical
+        Critical,
+        Emergency,
     };
 
     // Battery monitor driver types
@@ -120,6 +121,7 @@ public:
         uint32_t    last_time_micros;          // time when voltage and current was last read in microseconds
         uint32_t    low_voltage_start_ms;      // time when voltage dropped below the minimum in milliseconds
         uint32_t    critical_voltage_start_ms; // critical voltage failsafe start timer in milliseconds
+        uint32_t    emergency_voltage_start_ms; // emergency voltage failsafe start timer in milliseconds
         float       temperature;               // battery temperature in degrees Celsius
         uint32_t    temperature_time;          // timestamp of the last received temperature message
         float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate in Volt

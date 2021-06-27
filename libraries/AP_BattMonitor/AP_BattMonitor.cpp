@@ -422,6 +422,10 @@ void AP_BattMonitor::check_failsafes(void)
                     action = _params[i]._failsafe_critical_action;
                     type_str = "critical";
                     break;
+                case Failsafe::Emergency:
+                    action = _params[i]._failsafe_emergency_action;
+                    type_str = "emergency";
+                    break;
             }
 
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
@@ -607,6 +611,9 @@ MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t 
 
     case Failsafe::Critical:
         return MAV_BATTERY_CHARGE_STATE_CRITICAL;
+
+    case Failsafe::Emergency:
+        return MAV_BATTERY_CHARGE_STATE_EMERGENCY;
     }
 
     // Should not reach this
