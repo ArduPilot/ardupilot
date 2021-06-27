@@ -26,6 +26,7 @@ import textwrap
 import time
 import shlex
 import binascii
+import math
 
 from pymavlink import mavextra
 from pysim import vehicleinfo
@@ -417,6 +418,35 @@ def find_offsets(instances, file_path):
     return offsets
 
 
+def find_geocoder_location(locname):
+    '''find a location using geocoder and SRTM'''
+    try:
+        import geocoder
+    except ImportError:
+        print("geocoder not installed")
+        return None
+    j = geocoder.osm(locname)
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print("geocoder failed to find '%s'" % locname)
+        return None
+    lat = j.lat
+    lon = j.lng
+    from MAVProxy.modules.mavproxy_map import srtm
+    downloader = srtm.SRTMDownloader()
+    downloader.loadFileList()
+    start = time.time()
+    alt = None
+    while time.time() - start < 5:
+        tile = downloader.getTile(int(math.floor(lat)), int(math.floor(lon)))
+        if tile:
+            alt = tile.getAltitudeFromLatLon(lat, lon)
+            break
+    if alt is None:
+        print("timed out getting altitude for '%s'" % locname)
+        return None
+    return [lat, lon, alt, 0.0]
+
+
 def find_location_by_name(locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
@@ -436,8 +466,11 @@ def find_location_by_name(locname):
                 if name == locname:
                     return [(float)(x) for x in loc.split(",")]
 
-    print("Failed to find location (%s)" % cmd_opts.location)
-    sys.exit(1)
+    # fallback to geocoder if available
+    loc = find_geocoder_location(locname)
+    if loc is None:
+        sys.exit(1)
+    return loc
 
 
 def find_spawns(loc, offsets):
