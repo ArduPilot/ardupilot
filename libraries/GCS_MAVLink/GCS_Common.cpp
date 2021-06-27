@@ -284,6 +284,35 @@ bool GCS_MAVLINK::send_battery_status()
     return true;
 }
 
+void GCS_MAVLINK::send_battery_extended_status(const uint8_t instance) const
+{
+    const AP_BattMonitor &battery = AP::battery();
+    mavlink_msg_battery_extended_status_send(
+        chan,
+        instance, // id
+        battery.get_resistance(instance)
+    );
+}
+
+// returns true if all battery instances were reported
+bool GCS_MAVLINK::send_battery_extended_status()
+{
+    const AP_BattMonitor &battery = AP::battery();
+
+    for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        const uint8_t battery_id = (last_battery_extended_status_idx + 1) % AP_BATT_MONITOR_MAX_INSTANCES;
+        if (battery.get_type(battery_id) == AP_BattMonitor::Type::NONE) {
+            last_battery_extended_status_idx = battery_id;
+            continue;
+        }
+        CHECK_PAYLOAD_SIZE(BATTERY_EXTENDED_STATUS);
+        send_battery_extended_status(battery_id);
+        last_battery_extended_status_idx = battery_id;
+        return true;
+    }
+    return true;
+}
+
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
 {
     if (!sensor->has_data()) {
@@ -852,6 +881,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
+        { MAVLINK_MSG_ID_BATTERY_EXTENDED_STATUS, MSG_BATTERY_EXTENDED_STATUS},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4875,6 +4905,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_BATTERY_STATUS:
         send_battery_status();
+        break;
+
+    case MSG_BATTERY_EXTENDED_STATUS:
+        send_battery_extended_status();
         break;
 
     case MSG_BATTERY2:

@@ -223,6 +223,9 @@ public:
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
+    void send_battery_extended_status(const uint8_t instance) const;
+    bool send_battery_extended_status();
+
     void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
@@ -849,6 +852,7 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
+    uint8_t last_battery_extended_status_idx;
 
     // send_sensor_offsets decimates its send rate using this counter:
     // FIXME: decimate this instead when initialising the message
