@@ -155,14 +155,15 @@ pushd $BUILDLOGS
   # autotest is done, so update the link to the most-recent build
   ln -sfn "$HISTORY_DIR" latest
 
-  # if Parameters is a link, update the link.  If it is a directory
-  # then copy the contents down:
+  # copy Parameters and LogMessages from top-level dir down into HISTORY
   for dir in "Parameters" "LogMessages"; do
-      if [ ! -a "$dir" -o -d "$dir" ]; then
-          rsync -aP "$dir/" "$HISTORY_DIR"/"$dir"
-      else
-          echo "What manner of evil is ($dir)?"
+      SOURCE="$BUILD_BINARIES_BUILDLOGS_DIR/$dir"
+      if test -l "$SOURCE"; then
+          # source directory is a link, presumably to "latest"
+          continue
       fi
+      OUT="$HISTORY_DIR/$dir"
+      rsync -aP "$SOURCE/" "$OUT"
   done
 
   # remove the "currently-building" link as we're not currently building
