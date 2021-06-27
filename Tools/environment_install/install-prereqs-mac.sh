@@ -25,7 +25,7 @@ else
     echo "pip installed"
 fi
 
-pip2 install --user pyserial future empy mavproxy pexpect
+pip2 install --user pyserial future empy mavproxy pexpect geocoder
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
