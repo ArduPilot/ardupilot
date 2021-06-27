@@ -18281,7 +18281,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def upload_square_mission_items_around_location(self, loc):
         alt = 20
-        loc.alt = alt
         items = [
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt)
         ]
@@ -19040,6 +19039,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def fly_square_mission_around_location(self, loc, heading):
+        self.customise_SITL_commandline(
+            [],
+            home=self.sitl_home_string(loc, heading=heading),
+        )
+        ex = None
+        try:
+            self.upload_square_mission_items_around_location(loc)
+            self.change_mode('AUTO')
+            self.set_parameter('AUTO_OPTIONS', 3)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_disarmed()
+        except Exception as e:  # noqa: BLE001
+            ex = e
+
+        self.customise_SITL_commandline([])
+
+        if ex is not None:
+            raise ex
+
+    def LongitudeWrap(self):
+        '''fly a mission across the wrap from +180 to -179'''
+        middle = Location(-16.51273251, 179.999999999, 0, AltFrame.ABSOLUTE)
+        self.fly_square_mission_around_location(middle, 45)
+
+    def Equator(self):
+        '''fly a mission across the equator (crossing 0)'''
+        middle = Location(0, 40, 0, AltFrame.ABSOLUTE)
+        self.fly_square_mission_around_location(middle, 45)
+
+    def CMAC(self):
+        '''fly a mission around CMAC'''
+        middle = Location(-35.362938, 149.165085, 584, AltFrame.ABSOLUTE)
+        self.fly_square_mission_around_location(middle, 270)
+
+    def Rabi(self):
+        '''fly a mission around a very terrainy location'''
+        middle = Location(-16.51273251, 179.97642023, 7.5, AltFrame.ABSOLUTE)
+        self.fly_square_mission_around_location(middle, 90)
+
+    def ZeroZero(self):
+        '''fly a mission around 0 lat and 0 lng'''
+        # the 1 here is so we don't accidentally trigger ArduPilot's
+        # 0,0,0 check.  One place on earth the yaw makes no sense
+        middle = Location(0.000001, 0.000001, 1, AltFrame.ABSOLUTE)
+        self.fly_square_mission_around_location(middle, 45)
+
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITUDE_FAST is set we get many messages'''
 
@@ -19575,6 +19622,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.ZeroZero,
+            self.LongitudeWrap,
+            self.Equator,
+            self.CMAC,
+            self.Rabi,
         ])
         return ret
 

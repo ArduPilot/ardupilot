@@ -2281,11 +2281,19 @@ class TestSuite(abc.ABC):
         return 0
 
     def sitl_home(self):
-        HOME = self.sitl_start_location()
-        return "%f,%f,%u,%u" % (HOME.lat,
-                                HOME.lng,
-                                HOME.get_alt_m(AltFrame.ABSOLUTE),
-                                self.sitl_start_heading())
+        return self.sitl_home_string(self.sitl_start_location())
+
+    def sitl_home_string(self, loc, heading=None):
+        '''return a SITL --home string for loc (a Location).  heading
+        defaults to sitl_start_heading().  ArduPilot stores lat/lng to
+        1e-7 degrees, so lat/lng are given with more precision than
+        that'''
+        if heading is None:
+            heading = self.sitl_start_heading()
+        return "%.9f,%.9f,%u,%u" % (loc.lat,
+                                    loc.lng,
+                                    loc.get_alt_m(AltFrame.ABSOLUTE),
+                                    heading)
 
     def mavproxy_version(self):
         '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
@@ -2552,6 +2560,7 @@ class TestSuite(abc.ABC):
                 self.customise_SITL_commandline(
                     self.valgrind_restart_customisations,
                     model=self.valgrind_restart_model,
+                    home=self.valgrind_restart_home,
                 )
             else:
                 self.stop_SITL()
@@ -3350,6 +3359,7 @@ class TestSuite(abc.ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
+                                   home=None,
                                    binary=None):
         '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
@@ -3359,7 +3369,8 @@ class TestSuite(abc.ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        sitl_home=home)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -3389,6 +3400,7 @@ class TestSuite(abc.ABC):
         if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_customisations = customisations
+            self.valgrind_restart_home = home
 
     def restart_SITL_frame(self,
                            frame,
@@ -6174,7 +6186,7 @@ class TestSuite(abc.ABC):
 
     def location_offset_ne(self, location, north, east):
         '''move location in metres.  You probably wat offset_location_ne'''
-        print("old: %f %f" % (location.lat, location.lng))
+        print("old: %f %f (n=%f e=%f)" % (location.lat, location.lng, north, east))
         (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
         location.lat = lat
         location.lng = lng
