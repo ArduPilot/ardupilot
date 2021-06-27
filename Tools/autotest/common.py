@@ -1300,7 +1300,9 @@ class AutoTest(ABC):
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
     def sitl_home(self):
-        HOME = self.sitl_start_location()
+        return self.mavutil_location_to_str(self.sitl_start_location())
+
+    def mavutil_location_to_str(self, HOME):
         return "%f,%f,%u,%u" % (HOME.lat,
                                 HOME.lng,
                                 HOME.alt,
@@ -2128,14 +2130,15 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False):
+    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False, home=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
         self.start_SITL(model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        home=home)
         tstart = time.time()
         while True:
             if time.time() - tstart > 30:
