@@ -124,6 +124,9 @@ public:
     // vehicle has been disarmed at least once.
     Method last_disarm_method() const { return _last_disarm_method; } 
 
+    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
+    void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
+
 protected:
 
     // Parameters
@@ -158,8 +161,6 @@ protected:
 
     virtual bool rc_calibration_checks(bool report);
 
-    bool rc_arm_checks(AP_Arming::Method method);
-
     bool manual_transmitter_checks(bool report);
 
     bool mission_checks(bool report);
@@ -183,7 +184,7 @@ protected:
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+    bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
     bool visodom_checks(bool report) const;
     bool disarm_switch_checks(bool report) const;
@@ -196,8 +197,6 @@ protected:
     // returns a mavlink severity which should be used if a specific check fails
     MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
     // handle the case where a check fails
-    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
-    void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
 
     void Log_Write_Arm(bool forced, AP_Arming::Method method);
     void Log_Write_Disarm(AP_Arming::Method method);

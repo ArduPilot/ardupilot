@@ -4,7 +4,7 @@
 // Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
-void Copter::default_dead_zones()
+void RC_Channels_Copter::default_dead_zones()
 {
     channel_roll->set_default_dead_zone(20);
     channel_pitch->set_default_dead_zone(20);
@@ -18,12 +18,14 @@ void Copter::default_dead_zones()
     rc().channel(CH_6)->set_default_dead_zone(0);
 }
 
-void Copter::init_rc_in()
+void RC_Channels_Copter::init()
 {
-    channel_roll     = rc().channel(rcmap.roll()-1);
-    channel_pitch    = rc().channel(rcmap.pitch()-1);
-    channel_throttle = rc().channel(rcmap.throttle()-1);
-    channel_yaw      = rc().channel(rcmap.yaw()-1);
+    RC_Channels::init();
+
+    init_channel(channel_roll, RC_Channel::AUX_FUNC::ROLL, "Roll");
+    init_channel(channel_pitch, RC_Channel::AUX_FUNC::PITCH, "Pitch");
+    init_channel(channel_throttle, RC_Channel::AUX_FUNC::THROTTLE, "Throttle");
+    init_channel(channel_yaw, RC_Channel::AUX_FUNC::YAW, "Yaw");
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
@@ -35,7 +37,7 @@ void Copter::init_rc_in()
     default_dead_zones();
 
     // initialise throttle_zero flag
-    ap.throttle_zero = true;
+    copter.ap.throttle_zero = true;
 }
 
  // init_rc_out -- initialise motors

@@ -18,10 +18,10 @@ Mode::Mode(void) :
     ahrs(copter.ahrs),
     attitude_control(copter.attitude_control),
     motors(copter.motors),
-    channel_roll(copter.channel_roll),
-    channel_pitch(copter.channel_pitch),
-    channel_throttle(copter.channel_throttle),
-    channel_yaw(copter.channel_yaw),
+    channel_roll(copter.g2.rc_channels.channel_roll),
+    channel_pitch(copter.g2.rc_channels.channel_pitch),
+    channel_throttle(copter.g2.rc_channels.channel_throttle),
+    channel_yaw(copter.g2.rc_channels.channel_yaw),
     G_Dt(copter.G_Dt)
 { };
 

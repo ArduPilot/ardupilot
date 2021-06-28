@@ -2,6 +2,8 @@
 
 #include "RC_Channel.h"
 
+#include "Parameters.h"
+
 // defining these two macros and including the RC_Channels_VarInfo
 // header defines the parameter information common to all vehicle
 // types
@@ -9,6 +11,20 @@
 #define RC_CHANNEL_SUBCLASS RC_Channel_Rover
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
+
+bool RC_Channels_Rover::k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const {
+    k_param_rcmap = Parameters::k_param_rcmap_unused;
+    return true;
+}
+
+const RC_Channels::OptionDefault RC_Channels_Rover::option_defaults[] {
+    { 1, RC_Channel::AUX_FUNC::STEER },
+    { 3, RC_Channel::AUX_FUNC::THROTTLE },
+};
+void RC_Channels_Rover::get_option_defaults(const struct RC_Channels::OptionDefault *&defaults, uint8_t &num_defaults) {
+    defaults = option_defaults;
+    num_defaults = ARRAY_SIZE(option_defaults);
+};
 
 int8_t RC_Channels_Rover::flight_mode_channel_number() const
 {

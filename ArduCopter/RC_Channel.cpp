@@ -2,12 +2,18 @@
 
 #include "RC_Channel.h"
 
+#include "Parameters.h"
 
 // defining these two macros and including the RC_Channels_VarInfo header defines the parameter information common to all vehicle types
 #define RC_CHANNELS_SUBCLASS RC_Channels_Copter
 #define RC_CHANNEL_SUBCLASS RC_Channel_Copter
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
+
+bool RC_Channels_Copter::k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const {
+    k_param_rcmap = Parameters::k_param_rcmap_unused;
+    return true;
+}
 
 int8_t RC_Channels_Copter::flight_mode_channel_number() const
 {

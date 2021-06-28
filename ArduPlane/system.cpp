@@ -22,6 +22,9 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
+    // initialise rc channels including setting mode
+    g2.rc_channels.init();
+
     // setup any board specific drivers
     BoardConfig.init();
 
@@ -31,9 +34,6 @@ void Plane::init_ardupilot()
 
     rollController.convert_pid();
     pitchController.convert_pid();
-
-    // initialise rc channels including setting mode
-    rc().init();
 
     relay.init();
 
@@ -88,9 +88,7 @@ void Plane::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
-    init_rc_in();               // sets up rc channels from radio
-
-#if HAL_MOUNT_ENABLED
+#if HAL_MOUNT_ENABLED == ENABLED
     // initialise camera mount
     camera_mount.init();
 #endif

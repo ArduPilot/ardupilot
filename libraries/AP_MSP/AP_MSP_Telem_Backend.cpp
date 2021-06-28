@@ -23,7 +23,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
@@ -934,27 +933,35 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-    const RCMapper* rcmap = AP::rcmap();
-    if (rcmap == nullptr) {
-        return MSP_RESULT_ERROR;
+    union {
+        struct PACKED {
+            uint16_t a;
+            uint16_t e;
+            uint16_t r;
+            uint16_t t;
+        };
+        uint16_t values[4];
+    } _rc {};
+
+    // take values from these functions, poke into rc uinion.  Note
+    // that rc is packed so we can't take address of members.  MSP
+    // order is AERT
+    const RC_Channel::AUX_FUNC ordered_funcs[] {
+        RC_Channel::AUX_FUNC::ROLL,
+        RC_Channel::AUX_FUNC::PITCH,
+        RC_Channel::AUX_FUNC::YAW,
+        RC_Channel::AUX_FUNC::THROTTLE,
+    };
+
+    for (uint8_t i=0; i<ARRAY_SIZE(ordered_funcs); i++) {
+        const RC_Channel *ch = rc().find_channel_for_option(ordered_funcs[i]);
+        if (ch == nullptr) {
+            continue;
+        }
+        _rc.values[i] = ch->get_radio_in();
     }
-    uint16_t values[16] = {};
-    rc().get_radio_in(values, ARRAY_SIZE(values));
 
-    struct PACKED {
-        uint16_t a;
-        uint16_t e;
-        uint16_t r;
-        uint16_t t;
-    } rc;
-
-    // send only 4 channels, MSP order is AERT
-    rc.a = values[rcmap->roll()];       // A
-    rc.e = values[rcmap->pitch()];      // E
-    rc.r = values[rcmap->yaw()];        // R
-    rc.t = values[rcmap->throttle()];   // T
-
-    sbuf_write_data(dst, &rc, sizeof(rc));
+    sbuf_write_data(dst, &_rc, sizeof(_rc));
     return MSP_RESULT_ACK;
 }
 

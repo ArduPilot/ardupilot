@@ -110,6 +110,17 @@ RC_Channel::RC_Channel(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+const RC_Channels::OptionDefault RC_Channels::option_defaults[] {
+    { 1, RC_Channel::AUX_FUNC::ROLL },
+    { 2, RC_Channel::AUX_FUNC::PITCH },
+    { 3, RC_Channel::AUX_FUNC::THROTTLE },
+    { 4, RC_Channel::AUX_FUNC::YAW },
+};
+void RC_Channels::get_option_defaults(const struct RC_Channels::OptionDefault *&defaults, uint8_t &num_defaults) {
+    defaults = option_defaults;
+    num_defaults = ARRAY_SIZE(option_defaults);
+};
+
 void RC_Channel::set_range(uint16_t high)
 {
     type_in = RC_CHANNEL_TYPE_RANGE;
@@ -503,6 +514,12 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
     case AUX_FUNC::VTX_POWER:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -576,6 +593,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
     { AUX_FUNC::GENERATOR,"Generator"},
     { AUX_FUNC::ARSPD_CALIBRATE,"Calibrate Airspeed"},
+    { AUX_FUNC::ROLL,"Roll"},
+    { AUX_FUNC::PITCH,"Pitch"},
+    { AUX_FUNC::YAW,"Yaw"},
 };
 
 /* lookup the announcement for switch change */
@@ -597,17 +617,29 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
 bool RC_Channel::read_aux()
 {
     const aux_func_t _option = (aux_func_t)option.get();
-    if (_option == AUX_FUNC::DO_NOTHING) {
-        // may wish to add special cases for other "AUXSW" things
-        // here e.g. RCMAP_ROLL etc once they become options
+    switch (_option) {
+    case AUX_FUNC::DO_NOTHING:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
+    case AUX_FUNC::MAINSAIL:
+    case AUX_FUNC::FORWARD:
+        // these are not actually auxillary functions, they're
+        // main-channel-inputs
         return false;
-    } else if (_option == AUX_FUNC::VTX_POWER) {
+    case AUX_FUNC::VTX_POWER: {
         int8_t position;
         if (read_6pos_switch(position)) {
             AP::vtx().change_power(position);
             return true;
         }
         return false;
+    }
+    default:
+        break;
     }
 
     AuxSwitchPos new_position;
@@ -1144,6 +1176,13 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
+        break;
 
     case AUX_FUNC::RETRACT_MOUNT: {
 #if HAL_MOUNT_ENABLED
@@ -1236,9 +1275,9 @@ RC_Channel::AuxSwitchPos RC_Channel::get_aux_switch_pos() const
 
 // return switch position value as LOW, MIDDLE, HIGH
 // if reading the switch fails then it returns LOW
-RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
+RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(RC_Channel::AUX_FUNC func) const
 {
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
+    const RC_Channel* chan = rc().find_channel_for_option(func);
     return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::AuxSwitchPos::LOW;
 }
 
@@ -1283,4 +1322,66 @@ bool RC_Channels::duplicate_options_exist()
         }
     }
    return false;
+}
+
+bool RC_Channels::arm_checks(AP_Arming::Method method)
+{
+    // don't check the trims if we are in a failsafe
+    if (!rc().has_valid_input()) {
+        return true;
+    }
+
+    // only check if we've received some form of input within the last second
+    // this is a protection against a vehicle having never enabled an input
+    const uint32_t last_input_ms = rc().last_input_ms();
+    if ((last_input_ms == 0) || ((AP_HAL::millis() - last_input_ms) > 1000)) {
+        return true;
+    }
+
+    bool check_passed = true;
+    // ensure all rc channels have different functions
+    if (duplicate_options_exist()) {
+        AP::arming().check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
+        check_passed = false;
+    }
+    if (flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
+    }
+    if (!arming_skip_checks_rpy()) {
+        const RC_Channel::AUX_FUNC funcs[] = {RC_Channel::AUX_FUNC::ROLL, RC_Channel::AUX_FUNC::PITCH, RC_Channel::AUX_FUNC::YAW};
+        for (auto func : funcs) {
+            const RC_Channel *c = find_channel_for_option(func);
+            if (c == nullptr) {
+                continue;
+            }
+            if (c->get_control_in() != 0) {
+                if ((method != AP_Arming::Method::RUDDER) || (c != get_arming_channel())) { // ignore the yaw input channel if rudder arming
+                    AP::arming().check_failed(AP_Arming::ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", c->string_for_aux_function(func), c->ch()+1);
+                    check_passed = false;
+                }
+            }
+        }
+
+        // if throttle check is enabled, require zero input
+        if (rc().arming_check_throttle()) {
+            RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+            if (c != nullptr) {
+                if (c->get_control_in() != 0) {
+                    check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
+                    check_passed = false;
+                }
+            }
+            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+            if (c != nullptr) {
+                uint8_t fwd_thr = c->percent_input();
+                // require channel input within 2% of minimum
+                if (fwd_thr > 2) {
+                    check_failed(ARMING_CHECK_RC, true, "VTOL Fwd Throttle is not zero");
+                    check_passed = false;
+                }
+            }
+        }
+    }
+    return check_passed;
 }

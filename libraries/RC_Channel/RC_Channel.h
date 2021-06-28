@@ -8,12 +8,16 @@
 
 #define NUM_RC_CHANNELS 16
 
+class AP_Arming;
+enum class AP_Arming::Method;
+
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel {
 public:
     friend class SRV_Channels;
     friend class RC_Channels;
+    friend class AP_Arming;
     // Constructor
     RC_Channel(void);
 
@@ -219,6 +223,9 @@ public:
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
         WALKING_HEIGHT =     211, // walking robot height input
+        STEER =              212, // Rover steering input
+        LATERAL =            213, // Rover lateral movement input
+        FORWARD =            214, // Sub forward movement
 
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
@@ -278,6 +285,9 @@ public:
     // pwm value below which the option will be disabled:
     static const uint16_t AUX_PWM_TRIGGER_LOW = 1300;
 
+    // channel number, starts at 0, 2 typically being throttle channel.
+    uint8_t ch() const { return ch_in; };
+
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
@@ -305,7 +315,6 @@ protected:
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
-
 
 private:
 
@@ -368,7 +377,7 @@ public:
     // constructor
     RC_Channels(void);
 
-    void init(void);
+    virtual void init(void);
 
     // get singleton instance
     static RC_Channels *get_singleton() {
@@ -411,7 +420,7 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
-    RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
+    RC_Channel::AuxSwitchPos get_channel_pos(RC_Channel::AUX_FUNC func) const;
 
     void init_aux_all();
     void read_aux_all();
@@ -519,6 +528,9 @@ public:
     // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
 
+    // returns true if the RC Channels library thinks the vehicle is OK to arm.
+    bool arm_checks(enum AP_Arming::Method method);
+
 protected:
 
     enum class Option {
@@ -537,12 +549,46 @@ protected:
         has_new_overrides = true;
     }
 
+    // returns true if k_param_rcmap has been set to a Parameter
+    // storage identifier that has previously been used to store
+    // RCMAP_ values:
+    virtual bool k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const {
+        return false;
+    }
+
+    // initialise channel to point to the channel with function func.
+    // Critically, if that function is not assigned to a channel then
+    // we enter the config error loop, on the assumption that many
+    // other places in the code will simply assume that the channel
+    // has been assigned.
+    void init_channel(RC_Channel *&channel,
+                      RC_Channel::AUX_FUNC func,
+                      const char *function_name);
+
+    // set defaults:
+    struct OptionDefault {
+        uint8_t channel;
+        RC_Channel::AUX_FUNC func;
+    };
+
+    // get_option_defaults provides a map from user-visible channel
+    // numbers to the default _OPTION value for that channel number.
+    // For example, typically users have ROLL input on channel 1.
+    virtual void get_option_defaults(const RC_Channels::OptionDefault*&,
+                                     uint8_t &count);
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
 
     uint32_t last_update_ms;
+
+    // functions to do with initialisation of channel options:
+    static const RC_Channels::OptionDefault option_defaults[];
+    void populate_channel_options_from_old_rcmap();
+    void set_channel_options_from_defaults();
+
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
 

@@ -126,9 +126,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-    channel_steer(nullptr),
-    channel_throttle(nullptr),
-    channel_lateral(nullptr),
     logger{g.log_bitmask},
     modes(&g.mode1),
     control_mode(&mode_initializing)
@@ -342,7 +339,7 @@ void Rover::one_second_loop(void)
     // allow orientation change at runtime to aid config
     ahrs.update_orientation();
 
-    set_control_channels();
+    rc().set_control_channels();
 
     // cope with changes to aux functions
     SRV_Channels::enable_aux_servos();

@@ -5,12 +5,12 @@ Mode::Mode() :
     ahrs(rover.ahrs),
     g(rover.g),
     g2(rover.g2),
-    channel_steer(rover.channel_steer),
-    channel_throttle(rover.channel_throttle),
-    channel_lateral(rover.channel_lateral),
-    channel_roll(rover.channel_roll),
-    channel_pitch(rover.channel_pitch),
-    channel_walking_height(rover.channel_walking_height),
+    channel_steer(rover.g2.rc_channels.channel_steer),
+    channel_throttle(rover.g2.rc_channels.channel_throttle),
+    channel_lateral(rover.g2.rc_channels.channel_lateral),
+    channel_roll(rover.g2.rc_channels.channel_roll),
+    channel_pitch(rover.g2.rc_channels.channel_pitch),
+    channel_walking_height(rover.g2.rc_channels.channel_walking_height),
     attitude_control(rover.g2.attitude_control)
 { }
 
