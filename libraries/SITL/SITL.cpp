@@ -213,6 +213,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // count of simulated IMUs
     AP_GROUPINFO("IMU_COUNT",    23, SITL,  imu_count,  2),
 
+    // @Path: ./SIM_FETtecOneWireESC.cpp
+    AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SITL, FETtecOneWireESC),
+
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
