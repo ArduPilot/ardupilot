@@ -574,7 +574,8 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     }
 
     // check home and EKF origin are not too far
-    if (copter.far_from_EKF_origin(ahrs.get_home())) {
+    if (copter.far_from_EKF_origin(ahrs.get_home()) ||
+        copter.far_from_EKF_origin(copter.current_loc)) {
         check_failed(display_failure, "EKF-home variance");
         return false;
     }

@@ -41,7 +41,7 @@ bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
     if (ahrs.get_location(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
+        if (!set_home_no_distance_check(temp_loc, lock)) {
             return false;
         }
         // we have successfully set AHRS home, set it for SmartRTL
@@ -56,19 +56,8 @@ bool Copter::set_home_to_current_location(bool lock) {
 // set_home - sets ahrs home (used for RTL) to specified location
 //  initialises inertial nav and compass on first call
 //  returns true if home location set successfully
-bool Copter::set_home(const Location& loc, bool lock)
+bool Copter::set_home_no_distance_check(const Location& loc, bool lock)
 {
-    // check EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
-        return false;
-    }
-
-    // check home is close to EKF origin
-    if (far_from_EKF_origin(loc)) {
-        return false;
-    }
-
     const bool home_was_set = ahrs.home_is_set();
 
     // set ahrs home (used for RTL)
@@ -101,14 +90,38 @@ bool Copter::set_home(const Location& loc, bool lock)
     return true;
 }
 
+// set_home - sets ahrs home (used for RTL) to specified location
+//  initialises inertial nav and compass on first call
+//  returns true if home location set successfully
+bool Copter::set_home(const Location& loc, bool lock)
+{
+    // check EKF origin has been set
+    Location ekf_origin;
+    if (!ahrs.get_origin(ekf_origin)) {
+        return false;
+    }
+
+    // check home is close to EKF origin
+    if (far_from_EKF_origin(loc)) {
+        return false;
+    }
+
+    return set_home_no_distance_check(loc, lock);
+}
+
 // far_from_EKF_origin - checks if a location is too far from the EKF origin
 //  returns true if too far
 bool Copter::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
     Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin) && ((ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M) || (labs(ekf_origin.alt - loc.alt) > EKF_ORIGIN_MAX_DIST_M))) {
-        return true;
+    if (ahrs.get_origin(ekf_origin)) {
+        if ((ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_KM*1000.0)) {
+            return true;
+        }
+        if (labs(ekf_origin.alt - loc.alt)*0.01 > EKF_ORIGIN_MAX_ALT_KM*1000.0) {
+            return true;
+        }
     }
 
     // close enough to origin
