@@ -4767,7 +4767,7 @@ class AutoTest(ABC):
         data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
 
         if dist > dist_max:
-            raise NotAchievedException("simstate from startup location: %s" % data)
+            raise NotAchievedException("simstate far from startup location: %s" % data)
         self.progress("Simstate Close to startup location: %s" % data)
 
     def reach_distance_manual(self, distance):
