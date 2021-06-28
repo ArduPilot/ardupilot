@@ -1403,7 +1403,12 @@ private:
     bool have_table_earth_field;   // true when we have initialised table_earth_field_ga
     Vector3F table_earth_field_ga; // earth field from WMM tables
     ftype table_declination;       // declination in radians from the tables
+    uint32_t last_field_update_ms;
 
+    // handle earth field updates
+    void getEarthFieldTable(const Location &loc);
+    void checkUpdateEarthField(void);
+    
     // timing statistics
     struct ekf_timing timing;
 
