@@ -2704,18 +2704,18 @@ class AutoTest(ABC):
 
     def sim_location(self):
         """Return current simulator location."""
-        m = self.mav.recv_match(type='SIMSTATE', blocking=True)
+        m = self.poll_message('SIM_STATE')
         return mavutil.location(m.lat*1.0e-7,
-                                m.lng*1.0e-7,
-                                0,
+                                m.lon*1.0e-7,
+                                m.alt,
                                 math.degrees(m.yaw))
 
     def sim_location_int(self):
         """Return current simulator location."""
-        m = self.mav.recv_match(type='SIMSTATE', blocking=True)
+        m = self.poll_message('SIM_STATE', blocking=True)
         return mavutil.location(m.lat,
-                                m.lng,
-                                0,
+                                m.lon,
+                                m.alt,
                                 math.degrees(m.yaw))
 
     def save_wp(self, ch=7):
@@ -7069,10 +7069,8 @@ Also, ignores heartbeats not from our target system'''
             # wait until we definitely know where we are:
             self.poll_home_position(timeout=120)
 
-            ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
-            if ss is None:
-                raise NotAchievedException("Did not get SIMSTATE")
-            self.progress("Got SIMSTATE (%s)" % str(ss))
+            ss = self.poll_message("SIM_STATE")
+            self.progress("Got SIM_STATE (%s)" % str(ss))
 
             self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
                          math.degrees(ss.yaw), # param1
