@@ -55,6 +55,7 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
+#include <SITL/SIM_FETtecOneWireESC.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -298,6 +299,9 @@ private:
 
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+
+    // simulated FETtec OneWire ESCs:
+    SITL::FETtecOneWireESC *fetteconewireesc;
 
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
