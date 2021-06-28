@@ -725,6 +725,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
         statesInitialised = false;
         InitialiseFilterBootstrap();
     }
+
+    // check for update of earth field
+    checkUpdateEarthField();
 }
 
 void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t gyro_index)
