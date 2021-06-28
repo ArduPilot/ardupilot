@@ -690,10 +690,7 @@ void NavEKF3_core::readGpsData()
             if (gpsGoodToAlign && !have_table_earth_field) {
                 const auto *compass = dal.get_compass();
                 if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
-                    table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc).toftype();
-                    table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
-                                                                            gpsloc.lng*1.0e-7));
-                    have_table_earth_field = true;
+                    getEarthFieldTable(gpsloc);
                     if (frontend->_mag_ef_limit > 0) {
                         // initialise earth field from tables
                         stateStruct.earth_magfield = table_earth_field_ga;
@@ -1455,4 +1452,28 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
         dragSampleTimeDelta = 0.0f;
     }
 #endif // EK3_FEATURE_DRAG_FUSION
+}
+
+/*
+  get the earth mag field
+ */
+void NavEKF3_core::getEarthFieldTable(const Location &loc)
+{
+    table_earth_field_ga = AP_Declination::get_earth_field_ga(loc).toftype();
+    table_declination = radians(AP_Declination::get_declination(loc.lat*1.0e-7,
+                                                                loc.lng*1.0e-7));
+    have_table_earth_field = true;
+    last_field_update_ms = imuSampleTime_ms;
+}
+
+/*
+  check if we should update the earth field, we update it at 1Hz
+ */
+void NavEKF3_core::checkUpdateEarthField(void)
+{
+    if (have_table_earth_field && imuSampleTime_ms - last_field_update_ms > 1000) {
+        Location loc = EKF_origin;
+        loc.offset(stateStruct.position.x, stateStruct.position.y);
+        getEarthFieldTable(loc);
+    }
 }
