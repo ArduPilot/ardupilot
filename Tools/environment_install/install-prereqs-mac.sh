@@ -129,18 +129,18 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
+echo "Checking ccache..."
+{
+    $(which -s ccache)
+} ||
+{
+    brew install ccache
+    exportline="export PATH=/usr/local/opt/ccache/libexec:\$PATH";
+    eval $exportline
+}
+CCACHE_PATH=$(which ccache)
+
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then
-    echo "Checking ccache..."
-    {
-        $(which -s ccache)
-    } ||
-    {
-        brew install ccache
-        exportline="export PATH=/usr/local/opt/ccache/libexec:\$PATH";
-        echo $exportline >> ~/$SHELL_LOGIN
-        eval $exportline
-    }
-    CCACHE_PATH=$(which ccache)
     install_arm_none_eabi_toolchain
 fi
 
@@ -162,6 +162,8 @@ echo "Adding ArduPilot Tools to environment"
 
 SCRIPT_DIR=$(dirname $(grealpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(grealpath "$SCRIPT_DIR/../../")
+
+if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
@@ -171,15 +173,13 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
 }
+fi
 
-SCRIPT_DIR=$(dirname $(grealpath ${BASH_SOURCE[0]}))
-ARDUPILOT_ROOT=$(grealpath "$SCRIPT_DIR/../../")
-
-exportline="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
-grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
+exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
+grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
-        echo $exportline >> ~/$SHELL_LOGIN
-        eval $exportline
+        echo $exportline2 >> ~/$SHELL_LOGIN
+        eval $exportline2
     else
         echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
     fi
