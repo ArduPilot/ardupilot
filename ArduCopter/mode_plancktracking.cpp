@@ -44,60 +44,74 @@ void ModePlanckTracking::run() {
     bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
     bool use_positive_throttle = high_tension;
 
-    if(mount != nullptr && !high_tension) {
-      if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
+    // Don't use/set heading command from gimbal if tether is in high tension.
+    if(!high_tension)
+    {
+      // If the gimbal is in vehicle_yaw_follows_gimbal mode, it sends a heading offset command,
+      // so we add that offset to the current vehicle heading to obtain the desired absoute heading.
+      // Note that the getter method "get_follow_yaw_rate()" is poorly named; it is not a rate,
+      // it's the differene between vehicle and gimbal heading.
+      if(mount != nullptr) {
+        if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
-        //only set new yaw command if payload data is recent (1/2 sec)
-        if (AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
-        {
-          float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
-          int8_t direction = 1;
-          bool relative_angle = false;
+          //only set new yaw command if payload data is recent (1/2 sec)
+          if (AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
+          {
+            float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
+            int8_t direction = 1;
+            bool relative_angle = false;
 
-          // update auto_yaw private variable _fixed_yaw
-          copter.flightmode->auto_yaw.set_fixed_yaw(
-                angle_deg,
-                0, // use default angle change rate
-                direction,
-                relative_angle);
+            // update auto_yaw private variable _fixed_yaw
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  angle_deg,
+                  0, // use default angle change rate
+                  direction,
+                  relative_angle);
+          }
+          paylod_yaw_rate = false;
         }
-        paylod_yaw_rate = false;
-      }
-      else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
-      {
-        paylod_yaw_rate = true;
-        if(AP_HAL::micros64() - mount->get_last_mount_control_time_us() > 500000)
+        else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
         {
-          copter.flightmode->auto_yaw.set_fixed_yaw(
-                0.0f,
-                0.0f,
-                0,
-                0);
-        }
-        else if(copter.flightmode->auto_yaw.mode() == AUTO_YAW_RATE)
-        {
-          yaw_rate_for_logging_cds = copter.flightmode->auto_yaw.rate_cds();
-          copter.flightmode->auto_yaw.set_fixed_yaw(
-                copter.flightmode->auto_yaw.rate_cds(),
-                0.0f,
-                0,
-                0);
+          //in this case, APM is getting yaw rate commands from the tablet via mavlink,
+          //so we set the set the fixed yaw command to this rate, and tell the
+          //angle controller in mode guided to interpret as a rate. Note that the
+          //auto yaw will be set to mode fixed, though it is actually controlling rate.
+          paylod_yaw_rate = true;
 
+          //If we've stopped getting the mavlink yaw rate commands, use 0 yaw rate command
+          if(AP_HAL::micros64() - mount->get_last_mount_control_time_us() > 500000)
+          {
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  0.0f,
+                  0.0f,
+                  0,
+                  0);
+          }
+          else if(copter.flightmode->auto_yaw.mode() == AUTO_YAW_RATE)
+          {
+            yaw_rate_for_logging_cds = copter.flightmode->auto_yaw.rate_cds();
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  copter.flightmode->auto_yaw.rate_cds(),
+                  0.0f,
+                  0,
+                  0);
+
+          }
         }
-      }
-      static uint32_t next_yaw_report_t_ms = 0;
-      if(AP_HAL::millis() > next_yaw_report_t_ms) {
+        static uint32_t next_yaw_report_t_ms = 0;
+        if(AP_HAL::millis() > next_yaw_report_t_ms) {
           gcs().send_text(MAV_SEVERITY_INFO, "Yaw rate: %f %f %f %i %i %i",yaw_rate_for_logging_cds, auto_yaw.yaw(), mount->get_follow_yaw_rate(), mount->mount_yaw_follow_mode, mount->has_pan_control(), auto_yaw.mode());
           next_yaw_report_t_ms = AP_HAL::millis() + 500;
+        }
+        //      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
+        //                               AP_HAL::micros64(),
+        //                         (float)yaw_rate_for_logging_cds,
+        //                         (float)auto_yaw.yaw(),
+        //                         (float)mount->get_follow_yaw_rate(),
+        //                         (uint8_t)mount->mount_yaw_follow_mode,
+        //                         (uint8_t)mount->has_pan_control(),
+        //                         (uint8_t)auto_yaw.mode());
       }
-//      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
-//                               AP_HAL::micros64(),
-//                         (float)yaw_rate_for_logging_cds,
-//                         (float)auto_yaw.yaw(),
-//                         (float)mount->get_follow_yaw_rate(),
-//                         (uint8_t)mount->mount_yaw_follow_mode,
-//                         (uint8_t)mount->has_pan_control(),
-//                         (uint8_t)auto_yaw.mode());
     }
 
     if(high_tension) {
@@ -171,9 +185,11 @@ void ModePlanckTracking::run() {
                   is_yaw_rate = true;
               }
               //Some applications require a fixed yaw command when in PLANCKTRACK
-              //If we are not in takeoff or landing, use the fixed yaw command from the GCS
-              else if(copter.flightmode == &copter.mode_plancktracking
-                      && copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED && copter.planck_interface.get_tag_pos().z > min_yaw_alt_cm)
+              //Only use gimbal yaw (or yaw rate) commands if in mode_plancktracking and above alt threshold, and not high tension
+              else if((copter.flightmode == &copter.mode_plancktracking)
+                      && (copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED )
+                      && (copter.planck_interface.get_tag_pos().z > min_yaw_alt_cm)
+                      && !high_tension)
               {
                   yaw_cd = copter.flightmode->auto_yaw.yaw();
                   is_yaw_rate = paylod_yaw_rate;
