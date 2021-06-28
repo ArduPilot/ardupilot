@@ -73,7 +73,7 @@ jobs:
           python -m pip uninstall -y pymavlink
           git submodule update --init --recursive
           (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python -m pip install --user .)
-          if [[ ${{ matrix.config }} = "coverage" ]]; then
+          if [[ ${{ matrix.config }} == "coverage" ]]; then
             Tools/scripts/run_coverage.py -f
           else
             Tools/scripts/run_coverage.py -i
