@@ -85,6 +85,14 @@ void RCOutput::push(void)
         memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
         _corked = false;
     }
+
+    // do not overwrite FETTec simulation's ESC telemetry data:
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl != nullptr &&
+        sitl->fetteconewireesc_sim.enabled()) {
+        return;
+    }
+
     if (esc_telem == nullptr) {
         esc_telem = new AP_ESC_Telem_SITL;
     }
