@@ -156,7 +156,8 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         // if throttle is near zero, update base x,y,z values
         if (throttle_pct <= 0.0f) {
             for (uint8_t i=0; i<compass.get_count(); i++) {
-            compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
+                compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
+            }
         }
         } else {
 
