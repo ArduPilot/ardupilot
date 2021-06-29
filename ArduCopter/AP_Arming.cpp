@@ -788,6 +788,19 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         return false;
     }
 
+    // move home to current location if it has been set before but not "locked"
+    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+        if (!copter.set_home_to_current_location(false)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Arming failed to set home");
+            if (do_arming_checks) {
+                AP_Notify::events.arming_failed = true;
+                in_arm_motors = false;
+                return false;
+            }
+        }
+    }
+
     // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
 
@@ -809,8 +822,6 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // --------------------
     copter.init_simple_bearing();
 
-    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
-
     copter.initial_armed_bearing = ahrs.yaw_sensor;
 
     if (!ahrs.home_is_set()) {
@@ -820,12 +831,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
         // we have reset height, so arming height is zero
         copter.arming_altitude_m = 0;
-    } else if (!ahrs.home_is_locked()) {
-        // Reset home position if it has already been set before (but not locked)
-        if (!copter.set_home_to_current_location(false)) {
-            // ignore failure
-        }
-
+    } else {
         // remember the height when we armed
         copter.arming_altitude_m = copter.inertial_nav.get_altitude() * 0.01;
     }
