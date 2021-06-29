@@ -405,6 +405,23 @@ void AP_Vehicle::publish_osd_info()
 }
 #endif
 
+/**
+ * Determine if flight mode is invalid
+ *
+ * @param [in] mode Flight Mode Pointer
+ * @param [in] mode_num Flight mode number
+ * @retval true Flight mode for flight number is invalid
+ * @retval false Flight mode for flight number is valid
+ */
+bool AP_Vehicle::is_no_such_mode(void* mode, uint8_t mode_num)
+{
+    if (mode == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "invalid mode number: %d", mode_num);
+        return true;
+    }
+    return false;
+}
+
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()
