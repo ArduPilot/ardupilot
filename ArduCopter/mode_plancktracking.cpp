@@ -38,7 +38,6 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
-    float yaw_rate_for_logging_cds=18.4218;
 
     //Check for tether high tension
     bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
@@ -89,7 +88,6 @@ void ModePlanckTracking::run() {
           }
           else if(copter.flightmode->auto_yaw.mode() == AUTO_YAW_RATE)
           {
-            yaw_rate_for_logging_cds = copter.flightmode->auto_yaw.rate_cds();
             copter.flightmode->auto_yaw.set_fixed_yaw(
                   copter.flightmode->auto_yaw.rate_cds(),
                   0.0f,
@@ -98,19 +96,6 @@ void ModePlanckTracking::run() {
 
           }
         }
-        static uint32_t next_yaw_report_t_ms = 0;
-        if(AP_HAL::millis() > next_yaw_report_t_ms) {
-          gcs().send_text(MAV_SEVERITY_INFO, "Yaw rate: %f %f %f %i %i %i",yaw_rate_for_logging_cds, auto_yaw.yaw(), mount->get_follow_yaw_rate(), mount->mount_yaw_follow_mode, mount->has_pan_control(), auto_yaw.mode());
-          next_yaw_report_t_ms = AP_HAL::millis() + 500;
-        }
-        //      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
-        //                               AP_HAL::micros64(),
-        //                         (float)yaw_rate_for_logging_cds,
-        //                         (float)auto_yaw.yaw(),
-        //                         (float)mount->get_follow_yaw_rate(),
-        //                         (uint8_t)mount->mount_yaw_follow_mode,
-        //                         (uint8_t)mount->has_pan_control(),
-        //                         (uint8_t)auto_yaw.mode());
       }
     }
 

@@ -528,15 +528,6 @@ void ModePosHold::run()
                     relative_angle);
             }
         }
-//        AP::logger().Write("PHY1", "TimeUS,Tyr,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QffffBBB",
-//                                 AP_HAL::micros64(),
-//                                 (float)target_yaw_rate,
-//                                 (float)auto_yaw.rate_cds(),
-//                                 (float)auto_yaw.yaw(),
-//                                 (float)mount->get_follow_yaw_rate(),
-//                                 (uint8_t)mount->mount_yaw_follow_mode,
-//                                 (uint8_t)mount->has_pan_control(),
-//                                 (uint8_t)auto_yaw.mode());
     }
 
     // call attitude controller
