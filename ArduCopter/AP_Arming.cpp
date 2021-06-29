@@ -821,6 +821,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // Remember Orientation
     // --------------------
     copter.init_simple_bearing();
+    copter.update_super_simple_bearing(false);
 
     copter.initial_armed_bearing = ahrs.yaw_sensor;
 
@@ -835,7 +836,6 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         // remember the height when we armed
         copter.arming_altitude_m = copter.inertial_nav.get_altitude() * 0.01;
     }
-    copter.update_super_simple_bearing(false);
 
     // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
 #if MODE_SMARTRTL_ENABLED == ENABLED
