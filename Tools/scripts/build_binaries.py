@@ -36,8 +36,11 @@ class build_binaries(object):
     def __init__(self, tags):
         self.tags = tags
         self.dirty = False
-        binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
-                                                 "build_binaries_history.sqlite")
+        default_binaries_history_filepath = os.path.join(
+            self.buildlogs_dirpath(),
+            "build_binaries_history.sqlite")
+        binaries_history_filepath = os.getenv("BUILD_BINARIES_HISTORY",
+                                              default_binaries_history_filepath)
         self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
 
     def progress(self, string):
@@ -788,6 +791,10 @@ is bob we will attempt to checkout bob-AVR'''
             shutil.rmtree(self.tmpdir)
 
     def buildlogs_dirpath(self):
+        out = os.getenv("BUILD_BINARIES_BUILDLOGS_DIR", None)
+        if out is not None:
+            return out
+        raise ValueError("Expected BUILD_BINARIES_BUILDLOGS_DIR")
         return os.getenv("BUILDLOGS",
                          os.path.join(os.getcwd(), "..", "buildlogs"))
 
