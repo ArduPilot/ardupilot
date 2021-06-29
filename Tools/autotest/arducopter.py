@@ -6939,7 +6939,8 @@ class AutoTestCopter(AutoTest):
 
         self.wait_altitude(100, 1000, timeout=100, relative=True)
         self.context_collect('STATUSTEXT')
-        self.wait_statustext("throw detected - uprighting", check_context=True, timeout=10)
+        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
+        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
         self.wait_statustext("uprighted - controlling height", check_context=True)
         self.wait_statustext("height achieved - controlling position", check_context=True)
         self.progress("Waiting for still")
@@ -6966,8 +6967,8 @@ class AutoTestCopter(AutoTest):
             pass
 
         self.wait_altitude(100, 1000, timeout=100, relative=True)
-        self.context_collect('STATUSTEXT')
-        self.wait_statustext("throw detected - uprighting", check_context=True, timeout=10)
+        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
+        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
         self.wait_statustext("uprighted - controlling height", check_context=True)
         self.wait_statustext("height achieved - controlling position", check_context=True)
         self.wait_mode('AUTO')
