@@ -122,6 +122,15 @@ uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
     return crc;
 }
 
+// copied from AP_FETtecOneWire.cpp
+uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len)
+{
+    for (uint16_t i = 0; i < buf_len; i++) {
+        crc = crc8_dvb(buf[i], crc, 0x7);
+    }
+    return crc;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty
