@@ -50,6 +50,10 @@ protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;
     uint8_t get_bus(void) const;
+    bool bus_is_confgured(void) const;
+    uint8_t get_instance(void) const {
+        return instance;
+    }
 
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
         return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
