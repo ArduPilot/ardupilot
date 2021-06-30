@@ -641,7 +641,6 @@ MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlin
     if (is_equal(packet.param6,1.0f)) {
         // compassmot calibration
         return plane.mavlink_compassmot(*this);
-        // return MAV_RESULT_ACCEPTED;
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
