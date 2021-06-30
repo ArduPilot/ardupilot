@@ -205,6 +205,7 @@ private:
         AP_Int8  autocal;
         AP_Int8  tube_order;
         AP_Int8  skip_cal;
+        AP_Int32 bus_id;
     } param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {

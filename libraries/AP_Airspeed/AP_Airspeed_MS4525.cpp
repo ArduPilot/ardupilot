@@ -90,6 +90,9 @@ bool AP_Airspeed_MS4525::init()
     return false;
 
 found_sensor:
+    _dev->set_device_type(uint8_t(DevType::MS4525));
+    set_bus_id(_dev->get_bus_id());
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS4525[%u]: Found bus %u addr 0x%02x", get_instance(), _dev->bus_num(), _dev->get_bus_address());
 
     // drop to 2 retries for runtime
