@@ -582,14 +582,15 @@ void RCOutput::push_local(void)
                     period_us = group.dshot_pulse_time_us;
                 }
 #endif //#ifndef DISABLE_DSHOT
-                if (period_us > widest_pulse) {
-                    widest_pulse = period_us;
-                }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
                     group.current_mode == MODE_NEOPIXEL ||
                     group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
+                    // only control widest pulse for oneshot and dshot
+                    if (period_us > widest_pulse) {
+                        widest_pulse = period_us;
+                    }
                     const uint8_t i = &group - pwm_group_list;
                     need_trigger |= (1U<<i);
                 }
