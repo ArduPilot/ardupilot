@@ -40,9 +40,9 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     compass.read();
     for (uint8_t i=0; i<compass.get_count(); i++) {
         if (!compass.healthy(i)) {
-        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Check compass");
-        compass_mot = false;
-        return MAV_RESULT_TEMPORARILY_REJECTED;
+            gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Check compass");
+            compass_mot = false;
+            return MAV_RESULT_TEMPORARILY_REJECTED;
         }
     }
 
@@ -75,7 +75,7 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // send back initial ACK
-    mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION,0);
+    mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION, 0);
 
     // flash leds
     AP_Notify::flags.esc_calibration = true;
@@ -149,7 +149,7 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
         if (!battery.current_amps(current)) {
-        current = 0;
+            current = 0;
         }
         current_amps_max = MAX(current_amps_max, current);
 
@@ -207,12 +207,12 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         if (AP_HAL::millis() - last_send_time > 500) {
             last_send_time = AP_HAL::millis();
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
-                                                channel_throttle->get_control_in(),
-                                                current,
-                                                interference_pct[0],
-                                                motor_compensation[0].x,
-                                                motor_compensation[0].y,
-                                                motor_compensation[0].z);
+                                               channel_throttle->get_control_in(),
+                                               current,
+                                               interference_pct[0],
+                                               motor_compensation[0].x,
+                                               motor_compensation[0].y,
+                                               motor_compensation[0].z);
         }
     }
     // stop motors
@@ -222,7 +222,7 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     if (updated) {
         compass.motor_compensation_type(comp_type);
         for (uint8_t i=0; i<compass.get_count(); i++) {
-        compass.set_motor_compensation(i, motor_compensation[i]);
+            compass.set_motor_compensation(i, motor_compensation[i]);
         }
         compass.save_motor_compensation();
         //display success message
