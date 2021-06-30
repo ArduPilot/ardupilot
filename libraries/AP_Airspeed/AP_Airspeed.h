@@ -145,6 +145,7 @@ public:
     enum OptionsMask {
         ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
+        DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
     };
 
     enum airspeed_type {

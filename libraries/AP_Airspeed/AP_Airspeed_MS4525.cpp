@@ -193,8 +193,10 @@ void AP_Airspeed_MS4525::_collect()
     float temp  = _get_temperature(dT_raw);
     float temp2 = _get_temperature(dT_raw2);
     
-    _voltage_correction(press, temp);
-    _voltage_correction(press2, temp2);
+    if (!disable_voltage_correction()) {
+        _voltage_correction(press, temp);
+        _voltage_correction(press2, temp2);
+    }
 
     WITH_SEMAPHORE(sem);
 
