@@ -255,10 +255,6 @@ private:
 
     AP_Motors6DOF motors;
 
-    // GPS variables
-    // Sometimes we need to remove the scaling for distance calcs
-    float scaleLongDown;
-
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
 
