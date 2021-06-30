@@ -250,6 +250,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     } else {
         consumed_wh = -1;
     }
+    const float internal_resistance = battery.get_resistance(instance);
+
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
                                     MAV_BATTERY_FUNCTION_UNKNOWN, // function
@@ -262,7 +264,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
                                     battery.get_mavlink_charge_state(instance), // battery charge state
-                                    cell_volts_ext); // Cell 11..14 voltages
+                                    cell_volts_ext,  // Cell 11..14 voltages
+                                    internal_resistance
+        );
 }
 
 // returns true if all battery instances were reported
