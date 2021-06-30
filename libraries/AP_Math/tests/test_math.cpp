@@ -628,7 +628,7 @@ TEST(MathTest, VELCORRECTION)
     static constexpr Matrix3F rot(0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     static constexpr Vector3F rate{-1.0f, -1.0f, -1.0f};
     EXPECT_TRUE(Vector3F(1.0f, 1.0f, 0.0f) == get_vel_correction_for_sensor_offset(pos, rot, rate));
-    EXPECT_TRUE(Vector3F() == get_vel_correction_for_sensor_offset(Vector3f(), rot, rate));
+    EXPECT_TRUE(Vector3F() == get_vel_correction_for_sensor_offset(Vector3F(), rot, rate));
 }
 
 TEST(MathTest, LOWPASSALPHA)
