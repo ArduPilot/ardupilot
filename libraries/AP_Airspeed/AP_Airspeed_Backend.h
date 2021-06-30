@@ -55,6 +55,11 @@ protected:
         return instance;
     }
 
+    // see if voltage correction should be disabled
+    bool disable_voltage_correction(void) const {
+        return (frontend._options.get() & AP_Airspeed::OptionsMask::DISABLE_VOLTAGE_CORRECTION) != 0;
+    }
+
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
         return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
     }
