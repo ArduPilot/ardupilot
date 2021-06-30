@@ -33,6 +33,7 @@ public:
     Location();
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu, AltFrame frame);
+    Location(const Vector3d &ekf_offset_neu, AltFrame frame);
 
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
@@ -85,7 +86,7 @@ public:
     // shrinking longitude as you move north or south from the equator
     // Note: this does not include the scaling to convert
     // longitude/latitude points to meters or centimeters
-    float longitude_scale() const;
+    static float longitude_scale(int32_t lat);
 
     bool is_zero(void) const WARN_IF_UNUSED;
 
