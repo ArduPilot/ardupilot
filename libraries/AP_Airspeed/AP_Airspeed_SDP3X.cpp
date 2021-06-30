@@ -127,8 +127,9 @@ bool AP_Airspeed_SDP3X::init()
             c = '3';
             break;
         }
-        hal.console->printf("SDP3%c: Found on bus %u address 0x%02x scale=%u\n",
-                            c, get_bus(), addresses[i], _scale);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SDP3%c[%u]: Found bus %u addr 0x%02x scale=%u",
+                      get_instance(),
+                      c, get_bus(), addresses[i], _scale);
     }
 
     if (!found) {

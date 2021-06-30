@@ -27,6 +27,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -79,13 +80,13 @@ bool AP_Airspeed_MS5525::init()
         found = read_prom();
         
         if (found) {
-            printf("MS5525: Found sensor on bus %u address 0x%02x\n", get_bus(), addresses[i]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: Found on bus %u addr 0x%02x", get_instance(), get_bus(), addresses[i]);
             break;
         }
         dev->get_semaphore()->give();
     }
     if (!found) {
-        printf("MS5525: no sensor found\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: no sensor found", get_instance());
         return false;
     }
 
