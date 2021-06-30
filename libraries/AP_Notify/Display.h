@@ -3,7 +3,7 @@
 #include "NotifyDevice.h"
 
 #ifndef HAL_DISPLAY_ENABLED
-#define HAL_DISPLAY_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#define HAL_DISPLAY_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #define ROW(Y)    ((Y * 10) + 6)
