@@ -72,7 +72,7 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        dev->get_semaphore()->take_blocking();
+        WITH_SEMAPHORE(dev->get_semaphore());
 
         // lots of retries during probe
         dev->set_retries(5);
@@ -83,7 +83,6 @@ bool AP_Airspeed_MS5525::init()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: Found on bus %u addr 0x%02x", get_instance(), get_bus(), addresses[i]);
             break;
         }
-        dev->get_semaphore()->give();
     }
     if (!found) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: no sensor found", get_instance());
@@ -91,15 +90,17 @@ bool AP_Airspeed_MS5525::init()
     }
 
     // Send a command to read temperature first
+    WITH_SEMAPHORE(dev->get_semaphore());
     uint8_t reg = REG_CONVERT_TEMPERATURE;
     dev->transfer(&reg, 1, nullptr, 0);
     state = 0;
     command_send_us = AP_HAL::micros();
 
+    dev->set_device_type(uint8_t(DevType::MS5525));
+    set_bus_id(dev->get_bus_id());
+
     // drop to 2 retries for runtime
     dev->set_retries(2);
-
-    dev->get_semaphore()->give();
 
     // read at 80Hz
     dev->register_periodic_callback(1000000UL/80U,

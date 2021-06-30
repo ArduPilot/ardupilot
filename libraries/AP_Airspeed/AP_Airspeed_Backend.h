@@ -86,6 +86,24 @@ protected:
         frontend.param[instance].use.set(use);
     }
 
+    // set bus ID of this instance, for ARSPD_DEVID parameters
+    void set_bus_id(uint32_t id) {
+        frontend.param[instance].bus_id.set(int32_t(id));
+    }
+
+    enum class DevType {
+        SITL     = 0x01,
+        MS4525   = 0x02,
+        MS5525   = 0x03,
+        DLVR     = 0x04,
+        MSP      = 0x05,
+        SDP3X    = 0x06,
+        UAVCAN   = 0x07,
+        ANALOG   = 0x08,
+        NMEA     = 0x09,
+        ASP5033  = 0x0A,
+    };
+    
 private:
     AP_Airspeed &frontend;
     uint8_t instance;
