@@ -115,6 +115,7 @@ bool AP_Airspeed_SDP3X::init()
 
         found = true;
 
+#ifndef HAL_NO_GCS
         char c = 'X';
         switch (_scale) {
         case SDP3X_SCALE_PRESSURE_SDP31:
@@ -130,6 +131,7 @@ bool AP_Airspeed_SDP3X::init()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SDP3%c[%u]: Found bus %u addr 0x%02x scale=%u",
                       get_instance(),
                       c, get_bus(), addresses[i], _scale);
+#endif
     }
 
     if (!found) {
