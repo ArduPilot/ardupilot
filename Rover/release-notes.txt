@@ -1,5 +1,20 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.1.0-beta5 30-Jun-2021
+Changes from 4.1.0-beta4
+1) Enhancements
+    a) Arming check of distance from EKF origin increased to 250km horizontally (was 50km), 50km vertically (was 500m)
+    b) Pre-arm check of FLTMODE_CH and RCx_OPTION conflict
+    c) QioTekZealotH743 autopilot support
+    d) Scripting support for set home and get EKF origin
+    e) Water depth and temperature sent to GCS using WATER_DEPTH mavlink message
+2) Bug fixes
+    a) EKF alt estimate more robust when using GPS-for-yaw
+    b) EKF origin altitudes consistent across cores even if user takes off with no GPS lock
+    c) Logging start does not affect EKF (EKF could become unhealthy due to timing delays)
+    d) Longitude wrap fixed (allows flying across international date line)
+    e) Position jump fixed during GPS glitch and GPS/Non-GPS transitions
+--------------------------------
 Rover 4.1.0-beta4 12-Jun-2021
 Changes from 4.1.0-beta3
 1) Rover/Boat specific enhancements and bug fixes
