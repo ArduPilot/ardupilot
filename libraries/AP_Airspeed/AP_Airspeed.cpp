@@ -257,6 +257,23 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // Note that 21, 22 and 23 are used above by the _OPTIONS, _WIND_MAX and _WIND_WARN parameters.  Do not use them!!
 
+    // @Param: _DEVID
+    // @DisplayName: Airspeed ID
+    // @Description: Airspeed sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_DEVID", 24, AP_Airspeed, param[0].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
+#if AIRSPEED_MAX_SENSORS > 1
+    // @Param: 2_DEVID
+    // @DisplayName: Airspeed2 ID
+    // @Description: Airspeed2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("2_DEVID", 25, AP_Airspeed, param[1].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+#endif
+    
+    
     AP_GROUPEND
 };
 

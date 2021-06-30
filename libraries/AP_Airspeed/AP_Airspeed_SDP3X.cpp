@@ -143,6 +143,9 @@ bool AP_Airspeed_SDP3X::init()
     set_skip_cal();
     set_offset(0);
     
+    _dev->set_device_type(uint8_t(DevType::SDP3X));
+    set_bus_id(_dev->get_bus_id());
+
     // drop to 2 retries for runtime
     _dev->set_retries(2);
 

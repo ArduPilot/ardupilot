@@ -43,10 +43,12 @@ bool AP_Airspeed_DLVR::init()
     if (!dev) {
         return false;
     }
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
-    dev->get_semaphore()->give();
+    dev->set_device_type(uint8_t(DevType::DLVR));
+    set_bus_id(dev->get_bus_id());
+
     dev->register_periodic_callback(1000000UL/50U,
                                     FUNCTOR_BIND_MEMBER(&AP_Airspeed_DLVR::timer, void));
     return true;
