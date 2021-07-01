@@ -6,6 +6,7 @@
 #include "AC_Sprayer/AC_Sprayer.h"
 #include "AP_Gripper/AP_Gripper.h"
 #include "AP_Rally.h"
+#include "AP_Torqeedo/AP_Torqeedo.h"
 
 // Global parameter class.
 //
@@ -403,6 +404,11 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+#if HAL_TORQEEDO_ENABLED
+    // torqeedo motor driver
+    AP_Torqeedo torqeedo;
+#endif
 };
 
 extern const AP_Param::Info var_info[];
