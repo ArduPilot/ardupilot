@@ -2778,6 +2778,7 @@ class AutoTest(ABC):
             raise NotAchievedException("target temperature")
 
     def onboard_logging_not_log_disarmed(self):
+        self.start_subtest("Test LOG_DISARMED-is-false behaviour")
         self.set_parameter("LOG_DISARMED", 0)
         self.set_parameter("LOG_FILE_DSRMROT", 0)
         self.reboot_sitl()
@@ -2850,6 +2851,7 @@ class AutoTest(ABC):
             self.progress("Unexpected new log found")
 
     def onboard_logging_log_disarmed(self):
+        self.start_subtest("Test LOG_DISARMED-is-true behaviour")
         start_list = self.log_list()
         self.set_parameter("LOG_FILE_DSRMROT", 0)
         self.set_parameter("LOG_DISARMED", 0)
@@ -2924,9 +2926,27 @@ class AutoTest(ABC):
 
         # self.progress("If we re-arm during the HAL_LOGGER_ARM_PERSIST period it should rotate")
 
+    def onboard_logging_forced_arm(self):
+        '''ensure a bug where we didn't start logging when arming was forced
+        does not reappear'''
+        self.start_subtest("Ensure we get a log when force-arming")
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()  # so we'll definitely start a log on arming
+        pre_arming_list = self.log_list()
+        self.wait_ready_to_arm()
+        self.arm_vehicle(force=True)
+        # we might be relying on a thread to actually create the log
+        # file when doing forced-arming; give the file time to appear:
+        self.delay_sim_time(10)
+        post_arming_list = self.log_list()
+        self.disarm_vehicle()
+        if len(post_arming_list) <= len(pre_arming_list):
+            raise NotAchievedException("Did not get a log on forced arm")
+
     def test_onboard_logging(self):
         if self.is_tracker():
             return
+        self.onboard_logging_forced_arm()
         self.onboard_logging_log_disarmed()
         self.onboard_logging_not_log_disarmed()
 
