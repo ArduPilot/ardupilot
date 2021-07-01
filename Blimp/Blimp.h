@@ -347,6 +347,7 @@ private:
     void failsafe_gcs_check();
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
+    void gpsglitch_check();
 
     // failsafe.cpp
     void failsafe_enable();
