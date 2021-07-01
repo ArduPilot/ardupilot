@@ -572,16 +572,16 @@ void Scheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
     }
 #if defined STM32H7
-    uint8_t memcheck_counter=0;
+    uint16_t memcheck_counter=0;
 #endif
     while (true) {
-        sched->delay_microseconds(10000);
+        sched->delay_microseconds(1000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
 
 #if defined STM32H7
-        if (memcheck_counter++ % 50 == 0) {
+        if (memcheck_counter++ % 500 == 0) {
             // run check at 2Hz
             sched->check_low_memory_is_zero();
         }
