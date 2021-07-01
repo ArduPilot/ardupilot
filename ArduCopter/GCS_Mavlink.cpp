@@ -1413,6 +1413,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_l
     }
 #endif
 
+    //Immediately emit a heartbeat indicating a disarmed state
+    send_heartbeat();
+
     return result;
 }
 
