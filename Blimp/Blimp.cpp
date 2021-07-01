@@ -46,6 +46,7 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
     SCHED_TASK(check_vibration,       10,     50),
+    SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550),
 #if LOGGING_ENABLED == ENABLED
