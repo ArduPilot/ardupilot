@@ -1334,6 +1334,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
     }
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+    bool armed = hal.util->get_soft_armed();
 
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
 
@@ -1381,6 +1382,11 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
+            }
+
+            if (!armed) {
+                // when disarmed we always send a zero value
+                value = 0;
             }
 
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
