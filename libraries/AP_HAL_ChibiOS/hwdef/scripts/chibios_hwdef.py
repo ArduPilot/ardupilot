@@ -884,19 +884,19 @@ def write_mcu_config(f):
 #define HAL_NO_RCIN_THREAD
 #define HAL_NO_SHARED_DMA FALSE
 #define HAL_NO_ROMFS_SUPPORT TRUE
-''')
-        if not env_vars['EXTERNAL_PROG_FLASH_MB']:
-            f.write('''
 #define CH_CFG_USE_TM FALSE
 #define CH_CFG_USE_REGISTRY FALSE
 #define CH_CFG_USE_WAITEXIT FALSE
 #define CH_CFG_USE_MEMPOOLS FALSE
 #define CH_DBG_FILL_THREADS FALSE
-#define CH_CFG_USE_SEMAPHORES FALSE
-#define CH_CFG_USE_HEAP FALSE
 #define CH_CFG_USE_MUTEXES FALSE
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+''')
+        if not env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('''
+#define CH_CFG_USE_HEAP FALSE
+#define CH_CFG_USE_SEMAPHORES FALSE
 #define CH_CFG_USE_MEMCORE FALSE
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
