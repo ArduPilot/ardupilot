@@ -26,6 +26,7 @@ def build(bld):
             'AP_OSD',
             'AP_WindVane',
             'AP_Motors',
+            'AP_Torqeedo',
         ],
     )
 
