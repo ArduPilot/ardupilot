@@ -750,7 +750,7 @@ float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
     }
 
     // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
+    g2.acro_y_expo = constrain_float(g2.acro_y_expo, -0.5f, 1.0f);
 
     // calculate yaw rate request
     float yaw_request;
