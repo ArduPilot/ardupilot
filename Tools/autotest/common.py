@@ -3677,14 +3677,17 @@ class AutoTest(ABC):
                     target_compid=None,
                 ))
 
-    def arm_vehicle(self, timeout=20):
+    def arm_vehicle(self, timeout=20, force=False):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.drain_mav()
+        p2 = 0
+        if force:
+            p2 = 2989
         try:
             self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                          1,  # ARM
-                         0,
+                         p2,
                          0,
                          0,
                          0,
