@@ -6,7 +6,7 @@ def build(bld):
         return
 
     if bld.env.EXTERNAL_PROG_FLASH_MB:
-        flashiface_lib = ['AP_HAL', 'AP_FlashIface']
+        flashiface_lib = ['AP_HAL', 'AP_FlashIface', 'AP_HAL_Empty']
     else:
         flashiface_lib = []
     
