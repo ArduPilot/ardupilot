@@ -349,10 +349,6 @@ void AP_Camera::update()
 {
     update_trigger();
 
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
-        return;
-    }
-
     if (is_zero(_trigg_dist)) {
         _last_location.lat = 0;
         _last_location.lng = 0;
