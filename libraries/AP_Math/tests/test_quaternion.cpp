@@ -69,9 +69,27 @@ TEST(QuaternionConversionTest, GeneralQuaternionToRotationVector) {
     EXPECT_NEAR(res.z, -1.4125197f, 1e-6f);
 }
 
+// Tests that the quaternion to rotation matrix conversion formula is correctly derived from the Hamilton's quaternion
+// multiplication convention. This specific example is taken from "Why and How to Avoid the Flipped Quaternion
+// Multiplication" (https://arxiv.org/pdf/1801.07478.pdf)
+TEST(QuaternionConversionTest, QuaternionToRotationMatrix) {
+    Matrix3f res;
+    Quaternion(0.5f * sqrtf(2.0f), 0.0f, 0.0f, 0.5f * sqrtf(2.0f)).rotation_matrix(res);
+
+    EXPECT_NEAR(res.a.x, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.a.y, -1.0f, 1e-6f);
+    EXPECT_NEAR(res.a.z, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.b.x, 1.0f, 1e-6f);
+    EXPECT_NEAR(res.b.y, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.b.z, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.c.x, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.c.y, 0.0f, 1e-6f);
+    EXPECT_NEAR(res.c.z, 1.0f, 1e-6f);
+}
+
 // Tests that quaternion multiplication obeys Hamilton's quaternion multiplication convention
 // i*i == j*j == k*k == i*j*k == -1
-TEST(QuaternionTest, QuaternionMultiplicationOfBases) {
+TEST(QuaternionAlgebraTest, QuaternionMultiplicationOfBases) {
     const Quaternion unit(1.0f, 0.0f, 0.0f, 0.0f);
     const Quaternion i(0.0f, 1.0f, 0.0f, 0.0f);
     const Quaternion j(0.0f, 0.0f, 1.0f, 0.0f);
@@ -107,27 +125,9 @@ TEST(QuaternionTest, QuaternionMultiplicationOfBases) {
     }
 }
 
-// Tests that the quaternion to rotation matrix conversion formula is correctly derived from the Hamilton's quaternion
-// multiplication convention. This specific example is taken from "Why and How to Avoid the Flipped Quaternion
-// Multiplication" (https://arxiv.org/pdf/1801.07478.pdf)
-TEST(QuaternionTest, QuaternionToRotationMatrix) {
-    Matrix3f res;
-    Quaternion(0.5f * sqrtf(2.0f), 0.0f, 0.0f, 0.5f * sqrtf(2.0f)).rotation_matrix(res);
-
-    EXPECT_NEAR(res.a.x, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.a.y, -1.0f, 1e-6f);
-    EXPECT_NEAR(res.a.z, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.b.x, 1.0f, 1e-6f);
-    EXPECT_NEAR(res.b.y, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.b.z, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.c.x, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.c.y, 0.0f, 1e-6f);
-    EXPECT_NEAR(res.c.z, 1.0f, 1e-6f);
-}
-
 // Tests that quaternion multiplication is homomorphic with rotation matrix
 // multiplication, or C(q0 * q1) = C(q0) * C(q1)
-TEST(QuaternionTest, QuaternionMultiplicationIsHomomorphism) {
+TEST(QuaternionAlgebraTest, QuaternionMultiplicationIsHomomorphism) {
     Quaternion l_quat(0.8365163f, 0.48296291f, 0.22414387f, -0.12940952f);
     Quaternion r_quat(0.9576622f, 0.03378266f, 0.12607862f, 0.25660481f);
 
@@ -151,7 +151,7 @@ TEST(QuaternionTest, QuaternionMultiplicationIsHomomorphism) {
 }
 
 // Tests that applying a rotation by a unit quaternion does nothing
-TEST(QuaternionTest, QuatenionRotationByUnitQuaternion) {
+TEST(QuaternionAlgebraTest, QuatenionRotationByUnitQuaternion) {
     Vector3f v(1.0f, 2.0f, 3.0f);
     Quaternion q(1.0f, 0.0f, 0.0f, 0.0f);
 
@@ -163,9 +163,9 @@ TEST(QuaternionTest, QuatenionRotationByUnitQuaternion) {
 }
 
 // Tests that applying a rotation by a quaternion whose axis is parallel to the vector does nothing
-TEST(QuaternionTest, QuatenionRotationByParallelQuaternion) {
+TEST(QuaternionAlgebraTest, QuatenionRotationByParallelQuaternion) {
     Vector3f v(1.0f, 2.0f, 3.0f);
-    Quaternion q(0.730296743340221, 0.182574185835055, 0.365148371670111, 0.547722557505166f);
+    Quaternion q(0.7302967f, 0.1825742f, 0.3651484f, 0.5477226f);
 
     Vector3f res = q * v;
 
@@ -174,8 +174,8 @@ TEST(QuaternionTest, QuatenionRotationByParallelQuaternion) {
     }
 }
 
-// Tests that applying a rotation by a unit quaternion does not change the vector's length
-TEST(QuaternionTest, QuatenionRotationLengthPreserving) {
+// Tests that applying a rotation by any quaternion does not change the vector's length
+TEST(QuaternionAlgebraTest, QuatenionRotationLengthPreserving) {
     Vector3f v(1.0f, 2.0f, 3.0f);
     Quaternion q(0.8365163f, 0.48296291f, 0.22414387f, -0.12940952f);
 
@@ -186,7 +186,7 @@ TEST(QuaternionTest, QuatenionRotationLengthPreserving) {
 
 // Tests that calling the quaternion rotation operator is equivalent to the formula q * v * q.inverse(), and to
 // converting to rotation matrix followed by matrix multiplication
-TEST(QuaternionTest, QuatenionRotationFormulaEquivalence) {
+TEST(QuaternionAlgebraTest, QuatenionRotationFormulaEquivalence) {
     Vector3f res_1, res_0, res_2;
     Vector3f v(1.0f, 2.0f, 3.0f);
     Quaternion q(0.8365163f, 0.48296291f, 0.22414387f, -0.12940952f);
@@ -209,7 +209,7 @@ TEST(QuaternionTest, QuatenionRotationFormulaEquivalence) {
 
 // Tests that the calling the rotation operator on a inverted quaternion is equivalent to q.inverse() * v * q, and to
 // converting to rotation matrix, taking transpose, followed by matrix multiplication
-TEST(QuaternionTest, QuatenionInverseRotationFormulaEquivalence) {
+TEST(QuaternionAlgebraTest, QuatenionInverseRotationFormulaEquivalence) {
     Vector3f res_0, res_1, res_2;
     Vector3f v(1.0f, 2.0f, 3.0f);
     Quaternion q(0.8365163f, 0.48296291f, 0.22414387f, -0.12940952f);
