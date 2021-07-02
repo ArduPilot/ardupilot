@@ -972,6 +972,7 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 // from which to decide the origin on its own
 bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 {
+    WITH_SEMAPHORE(_rsem);
 #if HAL_NAVEKF2_AVAILABLE
     const bool ret2 = EKF2.setOriginLLH(loc);
 #endif
