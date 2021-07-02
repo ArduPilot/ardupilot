@@ -276,20 +276,20 @@ bool ModeThrow::throw_detected()
     return throw_condition_confirmed;
 }
 
-bool ModeThrow::throw_attitude_good()
+bool ModeThrow::throw_attitude_good() const
 {
     // Check that we have uprighted the copter
     const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
     return (rotMat.c.z > 0.866f); // is_upright
 }
 
-bool ModeThrow::throw_height_good()
+bool ModeThrow::throw_height_good() const
 {
     // Check that we are within 0.5m of the demanded height
     return (pos_control->get_pos_error_z_cm() < 50.0f);
 }
 
-bool ModeThrow::throw_position_good()
+bool ModeThrow::throw_position_good() const
 {
     // check that our horizontal position error is within 50cm
     return (pos_control->get_pos_error_xy_cm() < 50.0f);
