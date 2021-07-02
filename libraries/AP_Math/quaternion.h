@@ -93,7 +93,7 @@ public:
 
     // create a quaternion from a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
-    void        from_axis_angle(Vector3f v);
+    void        from_axis_angle(const Vector3f &v);
 
     // create a quaternion from its axis-angle representation
     // the axis vector must be length 1. the rotation angle theta is in radians
