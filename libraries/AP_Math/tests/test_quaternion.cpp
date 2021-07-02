@@ -2,6 +2,73 @@
 
 #include <AP_Math/AP_Math.h>
 
+TEST(QuaternionConversionTest, SpecialRotationVectorToQuaternion) {
+    const Vector3f small_vec(1e-4f, -2e-4f, 3e-4f);
+
+    Quaternion res;
+    res.from_axis_angle(small_vec);
+
+    // Check if the Taylor series approximations of quaternion coefficients violate the unit-length constraint
+    EXPECT_FLOAT_EQ(res.length(), 1.0f);
+    EXPECT_NEAR(res.q1, 1.0f, 1e-6f);
+    EXPECT_NEAR(res.q2, 5e-5f, 1e-6f);
+    EXPECT_NEAR(res.q3, -1e-4, 1e-6f);
+    EXPECT_NEAR(res.q4, 1.5e-4f, 1e-6f);
+}
+
+TEST(QuaternionConversionTest, GeneralRotationVectorToQuaternion) {
+    const Vector3f vec(-0.43192759f, -0.21596379f, 0.43192759f);
+
+    Quaternion res;
+    res.from_axis_angle(vec);
+    const float half_theta = 0.323945691482636f;
+    const float re_coeff = cosf(half_theta);
+    const float im_coeff = sinf(half_theta);
+
+    EXPECT_NEAR(res.q1, re_coeff, 1e-6f);
+    EXPECT_NEAR(res.q2, -2.0f / 3.0f * im_coeff, 1e-6f);
+    EXPECT_NEAR(res.q3, -1.0f / 3.0f * im_coeff, 1e-6f);
+    EXPECT_NEAR(res.q4, 2.0f / 3.0f * im_coeff, 1e-6f);
+}
+
+TEST(QuaternionConversionTest, SpecialQuaternionToRotationVector) {
+    Vector3f res;
+
+    Quaternion small_quat(1.0f, 1.15e-3f, 2.5e-4f, -7.5e-5f);
+    small_quat.to_axis_angle(res);
+    EXPECT_NEAR(res.x, 0.0023f, 1e-6f);
+    EXPECT_NEAR(res.y, 5e-4f, 1e-6f);
+    EXPECT_NEAR(res.z, -1.5e-4f, 1e-6f);
+
+    Quaternion approx_gt_pi_quat(-0.0042036f, 0.6329564f, 0.1941979f, 0.7494236f);
+    approx_gt_pi_quat.to_axis_angle(res);
+    EXPECT_NEAR(res.x, -1.9831872f, 1e-6f);
+    EXPECT_NEAR(res.y, -0.6084635f, 1e-6f);
+    EXPECT_NEAR(res.z, -2.3481037f, 1e-6f);
+
+    Quaternion approx_lt_pi_quat(0.0057963f, 0.7191047f, 0.3164257f, 0.6186515f);
+    approx_lt_pi_quat.to_axis_angle(res);
+    EXPECT_NEAR(res.x, 2.2508355f, 1e-6f);
+    EXPECT_NEAR(res.y, 0.990429f, 1e-6f);
+    EXPECT_NEAR(res.z, 1.9364116f, 1e-6f);
+}
+
+TEST(QuaternionConversionTest, GeneralQuaternionToRotationVector) {
+    Vector3f res;
+
+    Quaternion lt_pi_quat(0.3623578f, 0.6702449f, 0.2949261f, 0.576617f);
+    lt_pi_quat.to_axis_angle(res);
+    EXPECT_NEAR(res.x, 1.7258802f, 1e-6f);
+    EXPECT_NEAR(res.y, 0.7594344f, 1e-6f);
+    EXPECT_NEAR(res.z, 1.4847885f, 1e-6f);
+
+    Quaternion gt_pi_quat(-0.4161468f, 0.653891f, 0.2877299f, 0.5625476f);
+    gt_pi_quat.to_axis_angle(res);
+    EXPECT_NEAR(res.x, -1.6418768f, 1e-6f);
+    EXPECT_NEAR(res.y, -0.7224706f, 1e-6f);
+    EXPECT_NEAR(res.z, -1.4125197f, 1e-6f);
+}
+
 // Tests that quaternion multiplication obeys Hamilton's quaternion multiplication convention
 // i*i == j*j == k*k == i*j*k == -1
 TEST(QuaternionTest, QuaternionMultiplicationOfBases) {
@@ -164,3 +231,4 @@ TEST(QuaternionTest, QuatenionInverseRotationFormulaEquivalence) {
 }
 
 AP_GTEST_MAIN()
+int hal = 0; // Needed to ensure test builds, see last line of test_3d_lines.cpp
