@@ -9,7 +9,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_GPS/AP_GPS.h>
+#include <AP_RTC/AP_RTC.h>
 #include "AP_Camera_SoloGimbal.h"
 
 // ------------------------------
@@ -330,10 +330,13 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
         altitude = current_loc.alt;
         altitude_rel = current_loc.alt - ahrs.get_home().alt;
     }
+    
+    uint64_t time_usec = 0;
+    AP::rtc().get_utc_usec(time_usec);
 
     mavlink_msg_camera_feedback_send(
         chan,
-        AP::gps().time_epoch_usec(),
+        time_usec,
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
         altitude*1e-2f, altitude_rel*1e-2f,
