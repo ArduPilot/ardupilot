@@ -1465,9 +1465,9 @@ protected:
 private:
 
     bool throw_detected();
-    bool throw_position_good();
-    bool throw_height_good();
-    bool throw_attitude_good();
+    bool throw_position_good() const;
+    bool throw_height_good() const;
+    bool throw_attitude_good() const;
 
     // Throw stages
     enum ThrowModeStage {
