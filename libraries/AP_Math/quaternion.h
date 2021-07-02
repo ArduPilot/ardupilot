@@ -102,17 +102,6 @@ public:
     // rotate by the provided rotation vector
     void        rotate(const Vector3f &v);
 
-    // create a quaternion from a rotation vector
-    // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-    void        from_axis_angle_fast(Vector3f v);
-
-    // create a quaternion from its axis-angle representation
-    // the axis vector must be length 1, theta should less than 0.17 radians (i.e. 10 degrees)
-    void        from_axis_angle_fast(const Vector3f &axis, float theta);
-
-    // rotate by the provided rotation vector
-    // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-    void        rotate_fast(const Vector3f &v);
 
     // get euler roll angle
     float       get_euler_roll() const;
