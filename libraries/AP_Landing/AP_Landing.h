@@ -52,7 +52,9 @@ public:
     // NOTE: make sure to update is_type_valid()
     enum Landing_Type {
         TYPE_STANDARD_GLIDE_SLOPE = 0,
+#if HAL_LANDING_DEEPSTALL_ENABLED
         TYPE_DEEPSTALL = 1,
+#endif
 //      TODO: TYPE_PARACHUTE,
 //      TODO: TYPE_HELICAL,
     };
@@ -143,8 +145,10 @@ private:
     disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
     update_flight_stage_fn_t update_flight_stage_fn;
 
+#if HAL_LANDING_DEEPSTALL_ENABLED
     // support for deepstall landings
     AP_Landing_Deepstall deepstall;
+#endif
 
     AP_Int16 pitch_cd;
     AP_Float flare_alt;
