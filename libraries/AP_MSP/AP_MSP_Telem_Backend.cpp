@@ -947,12 +947,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
         uint16_t r;
         uint16_t t;
     } rc;
-
     // send only 4 channels, MSP order is AERT
-    rc.a = values[rcmap->roll()];       // A
-    rc.e = values[rcmap->pitch()];      // E
-    rc.r = values[rcmap->yaw()];        // R
-    rc.t = values[rcmap->throttle()];   // T
+    // note: rcmap channels start at 1
+    rc.a = values[rcmap->roll()-1];       // A
+    rc.e = values[rcmap->pitch()-1];      // E
+    rc.r = values[rcmap->yaw()-1];        // R
+    rc.t = values[rcmap->throttle()-1];   // T
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
