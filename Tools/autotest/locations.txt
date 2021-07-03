@@ -1,4 +1,5 @@
 #NAME=latitude,longitude,absolute-altitude,heading
+aragats=40.4132219,44.3570661,0,0
 eghvard=40.311451,44.455286,0,0
 hartavan=40.4640312,44.4286232,0,0
 OSRF0=37.4003371,-122.0800351,0,353
