@@ -276,7 +276,7 @@ for t in $CI_BUILD_TARGET; do
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
-        $waf --target tools/AP_DAL_Standalone
+        $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
     fi
