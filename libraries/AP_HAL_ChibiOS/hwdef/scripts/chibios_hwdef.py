@@ -771,12 +771,21 @@ def write_mcu_config(f):
     f.write('#define EXTERNAL_PROG_FLASH_MB %u\n' % get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int))
 
     env_vars['EXTERNAL_PROG_FLASH_MB'] = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
+
+    if env_vars['EXTERNAL_PROG_FLASH_MB'] and not args.bootloader:
+        f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
+        f.write('#define __RAMFUNC__ __attribute__ ((long_call, __section__(".ramfunc")))\n')
+        f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__')
+    else:
+        f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+
     if args.bootloader:
+        if env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('#define APP_START_ADDRESS 0x90000000\n')
+            f.write('#define BOOT_FROM_EXT_FLASH 1\n')
         f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
         f.write('#define FLASH_RESERVE_END_KB %u\n' % get_config('FLASH_RESERVE_END_KB', default=0, type=int))
         f.write('#define APP_START_OFFSET_KB %u\n' % get_config('APP_START_OFFSET_KB', default=0, type=int))
-    else:
-        f.write('#define PORT_IRQ_ATTRIBUTES __attribute__((section(".irq")))')
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
@@ -922,9 +931,13 @@ def write_ldscript(fname):
 
     # ram layout
     ram_map = get_mcu_config('RAM_MAP', True)
+    instruction_ram = get_mcu_config('INSTRUCTION_RAM', False)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
     ext_flash_base = 0x90000000
+    if instruction_ram is not None:
+        instruction_ram_base = instruction_ram[0]
+        instruction_ram_length = instruction_ram[1]
 
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -962,13 +975,13 @@ INCLUDE common.ld
 MEMORY
 {
     default_flash : org = 0x%08x, len = %uM
-    irq_flash : org = 0x%08x, len = %uK
+    instram : org = 0x%08x, len = %uK
     ram0  : org = 0x%08x, len = %u
 }
 
 INCLUDE common_extf.ld
 ''' % (ext_flash_base, ext_flash_length,
-       flash_base, flash_length,
+       instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len))
 
 def copy_common_linkerscript(outdir, hwdef):
