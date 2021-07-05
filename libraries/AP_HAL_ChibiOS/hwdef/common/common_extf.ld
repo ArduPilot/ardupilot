@@ -40,6 +40,10 @@ __ram0_start__          = ORIGIN(ram0);
 __ram0_size__           = LENGTH(ram0);
 __ram0_end__            = __ram0_start__ + __ram0_size__;
 
+__instram_start__      = ORIGIN(instram);
+__instram_size__       = LENGTH(instram);
+__instram_end__        = __instram_start__ + __instram_size__;
+
 ENTRY(Reset_Handler)
 
 SECTIONS
@@ -50,7 +54,7 @@ SECTIONS
     startup : ALIGN(16) SUBALIGN(16)
     {
         KEEP(*(.vectors))
-    } > irq_flash
+    } > default_flash
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
@@ -58,7 +62,7 @@ SECTIONS
         KEEP(*(SORT(.init_array.*)))
         KEEP(*(.init_array))
         __init_array_end__ = .;
-    } > irq_flash
+    } > default_flash
 
     destructors : ALIGN(4) SUBALIGN(4)
     {
@@ -66,12 +70,26 @@ SECTIONS
         KEEP(*(.fini_array))
         KEEP(*(SORT(.fini_array.*)))
         __fini_array_end__ = .;
-    } > irq_flash
+    } > default_flash
+
+    .ramfunc : ALIGN(4) SUBALIGN(4)
+    {
+        . = ALIGN(4);
+        __instram_init_text__ = LOADADDR(.ramfunc);
+        __instram_init__ = .;
+        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o)
+        *libch.a:*(.text .text.* .rodata .rodata.* .glue_7t .glue_7 .gcc*)
+        *(.ramfunc)
+        . = ALIGN(4);
+        __instram_end__ = .;
+    } > instram AT > default_flash
 
     .text : ALIGN(4) SUBALIGN(4)
     {
         /* we want app_descriptor near the start of flash so a false
            positive isn't found by the bootloader (eg. ROMFS) */
+        KEEP(*libch.a:vectors.o);
+        KEEP(*libch.a:crt0_v7m.o);
         KEEP(*(.app_descriptor));
         *(.text)
         *(.text.*)
@@ -81,11 +99,6 @@ SECTIONS
         *(.glue_7)
         *(.gcc*)
     } > default_flash
-
-    .irq : ALIGN(4) SUBALIGN(4)
-    {
-        *(.irq)
-    } > irq_flash
 
     .ARM.extab :
     {
