@@ -681,7 +681,7 @@ for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'blimp
         doc='builds %s programs' % name,
     )
 
-for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
+for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
