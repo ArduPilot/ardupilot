@@ -95,7 +95,7 @@ class CheckReplayBranch(object):
         subprocess.check_call(["./waf", "replay"])
 
     def run_replay_on_log(self, logfile_path):
-        subprocess.check_call(["./build/sitl/tools/Replay", logfile_path])
+        subprocess.check_call(["./build/sitl/tool/Replay", logfile_path])
 
     def get_logs(self):
         return sorted(glob.glob("logs/*.BIN"))
