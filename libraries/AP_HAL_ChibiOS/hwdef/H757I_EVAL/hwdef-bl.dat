@@ -74,7 +74,7 @@ PG6 QUADSPI_BK1_NCS QUADSPI1
 PB2 QUADSPI_CLK QUADSPI1
 
 # IFace     Device Name     Bus      QSPI Mode     Clk Freq  Size (Pow2)  NCS Delay
-QSPIDEV       mt25q       QUADSPI1      MODE1       50*MHZ      24            2
+QSPIDEV       mt25q       QUADSPI1      MODE1       120*MHZ      24            8
 
 PB13 VBUS INPUT OPENDRAIN
 
