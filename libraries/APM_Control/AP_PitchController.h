@@ -53,7 +53,7 @@ private:
 	AP_Float _roll_ff;
 	uint32_t _last_t;
     float _last_out;
-    AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 1.5, 7, 4, 0.02, 150, 1};
+    AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
     float angle_err_deg;
 
     AP_Logger::PID_Info _pid_info;
