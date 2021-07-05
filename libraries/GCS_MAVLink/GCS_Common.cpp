@@ -851,6 +851,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3469,7 +3470,9 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_RALLY_POINT:
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
+#if HAL_RALLY_ENABLED
         handle_common_rally_message(msg);
+#endif
         break;
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -3802,9 +3805,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_long_t &packet)
+{
+    if (hal.util->get_soft_armed()) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    (void)AP::arming().pre_arm_checks(true);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -4171,6 +4183,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
+        break;
+
+    case MAV_CMD_RUN_PREARM_CHECKS:
+        result = handle_command_run_prearm_checks(packet);
         break;
 
     case MAV_CMD_FLASH_BOOTLOADER:
@@ -4745,6 +4761,46 @@ void GCS_MAVLINK::send_generator_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_water_depth() const
+{
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr || !rangefinder->has_data_orient(ROTATION_PITCH_270)) {
+        // no rangefinder or not facing downwards
+        return;
+    }
+
+    const bool sensor_healthy = (rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good);
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_position(loc));
+
+    // get temperature
+    float temp_C = 0.0f;
+    IGNORE_RETURN(rangefinder->get_temp(ROTATION_PITCH_270, temp_C));
+
+    mavlink_msg_water_depth_send(
+        chan,
+        AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+        0,                  // sensor id always zero
+        sensor_healthy,     // sensor healthy
+        loc.lat,            // latitude of vehicle
+        loc.lng,            // longitude of vehicle
+        loc.alt * 0.01f,    // altitude of vehicle (MSL)
+        ahrs.get_roll(),    // roll in radians
+        ahrs.get_pitch(),   // pitch in radians
+        ahrs.get_yaw(),     // yaw in radians
+        rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f,    // distance in meters
+        temp_C);            // temperature in degC
+#endif
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5053,6 +5109,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_winch_status();
         break;
 
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+
     default:
         // try_send_message must always at some stage return true for
         // a message, or we will attempt to infinitely retry the
@@ -5316,9 +5377,11 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
     }
 
+#if HAL_RALLY_ENABLED
     if (AP::rally()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
     }
+#endif
 
     if (AP::fence()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;

@@ -100,9 +100,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.y = gps_corrected.pos.y  + 0.001f*gps_corrected.vel.y*(float(imuDataDelayed.time_ms) - float(gps_corrected.time_ms));
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
-            // clear the timeout flags and counters
-            posTimeout = false;
-            lastPosPassTime_ms = imuSampleTime_ms;
         } else if ((imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
             // use the range beacon data as a second preference
             stateStruct.position.x = receiverPos.x;
@@ -110,9 +107,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances from the beacon alignment filter
             P[7][7] = receiverPosCov[0][0];
             P[8][8] = receiverPosCov[1][1];
-            // clear the timeout flags and counters
-            rngBcnTimeout = false;
-            lastRngBcnPassTime_ms = imuSampleTime_ms;
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
             // use external nav data as the third preference
@@ -120,9 +114,6 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.y = extNavDataDelayed.pos.y;
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
-            // clear the timeout flags and counters
-            posTimeout = false;
-            lastPosPassTime_ms = imuSampleTime_ms;
 #endif // EK3_FEATURE_EXTERNAL_NAV
         }
     }
@@ -141,6 +132,10 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+
+    // clear the timeout flags and counters
+    posTimeout = false;
+    lastPosPassTime_ms = imuSampleTime_ms;
 }
 
 // reset the stateStruct's NE position to the specified position
@@ -274,6 +269,7 @@ void NavEKF3_core::ResetHeight(void)
     {
         P[6][6] = sq(frontend->_gpsVertVelNoise);
     }
+    vertVelVarClipCounter = 0;
 }
 
 // Zero the EKF height datum
@@ -589,15 +585,12 @@ void NavEKF3_core::SelectVelPosFusion()
 void NavEKF3_core::FuseVelPosNED()
 {
     // health is set bad until test passed
-    bool velHealth = false; // boolean true if velocity measurements have passed innovation consistency check
-    bool posHealth = false; // boolean true if position measurements have passed innovation consistency check
-    bool hgtHealth = false; // boolean true if height measurements have passed innovation consistency check
-
-    // declare variables used to check measurement errors
-    Vector3f velInnov;
+    bool velCheckPassed = false; // boolean true if velocity measurements have passed innovation consistency checks
+    bool posCheckPassed = false; // boolean true if position measurements have passed innovation consistency check
+    bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to control access to arrays
-    bool fuseData[6] = {false,false,false,false,false,false};
+    bool fuseData[6] {};
     uint8_t stateIndex;
     uint8_t obsIndex;
 
@@ -691,146 +684,162 @@ void NavEKF3_core::FuseVelPosNED()
             }
         }
 
-        // calculate innovations and check GPS data validity using an innovation consistency check
-        // test position measurements
+        // Test horizontal position measurements
         if (fusePosData) {
-            // test horizontal position measurements
             innovVelPos[3] = stateStruct.position.x - velPosObs[3];
             innovVelPos[4] = stateStruct.position.y - velPosObs[4];
             varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
-            // apply an innovation consistency threshold test, but don't fail if bad IMU data
+
+            // Apply an innovation consistency threshold test
+            // Don't allow test to fail if not navigating and using a constant position
+            // assumption to constrain tilt errors because innovations can become large
+            // due to vehicle motion.
             float maxPosInnov2 = sq(MAX(0.01f * (float)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
-            posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // use position data if healthy or timed out
-            if (PV_AidingMode == AID_NONE) {
-                posHealth = true;
+            if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
+                posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
-            } else if (posHealth || posTimeout) {
-                posHealth = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+            }
+
+            // Use position data if healthy or timed out or bad IMU data
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (posCheckPassed || posTimeout || badIMUdata) {
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
-                    // don't fuse external sensor data on this time step
+
+                    // Don't fuse the same data we have used to reset states.
                     fusePosData = false;
+
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
                     P[7][7] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
                     P[8][8] = P[7][7];
+
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
-                    // also reset velocity if it has timed out
+
+                    // Reset velocity if it has timed out
                     if (velTimeout) {
-                        // reset the velocity to the external sensor velocity
                         ResetVelocity(resetDataSource::DEFAULT);
+
+                        // Don't fuse the same data we have used to reset states.
                         fuseVelData = false;
+
+                        // Reset the normalised innovation to avoid failing the bad fusion tests
                         velTestRatio = 0.0f;
                     }
                 }
+            } else {
+                fusePosData = false;
             }
         }
 
-        // test velocity measurements
+        // Test velocity measurements
         if (fuseVelData) {
-            // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if disabled in sources or not available
             if ((!frontend->sources.haveVelZSource() || PV_AidingMode != AID_ABSOLUTE ||
                  !gpsDataDelayed.have_vz) && !useExtNavVel) {
                 imax = 1;
             }
+
+            // Apply an innovation consistency threshold test
             float innovVelSumSq = 0; // sum of squares of velocity innovations
             float varVelSum = 0; // sum of velocity innovation variances
             for (uint8_t i = 0; i<=imax; i++) {
-                // velocity states start at index 4
                 stateIndex   = i + 4;
-                // calculate innovations using blended and single IMU predicted states
-                velInnov[i]  = stateStruct.velocity[i] - velPosObs[i]; // blended
-                // calculate innovation variance
+                const float innovation = stateStruct.velocity[i] - velPosObs[i];
+                innovVelSumSq += sq(innovation);
                 varInnovVelPos[i] = P[stateIndex][stateIndex] + R_OBS_DATA_CHECKS[i];
-                // sum the innovation and innovation variances
-                innovVelSumSq += sq(velInnov[i]);
                 varVelSum += varInnovVelPos[i];
             }
-            // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            // calculate the test ratio
             velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01f * (float)frontend->_gpsVelInnovGate, 1.0f)));
-            // fail if the ratio is greater than 1
-            velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // use velocity data if healthy, timed out, or in constant position mode
-            if (velHealth || velTimeout) {
-                velHealth = true;
-                // restart the timeout count
+            if (velTestRatio < 1.0f) {
+                velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
+            }
+
+            // Use velocity data if healthy, timed out or when IMU fault has been detected
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (velCheckPassed || velTimeout || badIMUdata) {
                 // If we are doing full aiding and velocity fusion times out, reset to the external sensor velocity
                 if (PV_AidingMode == AID_ABSOLUTE && velTimeout) {
-                    // reset the velocity to the external sensor velocity
                     ResetVelocity(resetDataSource::DEFAULT);
-                    // don't fuse external sensor velocity data on this time step
+
+                    // Don't fuse the same data we have used to reset states.
                     fuseVelData = false;
+
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     velTestRatio = 0.0f;
                 }
+            } else {
+                fuseVelData = false;
             }
         }
 
-        // test height measurements
+        // Test height measurements
         if (fuseHgtData) {
-            // calculate height innovations
+            // Calculate height innovations
             innovVelPos[5] = stateStruct.position.z - velPosObs[5];
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
-            // calculate the innovation consistency test ratio
+
+            // Calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
 
-            // when on ground we accept a larger test ratio to allow
-            // the filter to handle large switch on IMU bias errors
-            // without rejecting the height sensor
-            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0 : 1.0;
+            // When on ground we accept a larger test ratio to allow the filter to handle large switch on IMU
+            // bias errors without rejecting the height sensor.
+            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0f : 1.0f;
+            if (hgtTestRatio < maxTestRatio) {
+                hgtCheckPassed = true;
+                lastHgtPassTime_ms = imuSampleTime_ms;
+            }
 
-            // fail if the ratio is > 1, but don't fail if bad IMU data
-            hgtHealth = ((hgtTestRatio < maxTestRatio) || badIMUdata);
-
-            // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout) {
+            // Use height data if innovation check passed or timed out or if bad IMU data
+            // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
+            // from the measurement un-opposed if test threshold is exceeded.
+            if (hgtCheckPassed || hgtTimeout || badIMUdata) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
-                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
+                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3f;
                     const float hgtInnovFiltTC = 2.0f;
-                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
-                    hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
+                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0f, 1.0f);
+                    hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState)*alpha;
                 } else {
                     hgtInnovFiltState = 0.0f;
                 }
 
-                // if timed out, reset the height
                 if (hgtTimeout) {
                     ResetHeight();
+
+                    // Don't fuse the same data we have used to reset states.
+                    fuseHgtData = false;
                 }
 
-                // If we have got this far then declare the height data as healthy and reset the timeout counter
-                hgtHealth = true;
-                lastHgtPassTime_ms = imuSampleTime_ms;
+            } else {
+                fuseHgtData = false;
             }
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && velHealth) {
+        if (fuseVelData) {
             fuseData[0] = true;
             fuseData[1] = true;
             if (useGpsVertVel || useExtNavVel) {
                 fuseData[2] = true;
             }
         }
-        if (fusePosData && posHealth) {
+        if (fusePosData) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if (fuseHgtData && hgtHealth) {
+        if (fuseHgtData) {
             fuseData[5] = true;
         }
 

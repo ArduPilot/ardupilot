@@ -257,6 +257,16 @@ configuration in order to save typing.
         default=False,
         help='Force a static build')
 
+    g.add_option('--postype-single',
+        action='store_true',
+        default=False,
+        help='force single precision postype_t')
+    
+    g.add_option('--extra-hwdef',
+	    action='store',
+	    default=None,
+	    help='Extra hwdef.dat file for custom build.')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -302,6 +312,10 @@ def configure(cfg):
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
+
+    cfg.env.HWDEF_EXTRA = cfg.options.extra_hwdef
+    if cfg.env.HWDEF_EXTRA:
+        cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)
 
     cfg.env.OPTIONS = cfg.options.__dict__
 

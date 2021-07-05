@@ -127,7 +127,7 @@ public:
 
     const Location &get_location() const { return location; }
 
-    const Vector3f &get_position() const { return position; }
+    const Vector3d &get_position() const { return position; }
 
     // distance the rangefinder is perceiving
     float rangefinder_range() const;
@@ -166,7 +166,7 @@ protected:
     Vector3f wind_ef;                    // m/s, earth frame
     Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
     Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
-    Vector3f position;                   // meters, NED from origin
+    Vector3d position;                   // meters, NED from origin
     float mass;                          // kg
     float external_payload_mass;         // kg
     Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
@@ -297,7 +297,7 @@ protected:
     void add_twist_forces(Vector3f &rot_accel);
 
     // get local thermal updraft
-    float get_local_updraft(Vector3f currentPos);
+    float get_local_updraft(const Vector3d &currentPos);
 
 private:
     uint64_t last_time_us;
@@ -313,13 +313,13 @@ private:
         Vector3f accel_body;
         Vector3f gyro;
         Matrix3f rotation_b2e;
-        Vector3f position;
+        Vector3d position;
         Vector3f velocity_ef;
         uint64_t last_update_us;
         Location location;
     } smoothing;
 
-    LowPassFilterFloat servo_filter[4];
+    LowPassFilterFloat servo_filter[5];
 
     Buzzer *buzzer;
     Sprayer *sprayer;

@@ -2,6 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#if HAL_INS_ENABLED
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
 #include <AP_Math/AP_Math.h>
@@ -519,7 +520,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: Fast sampling mask
     // @Description: Mask of IMUs to enable fast sampling on, if available
     // @User: Advanced
-    // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
@@ -535,7 +535,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: IMU enable mask
     // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
-    // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU,7:FirstSecondAndThirdIMU,127:AllIMUs
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
@@ -657,8 +656,9 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
         _accel_vibe_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ);
     }
-
+#if HAL_INS_ACCELCAL_ENABLED
     AP_AccelCal::register_client(this);
+#endif
 }
 
 /*
@@ -678,7 +678,7 @@ AP_InertialSensor *AP_InertialSensor::get_singleton()
 bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to register gyro id %u", unsigned(id));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register gyro id %u", unsigned(id));
         return false;
     }
 
@@ -714,7 +714,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
         return false;
     }
 
@@ -803,7 +803,7 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
     for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
         for (uint8_t j = 0; j < XYZ_AXIS_COUNT; j++) {
             if (!_gyro_window[i][j].set_size(size)) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate window for INS");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate window for INS");
                 // clean up whatever we have currently allocated
                 for (uint8_t ii = 0; ii <= i; ii++) {
                     for (uint8_t jj = 0; jj < j; jj++) {
@@ -2294,3 +2294,6 @@ AP_InertialSensor &ins()
 }
 
 };
+
+#endif //#if HAL_INS_ENABLED
+

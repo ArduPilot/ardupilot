@@ -230,10 +230,14 @@ class CoverageRunner(object):
                                     ".waf*",
                                     root_dir + "/modules/gtest/*",
                                     root_dir + "/modules/uavcan/*",
+                                    root_dir + "/modules/libcanard/*",
                                     root_dir + "/build/linux/libraries/*",
                                     root_dir + "/build/sitl/libraries/*",
                                     root_dir + "/build/sitl/modules/*",
+                                    root_dir + "/build/sitl_periph_gps/libraries/*",
+                                    root_dir + "/build/sitl_periph_gps/modules/*",
                                     root_dir + "/libraries/*/examples/*",
+                                    root_dir + "/libraries/*/tests/*",
                                     "-o", self.INFO_FILE
                                     ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
                     if self.verbose:

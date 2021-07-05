@@ -128,7 +128,7 @@ public:
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
-    void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point_xy(Vector2f& stopping_point) const;
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
@@ -274,7 +274,7 @@ protected:
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
 
     // position, velocity and acceleration targets passed to position controller
-    float       _pos_terrain_offset;
+    postype_t   _pos_terrain_offset;
     float       _vel_terrain_offset;
     float       _accel_terrain_offset;
 

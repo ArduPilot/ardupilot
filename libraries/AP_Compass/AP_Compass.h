@@ -33,7 +33,9 @@
 #endif
 #endif
 
+#ifndef COMPASS_CAL_ENABLED
 #define COMPASS_CAL_ENABLED !defined(HAL_BUILD_AP_PERIPH)
+#endif
 #define COMPASS_MOT_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 #define COMPASS_LEARN_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 

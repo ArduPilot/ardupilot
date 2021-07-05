@@ -24,7 +24,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, _driver_name, fmt, ##args); } while (0)
 #else
 #define debug_can(level_debug, fmt, args...)
@@ -34,7 +34,7 @@ CANSensor::CANSensor(const char *driver_name, AP_CANManager::Driver_Type dtype, 
     _driver_name(driver_name),
     _stack_size(stack_size)
 {
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     if (!AP::can().register_driver(dtype, this)) {
         debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", driver_name);
     } else {

@@ -115,7 +115,7 @@ bool XPlane::receive_data(void)
                                     one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator |
                                     one << Mixture);
     Location loc {};
-    Vector3f pos;
+    Vector3d pos;
     uint32_t wait_time_ms = 1;
     uint32_t now = AP_HAL::millis();
 

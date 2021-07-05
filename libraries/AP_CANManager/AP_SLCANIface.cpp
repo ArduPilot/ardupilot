@@ -245,7 +245,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
 #endif
     return true;

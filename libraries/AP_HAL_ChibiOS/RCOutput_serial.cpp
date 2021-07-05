@@ -85,10 +85,6 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
 // chan is the servo channel to send the command to
 void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
 {
-    if (!_active_escs_mask && !priority) {
-        return;
-    }
-
     DshotCommandPacket pkt;
     pkt.command = command;
     pkt.chan = chan;
@@ -108,34 +104,34 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 // The chanmask passed is added (ORed) into any existing mask.
 void RCOutput::set_reversed_mask(uint16_t chanmask) {
     _reversed_mask |= chanmask;
-
-    for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
-        if (chanmask & (1U<<i)) {
-            switch (_dshot_esc_type) {
-                case DSHOT_ESC_BLHELI:
-                    send_dshot_command(DSHOT_REVERSE, i, 0, 10, true);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 }
 
 // Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
 void RCOutput::set_reversible_mask(uint16_t chanmask) {
     _reversible_mask |= chanmask;
+}
+
+// Update the dshot outputs that should be reversible/3D at 1Hz
+void RCOutput::update_channel_masks() {
+
+    // post arming dshot commands will not be accepted
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
 
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
-        if (chanmask & (1U<<i)) {
-            switch (_dshot_esc_type) {
-                case DSHOT_ESC_BLHELI:
+        switch (_dshot_esc_type) {
+            case DSHOT_ESC_BLHELI:
+                if (_reversible_mask & (1U<<i)) {
                     send_dshot_command(DSHOT_3D_ON, i, 0, 10, true);
-                    break;
-                default:
-                    break;
-            }
+                }
+                if (_reversed_mask & (1U<<i)) {
+                    send_dshot_command(DSHOT_REVERSE, i, 0, 10, true);
+                }
+                break;
+            default:
+                break;
         }
     }
 }

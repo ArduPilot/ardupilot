@@ -23,6 +23,10 @@
 #include <AP_HAL_SITL/CANSocketIface.h>
 #endif
 
+#ifndef HAL_NO_GCS
+#include "GCS_MAVLink.h"
+#endif
+
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 #endif
@@ -210,6 +214,9 @@ public:
     AP_Logger logger;
 #endif
 
+#ifndef HAL_NO_GCS
+    GCS_Periph _gcs;
+#endif
     // setup the var_info table
     AP_Param param_loader{var_info};
 

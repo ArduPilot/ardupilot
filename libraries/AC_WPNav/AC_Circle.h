@@ -22,7 +22,7 @@ public:
     /// init - initialise circle controller setting center specifically
     ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init(const Vector3f& center, bool terrain_alt);
+    void init(const Vector3p& center, bool terrain_alt);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -33,10 +33,10 @@ public:
 
     /// set_circle_center as a vector from ekf origin
     ///     terrain_alt should be true if center.z is alt is above terrain
-    void set_center(const Vector3f& center, bool terrain_alt) { _center = center; _terrain_alt = terrain_alt; }
+    void set_center(const Vector3f& center, bool terrain_alt) { _center = center.topostype(); _terrain_alt = terrain_alt; }
 
     /// get_circle_center in cm from home
-    const Vector3f& get_center() const { return _center; }
+    const Vector3p& get_center() const { return _center; }
 
     /// returns true if using terrain altitudes
     bool center_is_terrain_alt() const { return _terrain_alt; }
@@ -143,7 +143,7 @@ private:
     AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
-    Vector3f    _center;        // center of circle in cm from home
+    Vector3p    _center;        // center of circle in cm from home
     float       _radius;        // radius of circle in cm
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)

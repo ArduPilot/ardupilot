@@ -25,8 +25,6 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Fence Type
     // @Description: Enabled fence types held as bitmask
-    // @Values{Rover}: 0:None,2:Circle,4:Polygon,6:All
-    // @Values{Copter, Plane, Sub}: 0:None,1:Max altitude,2:Circle,3:Max altitude and Circle,4:Polygon,5:Max altitude and Polygon,6:Circle and Polygon,7:Max altitude circle and Polygon,8:Min altitude
     // @Bitmask{Rover}: 1:Circle,2:Polygon
     // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle,2:Polygon,3:Min altitude
     // @User: Standard

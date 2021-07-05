@@ -7,13 +7,16 @@ on:
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-20.04
     container:
       image: ardupilot/ardupilot-dev-coverage:latest
-      options: --user 1001
+      options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -22,6 +25,7 @@ jobs:
         ]
         config: [
             coverage,
+            sitltest-can,
         ]
     steps:
       # git checkout the PR
@@ -49,6 +53,16 @@ jobs:
           echo "max_size = 400M" >> ~/.ccache/ccache.conf
           ccache -s
           ccache -z
+      - name: Configure CAN
+        if: ${{ matrix.config == 'sitltest-can'}}
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install -y gcc-multilib g++-multilib
+          sudo apt -y install can-utils iproute2 linux-modules-extra-$(uname -r)
+          sudo modprobe vcan
+          sudo ip link add dev vcan0 type vcan
+          sudo ip link set up vcan0
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -59,10 +73,33 @@ jobs:
           python -m pip uninstall -y pymavlink
           git submodule update --init --recursive
           (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python -m pip install --user .)
-          Tools/scripts/run_coverage.py -f
+          if [[ ${{ matrix.config }} == "coverage" ]]; then
+            Tools/scripts/run_coverage.py -f
+          else
+            Tools/scripts/run_coverage.py -i
+            ./waf configure --board sitl_periph_gps --debug --coverage
+            ./waf build --target bin/AP_Periph
+            Tools/scripts/run_coverage.py -i
+            Tools/autotest/autotest.py test.CAN --debug --coverage
+            Tools/scripts/run_coverage.py -u
+          fi
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./reports/lcov-report/lcov.info
+          flag-name: run-${{matrix.config}}
+          parallel: true
+
+
+  finish:
+    if: always()
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true

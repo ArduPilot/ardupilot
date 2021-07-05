@@ -60,7 +60,6 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
-    // @Values: 0:None,1:File,2:MAVLink,3:File and MAVLink,4:Block,6:Block and MAVLink
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
@@ -875,6 +874,7 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
 }
 
+#if HAL_RALLY_ENABLED
 void AP_Logger::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
@@ -886,6 +886,7 @@ void AP_Logger::Write_Rally()
 {
     FOR_EACH_BACKEND(Write_Rally());
 }
+#endif
 
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)

@@ -5,6 +5,9 @@ on: [push, pull_request, workflow_dispatch]
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -62,7 +65,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
-          if [[ ${{ matrix.toolchain }} = "chibios-clang" ]]; then
+          if [[ ${{ matrix.toolchain }} == "chibios-clang" ]]; then
             export CC=clang-7
             export CXX=clang++-7
           fi

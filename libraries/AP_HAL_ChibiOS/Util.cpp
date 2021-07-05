@@ -29,7 +29,7 @@
 #include "sdcard.h"
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED
 #include <AP_Notify/AP_Notify.h>
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
@@ -167,7 +167,7 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
     _toneAlarm_types = types;
 
-#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
     // Nothing to do
     return false;
 #else
@@ -366,7 +366,7 @@ bool Util::was_watchdog_reset() const
     return stm32_was_watchdog_reset();
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */

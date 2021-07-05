@@ -1044,6 +1044,34 @@ class AutoTestCopter(AutoTest):
 
         self.progress("All Battery failsafe tests complete")
 
+    # Tests the vibration failsafe
+    def test_vibration_failsafe(self):
+        self.context_push()
+
+        # takeoff in Loiter to 20m
+        self.takeoff(20, mode="LOITER")
+
+        # simulate accel bias caused by high vibration
+        self.set_parameters({
+            'SIM_ACC1_BIAS_Z': 2,
+            'SIM_ACC2_BIAS_Z': 2,
+            'SIM_ACC3_BIAS_Z': 2,
+        })
+
+        # wait for Vibration compensation warning and change to LAND mode
+        self.wait_statustext("Vibration compensation ON", timeout=30)
+        self.wait_mode("LAND")
+
+        # check vehicle descends to 2m or less within 30 seconds
+        self.wait_altitude(-5, 2, timeout=30, relative=True)
+
+        # force disarm of vehicle (it will likely not automatically disarm)
+        self.disarm_vehicle(force=True)
+
+        # revert simulated accel bias and reboot to restore EKF health
+        self.context_pop()
+        self.reboot_sitl()
+
     # fly_stability_patch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
     def fly_stability_patch(self,
@@ -1531,6 +1559,32 @@ class AutoTestCopter(AutoTest):
                       (max_distance, timeout))
         self.do_RTL()
         # re-arming is problematic because the GPS is glitching!
+        self.reboot_sitl()
+
+    def fly_gps_glitch_loiter_test2(self):
+        """test vehicle handles GPS glitch (aka EKF Reset) without twitching"""
+        self.context_push()
+        self.takeoff(10, mode="LOITER")
+
+        # wait for vehicle to level
+        self.wait_attitude(desroll=0, despitch=0, timeout=10, tolerance=1)
+
+        # apply glitch
+        self.set_parameter("SIM_GPS_GLITCH_X", 0.001)
+
+        # check lean angles remain stable for 20 seconds
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 20:
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            roll_deg = math.degrees(m.roll)
+            pitch_deg = math.degrees(m.pitch)
+            self.progress("checking att: roll=%f pitch=%f " % (roll_deg, pitch_deg))
+            if abs(roll_deg) > 2 or abs(pitch_deg) > 2:
+                raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
+
+        # RTL, remove glitch and reboot sitl
+        self.do_RTL()
+        self.context_pop()
         self.reboot_sitl()
 
     # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
@@ -4370,7 +4424,7 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         try:
-            self.set_parameter("SIM_SHOVE_TIME", 500, retries=3)
+            self.set_parameter("SIM_SHOVE_TIME", 500)
         except ValueError:
             # the shove resets this to zero
             pass
@@ -6615,6 +6669,7 @@ class AutoTestCopter(AutoTest):
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
             'heli': "wrong binary, different takeoff regime",
+            'tri': "bad yaw rate",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
@@ -6640,7 +6695,41 @@ class AutoTestCopter(AutoTest):
                 model=model,
                 wipe=True,
             )
+
+            # add a listener that verifies yaw looks good:
+            def verify_yaw(mav, m):
+                if m.get_type() != 'ATTITUDE':
+                    return
+                yawspeed_thresh_rads = math.radians(10)
+                if m.yawspeed > yawspeed_thresh_rads:
+                    raise NotAchievedException("Excessive yaw on takeoff: %f deg/s > %f deg/s (frame=%s)" %
+                                               (math.degrees(m.yawspeed), math.degrees(yawspeed_thresh_rads), frame))
+            self.install_message_hook(verify_yaw)
             self.takeoff(10)
+            self.remove_message_hook(verify_yaw)
+            self.hover()
+            self.change_mode('ALT_HOLD')
+            self.delay_sim_time(1)
+
+            def verify_rollpitch(mav, m):
+                if m.get_type() != 'ATTITUDE':
+                    return
+                pitch_thresh_rad = math.radians(2)
+                if m.pitch > pitch_thresh_rad:
+                    raise NotAchievedException("Excessive pitch %f deg > %f deg" %
+                                               (math.degrees(m.pitch), math.degrees(pitch_thresh_rad)))
+                roll_thresh_rad = math.radians(2)
+                if m.roll > roll_thresh_rad:
+                    raise NotAchievedException("Excessive roll %f deg > %f deg" %
+                                               (math.degrees(m.roll), math.degrees(roll_thresh_rad)))
+            self.install_message_hook(verify_rollpitch)
+            for i in range(5):
+                self.set_rc(4, 2000)
+                self.delay_sim_time(0.5)
+                self.set_rc(4, 1500)
+                self.delay_sim_time(5)
+            self.remove_message_hook(verify_rollpitch)
+
             self.do_RTL()
 
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
@@ -6974,6 +7063,10 @@ class AutoTestCopter(AutoTest):
              "Fly Battery Failsafe",
              self.fly_battery_failsafe),  # 164s
 
+            ("VibrationFailsafe",
+             "Test Vibration Failsafe",
+             self.test_vibration_failsafe),
+
             ("StabilityPatch",
              "Fly stability patch",
              lambda: self.fly_stability_patch(30)),  # 17s
@@ -7043,6 +7136,10 @@ class AutoTestCopter(AutoTest):
             ("GPSGlitchLoiter",
              "GPS Glitch Loiter Test",
              self.fly_gps_glitch_loiter_test),  # 30s
+
+            ("GPSGlitchLoiter2",
+             "GPS Glitch Loiter Test2",
+             self.fly_gps_glitch_loiter_test2),  # 30s
 
             ("GPSGlitchAuto",
              "GPS Glitch Auto Test",

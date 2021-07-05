@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 '''
 Create an apj file from a *.bin binary firmware
+
+AP_FLAKE8_CLEAN
 '''
 
 import argparse

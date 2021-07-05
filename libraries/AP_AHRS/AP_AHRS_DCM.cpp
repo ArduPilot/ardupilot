@@ -1089,6 +1089,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
 
 bool AP_AHRS_DCM::set_home(const Location &loc)
 {
+    WITH_SEMAPHORE(_rsem);
     // check location is valid
     if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
         return false;

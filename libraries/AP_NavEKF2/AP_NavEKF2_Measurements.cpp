@@ -584,7 +584,13 @@ void NavEKF2_core::readGpsData()
 
             // see if we can get origin from frontend
             if (!validOrigin && frontend->common_origin_valid) {
-                setOrigin(frontend->common_EKF_origin);
+
+                if (!setOrigin(frontend->common_EKF_origin)) {
+                    // set an error as an attempt was made to set the origin more than once
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    return;
+                }
+
             }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
@@ -592,7 +598,17 @@ void NavEKF2_core::readGpsData()
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
-                setOrigin(gpsloc);
+                Location gpsloc_fieldelevation = gpsloc;
+                // if flying, correct for height change from takeoff so that the origin is at field elevation
+                if (inFlight) {
+                    gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+                }
+
+                if (!setOrigin(gpsloc_fieldelevation)) {
+                    // set an error as an attempt was made to set the origin more than once
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    return;
+                }
 
                 // set the NE earth magnetic field states using the published declination
                 // and set the corresponding variances and covariances

@@ -86,7 +86,7 @@
 #endif
 
 #ifndef RANGEFINDER_FILT_DEFAULT
- # define RANGEFINDER_FILT_DEFAULT 0.25f    // filter for rangefinder distance
+ # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_VELZ_MAX
@@ -168,8 +168,11 @@
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
-#ifndef EKF_ORIGIN_MAX_DIST_M
- # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
+#ifndef EKF_ORIGIN_MAX_DIST_KM
+ # define EKF_ORIGIN_MAX_DIST_KM        250   // EKF origin and home must be within 250km horizontally
+#endif
+#ifndef EKF_ORIGIN_MAX_ALT_KM
+ # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
 
 #ifndef COMPASS_CAL_STICK_GESTURE_TIME

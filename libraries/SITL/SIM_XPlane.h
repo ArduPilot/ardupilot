@@ -54,7 +54,7 @@ private:
 
     uint64_t time_base_us;
     uint32_t last_data_time_ms;
-    Vector3f position_zero;
+    Vector3d position_zero;
     Vector3f accel_earth;
     float throttle_sent = -1;
     bool connected = false;

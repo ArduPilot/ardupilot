@@ -29,6 +29,12 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_MSP_PORT_DEFAULT 1
 #endif
 
+#ifndef HAL_DEFAULT_MAV_SYSTEM_ID
+#define MAV_SYSTEM_ID 3
+#else
+#define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -316,6 +322,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Bitmask: 2:GPS
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          4),
+#endif
+
+#ifndef HAL_NO_GCS
+    // @Param: SYSID_THISMAV
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual system id for this vehicle to distinguish it from others on the same network
+    // @Range: 1 255
+    // @User: Advanced
+    GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
 #endif
 
     AP_VAREND

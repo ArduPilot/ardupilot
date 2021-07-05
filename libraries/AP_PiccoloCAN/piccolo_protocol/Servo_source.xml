@@ -1,0 +1,344 @@
+<Protocol name="Servo" prefix="Servo_" api="21" version="2.11" mapfile="Servo_SettingsMap" verifyfile="Servo_SettingsVerify" endian="big" supportSpecialFloat="false" supportInt64="false" supportFloat64="false" supportBool="true" comment="This is the ICD for the Currawong Engineering CAN Servo. This document details the Servo command and packet structure for communication with and configuration of the Servo"><Include name="string.h" comment="C string manipulation function header" global="true" />
+
+    <Enum name="ServoModes" lookup="true" prefix="SERVO_MODE_">
+        <Value name="NORMAL" comment="The servo is in normal operational mode" />
+        <Value name="CALIBRATING" comment="The servo is in calibration mode (factory setting only)" />
+        <Value name="TEST" comment="The servo is in test mode (factory setting only)" />
+
+        <Value name="NUM_MODES" />
+    </Enum>
+
+    <Enum name="ServoTimeoutModes" prefix="SERVO_TIMEOUT_ACTION_">
+        <Value name="HOLD" comment="The servo will hold the current position" />
+        <Value name="DISABLE" comment="The servo will be disabled" />
+        <Value name="NEUTRAL" comment="The servo will move to its programmed neutral position" />
+
+        <Value name="SERVO_NUM_TIMEOUT_MODES" ignorePrefix="true" />
+    </Enum>
+
+    <Structure name="StatusBits" comment="Servo status bits" file="ServoDefines">
+        <Data name="enabled" inMemoryType="bitfield1" comment="Servo enabled status" />
+        <Data name="mode" enum="ServoModes" encodedType="bitfield3" comment="Servo mode" />
+        <Data name="cmdReceived" inMemoryType="bitfield1" comment="Set if the servo has received a valid position command within the configured timeout period" />
+        <Data name="reservedA" inMemoryType="bitfield1" comment="Reserved for future use" />
+        <Data name="reservedB" inMemoryType="bitfield1" comment="Reserved for future use" />
+        <Data name="reservedC" inMemoryType="bitfield1" comment="Reserved for future use" />
+    </Structure>
+
+    <Structure name="WarningBits" comment="Servo warning bits" file="ServoDefines">
+        <Data name="overCurrent" inMemoryType="bitfield1" comment="Servo current exceeds warning threshold" />
+        <Data name="overTemperature" inMemoryType="bitfield1" comment="Servo temperature exceeds warning threshold" />
+        <Data name="overAcceleration" inMemoryType="bitfield1" comment="Servo accelerometer reading exceeds warning threshold" />
+        <Data name="invalidInput" inMemoryType="bitfield1" comment="Most recent servo position command was outside valid range" />
+        <Data name="position" inMemoryType="bitfield1" comment="Servo position is outside calibrated range" />
+        <Data name="potCalibration" inMemoryType="bitfield1" comment="Servo potentiometer is not correctly calibrated" />
+        <Data name="underVoltage" inMemoryType="bitfield1" comment="Servo voltage is below operational threshold" />
+        <Data name="overVoltage" inMemoryType="bitfield1" comment="Servo voltage is above operational threshold" />
+        <Data name="reservedB" inMemoryType="bitfield8" comment="Reserved for future use" />
+    </Structure>
+
+    <Structure name="ErrorBits" comment="Servo error bits" file="ServoDefines">
+        <Data name="position" inMemoryType="bitfield1" comment="Servo position is outside measurement range" />
+        <Data name="potError" inMemoryType="bitfield1" comment="Error reading servo position" />
+        <Data name="accError" inMemoryType="bitfield1" comment="Error reading servo accelerometer data" />
+        <Data name="mapCalibration" inMemoryType="bitfield1" comment="Servo input/output map is not correctly calibrated" />
+        <Data name="settingsError" inMemoryType="bitfield1" comment="Error reading servo settings from memory" />
+        <Data name="healthError" inMemoryType="bitfield1" comment="Error reading servo health tracking information from memory" />
+        <Data name="tracking" inMemoryType="bitfield1" comment="Servo position cannot match commanded position" />
+        <Data name="reservedB" inMemoryType="bitfield1" comment="Reserved for future use" />
+    </Structure>
+
+    
+  <Structure name="TelemetryPackets" comment="Servo packet selection" map="true" file="ServoDefines">
+
+    <Data name="statusA" inMemoryType="bitfield1" comment="Select the *STATUS_A* packet" initialValue="1" verifyMaxValue="1" />
+    <Data name="statusB" inMemoryType="bitfield1" comment="Select the *STATUS_B* packet" initialValue="1" />
+    <Data name="statusC" inMemoryType="bitfield1" comment="Select the *STATUS_C* packet" initialValue="0" />
+    <Data name="statusD" inMemoryType="bitfield1" comment="Select the *STATUS_D* packet" initialValue="0" />
+    <Data name="accelerometer" inMemoryType="bitfield1" comment="Select the *ACCELEROMETER* packet" initialValue="0" />
+    <Data name="dbgA" inMemoryType="bitfield1" comment="Reserved field (set to zero)" map="false" initialValue="0" />
+    <Data name="dbgB" inMemoryType="bitfield1" comment="Reserved field (set to zero)" map="false" initialValue="0" />
+    <Data name="dbgC" inMemoryType="bitfield1" comment="Reserved field (set to zero)" map="false" initialValue="0" />
+  </Structure>
+
+
+  <Structure name="TelemetrySettings" map="true" comment="Servo telemetry configuration" file="ServoDefines">
+    <Data name="period" inMemoryType="unsigned8" comment="Servo telemetry period" units="50ms per bit" range="0 (Disabled) to 250 (12.5s)" initialValue="10" verifyMaxValue="250" />
+    <Data name="silence" inMemoryType="unsigned8" comment="Servo silence period (after boot)" units="50ms per bit" range="0 to 250 (12.5s)" initialValue="10" verifyMaxValue="250" />
+    <Data name="packets" struct="TelemetryPackets" comment="Telemetry packet selection" />
+    <Data name="responsePackets" struct="TelemetryPackets" comment="Command response packet selection" default="0" />
+  </Structure>
+
+  <Structure name="ConfigBits" file="ServoDefines" map="true">
+    <Data name="mapEnabled" inMemoryType="bitfield1" comment="1 = I/O map is enabled" initialValue="0" />
+    <Data name="piccoloCmd" inMemoryType="bitfield1" comment="1 = The servo will listen for Piccolo autopilot CAN messages" initialValue="1" />
+    <Data name="neutralPositionEnabled" inMemoryType="bitfield1" comment="1 = Servo neutral position is enabled, 0 = Neutral position disabled" initialValue="0" />
+    <Data name="piccoloChannel" inMemoryType="bitfield5" comment="Channel the servo will use to listen for Piccolo messages." range="1 to 16" notes="A value of zero indicates that the servo's CAN ID will be used to determine the Piccolo Channel. Values above 16 will be set to zero" verifyMaxValue="16" initialValue="0" />
+    <Data name="timeoutAction" inMemoryType="bitfield2" comment="Servo action at powerup" initialValue="0" />
+	<Data name="reservedB" inMemoryType="bitfield2" map="false" comment="reserved for future use" />
+    <Data name="reservedC" inMemoryType="bitfield4" map="false" comment="reserved for future use" />
+  </Structure>
+
+    
+
+    <Enum name="ServoMultiCommandPackets" lookup="true" prefix="PKT_SERVO_" comment="Command multiple servo positions with a single command" description="Using a single CAN frame, the position(s) of up to four servos can be commanded. The address IDs of these four servos must be sequential, and the CAN frame must be broadcast such that all servos on the CAN bus receive the frame.">
+        <Value name="MULTI_COMMAND_1" value="0x00" comment="Send a position command to servos 1,2,3,4" />
+        <Value name="MULTI_COMMAND_2" comment="Send a position command to servos 5,6,7,8" />
+        <Value name="MULTI_COMMAND_3" comment="Send a position command to servos 9,10,11,12" />
+        <Value name="MULTI_COMMAND_4" comment="Send a position command to servos 13,14,15,16" />
+        <Value name="MULTI_COMMAND_5" comment="Send a position command to servos 17,18,19,20" />
+        <Value name="MULTI_COMMAND_6" comment="Send a position command to servos 21,22,23,24" />
+        <Value name="MULTI_COMMAND_7" comment="Send a position command to servos 25,26,27,28" />
+        <Value name="MULTI_COMMAND_8" comment="Send a position command to servos 29,30,31,32" />
+        <Value name="MULTI_COMMAND_9" comment="Send a position command to servos 33,34,35,36" />
+        <Value name="MULTI_COMMAND_10" comment="Send a position command to servos 37,38,39,40" />
+        <Value name="MULTI_COMMAND_11" comment="Send a position command to servos 41,42,43,44" />
+        <Value name="MULTI_COMMAND_12" comment="Send a position command to servos 45,46,47,48" />
+        <Value name="MULTI_COMMAND_13" comment="Send a position command to servos 49,50,51,52" />
+        <Value name="MULTI_COMMAND_14" comment="Send a position command to servos 53,54,55,56" />
+        <Value name="MULTI_COMMAND_15" comment="Send a position command to servos 57,58,59,60" />
+        <Value name="MULTI_COMMAND_16" comment="Send a position command to servos 61,62,63,64" />
+    </Enum>
+
+    <Enum name="ServoPackets" comment="Servo CAN packet identifiers" prefix="PKT_SERVO_" lookup="true" description="Following are the enumerated identifiers for the various servo CAN packets available">
+        <Value name="POSITION_COMMAND" value="0x10" comment="Send a position command to an individual servo" />
+
+        <Value name="NEUTRAL_COMMAND" value="0x15" comment="Move the servo to the neutral position" />
+
+        <Value name="DISABLE" value="0x20" comment="Disable a single servo, or all servos with a broadcast message" />
+        <Value name="ENABLE" comment="Enable a single servo, or all servos with a broadcast message" />
+
+        <Value name="SYSTEM_COMMAND" value="0x50" comment="Servo system command" />
+        <Value name="SET_TITLE" comment="Set the title of this servo" />
+
+        
+        <Value name="STATUS_A" value="0x60" comment="Servo *STATUS_A* packet contains status and position information" />
+        <Value name="STATUS_B" comment="Servo *STATUS_B* packet contains current, temperature and other information" />
+        <Value name="STATUS_C" comment="Reserved for future use" />
+        <Value name="STATUS_D" comment="Reserved for future use" />
+        <Value name="ACCELEROMETER" comment="Raw accelerometer data" />
+
+        
+        <Value name="ADDRESS" value="0x70" comment="Servo address information" />
+        <Value name="TITLE" comment="Servo title information" />
+        <Value name="FIRMWARE" comment="Servo firmware information" />
+        <Value name="SYSTEM_INFO" comment="Servo system info (uptime, etc)" />
+        <Value name="TELEMETRY_CONFIG" comment="Telemetry settings" />
+        <Value name="SETTINGS_INFO" comment="Non-volatile settings configuration information" />
+        <Value name="TELLTALE_A" value="0x7A" comment="Servo telltale information" hidden="true" />
+
+        
+        <Value name="CURRENT_LIMITS" comment="Current limit control system settings" hidden="true" />
+        <Value name="BACKLASH" comment="" hidden="true" />
+        <Value name="WEAR_LEVEL_A" comment="Wear estimate information packet 1 of 2" hidden="true" />
+        <Value name="LOOKUP_TABLE" comment="Input/output mapping table information" hidden="true" />
+        <Value name="CONFIG" comment="General servo configuration" />
+        <Value name="CALIBRATION" comment="Servo calibration data" hidden="true" />
+
+        <Value name="LIMIT_VALUES" hidden="true" comment="Servo limit value settings" />
+
+        <Value name="DEBUG_CTRL_LOOP" comment="Control loop debug information" hidden="true" />
+        <Value name="DEBUG_MOTION_CTRL" comment="Motion control debug info" hidden="true" />
+
+		
+        <Value name="TELLTALE_SETTINGS" value="0x101" comment="Telltale settings packet" hidden="true" />
+		<Value name="SYSTEM_SETTINGS" value="0x1FF" comment="System settings (serial number, etc)" hidden="true" />
+    </Enum>
+
+    <Enum name="ServoCommands" prefix="CMD_SERVO_" lookup="true" comment="These commands are sent to the servo using the SERVO_SYSTEM_COMMAND packet" description="Multiple commands can be sent to the servo using the SERVO_SYSTEM_COMMAND packet, where the first byte of the packet describes the command type. Below are the enumerated identifiers for the available servo commands. Each command is described at length further in this document.">
+        <Value name="SET_LOOKUP_TABLE_ELEMENT" comment="Configure an individual I/O element" hidden="true" />
+        <Value name="SET_CONFIG" value="0x10" comment="Set the servo configuration bits" hidden="true" />
+
+        <Value name="SET_TEMPERATURE_LIMIT" hidden="true" comment="Set the over-temperature warning level" />
+        <Value name="SET_STRENGTH" hidden="true" comment="Set the servo 'strength' (maximum motor duty cycle)" />
+        <Value name="SET_ILIMIT_KI" hidden="true" comment="Set the servo current-limit integral gain value" />
+
+        <Value name="SET_MAX_PWM_LIMIT" hidden="true" comment="Set the maximum clipping value for the servo PWM signal" />
+        <Value name="SET_TELEMETRY_PERIOD" value="0x40" comment="Set the servo telemetry period" hidden="true" />
+        <Value name="SET_TELEMETRY_PACKETS" comment="Configure telemetry packets" hidden="true" />
+        <Value name="REQUEST_HF_DATA" value="0x43" comment="Request high-frequency telemetry data" />
+        <Value name="SET_NODE_ID" value="0x50" comment="Configure the CAN servo node ID" />
+        <Value name="SET_USER_ID_A" comment="Set User ID A" />
+        <Value name="SET_USER_ID_B" comment="Set User ID B" />
+
+        <Value name="START_TEST_MODE" hidden="true" />
+        <Value name="START_BACKLASH_TEST" comment="" hidden="true" />
+        <Value name="SET_MIDDLE_POS" value="0x70" hidden="true" />
+
+        <Value name="CLEAR_BIN_DATA" hidden="true" />
+
+        <Value name="SET_COMMISSIONING_FLAG" value="0x95" hidden="true" comment="Set servo commissioning flag" />
+
+        <Value name="RESET_DEFAULT_SETTINGS" value="0xA0" comment="Reset servo configuration settings to default values" />
+
+        
+        <Value name="UNLOCK_SETTINGS" value="0xF5" comment="Unlock servo settings" />
+        <Value name="LOCK_SETTINGS" comment="Lock servo settings" />
+
+        <Value name="ENTER_BOOTLOADER" value="0xFB" comment="Enter bootloader mode" />
+        <Value name="RESET" comment="Reset servo" />
+        
+        </Enum>
+
+    
+
+    
+    <Packet name="MultiPositionCommand" ID="PKT_SERVO_MULTI_COMMAND_1 PKT_SERVO_MULTI_COMMAND_2 PKT_SERVO_MULTI_COMMAND_3 PKT_SERVO_MULTI_COMMAND_4 PKT_SERVO_MULTI_COMMAND_5 PKT_SERVO_MULTI_COMMAND_6 PKT_SERVO_MULTI_COMMAND_7 PKT_SERVO_MULTI_COMMAND_8 PKT_SERVO_MULTI_COMMAND_9 PKT_SERVO_MULTI_COMMAND_10 PKT_SERVO_MULTI_COMMAND_11 PKT_SERVO_MULTI_COMMAND_12 PKT_SERVO_MULTI_COMMAND_13 PKT_SERVO_MULTI_COMMAND_14 PKT_SERVO_MULTI_COMMAND_15 PKT_SERVO_MULTI_COMMAND_16" map="false" file="ServoPackets" parameterInterface="true" comment="This packet can be used to simultaneously command multiple servos which have sequential CAN ID values. This packet must be sent as a broadcast packet (address = 0xFF) such that all servos can receive it. These commands can be sent to groups of servos with ID values up to 64, using different PKT_SERVO_MULTI_COMMAND_x packet ID values.">
+        <Data name="commandA" inMemoryType="signed16" comment="Servo command for servo with address offset 0" units="dimensionless" range="-20,000 to +20,000" notes="Input limits depend on servo I/O mapping" />
+        <Data name="commandB" inMemoryType="signed16" comment="Servo command for servo with address offset 1" units="dimensionless" range="-20,000 to +20,000" notes="Input limits depend on servo I/O mapping" />
+        <Data name="commandC" inMemoryType="signed16" comment="Servo command for servo with address offset 3" units="dimensionless" range="-20,000 to +20,000" notes="Input limits depend on servo I/O mapping" />
+        <Data name="commandD" inMemoryType="signed16" comment="Servo command for servo with address offset 3" units="dimensionless" range="-20,000 to +20,000" notes="Input limits depend on servo I/O mapping" />
+    </Packet>
+o
+    <Packet name="PositionCommand" ID="PKT_SERVO_POSITION_COMMAND" comment="Send this command to move the servo(s) to the commanded position. Position command units depend on the configuration of the servo. Send with the broadcast ID (0xFF) to send the position command to *all* servos." file="ServoPackets" parameterInterface="true">
+        <Data name="command" inMemoryType="signed16" comment="Servo command" units="dimensionless" range="-20,000 to +20,000" notes="Input limits depend on servo I/O mapping" />
+    </Packet>
+
+    <Packet name="NeutralPositionCommand" ID="PKT_SERVO_NEUTRAL_COMMAND" comment="Send this command (with zero data bytes) to move the servo(s) to the neutral position (if enabled). Send with the broadcast ID (0xFF) to move *all* servos to their neutral positions" file="ServoPackets" parameterInterface="true">
+    </Packet>
+
+    <Packet name="Disable" ID="PKT_SERVO_DISABLE" file="ServoPackets" parameterInterface="true" comment="Send this command (with zero data bytes) to disable the servo. Send with the broadcast ID (0xFF) to disable *all* servos.">
+    </Packet>
+
+    <Packet name="Enable" ID="PKT_SERVO_ENABLE" file="ServoPackets" parameterInterface="true" comment="Send this command (with zero data bytes) to enable the servo. Send with the broadcast ID (0xFF) to enable *all* servos.">
+    </Packet>
+
+    <Packet name="SetTitle" ID="PKT_SERVO_SET_TITLE" file="ServoPackets" parameterInterface="true" comment="Set the human-readable description of this servo">
+        <Data name="title" inMemoryType="unsigned8" array="8" />
+    </Packet>
+
+    <Packet name="StatusA" ID="PKT_SERVO_STATUS_A" file="ServoPackets" parameterInterface="true" structureInterface="true" comment="The *SERVO_STATUS_A* packet contains status, warning and error information, in addition to the servo position">
+        <Data name="status" struct="StatusBits" comment="Status bits contain information on servo operation" />
+        <Data name="warnings" struct="WarningBits" comment="Warning bits indicate servo is operation outside of desired range" />
+        <Data name="errors" struct="ErrorBits" comment="These bits indicate critical system error information" />
+        <Data name="position" inMemoryType="signed16" comment="Servo position, mapped to input units" />
+        <Data name="command" inMemoryType="signed16" comment="Servo commanded position" />
+    </Packet>
+
+    <Packet name="StatusB" ID="PKT_SERVO_STATUS_B" file="ServoPackets" parameterInterface="true" structureInterface="true" comment="The *SERVO_STATUS_B* packet contains various servo feedback data">
+        <Data name="current" inMemoryType="unsigned16" units="10mA per bit" comment="Servo current" />
+        <Data name="voltage" inMemoryType="unsigned16" units="10mV per bit" comment="Servo supply voltage" />
+        <Data name="temperature" inMemoryType="signed8" comment="Servo temperature" units="1C per bit" />
+        <Data name="dutyCycle" inMemoryType="signed8" default="0" comment="Motor duty cycle" units="1% per bit" range="-100% to +100%" />
+        <Data name="speed" inMemoryType="signed16" default="0" comment="Servo output shaft speed" units="1 degree per second" />
+    </Packet>
+    
+    <Packet name="StatusC" ID="PKT_SERVO_STATUS_C" file="ServoPackets" parameterInterface="true" structureInterface="true" comment="The *SERVO_STATUS_C* packet contains servo position data. It is a cut-down packet to allow high-speed feedback on servo position">
+        <Data name="position" inMemoryType="signed16" comment="Servo position, mapped to input units" />
+    </Packet>    
+
+    <Packet name="Accelerometer" ID="PKT_SERVO_ACCELEROMETER" file="ServoPackets" parameterInterface="true" comment="Raw accelerometer data. To convert these raw readings to 'real' units, use the formula acc = 0.5 * raw * fullscale / (2^resolution)">
+        <Data name="xAcc" inMemoryType="signed16" comment="X axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units" />
+        <Data name="yAcc" inMemoryType="signed16" comment="Y axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units" />
+        <Data name="zAcc" inMemoryType="signed16" comment="Z axis acceleration value" range="-0x7FFF to +0x7FFF" notes="Multiply by (0.5 * fullscale / 2^resolution) to get acceleration value in 'g' units" />
+        <Data name="fullscale" inMemoryType="unsigned8" comment="Accelerometer full-scale range" />
+        <Data name="resolution" inMemoryType="unsigned8" comment="Accelerometer measurement resolution, in 'bits'." />
+    </Packet>
+
+    <Packet name="Address" ID="PKT_SERVO_ADDRESS" file="ServoPackets" parameterInterface="true" structureInterface="true">
+        <Data name="hwRev" inMemoryType="unsigned8" comment="Hardware revision" />
+        <Data name="serialNumber" inMemoryType="unsigned32" encodedType="unsigned24" comment="Servo serial number" />
+        <Data name="userIDA" inMemoryType="unsigned16" comment="Programmable User ID value 1/2" />
+        <Data name="userIDB" inMemoryType="unsigned16" comment="Programmable User ID value 2/2" />
+    </Packet>
+
+    <Packet name="Title" ID="PKT_SERVO_TITLE" file="ServoPackets" parameterInterface="true">
+        <Data name="title" inMemoryType="unsigned8" array="8" comment="Human readable description string for the servo" />
+    </Packet>
+
+    
+
+    <Packet name="Firmware" ID="PKT_SERVO_FIRMWARE" file="ServoPackets" parameterInterface="true" structureInterface="true">
+        <Data name="major" inMemoryType="unsigned8" comment="Firmware version, major number" />
+        <Data name="minor" inMemoryType="unsigned8" comment="Firmware version, minor number" />
+        <Data name="day" inMemoryType="unsigned8" comment="Firmware release date, day-of-month" />
+        <Data name="month" inMemoryType="unsigned8" comment="Firmware release date, month-of-year" />
+        <Data name="year" inMemoryType="unsigned16" comment="Firmware release date, year" />
+        <Data name="checksum" inMemoryType="unsigned16" comment="Firmware checksum, 16-bit" />
+    </Packet>
+
+    <Packet name="SystemInfo" ID="PKT_SERVO_SYSTEM_INFO" file="ServoPackets" parameterInterface="true" structureInterface="true">
+        <Data name="msSinceReset" inMemoryType="unsigned32" comment="Time since last power cycle (milliseconds)" />
+        <Data name="powerCycles" inMemoryType="unsigned16" comment="Number of recorded power cycles" />
+        <Data name="resetCode" inMemoryType="unsigned8" comment="Processor code indicating cause of most recent reset event" />
+        <Data name="cpuOccupancy" inMemoryType="unsigned8" units="1% per bit" />
+    </Packet>
+
+    
+    <Packet name="TelemetryConfig" ID="PKT_SERVO_TELEMETRY_CONFIG" file="ServoPackets" parameterInterface="true" structureInterface="true" comment="Telemetry settings configuration packet">
+        <Data name="settings" struct="TelemetrySettings" comment="Servo telemetry settings" />
+        
+        <Data name="reserved" array="3" inMemoryType="null" encodedType="unsigned8" constant="0" comment="Reserved for future use" />
+        
+        <Data name="icdVersion" inMemoryType="unsigned8" constant="getServoApi()" comment="Servo ICD revision" />
+    </Packet>
+
+    <Packet name="SettingsInfo" ID="PKT_SERVO_SETTINGS_INFO" file="ServoPackets" parameterInterface="true" structureInterface="true">
+        <Data name="eeUnlocked" inMemoryType="bitfield1" comment="Set if the servo is unlocked and ready to receive settings updates" />
+        <Data name="eeVersion" inMemoryType="bitfield7" comment="Version of non-volatile settings configuration" />
+        <Data name="eeSize" inMemoryType="unsigned16" comment="Size of non-volatile settings data" />
+        <Data name="eeChecksum" inMemoryType="unsigned16" comment="NV settings checksum" />
+        <Data name="mramVersion" inMemoryType="unsigned8" />
+        <Data name="mramSize" inMemoryType="unsigned16" />
+    </Packet>
+    
+    <Packet name="TelltaleA" ID="PKT_SERVO_TELLTALE_A" file="ServoPackets" parameterInterface="true" comment="Servo telltale data">
+        <Data name="minTemperature" inMemoryType="signed8" comment="Minimum temperature seen by the servo" />
+        <Data name="maxTemperature" inMemoryType="signed8" comment="Maximum temperature seen by the servo" />
+      </Packet>
+
+    <Packet name="Config" useInOtherPackets="true" map="true" ID="PKT_SERVO_CONFIG" file="ServoPackets" parameterInterface="true" structureInterface="true" comment="General servo configuration settings">
+        <Data name="options" struct="ConfigBits" comment="Servo configuration parameters" />
+        <Data name="commandTimeout" inMemoryType="unsigned16" comment="Servo command timeout" units="1ms per bit" range="0 to 65535" notes="0 = Timeout disabled" initialValue="1000" verifyMaxValue="60000" />
+        <Data name="homePosition" inMemoryType="signed16" comment="Servo neutral position. Servo can be configured to return to this position at powerup, or after loss of communication" notes="Neutral position is specified in *input* units. i.e. if the I/O map is enabled, it will be applied to the neutral position" initialValue="1500" verifyMinValue="-20000" verifyMaxValue="20000" units="dimensionless" />
+        <Data name="reserved" inMemoryType="unsigned8" array="2" comment="Reserved for future use" map="false" />
+    </Packet>
+
+    <Packet name="RequestHighFrequencyData" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands" parameterInterface="true" comment="Select packets for high-frequency transmission. Selected packets will be transmitted at 500Hz for one second. Sending this command again resets the timer, allowing continuous data as long as this packet is received">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_REQUEST_HF_DATA" />
+        <Data name="packets" struct="TelemetryPackets" comment="Select which telemetry packets are transmitted at high-speed by the servo" />
+    </Packet>
+
+    <Packet name="SetNodeID" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands" parameterInterface="true" comment="Set the Node ID (CAN Address) for the servo">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_SET_NODE_ID" />
+        <Data name="serialNumber" inMemoryType="unsigned32" comment="The serial number must match that of the servo for the command to be accepted" />
+        <Data name="nodeID" inMemoryType="unsigned8" comment="Set the CAN Node ID of the target servo" range="0 to 254" notes="A servo with a Node ID of zero (0) will be disabled" />
+    </Packet>
+
+	<Packet name="SetUserIdA" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands" parameterInterface="true" comment="Set user programmable ID value">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_SET_USER_ID_A" />
+        <Data name="id" inMemoryType="unsigned16" comment="User configurable value, 16-bit" />
+    </Packet>
+
+    <Packet name="SetUserIdB" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands" parameterInterface="true" comment="Set user programmable ID value">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_SET_USER_ID_B" />
+        <Data name="id" inMemoryType="unsigned16" comment="User configurable value, 16-bit" />
+    </Packet>
+
+    <Packet name="ResetDefaultSettings" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands" parameterInterface="true" comment="Reset servo settings to default values">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_RESET_DEFAULT_SETTINGS" />
+        <Data name="resetSeqA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0xAA" />
+        <Data name="resetSeqB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0x55" />
+    </Packet>
+
+    <Packet name="UnlockSettings" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_UNLOCK_SETTINGS" />
+        <Data name="unlockSeqA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0xA0" />
+        <Data name="unlockSeqB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0xB0" />
+        <Data name="unlockSeqC" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0xC0" />
+    </Packet>
+
+    <Packet name="LockSettings" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_LOCK_SETTINGS" />
+        <Data name="lockSeqA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0x0A" />
+        <Data name="lockSeqB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0x0B" />
+        <Data name="lockSeqC" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0x0C" />
+    </Packet>
+
+    <Packet name="EnterBootloader" ID="PKT_SERVO_SYSTEM_COMMAND" file="ServoCommands">
+        <Data name="command" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="CMD_SERVO_ENTER_BOOTLOADER" />
+        <Data name="bootSeqA" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0xAA" comment="This byte is required for the command to be accepted" />
+        <Data name="bootSeqB" inMemoryType="null" encodedType="unsigned8" checkConstant="true" constant="0x55" comment="This byte is required for the command to be accepted" />
+    </Packet>
+
+    </Protocol>

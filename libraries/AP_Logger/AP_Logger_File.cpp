@@ -134,14 +134,19 @@ void AP_Logger_File::periodic_1Hz()
     }
     
     if (_initialised &&
+        !start_new_log_pending &&
         _write_fd == -1 && _read_fd == -1 &&
         logging_enabled() &&
-        !recent_open_error() &&
-        !hal.util->get_soft_armed()) {
+        !recent_open_error()) {
         // retry logging open. This allows for booting with
         // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
         // card is inserted then logging starts
-        start_new_log();
+        // this also allows for logging to start after forced arming
+        if (!hal.util->get_soft_armed()) {
+            start_new_log();
+        } else {
+            start_new_log_pending = true;
+        }
     }
 
     if (!io_thread_alive()) {
@@ -719,18 +724,22 @@ void AP_Logger_File::PrepForArming_start_logging()
     }
 
     uint32_t start_ms = AP_HAL::millis();
-    const uint32_t open_limit_ms = 250;
+    const uint32_t open_limit_ms = 1000;
 
     /*
       log open happens in the io_timer thread. We allow for a maximum
-      of 250ms to complete the open
+      of 1s to complete the open
      */
     start_new_log_pending = true;
-    EXPECT_DELAY_MS(250);
+    EXPECT_DELAY_MS(1000);
     while (AP_HAL::millis() - start_ms < open_limit_ms) {
         if (logging_started()) {
             break;
         }
+#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !defined(HAL_BUILD_AP_PERIPH)
+        // keep the EKF ticking over
+        AP::ahrs().update();
+#endif
         hal.scheduler->delay(1);
     }
 }

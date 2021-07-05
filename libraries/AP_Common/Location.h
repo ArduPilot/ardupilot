@@ -64,12 +64,14 @@ public:
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     Vector3f get_distance_NED(const Location &loc2) const;
+    Vector3d get_distance_NED_double(const Location &loc2) const;
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
+    void offset_double(double ofs_north, double ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(float bearing_deg, float distance);
@@ -119,12 +121,18 @@ public:
 
     bool initialised() const { return (lat !=0 || lng != 0 || alt != 0); }
 
+    // wrap longitude at -180e7 to 180e7
+    static int32_t wrap_longitude(int32_t lon);
+
+    // get lon1-lon2, wrapping at -180e7 to 180e7
+    static int32_t diff_longitude(int32_t lon1, int32_t lon2);
+    
 private:
     static AP_Terrain *_terrain;
 
     // scaling factor from 1e-7 degrees to meters at equator
     // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
-    static constexpr float LOCATION_SCALING_FACTOR = 0.011131884502145034f;
+    static constexpr float LOCATION_SCALING_FACTOR = LATLON_TO_M;
     // inverse of LOCATION_SCALING_FACTOR
-    static constexpr float LOCATION_SCALING_FACTOR_INV = 89.83204953368922f;
+    static constexpr float LOCATION_SCALING_FACTOR_INV = LATLON_TO_M_INV;
 };

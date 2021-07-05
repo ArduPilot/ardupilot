@@ -538,7 +538,7 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
     attitude_controller_run_quat();
 }
 
-// Command a Quaternion attitude with feedforward and smoothing
+// Command a thrust vector and heading rate
 void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -586,7 +586,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
     attitude_controller_run_quat();
 }
 
-// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+// Command a thrust vector, heading and heading rate
 void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
