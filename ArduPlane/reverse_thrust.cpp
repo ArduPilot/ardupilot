@@ -25,7 +25,7 @@ bool Plane::allow_reverse_thrust(void) const
     // check if we should allow reverse thrust
     bool allow = false;
 
-    if (g.use_reverse_thrust == USE_REVERSE_THRUST_NEVER || !have_reverse_thrust()) {
+    if (!have_reverse_thrust()) {
         return false;
     }
 
