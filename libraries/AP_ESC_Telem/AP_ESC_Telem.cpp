@@ -34,39 +34,28 @@ AP_ESC_Telem::AP_ESC_Telem()
     _singleton = this;
 }
 
-// return the average motor frequency in Hz for selected motors
-float AP_ESC_Telem::get_average_motor_frequency_hz(uint32_t servo_channel_mask) const
+// return the average motor RPM
+float AP_ESC_Telem::get_average_motor_rpm(uint32_t servo_channel_mask) const
 {
-    float motor_freq = 0.0f;
+    float rpm_avg = 0.0f;
     uint8_t valid_escs = 0;
 
-    // average the rpm of each motor and convert to Hz
+    // average the rpm of each motor
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (BIT_IS_SET(servo_channel_mask,i)) {
             float rpm;
             if (get_rpm(i, rpm)) {
-                motor_freq += rpm * (1.0f / 60.0f);
+                rpm_avg += rpm;
                 valid_escs++;
             }
         }
     }
+
     if (valid_escs > 0) {
-        motor_freq /= valid_escs;
+        rpm_avg /= valid_escs;
     }
 
-    return motor_freq;
-}
-
-// return the average motor frequency in Hz for dynamic filtering
-float AP_ESC_Telem::get_average_motor_frequency_hz() const
-{
-    return get_average_motor_frequency_hz(0xFFFFFFFF);
-}
-
-// return the average motor rpm for selected motor channels
-float AP_ESC_Telem::get_average_motor_rpm(uint32_t servo_channel_mask) const
-{
-    return get_average_motor_frequency_hz(servo_channel_mask)*60.f; // Hz to rpm
+    return rpm_avg;
 }
 
 // return all the motor frequencies in Hz for dynamic filtering
