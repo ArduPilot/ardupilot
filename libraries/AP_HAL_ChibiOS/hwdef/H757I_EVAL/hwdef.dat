@@ -23,10 +23,10 @@ APJ_BOARD_ID 146
 FLASH_SIZE_KB 2048
 
 # setup build for a peripheral firmware
-env AP_PERIPH 1
+# env AP_PERIPH 1
 
-define HAL_BUILD_AP_PERIPH
-define HAL_NO_GCS
+# define HAL_BUILD_AP_PERIPH
+# define HAL_NO_GCS
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 128
