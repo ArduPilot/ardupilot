@@ -109,12 +109,10 @@
 #define PROTO_SET_BAUD				0x33    // baud rate on uart
 
 // External Flash programming 
-#if EXTERNAL_PROG_FLASH_MB
 #define PROTO_EXTF_ERASE            0x34	// Erase sectors from external flash
 #define PROTO_EXTF_PROG_MULTI       0x35    // write bytes at external flash program address and increment
 #define PROTO_EXTF_READ_MULTI       0x36    // read bytes at address and increment
 #define PROTO_EXTF_GET_CRC          0x37	// compute & return a CRC of data in external flash
-#endif
 
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
@@ -225,13 +223,22 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
         : : "r"(stacktop), "r"(entrypoint) :);
 }
 
+#ifndef APP_START_ADDRESS
 #define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U)
+#endif
 
 void
 jump_to_app()
 {
     const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
 
+    // If we have QSPI chip start it
+#if EXTERNAL_PROG_FLASH_MB
+    uint8_t* ext_flash_start_addr;
+    if (!ext_flash.start_xip_mode((void**)&ext_flash_start_addr)) {
+        return;
+    }
+#endif
     /*
      * We hold back the programming of the lead words until the upload
      * is marked complete by the host. So if they are not 0xffffffff,
@@ -239,7 +246,7 @@ jump_to_app()
      */
     for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
         if (app_base[i] == 0xffffffff) {
-            return;
+            goto exit;
         }
     }
 
@@ -248,12 +255,16 @@ jump_to_app()
      * flash area (or we have a bad flash).
      */
     if (app_base[1] < APP_START_ADDRESS) {
-        return;
+        goto exit;
     }
 
-#if !EXTERNAL_PROG_FLASH_MB  // its very likely to happen when using external flash
+#if BOOT_FROM_EXT_FLASH
+    if (app_base[1] >= (APP_START_ADDRESS + board_info.extf_size)) {
+        goto exit;
+    }
+#else
     if (app_base[1] >= (APP_START_ADDRESS + board_info.fw_size)) {
-        return;
+        goto exit;
     }
 #endif
 
@@ -272,12 +283,6 @@ jump_to_app()
     flash_set_keep_unlocked(false);
     
     led_set(LED_OFF);
-
-    // If we have QSPI chip start it
-    uint8_t* ext_flash_start_addr;
-    if (!ext_flash.start_xip_mode((void**)&ext_flash_start_addr)) {
-        return;
-    }
 
     // resetting the clocks is needed for loading NuttX
 #if defined(STM32H7)
@@ -303,6 +308,11 @@ jump_to_app()
 
     /* extract the stack and entrypoint from the app vector table and go */
     do_jump(app_base[0], app_base[1]);
+exit:
+#if EXTERNAL_PROG_FLASH_MB
+    ext_flash.stop_xip_mode();
+#endif
+    return;
 }
 
 static void
@@ -417,7 +427,9 @@ bootloader(unsigned timeout)
 #endif
 
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
-    uint32_t	extf_address = board_info.extf_size;	/* force erase before upload will work */    
+#if EXTERNAL_PROG_FLASH_MB
+    uint32_t	extf_address = board_info.extf_size;	/* force erase before upload will work */
+#endif
     uint32_t	read_address = 0;
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
@@ -679,6 +691,7 @@ bootloader(unsigned timeout)
         //
         case PROTO_EXTF_PROG_MULTI:
         {
+#if EXTERNAL_PROG_FLASH_MB
             if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
@@ -715,6 +728,8 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
+            uint32_t offset = 0;
+            uint32_t size = arg;
 #if BOOT_FROM_EXT_FLASH
             // save the first words and don't program it until everything else is done
             if (extf_address < sizeof(first_words)) {
@@ -724,9 +739,7 @@ bootloader(unsigned timeout)
                 memset(&flash_buffer.w[0], 0xFF, n);
             }
 #endif
-            uint32_t size = arg;
             uint32_t programming;
-            uint32_t offset = 0;
             uint32_t delay_us = 0, timeout_us = 0;
             uint64_t start_time_us;
             while (true) {
@@ -753,6 +766,7 @@ bootloader(unsigned timeout)
                     }
                 }
             }
+#endif
             break;
         }
 
@@ -806,13 +820,14 @@ bootloader(unsigned timeout)
             }
 
             // save the first words and don't program it until everything else is done
+#if !BOOT_FROM_EXT_FLASH
             if (address < sizeof(first_words)) {
                 uint8_t n = MIN(sizeof(first_words)-address, arg);
                 memcpy(&first_words[address/4], &flash_buffer.w[0], n);
                 // replace first words with 1 bits we can overwrite later
                 memset(&flash_buffer.w[0], 0xFF, n);
             }
-
+#endif
             arg /= 4;
             // program the words
             if (!flash_write_buffer(address, flash_buffer.w, arg)) {
@@ -842,9 +857,12 @@ bootloader(unsigned timeout)
             for (unsigned p = 0; p < board_info.fw_size; p += 4) {
                 uint32_t bytes;
 
+#if !BOOT_FROM_EXT_FLASH
                 if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
                     bytes = first_words[p/4];
-                } else {
+                } else
+#endif
+                {
                     bytes = flash_func_read_word(p);
                 }
                 sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
@@ -860,6 +878,7 @@ bootloader(unsigned timeout)
         // reply:			<crc:4>/INSYNC/OK
         //
         case PROTO_EXTF_GET_CRC: {
+#if EXTERNAL_PROG_FLASH_MB
             // expect EOC
             uint32_t cmd_verify_bytes;
             if (cin_word(&cmd_verify_bytes, 100)) {
@@ -893,6 +912,7 @@ bootloader(unsigned timeout)
             }
             cout_word(sum);
             break;
+#endif
         }
 
         // read a word from the OTP
@@ -1058,9 +1078,30 @@ bootloader(unsigned timeout)
 
             // program the deferred first word
             if (first_words[0] != 0xffffffff) {
+#if !BOOT_FROM_EXT_FLASH
                 if (!flash_write_buffer(0, first_words, RESERVE_LEAD_WORDS)) {
                     goto cmd_fail;
                 }
+#else
+                uint32_t programming;
+                uint32_t delay_us;
+                uint32_t timeout_us;
+                if (!ext_flash.start_program_offset(0, (const uint8_t*)first_words, sizeof(first_words), programming, delay_us, timeout_us)) {
+                    // uprintf("ext flash write command failed\n");
+                    goto cmd_fail;
+                }
+                uint64_t start_time_us = AP_HAL::micros64();
+                while (true) {
+                    if (AP_HAL::micros64() > (start_time_us+delay_us)) {
+                        if (!ext_flash.is_device_busy()) {
+                            // uprintf("flash program Successful, elapsed %ld us\n", uint32_t(AP_HAL::micros64() - start_time_us));
+                            break;
+                        } else {
+                            // uprintf("Typical flash program time reached, Still Busy?!\n");
+                        }
+                    }
+                }
+#endif
                 // revert in case the flash was bad...
                 memset(first_words, 0xff, sizeof(first_words));
             }
