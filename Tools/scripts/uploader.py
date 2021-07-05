@@ -673,7 +673,11 @@ class uploader(object):
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
-        self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
+        try:
+            self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
+        except Exception:
+            print("Could not get external flash size, assuming 0")
+            self.extf_maxsize = 0
 
     def dump_board_info(self):
         # OTP added in v4:
