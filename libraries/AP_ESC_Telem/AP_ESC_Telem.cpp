@@ -145,6 +145,22 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
     return true;
 }
 
+// get the highest ESC temperature in centi-degrees if available, returns true if there is valid data for at least one ESC
+bool AP_ESC_Telem::get_highest_motor_temperature(int16_t& temp) const
+{
+    uint8_t valid_escs = 0;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        int16_t temp_temp;
+        if (get_motor_temperature(i, temp_temp)) {
+            temp = MAX(temp, temp_temp);
+            valid_escs++;
+        }
+    }
+
+    return valid_escs > 0;
+}
+
 // get an individual ESC's current in Ampere if available, returns true on success
 bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 {
