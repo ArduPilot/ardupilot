@@ -122,6 +122,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    AP_GROUPINFO("DISPLAY",      9,     AP_Arming,  display_failed_checks,   false),
+
     AP_GROUPEND
 };
 
