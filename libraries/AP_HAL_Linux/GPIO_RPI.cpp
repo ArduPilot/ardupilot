@@ -228,7 +228,12 @@ void GPIO_RPI::write(uint8_t pin, uint8_t value)
 
 void GPIO_RPI::toggle(uint8_t pin)
 {
-    write(pin, !read(pin));
+    if (pin >= GPIO_RPI_MAX_NUMBER_PINS) {
+        return ;
+    }
+    uint32_t flag = (1 << pin);
+    _gpio_output_port_status ^= flag;
+    write(pin, (_gpio_output_port_status & flag) >> pin);
 }
 
 /* Alternative interface: */
