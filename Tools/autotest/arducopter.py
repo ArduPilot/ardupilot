@@ -6777,7 +6777,7 @@ class AutoTestCopter(AutoTest):
     def test_replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tools/Replay', clean=False, configure=False)
+        util.build_SITL('tool/Replay', clean=False, configure=False)
 
         self.test_replay_bit(self.test_replay_gps_bit)
         self.test_replay_bit(self.test_replay_beacon_bit)
@@ -6790,7 +6790,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Running replay on (%s)" % current_log_filepath)
 
-        util.run_cmd(['build/sitl/tools/Replay', current_log_filepath],
+        util.run_cmd(['build/sitl/tool/Replay', current_log_filepath],
                      directory=util.topdir(), checkfail=True, show=True)
 
         self.context_pop()
