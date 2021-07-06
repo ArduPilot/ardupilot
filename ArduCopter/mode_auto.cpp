@@ -657,7 +657,7 @@ int32_t ModeAuto::wp_bearing() const
     }
 }
 
-bool ModeAuto::get_wp(Location& destination)
+bool ModeAuto::get_wp(Location& destination) const
 {
     switch (_mode) {
     case SubMode::NAVGUIDED:
