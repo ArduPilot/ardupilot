@@ -1374,3 +1374,74 @@ void GCS_MAVLINK_Copter::send_wind() const
         wind.length(),
         wind.z);
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    struct Location global_position_current;
+    UNUSED_RESULT(ahrs.get_position(global_position_current));
+
+    //return units are m
+    if (copter.ap.initialised) {
+        return 0.01 * (global_position_current.alt + copter.pos_control->get_pos_error_z_cm());
+    }
+    return 0;
+    
+}
+
+uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
+{
+    if (copter.ap.initialised) {
+        // return units are deg/2
+        const Mode *flightmode = copter.flightmode;
+        // need to convert -18000->18000 to 0->360/2
+        return wrap_360_cd(flightmode->wp_bearing()) / 200;
+    }
+    return 0;     
+}
+    
+uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
+{
+    if (copter.ap.initialised) {
+        // return units are dm
+        const Mode *flightmode = copter.flightmode;
+        return MIN(flightmode->wp_distance() * 1.0e-2, UINT16_MAX) / 10;
+    }
+    return 0;
+}
+
+uint8_t GCS_MAVLINK_Copter::high_latency_tgt_airspeed() const
+{
+    if (copter.ap.initialised) {
+        // return units are m/s*5
+        return MIN(copter.pos_control->get_vel_target_cms().length() * 5.0e-2, UINT8_MAX);
+    }
+    return 0;  
+}
+
+uint8_t GCS_MAVLINK_Copter::high_latency_wind_speed() const
+{
+    Vector3f airspeed_vec_bf;
+    Vector3f wind;
+    // return units are m/s*5
+    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        wind = AP::ahrs().wind_estimate();
+        return wind.length() * 5;
+    }
+    return 0; 
+}
+
+uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
+{
+    Vector3f airspeed_vec_bf;
+    Vector3f wind;
+    // return units are deg/2
+    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        wind = AP::ahrs().wind_estimate();
+        // need to convert -180->180 to 0->360/2
+        return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+    }
+    return 0;
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED
