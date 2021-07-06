@@ -647,3 +647,31 @@ void GCS_MAVLINK_Blimp::send_wind() const
         wind.length(),
         wind.z);
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+uint8_t GCS_MAVLINK_Blimp::high_latency_wind_speed() const
+{
+    Vector3f airspeed_vec_bf;
+    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // if we don't have an airspeed estimate then we don't have a
+        // valid wind estimate on blimps
+        return 0;
+    }
+    // return units are m/s*5
+    const Vector3f wind = AP::ahrs().wind_estimate();
+    return wind.length() * 5;
+}
+
+uint8_t GCS_MAVLINK_Blimp::high_latency_wind_direction() const
+{
+    Vector3f airspeed_vec_bf;
+    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // if we don't have an airspeed estimate then we don't have a
+        // valid wind estimate on blimps
+        return 0;
+    }
+    const Vector3f wind = AP::ahrs().wind_estimate();
+    // need to convert -180->180 to 0->360/2
+    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

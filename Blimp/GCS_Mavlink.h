@@ -76,4 +76,9 @@ private:
         POSZ =        7,
         POSYAW =      8,
     };
+    
+#if HAL_HIGH_LATENCY2_ENABLED
+    uint8_t high_latency_wind_speed() const override;
+    uint8_t high_latency_wind_direction() const override;
+#endif // HAL_HIGH_LATENCY2_ENABLED
 };
