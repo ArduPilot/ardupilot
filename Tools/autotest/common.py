@@ -5766,7 +5766,10 @@ Also, ignores heartbeats not from our target system'''
             shutil.move(log, newname)
         # move core files
         save_binaries = False
-        for log in sorted(glob.glob("core*")):
+        corefiles = []
+        corefiles.extend(glob.glob("core*"))
+        corefiles.extend(glob.glob("ap-*.core"))
+        for log in sorted(corefiles):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (bname, self.log_name(), name))
             print("Renaming %s to %s" % (log, newname))
@@ -5873,7 +5876,9 @@ Also, ignores heartbeats not from our target system'''
             util.pexpect_close(self._mavproxy)
             self._mavproxy = None
 
-        corefiles = glob.glob("core*")
+        corefiles = []
+        corefiles.extend(glob.glob("core*"))
+        corefiles.extend(glob.glob("ap-*.core"))
         if corefiles:
             self.progress('Corefiles detected: %s' % str(corefiles))
             passed = False
@@ -8785,7 +8790,7 @@ switch value'''
             self.progress("Failed with timeout")
             self.fail_list.append(["Failed with timeout", None, None])
             if self.logs_dir:
-                if glob.glob("core*"):
+                if glob.glob("core*") or glob.glob("ap-*.core"):
                     self.check_logs("FRAMEWORK")
 
         if self.rc_thread is not None:
