@@ -107,6 +107,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TYPE",  11, AP_Camera, _type, 0),
 
+    // @Param: TRIGG_GPSFIX
+    // @DisplayName: GPS status value
+    // @Description: Min GPS status value for allow camera triggering
+    // @Values: 0:NO_GPS,1:NO_FIX,2:GPS_OK_FIX_2D,3:GPS_OK_FIX_3D,4:GPS_OK_FIX_3D_DGPS,5:GPS_OK_FIX_3D_RTK_FLOAT,6:GPS_OK_FIX_3D_RTK_FIXED
+    // @User: Standard
+    AP_GROUPINFO("TRIGG_GPSFIX",  12, AP_Camera, _min_gps_fix, 0),
+
     AP_GROUPEND
 };
 
@@ -351,6 +358,10 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
 void AP_Camera::update()
 {
     update_trigger();
+
+    if (AP::gps().status() < _min_gps_fix) {
+        return;
+    }
 
     if (is_zero(_trigg_dist)) {
         _last_location.lat = 0;
