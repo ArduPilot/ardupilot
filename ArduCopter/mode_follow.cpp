@@ -168,7 +168,7 @@ int32_t ModeFollow::wp_bearing() const
 /*
   get target position for mavlink reporting
  */
-bool ModeFollow::get_wp(Location &loc)
+bool ModeFollow::get_wp(Location &loc) const
 {
     float dist = g2.follow.get_distance_to_target();
     float bearing = g2.follow.get_bearing_to_target();
