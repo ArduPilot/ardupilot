@@ -25,5 +25,6 @@ uint64_t native_micros64();
 uint64_t native_millis64();
 
 void dump_stack_trace();
+void dump_core_file();
 
 } // namespace AP_HAL
