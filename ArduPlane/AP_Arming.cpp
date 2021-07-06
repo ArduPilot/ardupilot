@@ -21,6 +21,11 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
  */
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
+    if (armed || require == (uint8_t)Required::NO) {
+        // if we are already armed or don't need any arming checks
+        // then skip the checks
+        return true;
+    }
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return true;
