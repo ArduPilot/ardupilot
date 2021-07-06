@@ -490,12 +490,13 @@ void Quaternion::to_axis_angle(Vector3f &v) const
     const float sin_half_theta_sq = sq(q2, q3, q4);
     const float &cos_half_theta = q1;
 
-    float vec_coeff;
+    float vec_coeff = 0.0f;
     // Each use of APPROXIMATION_TOL is multiplied by 0.5 since trig values are being compared
     // and sin(x/2) ~= x/2 and cos((pi - x)/2) ~= x/2 for small x
     if (sin_half_theta_sq < 0.25f * APPROXIMATION_TOL * APPROXIMATION_TOL) {
         if (is_zero(cos_half_theta)) {
-            vec_coeff = 0.0f; // The code goes here if the quaternion is [0,0,0,0]. Really shouldn't happen.
+            // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         } else {
             const float cos_half_theta_sq = sq(cos_half_theta);
             vec_coeff = (2.0f - 2.0f / 3.0f * sin_half_theta_sq / cos_half_theta_sq) / cos_half_theta;
