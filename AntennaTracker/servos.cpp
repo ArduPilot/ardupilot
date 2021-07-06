@@ -75,6 +75,9 @@ void Tracker::update_pitch_position_servo()
 
     // calculate new servo position
     int32_t new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.update_error(nav_status.angle_error_pitch);
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidPitch2Srv.set_target_rate(nav_status.pidP_target);
+    g.pidPitch2Srv.set_actual_rate(nav_status.pidP_actual);
 
     // position limit pitch servo
     if (new_servo_out <= pitch_min_cd) {
@@ -126,6 +129,11 @@ void Tracker::update_pitch_onoff_servo(float pitch) const
 void Tracker::update_pitch_cr_servo(float pitch)
 {
     const float pitch_out = constrain_float(g.pidPitch2Srv.update_error(nav_status.angle_error_pitch), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
+
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidPitch2Srv.set_target_rate(nav_status.pidP_target);
+    g.pidPitch2Srv.set_actual_rate(nav_status.pidP_actual);
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, pitch_out);
 }
 
@@ -188,6 +196,9 @@ void Tracker::update_yaw_position_servo()
      */
 
     float servo_change = g.pidYaw2Srv.update_error(nav_status.angle_error_yaw);
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidYaw2Srv.set_target_rate(nav_status.pidY_target);
+    g.pidYaw2Srv.set_actual_rate(nav_status.pidY_actual);
     servo_change = constrain_float(servo_change, -18000, 18000);
     float new_servo_out = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_yaw) + servo_change, -18000, 18000);
 
@@ -239,5 +250,8 @@ void Tracker::update_yaw_onoff_servo(float yaw) const
 void Tracker::update_yaw_cr_servo(float yaw)
 {
     const float yaw_out = constrain_float(-g.pidYaw2Srv.update_error(nav_status.angle_error_yaw), -g.yaw_range * 100/2, g.yaw_range * 100/2);
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidYaw2Srv.set_target_rate(nav_status.pidY_target);
+    g.pidYaw2Srv.set_actual_rate(nav_status.pidY_actual);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
 }
