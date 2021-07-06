@@ -18,6 +18,7 @@ public:
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
     AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
+    void update(void);
     bool pre_arm_checks(bool report) override;
     bool arm_checks(AP_Arming::Method method) override;
 
