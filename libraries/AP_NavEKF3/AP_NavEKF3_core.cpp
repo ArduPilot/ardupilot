@@ -245,6 +245,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&KHP[0][0], 0, sizeof(KHP));
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
+    relyingOnFlowData = false;
     rangeDataToFuse  = false;
     Popt = 0.0f;
     terrainState = 0.0f;

@@ -335,10 +335,6 @@ bool NavEKF3_core::getGPSLLH(struct Location &loc) const
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    // If in the last 10 seconds we have received flow data and no odometry data, then we are relying on optical flow
-    bool relyingOnFlowData = (imuSampleTime_ms - prevBodyVelFuseTime_ms > 1000)
-            && (imuSampleTime_ms - flowValidMeaTime_ms <= 10000);
-
     // If relying on optical flow, limit speed to prevent sensor limit being exceeded and adjust
     // nav gains to prevent body rate feedback into flow rates destabilising the control loop
     if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {

@@ -266,8 +266,12 @@ void NavEKF3_core::setAidingMode()
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
+                relyingOnFlowData = false;
             } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
                 PV_AidingMode = AID_NONE;
+                relyingOnFlowData = false;
+            } else {
+                relyingOnFlowData = true;
             }
             break;
         }
@@ -299,6 +303,8 @@ void NavEKF3_core::setAidingMode()
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
+
+            relyingOnFlowData = optFlowUsed && !posAiding && !gpsVelUsed && !airSpdUsed && !bodyOdmUsed;
 
             // Check if the loss of attitude aiding has become critical
             bool attAidLossCritical = false;
