@@ -19,6 +19,21 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
   additional arming checks for plane
 
  */
+void AP_Arming_Plane::update(void)
+{
+    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
+    pre_arm_display_counter++;
+    bool display_fail = false;
+    if (pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+        display_fail = true;
+        pre_arm_display_counter = 0;
+    }
+
+    AP_Notify::flags.pre_arm_check = pre_arm_checks(get_display_failed_checks() || display_fail);
+    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.armed = is_armed() || arming_required() == AP_Arming::Required::NO;
+}
+
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
     //are arming checks disabled?
