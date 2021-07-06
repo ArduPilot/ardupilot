@@ -129,6 +129,8 @@ def ap_autoconfigure(execute_method):
         """
         Wraps :py:func:`waflib.Context.Context.execute` on the context class
         """
+        if 'tools/' in self.targets:
+            raise Errors.WafError('\"tools\" name has been replaced with \"tool\" for build please use that!')
         if not Configure.autoconfig:
             return execute_method(self)
 
