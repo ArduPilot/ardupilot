@@ -701,7 +701,7 @@ def run_tests(steps):
 
     diagnostic_files = []
     for p in "dumpstack.sh_*", "dumpcore.sh_*", "autotest-*tlog":
-        diagnostic_files.extend(glob.glob())
+        diagnostic_files.extend(glob.glob(p))
     if diagnostic_files:
         print('Removing diagnostic files: %s' % str(diagnostic_files))
         for f in diagnostic_files:
