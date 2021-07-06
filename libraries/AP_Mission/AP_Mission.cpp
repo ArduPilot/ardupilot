@@ -885,6 +885,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
+        if (is_negative(packet.param1) || (packet.param1 > UINT16_MAX)) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
         cmd.p1 = packet.param1;
 #endif
     }
@@ -938,6 +941,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
+        if (is_negative(packet.param1) || (packet.param1 > UINT16_MAX)) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
         break;
 
