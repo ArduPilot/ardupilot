@@ -8,6 +8,8 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
 
+#include "config.h"
+
 class Mode
 {
 public:
@@ -35,6 +37,7 @@ public:
         AVOID_ADSB    = 14,
         GUIDED        = 15,
         INITIALISING  = 16,
+#if HAL_QUADPLANE_ENABLED
         QSTABILIZE    = 17,
         QHOVER        = 18,
         QLOITER       = 19,
@@ -42,6 +45,7 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
+#endif
         THERMAL       = 24,
     };
 
@@ -427,6 +431,7 @@ protected:
 };
 #endif
 
+#if HAL_QUADPLANE_ENABLED
 class ModeQStabilize : public Mode
 {
 public:
@@ -575,7 +580,7 @@ protected:
     bool _enter() override;
     void _exit() override;
 };
-
+#endif  // HAL_QUADPLANE_ENABLED
 
 class ModeTakeoff: public Mode
 {

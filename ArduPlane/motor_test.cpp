@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 /*
   mavlink motor test - implements the MAV_CMD_DO_MOTOR_TEST mavlink
                        command so that the quadplane pilot can test an
@@ -128,3 +130,5 @@ void QuadPlane::motor_test_stop()
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 }
+
+#endif

@@ -282,6 +282,7 @@ private:
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
+#if HAL_QUADPLANE_ENABLED
     ModeQStabilize mode_qstabilize;
     ModeQHover mode_qhover;
     ModeQLoiter mode_qloiter;
@@ -289,6 +290,7 @@ private:
     ModeQRTL mode_qrtl;
     ModeQAcro mode_qacro;
     ModeQAutotune mode_qautotune;
+#endif
     ModeTakeoff mode_takeoff;
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
@@ -769,8 +771,10 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
+#if HAL_QUADPLANE_ENABLED
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
+#endif
 
     // support for transmitter tuning
     AP_Tuning_Plane tuning;
@@ -845,6 +849,7 @@ private:
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
+    int32_t get_pitch_out(int32_t demanded_pitch, float speed_scaler, bool disable_integrator);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
@@ -920,9 +925,11 @@ private:
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
 
+#if HAL_QUADPLANE_ENABLED
     // quadplane.cpp
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
+#endif
 
     // control_modes.cpp
     void read_control_switch();

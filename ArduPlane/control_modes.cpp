@@ -52,6 +52,7 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QSTABILIZE:
         ret = &mode_qstabilize;
         break;
@@ -73,6 +74,7 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QAUTOTUNE:
         ret = &mode_qautotune;
         break;
+#endif
     case Mode::Number::TAKEOFF:
         ret = &mode_takeoff;
         break;

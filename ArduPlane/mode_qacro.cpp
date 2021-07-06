@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQAcro::_enter()
 {
     if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
@@ -21,3 +23,4 @@ void ModeQAcro::update()
     return;
 }
 
+#endif

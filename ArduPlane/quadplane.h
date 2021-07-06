@@ -1,5 +1,8 @@
 #pragma once
 
+#include "config.h"
+#if HAL_QUADPLANE_ENABLED
+
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
@@ -10,8 +13,9 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
-#include "qautotune.h"
 #include "defines.h"
+
+#include "qautotune.h"
 
 /*
   QuadPlane specific functionality
@@ -742,3 +746,5 @@ private:
 
     static QuadPlane *_singleton;
 };
+
+#endif

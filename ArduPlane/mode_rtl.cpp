@@ -50,6 +50,7 @@ void ModeRTL::update()
 
 void ModeRTL::navigate()
 {
+#if HAL_QUADPLANE_ENABLED
     if (plane.control_mode->mode_number() != QRTL) {
         // QRTL shares this navigate function with RTL
 
@@ -68,6 +69,7 @@ void ModeRTL::navigate()
             return;
         }
     }
+#endif
 
     if (plane.g.rtl_autoland == 1 &&
         !plane.auto_state.checked_for_autoland &&
@@ -109,6 +111,7 @@ void ModeRTL::navigate()
 // Switch to QRTL if enabled and within radius
 bool ModeRTL::switch_QRTL(bool check_loiter_target)
 { 
+#if HAL_QUADPLANE_ENABLED
     if (!plane.quadplane.available() || ((plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::SWITCH_QRTL) && (plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::QRTL_ALWAYS))) {  
         return false;
     }
@@ -135,6 +138,7 @@ bool ModeRTL::switch_QRTL(bool check_loiter_target)
         plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
         return true;
     }
+#endif
 
     return false;
 }

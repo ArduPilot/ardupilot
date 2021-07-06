@@ -1,5 +1,9 @@
 #include "Plane.h"
 
+#include "config.h"
+
+#include "qautotune.h"
+
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
@@ -111,7 +115,9 @@ void Plane::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+#if HAL_QUADPLANE_ENABLED
     quadplane.setup();
+#endif
 
     AP_Param::reload_defaults_file(true);
     
@@ -409,9 +415,11 @@ bool Plane::should_log(uint32_t mask)
  */
 int8_t Plane::throttle_percentage(void)
 {
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() && !quadplane.in_tailsitter_vtol_transition()) {
         return quadplane.throttle_percentage();
     }
+#endif
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (!have_reverse_thrust()) {
         return constrain_int16(throttle, 0, 100);
@@ -436,9 +444,11 @@ void Plane::update_dynamic_notch()
     switch (ins.get_gyro_harmonic_notch_tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
+#if HAL_QUADPLANE_ENABLED
             if (quadplane.available()) {
                 ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(quadplane.motors->get_throttle_out() / ref)));
             }
+#endif
             break;
 
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
@@ -462,8 +472,10 @@ void Plane::update_dynamic_notch()
                 }
                 if (num_notches > 0) {
                     ins.update_harmonic_notch_frequencies_hz(num_notches, notches);
+#if HAL_QUADPLANE_ENABLED
                 } else if (quadplane.available()) {    // throttle fallback
                     ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(quadplane.motors->get_throttle_out() / ref)));
+#endif
                 } else {
                     ins.update_harmonic_notch_freq_hz(ref_freq);
                 }

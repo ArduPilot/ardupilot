@@ -25,6 +25,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         }
         break;
 
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QSTABILIZE:
     case Mode::Number::QLOITER:
     case Mode::Number::QHOVER:
@@ -38,10 +39,14 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
             set_mode(mode_qland, reason);
         }
         break;
-        
+#endif
+
     case Mode::Number::AUTO:
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-            quadplane.in_vtol_land_sequence()) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND
+#if HAL_QUADPLANE_ENABLED
+            || quadplane.in_vtol_land_sequence()
+#endif
+            ) {
             // don't failsafe in a landing sequence
             break;
         }
@@ -65,8 +70,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
     case Mode::Number::RTL:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+#endif
     case Mode::Number::INITIALISING:
         break;
     }
@@ -104,6 +111,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         }
         break;
 
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QSTABILIZE:
     case Mode::Number::QHOVER:
     case Mode::Number::QLOITER:
@@ -115,10 +123,14 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             set_mode(mode_qland, reason);
         }
         break;
-        
+#endif
+
     case Mode::Number::AUTO:
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-            quadplane.in_vtol_land_sequence()) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND
+#if HAL_QUADPLANE_ENABLED
+            || quadplane.in_vtol_land_sequence()
+#endif
+            ) {
             // don't failsafe in a landing sequence
             break;
         }
@@ -138,8 +150,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         break;
 
     case Mode::Number::RTL:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+#endif
     case Mode::Number::TAKEOFF:
     case Mode::Number::INITIALISING:
         break;
@@ -172,13 +186,19 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {
         case Failsafe_Action_QLand:
+#if HAL_QUADPLANE_ENABLED
             if (quadplane.available()) {
                 plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
+#endif
             FALLTHROUGH;
         case Failsafe_Action_Land:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+#if HAL_QUADPLANE_ENABLED
+                && control_mode != &mode_qland
+#endif
+                ) {
                 // never stop a landing if we were already committed
                 if (plane.mission.is_best_land_sequence()) {
                     // continue mission as it will reach a landing in less distance
@@ -192,7 +212,12 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland && !quadplane.in_vtol_land_sequence()) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+#if HAL_QUADPLANE_ENABLED
+                && control_mode != &mode_qland &&
+                !quadplane.in_vtol_land_sequence()
+#endif
+                ) {
                 // never stop a landing if we were already committed
                 if (g.rtl_autoland == 2 && plane.mission.is_best_land_sequence()) {
                     // continue mission as it will reach a landing in less distance

@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQAutotune::_enter()
 {
     return plane.mode_qstabilize._enter();
@@ -18,3 +20,4 @@ void ModeQAutotune::_exit()
 #endif
 }
 
+#endif

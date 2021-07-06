@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQStabilize::_enter()
 {
     if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
@@ -67,3 +69,5 @@ void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float 
         plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min_cd, plane.quadplane.aparm.angle_max);
     }
 }
+
+#endif // HAL_QUADPLANE_ENABLED
