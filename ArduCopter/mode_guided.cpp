@@ -284,7 +284,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     return true;
 }
 
-bool ModeGuided::get_wp(Location& destination)
+bool ModeGuided::get_wp(Location& destination) const
 {
     if (guided_mode != SubMode::WP) {
         return false;
