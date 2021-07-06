@@ -693,9 +693,18 @@ def run_tests(steps):
     global results
 
     corefiles = glob.glob("core*")
+    corefiles.extend(glob.glob("ap-*.core"))
     if corefiles:
         print('Removing corefiles: %s' % str(corefiles))
         for f in corefiles:
+            os.unlink(f)
+
+    diagnostic_files = []
+    for p in "dumpstack.sh_*", "dumpcore.sh_*", "autotest-*tlog":
+        diagnostic_files.extend(glob.glob())
+    if diagnostic_files:
+        print('Removing diagnostic files: %s' % str(diagnostic_files))
+        for f in diagnostic_files:
             os.unlink(f)
 
     passed = True
