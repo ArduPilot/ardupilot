@@ -113,6 +113,10 @@ jobs:
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
+             /__w/ardupilot/ardupilot/ap-*.core
+             /__w/ardupilot/ardupilot/core.*
+             /__w/ardupilot/ardupilot/dumpstack.sh_*
+             /__w/ardupilot/ardupilot/dumpcore.sh_*
            retention-days: 14
 
       - name: Archive .bin artifacts
