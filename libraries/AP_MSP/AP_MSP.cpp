@@ -170,7 +170,7 @@ void AP_MSP::update_osd_item_settings()
     _osd_item_settings[OSD_NUMERICAL_HEADING] = &osd->screen[_msp_status.current_screen].heading;   // OSDn_HEADING
     _osd_item_settings[OSD_NUMERICAL_VARIO] = &osd->screen[_msp_status.current_screen].vspeed;      // OSDn_VSPEED
 #if HAL_WITH_ESC_TELEM
-    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[_msp_status.current_screen].esc_temp;            // OSDn_ESCTEMP
+    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[_msp_status.current_screen].highest_esc_temp;    // OSDn_ESCTEMP
 #endif
     _osd_item_settings[OSD_RTC_DATETIME] = &osd->screen[_msp_status.current_screen].clk;            // OSDn_CLK
 #endif  // OSD_ENABLED
