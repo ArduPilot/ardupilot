@@ -898,9 +898,13 @@ if __name__ == "__main__":
                            help='do not clean before building',
                            dest="no_clean")
     group_build.add_option("--debug",
-                           default=False,
+                           default=None,
                            action='store_true',
-                           help='make built binaries debug binaries')
+                           help='make built SITL binaries debug binaries')
+    group_build.add_option("--no-debug",
+                           default=None,
+                           action='store_true',
+                           help='do not make built SITL binaries debug binaries')
     group_build.add_option("--coverage",
                            default=False,
                            action='store_true',
@@ -968,6 +972,16 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    # canonicalise on opts.debug:
+    if opts.debug is None and opts.no_debug is None:
+        # default is to create debug SITL binaries
+        opts.debug = True
+    elif opts.debug is not None and opts.no_debug is not None:
+        if opts.debug == opts.no_debug:
+            raise ValueError("no_debug != !debug")
+    elif opts.no_debug is not None:
+        opts.debug = not opts.no_debug
 
     if opts.timeout is None:
         opts.timeout = 5400
