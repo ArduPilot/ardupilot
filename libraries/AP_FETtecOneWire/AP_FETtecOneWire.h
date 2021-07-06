@@ -31,17 +31,17 @@
 
 // Get static info from the ESCs (optional feature)
 #ifndef HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
-#define HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO 0
+#define HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO 1
 #endif
 
 // provide beep support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_BEEP
-#define HAL_AP_FETTEC_ESC_BEEP 0
+#define HAL_AP_FETTEC_ESC_BEEP 1
 #endif
 
 // provide light support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_LIGHT
-#define HAL_AP_FETTEC_ESC_LIGHT 0
+#define HAL_AP_FETTEC_ESC_LIGHT 1
 #endif
 
 #if HAL_AP_FETTEC_ONEWIRE_ENABLED
@@ -49,7 +49,8 @@
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Param/AP_Param.h>
 
-
+#include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 class AP_FETtecOneWire : public AP_ESC_Telem_Backend
 {
@@ -105,7 +106,6 @@ private:
 #endif
 
     static constexpr uint8_t FRAME_OVERHEAD = 6;
-    static constexpr uint8_t MAX_TRANSMIT_LENGTH = 4;
     static constexpr uint8_t MAX_RECEIVE_LENGTH = 12;
 
     /**
@@ -119,19 +119,12 @@ private:
     void configuration_check();
 
     /**
-        transmits a FETtec OneWire frame to an ESC
-        @param esc_id id of the ESC
-        @param bytes  8 bit array of bytes. Where byte 1 contains the command, and all following bytes can be the payload
-        @param length length of the bytes array
-        @return false if length is bigger than MAX_TRANSMIT_LENGTH, true on write success
+        transmits data to ESCs
+        @param bytes  bytes to transmit
+        @param length number of bytes to transmit
+        @return false there's no space in the UART for this message
     */
-    bool transmit(const uint8_t esc_id, const uint8_t *bytes, uint8_t length);
-
-    enum class return_type : uint8_t
-    {
-        RESPONSE,
-        FULL_FRAME
-    };
+    bool transmit(const uint8_t* bytes, uint8_t length);
 
     enum class receive_response : uint8_t
     {
@@ -144,11 +137,10 @@ private:
     /**
         reads the FETtec OneWire answer frame of an ESC
         @param bytes 8 bit byte array, where the received answer gets stored in
-        @param length the expected answer length
-        @param return_full_frame can be return_type::RESPONSE or return_type::FULL_FRAME
+        @param length bytes available in bytes
         @return receive_response enum
     */
-    receive_response receive(uint8_t *bytes, uint8_t length, return_type return_full_frame);
+    receive_response receive(uint8_t *bytes, uint8_t length);
     uint8_t receive_buf[FRAME_OVERHEAD + MAX_RECEIVE_LENGTH];
     uint8_t receive_buf_used;
     void move_preamble_in_receive_buffer(uint8_t search_start_pos = 0);
@@ -165,11 +157,11 @@ private:
         @param esc_id id of the ESC
         @param command 8bit array containing the command that should be send including the possible payload
         @param response 8bit array where the response will be stored in
-        @param return_full_frame can be return_type::RESPONSE or return_type::FULL_FRAME
         @param req_len transmit request length
         @return pull_state enum
     */
-    pull_state pull_command(const uint8_t esc_id, const uint8_t *command, uint8_t *response, return_type return_full_frame, const uint8_t req_len);
+    template <typename T, typename R>
+    pull_state pull_command(const T &cmd, R &response);
 
     /**
         Scans for all ESCs in bus. Configures fast-throttle and telemetry for the ones found.
@@ -277,6 +269,155 @@ private:
 #endif
     };
 
+    /*
+    a frame looks like:
+    byte 1 = frame header (master is always 0x01)
+    byte 2 = target ID (5bit)
+    byte 3 & 4 = frame type (always 0x00, 0x00 used for bootloader. here just for compatibility)
+    byte 5 = frame length over all bytes
+    byte 6 - X = request type, followed by the payload
+    byte X+1 = 8bit CRC
+    */
+    template <typename T>
+    class PACKED PackedMessage {
+    public:
+        PackedMessage(uint8_t _esc_id, T _msg) :
+            esc_id(_esc_id),
+            msg(_msg)
+        {
+            update_checksum();
+        }
+        uint8_t preamble { 0x01 };  // (master is always 0x01
+        uint8_t esc_id;
+        uint16_t frame_type = 0;  // bootloader only, always zero
+        uint8_t frame_length = sizeof(T) + 6;  // all bytes inc preamble and checksum
+        T msg;
+        uint8_t checksum;
+
+        void update_checksum() {
+            checksum = crc8_dvb_update(0, (const uint8_t*)this, frame_length-1);
+        }
+    };
+
+    class PACKED OK {
+    public:
+        uint8_t msgid { (uint8_t)msg_type::OK };
+    };
+
+#if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
+    class PACKED REQ_TYPE {
+    public:
+        uint8_t msgid { (uint8_t)msg_type::REQ_TYPE };
+    };
+
+    class PACKED REQ_SW_VER {
+    public:
+        uint8_t msgid { (uint8_t)msg_type::REQ_SW_VER };
+    };
+
+    class PACKED REQ_SN {
+    public:
+        uint8_t msgid { (uint8_t)msg_type::REQ_SN };
+    };
+#endif
+
+    class PACKED SET_TLM_TYPE {
+    public:
+        SET_TLM_TYPE(uint8_t _tlm_type) :
+            tlm_type{_tlm_type}
+        { }
+        uint8_t msgid { (uint8_t)msg_type::SET_TLM_TYPE };
+        uint8_t tlm_type;
+    };
+
+    class PACKED SET_FAST_COM_LENGTH {
+    public:
+        SET_FAST_COM_LENGTH(uint8_t _byte_count, uint8_t _min_esc_id, uint8_t _esc_count) :
+            byte_count{_byte_count},
+            min_esc_id{_min_esc_id},
+            esc_count{_esc_count}
+        { }
+        uint8_t msgid { (uint8_t)msg_type::SET_FAST_COM_LENGTH };
+        uint8_t byte_count;
+        uint8_t min_esc_id;
+        uint8_t esc_count;
+    };
+
+
+#if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
+    class PACKED ESC_TYPE {
+    public:
+        ESC_TYPE(uint8_t _type) :
+            type{_type} { }
+        uint8_t type;
+    };
+
+    class PACKED SW_VER {
+    public:
+        SW_VER(uint8_t _version, uint8_t _subversion) :
+            version{_version},
+            subversion{_subversion}
+            { }
+        uint8_t version;
+        uint8_t subversion;
+    };
+
+    class PACKED SN {
+    public:
+        SN(uint8_t *_sn, uint8_t snlen) {
+            memset(sn, 0, ARRAY_SIZE(sn));
+            memcpy(sn, _sn, MIN(ARRAY_SIZE(sn), snlen));
+        }
+        uint8_t sn[12];
+    };
+
+#endif
+
+    class PACKED START_FW {
+    public:
+        uint8_t msgid { (uint8_t)msg_type::BL_START_FW };
+    };
+
+#if HAL_AP_FETTEC_ESC_BEEP
+    class PACKED Beep {
+    public:
+        Beep(uint8_t _beep_frequency) :
+            beep_frequency{_beep_frequency}
+        { }
+        uint8_t msgid { (uint8_t)msg_type::BEEP };
+        uint8_t beep_frequency;
+        // add two zeros to make sure all ESCs can catch their command as we don't wait for a response here  (don't blame me --pb)
+        uint16_t spacer = 0;
+    };
+#endif
+
+#if HAL_AP_FETTEC_ESC_LIGHT
+    class PACKED LEDColour {
+    public:
+        LEDColour(uint8_t _r, uint8_t _g, uint8_t _b) :
+            r{_r},
+            g{_g},
+            b{_b}
+          { }
+        uint8_t msgid { (uint8_t)msg_type::SET_LED_TMP_COLOR };
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        // add two zeros to make sure all ESCs can catch their command as we don't wait for a response here  (don't blame me --pb)
+        uint16_t spacer = 0;
+    };
+#endif
+
+    /**
+        transmits a FETtec OneWire frame to an ESC
+        @param msg message to transmit
+        @return false if message won't fit in transmit buffer
+    */
+    template <typename T>
+    bool transmit(const PackedMessage<T> &msg) {
+        return transmit((const uint8_t*)&msg, sizeof(msg));
+    }
+
     enum class scan_state_t : uint8_t {
         WAIT_FOR_BOOT,            ///< initial state, wait for a ESC(s) cold-start
         IN_BOOTLOADER,            ///< in bootloader?
@@ -310,14 +451,16 @@ private:
     struct fast_throttle_config
     {
         uint16_t bits_to_add_left; ///< bits to add after the header
-        uint8_t command[4];        ///< fast-throttle command frame header bytes
         uint8_t byte_count;        ///< nr bytes in a fast throttle command
         uint8_t min_id;            ///< Zero-indexed ESC ID
         uint8_t max_id;            ///< Zero-indexed ESC ID
     } _fast_throttle;
 
-    /// response length lookup table, saves 104 bytes of flash and speeds up the pull_command() function
-    uint8_t _response_length[uint8_t(msg_type::SIZEOF_RESPONSE_LENGTH)];
+    struct {
+        uint8_t byte_count;
+        uint8_t min_esc_id;
+        uint8_t esc_count;
+    } _fast_throttle_command;
 
 };
 #endif // HAL_AP_FETTEC_ONEWIRE_ENABLED
