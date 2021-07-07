@@ -158,7 +158,6 @@ MAV_RESULT Plane::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             for (uint8_t i=0; i<compass.get_count(); i++) {
                 compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
             }
-        }
         } else {
 
             // calculate diff from compass base and scale with throttle
