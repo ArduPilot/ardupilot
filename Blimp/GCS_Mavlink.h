@@ -23,7 +23,8 @@ protected:
 
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
 
-    void send_position_target_global_int() override;
+    // position target info message helper
+    bool get_target_info(Position_Target_Info &target) const override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet) override;

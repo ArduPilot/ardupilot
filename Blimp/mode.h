@@ -64,7 +64,7 @@ public:
     }
 
     // functions for reporting to GCS
-    virtual bool get_wp(Location &loc)
+    virtual bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
     {
         return false;
     };
