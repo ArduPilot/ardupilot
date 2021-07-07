@@ -75,8 +75,8 @@ void Buzzer::update_pattern_to_play()
         return;
     }
 
-    if (AP_HAL::millis() - _pattern_start_time < _pattern_start_interval_time_ms) {
-        // do not interrupt playing patterns / enforce minumum separation
+    // do not interrupt playing patterns
+    if (_pattern != 0UL) {
         return;
     }
 
@@ -105,7 +105,7 @@ void Buzzer::update_pattern_to_play()
 
     // if vehicle lost was enabled, starting beep
     if (AP_Notify::flags.vehicle_lost) {
-        play_pattern(DOUBLE_BUZZ);
+        play_pattern(MODEL_LOST_BUZZ);
         return;
     }
 
@@ -124,15 +124,29 @@ void Buzzer::update_playing_pattern()
     }
 
     const uint32_t now = AP_HAL::millis();
+    if (_current_bit_pos < 0) {     // if first iteration for new pattern then
+        _pattern_start_time = now;  // mark start time for pattern
+    }
     const uint32_t delta = now - _pattern_start_time;
-    if (delta >= 3200) {
+    const int bit_pos = (int)(delta / 100);  // each bit is 100ms
+    if (bit_pos != _current_bit_pos) {       // update if new bit position
+        _current_bit_pos = bit_pos;
+        if (bit_pos < 32) {
+            const uint32_t mask = 1UL << (31-bit_pos);
+            // turn buzzer on if bit position contains a '1'
+            const bool on_flag = (_pattern & mask);
+            // if buzzer on or if more '1's remaining then continue
+            // (if end-of-pattern '0' reached, don't clear '_pattern' value until next
+            //  100ms cycle to enforce spacing between consecutive patterns)
+            if (on_flag || _flags.on || (_pattern & (mask-1)) != 0) {
+                on(on_flag);
+                return;
+            }
+        }
         // finished playing pattern
         on(false);
         _pattern = 0UL;
-        return;
     }
-    const uint32_t bit = delta / 100UL; // each bit is 100ms
-    on(_pattern & (1U<<(31-bit)));
 }
 
 // on - turns the buzzer on or off
@@ -154,6 +168,6 @@ void Buzzer::on(bool turn_on)
 void Buzzer::play_pattern(const uint32_t pattern)
 {
     _pattern = pattern;
-    _pattern_start_time = AP_HAL::millis();
+    _current_bit_pos = -1;
 }
 
