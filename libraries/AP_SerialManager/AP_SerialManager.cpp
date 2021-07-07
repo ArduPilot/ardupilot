@@ -569,7 +569,13 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
         return nullptr;
     }
     const uint8_t serial_idx = _state - &state[0];
-    return hal.serial(serial_idx);
+
+    // set options before any user does begin()
+    AP_HAL::UARTDriver *port = hal.serial(serial_idx);
+    if (port) {
+        port->set_options(_state->options);
+    }
+    return port;
 }
 
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
