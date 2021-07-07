@@ -25,7 +25,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include "Util.h"
 #include "Scheduler.h"
-#include "Semaphores.h"
 #include <stdio.h>
 #include "hwdef/common/stm32_util.h"
 

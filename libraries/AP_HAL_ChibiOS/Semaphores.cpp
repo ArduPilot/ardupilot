@@ -20,7 +20,9 @@
 
 #if CH_CFG_USE_MUTEXES == TRUE
 
+#ifndef HAL_BOOTLOADER_BUILD
 extern const AP_HAL::HAL& hal;
+#endif
 
 using namespace ChibiOS;
 
@@ -51,7 +53,11 @@ bool Semaphore::take(uint32_t timeout_ms)
     }
     uint64_t start = AP_HAL::micros64();
     do {
+#ifndef HAL_BOOTLOADER_BUILD
         hal.scheduler->delay_microseconds(200);
+#else
+        chThdSleepMicroseconds(200);
+#endif
         if (take_nonblocking()) {
             return true;
         }

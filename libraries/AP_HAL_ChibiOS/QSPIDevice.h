@@ -26,7 +26,12 @@
 
 #if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
 
+#if !defined(HAL_BOOTLOADER_BUILD)
 #include "Semaphores.h"
+#else
+#include <AP_HAL_Empty/Semaphores.h>
+#endif
+
 #include "Scheduler.h"
 #include "Device.h"
 
@@ -99,8 +104,12 @@ public:
 
     AP_HAL::Semaphore* get_semaphore() override
     {
+#if defined(HAL_BOOTLOADER_BUILD)
         // if asking for invalid bus number use bus 0 semaphore
         return &bus.semaphore;
+#else
+        return nullptr;
+#endif
     }
 
     bool acquire_bus(bool acquire);

@@ -162,8 +162,6 @@ void AP_FlashIface_JEDEC::reset_device()
 {
     // Get chip out of XIP mode
     AP_HAL::QSPIDevice::CommandHeader cmd;
-    _dev->get_semaphore()->take_blocking();
-
     /* Single line CMD_RESET_MEMORY command.*/
     cmd.cmd    =  CMD_RESET_ENABLE;
     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;

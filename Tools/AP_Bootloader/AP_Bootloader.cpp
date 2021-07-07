@@ -32,6 +32,9 @@
 #include "bl_protocol.h"
 #include "can.h"
 #include <stdio.h>
+#if EXTERNAL_PROG_FLASH_MB
+#include <AP_FlashIface/AP_FlashIface_JEDEC.h>
+#endif
 
 extern "C" {
     int main(void);
@@ -40,7 +43,8 @@ extern "C" {
 struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
-    .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024
+    .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
+    .extf_size = (EXTERNAL_PROG_FLASH_MB * 1024 * 1024)
 };
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
@@ -49,6 +53,10 @@ struct boardinfo board_info = {
 
 #ifndef HAL_STAY_IN_BOOTLOADER_VALUE
 #define HAL_STAY_IN_BOOTLOADER_VALUE 0
+#endif
+
+#if EXTERNAL_PROG_FLASH_MB
+AP_FlashIface_JEDEC ext_flash;
 #endif
 
 int main(void)
@@ -141,6 +149,15 @@ int main(void)
     can_start();
 #endif
     flash_init();
+
+
+#if EXTERNAL_PROG_FLASH_MB
+    while (!ext_flash.init()) {
+        // keep trying until we get it working
+        // there's no future without it
+        chThdSleep(1000);
+    }
+#endif
 
 #if defined(BOOTLOADER_DEV_LIST)
     while (true) {
