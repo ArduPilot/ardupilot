@@ -909,7 +909,13 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
 
         if (dma_handle->has_contention()) {
-            if (_baudrate <= 115200) {
+            // on boards with a hw fifo we can use a higher threshold for disabling DMA
+#if defined(USART_CR1_FIFOEN)
+            const uint32_t baud_threshold = 460800;
+#else
+            const uint32_t baud_threshold = 115200;
+#endif
+            if (_baudrate <= baud_threshold) {
                 contention_counter += 3;
                 if (contention_counter > 1000) {
                     // more than 25% of attempts to use this DMA
