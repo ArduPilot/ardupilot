@@ -47,3 +47,8 @@ void ModePlanckWingman::run() {
 
   copter.mode_plancktracking.run();
 }
+
+void ModePlanckWingman::exit()
+{
+  auto_yaw.set_mode_to_default(false);
+}

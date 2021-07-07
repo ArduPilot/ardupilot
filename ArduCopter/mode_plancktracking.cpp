@@ -347,3 +347,7 @@ bool ModePlanckTracking::allows_arming(bool from_gcs) const
     return true;
 }
 
+void ModePlanckTracking::exit()
+{
+  auto_yaw.set_mode_to_default(false);
+}

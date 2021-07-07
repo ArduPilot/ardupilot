@@ -29,6 +29,7 @@ bool ModePlanckLand::init(bool ignore_checks){
 void ModePlanckLand::exit()
 {
     copter.pos_control->get_pos_z_p().kP(_kpz_nom);
+    auto_yaw.set_mode_to_default(false);
 }
 
 void ModePlanckLand::run(){

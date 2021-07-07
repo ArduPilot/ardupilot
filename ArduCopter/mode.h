@@ -1516,6 +1516,7 @@ public:
     virtual bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool do_user_takeoff_start(float final_alt_above_home) override;
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
 
@@ -1541,6 +1542,7 @@ public:
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
     bool is_landing() const override { return _is_landing; }
+    void exit();
 
 protected:
 
@@ -1588,6 +1590,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
 
