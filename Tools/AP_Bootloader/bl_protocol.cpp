@@ -79,7 +79,7 @@
 // RESET		finalise flash programming, reset chip and starts application
 //
 
-#define BL_PROTOCOL_VERSION 		5		// The revision of the bootloader protocol
+#define BL_PROTOCOL_VERSION			6		// The revision of the bootloader protocol
 // protocol bytes
 #define PROTO_INSYNC				0x12    // 'in sync' byte sent before status
 #define PROTO_EOC					0x20    // end of command
