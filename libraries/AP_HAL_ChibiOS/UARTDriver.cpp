@@ -308,6 +308,16 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 #endif
 
+#if defined(USART_CR1_FIFOEN)
+    // enable the UART FIFO on G4 and H7. This allows for much higher baudrates
+    // without data loss when not using DMA
+    if (_last_options & OPTION_NOFIFO) {
+        _cr1_options &= ~USART_CR1_FIFOEN;
+    } else {
+        _cr1_options |= USART_CR1_FIFOEN;
+    }
+#endif
+
     /*
       allocate the write buffer
      */
