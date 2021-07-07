@@ -544,6 +544,13 @@ private:
         uint32_t received_ms; // time RADIO_STATUS received
     } last_radio_status;
 
+    enum class Flags {
+        USING_SIGNING = (1<<0),
+        ACTIVE = (1<<1),
+        STREAMING = (1<<2),
+        PRIVATE = (1<<3),
+        LOCKED = (1<<4),
+    };
     void log_mavlink_stats();
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);

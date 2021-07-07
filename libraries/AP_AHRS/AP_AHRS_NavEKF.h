@@ -325,15 +325,15 @@ public:
 
 private:
     enum class EKFType {
-        NONE = 0
+        NONE = 0,
 #if HAL_NAVEKF3_AVAILABLE
-        ,THREE = 3
+        THREE = 3,
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        ,TWO = 2
+        TWO = 2,
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ,SITL = 10
+        SITL = 10,
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
         ,EXTERNAL = 11

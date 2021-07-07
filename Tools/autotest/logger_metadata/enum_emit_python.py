@@ -2,74 +2,57 @@
 
 from __future__ import print_function
 
-import emitter
+import enum_emitter
+import re
 
-class RSTEmitter(emitter.Emitter):
-    def preface(self):
-        return """.. Dynamically generated list of Logger Messages
-.. This page was generated using Tools/autotest/logger_metdata/parse.py
+class PythonEnumEmitter(enum_emitter.EnumEmitter):
+    def preface(self, vehicle):
+        vehicle = vehicle.upper()
+        if vehicle != "ANTENNATRACKER":
+            if not vehicle.startswith("ARDU"):
+                vehicle = "ARDU%s" % vehicle
+        return """# Dynamically generated list of Enumerations
+# This page was generated using Tools/autotest/logger_metdata/enum_emit.py
 
-.. DO NOT EDIT
+# DO NOT EDIT
 
-.. _logmessages:
-
-Onboard Message Log Messages
-============================
-
-This is a list of log messages which may be present in logs produced and stored onboard ArduPilot vehicles.
-
-"""
+%s_ENUMS = {
+""" % vehicle
     def postface(self):
-        return ""
+        return "}"
 
-    def start(self):
-        self.fh = open("LogMessages.rst", mode='w')
-        print(self.preface(), file=self.fh)
+    def start(self, vehicle):
+        self.fh = open("Enumerations.py", mode='w')
+        print(self.preface(vehicle), file=self.fh)
 
-    def emit(self, doccos, enumerations):
-        self.start()
-        for docco in doccos:
-            print('.. _%s:' % docco.name, file=self.fh)
-            print("", file=self.fh)
-            desc = docco.description
-            if desc is None:
-                desc = ""
-            line = '%s: %s' % (docco.name, desc)
+    def emit(self, vehicle, enumerations):
+        self.start(vehicle)
+        for enumeration in enumerations:
+            name = enumeration.name
+#            name = re.sub("::", "_", name)
+            line = '    "%s": {' % (name)
             print(line, file=self.fh)
-            print("~" * len(line), file=self.fh)
 
-            rows = []
-            for f in docco.fields_order:
-                if "description" in docco.fields[f]:
-                    fdesc = docco.fields[f]["description"]
+            for f in enumeration.entries:
+                value = f.value
+                if value is None:
+                    raise ValueError("Should always have a value")
+                comment = f.comment
+                if comment is None:
+                    comment = "None"
                 else:
-                    fdesc = ""
-                fieldnamething = None
-                if "bitmaskenum" in docco.fields[f]:
-                    fieldnamething = "bitmaskenum"
-                    table_label = "Bitmask bits"
-                elif "valueenum" in docco.fields[f]:
-                    fieldnamething = "valueenum"
-                    table_label = "Values"
-                if fieldnamething is not None:
-                    enum_name = docco.fields[f][fieldnamething]
-                    if enum_name not in enumerations:
-                        raise Exception("Unknown enum (%s) (have %s)" %
-                                        (enum_name, "\n".join(sorted(enumerations.keys()))))
-                    enumeration = enumerations[enum_name]
-                    bitmaskrows = []
-                    for enumentry in enumeration.entries:
-#                        print("enumentry: %s" % str(enumentry))
-                        comment = enumentry.comment
-                        if comment is None:
-                            comment = ""
-                        bitmaskrows.append([enumentry.name, str(enumentry.value), comment])
-                    fdesc += "\n%s:\n%s" % (table_label, self.tablify(bitmaskrows))
-                rows.append([f, fdesc])
+                    comment = re.sub('"', "'", comment)
+                    comment = '"%s"' % comment
+                x = """        %s: {
+          'name': "%s",
+          'description': %s,
+        },""" % (
+    str(value),
+    str(f.name),
+    comment)
+                print(x, file=self.fh)
 
-            print(self.tablify(rows), file=self.fh)
-
-            print("", file=self.fh)
+            print("    },", file=self.fh)
         self.stop()
 
     def stop(self):
