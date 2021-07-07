@@ -56,7 +56,11 @@ class upload_fw(Task.Task):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
-        cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
+        # Refer Tools/scripts/macos_remote_upload.sh for details
+        if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
+            cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
+        else:
+            cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
