@@ -51,6 +51,13 @@ public:
         FUSE_ALL_VELOCITIES = (1 << 0)  // fuse all velocities configured in source sets
     };
 
+    // enum for source set idx
+    enum SourceSetSwitch : uint8_t {
+        SOURCE_SET_SWITCH_PRIMARY = 0,
+        SOURCE_SET_SWITCH_SECONDARY = 1,
+        SOURCE_SET_SWITCH_TERTIARY = 2,
+    };
+
     // initialisation
     void init();
 
