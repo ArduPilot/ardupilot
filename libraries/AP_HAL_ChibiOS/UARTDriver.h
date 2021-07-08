@@ -51,7 +51,7 @@ public:
     uint32_t txspace() override;
     int16_t read() override;
     ssize_t read(uint8_t *buffer, uint16_t count) override;
-    int16_t read_locked(uint32_t key) override;
+    ssize_t read_locked(uint8_t *data, uint16_t len, uint32_t key) override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
 
@@ -271,6 +271,10 @@ private:
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
     void read_bytes_NODMA();
+
+    // internal method called to read data from UART after the lock
+    // has been checked:
+    ssize_t read_lock_checked(uint8_t *buffer, uint16_t count);
 
     void receive_timestamp_update(void);
 
