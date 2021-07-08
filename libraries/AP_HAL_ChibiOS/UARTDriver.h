@@ -108,6 +108,13 @@ public:
     void set_stop_bits(int n) override;
 
     /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    bool set_RTS_pin(bool high) override;
+    bool set_CTS_pin(bool high) override;
+
+    /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
       time constraint, not an exact time. It is guaranteed that the
