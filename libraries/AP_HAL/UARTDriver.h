@@ -151,6 +151,8 @@ public:
      */
     virtual bool is_dma_enabled() const { return false; }
 
+    virtual uint32_t get_last_tx_empty_us() const { return 0; }
+
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str) {}
