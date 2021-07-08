@@ -702,26 +702,6 @@ ssize_t UARTDriver::read_lock_checked(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t UARTDriver::read()
-{
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
-        return -1;
-    }
-    if (!_rx_initialised) {
-        return -1;
-    }
-
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-
-    return byte;
-}
-
 /* write one byte to the port */
 size_t UARTDriver::write(uint8_t c)
 {
