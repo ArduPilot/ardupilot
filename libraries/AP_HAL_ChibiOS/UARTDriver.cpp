@@ -146,6 +146,11 @@ void UARTDriver::uart_thread()
         if (_tx_initialised && ((mask & EVT_TRANSMIT_DATA_READY) || need_tick || (hd_tx_active && (mask & EVT_TRANSMIT_END)))) {
             _tx_timer_tick();
         }
+
+        // record the time when a half-duplex TX buffer got emptied
+        if (_tx_initialised && hd_tx_active && (mask & EVT_TRANSMIT_END) && _writebuf.is_empty()) {
+            _last_write_completed_us = now;
+        }
     }
 }
 #pragma GCC diagnostic pop

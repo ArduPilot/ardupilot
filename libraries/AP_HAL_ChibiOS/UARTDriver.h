@@ -131,6 +131,13 @@ public:
      */
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
+    // get the last time when the tx write buffer got emptied
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t get_last_tx_empty_us() const override { return ((tx_dma_enabled || half_duplex) && _writebuf.is_empty()) ? _last_write_completed_us : 0; }
+#else
+    uint32_t get_last_tx_empty_us() const override { return (tx_dma_enabled && _writebuf.is_empty()) ? _last_write_completed_us : 0; }
+#endif
+
 private:
     const SerialDef &sdef;
     bool rx_dma_enabled;
