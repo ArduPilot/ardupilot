@@ -5686,6 +5686,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Set modes via mavproxy switch",
              self.test_setting_modes_via_mavproxy_switch),
 
+            ("HIGH_LATENCY2",
+             "Set sending of HIGH_LATENCY2",
+             self.HIGH_LATENCY2),
+
             ("MAVProxy_SetModeUsingMode",
              "Set modes via mavproxy mode command",
              self.test_setting_modes_via_mavproxy_mode_command),
