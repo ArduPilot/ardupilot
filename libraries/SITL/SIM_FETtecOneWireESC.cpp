@@ -19,11 +19,11 @@
  - verify the assertion that DMA is required
  - stop ignoring REQ_TYPE while in bootloader?
  - correct visibility of members in simulation
- - vehicles that don't require arming might be in trouble
  - half-duplex will require the use of a thread as every time we call update() we expect to send out a configuration message
  - tidy break vs return oin AP_FETtec::handle_message
  - determine if we should have a "REQ_OK" as well as an "OK"
  - should rename simulated ESC "pwm" field to "value" or "fettec_value" or something
+ - make sure it always works, even with FAST_LOOP rate = 8KHz
 
 Protocol:
  - SET_FAST_COM_LENGTH could set a 32-bit bitmask that will be present rather than requring consecutive motors
