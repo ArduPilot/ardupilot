@@ -267,11 +267,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
-    act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
     esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*_node);
-    esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromUSec(2500));
     esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
     rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*_node);
@@ -354,7 +354,7 @@ void AP_UAVCAN::loop(void)
             continue;
         }
 
-        const int error = _node->spin(uavcan::MonotonicDuration::fromMSec(1));
+        const int error = _node->spin(uavcan::MonotonicDuration::fromUSec(300));
 
         if (error < 0) {
             hal.scheduler->delay_microseconds(100);
@@ -362,8 +362,6 @@ void AP_UAVCAN::loop(void)
         }
 
         if (_SRV_armed) {
-            bool sent_servos = false;
-
             if (_servo_bm > 0) {
                 // if we have any Servos in bitmask
                 uint32_t now = AP_HAL::native_micros();
@@ -371,20 +369,12 @@ void AP_UAVCAN::loop(void)
                 if (now - _SRV_last_send_us >= servo_period_us) {
                     _SRV_last_send_us = now;
                     SRV_send_actuator();
-                    sent_servos = true;
-                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                        _SRV_conf[i].servo_pending = false;
-                    }
                 }
             }
 
             // if we have any ESC's in bitmask
-            if (_esc_bm > 0 && !sent_servos) {
+            if (_esc_bm > 0) {
                 SRV_send_esc();
-            }
-
-            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                _SRV_conf[i].esc_pending = false;
             }
         }
 
@@ -425,6 +415,8 @@ void AP_UAVCAN::SRV_send_actuator(void)
              */
 
             if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+                _SRV_conf[starting_servo].servo_pending = false;
+
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
@@ -464,6 +456,7 @@ void AP_UAVCAN::SRV_send_esc(void)
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
+                _SRV_conf[i].esc_pending = false;
                 active_esc_num++;
             }
         }
