@@ -319,7 +319,7 @@ public:
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
 #if HAL_HIGH_LATENCY2_ENABLED
-    void send_high_latency() const;
+    void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     // lock a channel, preventing use by MAVLink
