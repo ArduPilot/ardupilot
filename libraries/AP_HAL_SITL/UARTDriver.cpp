@@ -180,12 +180,16 @@ uint32_t UARTDriver::txspace(void)
 
 int16_t UARTDriver::read(void)
 {
-    if (available() <= 0) {
+    uint8_t c;
+    if (read(&c, 1) == 0) {
         return -1;
     }
-    uint8_t c;
-    _readbuffer.read(&c, 1);
     return c;
+}
+
+ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
+{
+    return _readbuffer.read(buffer, count);
 }
 
 bool UARTDriver::discard_input(void)
