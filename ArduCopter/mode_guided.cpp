@@ -139,12 +139,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     return true;
 }
 
-// initialise guided mode's position controller
-void ModeGuided::pos_control_start()
+// initialise position controller
+void ModeGuided::pva_control_start()
 {
-    // set to position control mode
-    guided_mode = SubMode::WP;
-
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
@@ -154,6 +151,16 @@ void ModeGuided::pos_control_start()
     // initialise velocity controller
     pos_control->init_z_controller();
     pos_control->init_xy_controller();
+}
+
+// initialise guided mode's position controller
+void ModeGuided::pos_control_start()
+{
+    // set to position control mode
+    guided_mode = SubMode::WP;
+
+    // initialise position controller
+    pva_control_start();
 
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
@@ -165,55 +172,34 @@ void ModeGuided::accel_control_start()
     // set guided_mode to velocity controller
     guided_mode = SubMode::Accel;
 
-    // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-
-    // initialise the position controller
-    pos_control->init_z_controller();
-    pos_control->init_xy_controller();
+    // initialise position controller
+    pva_control_start();
 
     // pilot always controls yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
-// initialise guided mode's velocity controller
+// initialise guided mode's velocity and acceleration controller
 void ModeGuided::velaccel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = SubMode::VelAccel;
 
-    // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-
-    // initialise the position controller
-    pos_control->init_z_controller();
-    pos_control->init_xy_controller();
+    // initialise position controller
+    pva_control_start();
 
     // pilot always controls yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
-// initialise guided mode's posvel controller
+// initialise guided mode's position, velocity and acceleration controller
 void ModeGuided::posvelaccel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = SubMode::PosVelAccel;
 
-    // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-
-    // initialise the position controller
-    pos_control->init_z_controller();
-    pos_control->init_xy_controller();
+    // initialise position controller
+    pva_control_start();
 
     // pilot always controls yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
