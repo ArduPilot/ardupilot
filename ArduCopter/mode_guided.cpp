@@ -301,7 +301,8 @@ bool ModeGuided::get_wp(Location& destination)
     if (guided_mode != SubMode::WP) {
         return false;
     }
-    return wp_nav->get_oa_wp_destination(destination);
+    destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    return true;
 }
 
 // sets guided mode's target from a Location object
