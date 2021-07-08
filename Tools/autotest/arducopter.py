@@ -7155,21 +7155,21 @@ class AutoTestCopter(AutoTest):
 
     def FETtecESC_preflight_checks(self):
         '''ensure prearm checks work as expected'''
-        for bad_mask in [0b101, 0b1010]:
+        for bad_mask in [0b1000000000000, 0b10100000000000]:
             self.fettec_assert_bad_mask(bad_mask)
-        for good_mask in [0b00001, 0b000011, 0b10000, 0b110000, 0b1100000]:
+        for good_mask in [0b00001, 0b00101, 0b110000000000]:
             self.fettec_assert_good_mask(good_mask)
 
     def FETtecESC(self):
         self.set_parameters({
             "SERIAL5_PROTOCOL": 38,
-            "SERVO_FTW_MASK": 0b11110000,
+            "SERVO_FTW_MASK": 0b11101000,
             "SIM_FTOWESC_ENA": 1,
             "SERVO1_FUNCTION": 0,
             "SERVO2_FUNCTION": 0,
             "SERVO3_FUNCTION": 0,
-            "SERVO4_FUNCTION": 0,
-            "SERVO5_FUNCTION": 33,
+            "SERVO4_FUNCTION": 33,
+            "SERVO5_FUNCTION": 0,
             "SERVO6_FUNCTION": 34,
             "SERVO7_FUNCTION": 35,
             "SERVO8_FUNCTION": 36,
