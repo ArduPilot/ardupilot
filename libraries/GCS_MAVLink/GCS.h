@@ -262,7 +262,8 @@ public:
     void send_gimbal_report() const;
     void send_home_position() const;
     void send_gps_global_origin() const;
-    virtual void send_position_target_global_int() { };
+    void send_position_target_global_int();
+    virtual bool get_position_target_location(Location &target) const { return false; }
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
