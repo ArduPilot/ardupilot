@@ -430,6 +430,8 @@ def run_step(step):
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
         "math_check_indexes": opts.math_check_indexes,
+        "ekf_single": opts.ekf_single,
+        "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
     }
@@ -923,6 +925,16 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="math_check_indexes",
                            help="enable checking of math indexes")
+    group_build.add_option("--postype-single",
+                           default=False,
+                           action="store_true",
+                           dest="postype_single",
+                           help="force single precision copter position controller")
+    group_build.add_option("--ekf-single",
+                           default=False,
+                           action="store_true",
+                           dest="ekf_single",
+                           help="force single precision EKF")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
