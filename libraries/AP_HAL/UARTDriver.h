@@ -129,4 +129,11 @@ public:
 
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str) {}
+
+    /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    virtual bool set_RTS_pin(bool high) { return false; };
+    virtual bool set_CTS_pin(bool high) { return false; };
 };
