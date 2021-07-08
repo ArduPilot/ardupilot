@@ -905,6 +905,7 @@ private:
         DoNotStabilizeVelocityXY = (1U << 5),
     };
 
+    void pva_control_start();
     void pos_control_start();
     void accel_control_start();
     void velaccel_control_start();
