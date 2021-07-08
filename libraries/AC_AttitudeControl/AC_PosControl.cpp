@@ -393,7 +393,10 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z)
 /// Lateral position controller
 ///
 
-/// set_max_speed_accel_xy - set the maximum horizontal speed in cm/s and acceleration in cm/s/s and position controller correction acceleration limit
+/// set_max_speed_accel_xy - set the maximum horizontal speed in cm/s and acceleration in cm/s/s
+///     This function only needs to be called if using the kinimatic shaping.
+///     This can be done at any time as changes in these parameters are handled smoothly
+///     by the kinimatic shaping.
 void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
 {
     // return immediately if no change
@@ -403,8 +406,6 @@ void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
     _vel_max_xy_cms = speed_cms;
     _accel_max_xy_cmss = accel_cmss;
 
-    _p_pos_xy.set_limits(_vel_max_xy_cms, _accel_max_xy_cmss, 0.0f);
-
     // ensure the horizontal time constant is not less than the vehicle is capable of
     const float lean_angle = _accel_max_xy_cmss / (GRAVITY_MSS * 100.0 * M_PI / 18000.0);
     const float angle_accel = MIN(_attitude_control.get_accel_pitch_max(), _attitude_control.get_accel_roll_max());
@@ -413,6 +414,13 @@ void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
     } else {
         _tc_xy_s = _shaping_tc_xy_s;
     }
+}
+
+/// set_max_speed_accel_xy - set the position controller correction velocity and acceleration limit
+///     This should be done only during initialisation to avoid discontinuities
+void AC_PosControl::set_correction_speed_accel_xy(float speed_cms, float accel_cmss)
+{
+    _p_pos_xy.set_limits(speed_cms, accel_cmss, 0.0f);
 }
 
 /// init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
@@ -646,8 +654,11 @@ void AC_PosControl::update_xy_controller()
 /// Vertical position controller
 ///
 
-/// set_max_speed_accel_z - set the maximum vertical speed in cm/s and acceleration in cm/s/s and position controller correction acceleration limit
-///     speed_down can be positive or negative but will always be interpreted as a descent speed
+/// set_max_speed_accel_z - set the maximum vertical speed in cm/s and acceleration in cm/s/s
+///     speed_down can be positive or negative but will always be interpreted as a descent speed.
+///     This function only needs to be called if using the kinimatic shaping.
+///     This can be done at any time as changes in these parameters are handled smoothly
+///     by the kinimatic shaping.
 void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, float accel_cmss)
 {
     // ensure speed_down is always negative
@@ -668,8 +679,6 @@ void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, floa
     if (is_positive(accel_cmss)) {
         _accel_max_z_cmss = accel_cmss;
     }
-    // define maximum position error and maximum first and second differential limits
-    _p_pos_z.set_limits(-fabsf(_vel_max_down_cms), _vel_max_up_cms, _accel_max_z_cmss, 0.0f);
 
     // ensure the vertical time constant is not less than the filters in the _pid_accel_z object
     _tc_z_s = _shaping_tc_z_s;
@@ -679,6 +688,15 @@ void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, floa
     if (is_positive(_pid_accel_z.filt_E_hz())) {
         _tc_z_s = MAX(_tc_z_s, 2.0f/(M_2PI*_pid_accel_z.filt_E_hz()));
     }
+}
+
+/// set_correction_speed_accel_z - set the position controller correction velocity and acceleration limit
+///     speed_down can be positive or negative but will always be interpreted as a descent speed.
+///     This should be done only during initialisation to avoid discontinuities
+void AC_PosControl::set_correction_speed_accel_z(float speed_down, float speed_up, float accel_cmss)
+{
+    // define maximum position error and maximum first and second differential limits
+    _p_pos_z.set_limits(-fabsf(speed_down), _vel_max_up_cms, _accel_max_z_cmss, 0.0f);
 }
 
 /// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
@@ -1165,7 +1183,7 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
         }
     }
 
-    // update the target yaw if origin and destination are at least 2m apart horizontally
+    // update the target yaw if velocity is greater than 5% _vel_max_xy_cms
     if (vel_desired_xy_len > _vel_max_xy_cms * 0.05f) {
         _yaw_target = degrees(vel_desired_xy.angle()) * 100.0f;
         _yaw_rate_target = turn_rate*degrees(100.0f);
