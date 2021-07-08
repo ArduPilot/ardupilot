@@ -334,7 +334,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 ///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
 ///     The time constant also defines the time taken to achieve the maximum acceleration.
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z)
+void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float pos_offset_z_buffer)
 {
     // remove terrain offsets for flat earth assumption
     _pos_target.z -= _pos_offset_z;
@@ -368,6 +368,9 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z)
         vel_max_z_cms = fabsf(vel_max_cms * dest_vector.z);
     }
 
+    // reduce speed if we are reaching the edge of our vertical buffer
+    vel_max_xy_cms *= pos_offset_z_scaler(pos_offset_z, pos_offset_z_buffer);
+
     Vector2f vel;
     Vector2f accel;
     shape_pos_vel_accel_xy(pos.xy(), vel, accel, _pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(),
@@ -387,6 +390,18 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z)
     _pos_target.z += _pos_offset_z;
     _vel_desired.z += _vel_offset_z;
     _accel_desired.z += _accel_offset_z;
+}
+
+
+/// pos_offset_z_scaler - calculates a multiplier used to reduce the horizontal velocity to allow the z position controller to stay within the provided buffer range
+float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer)
+{
+    if (is_zero(pos_offset_z_buffer)) {
+        return 1.0;
+    }
+    const Vector3f curr_pos = _inav.get_position();
+    float pos_offset_error_z = curr_pos.z - (_pos_target.z + pos_offset_z);
+    return constrain_float((1.0 - (fabsf(pos_offset_error_z) - 0.5 * pos_offset_z_buffer) / (0.5 * pos_offset_z_buffer)), 0.01, 1.0);
 }
 
 ///
