@@ -27,6 +27,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+static constexpr uint32_t HALF_DUPLEX_BAUDRATE = 2000000;
+static constexpr uint32_t FULL_DUPLEX_BAUDRATE =  500000;
+
 const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] {
 
     // @Param: MASK
@@ -89,11 +92,11 @@ void AP_FETtecOneWire::init_uart()
     _uart->set_unbuffered_writes(true);
     _uart->set_blocking_writes(false);
 
-    uint32_t uart_baud { 500000U };
+    uint32_t uart_baud { FULL_DUPLEX_BAUDRATE };
 #if HAL_AP_FETTEC_HALF_DUPLEX
     if (_uart->get_options() & _uart->OPTION_HDPLEX) { //Half-Duplex is enabled
         _use_hdplex = true;
-        uart_baud = 2000000U;
+        uart_baud = HALF_DUPLEX_BAUDRATE;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FTW using Half-Duplex");
     } else {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FTW using Full-Duplex");
@@ -148,17 +151,27 @@ void AP_FETtecOneWire::init()
 
     gcs().send_text(MAV_SEVERITY_INFO, "FETtec: allocated %u motors", _esc_count);
 
-#if HAL_WITH_ESC_TELEM
-    // telemetry is fetched from each loop in turn.  We expect to be
-    // able to send a fast-throttle message each loop.
+    // We expect to be able to send a fast-throttle message each loop.
     // 8  bits - OneWire Header
     // 4  bits - telemetry request
     // 11 bits - throttle value per ESC
     // 8  bits - frame CRC
-    const uint16_t bit_count = 8 + 4 + (_esc_count * 11) + 8;
+    const uint16_t net_bit_count = 8 + 4 + (_esc_count * 11) + 8;
     // 7  dummy for rounding up the division by 8
-    _fast_throttle_byte_count = (bit_count + 7)/8;
+    const uint16_t fast_throttle_byte_count = (net_bit_count + 7)/8;
+    uint16_t telemetry_byte_count { 0U };
+#if HAL_WITH_ESC_TELEM
+    // Telemetry is fetched from each loop in turn.
+    telemetry_byte_count = sizeof(u.packed_tlm) + 1; // assume 9 pause bits between TX and RX
+    _fast_throttle_byte_count = fast_throttle_byte_count;
 #endif
+    uint32_t uart_baud { FULL_DUPLEX_BAUDRATE };
+#if HAL_AP_FETTEC_HALF_DUPLEX
+    if (_use_hdplex == true) { //Half-Duplex is enabled
+        uart_baud = HALF_DUPLEX_BAUDRATE;
+    }
+#endif
+    _min_update_period_us = (fast_throttle_byte_count + telemetry_byte_count) * 9 * 1000000 / uart_baud + 300; // 300us extra reserve
 
     // tell SRV_Channels about ESC capabilities
     // FIXME: should we wait until we've seen all ESCs before doing this?
@@ -724,7 +737,16 @@ void AP_FETtecOneWire::update()
     // read all data from incoming serial:
     read_data_from_uart();
 
-    // run ESC configuration state machines
+    const uint32_t now = AP_HAL::micros();
+    if (now - _last_update_us < _min_update_period_us) {
+        // in case the SRV_Channels::push() is running at very high rates, limit the period
+        // this function gets executed because FETtec needs a time gap between frames
+        _period_too_short++;
+        return;
+    }
+    _last_update_us = now;
+
+    // run ESC configuration state machines if needed
     if (_running_mask != _motor_mask) {
         configure_escs();
     }
@@ -755,7 +777,7 @@ void AP_FETtecOneWire::update()
         }
     }
 
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
 
     if (some_not_running) {
         if (!hal.util->get_soft_armed()) {
@@ -763,8 +785,8 @@ void AP_FETtecOneWire::update()
         }
         // OK, darn.  We appear to be flying with an ESC in a bad
         // state.  Well, we might not be flying for long...
-        if (now - _last_not_running_warning_ms > 5000) {
-            _last_not_running_warning_ms = now;
+        if (now_ms - _last_not_running_warning_ms > 5000) {
+            _last_not_running_warning_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FETtec: Some ESCs are not running");
         }
     }
@@ -784,13 +806,12 @@ void AP_FETtecOneWire::update()
         // if we haven't seen an ESC in a while, the user might have
         // power-cycled them.  Try re-initialising.
         if (!hal.util->get_soft_armed()) {
-            const uint32_t now_us = AP_HAL::micros();
             for (uint8_t i=0; i<_esc_count; i++) {
                 auto &esc = _escs[i];
                 if (esc.last_telem_us == 0) {
                     return;
                 }
-                if (now_us - esc.last_telem_us < 1000000) {
+                if (now - esc.last_telem_us < 1000000) {
                     continue;
                 }
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting", esc.id);

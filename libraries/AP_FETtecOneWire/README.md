@@ -110,11 +110,13 @@ See *ESC to Ardupilot Protocol* section below and comments in `FETtecOneWire.cpp
 
 ### Timing
 
-Four ESCs need 90uS for the throttle request and telemetry reception. With four ESCs 11kHz are possible.
-As each additional ESC adds 11 extra fast-throttle command bits, so the rate is lowered by each ESC.
-If you use 8 ESCs, it needs 160uS including telemetry response, so 5.8kHz are possible.
+Four ESCs need 90us for the fast-throttle request and telemetry reception. With four ESCs 11kHz update would be possible.
+Each additional ESC adds 11 extra fast-throttle command bits, so the update rate is lowered by each additional ESC.
+If you use 8 ESCs, it needs 160us including telemetry response, so 5.8kHz update rate would be possible.
+The FETtec Ardupilot device driver limits the update period to `_min_update_period_us` according to the number of ESCs used.
+The current update rate for Copter is 400Hz (~2500us) and for other vehicles is 50Hz (~20000us) so we are bellow device driver limit.
 
-**Note:** You need at least a 4Hz motor signal (max 250ms between messages) before the motors disarm.
+**Note:** The FETtec ESCs firmware requires at least a 4Hz fast-throttle update rate (max. 250ms between messages) otherwise the FETtec ESC disarm (stop) the motors.
 
 ## ESC to Ardupilot protocol
 
