@@ -6797,8 +6797,13 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Running replay on (%s)" % current_log_filepath)
 
-        util.run_cmd(['build/sitl/tool/Replay', current_log_filepath],
-                     directory=util.topdir(), checkfail=True, show=True)
+        util.run_cmd(
+            ['build/sitl/tool/Replay', current_log_filepath],
+            directory=util.topdir(),
+            checkfail=True,
+            show=True,
+            output=True,
+        )
 
         self.context_pop()
 
