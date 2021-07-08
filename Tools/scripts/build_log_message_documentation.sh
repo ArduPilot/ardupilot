@@ -3,7 +3,10 @@
 set -e
 set -x
 
-DIR="../buildlogs/LogMessages"
+if [ "x$BUILDLOGS" = "x" ]; then
+    BUILDLOGS="../buildlogs"
+fi
+DIR="$BUILDLOGS/LogMessages"
 
 # work from either APM directory or above
 [ -d ArduPlane ] || cd APM
