@@ -314,14 +314,15 @@ void AP_ToshibaCAN::loop()
                         // update total current
                         const uint32_t now_ms = AP_HAL::native_millis();
                         const uint32_t diff_ms = now_ms - _telemetry[esc_id].last_update_ms;
-                        TelemetryData t {};
-                        t.voltage = float(be16toh(reply_data.voltage_mv)) * 0.001f;  // millivolts to volts
-                        t.current = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.001f); // milli-amps to amps
+                        TelemetryData t {
+                            .voltage = float(be16toh(reply_data.voltage_mv)) * 0.001f,  // millivolts to volts
+                            .current = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.001f), // milli-amps to amps
+                            .consumption_mah = _telemetry[esc_id].current_tot_mah,
+                        };
                         if (diff_ms <= 1000) {
                             // convert centi-amps miliseconds to mAh
                             _telemetry[esc_id].current_tot_mah += t.current * diff_ms * amp_ms_to_mah;
                         }
-                        t.consumption_mah = _telemetry[esc_id].current_tot_mah;
                         update_telem_data(esc_id, t,
                             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
@@ -353,9 +354,8 @@ void AP_ToshibaCAN::loop()
                         const int16_t motor_temp_deg = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
 
-                        TelemetryData t {
-                            .temperature_cdeg = int16_t(esc_temp_deg * 100)
-                        };
+                        TelemetryData t {};
+                        t.temperature_cdeg = int16_t(esc_temp_deg * 100);
                         t.motor_temp_cdeg = int16_t(motor_temp_deg * 100);
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE |
                             AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
