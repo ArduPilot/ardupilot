@@ -86,37 +86,9 @@ MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 }
 
 
-void GCS_MAVLINK_Copter::send_position_target_global_int()
+bool GCS_MAVLINK_Copter::get_position_target_location(Location &target) const
 {
-    Location target;
-    if (!copter.flightmode->get_wp(target)) {
-        return;
-    }
-
-    // convert altitude frame to AMSL (this may use the terrain database)
-    if (!target.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
-        return;
-    }
-    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
-    mavlink_msg_position_target_global_int_send(
-        chan,
-        AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        target.lat, // latitude as 1e7
-        target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
+    return copter.flightmode->get_wp(target);
 }
 
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
