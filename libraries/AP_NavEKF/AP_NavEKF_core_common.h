@@ -58,6 +58,10 @@ protected:
 
 #if HAL_WITH_EKF_DOUBLE
 // stack frames are larger with double EKF
+#if MATH_CHECK_INDEXES
+#pragma GCC diagnostic error "-Wframe-larger-than=4000"
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2100"
+#endif
 #endif
 
