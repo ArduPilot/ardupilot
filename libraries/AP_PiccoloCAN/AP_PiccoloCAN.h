@@ -51,7 +51,7 @@ public:
     AP_PiccoloCAN();
     ~AP_PiccoloCAN();
 
-    // Piccolo message groups form part of the CAN ID of each frame
+    //! Piccolo message groups form part of the CAN ID of each frame
     enum class MessageGroup : uint8_t {
         SIMULATOR = 0x00,       // Simulator messages
         SENSOR = 0x04,          // External sensors
@@ -62,7 +62,7 @@ public:
         SYSTEM = 0x19,          // System messages (e.g. bootloader)
     };
 
-    // Piccolo actuator types differentiate between actuator frames
+    //! Piccolo actuator types differentiate between actuator frames
     enum class ActuatorType : uint8_t {
         SERVO = 0x00,
         ESC = 0x20,
@@ -83,9 +83,6 @@ public:
 
     // called from SRV_Channels
     void update();
-
-    // send ESC telemetry messages over MAVLink
-    void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
     // return true if a particular servo is 'active' on the Piccolo interface
     bool is_servo_channel_active(uint8_t chan);
@@ -137,7 +134,7 @@ private:
     AP_HAL::CANIface* _can_iface;
     HAL_EventHandle _event_handle;
 
-    // Data structure for representing the state of a CBS servo
+    /// Data structure for representing the state of a CBS servo
     struct CBSServo_Info_t {
 
         /* Telemetry data provided across multiple packets */
@@ -153,11 +150,11 @@ private:
 
         /* Internal state information */
 
-        int16_t command;    //! Raw command to send to each servo
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
+        int16_t command;    //!< Raw command to send to each servo
+        bool newCommand;    //!< Is the command "new"?
+        bool newTelemetry;  //!< Is there new telemetry data available?
 
-        uint64_t last_rx_msg_timestamp = 0; //! Time of most recently received message
+        uint64_t last_rx_msg_timestamp = 0; //!< Time of most recently received message
 
     } _servo_info[PICCOLO_CAN_MAX_NUM_SERVO];
 
@@ -165,8 +162,8 @@ private:
     struct VelocityESC_Info_t {
 
         /* Telemetry data provided in the PKT_ESC_STATUS_A packet */
-        uint8_t mode;                   //! ESC operational mode
-        ESC_StatusBits_t status;        //! ESC status information
+        uint8_t mode;                   //!< ESC operational mode
+        ESC_StatusBits_t status;        //!< ESC status information
         uint16_t setpoint;              //!< ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM
         uint16_t rpm;                   //!< Motor speed
 
@@ -183,29 +180,29 @@ private:
         uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
         
         /* ESC status information provided in the PKT_ESC_WARNINGS_ERRORS packet */
-        ESC_WarningBits_t warnings;     //! ESC warning information
-        ESC_ErrorBits_t errors;         //! ESC error information
+        ESC_WarningBits_t warnings;     //!< ESC warning information
+        ESC_ErrorBits_t errors;         //!< ESC error information
 
-        ESC_Firmware_t firmware;        //! Firmware / checksum information
-        ESC_Address_t address;          //! Serial number
-        ESC_EEPROMSettings_t eeprom;    //! Non-volatile settings info
+        ESC_Firmware_t firmware;        //!< Firmware / checksum information
+        ESC_Address_t address;          //!< Serial number
+        ESC_EEPROMSettings_t eeprom;    //!< Non-volatile settings info
 
         // Output information
 
-        int16_t command;    //! Raw command to send to each ESC
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
+        int16_t command;    //!< Raw command to send to each ESC
+        bool newCommand;    //!< Is the command "new"?
+        bool newTelemetry;  //!< Is there new telemetry data available?
 
-        uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
+        uint64_t last_rx_msg_timestamp = 0;    //!< Time of most recently received message
 
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
 
     // Piccolo CAN parameters
-    AP_Int32 _esc_bm;       //! ESC selection bitmask
-    AP_Int16 _esc_hz;       //! ESC update rate (Hz)
+    AP_Int32 _esc_bm;       //!< ESC selection bitmask
+    AP_Int16 _esc_hz;       //!< ESC update rate (Hz)
 
-    AP_Int32 _srv_bm;       //! Servo selection bitmask
-    AP_Int16 _srv_hz;       //! Servo update rate (Hz)
+    AP_Int32 _srv_bm;       //!< Servo selection bitmask
+    AP_Int16 _srv_hz;       //!< Servo update rate (Hz)
 
     HAL_Semaphore _telem_sem;
 };
