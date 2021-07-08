@@ -90,8 +90,10 @@ void AC_Loiter::init_target(const Vector2f& position)
 {
     sanity_check_params();
 
-    // initialise pos controller speed, acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    // initialise position controller speed and acceleration
+    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
+
     // initialise position controller
     _pos_control.init_xy_controller_stopping_point();
 
@@ -111,11 +113,11 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // initialise position controller speed and acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise position controller
     _pos_control.init_xy_controller();
-    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel.x = _pos_control.get_accel_target_cmss().x;
@@ -191,9 +193,6 @@ float AC_Loiter::get_angle_max_cd() const
 /// run the loiter controller
 void AC_Loiter::update(bool avoidance_on)
 {
-    // initialise pos controller speed and acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
-
     calc_desired_velocity(_pos_control.get_dt(), avoidance_on);
     _pos_control.update_xy_controller();
 }
@@ -223,9 +222,6 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     if (nav_dt < 0) {
         return;
     }
-
-    // initialise pos controller speed, acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
 
     // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &desired_vel_3d = _pos_control.get_vel_desired_cms();
