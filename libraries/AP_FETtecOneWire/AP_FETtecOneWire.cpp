@@ -750,6 +750,12 @@ void AP_FETtecOneWire::update()
     }
     _last_update_us = now;
 
+    if (_uart->tx_pending()) {
+        // there is unsent data in the send buffer,
+        // do not send more data because FETtec needs a time gap between frames
+        return;
+    }
+
     // run ESC configuration state machines if needed
     if (_running_mask != _motor_mask) {
         configure_escs();
