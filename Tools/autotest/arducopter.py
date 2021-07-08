@@ -5051,7 +5051,7 @@ class AutoTestCopter(AutoTest):
         post_arming_home_offset_mm = m.alt - m.relative_alt
         self.progress("post-arming home offset: %f" % (post_arming_home_offset_mm))
         self.progress("gpi=%s" % str(m))
-        min_post_arming_home_offset_delta_mm = -3000
+        min_post_arming_home_offset_delta_mm = -2500
         max_post_arming_home_offset_delta_mm = -4000
         delta_between_original_home_alt_offset_and_new_home_alt_offset_mm = post_arming_home_offset_mm - orig_home_offset_mm
         self.progress("delta=%f-%f=%f" % (
