@@ -70,6 +70,7 @@ uint32_t ByteBuffer::available(void) const
 void ByteBuffer::clear(void)
 {
     head = tail = 0;
+    // stats.clear(0);
 }
 
 uint32_t ByteBuffer::space(void) const
