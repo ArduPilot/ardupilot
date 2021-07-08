@@ -111,11 +111,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         //     run_state.first_packet_Heartbeat_ms = now_ms;
         // }
 
-        _frontend.out_state.ident_isActive = rx.decoded.heartbeat.status.one.ident;
-        if (rx.decoded.heartbeat.status.one.ident) {
-            // if we're identing, clear the pending send request
-            _frontend.out_state.ident_pending = false;
-        }
         break;
         }
 
@@ -215,11 +210,12 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
 #endif
 
     msg.baroCrossChecked = ADSB_NIC_BARO_UNVERIFIED;
-    msg.identActive = _frontend.out_state.ident_pending && !_frontend.out_state.ident_isActive; // set when pending via user but not already active
-    msg.modeAEnabled = true;
-    msg.modeCEnabled = true;
-    msg.modeSEnabled = true;
-    msg.es1090TxEnabled = (_frontend.out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) != 0;
+    msg.identActive = _frontend.out_state.ctrl.identActive;
+    _frontend.out_state.ctrl.identActive = false; // only send identButtonActive once per request
+    msg.modeAEnabled = _frontend.out_state.ctrl.modeAEnabled;
+    msg.modeCEnabled = _frontend.out_state.ctrl.modeCEnabled;
+    msg.modeSEnabled = _frontend.out_state.ctrl.modeSEnabled;
+    msg.es1090TxEnabled = _frontend.out_state.ctrl.es1090TxEnabled;
 
     // Hard coding unknown baro for now. 
     // if ((rx.decoded.transponder_config.baroAltSource == GDL90_BARO_DATA_SOURCE_EXTERNAL) && AP::baro().healthy()) {
@@ -235,14 +231,14 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
         ((_frontend._options & uint32_t(AP_ADSB::AdsbOption::Squawk_7400_FS_GCS)) && notify.flags.failsafe_gcs)) {
         msg.squawkCode = 7400;
     } else {
-        msg.squawkCode = _frontend.out_state.cfg.squawk_octal;
+        msg.squawkCode = _frontend.out_state.ctrl.squawkCode;
     }
 
     // const uint32_t last_gcs_ms = gcs().sysid_myggcs_last_seen_time_ms();
     // const bool gcs_lost_comms = (last_gcs_ms != 0) && (AP_HAL::millis() - last_gcs_ms > AP_ADSB_GCS_LOST_COMMS_LONG_TIMEOUT_MS);
     // msg.emergencyState = gcs_lost_comms ? ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_UAS_LOST_LINK : ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_NONE;
     msg.emergencyState = ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_NONE;
-    memcpy(msg.callsign, _frontend.out_state.cfg.callsign, sizeof(msg.callsign));
+    memcpy(msg.callsign, _frontend.out_state.ctrl.callsign, sizeof(msg.callsign));
 
     gdl90Transmit((GDL90_TX_MESSAGE&)msg, sizeof(msg));
 }

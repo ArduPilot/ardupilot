@@ -158,7 +158,7 @@ public:
         // if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0) {
         //     return false;
         // }
-        out_state.ident_pending = true;
+        out_state.ctrl.identActive = true;
         return true;
     }
 
@@ -189,6 +189,9 @@ private:
 
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
+
+    // control ADSB-out transcievers
+    void handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet);
 
     // mavlink handler
     void handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet);
@@ -230,9 +233,6 @@ private:
         bool        is_flying;
         bool        is_in_auto_mode;
 
-        bool        ident_pending;
-        bool        ident_isActive;
-
         // ADSB-OUT configuration
         struct {
             int32_t     ICAO_id;
@@ -251,6 +251,21 @@ private:
             AP_Int8     rf_capable;
             bool        was_set_externally;
         } cfg;
+
+        struct {
+            bool                          baroCrossChecked;
+            uint8_t                       airGroundState;
+            bool                          identActive;
+            bool                          modeAEnabled;
+            bool                          modeCEnabled;
+            bool                          modeSEnabled;
+            bool                          es1090TxEnabled;
+            int32_t                       externalBaroAltitude_mm;
+            uint16_t                      squawkCode;
+            uint8_t                       emergencyState;
+            uint8_t                       callsign[8];
+            bool                          x_bit;
+        } ctrl;
 
     } out_state;
 
