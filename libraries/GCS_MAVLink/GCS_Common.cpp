@@ -5117,7 +5117,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_HIGH_LATENCY2:
 #if HAL_HIGH_LATENCY2_ENABLED
         CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
-        send_high_latency();
+        send_high_latency2();
 #endif // HAL_HIGH_LATENCY2_ENABLED
         break;
 
@@ -5429,7 +5429,7 @@ GCS &gcs()
   send HIGH_LATENCY2 message
  */
 #if HAL_HIGH_LATENCY2_ENABLED
-void GCS_MAVLINK::send_high_latency() const
+void GCS_MAVLINK::send_high_latency2() const
 {
     AP_AHRS &ahrs = AP::ahrs();
     struct Location global_position_current;
@@ -5458,52 +5458,30 @@ void GCS_MAVLINK::send_high_latency() const
     uint32_t present;
     uint32_t enabled;
     uint32_t health;
-    uint16_t failure_flags = 0;
     gcs().get_sensor_status_flags(present, enabled, health);
     // Remap HL_FAILURE_FLAG from system status flags
-    if (!(health & MAV_SYS_STATUS_SENSOR_GPS))
-    {
-        failure_flags |= HL_FAILURE_FLAG_GPS;
-    }
-    if (!(health & MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE))
-    {
-        failure_flags |= HL_FAILURE_FLAG_DIFFERENTIAL_PRESSURE;
-    }    
-    if (!(health & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE))
-    {
-        failure_flags |= HL_FAILURE_FLAG_ABSOLUTE_PRESSURE;
-    }    
-    if (!(health & MAV_SYS_STATUS_SENSOR_3D_ACCEL))
-    {
-        failure_flags |= HL_FAILURE_FLAG_3D_ACCEL;
-    }  
-    if (!(health & MAV_SYS_STATUS_SENSOR_3D_GYRO))
-    {
-        failure_flags |= HL_FAILURE_FLAG_3D_GYRO;
-    }  
-    if (!(health & MAV_SYS_STATUS_SENSOR_3D_MAG))
-    {
-        failure_flags |= HL_FAILURE_FLAG_3D_MAG;
-    }  
-    if (!(health & MAV_SYS_STATUS_TERRAIN))
-    {
-        failure_flags |= HL_FAILURE_FLAG_TERRAIN;
-    }  
-    if (!(health & MAV_SYS_STATUS_SENSOR_BATTERY))
-    {
-        failure_flags |= HL_FAILURE_FLAG_BATTERY;
-    }  
-    if (!(health & MAV_SYS_STATUS_SENSOR_RC_RECEIVER))
-    {
-        failure_flags |= HL_FAILURE_FLAG_RC_RECEIVER;
-    }  
-    if (!(health & MAV_SYS_STATUS_GEOFENCE))
-    {
-        failure_flags |= HL_FAILURE_FLAG_GEOFENCE;
-    } 
-    if (!(health & MAV_SYS_STATUS_AHRS))
-    {
-        failure_flags |= HL_FAILURE_FLAG_ESTIMATOR;
+    static const struct status_map_t {
+        MAV_SYS_STATUS_SENSOR sensor;
+        HL_FAILURE_FLAG failure_flag;
+    } status_map[] {
+        { MAV_SYS_STATUS_SENSOR_GPS, HL_FAILURE_FLAG_GPS },
+        { MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE, HL_FAILURE_FLAG_DIFFERENTIAL_PRESSURE },
+        { MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE, HL_FAILURE_FLAG_ABSOLUTE_PRESSURE },
+        { MAV_SYS_STATUS_SENSOR_3D_ACCEL, HL_FAILURE_FLAG_3D_ACCEL },
+        { MAV_SYS_STATUS_SENSOR_3D_GYRO, HL_FAILURE_FLAG_3D_GYRO },
+        { MAV_SYS_STATUS_SENSOR_3D_MAG, HL_FAILURE_FLAG_3D_MAG },
+        { MAV_SYS_STATUS_TERRAIN, HL_FAILURE_FLAG_TERRAIN },
+        { MAV_SYS_STATUS_SENSOR_BATTERY, HL_FAILURE_FLAG_BATTERY },
+        { MAV_SYS_STATUS_SENSOR_RC_RECEIVER, HL_FAILURE_FLAG_RC_RECEIVER },
+        { MAV_SYS_STATUS_GEOFENCE, HL_FAILURE_FLAG_GEOFENCE },
+        { MAV_SYS_STATUS_AHRS, HL_FAILURE_FLAG_ESTIMATOR },
+    };
+
+    uint16_t failure_flags = 0;
+    for (const struct status_map_t &map_entry : status_map) {
+        if ((health & map_entry.sensor) == 0) {
+            failure_flags |= map_entry.failure_flag;
+        }
     }
 
     //send_text(MAV_SEVERITY_INFO, "Yaw: %u", (((uint16_t)ahrs.yaw_sensor / 100) % 360));
