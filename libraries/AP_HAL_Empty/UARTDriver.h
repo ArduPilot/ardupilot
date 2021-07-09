@@ -17,7 +17,7 @@ public:
     /* Empty implementations of Stream virtual methods */
     uint32_t available() override;
     uint32_t txspace() override;
-    int16_t read() override;
+    ssize_t read(uint8_t *buffer, uint16_t count) override;
     bool discard_input() override;
 
     /* Empty implementations of Print virtual methods */
