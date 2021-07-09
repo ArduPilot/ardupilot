@@ -415,7 +415,7 @@ TEST(Location, Line)
  */
 TEST(Location, OffsetError)
 {
-    // test at 30km from origin
+    // test at 10km from origin
     const float ofs_ne = 10e3 / sqrtf(2.0);
     for (float lat = -80; lat <= 80; lat += 10.0) {
         Location origin{int32_t(lat*1e7), 0, 0, Location::AltFrame::ABOVE_HOME};
