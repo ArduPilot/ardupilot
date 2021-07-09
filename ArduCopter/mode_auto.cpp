@@ -1501,7 +1501,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
     // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
     if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
         !copter.camera_mount.has_pan_control()) {
-        auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,false);
+        auto_yaw.set_yaw_angle_rate(cmd.content.mount_control.yaw,0.0f);
     }
     // pass the target angles to the camera mount
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
