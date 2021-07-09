@@ -777,7 +777,7 @@ void AP_CRSF_Telem::calc_device_info() {
 
     const AP_FWVersion &fwver = AP::fwversion();
     // write out the name with version, max width is 60 - 18 = the meaning of life
-    int32_t n = strlen(fwver.fw_string);
+    int32_t n = strlen(fwver.fw_short_string);
     strncpy((char*)_telem.ext.info.payload, fwver.fw_short_string, 41);
     n = MIN(n + 1, 42);
 
