@@ -700,6 +700,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
         // Update the filter status
         updateFilterStatus();
+
+        // check for update of earth field
+        checkUpdateEarthField();
     }
 
     // Wind output forward from the fusion to output time horizon
@@ -725,9 +728,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
         statesInitialised = false;
         InitialiseFilterBootstrap();
     }
-
-    // check for update of earth field
-    checkUpdateEarthField();
 }
 
 void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t gyro_index)
