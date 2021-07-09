@@ -69,8 +69,8 @@ public:
     Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
-    void offset(float ofs_north, float ofs_east);
-    void offset_double(double ofs_north, double ofs_east);
+    static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
+    void offset(ftype ofs_north, ftype ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(float bearing_deg, float distance);
@@ -82,7 +82,7 @@ public:
     // shrinking longitude as you move north or south from the equator
     // Note: this does not include the scaling to convert
     // longitude/latitude points to meters or centimeters
-    static float longitude_scale(int32_t lat);
+    static ftype longitude_scale(int32_t lat);
 
     bool is_zero(void) const WARN_IF_UNUSED;
 
@@ -128,7 +128,7 @@ public:
     
     // get lon1-lon2, wrapping at -180e7 to 180e7
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
-    
+
 private:
 
     // scaling factor from 1e-7 degrees to meters at equator
