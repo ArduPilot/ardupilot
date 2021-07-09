@@ -876,18 +876,22 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
 }
 
 // Sets attitude target to vehicle attitude and sets all rates to zero
-void AC_AttitudeControl::reset_target_and_rate()
+// If reset_rate is false rates are not reset to allow the rate controllers to run
+void AC_AttitudeControl::reset_target_and_rate(bool reset_rate)
 {
     // move attitude target to current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
 
-    // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    _ang_vel_target.zero();
-    _euler_angle_target.zero();
+    if (reset_rate) {
+        // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
+        _ang_vel_target.zero();
+        _euler_angle_target.zero();
+    }
 }
 
 // Sets yaw target to vehicle heading and sets yaw rate to zero
-void AC_AttitudeControl::reset_yaw_target_and_rate()
+// If reset_rate is false rates are not reset to allow the rate controllers to run
+void AC_AttitudeControl::reset_yaw_target_and_rate(bool reset_rate)
 {
     // move attitude target to current heading
     float yaw_shift = _ahrs.yaw - _euler_angle_target.z;
@@ -895,11 +899,13 @@ void AC_AttitudeControl::reset_yaw_target_and_rate()
     _attitude_target_update.from_axis_angle(Vector3f{0.0f, 0.0f, yaw_shift});
     _attitude_target = _attitude_target_update * _attitude_target;
 
-    // set yaw rate to zero
-    _euler_rate_target.z = 0.0f;
+    if (reset_rate) {
+        // set yaw rate to zero
+        _euler_rate_target.z = 0.0f;
 
-    // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
+        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+    }
 }
 
 // Shifts the target attitude to maintain the current error in the event of an EKF reset
