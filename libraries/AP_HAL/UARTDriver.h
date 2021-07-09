@@ -41,7 +41,9 @@ public:
     virtual void end() = 0;
     virtual void flush() = 0;
     virtual bool is_initialized() = 0;
-    virtual void set_blocking_writes(bool blocking) = 0;
+    void set_blocking_writes(bool blocking) {
+        _blocking_writes = blocking;
+    };
     virtual bool tx_pending() = 0;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
@@ -136,4 +138,7 @@ public:
      */
     virtual bool set_RTS_pin(bool high) { return false; };
     virtual bool set_CTS_pin(bool high) { return false; };
+
+protected:
+    bool _blocking_writes;
 };
