@@ -601,11 +601,6 @@ bool UARTDriver::is_initialized()
     return _tx_initialised && _rx_initialised;
 }
 
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _blocking_writes = blocking;
-}
-
 bool UARTDriver::tx_pending() { return false; }
 
 /* Empty implementations of Stream virtual methods */
