@@ -86,7 +86,8 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
-    default_ports += ['/dev/ttyS*']
+    # try to match in mostly numerical order
+    default_ports += ['/dev/ttyS?', '/dev/ttyS??', '/dev/ttyS???']
 
 # Detect python version
 if sys.version_info[0] < 3:
@@ -240,6 +241,8 @@ class uploader(object):
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0)
         self.baudrate_bootloader = baudrate_bootloader
+        if hasattr(self.port, 'write_timeout'):
+            self.write_timeout = self.port.write_timeout
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
         else:
@@ -329,8 +332,14 @@ class uploader(object):
         # that we might still have in progress
         # self.__send(uploader.NOP * (uploader.PROG_MULTI_MAX + 2))
         self.port.flushInput()
+        # on WSL disconnected bluetooth ports will block trying to write
+        if hasattr(self.port, 'write_timeout'):
+            self.port.write_timeout = 0.1
         self.__send(uploader.GET_SYNC +
                     uploader.EOC)
+        # make subsequent writes blocking
+        if hasattr(self.port, 'write_timeout'):
+            self.port.write_timeout = self.write_timeout
         self.__getSync()
 
     def __trySync(self):
@@ -848,10 +857,15 @@ def ports_to_try(args):
         patterns = default_ports
     else:
         patterns = args.port.split(",")
+        # treat the specified port as a hint and add the default ports afterwards as on windows
+        # the port can change once the board is in bootloader mode
+        if is_WSL:
+            patterns += default_ports
+
     # use glob to support wildcard ports. This allows the use of
     # /dev/serial/by-id/usb-ArduPilot on Linux, which prevents the
     # upload from causing modem hangups etc
-    if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
+    if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform or is_WSL:
         import glob
         for pattern in patterns:
             portlist += glob.glob(pattern)
@@ -859,7 +873,7 @@ def ports_to_try(args):
         portlist = patterns
 
     # filter ports based on platform:
-    if "cygwin" in _platform:
+    if "cygwin" in _platform or is_WSL:
         # Cygwin, don't open MAC OS and Win ports, we are more like
         # Linux. Cygwin needs to be before Windows test
         pass
@@ -883,10 +897,23 @@ WARNING: You should uninstall ModemManager as it conflicts with any non-modem se
 
 
 def find_bootloader(up, port):
-    while (True):
-        up.open()
+    up.open()
 
-        # port is open, try talking to it
+    # port is open, try talking to it
+    try:
+        # identify the bootloader
+        up.identify()
+        print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
+        return True
+
+    except Exception as e:
+        pass
+
+    if up.send_reboot():
+        # wait for the reboot, without we might run into Serial I/O Error 5
+        time.sleep(0.25)
+
+        # reboot sent try talking to it again
         try:
             # identify the bootloader
             up.identify()
@@ -896,19 +923,13 @@ def find_bootloader(up, port):
         except Exception:
             pass
 
-        reboot_sent = up.send_reboot()
+    # always close the port
+    up.close()
 
-        # wait for the reboot, without we might run into Serial I/O Error 5
-        time.sleep(0.25)
+    # wait for the close, without we might run into Serial I/O Error 6
+    time.sleep(0.3)
 
-        # always close the port
-        up.close()
-
-        # wait for the close, without we might run into Serial I/O Error 6
-        time.sleep(0.3)
-
-        if not reboot_sent:
-            return False
+    return False
 
 
 def main():
@@ -998,7 +1019,6 @@ def main():
                                   args.target_component,
                                   args.source_system,
                                   args.source_component)
-
                 except Exception as e:
                     if not is_WSL:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
