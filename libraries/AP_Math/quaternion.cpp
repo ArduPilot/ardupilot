@@ -71,33 +71,6 @@ void QuaternionT<T>::rotation_matrix(Matrix3f &m) const
     m.c.z = 1.0f-2.0f*(q2q2 + q3q3);
 }
 
-// return the rotation matrix equivalent for this quaternion after normalization
-template <typename T>
-void QuaternionT<T>::rotation_matrix_norm(Matrix3<T> &m) const
-{
-    const T q1q1 = q1 * q1;
-    const T q1q2 = q1 * q2;
-    const T q1q3 = q1 * q3;
-    const T q1q4 = q1 * q4;
-    const T q2q2 = q2 * q2;
-    const T q2q3 = q2 * q3;
-    const T q2q4 = q2 * q4;
-    const T q3q3 = q3 * q3;
-    const T q3q4 = q3 * q4;
-    const T q4q4 = q4 * q4;
-    const T invs = 1.0f / (q1q1 + q2q2 + q3q3 + q4q4);
-
-    m.a.x = ( q2q2 - q3q3 - q4q4 + q1q1)*invs;
-    m.a.y = 2.0f*(q2q3 - q1q4)*invs;
-    m.a.z = 2.0f*(q2q4 + q1q3)*invs;
-    m.b.x = 2.0f*(q2q3 + q1q4)*invs;
-    m.b.y = (-q2q2 + q3q3 - q4q4 + q1q1)*invs;
-    m.b.z = 2.0f*(q3q4 - q1q2)*invs;
-    m.c.x = 2.0f*(q2q4 - q1q3)*invs;
-    m.c.y = 2.0f*(q3q4 + q1q2)*invs;
-    m.c.z = (-q2q2 - q3q3 + q4q4 + q1q1)*invs;
-}
-
 // return the rotation matrix equivalent for this quaternion
 // Thanks to Martin John Baker
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
