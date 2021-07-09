@@ -153,6 +153,9 @@ void ModeGuided::pva_control_start()
     // initialise velocity controller
     pos_control->init_z_controller();
     pos_control->init_xy_controller();
+
+    // initialise yaw
+    auto_yaw.set_mode_to_default(false);
 }
 
 // initialise guided mode's position controller
@@ -163,9 +166,6 @@ void ModeGuided::pos_control_start()
 
     // initialise position controller
     pva_control_start();
-
-    // initialise yaw
-    auto_yaw.set_mode_to_default(false);
 }
 
 // initialise guided mode's velocity controller
@@ -176,9 +176,6 @@ void ModeGuided::accel_control_start()
 
     // initialise position controller
     pva_control_start();
-
-    // pilot always controls yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // initialise guided mode's velocity and acceleration controller
@@ -189,9 +186,6 @@ void ModeGuided::velaccel_control_start()
 
     // initialise position controller
     pva_control_start();
-
-    // pilot always controls yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // initialise guided mode's position, velocity and acceleration controller
@@ -202,9 +196,6 @@ void ModeGuided::posvelaccel_control_start()
 
     // initialise position controller
     pva_control_start();
-
-    // pilot always controls yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 bool ModeGuided::is_taking_off() const
