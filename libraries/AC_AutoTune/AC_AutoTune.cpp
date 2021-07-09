@@ -1646,6 +1646,8 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
         sweep.maxgain_gain = 0.0f;
         sweep.maxgain_freq = 0.0f;
         sweep.maxgain_phase = 0.0f;
+        curr_test_gain = 0.0f;
+        curr_test_phase = 0.0f;
     }
 }
 
@@ -1690,7 +1692,7 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
             if (is_equal(start_frq,stop_frq)) {
                 target_rate_cds = - dwell_freq * tgt_attitude * 5730.0f * cosf(dwell_freq * (now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001);
             } else {
-                target_rate_cds = waveform((now - dwell_start_time_ms - 0.5f * cycle_time_ms) * 0.001, (sweep_time_ms - 0.5f * cycle_time_ms) * 0.001f, dwell_freq * tgt_attitude * 5730.0f);
+                target_rate_cds = waveform((now - dwell_start_time_ms - 0.5f * cycle_time_ms) * 0.001, (sweep_time_ms - 0.5f * cycle_time_ms) * 0.001f, dwell_freq * tgt_attitude * 5730.0f, start_frq, stop_frq);
                 dwell_freq = waveform_freq_rads;
             }
         }
@@ -1773,7 +1775,7 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
     }
 
     // set sweep data if a frequency sweep is being conducted
-    if (!is_equal(start_frq,stop_frq)) {
+    if (!is_equal(start_frq,stop_frq) && (float)(now - dwell_start_time_ms) > 2.5f * cycle_time_ms) {
         if (curr_test_phase <= 160.0f && curr_test_phase >= 150.0f) {
             sweep.ph180_freq = curr_test_freq;
             sweep.ph180_gain = curr_test_gain;
@@ -1848,6 +1850,8 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
         sweep.maxgain_gain = 0.0f;
         sweep.maxgain_freq = 0.0f;
         sweep.maxgain_phase = 0.0f;
+        curr_test_gain = 0.0f;
+        curr_test_phase = 0.0f;
     }
 }
 
@@ -1887,7 +1891,7 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
             if (is_equal(start_frq,stop_frq)) {
                 target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001);
             } else {
-                target_angle_cd = -waveform((now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001, (sweep_time_ms - 0.25f * cycle_time_ms) * 0.001f, tgt_attitude * 5730.0f);
+                target_angle_cd = -waveform((now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001, (sweep_time_ms - 0.25f * cycle_time_ms) * 0.001f, tgt_attitude * 5730.0f, start_frq, stop_frq);
                 dwell_freq = waveform_freq_rads;
             }
         }
@@ -2385,15 +2389,11 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
 }
 
 // init_test - initialises the test
-float AC_AutoTune::waveform(float time, float time_record, float waveform_magnitude)
+float AC_AutoTune::waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax)
 {
-    float frequency_start = 2.0f;   // Frequency at the start of the chirp
-    float frequency_stop = 12.0f;    // Frequency at the end of the chirp
     float time_fade_in = 0.0f;      // Time to reach maximum amplitude of chirp
     float time_fade_out = 0.1 * time_record;     // Time to reach zero amplitude after chirp finishes
     float time_const_freq = 1.0f;
-    float wMin = 2 * M_PI * frequency_start;
-    float wMax = 2 * M_PI * frequency_stop;
 
     float window;
     float output;

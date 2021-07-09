@@ -370,7 +370,7 @@ protected:
     // determines the gain and phase for a dwell
     void determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset);
 
-    float waveform(float time, float time_record, float waveform_magnitude);
+    float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
 
     uint8_t  ff_test_phase;                         // phase of feedforward test
     float    test_command_filt;                     // filtered commanded output
