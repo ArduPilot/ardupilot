@@ -40,6 +40,7 @@ AP_NMEA_Output::AP_NMEA_Output()
         if (_uart[i] == nullptr) {
             break;
         }
+        _uart[i]->begin(sm.find_baudrate(AP_SerialManager::SerialProtocol_NMEAOutput, i));
         _num_outputs++;
     }
 }
