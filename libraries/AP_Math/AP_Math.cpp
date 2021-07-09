@@ -244,35 +244,24 @@ long wrap_360_cd(const long angle)
     }
     return res;
 }
-template <typename T>
-float wrap_PI(const T radian)
+
+ftype wrap_PI(const ftype radian)
 {
-    auto res = wrap_2PI(radian);
+    ftype res = wrap_2PI(radian);
     if (res > M_PI) {
         res -= M_2PI;
     }
     return res;
 }
 
-template float wrap_PI<int>(const int radian);
-template float wrap_PI<short>(const short radian);
-template float wrap_PI<float>(const float radian);
-template float wrap_PI<double>(const double radian);
-
-template <typename T>
-float wrap_2PI(const T radian)
+ftype wrap_2PI(const ftype radian)
 {
-    float res = fmodf(static_cast<float>(radian), M_2PI);
+    ftype res = fmodF(radian, M_2PI);
     if (res < 0) {
         res += M_2PI;
     }
     return res;
 }
-
-template float wrap_2PI<int>(const int radian);
-template float wrap_2PI<short>(const short radian);
-template float wrap_2PI<float>(const float radian);
-template float wrap_2PI<double>(const double radian);
 
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)

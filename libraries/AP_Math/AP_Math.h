@@ -142,14 +142,12 @@ double wrap_360_cd(const double angle);
 /*
   wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
-template <typename T>
-ftype wrap_PI(const T radian);
+ftype wrap_PI(const ftype radian);
 
 /*
  * wrap an angle in radians to 0..2PI
  */
-template <typename T>
-ftype wrap_2PI(const T radian);
+ftype wrap_2PI(const ftype radian);
 
 /*
  * Constrain a value to be within the range: low and high
