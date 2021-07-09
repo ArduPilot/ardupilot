@@ -7125,6 +7125,36 @@ class AutoTestCopter(AutoTest):
         num_wp = self.load_mission("copter_mission.txt", strict=False)
         self.fly_loaded_mission(num_wp)
 
+    def FETtecESC_esc_power_checks(self):
+        '''Make sure state machine copes with ESCs rebooting'''
+        self.start_subtest("FETtec ESC reboot")
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.progress("Turning off an ESC off ")
+        mask = int(self.get_parameter("SIM_FTOWESC_POW"))
+
+        for mot_id_to_kill in 1, 2:
+            self.progress("Turning ESC=%u off" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+            self.progress("Turning ESC=%u off (again)" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+        self.progress("Turning all ESCs off")
+        self.set_parameter("SIM_FTOWESC_POW", 0)
+        self.assert_prearm_failure("are not sending tel")
+        self.progress("Turning them back on")
+        self.set_parameter("SIM_FTOWESC_POW", mask)
+        self.wait_ready_to_arm()
+
     def fettec_assert_bad_mask(self, mask):
         '''assert the mask is bad for fettec driver'''
         self.start_subsubtest("Checking mask (%s) is bad" % (mask,))
@@ -7153,7 +7183,7 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
-    def FETtecESC_preflight_checks(self):
+    def FETtecESC_btw_mask_checks(self):
         '''ensure prearm checks work as expected'''
         for bad_mask in [0b1000000000000, 0b10100000000000]:
             self.fettec_assert_bad_mask(bad_mask)
@@ -7175,7 +7205,8 @@ class AutoTestCopter(AutoTest):
             "SERVO8_FUNCTION": 36,
         })
         self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
-        self.FETtecESC_preflight_checks()
+        self.FETtecESC_esc_power_checks()
+        self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
     def tests1a(self):
