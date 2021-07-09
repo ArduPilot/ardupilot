@@ -619,6 +619,16 @@ bool Plane::get_wp_distance_m(float &distance) const
     return true;
 }
 
+// get the location of the next target wp, frame NED from EKF origin in meters
+bool Plane::get_target_wp(Location &loc) const
+{
+    if (plane.control_mode == &plane.mode_manual) {
+        return false;
+    }
+    loc = plane.next_WP_loc;
+    return true;
+}
+
 bool Plane::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Plane::send_nav_controller_output()

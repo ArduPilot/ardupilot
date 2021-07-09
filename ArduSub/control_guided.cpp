@@ -181,6 +181,14 @@ bool Sub::guided_set_destination(const Location& dest_loc)
     return true;
 }
 
+bool Sub::guided_get_wp(Location& destination) const
+{
+    if (guided_mode != Guided_WP) {
+        return false;
+    }
+    return wp_nav.get_oa_wp_destination(destination);
+}
+
 // guided_set_velocity - sets guided mode's target velocity
 void Sub::guided_set_velocity(const Vector3f& velocity)
 {

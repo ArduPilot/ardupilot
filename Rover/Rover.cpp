@@ -401,6 +401,11 @@ bool Rover::get_wp_distance_m(float &distance) const
     return true;
 }
 
+bool Rover::get_target_wp(Location &loc) const
+{
+    return control_mode->get_desired_location(loc);
+}
+
 // vehicle specific waypoint info helpers
 bool Rover::get_wp_bearing_deg(float &bearing) const
 {

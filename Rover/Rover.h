@@ -387,6 +387,7 @@ private:
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
+    bool get_target_wp(Location &loc) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 

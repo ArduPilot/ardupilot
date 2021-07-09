@@ -4751,6 +4751,40 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+void GCS_MAVLINK::send_position_target_global_int()
+{
+    Location target;
+    if (!AP::vehicle()->get_target_wp(target)) {
+        return;
+    }
+
+    // Note, currently get_wp() only returns either ABOVE_TERRAIN or ABOVE_ORIGIN
+    MAV_FRAME frame = MAV_FRAME_GLOBAL;
+    if (!location_alt_frame_to_mavlink_coordinate_frame(target, frame)) {
+        return; // failed altitude frame conversion
+    }
+    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
+    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        frame,              // target MAV_FRAME
+        TYPE_MASK,          // ignore everything except the x/y/z components
+        target.lat,         // latitude as 1e7
+        target.lng,         // longitude as 1e7
+        target.alt * 0.01f, // altitude is sent as a float
+        0.0f,   // vx
+        0.0f,   // vy
+        0.0f,   // vz
+        0.0f,   // afx
+        0.0f,   // afy
+        0.0f,   // afz
+        0.0f,   // yaw
+        0.0f);  // yaw_rate
+}
+
 void GCS_MAVLINK::send_generator_status() const
 {
 #if GENERATOR_ENABLED
@@ -5367,6 +5401,30 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 #endif
         return false;
     }
+}
+
+// Returns true if the mavlink_coordinate frame is set and if the input location's altitude frame can be converted
+// returns false if the change in altitude frame fails
+// Note: AltFrame::ABOVE_ORIGIN is converted to AltFrame::ABSOLUTE
+bool GCS_MAVLINK::location_alt_frame_to_mavlink_coordinate_frame(Location &loc, MAV_FRAME &coordinate_frame) const
+{
+    switch (loc.get_alt_frame()) {
+    case Location::AltFrame::ABOVE_TERRAIN:
+        coordinate_frame = MAV_FRAME_GLOBAL_TERRAIN_ALT;
+        break;
+    case Location::AltFrame::ABSOLUTE:
+        coordinate_frame = MAV_FRAME_GLOBAL;
+        break;
+    case Location::AltFrame::ABOVE_HOME:
+        coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        break;
+    case Location::AltFrame::ABOVE_ORIGIN:
+        if (!loc.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            return false;
+        }
+        coordinate_frame = MAV_FRAME_GLOBAL;
+    }
+    return true;
 }
 
 uint64_t GCS_MAVLINK::capabilities() const

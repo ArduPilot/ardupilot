@@ -462,6 +462,7 @@ private:
     void auto_wp_start(const Vector3f& destination);
     void auto_wp_start(const Location& dest_loc);
     void auto_wp_run();
+    bool auto_get_wp(Location& destination) const;
     void auto_circle_movetoedge_start(const Location &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
@@ -483,6 +484,7 @@ private:
     void guided_angle_control_start();
     bool guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location& dest_loc);
+    bool guided_get_wp(Location& destination) const;
     void guided_set_velocity(const Vector3f& velocity);
     bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
@@ -627,6 +629,7 @@ private:
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
+    bool get_target_wp(Location &loc) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 

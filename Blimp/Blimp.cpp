@@ -258,6 +258,12 @@ void Blimp::rotate_BF_to_NE(Vector2f &vec)
     vec.y = ne_y;
 }
 
+// vehicle specific waypoint info helpers
+bool Blimp::get_target_wp(Location &loc) const
+{
+    return blimp.flightmode->get_wp(loc);
+}
+
 void Blimp::rotate_NE_to_BF(Vector2f &vec)
 {
     float bf_x = vec.x*ahrs.cos_yaw() + vec.y*ahrs.sin_yaw();

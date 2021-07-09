@@ -229,6 +229,12 @@ public:
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
     /*
+      get the location of the next target wp, frame NED from EKF origin in meters
+      return false if failed or n/a
+     */
+    virtual bool get_target_wp(Location &loc) const { return false; }
+
+    /*
       get the current wp bearing in degrees
       return false if failed or n/a
      */

@@ -343,6 +343,31 @@ void Sub::auto_loiter_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 }
 
+// get desired location
+bool Sub::auto_get_wp(Location& destination) const
+{
+    // call the correct auto controller
+    switch (auto_mode) {
+
+    case Auto_WP:
+        return wp_nav.get_oa_wp_destination(destination);
+
+    case Auto_NavGuided:
+#if NAV_GUIDED == ENABLED
+        return guided_get_wp(destination);
+#endif
+
+    case Auto_CircleMoveToEdge:
+    case Auto_Circle:
+    case Auto_Loiter:
+    case Auto_TerrainRecover:
+        return false;
+    }
+
+    // we should never reach here but just in case
+    return false;
+}
+
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
 uint8_t Sub::get_default_auto_yaw_mode(bool rtl) const

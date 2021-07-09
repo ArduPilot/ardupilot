@@ -453,6 +453,9 @@ private:
     const char* get_frame_string();
     void allocate_motors(void);
 
+    // vehicle specific waypoint info helpers
+    bool get_target_wp(Location &loc) const override;
+
     Mode *flightmode;
     ModeManual mode_manual;
     ModeLand mode_land;

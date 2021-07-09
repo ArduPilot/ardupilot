@@ -623,6 +623,12 @@ bool Copter::get_wp_distance_m(float &distance) const
     return true;
 }
 
+// get the location of the next target wp, frame NED from EKF origin in meters
+bool Copter::get_target_wp(Location &loc) const
+{
+    return flightmode->get_wp(loc);
+}
+
 // vehicle specific waypoint info helpers
 bool Copter::get_wp_bearing_deg(float &bearing) const
 {
