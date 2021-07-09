@@ -693,11 +693,8 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         AP_ESC_Telem_Backend::TelemetryData t {
             .voltage = float(esc.voltage) * 0.01f,
             .current = float(esc.current) * 0.01f,
-            .consumption_mah = 0.0f,
-            .usage_s = 0,
-            .last_update_ms = 0,
-            .temperature_cdeg = int16_t(esc.escTemperature * 100),
         };
+        t.temperature_cdeg = int16_t(esc.escTemperature * 100);
 
         update_telem_data(addr, t,
             AP_ESC_Telem_Backend::TelemetryType::CURRENT

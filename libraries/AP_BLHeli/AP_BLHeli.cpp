@@ -1438,10 +1438,8 @@ void AP_BLHeli::read_telemetry_packet(void)
         .voltage = float(uint16_t((buf[1]<<8) | buf[2])) * 0.01,
         .current = float(uint16_t((buf[3]<<8) | buf[4])) * 0.01,
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
-        .usage_s = 0,
-        .last_update_ms = 0,
-        .temperature_cdeg = int16_t(buf[0] * 100),
     };
+    t.temperature_cdeg = int16_t(buf[0] * 100);
 
     update_telem_data(motor_idx - chan_offset, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
