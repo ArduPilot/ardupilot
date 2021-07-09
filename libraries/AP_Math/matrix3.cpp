@@ -52,10 +52,10 @@ void Matrix3<T>::to_euler(T *roll, T *pitch, T *yaw) const
         *pitch = -safe_asin(c.x);
     }
     if (roll != nullptr) {
-        *roll = atan2f(c.y, c.z);
+        *roll = atan2F(c.y, c.z);
     }
     if (yaw != nullptr) {
-        *yaw = atan2f(b.x, a.x);
+        *yaw = atan2F(b.x, a.x);
     }
 }
 
@@ -81,8 +81,8 @@ template <typename T>
 Vector3<T> Matrix3<T>::to_euler312() const
 {
     return Vector3<T>(asinF(c.y),
-                      atan2f(-c.x, c.z),
-                      atan2f(-a.y, b.y));
+                      atan2F(-c.x, c.z),
+                      atan2F(-a.y, b.y));
 }
 
 /*

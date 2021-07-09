@@ -143,13 +143,13 @@ double wrap_360_cd(const double angle);
   wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
 template <typename T>
-float wrap_PI(const T radian);
+ftype wrap_PI(const T radian);
 
 /*
  * wrap an angle in radians to 0..2PI
  */
 template <typename T>
-float wrap_2PI(const T radian);
+ftype wrap_2PI(const T radian);
 
 /*
  * Constrain a value to be within the range: low and high
@@ -179,7 +179,7 @@ inline int64_t constrain_int64(const int64_t amt, const int64_t low, const int64
 }
 
 // degrees -> radians
-static inline constexpr float radians(float deg)
+static inline constexpr ftype radians(ftype deg)
 {
     return deg * DEG_TO_RAD;
 }
