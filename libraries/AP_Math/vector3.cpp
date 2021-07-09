@@ -418,7 +418,7 @@ T Vector3<T>::angle(const Vector3<T> &v2) const
         return 0.0f;
     }
     const T cosv = ((*this)*v2) / len;
-    if (fabsf(cosv) >= 1) {
+    if (fabsF(cosv) >= 1) {
         return 0.0f;
     }
     return acosF(cosv);
