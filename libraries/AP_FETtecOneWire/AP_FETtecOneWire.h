@@ -132,6 +132,8 @@ private:
 
     // states configured ESCs can be in:
     enum class ESCState : uint8_t {
+        UNINITIALISED = 5,  // when we haven't tried to send anything to the ESC
+
         WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE = 10,
         WAITING_OK_FOR_RUNNING_SW_TYPE = 11,
 
@@ -165,6 +167,7 @@ private:
 
 #if HAL_WITH_ESC_TELEM
         uint32_t last_telem_us;              ///< last time we got telemetry from this ESC
+        uint32_t last_reset_us;
         uint16_t error_count;                ///< error counter from the ESCs.
         bool telem_expected;                 ///< this ESC is fully configured and is now expected to send us telemetry
 #endif
@@ -176,7 +179,7 @@ private:
             fet_debug("Moving ESC.id=%u from state=%u to state=%u", (unsigned)id, (unsigned)state, (unsigned)_state);
             state = _state;
         };
-        ESCState state = ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE;
+        ESCState state = ESCState::UNINITIALISED;
 
 #if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
         uint8_t serial_number[SERIAL_NUMBER_LENGTH];

@@ -265,6 +265,7 @@ void AP_FETtecOneWire::handle_message(ESC &esc, const uint8_t length)
     }
 
     switch (esc.state) {
+    case ESCState::UNINITIALISED:
     case ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE:
         return;
     case ESCState::WAITING_OK_FOR_RUNNING_SW_TYPE:
@@ -655,6 +656,9 @@ void AP_FETtecOneWire::configure_escs()
     for (uint8_t i=0; i<_esc_count; i++) {
         auto &esc = _escs[i];
         switch (esc.state) {
+        case ESCState::UNINITIALISED:
+            esc.state = ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE;
+            FALLTHROUGH;
         case ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE:
             // probe for bootloader or running firmware
             if (transmit_config_request(PackedMessage<OK>{esc.id, OK{}})) {
@@ -753,16 +757,11 @@ void AP_FETtecOneWire::update()
 
     // get ESC set points
     uint16_t motor_pwm[_esc_count];
-    bool some_not_running = false;
     for (uint8_t i = 0; i < _esc_count; i++) {
         const ESC &esc = _escs[i];
-        if (esc.state != ESCState::RUNNING) {
-            some_not_running = true;
-        }
         const SRV_Channel* c = SRV_Channels::srv_channel(esc.servo_ofs);
         if (c == nullptr) { // this should never ever happen, but just in case ...
             motor_pwm[i] = 1000;  // stop motor
-            some_not_running = true;
             continue;
         }
         // check if safety switch has been pushed
@@ -777,19 +776,32 @@ void AP_FETtecOneWire::update()
         }
     }
 
-    const uint32_t now_ms = AP_HAL::millis();
+#if HAL_WITH_ESC_TELEM
+    if (!hal.util->get_soft_armed()) {
+    // const uint32_t now_ms = AP_HAL::millis();
 
-    if (some_not_running) {
-        if (!hal.util->get_soft_armed()) {
-            return;
-        }
-        // OK, darn.  We appear to be flying with an ESC in a bad
-        // state.  Well, we might not be flying for long...
-        if (now_ms - _last_not_running_warning_ms > 5000) {
-            _last_not_running_warning_ms = now_ms;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FETtec: Some ESCs are not running");
+        // if we haven't seen an ESC in a while, the user might
+        // have power-cycled them.  Try re-initialising.
+        for (uint8_t i=0; i<_esc_count; i++) {
+            auto &esc = _escs[i];
+            if (now - esc.last_telem_us < 1000000) {
+                // telem OK
+                continue;
+            }
+            _running_mask &= ~(1 << esc.servo_ofs);
+            if (now - esc.last_reset_us < 5000000) {
+                // only attempt reset periodically
+                continue;
+            }
+            if (esc.state == ESCState::UNINITIALISED) {
+                continue;
+            }
+            esc.last_reset_us = now;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting it", esc.id);
+            esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
         }
     }
+#endif
 
     // send motor setpoints to ESCs, and request for telemetry data
     escs_set_values(motor_pwm);
@@ -802,22 +814,6 @@ void AP_FETtecOneWire::update()
         for (uint8_t i=0; i<_esc_count; i++) {
             auto &esc = _escs[i];
             esc.error_count = 0;
-        }
-        // if we haven't seen an ESC in a while, the user might have
-        // power-cycled them.  Try re-initialising.
-        if (!hal.util->get_soft_armed()) {
-            for (uint8_t i=0; i<_esc_count; i++) {
-                auto &esc = _escs[i];
-                if (esc.last_telem_us == 0) {
-                    return;
-                }
-                if (now - esc.last_telem_us < 1000000) {
-                    continue;
-                }
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting", esc.id);
-                esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
-                _running_mask &= ~(1 << esc.servo_ofs);
-            }
         }
     }
 #endif  // HAL_WITH_ESC_TELEM
