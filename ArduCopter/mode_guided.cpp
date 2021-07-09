@@ -10,9 +10,6 @@
  # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
 #endif
 
-#define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
-#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
-
 static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
 bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
 static Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
@@ -604,7 +601,7 @@ void ModeGuided::accel_control_run()
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
         if (auto_yaw.mode() == AUTO_YAW_RATE) {
@@ -667,7 +664,7 @@ void ModeGuided::velaccel_control_run()
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
         if (auto_yaw.mode() == AUTO_YAW_RATE) {
@@ -742,7 +739,7 @@ void ModeGuided::posvelaccel_control_run()
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
         if (auto_yaw.mode() == AUTO_YAW_RATE) {
@@ -827,7 +824,7 @@ void ModeGuided::angle_control_run()
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
+    if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
         roll_in = 0.0f;
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
@@ -1035,6 +1032,12 @@ float ModeGuided::crosstrack_error() const
     }
     // compiler guarantees we don't get here
     return 0;
+}
+
+// return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+uint32_t ModeGuided::get_timeout_ms() const
+{
+    return MAX(copter.g2.guided_timeout, 0.1) * 1000;
 }
 
 #endif
