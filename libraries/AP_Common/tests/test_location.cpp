@@ -185,6 +185,7 @@ TEST(Location, Tests)
     EXPECT_EQ(Location::AltFrame::ABOVE_TERRAIN, test_location3.get_alt_frame());
 
     // No TERRAIN, NO HOME, NO ORIGIN
+    AP::terrain()->set_enabled(false);
     for (auto current_frame = Location::AltFrame::ABSOLUTE;
          current_frame <= Location::AltFrame::ABOVE_TERRAIN;
          current_frame = static_cast<Location::AltFrame>(
@@ -240,7 +241,7 @@ TEST(Location, Tests)
         }
     }
     // NO Origin
-    Location::set_terrain(&vehicle.terrain);
+    AP::terrain()->set_enabled(true);
     for (auto current_frame = Location::AltFrame::ABSOLUTE;
          current_frame <= Location::AltFrame::ABOVE_TERRAIN;
          current_frame = static_cast<Location::AltFrame>(
