@@ -362,13 +362,27 @@ const AP_Param::GroupInfo SITL::var_mag[] = {
     AP_GROUPINFO("MAG_ORIENT",     9, SITL,  mag_orient[0], 0),
     AP_GROUPINFO("MAG1_SCALING",  10, SITL,  mag_scaling[0], 1),
     AP_GROUPINFO("MAG1_DEVID",    11, SITL,  mag_devid[0], 97539),
+#if MAX_CONNECTED_MAGS > 1
     AP_GROUPINFO("MAG2_DEVID",    12, SITL,  mag_devid[1], 131874),
+#endif
+#if MAX_CONNECTED_MAGS > 2
     AP_GROUPINFO("MAG3_DEVID",    13, SITL,  mag_devid[2], 263178),
+#endif
+#if MAX_CONNECTED_MAGS > 3
     AP_GROUPINFO("MAG4_DEVID",    14, SITL,  mag_devid[3], 97283),
+#endif
+#if MAX_CONNECTED_MAGS > 4
     AP_GROUPINFO("MAG5_DEVID",    15, SITL,  mag_devid[4], 97795),
+#endif
+#if MAX_CONNECTED_MAGS > 5
     AP_GROUPINFO("MAG6_DEVID",    16, SITL,  mag_devid[5], 98051),
+#endif
+#if MAX_CONNECTED_MAGS > 6
     AP_GROUPINFO("MAG7_DEVID",    17, SITL,  mag_devid[6], 0),
+#endif
+#if MAX_CONNECTED_MAGS > 7
     AP_GROUPINFO("MAG8_DEVID",    18, SITL,  mag_devid[7], 0),
+#endif
     AP_GROUPINFO("MAG1_FAIL",     26, SITL,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",      19, SITL,  mag_ofs[1], 0),
@@ -439,9 +453,11 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
 
 
     // the IMUT parameters must be last due to the enable parameters
+#ifndef HAL_BUILD_AP_PERIPH
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SITL, AP_InertialSensor::TCal),
+#endif
     AP_GROUPEND
 };
     

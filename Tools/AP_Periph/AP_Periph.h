@@ -17,6 +17,11 @@
 #include "hwing_esc.h"
 #include <AP_CANManager/AP_CANManager.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANIface.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -228,6 +233,10 @@ public:
     uint32_t last_airspeed_update_ms;
 
     static AP_Periph_FW *_singleton;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL sitl;
+#endif
 
     // show stack as DEBUG msgs
     void show_stack_free();

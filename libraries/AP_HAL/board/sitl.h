@@ -10,8 +10,6 @@
 
 #define AP_FLASHSTORAGE_TYPE 3
 
-#if defined(STORAGE_USE_FLASH) && STORAGE_USE_FLASH==1
-
 #if AP_FLASHSTORAGE_TYPE == 1
 // emulate F1/F3 flash
 #define HAL_STORAGE_SIZE 15360
@@ -32,7 +30,6 @@
 #define HAL_FLASH_SECTOR_SIZE 128*1024
 #define HAL_FLASH_MIN_WRITE_SIZE 32
 #define HAL_FLASH_ALLOW_UPDATE 0
-#endif
 #endif
 
 #ifndef HAL_STORAGE_SIZE

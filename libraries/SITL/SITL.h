@@ -385,6 +385,15 @@ public:
         return true;
     }
 
+    void set_storage_posix_enabled(bool _enabled) {
+        storage_posix_enabled = _enabled;
+    }
+    bool get_storage_posix_enabled() const { return storage_posix_enabled; }
+    void set_storage_flash_enabled(bool _enabled) {
+        storage_flash_enabled = _enabled;
+    }
+    bool get_storage_flash_enabled() const { return storage_flash_enabled; }
+
     uint16_t irlock_port;
 
     time_t start_time_UTC;
@@ -474,6 +483,11 @@ public:
 
     // Sailboat sim only
     AP_Int8 sail_type;
+
+private:
+
+    bool storage_posix_enabled;
+    bool storage_flash_enabled;
 
 };
 

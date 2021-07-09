@@ -333,6 +333,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
+    GOBJECT(sitl, "SIM_", SITL::SITL),
+#endif
     AP_VAREND
 };
 
