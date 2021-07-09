@@ -677,6 +677,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--defaults", path])
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
+    elif opts.udp:
+        cmd.extend(["--uartA udpclient:127.0.0.1:" + str(5760+cmd_opts.instance*10)])
 
     if cmd_opts.start_time is not None:
         # Parse start_time into a double precision number specifying seconds since 1900.
@@ -809,6 +811,8 @@ def start_mavproxy(opts, stuff):
         if True:
             if opts.mcast:
                 c.extend(["--master", "mcast:"])
+            elif opts.udp:
+                c.extend(["--master", ":" + str(5760 + 10 * i)])
             else:
                 c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
             if stuff["sitl-port"] and not opts.no_rcin:
@@ -1040,6 +1044,10 @@ group_sim.add_option("", "--mcast",
                      action="store_true",
                      default=False,
                      help="Use multicasting at default 239.255.145.50:14550")
+group_sim.add_option("", "--udp",
+                     action="store_true",
+                     default=False,
+                     help="Use UDP on 127.0.0.1:5760")
 group_sim.add_option("", "--osd",
                      action='store_true',
                      dest='OSD',
