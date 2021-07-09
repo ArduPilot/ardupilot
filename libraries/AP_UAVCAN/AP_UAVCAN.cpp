@@ -183,7 +183,7 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wframe-larger-than=1400"
+#pragma GCC diagnostic error "-Wframe-larger-than=1700"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
