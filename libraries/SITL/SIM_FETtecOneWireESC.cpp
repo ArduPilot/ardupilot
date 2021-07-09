@@ -23,7 +23,10 @@
  - tidy break vs return oin AP_FETtec::handle_message
  - determine if we should have a "REQ_OK" as well as an "OK"
  - should rename simulated ESC "pwm" field to "value" or "fettec_value" or something
- - make sure it always works, even with FAST_LOOP rate = 8KHz
+ - periodically log _unknown_esc_message, _message_invalid_in_state_count, _period_too_short, _receive_buf_used to dataflash using a low prio thread.
+ - log type, version, subversion and sn to dataflash once.
+
+
 
 Protocol:
  - SET_FAST_COM_LENGTH could set a 32-bit bitmask that will be present rather than requring consecutive motors
