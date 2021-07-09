@@ -704,11 +704,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_fixed_yaw(
+            copter.flightmode->auto_yaw.set_yaw_angle_rate(
                 (float)packet.param3 * 0.01f,
-                0.0f,
-                0,
-                false);
+                0.0f);
         }
         break;
 #endif
@@ -974,11 +972,9 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_fixed_yaw(
+            copter.flightmode->auto_yaw.set_yaw_angle_rate(
                 mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
-                0.0f,
-                0,
-                false);
+                0.0f);
 
             break;
         }
