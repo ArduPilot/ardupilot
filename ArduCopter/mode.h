@@ -890,6 +890,9 @@ public:
     void angle_control_start();
     void angle_control_run();
 
+    // return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+    uint32_t get_timeout_ms() const;
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
