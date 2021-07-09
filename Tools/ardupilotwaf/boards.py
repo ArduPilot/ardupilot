@@ -463,6 +463,9 @@ class sitl(Board):
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
 
+        cfg.define('HAL_WITH_SPI', 1)
+        cfg.define('HAL_WITH_RAMTRON', 1)
+
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)

@@ -14,6 +14,7 @@
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_I2C.h"
+#include "SIM_SPI.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 #include "SIM_Sprayer.h"
@@ -374,6 +375,14 @@ public:
 
     AP_Int8 _safety_switch_state;
 
+    /*
+      instructs the simulation to wipe any storage as it opens it:
+     */
+    void set_wipe_storage(bool _wipe_storage) {
+        wipe_storage = _wipe_storage;
+    }
+    bool get_wipe_storage() const { return wipe_storage; }
+
     AP_HAL::Util::safety_state safety_switch_state() const {
         return (AP_HAL::Util::safety_state)_safety_switch_state.get();
     }
@@ -406,6 +415,10 @@ public:
         return i2c_sim.ioctl(i2c_operation, data);
     }
 
+    int spi_ioctl(uint8_t bus, uint8_t cs_pin, uint8_t spi_operation, void *data) {
+        return spi_sim.ioctl(bus, cs_pin, spi_operation, data);
+    }
+
     Sprayer sprayer_sim;
 
     // simulated ship takeoffs
@@ -417,6 +430,7 @@ public:
     Parachute parachute_sim;
     Buzzer buzzer_sim;
     I2C i2c_sim;
+    SPI spi_sim;
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
@@ -475,6 +489,8 @@ public:
     // Sailboat sim only
     AP_Int8 sail_type;
 
+    // set to true if simulation is to wipe storage as it is opened:
+    bool wipe_storage;
 };
 
 } // namespace SITL

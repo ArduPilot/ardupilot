@@ -323,6 +323,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
+    bool wiping_storage = false;
+
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
     while (!is_replay && (opt = gopt.getoption()) != -1) {
@@ -334,6 +336,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if HAL_LOGGING_SITL_ENABLED
             unlink(AP_Logger_SITL::filename);
 #endif
+            wiping_storage = true;
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);
@@ -514,6 +517,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     if (AP::sitl()) {
         // Set SITL start time.
         AP::sitl()->start_time_UTC = start_time_UTC;
+        AP::sitl()->set_wipe_storage(wiping_storage);
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);

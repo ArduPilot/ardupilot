@@ -60,7 +60,22 @@ void Storage::_storage_open(void)
         
     _dirty_mask.clearall();
 
-#if STORAGE_USE_FLASH
+#define HAL_RAMTRON_ALLOW_FALLBACK 0
+
+#if HAL_WITH_RAMTRON
+    if (fram.init() && fram.read(0, _buffer, HAL_STORAGE_SIZE)) {
+//        _save_backup();  // FIXME
+        // _initialisedType = StorageBackend::FRAM;
+        // ::printf("Initialised Storage type=%d\n", _initialisedType);
+        _initialised = true;
+        return;
+    }
+
+#if !HAL_RAMTRON_ALLOW_FALLBACK
+    AP_HAL::panic("Unable to init RAMTRON storage");
+#endif
+
+#elif STORAGE_USE_FLASH
     // load from storage backend
     _flash_load();
 #elif STORAGE_USE_POSIX
@@ -158,6 +173,13 @@ void Storage::_timer_tick(void)
         // this shouldn't be possible
         return;
     }
+
+#if HAL_WITH_RAMTRON
+        if (fram.write(STORAGE_LINE_SIZE*i, &_buffer[STORAGE_LINE_SIZE*i], STORAGE_LINE_SIZE)) {
+            _dirty_mask.clear(i);
+            return;
+        }
+#endif
 
 #if STORAGE_USE_POSIX
     if (using_filesystem && log_fd != -1) {

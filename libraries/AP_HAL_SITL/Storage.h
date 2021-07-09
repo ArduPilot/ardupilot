@@ -4,6 +4,7 @@
 #include <AP_Common/Bitmask.h>
 #include "AP_HAL_SITL_Namespace.h"
 #include <AP_FlashStorage/AP_FlashStorage.h>
+#include <AP_RAMTRON/AP_RAMTRON.h>
 
 // define which storage system to use. This allows us to test flash storage with --sitl-flash-storage
 // configure option
@@ -47,6 +48,9 @@ private:
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
 
+#if HAL_WITH_RAMTRON
+    AP_RAMTRON fram;
+#endif
 #if STORAGE_USE_FLASH
     AP_FlashStorage _flash{_buffer,
             HAL_FLASH_SECTOR_SIZE,
