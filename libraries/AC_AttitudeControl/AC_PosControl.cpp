@@ -805,6 +805,28 @@ void AC_PosControl::init_z()
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The function alters the vel to be the kinematic path based on accel
+void AC_PosControl::input_accel_z(const float accel)
+{
+    // calculated increased maximum acceleration if over speed
+    float accel_z_cmss = _accel_max_z_cmss;
+    if (_vel_desired.z < _vel_max_down_cms && !is_zero(_vel_max_down_cms)) {
+        accel_z_cmss *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _vel_max_down_cms;
+    }
+    if (_vel_desired.z > _vel_max_up_cms && !is_zero(_vel_max_up_cms)) {
+        accel_z_cmss *= POSCONTROL_OVERSPEED_GAIN_Z * _vel_desired.z / _vel_max_up_cms;
+    }
+
+    // adjust desired alt if motors have not hit their limits
+    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z);
+
+    shape_accel(accel, _accel_desired.z,
+                    -constrain_float(accel_z_cmss, 0.0f, 750.0f), accel_z_cmss,
+                    _tc_z_s, _dt);
+}
+
+/// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
+///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
+///     The kinematic path is constrained by the maximum acceleration and time constant set using the function set_max_speed_accel_z and time constant.
 void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit)
 {
     if (ignore_descent_limit) {
