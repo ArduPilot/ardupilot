@@ -552,8 +552,8 @@ void ModeGuided::pos_control_run()
     // calculate terrain adjustments
     float terr_offset = 0.0f;
     if (guided_pos_terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
-        // if we don't have terrain altitude then stop
-        init(true);
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
         return;
     }
 
