@@ -201,8 +201,6 @@ public:
 
     // get target yaw in centi-degrees
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
-    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
-
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
