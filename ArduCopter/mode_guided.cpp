@@ -551,11 +551,9 @@ void ModeGuided::pos_control_run()
     guided_accel_target_cmss.zero();
     guided_vel_target_cms.zero();
 
-    // todo: Randy to convert to parameter TERRAIN_MARGIN (in m)
-    float TERRAIN_MARGIN = 10;
     float pos_offset_z_buffer = 0.0; // Vertical buffer size in m
     if (guided_pos_terrain_alt) {
-        pos_offset_z_buffer = MIN(TERRAIN_MARGIN * 100.0, 0.5 * fabsf(guided_pos_target_cm.z));
+        pos_offset_z_buffer = MIN(copter.get_terrain_margin() * 100.0, 0.5 * fabsf(guided_pos_target_cm.z));
     }
     pos_control->input_pos_xyz(guided_pos_target_cm, terr_offset, pos_offset_z_buffer);
 
