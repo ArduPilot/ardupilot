@@ -412,7 +412,7 @@ void fill_nanf(float *f, uint16_t count)
 void fill_nanf(double *f, uint16_t count)
 {
     while (count--) {
-        *f++ = 0;
+        *f++ = std::numeric_limits<double>::signaling_NaN();
     }
 }
 #endif
