@@ -108,8 +108,7 @@ const AP_Param::GroupInfo AC_AutoTune::var_info[] = {
 
     // @Param: SEQ
     // @DisplayName: AutoTune Sequence Bitmask
-    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected.
-    // @Values: 7:All,1:VFF Only,2:Rate D Only,4:Angle P Only,8:Max Gain Only,3:VFF and Rate D (incl max gain),5:VFF and Angle P,13:VFF max gain and angle P
+    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D Only,4:Angle P Only,8:Max Gain Only,3:VFF and Rate D (incl max gain),5:VFF and Angle P,13:VFF max gain and angle P
     // @Bitmask: 0:VFF,1:Rate D,2:Angle P,3:Max Gain Only
     // @User: Standard
     AP_GROUPINFO("SEQ", 4, AC_AutoTune, seq_bitmask,  5),
