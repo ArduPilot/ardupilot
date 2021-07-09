@@ -207,6 +207,8 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
+        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+
     private:
 
         float look_ahead_yaw();
@@ -219,16 +221,19 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
+        float _fixed_yaw_offset_cd;
 
         // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
+        float _fixed_yaw_slewrate_cds;
+
+        uint32_t fixed_last_update;
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _rate_cds;
+        float _yaw_angle_cd;
+        float _yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
 
