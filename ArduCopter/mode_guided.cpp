@@ -615,22 +615,25 @@ void ModeGuided::accel_control_run()
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+        guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
         if (auto_yaw.mode() == AUTO_YAW_RATE) {
             auto_yaw.set_rate(0.0f);
         }
+        pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy());
+        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    } else {
+        // update position controller with new target
+        pos_control->input_accel_xy(guided_accel_target_cmss);
+        if (!stabilizing_vel_xy()) {
+            // set position and velocity errors to zero
+            pos_control->stop_vel_xy_stabilisation();
+        } else if (!stabilizing_pos_xy()) {
+            // set position errors to zero
+            pos_control->stop_pos_xy_stabilisation();
+        }
+        pos_control->input_accel_z(guided_accel_target_cmss.z);
     }
-
-    // update position controller with new target
-    pos_control->input_accel_xy(guided_accel_target_cmss);
-    if (!stabilizing_vel_xy()) {
-        // set position and velocity errors to zero
-        pos_control->stop_vel_xy_stabilisation();
-    } else if (!stabilizing_pos_xy()) {
-        // set position errors to zero
-        pos_control->stop_pos_xy_stabilisation();
-    }
-    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_xy_controller();
