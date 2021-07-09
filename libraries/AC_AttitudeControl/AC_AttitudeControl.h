@@ -133,10 +133,12 @@ public:
     void reset_rate_controller_I_terms_smoothly();
 
     // Sets attitude target to vehicle attitude and sets all rates to zero
-    void reset_target_and_rate();
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_target_and_rate(bool reset_rate = true);
 
     // Sets yaw target to vehicle heading and sets yaw rate to zero
-    void reset_yaw_target_and_rate();
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_yaw_target_and_rate(bool reset_rate = true);
 
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();
