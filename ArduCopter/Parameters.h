@@ -649,6 +649,10 @@ public:
     AP_Float rangefinder_filt;
 #endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
+    AP_Float guided_timeout;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
