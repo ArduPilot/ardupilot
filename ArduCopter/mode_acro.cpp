@@ -27,7 +27,7 @@ void ModeAcro::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->reset_target_and_rate();
+        attitude_control->reset_target_and_rate(true);
         attitude_control->reset_rate_controller_I_terms();
         break;
 
