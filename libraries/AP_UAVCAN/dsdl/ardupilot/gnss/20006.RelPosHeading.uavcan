@@ -1,0 +1,8 @@
+# timestamp on the gps message
+uavcan.Timestamp timestamp
+
+bool    reported_heading_acc_available
+float32 reported_heading_deg
+float32 reported_heading_acc_deg
+float16 relative_distance_m
+float16 relative_down_pos_m
