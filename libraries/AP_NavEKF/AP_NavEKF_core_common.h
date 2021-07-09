@@ -50,7 +50,7 @@ protected:
     // fill all the common scratch variables with NaN on SITL
     void fill_scratch_variables(void);
 
-    // zero part of an array
+    // zero part of an array for index range [n1,n2]
     static void zero_range(ftype *v, uint8_t n1, uint8_t n2) {
         memset(&v[n1], 0, sizeof(ftype)*(1+(n2-n1)));
     }
