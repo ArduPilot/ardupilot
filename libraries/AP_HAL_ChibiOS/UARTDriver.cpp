@@ -728,32 +728,7 @@ int16_t UARTDriver::read_locked(uint32_t key)
 /* write one byte to the port */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (lock_write_key != 0) {
-        return 0;
-    }
-    _write_mutex.take_blocking();
-
-    if (!_tx_initialised) {
-        _write_mutex.give();
-        return 0;
-    }
-
-    while (_writebuf.space() == 0) {
-        if (!_blocking_writes || unbuffered_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        // release the semaphore while sleeping
-        _write_mutex.give();
-        hal.scheduler->delay(1);
-        _write_mutex.take_blocking();
-    }
-    size_t ret = _writebuf.write(&c, 1);
-    if (unbuffered_writes) {
-        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
-    }
-    _write_mutex.give();
-    return ret;
+    return write(&c, 1);
 }
 
 /* write a block of bytes to the port */
@@ -763,23 +738,40 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (_blocking_writes && !unbuffered_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
+    bool should_block = _blocking_writes;
+    if (unbuffered_writes) {
+        // unbuffered infers if we don't have space we don't wait
+        should_block = false;
     }
 
-    WITH_SEMAPHORE(_write_mutex);
+    size_t remaining = size;
+    size_t ret = 0;
+    while (remaining > 0) {
+        size_t bytes_written;
+        {
+            WITH_SEMAPHORE(_write_mutex);
+            bytes_written = _writebuf.write(&buffer[ret], remaining);
+        }
+        ret += bytes_written;
+        remaining -= bytes_written;
 
-    size_t ret = _writebuf.write(buffer, size);
-    if (unbuffered_writes) {
-        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+        if (bytes_written != 0) {
+            // bytes written to ringbuffer; let thread know it has
+            // work to do:
+            if (unbuffered_writes) {
+                chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+            }
+        }
+        if (remaining == 0) {
+            // no more work to do
+            break;
+        }
+        if(!should_block) {
+            // we haven't written everything, but we can't wait for space
+            break;
+        }
+        // give time for thread to clear space for us:
+        hal.scheduler->delay(1);
     }
     return ret;
 }
