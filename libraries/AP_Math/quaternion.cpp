@@ -21,6 +21,11 @@
 #include "AP_Math.h"
 #include <AP_InternalError/AP_InternalError.h>
 
+// This constant is defined to determine when it is appropriate to not evaluate trig functions but use series
+// approximations of said trig functions. When some angle theta < APPROXIMATION_TOL, then the series expansions of sine
+// and cosine evaluated at theta approximate the true trig functions to an absolute error less than FLT_EPSILON
+#define APPROXIMATION_TOL radians(4.0f)
+
 // return the rotation matrix equivalent for this quaternion
 void Quaternion::rotation_matrix(Matrix3f &m) const
 {
@@ -424,16 +429,25 @@ void Quaternion::from_vector312(float roll, float pitch, float yaw)
 }
 
 // create a quaternion from its axis-angle representation
-void Quaternion::from_axis_angle(Vector3f v)
+void Quaternion::from_axis_angle(const Vector3f &v)
 {
-    const float theta = v.length();
-    if (is_zero(theta)) {
-        q1 = 1.0f;
-        q2=q3=q4=0.0f;
-        return;
+    const float theta_sq = v.length_squared();
+    float re_coeff, im_coeff;
+    if (theta_sq < APPROXIMATION_TOL * APPROXIMATION_TOL) {
+        // When theta is close to 0, cannot divide v by theta to get the rotation axis
+        // Use Taylor series approximation of `sin(theta/2)/theta` and cos(theta/2) with second-order expansion
+        re_coeff = 1.0f - 0.125f * theta_sq;
+        im_coeff = 0.5f - 1.0f / 48.0f * theta_sq;
+    } else {
+        const float theta = sqrtf(theta_sq);
+        const float half_theta = 0.5f * theta;
+        re_coeff = cosf(half_theta);
+        im_coeff = sinf(half_theta) / theta;
     }
-    v /= theta;
-    from_axis_angle(v,theta);
+    q1 = re_coeff;
+    q2 = im_coeff * v.x;
+    q3 = im_coeff * v.y;
+    q4 = im_coeff * v.z;
 }
 
 // create a quaternion from its axis-angle representation
@@ -441,17 +455,21 @@ void Quaternion::from_axis_angle(Vector3f v)
 void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
 {
     // axis must be a unit vector as there is no check for length
-    if (is_zero(theta)) {
-        q1 = 1.0f;
-        q2=q3=q4=0.0f;
-        return;
+    float re_coeff, im_coeff;
+    if (theta < APPROXIMATION_TOL) {
+        const float theta_sq = sq(theta);
+        // Use Taylor series approximation of `sin(theta/2)` and cos(theta/2) with second-order expansion
+        re_coeff = 1.0f - 0.125f * theta_sq;
+        im_coeff = theta * (0.5f - 1.0f / 48.0f * theta_sq);
+    } else {
+        const float half_theta = 0.5f * theta;
+        re_coeff = cosf(half_theta);
+        im_coeff = sinf(half_theta);
     }
-    const float st2 = sinf(theta/2.0f);
-
-    q1 = cosf(theta/2.0f);
-    q2 = axis.x * st2;
-    q3 = axis.y * st2;
-    q4 = axis.z * st2;
+    q1 = re_coeff;
+    q2 = im_coeff * axis.x;
+    q3 = im_coeff * axis.y;
+    q4 = im_coeff * axis.z;
 }
 
 // rotate by the provided axis angle
@@ -464,74 +482,39 @@ void Quaternion::rotate(const Vector3f &v)
 
 // convert this quaternion to a rotation vector where the direction of the vector represents
 // the axis of rotation and the length of the vector represents the angle of rotation
+// Algorithm source:
+// Christoph Hertzberg, Rene Wagner, Udo Frese, et al. Integrating Generic Sensor Fusion Algorithms with Sound State
+// Representations through Encapsulation of Manifolds. 2011. arXiv:1107.1119 [cs.RO].1
 void Quaternion::to_axis_angle(Vector3f &v) const
 {
-    const float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
-    v = Vector3f(q2,q3,q4);
-    if (!is_zero(l)) {
-        v /= l;
-        v *= wrap_PI(2.0f * atan2f(l,q1));
+    const float sin_half_theta_sq = sq(q2, q3, q4);
+    const float &cos_half_theta = q1;
+
+    float vec_coeff = 0.0f;
+    // Each use of APPROXIMATION_TOL is multiplied by 0.5 since trig values are being compared
+    // and sin(x/2) ~= x/2 and cos((pi - x)/2) ~= x/2 for small x
+    if (sin_half_theta_sq < 0.25f * APPROXIMATION_TOL * APPROXIMATION_TOL) {
+        if (is_zero(cos_half_theta)) {
+            // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        } else {
+            const float cos_half_theta_sq = sq(cos_half_theta);
+            vec_coeff = (2.0f - 2.0f / 3.0f * sin_half_theta_sq / cos_half_theta_sq) / cos_half_theta;
+        }
+    } else {
+        float sin_half_theta = sqrtf(sin_half_theta_sq);
+
+        // Check the sign of cos(theta/2) and flip signs of the operands to atan2 as appropriate
+        // This folds wrap_PI() inside evaluation of atan2()
+        // atan2() also elegantly handles the case of cos_half_theta ~= 0
+        const float half_theta = is_negative(cos_half_theta) ? atan2f(-sin_half_theta, -cos_half_theta)
+                                                                : atan2f(sin_half_theta, cos_half_theta);
+        vec_coeff = 2.0f * half_theta / sin_half_theta;
+        
     }
-}
-
-// create a quaternion from its axis-angle representation
-// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-void Quaternion::from_axis_angle_fast(Vector3f v)
-{
-    const float theta = v.length();
-    if (is_zero(theta)) {
-        q1 = 1.0f;
-        q2=q3=q4=0.0f;
-        return;
-    }
-    v /= theta;
-    from_axis_angle_fast(v,theta);
-}
-
-// create a quaternion from its axis-angle representation
-// theta should less than 0.17 radians (i.e. 10 degrees)
-void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
-{
-    const float t2 = theta/2.0f;
-    const float sqt2 = sq(t2);
-    const float st2 = t2-sqt2*t2/6.0f;
-
-    q1 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
-    q2 = axis.x * st2;
-    q3 = axis.y * st2;
-    q4 = axis.z * st2;
-}
-
-// rotate by the provided axis angle
-// only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-void Quaternion::rotate_fast(const Vector3f &v)
-{
-    const float theta = v.length();
-    if (is_zero(theta)) {
-        return;
-    }
-    const float t2 = theta/2.0f;
-    const float sqt2 = sq(t2);
-    float st2 = t2-sqt2*t2/6.0f;
-    st2 /= theta;
-
-    //"rotation quaternion"
-    const float w2 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
-    const float x2 = v.x * st2;
-    const float y2 = v.y * st2;
-    const float z2 = v.z * st2;
-
-    //copy our quaternion
-    const float w1 = q1;
-    const float x1 = q2;
-    const float y1 = q3;
-    const float z1 = q4;
-
-    //do the multiply into our quaternion
-    q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
-    q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
-    q3 = w1*y2 - x1*z2 + y1*w2 + z1*x2;
-    q4 = w1*z2 + x1*y2 - y1*x2 + z1*w2;
+    v.x = vec_coeff * q2;
+    v.y = vec_coeff * q3;
+    v.z = vec_coeff * q4;
 }
 
 // get euler roll angle
