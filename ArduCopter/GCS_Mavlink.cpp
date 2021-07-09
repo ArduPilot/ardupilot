@@ -1109,6 +1109,8 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
             packet.coordinate_frame != MAV_FRAME_BODY_NED &&
             packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+            // input is not valid so stop
+            copter.mode_guided.init(true);
             break;
         }
 
@@ -1211,11 +1213,15 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         if (!pos_ignore) {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
+                // input is not valid so stop
+                copter.mode_guided.init(true);
                 break;
             }
             Location::AltFrame frame;
             if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
+                // input is not valid so stop
+                copter.mode_guided.init(true);
                 break;
             }
             loc = {packet.lat_int, packet.lon_int, int32_t(packet.alt*100), frame};
@@ -1252,10 +1258,14 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             // convert Location to vector from ekf origin for posvel controller
             if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
                 // posvel controller does not support alt-above-terrain
+                // input is not valid so stop
+                copter.mode_guided.init(true);
                 break;
             }
             Vector3f pos_neu_cm;
             if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+                // input is not valid so stop
+                copter.mode_guided.init(true);
                 break;
             }
             copter.mode_guided.set_destination_posvel(pos_neu_cm, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
