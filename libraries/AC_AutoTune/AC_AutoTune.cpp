@@ -2033,8 +2033,10 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         uint8_t cnt = 0;
         uint8_t gcnt = 0;
         uint16_t meas_cnt, tgt_cnt;
-        float meas_ampl, tgt_ampl;
-        uint32_t meas_time, tgt_time;
+        float meas_ampl = 0.0f;
+        float tgt_ampl = 0.0f;
+        uint32_t meas_time = 0;
+        uint32_t tgt_time = 0;
         for (int i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
             meas_cnt=0;
             tgt_cnt=0;
@@ -2233,8 +2235,10 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
         uint8_t cnt = 0;
         uint8_t gcnt = 0;
         uint16_t meas_cnt, tgt_cnt;
-        float meas_ampl, tgt_ampl;
-        uint32_t meas_time, tgt_time;
+        float meas_ampl = 0.0f;
+        float tgt_ampl = 0.0f;
+        uint32_t meas_time = 0;
+        uint32_t tgt_time = 0;
         for (int i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
             meas_cnt=0;
             tgt_cnt=0;
