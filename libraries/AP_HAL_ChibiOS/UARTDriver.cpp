@@ -1231,9 +1231,10 @@ void UARTDriver::read_bytes_NODMA()
 }
 
 /*
-  push any pending bytes to/from the serial port. This is called at
-  1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously.
+  push any pending bytes to/from the serial port. This is called on
+  the uart thread at 1kHz or whenever a data-should-be-transmitted
+  event is raised. Doing it this way reduces the system call overhead
+  in the main task enormously.
  */
 void UARTDriver::_tx_timer_tick(void)
 {
