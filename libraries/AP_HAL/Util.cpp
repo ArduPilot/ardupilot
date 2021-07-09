@@ -36,7 +36,7 @@ public:
     const size_t _size;
 
     uint32_t available() override { return 0; }
-    int16_t read() override { return -1; }
+    ssize_t read(uint8_t *buffer, uint16_t count) override { return -1; }
     uint32_t txspace() override { return 0; }
     bool discard_input() override { return false; }
 };

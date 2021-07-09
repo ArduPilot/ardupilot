@@ -42,7 +42,13 @@ public:
 
     /* return value for read():
      * -1 if nothing available, uint8_t value otherwise. */
-    virtual int16_t read() = 0;
+    int16_t read() {
+        uint8_t c;
+        if (read(&c, 1) <= 0) {
+            return -1;
+        }
+        return c;
+    }
 
     // no base-class implementation to force descendants to
     // do things efficiently.  Looping over 2^32-1 bytes would be bad.
@@ -51,7 +57,7 @@ public:
 
     // returns -1 on error (e.g. port locked), number of bytes read
     // otherwise
-    virtual ssize_t read(uint8_t *buffer, uint16_t count);
+    virtual ssize_t read(uint8_t *buffer, uint16_t count) = 0;
 
     /* NB txspace was traditionally a member of BetterStream in the
      * FastSerial library. As far as concerns go, it belongs with available() */
