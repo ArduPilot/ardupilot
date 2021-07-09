@@ -465,6 +465,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     magYawResetRequest = false;
     posDownAtLastMagReset = stateStruct.position.z;
     yawInnovAtLastMagReset = 0.0f;
+    stateStruct.quat.initialise();
     quatAtLastMagReset = stateStruct.quat;
     magFieldLearned = false;
     storedMag.reset();
