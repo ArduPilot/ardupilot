@@ -61,6 +61,7 @@
 #include "Fins.h"
 
 #include "RC_Channel.h"         // RC Channel Library
+#include "AP_AuxFunc.h"         // RC Channel Library
 
 #include "GCS_Mavlink.h"
 #include "GCS_Blimp.h"
@@ -88,6 +89,7 @@ public:
     friend class ParametersG2;
 
     friend class AP_Arming_Blimp;
+    friend class AP_AuxFunc_Blimp;
     friend class RC_Channel_Blimp;
     friend class RC_Channels_Blimp;
 
@@ -115,6 +117,8 @@ private:
     RC_Channel *channel_front;
     RC_Channel *channel_down;
     RC_Channel *channel_yaw;
+
+    AP_AuxFunc_Blimp auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 

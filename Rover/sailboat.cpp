@@ -156,7 +156,7 @@ void Sailboat::init()
 void Sailboat::init_rc_in()
 {
     // get auxiliary throttle value
-    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MAINSAIL);
+    RC_Channel *rc_ptr = rc().find_channel_for_option(AP_AuxFunc::Function::MAINSAIL);
     if (rc_ptr != nullptr) {
         // use aux as sail input if defined
         channel_mainsail = rc_ptr;

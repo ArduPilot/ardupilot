@@ -111,6 +111,7 @@
 #endif
 
 #include "RC_Channel.h"     // RC Channel Library
+#include "AP_AuxFunc.h"
 #include "Parameters.h"
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
@@ -136,7 +137,7 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
     friend class GCS_Plane;
-    friend class RC_Channel_Plane;
+    friend class AP_AuxFunc_Plane;
     friend class RC_Channels_Plane;
 
     friend class Mode;
@@ -186,6 +187,8 @@ private:
     RC_Channel *channel_rudder;
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
+
+    AP_AuxFunc_Plane auxfunc;  // always accessed by AP::auxfunc()
 
     AP_Logger logger;
 

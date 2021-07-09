@@ -391,51 +391,51 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
 // return radio values as LOW, MIDDLE, HIGH
 // this function uses different threshold values to RC_Chanel::get_channel_pos()
 // to avoid glitching on the stick travel
-RC_Channel::AuxSwitchPos AP_OSD_ParamScreen::get_channel_pos(uint8_t rcmapchan) const
+AP_AuxFunc::SwitchPos AP_OSD_ParamScreen::get_channel_pos(uint8_t rcmapchan) const
 {
     const RC_Channel* chan = rc().channel(rcmapchan-1);
     if (chan == nullptr) {
-        return RC_Channel::AuxSwitchPos::LOW;
+        return AP_AuxFunc::SwitchPos::LOW;
     }
 
     const uint16_t in = chan->get_radio_in();
     if (in <= 900 || in >= 2200) {
-        return RC_Channel::AuxSwitchPos::LOW;
+        return AP_AuxFunc::SwitchPos::LOW;
     }
 
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
     bool switch_reversed = chan->get_reverse() && rc().switch_reverse_allowed();
 
     if (in < RC_Channel::AUX_PWM_TRIGGER_LOW) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
+        return switch_reversed ? AP_AuxFunc::SwitchPos::HIGH : AP_AuxFunc::SwitchPos::LOW;
     } else if (in > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-        return switch_reversed ? RC_Channel::AuxSwitchPos::LOW : RC_Channel::AuxSwitchPos::HIGH;
+        return switch_reversed ? AP_AuxFunc::SwitchPos::LOW : AP_AuxFunc::SwitchPos::HIGH;
     } else {
-        return RC_Channel::AuxSwitchPos::MIDDLE;
+        return AP_AuxFunc::SwitchPos::MIDDLE;
     }
 }
 
 // map rc input to an event
 AP_OSD_ParamScreen::Event AP_OSD_ParamScreen::map_rc_input_to_event() const
 {
-    const RC_Channel::AuxSwitchPos throttle = get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::AuxSwitchPos yaw = get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::AuxSwitchPos roll = get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::AuxSwitchPos pitch = get_channel_pos(AP::rcmap()->pitch());
+    const AP_AuxFunc::SwitchPos throttle = get_channel_pos(AP::rcmap()->throttle());
+    const AP_AuxFunc::SwitchPos yaw = get_channel_pos(AP::rcmap()->yaw());
+    const AP_AuxFunc::SwitchPos roll = get_channel_pos(AP::rcmap()->roll());
+    const AP_AuxFunc::SwitchPos pitch = get_channel_pos(AP::rcmap()->pitch());
 
     Event result = Event::NONE;
 
-    if (yaw != RC_Channel::AuxSwitchPos::MIDDLE || throttle != RC_Channel::AuxSwitchPos::LOW) {
+    if (yaw != AP_AuxFunc::SwitchPos::MIDDLE || throttle != AP_AuxFunc::SwitchPos::LOW) {
         return result;
     }
 
-    if (pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::LOW) {
+    if (pitch == AP_AuxFunc::SwitchPos::MIDDLE && roll == AP_AuxFunc::SwitchPos::LOW) {
         result = Event::MENU_EXIT;
-    } else if (pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::HIGH) {
+    } else if (pitch == AP_AuxFunc::SwitchPos::MIDDLE && roll == AP_AuxFunc::SwitchPos::HIGH) {
         result = Event::MENU_ENTER;
-    } else if (pitch == RC_Channel::AuxSwitchPos::LOW && roll == RC_Channel::AuxSwitchPos::MIDDLE) {
+    } else if (pitch == AP_AuxFunc::SwitchPos::LOW && roll == AP_AuxFunc::SwitchPos::MIDDLE) {
         result = Event::MENU_UP;
-    } else if (pitch == RC_Channel::AuxSwitchPos::HIGH && roll == RC_Channel::AuxSwitchPos::MIDDLE) {
+    } else if (pitch == AP_AuxFunc::SwitchPos::HIGH && roll == AP_AuxFunc::SwitchPos::MIDDLE) {
         result = Event::MENU_DOWN;
     } else {
         // OSD option has not changed so assume stick re-centering

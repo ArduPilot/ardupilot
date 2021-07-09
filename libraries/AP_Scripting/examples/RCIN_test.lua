@@ -28,9 +28,9 @@ function update()
     end
   end
 
-  -- we can also call functions that are available to RC switches
+  -- we can also call auxillary functions
   -- 28 is Relay one
-  rc:run_aux_function(28, flip_flop)
+  auxfunc:run_function(28, flip_flop)
 
   if (flip_flop == 0) then
     flip_flop = 2 -- switch high

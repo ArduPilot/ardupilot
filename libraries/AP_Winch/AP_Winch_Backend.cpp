@@ -7,7 +7,7 @@ void AP_Winch_Backend::init()
     // set servo output range
     SRV_Channels::set_angle(SRV_Channel::k_winch,  1000);
 
-    RC_Channel *rc_input = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WINCH_CONTROL);
+    RC_Channel *rc_input = rc().find_channel_for_option(AP_AuxFunc::Function::WINCH_CONTROL);
     if (rc_input != nullptr) {
         // rc input deadzone is required or pilot input will always override autonomous control of winch
         rc_input->set_default_dead_zone(30);
@@ -19,7 +19,7 @@ void AP_Winch_Backend::init()
 void AP_Winch_Backend::read_pilot_desired_rate()
 {
     // fail if no input channel defined
-    const RC_Channel *rc_input = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WINCH_CONTROL);
+    const RC_Channel *rc_input = rc().find_channel_for_option(AP_AuxFunc::Function::WINCH_CONTROL);
     if (rc_input == nullptr) {
         return;
     }
