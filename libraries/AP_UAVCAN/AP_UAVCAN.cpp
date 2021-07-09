@@ -797,9 +797,12 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
     }
 
     TelemetryData t {
-        .temperature_cdeg = int16_t((cb.msg->temperature - C_TO_KELVIN) * 100),
         .voltage = cb.msg->voltage,
         .current = cb.msg->current,
+        .consumption_mah = 0,
+        .usage_s = 0,
+        .last_update_ms = 0,
+        .temperature_cdeg = int16_t((cb.msg->temperature - C_TO_KELVIN) * 100),
     };
 
     ap_uavcan->update_rpm(esc_index, cb.msg->rpm);

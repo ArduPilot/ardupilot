@@ -348,77 +348,6 @@ void AP_PiccoloCAN::update()
     }
 }
 
-// send ESC telemetry messages over MAVLink
-void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-    // Arrays to store ESC telemetry data
-    uint8_t temperature[4] {};
-    uint16_t voltage[4] {};
-    uint16_t rpm[4] {};
-    uint16_t count[4] {};
-    uint16_t current[4] {};
-    uint16_t totalcurrent[4] {};
-
-    bool dataAvailable = false;
-
-    uint8_t idx = 0;
-
-    WITH_SEMAPHORE(_telem_sem);
-
-    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
-
-        // Calculate index within storage array
-        idx = (ii % 4);
-
-        VelocityESC_Info_t &esc = _esc_info[idx];
-
-        // Has the ESC been heard from recently?
-        if (is_esc_present(ii)) {
-            dataAvailable = true;
-
-            temperature[idx] = esc.fetTemperature;
-            voltage[idx] = esc.voltage;
-            current[idx] = esc.current;
-            totalcurrent[idx] = 0;
-            rpm[idx] = esc.rpm;
-            count[idx] = 0;
-        } else {
-            temperature[idx] = 0;
-            voltage[idx] = 0;
-            current[idx] = 0;
-            totalcurrent[idx] = 0;
-            rpm[idx] = 0;
-            count[idx] = 0;
-        }
-
-        // Send ESC telemetry in groups of 4
-        if ((ii % 4) == 3) {
-
-            if (dataAvailable) {
-                if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                    continue;
-                }
-
-                switch (ii) {
-                case 3:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 7:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 11:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            dataAvailable = false;
-        }
-    }
-}
-
 
 // send servo messages over CAN
 void AP_PiccoloCAN::send_servo_messages(void)
@@ -603,6 +532,19 @@ bool AP_PiccoloCAN::handle_servo_message(AP_HAL::CANFrame &frame)
     if (decodeServo_StatusAPacketStructure(&frame, &servo.statusA)) {
         servo.newTelemetry = true;
     } else if (decodeServo_StatusBPacketStructure(&frame, &servo.statusB)) {
+        AP_ESC_Telem_Backend::TelemetryData t {
+            .voltage = float(servo.statusB.voltage) * 0.01f,
+            .current = float(servo.statusB.current) * 0.01f,
+            .consumption_mah = 0.0f,
+            .usage_s = 0,
+            .last_update_ms = 0,
+            .temperature_cdeg = int16_t(servo.statusB.temperature * 100),
+        };
+
+        update_telem_data(addr, t,
+            AP_ESC_Telem_Backend::TelemetryType::CURRENT
+                | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
         servo.newTelemetry = true;
     } else if (decodeServo_FirmwarePacketStructure(&frame, &servo.firmware)) {
         // TODO
@@ -691,9 +633,12 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
         
         AP_ESC_Telem_Backend::TelemetryData t {
-            .temperature_cdeg = int16_t(esc.escTemperature * 100),
             .voltage = float(esc.voltage) * 0.01f,
             .current = float(esc.current) * 0.01f,
+            .consumption_mah = 0.0f,
+            .usage_s = 0,
+            .last_update_ms = 0,
+            .temperature_cdeg = int16_t(esc.escTemperature * 100),
         };
 
         update_telem_data(addr, t,
