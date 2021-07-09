@@ -241,15 +241,6 @@ bool UARTDriver::is_initialized()
 
 
 /*
-  enable or disable blocking writes
- */
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _nonblocking_writes = !blocking;
-}
-
-
-/*
   do we have any bytes pending transmission?
  */
 bool UARTDriver::tx_pending()
@@ -313,7 +304,7 @@ size_t UARTDriver::write(uint8_t c)
     }
 
     while (_writebuf.space() == 0) {
-        if (_nonblocking_writes) {
+        if (!_blocking_writes) {
             _write_mutex.give();
             return 0;
         }
@@ -335,7 +326,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_write_mutex.take_nonblocking()) {
         return 0;
     }
-    if (!_nonblocking_writes) {
+    if (_blocking_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */

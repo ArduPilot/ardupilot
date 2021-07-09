@@ -23,7 +23,6 @@ public:
     void end() override;
     void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
     /* Linux implementations of Stream virtual methods */
@@ -71,7 +70,6 @@ public:
 
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
-    bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
     uint16_t _base_port;
