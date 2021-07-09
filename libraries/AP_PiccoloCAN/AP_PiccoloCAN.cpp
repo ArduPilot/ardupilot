@@ -691,10 +691,10 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
         
         AP_ESC_Telem_Backend::TelemetryData t {
-            .temperature_cdeg = int16_t(esc.escTemperature * 100),
             .voltage = float(esc.voltage) * 0.01f,
             .current = float(esc.current) * 0.01f,
         };
+        t.temperature_cdeg = int16_t(esc.escTemperature * 100);
 
         update_telem_data(addr, t,
             AP_ESC_Telem_Backend::TelemetryType::CURRENT
