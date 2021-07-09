@@ -104,7 +104,7 @@ TEST(Location, LatLngWrapping)
         int32_t expected_lat;
         int32_t expected_lng;
     } tests[] {
-        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860775}
+        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860774}
     };
 
     for (auto &test : tests) {
