@@ -284,6 +284,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
     gyro = state.imu.gyro;
     velocity_ef = state.velocity;
     position = state.position;
+    position.xy() += origin.get_distance_NE_double(home);
 
     // deal with euler or quaternion attitude
     if ((received_bitmask & QUAT_ATT) != 0) {
