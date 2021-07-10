@@ -499,7 +499,7 @@ private:
     };
 
     struct gps_elements : EKF_obs_element_t {
-        Vector2F    pos;            // horizontal North East position of the GPS antenna in local NED earth frame (m)
+        int32_t     lat, lng;       // latitude and longitude in 1e7 degrees
         ftype       hgt;            // height of the GPS antenna in local NED earth frame (m)
         Vector3F    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
         uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
@@ -1025,7 +1025,8 @@ private:
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    struct Location EKF_origin;     // LLH origin of the NED axis system
+    struct Location EKF_origin;     // LLH origin of the NED axis system, internal only
+    struct Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -1403,7 +1404,13 @@ private:
     bool have_table_earth_field;   // true when we have initialised table_earth_field_ga
     Vector3F table_earth_field_ga; // earth field from WMM tables
     ftype table_declination;       // declination in radians from the tables
-    uint32_t last_field_update_ms;
+
+    // 1Hz update
+    uint32_t last_oneHz_ms;
+    void oneHzUpdate(void);
+
+    // move EKF origin at 1Hz
+    void moveEKFOrigin(void);
 
     // handle earth field updates
     void getEarthFieldTable(const Location &loc);

@@ -10,7 +10,8 @@
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
     frontend(_frontend),
-    dal(AP::dal())
+    dal(AP::dal()),
+    public_origin(frontend->common_EKF_origin)
 {
     firstInitTime_ms = 0;
     lastInitFailReport_ms = 0;
@@ -701,8 +702,12 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Update the filter status
         updateFilterStatus();
 
-        // check for update of earth field
-        checkUpdateEarthField();
+        if (imuSampleTime_ms - last_oneHz_ms >= 1000) {
+            // 1Hz tasks
+            last_oneHz_ms = imuSampleTime_ms;
+            moveEKFOrigin();
+            checkUpdateEarthField();
+        }
     }
 
     // Wind output forward from the fusion to output time horizon
@@ -2146,3 +2151,31 @@ void NavEKF3_core::verifyTiltErrorVariance()
     }
 }
 #endif
+
+/*
+  move the EKF origin to the current position at 1Hz. The public_origin doesn't move.
+  By moving the EKF origin we keep the distortion due to spherical
+  shape of the earth to a minimum.
+ */
+void NavEKF3_core::moveEKFOrigin(void)
+{
+    // only move origin when we have a origin and we're using GPS
+    if (!frontend->common_origin_valid || !filterStatus.flags.using_gps) {
+        return;
+    }
+
+    // move the origin to the current state location
+    Location loc = EKF_origin;
+    loc.offset(stateStruct.position.x, stateStruct.position.y);
+    const Vector2F diffNE = loc.get_distance_NE_ftype(EKF_origin);
+    EKF_origin = loc;
+
+    // now fix all output states
+    stateStruct.position.xy() += diffNE;
+    outputDataNew.position.xy() += diffNE;
+    outputDataDelayed.position.xy() += diffNE;
+
+    for (unsigned index=0; index < imu_buffer_length; index++) {
+        storedOutput[index].position.xy() += diffNE;
+    }
+}

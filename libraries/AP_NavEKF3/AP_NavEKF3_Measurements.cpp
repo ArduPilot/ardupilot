@@ -648,16 +648,6 @@ void NavEKF3_core::readGpsData()
             // Post-alignment checks
             calcGpsGoodForFlight();
 
-            // see if we can get an origin from the frontend
-            if (!validOrigin && frontend->common_origin_valid) {
-
-                if (!setOrigin(frontend->common_EKF_origin)) {
-                    // set an error as an attempt was made to set the origin more than once
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    return;
-                }
-            }
-
             // Read the GPS location in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = gps.location(selected_gps);
 
@@ -700,7 +690,8 @@ void NavEKF3_core::readGpsData()
 
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
-                gpsDataNew.pos = EKF_origin.get_distance_NE_ftype(gpsloc);
+                gpsDataNew.lat = gpsloc.lat;
+                gpsDataNew.lng = gpsloc.lng;
                 if ((frontend->_originHgtMode & (1<<2)) == 0) {
                     gpsDataNew.hgt = (ftype)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
                 } else {
@@ -1463,15 +1454,14 @@ void NavEKF3_core::getEarthFieldTable(const Location &loc)
     table_declination = radians(AP_Declination::get_declination(loc.lat*1.0e-7,
                                                                 loc.lng*1.0e-7));
     have_table_earth_field = true;
-    last_field_update_ms = imuSampleTime_ms;
 }
 
 /*
-  check if we should update the earth field, we update it at 1Hz
+  update earth field, called at 1Hz
  */
 void NavEKF3_core::checkUpdateEarthField(void)
 {
-    if (have_table_earth_field && imuSampleTime_ms - last_field_update_ms > 1000) {
+    if (have_table_earth_field && filterStatus.flags.using_gps) {
         Location loc = EKF_origin;
         loc.offset(stateStruct.position.x, stateStruct.position.y);
         getEarthFieldTable(loc);
