@@ -207,8 +207,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // correct for the IMU offset (EKF calculations are at the IMU)
-        posNE.x = outputDataNew.position.x + posOffsetNED.x;
-        posNE.y = outputDataNew.position.y + posOffsetNED.y;
+        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + public_origin.get_distance_NE_ftype(EKF_origin)).tofloat();
         return true;
 
     } else {
@@ -218,9 +217,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = gps.location(selected_gps);
-                const Vector2F tempPosNE = EKF_origin.get_distance_NE_ftype(gpsloc);
-                posNE.x = tempPosNE.x;
-                posNE.y = tempPosNE.y;
+                posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
                 return false;
             } else if (rngBcnAlignmentStarted) {
                 // If we are attempting alignment using range beacon data, then report the position
@@ -229,14 +226,12 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
                 return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
-                posNE.x = outputDataNew.position.x;
-                posNE.y = outputDataNew.position.y;
+                posNE = outputDataNew.position.xy().tofloat();
                 return false;
             }
         } else {
             // If the origin has not been set, then we have no means of providing a relative position
-            posNE.x = 0.0f;
-            posNE.y = 0.0f;
+            posNE.zero();
             return false;
         }
     }
@@ -357,7 +352,7 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 bool NavEKF3_core::getOriginLLH(struct Location &loc) const
 {
     if (validOrigin) {
-        loc = EKF_origin;
+        loc = public_origin;
         // report internally corrected reference height if enabled
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
