@@ -457,13 +457,13 @@ bool ModeGuided::set_attitude_target_provides_thrust() const
 }
 
 // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
-bool ModeGuided:: stabilizing_pos_xy() const
+bool ModeGuided::stabilizing_pos_xy() const
 {
     return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizePositionXY)) != 0);
 }
 
 // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
-bool ModeGuided:: stabilizing_vel_xy() const
+bool ModeGuided::stabilizing_vel_xy() const
 {
     return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizeVelocityXY)) != 0);
 }
@@ -513,9 +513,8 @@ void ModeGuided::takeoff_run()
         copter.landinggear.retract_after_takeoff();
 #endif
 
-        // switch to position control mode but maintain current target
-        const Vector3f target = pos_control->get_pos_target_cm().tofloat();
-        set_destination(target, false, 0, false, 0, false, wp_nav->origin_and_destination_are_terrain_alt());
+        // change to velocity control after take off.
+        init(true);
     }
 }
 
