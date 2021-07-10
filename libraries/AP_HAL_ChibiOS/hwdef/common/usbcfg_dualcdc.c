@@ -300,17 +300,16 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 /*
     get the requested usb baudrate - 0 = none
 */
+#if HAL_USE_SERIAL_USB
 uint32_t get_usb_baud(uint16_t endpoint_id)
 {
-#if defined(HAL_USB_PRODUCT_ID) && HAL_HAVE_DUAL_USB_CDC
     if(endpoint_id == 0)
         return *((uint32_t*)linecoding.dwDTERate);
     if(endpoint_id == 2)
         return *((uint32_t*)linecoding2.dwDTERate);
-#endif
     return 0;
 }
-
+#endif
 /**
  * @brief   IN EP1 state.
  */
