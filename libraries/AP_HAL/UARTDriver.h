@@ -17,6 +17,8 @@ public:
 
     // begin() implicitly clears rx/tx buffers, even if the port was already open (unless the UART is the console UART)
     virtual void begin(uint32_t baud) = 0;
+    virtual void begin_locked(uint32_t baud, uint32_t key) { begin(baud); }
+
 	/// Extended port open method
 	///
 	/// Allows for both opening with specified buffer sizes, and re-opening
@@ -137,4 +139,7 @@ public:
      */
     virtual bool set_RTS_pin(bool high) { return false; };
     virtual bool set_CTS_pin(bool high) { return false; };
+
+    // return true requested baud on USB port
+    virtual uint32_t get_usb_baud(void) const { return 0; }
 };
