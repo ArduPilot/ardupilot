@@ -7183,6 +7183,35 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def FETtecESC_safety_switch(self):
+        mot = self.find_first_set_bit(int(self.get_parameter("SERVO_FTW_MASK"))) + 1
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        # we have to wait for a while for the arming tone to go out
+        # before the motors will pin:
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=17640,
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.set_safetyswitch_on()
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.set_safetyswitch_off()
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=17640,
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.context_pop()
+        self.wait_disarmed()
+
     def FETtecESC_btw_mask_checks(self):
         '''ensure prearm checks work as expected'''
         for bad_mask in [0b1000000000000, 0b10100000000000]:
@@ -7205,6 +7234,7 @@ class AutoTestCopter(AutoTest):
             "SERVO8_FUNCTION": 36,
         })
         self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
+        self.FETtecESC_safety_switch()
         self.FETtecESC_esc_power_checks()
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
