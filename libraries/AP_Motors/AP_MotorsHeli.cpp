@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     AP_GROUPINFO("COL_MAX", 4, AP_MotorsHeli, _collective_max, AP_MOTORS_HELI_COLLECTIVE_MAX),
 
     // @Param: COL_MID
-    // @DisplayName: Zero-Thrust Collective Pitch 
+    // @DisplayName: Zero-Thrust Collective Pitch
     // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
@@ -202,7 +202,7 @@ void AP_MotorsHeli::output()
     } else {
         output_disarmed();
     }
-    
+
     output_to_motors();
 
 };
@@ -425,7 +425,7 @@ void AP_MotorsHeli::output_logic()
 bool AP_MotorsHeli::parameter_check(bool display_msg) const
 {
     // returns false if RSC Mode is not set to a valid control mode
-    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
         if (display_msg) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
         }
