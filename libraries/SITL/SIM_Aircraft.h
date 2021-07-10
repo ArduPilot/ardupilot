@@ -126,7 +126,8 @@ public:
 
     const Location &get_location() const { return location; }
 
-    const Vector3d &get_position() const { return position; }
+    // get position relative to home
+    Vector3d get_position_relhome() const;
 
     // distance the rangefinder is perceiving
     float rangefinder_range() const;
@@ -152,6 +153,9 @@ public:
 
 protected:
     SITL *sitl;
+    // origin of position vector
+    Location origin;
+    // home location
     Location home;
     bool home_is_set;
     Location location;
@@ -175,6 +179,7 @@ protected:
     float battery_current;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
+    uint32_t last_one_hz_ms;
 
     // battery model
     Battery battery;
