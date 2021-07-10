@@ -73,6 +73,8 @@ Aircraft::Aircraft(const char *frame_str) :
 void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
 {
     home = start_loc;
+    origin = home;
+    position.xy().zero();
     home_yaw = start_yaw;
     home_is_set = true;
 
@@ -84,6 +86,11 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
 
     location = home;
     ground_level = home.alt * 0.01f;
+
+#if 0
+    // useful test for home position being very different from origin
+    home.offset(-3000*1000, 1800*1000);
+#endif
 
     dcm.from_euler(0.0f, 0.0f, radians(home_yaw));
 }
@@ -134,12 +141,15 @@ bool Aircraft::on_ground() const
 */
 void Aircraft::update_position(void)
 {
-    location = home;
-    location.offset_double(position.x, position.y);
+    location = origin;
+    location.offset(position.x, position.y);
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
 
 #if 0
+    Vector3d pos_home = position;
+    pos_home.xy() += home.get_distance_NE_double(origin);
+
     // logging of raw sitl data
     Vector3f accel_ef = dcm * accel_body;
 // @LoggerMessage: SITL
@@ -158,8 +168,20 @@ void Aircraft::update_position(void)
                                            AP_HAL::micros64(),
                                            velocity_ef.x, velocity_ef.y, velocity_ef.z,
                                            accel_ef.x, accel_ef.y, accel_ef.z,
-                                           position.x, position.y, position.z);
+                                           pos_home.x, pos_home.y, pos_home.z);
 #endif
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_one_hz_ms >= 1000) {
+        // shift origin of position at 1Hz to current location
+        // this prevents sperical errors building up in the GPS data
+        last_one_hz_ms = now;
+        Vector2d diffNE = origin.get_distance_NE_double(location);
+        position.xy() -= diffNE;
+        smoothing.position.xy() -= diffNE;
+        origin.lat = location.lat;
+        origin.lng = location.lng;
+    }
 }
 
 /*
@@ -389,6 +411,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.longitude = smoothing.location.lng * 1.0e-7;
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
+
 
     if (ahrs_orientation != nullptr) {
         enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
@@ -676,7 +699,7 @@ void Aircraft::update_wind(const struct sitl_input &input)
                        sinf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
                        sinf(radians(input.wind.dir_z))) * input.wind.speed;
 
-    wind_ef.z += get_local_updraft(position);
+    wind_ef.z += get_local_updraft(position + home.get_distance_NED_double(origin));
 
     const float wind_turb = input.wind.turbulence * 10.0f;  // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98f;  // filtering high frequencies from turbulence
@@ -784,8 +807,8 @@ void Aircraft::smooth_sensors(void)
     smoothing.velocity_ef += accel_e * delta_time;
     smoothing.position += (smoothing.velocity_ef * delta_time).todouble();
 
-    smoothing.location = home;
-    smoothing.location.offset_double(smoothing.position.x, smoothing.position.y);
+    smoothing.location = origin;
+    smoothing.location.offset(smoothing.position.x, smoothing.position.y);
     smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
 
     smoothing.last_update_us = now;
@@ -889,7 +912,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
     if (precland && precland->is_enabled()) {
-        precland->update(get_location(), get_position());
+        precland->update(get_location(), get_position_relhome());
         if (precland->_over_precland_base) {
             local_ground_level += precland->_origin_height;
         }
@@ -1015,3 +1038,14 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
         sitl->twist.t = 0;
     }
 }
+
+/*
+  get position relative to home
+ */
+Vector3d Aircraft::get_position_relhome() const
+{
+    Vector3d pos = position;
+    pos.xy() += home.get_distance_NE_double(origin);
+    return pos;
+}
+
