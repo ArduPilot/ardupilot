@@ -5265,14 +5265,16 @@ void GCS::update_passthru(void)
 {
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
-
+    uint32_t baud1, baud2;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
-                                                    _passthru.baud1, _passthru.baud2);
+                                                    baud1, baud2);
     if (enabled && !_passthru.enabled) {
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
         _passthru.enabled = true;
         _passthru.last_port1_data_ms = now;
+        _passthru.baud1 = baud1;
+        _passthru.baud2 = baud2;
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -5282,6 +5284,15 @@ void GCS::update_passthru(void)
         _passthru.enabled = false;
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
+        // Restore original baudrates
+        if (_passthru.baud1 != baud1) {
+            _passthru.port1->end();
+            _passthru.port1->begin(baud1);
+        }
+        if (_passthru.baud2 != baud2) {
+            _passthru.port2->end();
+            _passthru.port2->begin(baud2);
+        }
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
                _passthru.timeout_s &&
@@ -5291,6 +5302,15 @@ void GCS::update_passthru(void)
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
         AP::serialmanager().disable_passthru();
+        // Restore original baudrates
+        if (_passthru.baud1 != baud1) {
+            _passthru.port1->end();
+            _passthru.port1->begin(baud1);
+        }
+        if (_passthru.baud2 != baud2) {
+            _passthru.port2->end();
+            _passthru.port2->begin(baud2);
+        }
         gcs().send_text(MAV_SEVERITY_INFO, "Passthru timed out");
     }
 }
@@ -5322,6 +5342,21 @@ void GCS::passthru_timer(void)
     const uint32_t lock_key = 0x3256AB9F;
     _passthru.port1->lock_port(lock_key, lock_key);
     _passthru.port2->lock_port(lock_key, lock_key);
+
+    // Check for requested Baud rates over USB
+    uint32_t baud = _passthru.port1->get_usb_baud();
+    if (_passthru.baud2 != baud && baud != 0) {
+        _passthru.baud2 = baud;
+        _passthru.port2->end();
+        _passthru.port2->begin_locked(baud, lock_key);
+    }
+
+    baud = _passthru.port2->get_usb_baud();
+    if (_passthru.baud1 != baud && baud != 0) {
+        _passthru.baud1 = baud;
+        _passthru.port1->end();
+        _passthru.port1->begin_locked(baud, lock_key);
+    }
 
     int16_t b;
     uint8_t buf[64];
