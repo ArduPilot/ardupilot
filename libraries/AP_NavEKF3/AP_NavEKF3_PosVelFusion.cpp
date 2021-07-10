@@ -95,9 +95,13 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             CorrectGPSForAntennaOffset(gps_corrected);
             // record the ID of the GPS for the data we are using for the reset
             last_gps_idx = gps_corrected.sensor_idx;
-            // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
-            stateStruct.position.x = gps_corrected.pos.x  + 0.001*gps_corrected.vel.x*(ftype(imuDataDelayed.time_ms) - ftype(gps_corrected.time_ms));
-            stateStruct.position.y = gps_corrected.pos.y  + 0.001*gps_corrected.vel.y*(ftype(imuDataDelayed.time_ms) - ftype(gps_corrected.time_ms));
+            // calculate position
+            const Location gpsloc{gps_corrected.lat, gps_corrected.lng, 0, Location::AltFrame::ABSOLUTE};
+            stateStruct.position.xy() = EKF_origin.get_distance_NE_ftype(gpsloc);
+            // compensate for offset  between last GPS measurement and the EKF time horizon. Note that this is an unusual
+            // time delta in that it can be both -ve and +ve
+            const int32_t tdiff = imuDataDelayed.time_ms - gps_corrected.time_ms;
+            stateStruct.position.xy() += gps_corrected.vel.xy()*0.001*tdiff;
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
         } else if ((imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
@@ -335,8 +339,7 @@ void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
     gps_data.vel -= velOffsetEarth;
 
     Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-    gps_data.pos.x -= posOffsetEarth.x;
-    gps_data.pos.y -= posOffsetEarth.y;
+    Location::offset_latlng(gps_data.lat, gps_data.lng, -posOffsetEarth.x, -posOffsetEarth.y);
     gps_data.hgt += posOffsetEarth.z;
 }
 
@@ -348,6 +351,9 @@ void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
         return;
     }
     ext_nav_data.corrected = true;
+
+    // external nav data is against the public_origin, so convert to offset from EKF_origin
+    ext_nav_data.pos.xy() += EKF_origin.get_distance_NE_ftype(public_origin);
 
 #if HAL_VISUALODOM_ENABLED
     const auto *visual_odom = dal.visualodom();
@@ -477,8 +483,10 @@ void NavEKF3_core::SelectVelPosFusion()
             velPosObs[1] = gpsDataDelayed.vel.y;
             velPosObs[2] = gpsDataDelayed.vel.z;
         }
-        velPosObs[3] = gpsDataDelayed.pos.x;
-        velPosObs[4] = gpsDataDelayed.pos.y;
+        const Location gpsloc{gpsDataDelayed.lat, gpsDataDelayed.lng, 0, Location::AltFrame::ABSOLUTE};
+        const Vector2F posxy = EKF_origin.get_distance_NE_ftype(gpsloc);
+        velPosObs[3] = posxy.x;
+        velPosObs[4] = posxy.y;
 #if EK3_FEATURE_EXTERNAL_NAV
     } else if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (posxy_source == AP_NavEKF_Source::SourceXY::EXTNAV)) {
         // use external nav system for horizontal position
@@ -517,7 +525,9 @@ void NavEKF3_core::SelectVelPosFusion()
         last_gps_idx = gpsDataDelayed.sensor_idx;
 
         // reset the position to the GPS position
-        ResetPositionNE(gpsDataDelayed.pos.x, gpsDataDelayed.pos.y);
+        const Location gpsloc{gpsDataDelayed.lat, gpsDataDelayed.lng, 0, Location::AltFrame::ABSOLUTE};
+        const Vector2F posxy = EKF_origin.get_distance_NE_ftype(gpsloc);
+        ResetPositionNE(posxy.x, posxy.y);
 
         // If we are also using GPS as the height reference, reset the height
         if (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) {
