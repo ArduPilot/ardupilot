@@ -833,7 +833,11 @@ void ModeGuided::angle_control_run()
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
         yaw_rate_in = 0.0f;
-        guided_angle_state.use_thrust = false;
+        if (guided_angle_state.use_thrust) {
+            // initialise vertical velocity controller
+            pos_control->init_z_controller();
+            guided_angle_state.use_thrust = false;
+        }
     }
 
     // interpret positive climb rate or thrust as triggering take-off
