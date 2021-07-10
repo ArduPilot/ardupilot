@@ -513,6 +513,7 @@ void Morse::update(const struct sitl_input &input)
                            -state.velocity.world_linear_velocity[2]);
 
     position = Vector3d(state.gps.x, -state.gps.y, -state.gps.z);
+    position.xy() += origin.get_distance_NE_double(home);
 
     // Morse IMU accel is NEU, convert to NED
     accel_body = Vector3f(state.imu.linear_acceleration[0],
