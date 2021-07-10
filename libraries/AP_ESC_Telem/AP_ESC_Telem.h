@@ -33,6 +33,9 @@ public:
     // return the average motor RPM
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
 
+    // get the highest ESC RPM if available, returns true if there is valid data for at least one ESC
+    bool get_highest_motor_rpm(float& rpm) const;
+
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
 

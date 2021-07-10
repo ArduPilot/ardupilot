@@ -121,6 +121,28 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     return false;
 }
 
+// get the highest ESC RPM if available, returns true if there is valid data for at least one ESC
+bool AP_ESC_Telem::get_highest_motor_rpm(float& rpm) const
+{
+    uint8_t valid_escs = 0;
+    float lh_rpm = -std::numeric_limits<float>::max();
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        float temp_rpm;
+        if (get_rpm(i, temp_rpm)) {
+            lh_rpm = MAX(lh_rpm, temp_rpm);
+            valid_escs++;
+        }
+    }
+
+    if (valid_escs > 0) {
+        rpm = lh_rpm;
+        return true;
+    }
+
+    return false;
+}
+
 // get an individual ESC's raw rpm if available, returns true on success
 bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
 {
