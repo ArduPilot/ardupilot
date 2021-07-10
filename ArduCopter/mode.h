@@ -226,7 +226,8 @@ public:
         // Deg/s we should turn
         float _fixed_yaw_slewrate_cds;
 
-        uint32_t fixed_last_update;
+        // time of the last yaw update
+        uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
