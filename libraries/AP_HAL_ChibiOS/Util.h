@@ -110,12 +110,6 @@ private:
       get system clock in UTC microseconds
      */
     uint64_t get_hw_rtc() const override;
-
-    /*
-      get the requested usb baudrate - 0 = none
-     */
-    uint32_t get_usb_baud(uint16_t endpoint_id) override;
-
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     FlashBootloader flash_bootloader() override;
 #endif

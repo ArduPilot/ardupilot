@@ -24,7 +24,6 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
-#include "hwdef/common/usbcfg.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
@@ -224,17 +223,6 @@ void Util::set_hw_rtc(uint64_t time_utc_usec)
 uint64_t Util::get_hw_rtc() const
 {
     return stm32_get_utc_usec();
-}
-
-/*
-    get the requested usb baudrate - 0 = none
-*/
-uint32_t Util::get_usb_baud(uint16_t endpoint_id)
-{
-#if defined(HAL_USB_PRODUCT_ID) && HAL_HAVE_DUAL_USB_CDC
-    return ::get_usb_baud(endpoint_id);
-#endif
-    return 0;
 }
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
