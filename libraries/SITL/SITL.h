@@ -55,8 +55,8 @@ struct sitl_fdm {
     double rollRate, pitchRate, yawRate; // degrees/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
-    double airspeed; // m/s
-    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
+    double airspeed; // m/s, EAS
+    Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity

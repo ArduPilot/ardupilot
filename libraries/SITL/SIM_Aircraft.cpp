@@ -573,6 +573,10 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     const float delta_time = frame_time_us * 1.0e-6f;
 
+    // update eas2tas and air density
+    eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
+    air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);
+
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
 
@@ -611,10 +615,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     // airspeed
-    airspeed = velocity_air_ef.length();
-
-    // airspeed as seen by a fwd pitot tube (limited to 120m/s)
-    airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+    update_eas_airspeed();
 
     // constrain height to the ground
     if (on_ground()) {
@@ -889,7 +890,7 @@ void Aircraft::extrapolate_sensors(float delta_time)
     // new velocity and position vectors
     velocity_ef += accel_earth * delta_time;
     position += (velocity_ef * delta_time).todouble();
-    velocity_air_ef = velocity_ef + wind_ef;
+    velocity_air_ef = (velocity_ef + wind_ef) / eas2tas;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 }
 
@@ -1070,5 +1071,38 @@ Vector3d Aircraft::get_position_relhome() const
     Vector3d pos = position;
     pos.xy() += home.get_distance_NE_double(origin);
     return pos;
+}
+
+/*
+  update EAS airspeed and pitot speed
+ */
+void Aircraft::update_eas_airspeed()
+{
+    airspeed = velocity_air_ef.length() / eas2tas;
+
+    /*
+      airspeed as seen by a fwd pitot tube (limited to 120m/s)
+    */
+    airspeed_pitot = velocity_air_bf.x/eas2tas;
+
+    // calculate angle of attack
+    const float alpharad = atan2f(velocity_air_bf.z, velocity_air_bf.x);
+    const float betarad = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+
+    /*
+      assume the pitot can correctly capture airspeed up to 10 degrees off the nose
+     */
+    const float pitot_angle = alpharad+betarad;
+    const float max_pitot_angle = 10.0;
+    if (pitot_angle > radians(90)) {
+        airspeed_pitot = 0;
+    } else if (pitot_angle > radians(max_pitot_angle)) {
+        // compressed cosine beyong the max angle
+        airspeed_pitot *= cos((pitot_angle-max_pitot_angle)*90/(90-max_pitot_angle));
+    }
+    
+    // limit to speed common pitot setups can measure
+    const float airspeed_eas_max = 120.0;
+    airspeed_pitot = constrain_float(airspeed_pitot, 0.0f, airspeed_eas_max);
 }
 
