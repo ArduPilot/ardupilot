@@ -415,6 +415,7 @@ void FlightAxis::update(const struct sitl_input &input)
     position = Vector3d(state.m_aircraftPositionY_MTR,
                         state.m_aircraftPositionX_MTR,
                         -state.m_altitudeASL_MTR - home.alt*0.01);
+    position.xy() += origin.get_distance_NE_double(home);
 
     accel_body = {
         float(state.m_accelerationBodyAX_MPS2),
