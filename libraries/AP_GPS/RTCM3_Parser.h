@@ -16,7 +16,7 @@
  RTCMv3 parser, used to support moving baseline RTK mode between two
  GPS modules
 */
-
+#pragma once
 #include <stdint.h>
 
 #define RTCM3_MAX_PACKET_LEN 300
