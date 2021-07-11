@@ -31,8 +31,14 @@ For purchase, connection and configuration information please see the [Ardupilot
   - check that the ESCs are periodicaly sending telemetry data
 - re-enumerate all ESCs if not armed (motors not spinning) when
   - communication with one of the ESCs is lost
-- adds a serial simulator of FETtec OneWire ESCs
-- adds autotest (using the simulator) to fly a copter over a simulated serial link connection
+- adds a serial simulator (--uartF=sim:fetteconewireesc) of FETtec OneWire ESCs
+- adds autotest (using the simulator) to:
+  - simulate telemetry voltage, current, temperature, RPM data using SITL internal variables
+  - test the safety switch functionality
+  - test ESC power outages
+  - test `SERVO_FWT_MASK` parameter validation
+  - fly a copter over a simulated serial link connection
+
 
 ## Ardupilot to ESC protocol
 
