@@ -336,8 +336,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Axis: tuning axis
 // @Field: State: tuning state
 // @Field: Sur: control surface deflection
-// @Field: Tar: target rate
-// @Field: Act: actual rate
+// @Field: PSlew: P slew rate
+// @Field: DSlew: D slew rate
 // @Field: FF0: FF value single sample
 // @Field: FF: FF value
 // @Field: P: P value
@@ -347,7 +347,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: RMAX: Rate maximum
 // @Field: TAU: time constant
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
-      "ATRP", "QBBffffffffBff", "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,I,D,Action,RMAX,TAU", "s#-dkk------ks", "F--00000000-00" },
+      "ATRP", "QBBffffffffBff", "TimeUS,Axis,State,Sur,PSlew,DSlew,FF0,FF,P,I,D,Action,RMAX,TAU", "s#-dkk------ks", "F--00000000-00" },
 
 // @LoggerMessage: STAT
 // @Description: Current status of the aircraft
