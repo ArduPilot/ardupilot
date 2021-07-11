@@ -374,7 +374,7 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
                            total_size);
 }
 
-static int16_t canard_broadcast(uint64_t data_type_signature,
+static void canard_broadcast(uint64_t data_type_signature,
                                 uint16_t data_type_id,
                                 uint8_t priority,
                                 const void* payload,
@@ -1015,31 +1015,24 @@ static void cleanup_stale_transactions(uint64_t &timestamp_usec)
     }
 }
 
-static int16_t canard_broadcast(uint64_t data_type_signature,
+static void canard_broadcast(uint64_t data_type_signature,
                                 uint16_t data_type_id,
                                 uint8_t priority,
                                 const void* payload,
                                 uint16_t payload_len)
 {
-    int16_t cache = -1;
-    bool success = false;
     for (auto &ins : instances) {
         if (canardGetLocalNodeID(&ins.canard) == CANARD_BROADCAST_NODE_ID) {
             continue;
         }
-        cache = canardBroadcast(&ins.canard,
+        canardBroadcast(&ins.canard,
                         data_type_signature,
                         data_type_id,
                         &ins.transfer_id,
                         priority,
                         payload,
                         payload_len);
-        if (cache == 0) {
-            // we had atleast one interface where transaction was successful
-            success = true;
-        }
     }
-    return success?0:cache;
 }
 
 static void processTx(void)
@@ -1126,16 +1119,11 @@ static void node_status_send(void)
 
     uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer);
 
-    const int16_t bc_res = canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                                           UAVCAN_PROTOCOL_NODESTATUS_ID,
-                                           CANARD_TRANSFER_PRIORITY_LOW,
-                                           buffer,
-                                           len);
-    if (bc_res <= 0) {
-        printf("broadcast fail %d\n", bc_res);
-    } else {
-        //printf("broadcast node status OK\n");
-    }
+    canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+                    UAVCAN_PROTOCOL_NODESTATUS_ID,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    buffer,
+                    len);
 }
 
 
