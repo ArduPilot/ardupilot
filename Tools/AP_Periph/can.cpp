@@ -43,6 +43,9 @@
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
 #include <ardupilot/gnss/Status.h>
+#include <ardupilot/gnss/MovingBaselineData.h>
+#include <ardupilot/gnss/RelPosHeading.h>
+#include <AP_GPS/RTCM3_Parser.h>
 #include <uavcan/equipment/gnss/RTCMStream.h>
 #include <uavcan/equipment/power/BatteryInfo.h>
 #include <uavcan/protocol/debug/LogMessage.h>
@@ -593,6 +596,23 @@ static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
     }
     periph.gps.handle_gps_rtcm_fragment(0, req.data.data, req.data.len);
 }
+
+/*
+    handle gnss::MovingBaselineData
+*/
+#if GPS_MOVING_BASELINE
+static void handle_MovingBaselineData(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    ardupilot_gnss_MovingBaselineData msg;
+    uint8_t arraybuf[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE];
+    uint8_t *arraybuf_ptr = arraybuf;
+    if (ardupilot_gnss_MovingBaselineData_decode(transfer, transfer->payload_len, &msg, &arraybuf_ptr) < 0) {
+        return;
+    }
+    periph.gps.inject_MBL_data(msg.data.data, msg.data.len);
+}
+#endif // GPS_MOVING_BASELINE
+
 #endif // HAL_PERIPH_ENABLE_GPS
 
 
@@ -903,6 +923,12 @@ static void onTransferReceived(CanardInstance* ins,
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         handle_RTCMStream(ins, transfer);
         break;
+
+#if GPS_MOVING_BASELINE
+    case ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID:
+        handle_MovingBaselineData(ins, transfer);
+        break;
+#endif
 #endif
         
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
@@ -991,6 +1017,12 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_SIGNATURE;
         return true;
+
+#if GPS_MOVING_BASELINE
+    case ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID:
+        *out_data_type_signature = ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE;
+        return true;
+#endif
 #endif
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
@@ -1821,6 +1853,64 @@ void AP_Periph_FW::can_gps_update(void)
 
     }
 #endif // HAL_PERIPH_ENABLE_GPS
+}
+
+
+void AP_Periph_FW::send_moving_baseline_msg(const uint8_t *&data, uint16_t len)
+{
+#if defined(HAL_PERIPH_ENABLE_GPS) && GPS_MOVING_BASELINE
+    if (len == 0 || data == nullptr) {
+        return;
+    }
+    // static uint32_t data_cnt = 0;
+    // static uint32_t last_moving_baseline_ms = 0;
+    // if (AP_HAL::millis() - last_moving_baseline_ms > 1000) {
+    //     can_printf("RATE: %lu bps", data_cnt);
+    //     data_cnt = 0;
+    // }
+    // data_cnt += len;
+    // if (data_cnt > 0) {
+    //     return;
+    // }
+    // send the packet from Moving Base to be used RelPosHeading calc by GPS module
+    ardupilot_gnss_MovingBaselineData mbldata {};
+    // get the data from the moving base
+    static_assert(ARDUPILOT_GNSS_MOVINGBASELINEDATA_DATA_MAX_LENGTH == RTCM3_MAX_PACKET_LEN, "Size of Moving Base data is wrong");
+    mbldata.data.len = len;
+    mbldata.data.data = (uint8_t*)data;
+    uint8_t buffer[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE] {};
+    const uint16_t total_size = ardupilot_gnss_MovingBaselineData_encode(&mbldata, buffer);
+    canardBroadcast(&canard,
+                    ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
+                    ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+#endif // HAL_PERIPH_ENABLE_GPS && GPS_MOVING_BASELINE
+}
+
+void AP_Periph_FW::send_relposheading_msg(uint32_t timestamp, float reported_heading, 
+                                          float relative_distance, float relative_down_pos,
+                                          float reported_heading_acc) {
+#if defined(HAL_PERIPH_ENABLE_GPS) && GPS_MOVING_BASELINE
+    ardupilot_gnss_RelPosHeading relpos {};
+    relpos.timestamp.usec = uint64_t(timestamp)*1000LLU;
+    relpos.reported_heading_deg = reported_heading;
+    relpos.relative_distance_m = relative_distance;
+    relpos.relative_down_pos_m = relative_down_pos;
+    relpos.reported_heading_acc_deg = reported_heading_acc;
+    relpos.reported_heading_acc_available = true;
+    uint8_t buffer[ARDUPILOT_GNSS_RELPOSHEADING_MAX_SIZE] {};
+    const uint16_t total_size = ardupilot_gnss_RelPosHeading_encode(&relpos, buffer);
+    canardBroadcast(&canard,
+                    ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
+                    ARDUPILOT_GNSS_RELPOSHEADING_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+#endif // HAL_PERIPH_ENABLE_GPS && GPS_MOVING_BASELINE
 }
 
 /*
