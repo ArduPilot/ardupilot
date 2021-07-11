@@ -47,6 +47,7 @@ public:
         k_param_can_protocol1,
         k_param_can_protocol2,
         k_param_sysid_this_mav,
+        k_param_serial_manager,
     };
 
     AP_Int16 format_version;
