@@ -41,6 +41,7 @@
 #include <ardupilot/indication/SafetyState.hpp>
 #include <ardupilot/indication/Button.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
+#include <ardupilot/gnss/MovingBaselineData.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
 
@@ -114,7 +115,9 @@ static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
-
+#if GPS_MOVING_BASELINE
+static uavcan::Publisher<ardupilot::gnss::MovingBaselineData>* moving_baseline_data[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#endif
 // subscribers
 
 // handler SafteyButton
@@ -183,7 +186,7 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wframe-larger-than=1400"
+#pragma GCC diagnostic error "-Wframe-larger-than=1500"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -294,6 +297,13 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
     
+#if GPS_MOVING_BASELINE
+    moving_baseline_data[driver_index] = new uavcan::Publisher<ardupilot::gnss::MovingBaselineData>(*_node);
+    moving_baseline_data[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    moving_baseline_data[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    AP::gps().set_MBL_data_cb(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::moving_baseline_data_cb, void, const uint8_t *&, uint16_t));
+#endif
+
     safety_button_listener[driver_index] = new uavcan::Subscriber<ardupilot::indication::Button, ButtonCb>(*_node);
     if (safety_button_listener[driver_index]) {
         safety_button_listener[driver_index]->start(ButtonCb(this, &handle_button));
@@ -629,6 +639,73 @@ void AP_UAVCAN::rtcm_stream_send()
     }
     rtcm_stream[_driver_index]->broadcast(msg);
 }
+
+#if GPS_MOVING_BASELINE
+void AP_UAVCAN::moving_baseline_data_cb(const uint8_t *&data, uint16_t len)
+{
+    bool send_moving_baseline = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // Check if we have a receiver marked as UAVCAN RTK ROVER
+        // only then we send the moving baseline message
+        if (AP::gps().get_type(i) == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER) {
+            send_moving_baseline = true;
+        } 
+    }
+    if (!send_moving_baseline) {
+        // nothing to do
+        return;
+    }
+
+    WITH_SEMAPHORE(_mbl_data.sem);
+
+    if (_mbl_data.frames == nullptr) {
+        // give enough space for a full round from a NTRIP server with all
+        // constellations
+        _mbl_data.frames = new ObjectBuffer<AP_UAVCAN::MBLFrame>(8);
+    }
+    if (_mbl_data.frames == nullptr ||
+        _mbl_data.frames->get_size() == 0) {
+        return;
+    }
+    MBLFrame frame;
+    memcpy(frame.data, data, len);
+    frame.len = len;
+    _mbl_data.frames->push(frame);
+}
+
+void AP_UAVCAN::moving_baseline_data_send()
+{
+    if (_mbl_data.frames == nullptr ||
+        _mbl_data.frames->available() == 0) {
+        // nothing to send
+        return;
+    }
+    bool send_moving_baseline = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // Check if we have a receiver marked as UAVCAN RTK ROVER
+        // only then we send the moving baseline message
+        if (AP::gps().get_type(i) == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER) {
+            send_moving_baseline = true;
+        } 
+    }
+
+    if (!send_moving_baseline) {
+        return;
+    }
+    WITH_SEMAPHORE(_mbl_data.sem);
+    MBLFrame frame;
+    if (!_mbl_data.frames->pop(frame)) {
+        return;
+    }
+    ardupilot::gnss::MovingBaselineData msg;
+    static_assert(RTCM3_MAX_PACKET_LEN == msg.data.MaxSize, "RTCM3_MAX_PACKET_LEN must match MovingBaseline::data::MaxSize");
+
+    for (uint16_t i=0; i<frame.len; i++) {
+        msg.data.push_back(frame.data[i]);
+    }
+    moving_baseline_data[_driver_index]->broadcast(msg);
+}
+#endif // GPS_MOVING_BASELINE
 
 // SafetyState send
 void AP_UAVCAN::safety_state_send()

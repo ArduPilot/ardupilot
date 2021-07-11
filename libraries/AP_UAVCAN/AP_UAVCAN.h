@@ -30,7 +30,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
-
+#include <AP_GPS/RTCM3_Parser.h>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -163,6 +163,11 @@ private:
     // send GNSS injection
     void rtcm_stream_send();
 
+    // Moving Baseline data callback
+    void moving_baseline_data_cb(const uint8_t *&data, uint16_t len);
+    // send Moving Baseline data
+    void moving_baseline_data_send();
+
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
@@ -220,6 +225,18 @@ private:
         ByteBuffer *buf;
     } _rtcm_stream;
     
+    // Moving Baseline data
+    struct MBLFrame {
+        uint16_t len;
+        uint8_t data[RTCM3_MAX_PACKET_LEN];
+    };
+
+    struct {
+        HAL_Semaphore sem;
+        uint16_t num_frames;
+        ObjectBuffer<MBLFrame> *frames;
+    } _mbl_data;
+
      // ESC
 
     static HAL_Semaphore _telem_sem;
