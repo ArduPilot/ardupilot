@@ -1095,7 +1095,14 @@ private:
 GCS &gcs();
 
 // send text when we do have a GCS
+#if !defined(HAL_BUILD_AP_PERIPH)
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#else
+extern "C" {
+void can_printf(const char *fmt, ...);
+}
+#define GCS_SEND_TEXT(severity, format, args...) (void)severity; can_printf(format, ##args)
+#endif
 
 #elif defined(HAL_BUILD_AP_PERIPH) && !defined(STM32F1)
 

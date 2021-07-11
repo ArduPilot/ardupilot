@@ -2082,6 +2082,7 @@ void GCS::send_message(enum ap_message id)
 void GCS::update_send()
 {
     update_send_has_been_called = true;
+#ifndef HAL_BUILD_AP_PERIPH
     if (!initialised_missionitemprotocol_objects) {
         initialised_missionitemprotocol_objects = true;
         // once-only initialisation of MissionItemProtocol objects:
@@ -2107,6 +2108,7 @@ void GCS::update_send()
     if (_missionitemprotocol_fence != nullptr) {
         _missionitemprotocol_fence->update();
     }
+#endif // HAL_BUILD_AP_PERIPH
     // round-robin the GCS_MAVLINK backend that gets to go first so
     // one backend doesn't monopolise all of the time allowed for sending
     // messages
