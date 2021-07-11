@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
-
+#include "RTCM3_Parser.h"
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 class FixCb;
@@ -30,10 +30,14 @@ class Fix2Cb;
 class AuxCb;
 class HeadingCb;
 class StatusCb;
+#if GPS_MOVING_BASELINE
+class MovingBaselineDataCb;
+class RelPosHeadingCb;
+#endif
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
 public:
-    AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state);
+    AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
     ~AP_GPS_UAVCAN();
 
     bool read() override;
@@ -54,18 +58,30 @@ public:
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
     static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
     static void handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const StatusCb &cb);
-
+#if GPS_MOVING_BASELINE
+    static void handle_moving_baseline_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MovingBaselineDataCb &cb);
+    static void handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const RelPosHeadingCb &cb);
+#endif
     static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
 
+#if GPS_MOVING_BASELINE
+    bool get_RTCMV3(const uint8_t *&data, uint16_t &len) override;
+    void clear_RTCMV3() override;
+#endif
 private:
     void handle_fix_msg(const FixCb &cb);
     void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
     void handle_heading_msg(const HeadingCb &cb);
     void handle_status_msg(const StatusCb &cb);
+
+#if GPS_MOVING_BASELINE
+    void handle_moving_baseline_msg(const MovingBaselineDataCb &cb);
+    void handle_relposheading_msg(const RelPosHeadingCb &cb);
+#endif
 
     static bool take_registry();
     static void give_registry();
@@ -74,6 +90,18 @@ private:
     bool _new_data;
     AP_GPS::GPS_State interim_state;
 
+#if GPS_MOVING_BASELINE
+    bool _new_heading_data;
+    struct {
+        uint32_t time_ms;
+        float reported_heading;
+        bool reported_heading_acc_available;
+        float reported_heading_acc;
+        float relative_distance;
+        float relative_down_pos;
+    } heading_interim_state;
+    HAL_Semaphore sem_heading;
+#endif
     HAL_Semaphore sem;
 
     uint8_t _detected_module;
@@ -96,4 +124,12 @@ private:
     } _detected_modules[GPS_MAX_RECEIVERS];
 
     static HAL_Semaphore _sem_registry;
+
+#if GPS_MOVING_BASELINE
+    // RTCM3 parser for when in moving baseline base mode
+    RTCM3_Parser *rtcm3_parser;
+#endif
+    // the role set from GPS_TYPE
+    AP_GPS::GPS_Role role;
+
 };

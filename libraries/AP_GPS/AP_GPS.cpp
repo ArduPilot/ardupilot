@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: 1st GPS type
     // @Description: GPS type of 1st GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:UAVCAN-MovingBaseline-Base,23:UAVCAN-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:UAVCAN-MovingBaseline-Base,23:UAVCAN-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_TYPE2",   1, AP_GPS, _type[1], 0),
@@ -401,6 +401,8 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_NONE:
     case GPS_TYPE_HIL:
     case GPS_TYPE_UAVCAN:
+    case GPS_TYPE_UAVCAN_RTK_BASE:
+    case GPS_TYPE_UAVCAN_RTK_ROVER:
     case GPS_TYPE_MAV:
     case GPS_TYPE_MSP:
     case GPS_TYPE_EXTERNAL_AHRS:
@@ -573,6 +575,8 @@ void AP_GPS::detect_instance(uint8_t instance)
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
     case GPS_TYPE_UAVCAN:
+    case GPS_TYPE_UAVCAN_RTK_BASE:
+    case GPS_TYPE_UAVCAN_RTK_ROVER:
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = AP_GPS_UAVCAN::probe(*this, state[instance]);
@@ -820,7 +824,10 @@ void AP_GPS::update_instance(uint8_t instance)
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
             // do not try to detect again if type is MAV or UAVCAN
-            if (_type[instance] == GPS_TYPE_MAV || _type[instance] == GPS_TYPE_UAVCAN) {
+            if (_type[instance] == GPS_TYPE_MAV ||
+                _type[instance] == GPS_TYPE_UAVCAN ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER) {
                 state[instance].status = NO_FIX;
             } else {
                 // free the driver before we run the next detection, so we
@@ -851,20 +858,28 @@ void AP_GPS::update_instance(uint8_t instance)
         data_should_be_logged = true;
     }
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MOVING_BASELINE
     if (drivers[instance] && _type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
         // see if a moving baseline base has some RTCMv3 data
         // which we need to pass along to the rover
         const uint8_t *rtcm_data;
         uint16_t rtcm_len;
+        bool clear_rtcmv3_buffer = false;
         if (drivers[instance]->get_RTCMV3(rtcm_data, rtcm_len)) {
+            if (_mbl_data_cb != nullptr) {
+                _mbl_data_cb(rtcm_data, rtcm_len);
+                clear_rtcmv3_buffer = true;
+            }
             for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
                 if (i != instance && _type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
                     // pass the data to the rover
                     inject_data(i, rtcm_data, rtcm_len);
-                    drivers[instance]->clear_RTCMV3();
+                    clear_rtcmv3_buffer = true;
                     break;
                 }
+            }
+            if (clear_rtcmv3_buffer) {
+                drivers[instance]->clear_RTCMV3();
             }
         }
     }
@@ -906,6 +921,22 @@ void AP_GPS::update_instance(uint8_t instance)
     (void)data_should_be_logged;
 #endif
 }
+
+/*
+    inject Moving Baseline Data messages.
+*/
+#if GPS_MOVING_BASELINE
+void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
+{
+    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            // pass the data to the rover
+            inject_data(i, data, length);
+            break;
+        }
+    }
+}
+#endif //#if GPS_MOVING_BASELINE
 
 /*
   update all GPS instances
@@ -1894,7 +1925,9 @@ bool AP_GPS::prepare_for_arming(void) {
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-        if (_type[i] == GPS_TYPE_UAVCAN) {
+        if (_type[i] == GPS_TYPE_UAVCAN ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_BASE ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
             if (!AP_GPS_UAVCAN::backends_healthy(failure_msg, failure_msg_len)) {
                 return false;
             }
