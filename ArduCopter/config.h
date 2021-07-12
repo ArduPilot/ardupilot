@@ -168,9 +168,6 @@
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
-#ifndef EKF_ORIGIN_MAX_DIST_KM
- # define EKF_ORIGIN_MAX_DIST_KM        250   // EKF origin and home must be within 250km horizontally
-#endif
 #ifndef EKF_ORIGIN_MAX_ALT_KM
  # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
