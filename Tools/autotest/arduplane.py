@@ -1611,7 +1611,7 @@ class AutoTestPlane(AutoTest):
             if self.simstate is None:
                 return
             divergence = self.get_distance_int(self.gpi, self.simstate)
-            max_allowed_divergence = 200
+            max_allowed_divergence = 210
             if (time.time() - self.last_print > 1 or
                     divergence > self.max_divergence):
                 self.progress("position-estimate-divergence=%fm" % (divergence,))
