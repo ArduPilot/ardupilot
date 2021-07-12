@@ -49,12 +49,12 @@ void AP_BattMonitor_SMBus::read(void)
 // returns true if the read was successful, or if we already knew the pack capacity
 bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
 {
-    uint16_t data;
-
     if (_full_charge_capacity != 0) {
         return true;
-    } else if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
-        _full_charge_capacity = data * get_capacity_scaler();
+    }
+
+    if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, _full_charge_capacity)) {
+        _full_charge_capacity *= get_capacity_scaler();
         return true;
     }
     return false;
@@ -189,4 +189,3 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
-
