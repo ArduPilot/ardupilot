@@ -569,6 +569,15 @@ public:
 
     // min initial climb in RTL
     AP_Int16        rtl_climb_min;
+
+    // Extra modes.
+    AP_Int8 fltmode_ext;
+    AP_Int8 flight_mode7;
+    AP_Int8 flight_mode8;
+    AP_Int8 flight_mode9;
+    AP_Int8 flight_mode10;
+    AP_Int8 flight_mode11;
+    AP_Int8 flight_mode12;
 };
 
 extern const AP_Param::Info var_info[];

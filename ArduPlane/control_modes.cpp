@@ -116,7 +116,14 @@ void Plane::read_control_switch()
             return;
         }
 
-        set_mode_by_number((enum Mode::Number)flight_modes[switchPosition].get(), ModeReason::RC_COMMAND);
+        enum Mode::Number fm;
+        if (switchPosition < 6) {
+            fm = (enum Mode::Number)flight_modes[switchPosition].get();
+        } else {
+            fm = (enum Mode::Number)flight_modes2[switchPosition-6].get();
+        }
+
+        set_mode_by_number(fm, ModeReason::RC_COMMAND);
 
         oldSwitchPosition = switchPosition;
     }
@@ -129,12 +136,28 @@ uint8_t Plane::readSwitch(void) const
 {
     uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth <= 1230) return 0;
-    if (pulsewidth <= 1360) return 1;
-    if (pulsewidth <= 1490) return 2;
-    if (pulsewidth <= 1620) return 3;
-    if (pulsewidth <= 1749) return 4;              // Software Manual
-    return 5;                                                           // Hardware Manual
+
+    if (g2.fltmode_ext == 0) {
+        if (pulsewidth < 1231) return 0;
+        if (pulsewidth < 1361) return 1;
+        if (pulsewidth < 1491) return 2;
+        if (pulsewidth < 1621) return 3;
+        if (pulsewidth < 1750) return 4;              // Software Manual
+        return 5;                                                           // Hardware Manual
+    } else {
+        if (pulsewidth < 1126) return 0;
+        if (pulsewidth < 1201) return 1;
+        if (pulsewidth < 1276) return 2;
+        if (pulsewidth < 1351) return 3;
+        if (pulsewidth < 1426) return 4;
+        if (pulsewidth < 1501) return 5;
+        if (pulsewidth < 1576) return 6;
+        if (pulsewidth < 1651) return 7;
+        if (pulsewidth < 1726) return 8;
+        if (pulsewidth < 1801) return 9;
+        if (pulsewidth < 1876) return 10;
+        return 11;
+    }
 }
 
 void Plane::reset_control_switch()
