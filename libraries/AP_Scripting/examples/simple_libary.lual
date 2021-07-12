@@ -1,0 +1,16 @@
+-- this ia a example library
+
+-- all variables and function must be stored in a table, this table is then returned when the library is setup
+lib = {}
+
+lib.number = math.random()
+
+function lib.update()
+  gcs:send_text(0, "hello, world")
+
+  gcs:send_named_float('Lua Float',lib.number)
+  lib.number = lib.number + math.random()
+
+end
+
+return lib
