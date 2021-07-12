@@ -6841,7 +6841,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.reboot_sitl()
 
-    def test_SMART_RTL(self):
+    def test_SMART_RTL_pathfollow(self):
         self.context_push()
         ex = None
         try:
@@ -7041,6 +7041,33 @@ class AutoTestCopter(AutoTest):
         items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
 
         self.upload_simple_relhome_mission(items)
+
+    def test_SMART_RTL_nopoints(self):
+        self.context_push()
+        ex = None
+        try:
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.change_mode('ALT_HOLD')
+            self.change_mode('SMART_RTL')
+            self.change_mode('ALT_HOLD')
+            self.change_mode('SMART_RTL')
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+            self.disarm_vehicle(force=True)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+    def test_SMART_RTL(self):
+        self.test_SMART_RTL_nopoints()
+        self.test_SMART_RTL_pathfollow()
 
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
