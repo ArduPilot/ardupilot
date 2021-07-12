@@ -4491,3 +4491,33 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
 
+-- OSD scripting backend access
+osd = {}
+
+-- write a string to the OSD at the given column and row
+---@param col integer -- column (0-29 typically)
+---@param row integer -- row (0-15 typically)
+---@param text string -- text to display
+function osd:write(col, row, text) end
+
+-- flush the OSD buffer to the display
+function osd:flush() end
+
+-- clear the OSD buffer
+function osd:clear() end
+
+-- request a screen redraw
+function osd:draw_screen() end
+
+-- get the aspect ratio correction factor
+---@return number
+function osd:get_aspect_ratio_correction() end
+
+-- get the current screen number
+---@return integer
+function osd:get_screen() end
+
+-- check if display is disabled
+---@return boolean
+function osd:display_disabled() end
+
