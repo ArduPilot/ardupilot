@@ -23,24 +23,30 @@
 #include <SITL/SITL.h>
 
 #include "SIM_SerialDevice.h"
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 namespace SITL {
 
 class SerialRangeFinder : public SerialDevice {
 public:
 
-    SerialRangeFinder() {};
+    SerialRangeFinder(uint8_t port_num): _port_num(port_num) {};
 
     // update state
-    virtual void update(float range);
+    virtual void update(float range, uint8_t health);
 
     virtual uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) = 0;
 
     virtual uint16_t reading_interval_ms() const { return 200; } // 5Hz default
 
+    uint8_t get_port() const { return _port_num; }
+
+    virtual void set_health(RangeFinder::Status health) {};
+
 private:
 
     uint32_t last_sent_ms;
+    uint8_t _port_num;
 };
 
 }

@@ -35,6 +35,7 @@ namespace SITL {
 
 class RF_uLanding_v1 : public RF_uLanding {
 public:
+    RF_uLanding_v1(uint8_t port_num): RF_uLanding(port_num) {};
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 

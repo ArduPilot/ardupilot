@@ -27,7 +27,7 @@ using namespace SITL;
 uint32_t RF_LightWareSerialBinary::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
     // high byte is second 7 bits but high bit set
-    buffer[0] = ((alt_cm >> 7) & 0x7f) | (1<<7);
+    buffer[0] = ((alt_cm>> 7) & 0x7f) | (1<<7);
     // low byte is just first 7 bits
     buffer[1] = alt_cm & 0x7f;
     return 2;

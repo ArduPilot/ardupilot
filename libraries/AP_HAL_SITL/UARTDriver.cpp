@@ -118,7 +118,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (!_connected) {
                 ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
                 _connected = true;
-                _fd = _sitlState->sim_fd(args1, args2);
+                _fd = _sitlState->sim_fd(args1, args2, _portNumber);
                 _fd_write = _sitlState->sim_fd_write(args1);
             }
         } else if (strcmp(devtype, "udpclient") == 0) {

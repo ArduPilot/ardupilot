@@ -40,15 +40,15 @@ bool RF_LightWareSerial::check_synced()
     return synced;
 }
 
-void RF_LightWareSerial::update(float range)
+void RF_LightWareSerial::update(float range, uint8_t health)
 {
     if (!check_synced()) {
         return;
     }
-    return SerialRangeFinder::update(range);
+    return SerialRangeFinder::update(range, health);
 }
 
 uint32_t RF_LightWareSerial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    return snprintf((char*)buffer, buflen, "%f\r", alt_cm / 100.0f); // note tragic lack of snprintf return checking
+    return snprintf((char*)buffer, buflen, "%f\r", (alt_cm * out_of_range) / 100.0f); // note tragic lack of snprintf return checking
 }

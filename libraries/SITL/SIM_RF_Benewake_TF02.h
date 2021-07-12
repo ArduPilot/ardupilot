@@ -36,12 +36,37 @@ namespace SITL {
 
 class RF_Benewake_TF02 : public RF_Benewake {
 public:
+    RF_Benewake_TF02(uint8_t port_num): RF_Benewake(port_num) {};
 
+    void set_health(RangeFinder::Status health) override
+    {
+        out_of_range = 0;
+        switch (health) {
+        case RangeFinder::Status::NotConnected :
+        case RangeFinder::Status::NoData :
+            reliability = 0;
+            break;
+
+        case RangeFinder::Status::OutOfRangeLow :
+            break;
+
+        case RangeFinder::Status::OutOfRangeHigh :
+            out_of_range = 32768;
+            break;
+
+        case RangeFinder::Status::Good :
+            reliability = 7;
+            break;
+        }
+    };
+    uint8_t reliability = 7;
     // see AP_RangeFinder_Benewake.cpp for definitions
     uint8_t byte4() const override { return 1; } // strength low-bits
     uint8_t byte5() const override { return 1; } // strength high-bits
-    uint8_t byte6() const override { return 7; } // reliability
+    uint8_t byte6() const override { return reliability; } // reliability
     uint8_t byte7() const override { return 0x06; } // exposure time
+
+private:
 
 };
 

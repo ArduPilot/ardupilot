@@ -104,10 +104,10 @@ void RF_Wasp::check_configuration()
     _buflen = 0;
 }
 
-void RF_Wasp::update(float range)
+void RF_Wasp::update(float range, uint8_t health)
 {
     check_configuration();
-    return SerialRangeFinder::update(range);
+    return SerialRangeFinder::update(range, health);
 }
 
 

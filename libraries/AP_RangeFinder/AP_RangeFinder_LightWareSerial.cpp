@@ -75,15 +75,11 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
                 // received the low byte which should be second
                 if (high_byte_received) {
                     const float dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
-                    if (!is_negative(dist)) {
-                        sum += dist * 0.01f;
-                        valid_count++;
-                        // if still determining protocol update binary valid count
-                        if (protocol_state == ProtocolState::UNKNOWN) {
-                            binary_valid_count++;
-                        }
-                    } else {
-                        invalid_count++;
+                    sum += dist * 0.01f;
+                    valid_count++;
+                    // if still determining protocol update binary valid count
+                    if (protocol_state == ProtocolState::UNKNOWN) {
+                        binary_valid_count++;
                     }
                 }
                 high_byte_received = false;

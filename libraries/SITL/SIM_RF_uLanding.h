@@ -24,6 +24,8 @@ namespace SITL {
 
 class RF_uLanding : public SerialRangeFinder {
 public:
+    RF_uLanding(uint8_t port_num): SerialRangeFinder(port_num) {};
+
 };
 
 }

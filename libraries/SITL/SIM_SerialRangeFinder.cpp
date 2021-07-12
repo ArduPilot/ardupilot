@@ -20,7 +20,7 @@
 
 using namespace SITL;
 
-void SerialRangeFinder::update(float range)
+void SerialRangeFinder::update(float range, uint8_t health)
 {
     // just send a chunk of data at 5Hz:
     const uint32_t now = AP_HAL::millis();
@@ -28,7 +28,7 @@ void SerialRangeFinder::update(float range)
         return;
     }
     last_sent_ms = now;
-
+    set_health(static_cast<RangeFinder::Status>(health));
     const uint16_t range_cm = uint16_t(range*100);
     uint8_t data[255];
     const uint32_t packetlen = packet_for_alt(range_cm,
