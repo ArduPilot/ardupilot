@@ -486,7 +486,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         (void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
 
         canardSetLocalNodeID(ins, allocated_node_id);
-        printf("Node ID allocated: %d\n", allocated_node_id);
+        printf("IF%d Node ID allocated: %d\n", can_ins->index, allocated_node_id);
     }
 }
 
@@ -1214,21 +1214,40 @@ static void process1HzTasks(uint64_t timestamp_usec)
 /*
   wait for dynamic allocation of node ID
  */
-static bool no_iface_finished_dna = true;
+bool AP_Periph_FW::no_iface_finished_dna = true;
 static bool can_do_dna(instance_t &ins)
 {
     if (canardGetLocalNodeID(&ins.canard) != CANARD_BROADCAST_NODE_ID) {
-        no_iface_finished_dna = false;
+        AP_Periph_FW::no_iface_finished_dna = false;
         return true;
+    }
+
+    const uint32_t now = AP_HAL::native_millis();
+    const uint32_t led_pattern = 0xAAAA;
+    const uint32_t led_change_period = 50;
+    static uint8_t led_idx = 0;
+    static uint32_t last_led_change;
+
+    if ((now - last_led_change > led_change_period) && AP_Periph_FW::no_iface_finished_dna) {
+        // blink LED in recognisable pattern while waiting for DNA
+#ifdef HAL_GPIO_PIN_LED
+        palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#elif defined(HAL_GPIO_PIN_SAFE_LED)
+        // or use safety LED if defined
+        palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
+#else
+        (void)led_pattern;
+        (void)led_idx;
+#endif
+        led_idx = (led_idx+1) % 32;
+        last_led_change = now;
     }
 
     uint8_t node_id_allocation_transfer_id = 0;
 
-    if (no_iface_finished_dna) {
+    if (AP_Periph_FW::no_iface_finished_dna) {
         printf("Waiting for dynamic node ID allocation on IF%d... (pool %u)\n", ins.index, pool_peak_percent(ins));
     }
-
-    const uint32_t now = AP_HAL::native_millis();
 
     ins.send_next_node_id_allocation_request_at_ms =
         now + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
@@ -1269,62 +1288,7 @@ static bool can_do_dna(instance_t &ins)
 
     // Preparing for timeout; if response is received, this value will be updated from the callback.
     ins.node_id_allocation_unique_id_offset = 0;
-
-    if (no_iface_finished_dna) {
-        printf("Dynamic node ID allocation complete [IF%d][%d]\n", ins.index, canardGetLocalNodeID(&ins.canard));
-    }
     return false;
-}
-
-/*
-    wait until atleast one iface has Node Allocation finished
-*/
-static void can_wait_node_id() {
-    uint32_t now = AP_HAL::native_millis();
-    const uint32_t led_pattern = 0xAAAA;
-    uint8_t led_idx = 0;
-    uint32_t last_led_change = AP_HAL::native_millis();
-    const uint32_t led_change_period = 50;
-
-    while(true) {
-        for (auto &ins : instances) {
-            if (can_do_dna(ins)) {
-                return;
-            }
-        }
-        uint32_t wait_until_ms = UINT32_MAX;
-
-        while (((now=AP_HAL::native_millis()) < wait_until_ms) && no_iface_finished_dna) {
-            processTx();
-            processRx();
-            for (auto &ins : instances) {
-                wait_until_ms = MIN(wait_until_ms, ins.send_next_node_id_allocation_request_at_ms);
-            }
-            for (auto &ins : instances) {
-                canardCleanupStaleTransfers(&ins.canard, AP_HAL::native_micros64());
-            }
-            stm32_watchdog_pat();
-
-            if (now - last_led_change > led_change_period) {
-                // blink LED in recognisable pattern while waiting for DNA
-#ifdef HAL_GPIO_PIN_LED
-                palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
-#elif defined(HAL_GPIO_PIN_SAFE_LED)
-                // or use safety LED if defined
-                palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
-#else
-                (void)led_pattern;
-                (void)led_idx;
-#endif
-                led_idx = (led_idx+1) % 32;
-                last_led_change = now;
-            }
-
-#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
-            periph.check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
-#endif
-        }
-    }
 }
 
 void AP_Periph_FW::can_start()
@@ -1376,9 +1340,6 @@ void AP_Periph_FW::can_start()
             canardSetLocalNodeID(&instances[i].canard, PreferredNodeID);
         }
     }
-
-    // wait for dynamic node ID allocation on atleast one iface
-    can_wait_node_id();
 }
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
@@ -1470,7 +1431,9 @@ void AP_Periph_FW::hwesc_telem_update()
 void AP_Periph_FW::can_update()
 {
     for (auto &ins : instances) {
-        can_do_dna(ins);
+        if (AP_HAL::millis() > ins.send_next_node_id_allocation_request_at_ms) {
+            can_do_dna(ins);
+        }
     }
     
     static uint32_t last_1Hz_ms;
