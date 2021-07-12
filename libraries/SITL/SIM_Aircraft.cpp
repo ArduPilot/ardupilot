@@ -640,11 +640,14 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             break;
         }
         case GROUND_BEHAVIOR_TAILSITTER: {
-            // point straight up
-            float r, p, y;
-            dcm.to_euler(&r, &p, &y);
-            y = y + yaw_rate * delta_time;
-            dcm.from_euler(0.0f, radians(90), y);
+            // make sure vehicle is pointing upward
+            Vector2f bxe(dcm.a.x, dcm.b.x);
+            if (bxe.length() > 0.01f) {
+                // get yaw from projection of body frame X to ground
+                float yaw = atan2f(bxe.y, bxe.x);
+                // point straight up
+                dcm.from_euler(0.0f, radians(90.0f), yaw);
+            }
             // no movement
             if (accel_earth.z > -1.1*GRAVITY_MSS) {
                 velocity_ef.zero();
