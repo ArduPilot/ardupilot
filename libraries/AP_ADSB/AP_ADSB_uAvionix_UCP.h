@@ -84,6 +84,7 @@ private:
         uint32_t last_packet_GPS_ms;
         uint32_t last_packet_Transponder_Control_ms;
         uint32_t first_packet_Heartbeat_ms;
+        bool first_packet_Tx_Status_recieved;
         bool Heartbeat_two_seconds_b;
     } run_state;
 

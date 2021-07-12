@@ -78,7 +78,7 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     } // while nbytes
 
-   if (now_ms - run_state.last_packet_Transponder_Control_ms >= 1000) {
+   if (now_ms - run_state.last_packet_Transponder_Control_ms >= 1000 && run_state.first_packet_Tx_Status_recieved) {
         run_state.last_packet_Transponder_Control_ms = now_ms;
         send_Transponder_Control();
     }
@@ -98,18 +98,24 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         // transponder. The message will be transmitted with a period of one second for the UCP
         // protocol.
         memcpy(&rx.decoded.heartbeat, msg.raw, sizeof(rx.decoded.heartbeat));
-
+        
+        _frontend.tx_status.maintenanceRequired = rx.decoded.heartbeat.status.one.maintenanceRequired;
+        _frontend.tx_status.functionFailureGnssUnavailable = rx.decoded.heartbeat.status.two.functionFailureGnssUnavailable;
+        _frontend.tx_status.functionFailureGnssNo3dFix = rx.decoded.heartbeat.status.two.functionFailureGnssNo3dFix;
+        _frontend.tx_status.functionFailureTransmitSystem = rx.decoded.heartbeat.status.two.functionFailureTransmitSystem;
+        
+        const uint32_t now_ms = AP_HAL::millis();
+        if (run_state.first_packet_Heartbeat_ms > 0){
         // Disabled entirely for now. GPS messages will simply not be sent. 
         // Controls whether to send GPS messages based on whether the transponder has its own GPS. 
-        // const uint32_t now_ms = AP_HAL::millis();
-        // if (run_state.first_packet_Heartbeat_ms > 0){
         //     if (now_ms - run_state.first_packet_Heartbeat_ms >= 2000 && !run_state.Heartbeat_two_seconds_b) {
         //         send_gps = rx.decoded.heartbeat.status.two.functionFailureGnssUnavailable == 1;
         //         run_state.Heartbeat_two_seconds_b = true;
         //     }
-        // } else {
-        //     run_state.first_packet_Heartbeat_ms = now_ms;
-        // }
+        } else {
+            run_state.first_packet_Heartbeat_ms = now_ms;
+            _frontend.tx_status.noComms = 0;
+        }
 
         break;
         }
@@ -149,6 +155,10 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         // Ownship message will be transmitted with a period of one second regardless of data status or
         // update for the UCP protocol. All fields in the ownship message are transmitted MSB first
         memcpy(&rx.decoded.ownship_report, msg.raw, sizeof(rx.decoded.ownship_report));
+        _frontend.tx_status.airborne = rx.decoded.ownship_report.report.misc >= 8;
+        _frontend.tx_status.NACp = rx.decoded.ownship_report.report.NACp;
+        _frontend.tx_status.NIC = rx.decoded.ownship_report.report.NIC;
+        // _frontend.tx_status.temperature = rx.decoded.ownship_report.report.temperature; // there is no message in the vocabulary of the 200x that has board temperature
         break;
 
     case GDL90_ID_OWNSHIP_GEOMETRIC_ALTITUDE:
@@ -164,7 +174,28 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
     case GDL90_ID_TRANSPONDER_STATUS:
         memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
+        _frontend.tx_status.identActive = rx.decoded.transponder_status.identActive;
+        _frontend.tx_status.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
+        _frontend.tx_status.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;
+        _frontend.tx_status.modeSEnabled = rx.decoded.transponder_status.modeSEnabled;
+        _frontend.tx_status.es1090TxEnabled = rx.decoded.transponder_status.es1090TxEnabled;
+        _frontend.tx_status.squawkCode = rx.decoded.transponder_status.squawkCode;
+        _frontend.tx_status.x_bit = rx.decoded.transponder_status.x_bit;
+        if (!run_state.first_packet_Tx_Status_recieved)
+        {
+            // set initial control message contents to transponder defaults
+            _frontend.out_state.ctrl.modeAEnabled = _frontend.tx_status.modeAEnabled;
+            _frontend.out_state.ctrl.modeCEnabled = _frontend.tx_status.modeCEnabled;
+            _frontend.out_state.ctrl.modeSEnabled = _frontend.tx_status.modeSEnabled;
+            _frontend.out_state.ctrl.es1090TxEnabled = _frontend.tx_status.es1090TxEnabled;
+            _frontend.out_state.ctrl.squawkCode = _frontend.tx_status.squawkCode;
+            _frontend.out_state.ctrl.x_bit = _frontend.tx_status.x_bit;
+
+            _frontend.tx_status.noComms = 0;
+            run_state.first_packet_Tx_Status_recieved = true;
+        }
         break;
+
 #endif // HAL_ADSB_UCP_CAPTURE_ALL_RX_PACKETS
 
     case GDL90_ID_TRANSPONDER_CONTROL:

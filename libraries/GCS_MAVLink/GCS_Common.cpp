@@ -853,6 +853,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
+        { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -4813,6 +4814,17 @@ void GCS_MAVLINK::send_water_depth() const
 #endif
 }
 
+void GCS_MAVLINK::send_uavionix_adsb_out_status() const
+{
+    AP_ADSB adsb = AP_ADSB::get_singleton();
+    if(adsb == nullptr) return;
+    mavlink_msg_uavionix_adsb_out_status_send(
+        chan,
+        AP_HAL::millis(),
+        adsb->tx_status.
+    );
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5125,6 +5137,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(WATER_DEPTH);
         send_water_depth();
         break;
+
+    #if HAL_ADSB_ENABLED
+    case MSG_UAVIONIX_ADSB_OUT_STATUS:
+        CHECK_PAYLOAD_SIZE(ADSB_OUT_STATUS);
+        send_uavionix_adsb_out_status();
+        break;
+    #endif
 
     default:
         // try_send_message must always at some stage return true for

@@ -223,6 +223,31 @@ private:
         uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
     } in_state;
 
+    struct {
+        // from gdl90 status message
+        bool      interrogatedSinceLast;
+        bool      airborne;
+        bool      identActive;
+        bool      modeAEnabled;
+        bool      modeCEnabled;
+        bool      modeSEnabled;
+        bool      es1090TxEnabled;
+        uint16_t  squawkCode;
+        bool      x_bit;
+        uint8_t   NACp;
+        uint8_t   NIC;
+        uint8_t   temperature;
+
+        // from gdl90 heartbeat message
+        bool      maintenanceRequired;
+        bool      functionFailureGnssUnavailable;
+        bool      functionFailureGnssNo3dFix;
+        bool      functionFailureTransmitSystem;
+
+        // no connection to ping200x
+        bool      noComms = 1;
+    } tx_status;
+
     // ADSB-OUT state. Maintains export data
     struct {
         uint32_t    last_config_ms; // send once every 10s
