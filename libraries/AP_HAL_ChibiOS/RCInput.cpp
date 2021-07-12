@@ -180,6 +180,7 @@ void RCInput::_timer_tick(void)
         _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
+        _rx_link_quality = rcprot.get_rx_link_quality();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = rcprot.protocol_name();
 #endif
