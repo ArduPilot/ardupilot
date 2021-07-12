@@ -81,6 +81,7 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
+    AP_HAL::UARTDriver(_serial_num),
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600)
@@ -658,6 +659,7 @@ bool UARTDriver::discard_input()
     }
 
     _readbuf.clear();
+    update_readbuf_stats();
 
     if (!_rts_is_active) {
         update_rts_line();
@@ -684,6 +686,14 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
         update_rts_line();
     }
 
+#if HAL_LOG_UART_STATS
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.rx_bytes += count;
+        update_readbuf_stats();
+    }
+#endif
+
     return ret;
 }
 
@@ -704,6 +714,14 @@ int16_t UARTDriver::read()
         update_rts_line();
     }
 
+#if HAL_LOG_UART_STATS
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.rx_bytes++;
+        update_readbuf_stats();
+    }
+#endif
+
     return byte;
 }
 
@@ -722,6 +740,13 @@ int16_t UARTDriver::read_locked(uint32_t key)
     if (!_rts_is_active) {
         update_rts_line();
     }
+#if HAL_LOG_UART_STATS
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.rx_bytes++;
+        update_readbuf_stats();
+    }
+#endif
     return byte;
 }
 
@@ -748,12 +773,37 @@ size_t UARTDriver::write(uint8_t c)
         hal.scheduler->delay(1);
         _write_mutex.take_blocking();
     }
-    size_t ret = _writebuf.write(&c, 1);
+    uint32_t ret = _writebuf.write(&c, 1);
     if (unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
     _write_mutex.give();
+
+#if HAL_LOG_UART_STATS
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.tx_bytes++;
+        update_writebuf_stats();
+    }
+#endif
     return ret;
+}
+
+void UARTDriver::update_writebuf_stats()
+{
+    const uint32_t space = _writebuf.space();
+    _stats.tx_buffer_min = MIN(_stats.tx_buffer_min, space);
+    _stats.tx_buffer_max = MAX(_stats.tx_buffer_max, space);
+    _stats.tx_buffer_bytes_space_sum += space;
+    _stats.tx_buffer_bytes_space_count++;
+}
+void UARTDriver::update_readbuf_stats()
+{
+    const uint32_t available = _readbuf.available();
+    _stats.rx_buffer_min = MIN(_stats.rx_buffer_min, available);
+    _stats.rx_buffer_max = MAX(_stats.rx_buffer_max, available);
+    _stats.rx_buffer_bytes_available_sum += available;
+    _stats.rx_buffer_bytes_available_count++;
 }
 
 /* write a block of bytes to the port */
@@ -781,6 +831,13 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
+
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.tx_bytes += ret;
+        update_writebuf_stats();
+    }
+
     return ret;
 }
 
@@ -811,8 +868,19 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
     if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
-    WITH_SEMAPHORE(_write_mutex);
-    return _writebuf.write(buffer, size);
+    size_t ret;
+    {
+        WITH_SEMAPHORE(_write_mutex);
+        ret =  _writebuf.write(buffer, size);
+    }
+
+    {
+        WITH_SEMAPHORE(_stats.sem);
+        _stats.tx_bytes += ret;
+        update_writebuf_stats();
+    }
+
+    return ret;
 }
 
 /*

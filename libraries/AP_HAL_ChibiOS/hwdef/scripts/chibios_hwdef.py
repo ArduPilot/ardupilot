@@ -1288,8 +1288,8 @@ def write_UART_config(f):
     idx = 0
     for dev in uart_list:
         if dev == 'EMPTY':
-            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                    (devnames[idx], devnames[idx]))
+            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver(%u)\n' %
+                    (devnames[idx], devnames[idx], sdev))
             sdev += 1
         else:
             f.write(
@@ -1298,8 +1298,8 @@ def write_UART_config(f):
             sdev += 1
         idx += 1
     for idx in range(len(uart_list), len(devnames)):
-        f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
-                (devnames[idx], devnames[idx]))
+        f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver(%u)\n' %
+                (devnames[idx], devnames[idx], sdev))
 
     if 'IOMCU_UART' in config:
         f.write('#define HAL_WITH_IO_MCU 1\n')

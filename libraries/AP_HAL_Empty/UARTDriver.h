@@ -4,7 +4,7 @@
 
 class Empty::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    UARTDriver();
+    UARTDriver(uint8_t instance);
     /* Empty implementations of UARTDriver virtual methods */
     void begin(uint32_t b) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;

@@ -352,6 +352,8 @@ private:
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
+    // let uart write data out to onboard logs
+    void update_uart_logging();
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true

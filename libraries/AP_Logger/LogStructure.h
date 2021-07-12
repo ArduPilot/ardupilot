@@ -282,6 +282,18 @@ struct PACKED log_MAV {
     uint16_t times_full;
 };
 
+struct PACKED log_UART {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    uint16_t rxq_min;
+    uint16_t rxq_max;
+    uint16_t rxq_avg;
+    uint16_t txq_min;
+    uint16_t txq_max;
+    uint16_t txq_avg;
+};
+
 struct PACKED log_RSSI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1299,6 +1311,8 @@ LOG_STRUCTURE_FROM_AHRS \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
+    { LOG_UART_MSG, sizeof(log_UART),   \
+      "UART", "QBHHHHHH",   "TimeUS,id,rmn,rmx,rav,tmn,tmx,tav", "s#------", "F-000000" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
@@ -1422,6 +1436,7 @@ enum LogMessages : uint8_t {
     LOG_EVENT_MSG,
     LOG_WHEELENCODER_MSG,
     LOG_MAV_MSG,
+    LOG_UART_MSG,
     LOG_ERROR_MSG,
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,

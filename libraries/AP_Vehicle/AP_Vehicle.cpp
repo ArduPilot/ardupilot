@@ -231,6 +231,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+    SCHED_TASK(update_uart_logging,                   10,      20),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -306,6 +307,11 @@ void AP_Vehicle::send_watchdog_reset_statustext()
                     (unsigned)pd.internal_error_count,
                     pd.thread_name4
         );
+}
+
+void AP_Vehicle::update_uart_logging()
+{
+    AP_HAL::UARTDriver::update_logging_all();
 }
 
 bool AP_Vehicle::is_crashed() const
