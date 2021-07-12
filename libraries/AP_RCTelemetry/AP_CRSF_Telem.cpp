@@ -165,7 +165,9 @@ void AP_CRSF_Telem::process_rf_mode_changes()
     // report a change in RF mode or a chnage of more than 10Hz if we haven't done so in the last 5s
     if ((now - _telem_last_report_ms > 5000) &&
         (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "CRSF: RF mode %d, rate is %dHz", (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
+        if (!rc().suppress_crsf_message()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "CRSF: RF mode %d, rate is %dHz", (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
+        }
         update_custom_telemetry_rates(current_rf_mode);
         _telem_rf_mode = current_rf_mode;
         _telem_last_avg_rate = _scheduler.avg_packet_rate;
