@@ -30,7 +30,7 @@ void Copter::terrain_logging()
 // return terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)
 float Copter::get_terrain_margin() const
 {
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     return MAX(g2.terrain_margin.get(), 0.1);
 #else
     return 10;
