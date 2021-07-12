@@ -231,6 +231,8 @@ public:
 
     // show stack as DEBUG msgs
     void show_stack_free();
+
+    static bool no_iface_finished_dna;
 };
 
 namespace AP

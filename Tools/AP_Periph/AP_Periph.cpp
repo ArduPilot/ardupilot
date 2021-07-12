@@ -306,7 +306,9 @@ void AP_Periph_FW::update()
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED
-        palToggleLine(HAL_GPIO_PIN_LED);
+        if (!no_iface_finished_dna) {
+            palToggleLine(HAL_GPIO_PIN_LED);
+        }
 #endif
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
