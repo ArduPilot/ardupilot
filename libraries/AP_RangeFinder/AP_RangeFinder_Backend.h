@@ -30,6 +30,7 @@ public:
 
     // update the state structure
     virtual void update() = 0;
+    virtual void init_serial() {};
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 #if HAL_MSP_RANGEFINDER_ENABLED
