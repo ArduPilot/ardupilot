@@ -61,6 +61,8 @@ public:
 
     bool receiving; // currently sending requests and expecting items
 
+    bool send_mission_checksum_message(const GCS_MAVLINK &_link);
+
 protected:
 
     GCS_MAVLINK *link; // link currently receiving waypoints on
@@ -127,6 +129,8 @@ private:
     // in a transfer.  Backends are expected to tidy themselves up in
     // this routine
     virtual void timeout() {};
+
+    virtual bool checksum_for_mission_checksum_message(uint32_t &checksum) = 0;
 
     bool mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const;
 };

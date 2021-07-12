@@ -29,6 +29,12 @@ protected:
     }
     bool clear_all_items() override WARN_IF_UNUSED;
 
+    bool checksum_for_mission_checksum_message(uint32_t &checksum) override {
+        // this implementation needs some work
+        checksum = 0;
+        return true;
+    }
+
 private:
     class AC_Fence &_fence;
 
