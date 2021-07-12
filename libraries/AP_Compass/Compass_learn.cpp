@@ -39,7 +39,7 @@ CompassLearn::CompassLearn(Compass &_compass) :
 void CompassLearn::update(void)
 {
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
+    if (compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
         !hal.util->get_soft_armed() || vehicle->get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
         // the ground
@@ -83,6 +83,9 @@ void CompassLearn::update(void)
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
 
+    if (!AP_Notify::flags.compass_cal_running) {
+        start_time_ms = AP_HAL::millis();
+    }
     AP_Notify::flags.compass_cal_running = true;
 
     if (sample_available) {
@@ -129,7 +132,7 @@ void CompassLearn::update(void)
                                                num_samples);
     }
 
-    if (!converged) {
+    {
         WITH_SEMAPHORE(sem);
 
         // set offsets to current best guess
@@ -159,21 +162,36 @@ void CompassLearn::update(void)
                 }
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);
-            // setup so use can trigger it again
-            converged = false;
-            sample_available = false;
-            num_samples = 0;
-            have_earth_field = false;
-            memset(predicted_offsets, 0, sizeof(predicted_offsets));
-            worst_error = 0;
-            best_error = 0;
-            best_yaw_deg = 0;
-            best_offsets.zero();
+            reset();
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
             AP_Notify::flags.compass_cal_running = false;
             AP_Notify::events.compass_cal_saved = true;
         }
+        if (AP_HAL::millis() - start_time_ms > 600U*1000U) {
+            compass.set_learn_type(Compass::LEARN_NONE, false);
+            reset();
+            gcs().send_text(MAV_SEVERITY_WARNING, "CompassLearn: Timeout");
+            AP_Notify::flags.compass_cal_running = false;
+            AP_Notify::events.compass_cal_saved = false;
+            return;
+        }
     }
+}
+
+/*
+ * Reset counter for new run
+ */
+void CompassLearn::reset()
+{
+    // setup so use can trigger it again
+    sample_available = false;
+    num_samples = 0;
+    have_earth_field = false;
+    memset(predicted_offsets, 0, sizeof(predicted_offsets));
+    worst_error = 0;
+    best_error = 0;
+    best_yaw_deg = 0;
+    best_offsets.zero();
 }
 
 /*
@@ -255,7 +273,7 @@ void CompassLearn::process_sample(const struct sample &s)
 
     // send current learn state to gcs
     const uint32_t now = AP_HAL::millis();
-    if (!converged && now - last_learn_progress_sent_ms >= 5000) {
+    if (now - last_learn_progress_sent_ms >= 5000) {
         float percent = (MIN(num_samples / COMPASS_LEARN_NUM_SAMPLES, 1.0f) + 
                          MIN(COMPASS_LEARN_BEST_ERROR_THRESHOLD / (best_error + 1.0f), 1.0f) + 
                          MIN(worst_error / COMPASS_LEARN_WORST_ERROR_THRESHOLD, 1.0f)) / 3.0f * 100.f;
