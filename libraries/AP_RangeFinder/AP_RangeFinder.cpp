@@ -314,7 +314,7 @@ void RangeFinder::update(void)
 #endif
 }
 
-bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance)
+bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
 {
     if (!backend) {
         return false;
@@ -326,7 +326,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
         // we've allocated the same instance twice
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
-
+    backend->init_serial(serial_instance);
     drivers[instance] = backend;
     num_instances = MAX(num_instances, instance+1);
 
@@ -442,17 +442,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::LWSER:
         if (AP_RangeFinder_LightWareSerial::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LightWareSerial(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_LightWareSerial(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::LEDDARONE:
         if (AP_RangeFinder_LeddarOne::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LeddarOne(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_LeddarOne(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::ULANDING:
         if (AP_RangeFinder_uLanding::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_uLanding(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_uLanding(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::BEBOP:
@@ -472,7 +472,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::MBSER:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::ANALOG:
@@ -493,27 +493,27 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::NMEA:
         if (AP_RangeFinder_NMEA::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_NMEA(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_NMEA(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::WASP:
         if (AP_RangeFinder_Wasp::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Wasp(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_Wasp(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::BenewakeTF02:
         if (AP_RangeFinder_Benewake_TF02::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TF02(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_Benewake_TF02(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::BenewakeTFmini:
         if (AP_RangeFinder_Benewake_TFMini::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TFMini(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_Benewake_TFMini(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::BenewakeTF03:
         if (AP_RangeFinder_Benewake_TF03::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TF03(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_Benewake_TF03(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::PWM:
@@ -525,17 +525,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::BLPing:
         if (AP_RangeFinder_BLPing::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_BLPing(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_BLPing(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::Lanbao:
         if (AP_RangeFinder_Lanbao::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Lanbao(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_Lanbao(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::LeddarVu8_Serial:
         if (AP_RangeFinder_LeddarVu8::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LeddarVu8(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_LeddarVu8(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
 
@@ -552,7 +552,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 
     case Type::GYUS42v2:
         if (AP_RangeFinder_GYUS42v2::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_GYUS42v2(state[instance], params[instance], serial_instance++), instance);
+            _add_backend(new AP_RangeFinder_GYUS42v2(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
 
