@@ -88,6 +88,7 @@ public:
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
 
     int get_hw_arm32();
+    int get_hw_arm64();
 
     bool toneAlarm_init(uint8_t types) override { return _toneAlarm.init(); }
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {

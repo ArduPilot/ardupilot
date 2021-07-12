@@ -231,6 +231,29 @@ int Util::get_hw_arm32()
     return -ENOENT;
 }
 
+int Util::get_hw_arm64()
+{
+    char buffer[MAX_SIZE_LINE] = { 0 };
+    FILE *f = fopen("/proc/device-tree/model", "r");
+    if (f == nullptr) {
+        return -errno;
+    }
+
+    while (fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
+        for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
+            if (strstr(buffer, _hw_names[i]) == nullptr) {
+                continue;
+            }
+            fclose(f);
+            return i;
+        }
+    }
+
+    fclose(f);
+    return -ENOENT;
+
+}
+
 #ifdef ENABLE_HEAP
 void *Util::allocate_heap_memory(size_t size)
 {
