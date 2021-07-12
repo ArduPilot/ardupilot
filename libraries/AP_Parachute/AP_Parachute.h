@@ -110,6 +110,12 @@ private:
     bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
+
+    enum class Options : uint8_t {
+        HoldOpen = (1U<<0),
+    };
+
+    AP_Int32    _options;
 };
 
 namespace AP {
