@@ -319,16 +319,29 @@ void AP_OSD::osd_thread()
 {
     while (true) {
         hal.scheduler->delay(100);
-        update_osd();
+        update_stats();
+#if defined(ENABLE_SCRIPTING) && ENABLE_SCRIPTING
+        if (!scripting_override) {
+#endif
+            backend->clear();
+            update_osd();
+            backend->flush();
+#if defined(ENABLE_SCRIPTING) && ENABLE_SCRIPTING
+        } else {
+            override_count++;
+            if (override_count > 20) {
+                // timeout after 2 seconds and return to normal OSD
+                scripting_override = false;
+                override_count = 0;
+            }
+        }
+#endif // ENABLE_SCRIPTING
     }
 }
 
 void AP_OSD::update_osd()
 {
-    backend->clear();
-
     if (!_disable) {
-        update_stats();
         update_current_screen();
 
         get_screen(current_screen).set_backend(backend);
@@ -337,8 +350,6 @@ void AP_OSD::update_osd()
             get_screen(current_screen).draw();
         }
     }
-
-    backend->flush();
 }
 
 //update maximums and totals
