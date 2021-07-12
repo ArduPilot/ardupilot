@@ -743,8 +743,9 @@ bool AP_BLHeli::BL_ConnectEx(void)
 
     blheli.interface_mode[blheli.chan] = 0;
 
-    uint16_t *devword = (uint16_t *)blheli.deviceInfo[blheli.chan];
-    switch (*devword) {
+    uint16_t devword;
+    memcpy(&devword, blheli.deviceInfo[blheli.chan], sizeof(devword));
+    switch (devword) {
     case 0x9307:
     case 0x930A:
     case 0x930F:
@@ -769,7 +770,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
             debug("Interface type imARM_BLB");
         } else {
             blheli.ack = ACK_D_GENERAL_ERROR;
-            debug("Unknown interface type 0x%04x", *devword);
+            debug("Unknown interface type 0x%04x", devword);
             break;
         }
     }
