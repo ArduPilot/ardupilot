@@ -502,6 +502,20 @@ public:
     void enable() {
         _disable = false;
     }
+#if defined(ENABLE_SCRIPTING) && ENABLE_SCRIPTING
+    AP_OSD_Backend *scripting_get_backend() {
+        scripting_override = true;
+        override_count = 0;
+        return backend;
+    }
+    void draw_screen() {
+        if (scripting_override) {
+            update_osd();
+        }
+    }
+    bool display_disabled() const { return _disable; }
+    uint8_t get_screen() const { return current_screen; }
+#endif // ENABLE_SCRIPTING
 
     AP_OSD_AbstractScreen& get_screen(uint8_t idx) {
 #if OSD_PARAM_ENABLED
@@ -558,7 +572,11 @@ private:
     float avg_current_a;
 #endif
     AP_OSD_Backend *backend;
-
+#if defined(ENABLE_SCRIPTING) && ENABLE_SCRIPTING
+    // bool for scripting override and counter to timeout override
+    bool scripting_override;
+    uint8_t override_count;
+#endif // ENABLE_SCRIPTING
     static AP_OSD *_singleton;
 };
 
