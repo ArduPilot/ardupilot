@@ -2538,11 +2538,11 @@ class AutoTestCopter(AutoTest):
             while True:
                 if self.get_sim_time_cached() - tstart > 200:
                     raise NotAchievedException("Did not disarm")
-                self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                    blocking=True)
+                # self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                # blocking=True)
                 # print("gpi=%s" % str(gpi))
-                self.mav.recv_match(type='SIMSTATE',
-                                    blocking=True)
+                # self.mav.recv_match(type='SIM_STATE',
+                #                    blocking=True)
                 # print("ss=%s" % str(ss))
                 # wait for RTL disarm:
                 if not self.armed():
@@ -7042,6 +7042,47 @@ class AutoTestCopter(AutoTest):
 
         self.upload_simple_relhome_mission(items)
 
+    def fly_square_mission_around_location(self, loc):
+        self.customise_SITL_commandline([
+        ], home=self.mavutil_location_to_str(loc)
+        )
+        self.upload_square_mission_items_around_location(loc)
+        self.change_mode('AUTO')
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_disarmed()
+
+    def NorthPole(self):
+        middle = mavutil.location(90, 0, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def SouthPole(self):
+        middle = mavutil.location(-90, 0, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def LongitudeWrap(self):
+        middle = mavutil.location(-16.51273251, 179.999999999, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def Equator(self):
+        middle = mavutil.location(0, 40, 0, 45)
+        self.fly_square_mission_around_location(middle)
+
+    def CMAC(self):
+        middle = mavutil.location(-35.362938, 149.165085, 584, 270)
+        self.fly_square_mission_around_location(middle)
+
+    def Rabi(self):
+        middle = mavutil.location(-16.51273251, 179.97642023, 7.5, 90)
+        self.fly_square_mission_around_location(middle)
+
+    def ZeroZero(self):
+        # the 1 here is so we don't accidentally trigger ArduPilot's
+        # 0,0,0 check.  One place on earth the yaw makes no sense
+        middle = mavutil.location(0.000001, 0.000001, 1, 45)
+        self.fly_square_mission_around_location(middle)
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -7186,6 +7227,33 @@ class AutoTestCopter(AutoTest):
              "Test Splines and Terrain",
              self.test_terrain_spline_mission),
 
+            ("NorthPole",
+             "Test Flying at North Pole",
+             self.NorthPole),
+
+            ("SouthPole",
+             "Test Flying at South Pole",
+             self.SouthPole),
+
+            ("ZeroZero",
+             "Test Flying at ZeroZero",
+             self.ZeroZero),
+
+            ("LongitudeWrap",
+             "Test Flying at Longitude Wrap point",
+             self.LongitudeWrap),
+
+            ("Equator",
+             "Test Flying at Equator",
+             self.Equator),
+
+            ("CMAC",
+             "Test Flying at Equator",
+             self.CMAC),
+
+            ("Rabi",
+             "Test Flying at Rabi",
+             self.Rabi),
         ])
         return ret
 
@@ -7532,6 +7600,8 @@ class AutoTestCopter(AutoTest):
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
+            "NorthPole": "Fails to run mission",
+            "SouthPole": "EKF gets very unhappy - and vibe compensation....",
         }
 
 

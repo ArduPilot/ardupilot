@@ -1300,7 +1300,9 @@ class AutoTest(ABC):
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
     def sitl_home(self):
-        HOME = self.sitl_start_location()
+        return self.mavutil_location_to_str(self.sitl_start_location())
+
+    def mavutil_location_to_str(self, HOME):
         return "%f,%f,%u,%u" % (HOME.lat,
                                 HOME.lng,
                                 HOME.alt,
@@ -2128,14 +2130,15 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False):
+    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False, home=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
         self.start_SITL(model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        home=home)
         tstart = time.time()
         while True:
             if time.time() - tstart > 30:
@@ -2701,18 +2704,18 @@ class AutoTest(ABC):
 
     def sim_location(self):
         """Return current simulator location."""
-        m = self.mav.recv_match(type='SIMSTATE', blocking=True)
+        m = self.poll_message('SIM_STATE')
         return mavutil.location(m.lat*1.0e-7,
-                                m.lng*1.0e-7,
-                                0,
+                                m.lon*1.0e-7,
+                                m.alt,
                                 math.degrees(m.yaw))
 
     def sim_location_int(self):
         """Return current simulator location."""
-        m = self.mav.recv_match(type='SIMSTATE', blocking=True)
+        m = self.poll_message('SIM_STATE', blocking=True)
         return mavutil.location(m.lat,
-                                m.lng,
-                                0,
+                                m.lon,
+                                m.alt,
                                 math.degrees(m.yaw))
 
     def save_wp(self, ch=7):
@@ -4648,7 +4651,7 @@ class AutoTest(ABC):
         data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
 
         if dist > dist_max:
-            raise NotAchievedException("simstate from startup location: %s" % data)
+            raise NotAchievedException("simstate far from startup location: %s" % data)
         self.progress("Simstate Close to startup location: %s" % data)
 
     def reach_distance_manual(self, distance):
@@ -7066,10 +7069,8 @@ Also, ignores heartbeats not from our target system'''
             # wait until we definitely know where we are:
             self.poll_home_position(timeout=120)
 
-            ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
-            if ss is None:
-                raise NotAchievedException("Did not get SIMSTATE")
-            self.progress("Got SIMSTATE (%s)" % str(ss))
+            ss = self.poll_message("SIM_STATE")
+            self.progress("Got SIM_STATE (%s)" % str(ss))
 
             self.run_cmd(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
                          math.degrees(ss.yaw), # param1
