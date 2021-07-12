@@ -104,7 +104,7 @@ TEST(Location, LatLngWrapping)
         int32_t expected_lat;
         int32_t expected_lng;
     } tests[] {
-        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860774}
+        {519634000, 1797560000, Vector2f{0, 100000}, 519634000, -1787860775}
     };
 
     for (auto &test : tests) {
@@ -139,7 +139,7 @@ TEST(Location, LocOffsetDouble)
                -353632620, 1491652373,
                Vector2d{4682795.4576701336, 5953662.7673837934},
                Vector2d{4682797.1904749088, 5953664.1586009059},
-               Vector2d{1.7365739867091179,1.4261966},
+               Vector2d{1.7365739867091179,1.2050807},
     };
 
     for (auto &test : tests) {
