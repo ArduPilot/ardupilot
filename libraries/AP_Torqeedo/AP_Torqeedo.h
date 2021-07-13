@@ -24,6 +24,7 @@
 #if HAL_TORQEEDO_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 
 #define TORQEEDO_MESSAGE_LEN_MAX    30  // messages are no more than 30 bytes
 
@@ -41,6 +42,12 @@ public:
     // consume incoming messages from motor, reply with latest motor speed
     // runs in background thread
     void thread_main();
+
+    // returns true if communicating with the motor
+    bool healthy();
+
+    // run pre-arm check.  returns false on failure and fills in failure_msg
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -92,6 +99,10 @@ private:
     int16_t _motor_speed;           // desired motor speed (set from within update method)
     uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent
     uint32_t _send_delay_us;        // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
+
+    // health reporting
+    uint32_t _last_healthy_ms;      // system time (in millis) that driver was last considered healthy
+    HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_healthy_ms
 
     // message parsing members
     ParseState _parse_state;        // current state of parsing
