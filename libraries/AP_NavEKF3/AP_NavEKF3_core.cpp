@@ -1143,7 +1143,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             const uint8_t index = stateIndex - 13;
 
             // Don't attempt learning of IMU delta velocty bias if on ground and not aligned with the gravity vector
-            const bool is_bias_observable = (fabsF(prevTnb[index][2]) > 0.8f) && onGround;
+            const bool is_bias_observable = (fabsF(prevTnb[index][2]) > 0.8f) || !onGround;
 
             if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
                 // store variances to be reinstated wben learning can commence later
