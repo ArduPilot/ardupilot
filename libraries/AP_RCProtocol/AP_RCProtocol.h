@@ -70,6 +70,7 @@ public:
     bool new_input();
     void start_bind(void);
     int16_t get_RSSI(void) const;
+    int16_t get_rx_link_quality(void) const;
 
     // return protocol name as a string
     static const char *protocol_name_from_protocol(rcprotocol_t protocol);
