@@ -22,6 +22,7 @@
 #include "Util.h"
 #include "DSP.h"
 #include "CANSocketIface.h"
+#include "SPIDevice.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
@@ -50,7 +51,6 @@ static DSP dspDriver;
 
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
@@ -66,11 +66,12 @@ static UARTDriver sitlUart8Driver(8, &sitlState);
 
 #if defined(HAL_BUILD_AP_PERIPH)
 static Empty::I2CDeviceManager i2c_mgr_instance;
+static Empty::SPIDeviceManager spi_mgr_instance;
 #else
 static I2CDeviceManager i2c_mgr_instance;
+static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);
-
 
 #if HAL_NUM_CAN_IFACES
 static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
@@ -90,7 +91,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart7Driver,   /* uartH */
         &sitlUart8Driver,   /* uartI */
         &i2c_mgr_instance,
-        &emptySPI,          /* spi */
+        &spi_mgr_instance,  /* spi */
         &qspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
