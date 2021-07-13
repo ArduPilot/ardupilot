@@ -2858,13 +2858,16 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def test_terrain_spline_mission(self):
-        self.set_parameter("AUTO_OPTIONS", 3)
         self.set_parameter("TERRAIN_ENABLE", 0)
-        self.load_mission("wp.txt")
+        self.fly_mission("wp.txt")
+
+    def fly_mission(self, filename, strict=True):
+        num_wp = self.load_mission(filename, strict=strict)
+        self.set_parameter("AUTO_OPTIONS", 3)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(4, 4)
+        self.wait_waypoint(num_wp-1, num_wp-1)
         self.wait_disarmed()
 
     def test_surface_tracking(self):
