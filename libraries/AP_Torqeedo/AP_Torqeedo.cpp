@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
 
     // @Param: ONOFF_PIN
     // @DisplayName: Torqeedo ON/Off pin
-    // @Description: Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
+    // @Description: Pin number connected to Torqeedo's on/off pin. -1 to use serial port's RTS pin if available
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
 
     // @Param: DE_PIN
     // @DisplayName: Torqeedo DE pin
-    // @Description: Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
+    // @Description: Pin number connected to RS485 to Serial converter's DE pin. -1 to use serial port's CTS pin if available
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
@@ -90,20 +90,25 @@ bool AP_Torqeedo::init_internals()
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_unbuffered_writes(true);
 
-    // initialise onoff pin and set for 0.5 sec to turn on motor
     if (_pin_onoff > -1) {
+        // initialise on/off pin and set for 0.5 sec to turn on motor
         hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
         hal.gpio->write(_pin_onoff, 1);
-
-        // delay 0.5 sec and then unset pin
         hal.scheduler->delay(500);
         hal.gpio->write(_pin_onoff, 0);
+    } else {
+        // user serial port's RTS pin to turn on motor
+        _uart->set_RTS_pin(true);
+        hal.scheduler->delay(500);
+        _uart->set_RTS_pin(false);
     }
 
     // initialise RS485 DE pin (when high, allows send to motor)
     if (_pin_de > -1) {
         hal.gpio->pinMode(_pin_de, HAL_GPIO_OUTPUT);
         hal.gpio->write(_pin_de, 0);
+    } else {
+        _uart->set_CTS_pin(false);
     }
 
     return true;
