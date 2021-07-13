@@ -609,6 +609,9 @@ void AP_GPS_UAVCAN::handle_status_msg(const StatusCb &cb)
 void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb)
 {
     WITH_SEMAPHORE(sem);
+    if ((rtcm3_parser == nullptr) || (role != AP_GPS::GPS_ROLE_MB_BASE)) {
+        return;
+    }
     for (const auto &c : cb.msg->data) {
         rtcm3_parser->read(c);
     }
@@ -622,20 +625,27 @@ void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb)
     if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
         return;
     }
-    WITH_SEMAPHORE(sem_heading);
-    heading_interim_state.time_ms = cb.msg->timestamp.usec/1000;
-    heading_interim_state.reported_heading = cb.msg->reported_heading_deg;
-    heading_interim_state.reported_heading_acc_available = cb.msg->reported_heading_acc_available;
-    heading_interim_state.reported_heading_acc = cb.msg->reported_heading_acc_deg;
-    heading_interim_state.relative_distance = cb.msg->relative_distance_m;
-    heading_interim_state.relative_down_pos = cb.msg->relative_down_pos_m;
-    _new_heading_data = true;
+ 
+    WITH_SEMAPHORE(sem);
+
+    interim_state.gps_yaw_configured = true;
+    // push raw heading data to calculate moving baseline heading states
+    if (calculate_moving_base_yaw(interim_state,
+                                cb.msg->reported_heading_deg,
+                                cb.msg->relative_distance_m,
+                                cb.msg->relative_down_pos_m)) {
+        if (cb.msg->reported_heading_acc_available) {
+            interim_state.gps_yaw_accuracy = cb.msg->reported_heading_acc_deg;
+        }
+        interim_state.have_gps_yaw_accuracy = cb.msg->reported_heading_acc_available;
+    }
 }
 
 // support for retrieving RTCMv3 data from a moving baseline base
 bool AP_GPS_UAVCAN::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 {
-    if (rtcm3_parser) {
+    WITH_SEMAPHORE(sem);
+    if (rtcm3_parser != nullptr) {
         len = rtcm3_parser->get_len(bytes);
         return len > 0;
     }
@@ -645,7 +655,8 @@ bool AP_GPS_UAVCAN::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 // clear previous RTCM3 packet
 void AP_GPS_UAVCAN::clear_RTCMV3(void)
 {
-    if (rtcm3_parser) {
+    WITH_SEMAPHORE(sem);
+    if (rtcm3_parser != nullptr) {
         rtcm3_parser->clear_packet();
     }
 }
@@ -727,22 +738,6 @@ void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, ui
 // Consume new data and mark it received
 bool AP_GPS_UAVCAN::read(void)
 {
-#if GPS_MOVING_BASELINE
-    WITH_SEMAPHORE(sem_heading);
-    if (_new_heading_data && role == AP_GPS::GPS_ROLE_MB_ROVER) {
-        _new_heading_data = false;
-
-        // push raw heading data to calculate moving baseline heading states
-        if (calculate_moving_base_yaw(heading_interim_state.reported_heading,
-                                      heading_interim_state.relative_distance,
-                                      heading_interim_state.relative_down_pos)) {
-            if (heading_interim_state.reported_heading_acc_available) {
-                state.gps_yaw_accuracy = heading_interim_state.reported_heading_acc;
-                state.have_gps_yaw_accuracy = heading_interim_state.reported_heading_acc_available;
-            }
-        }
-    }
-#endif
     WITH_SEMAPHORE(sem);
     if (_new_data) {
         _new_data = false;

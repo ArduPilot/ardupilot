@@ -1020,7 +1020,7 @@ void AP_GPS::update_primary(void)
     // primary. This ensures that the yaw data and position/velocity
     // data is time aligned whenever we provide yaw to the EKF
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER &&
+        if (((_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
             state[i].status == GPS_OK_FIX_3D_RTK_FIXED &&
             state[i].have_gps_yaw) {
             if (primary_instance != i) {
@@ -1043,7 +1043,7 @@ void AP_GPS::update_primary(void)
         const uint8_t i2 = i^1; // the other GPS in the pair
         if (_type[i] == GPS_TYPE_UBLOX_RTK_BASE &&
             state[i].status >= GPS_OK_FIX_3D &&
-            _type[i2] == GPS_TYPE_UBLOX_RTK_ROVER &&
+            (_type[i2] == GPS_TYPE_UBLOX_RTK_ROVER || _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) &&
             (state[i2].status != GPS_OK_FIX_3D_RTK_FIXED ||
              !state[i2].have_gps_yaw)) {
             if (primary_instance != i) {
@@ -1896,7 +1896,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       happens with the RTCMv3 data
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
+    const float delay_avg_max = _type[instance] == (GPS_TYPE_UBLOX_RTK_ROVER || GPS_TYPE_UAVCAN_RTK_ROVER)?245:215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&

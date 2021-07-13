@@ -63,7 +63,14 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #if UBLOX_MB_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define MB_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
  # define MB_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
 #else
  # define MB_Debug(fmt, args ...)
 #endif
@@ -1360,21 +1367,22 @@ AP_GPS_UBLOX::_parse_gps(void)
                 MB_Debug("RELPOSNED ITOW %u %u\n", unsigned(_buffer.relposned.iTOW), unsigned(_last_relposned_itow));
             }
             _last_relposned_itow = _buffer.relposned.iTOW;
-            Debug("RELPOSNED flags: %lx valid: %lx invalid: %lx\n", _buffer.relposned.flags, valid_mask, invalid_mask);
+            MB_Debug("RELPOSNED flags: %lx valid: %lx invalid: %lx\n", _buffer.relposned.flags, valid_mask, invalid_mask);
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
-                ((_buffer.relposned.flags & invalid_mask) == 0) &&
-                calculate_moving_base_yaw(_buffer.relposned.relPosHeading * 1e-5,
+                ((_buffer.relposned.flags & invalid_mask) == 0)) {
+                if (calculate_moving_base_yaw(_buffer.relposned.relPosHeading * 1e-5,
                                           _buffer.relposned.relPosLength * 0.01,
                                           _buffer.relposned.relPosD*0.01)) {
-                state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
-                state.have_gps_yaw_accuracy = true;
-                _last_relposned_ms = AP_HAL::millis();
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
+                    _last_relposned_ms = AP_HAL::millis();
+                }
                 if (gps._relposheading_cb != nullptr) {
-                    gps._relposheading_cb(_last_relposned_ms,
+                    gps._relposheading_cb(AP_HAL::millis(),
                                           _buffer.relposned.relPosHeading * 1e-5,
                                           _buffer.relposned.relPosLength * 0.01,
                                           _buffer.relposned.relPosD*0.01,
-                                          state.gps_yaw_accuracy);
+                                          _buffer.relposned.accHeading * 1e-5);
                 }
             } else {
                 state.have_gps_yaw_accuracy = false;
