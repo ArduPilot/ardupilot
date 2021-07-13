@@ -2096,6 +2096,115 @@ bool AP_Mission::jump_to_shortest_landing_sequence(void)
     return jump_to_landing_sequence();
 }
 
+/*
+   find the closest point on the mission after a DO_LAND_START and before the final DO_LAND_START
+   defaults to closest if distance to mission calculation fails
+ */
+bool AP_Mission::jump_to_closest_mission_leg(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return 0;
+    }
+
+    uint16_t landing_start_index = 0;
+    float min_distance = -1;
+    uint16_t possible_index = 0;
+    float possible_min_dist = -1;
+
+    // Go through mission looking for shortest distance to landing
+    for (uint16_t i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_LAND_START) {
+            landing_start_index = possible_index;
+            min_distance = possible_min_dist;
+            uint16_t tmp_index;
+            float tmp_distance;
+            if (!distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc)){
+                continue;
+            }
+            if (min_distance < 0 || tmp_distance <= min_distance) {
+                // Only valid if this is not the final DO_LAND_START
+                possible_min_dist = tmp_distance;
+                possible_index = tmp_index;
+            }
+        }
+    }
+
+    if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
+
+        // if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Rejoin Landing sequence start");
+        _flags.in_landing_sequence = true;
+        return true;
+    }
+
+    // failed to do shortest rejoin calculation, default to closest
+    return jump_to_landing_sequence();
+}
+
+/*
+   find the closest point on the mission after a DO_LAND_START and before the final DO_LAND_START
+   pick the shortest distance to landing not the shortest distance to rejoin mission
+   defaults to closest if distance to landing calculation fails
+ */
+bool AP_Mission::jump_to_shortest_mission_leg(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return 0;
+    }
+
+    uint16_t landing_start_index = 0;
+    float min_distance = -1;
+    uint16_t possible_index = 0;
+    float possible_min_dist = -1;
+
+    // Go through mission looking for shortest distance to landing
+    for (uint16_t i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_LAND_START) {
+            landing_start_index = possible_index;
+            min_distance = possible_min_dist;
+            uint16_t tmp_index;
+            float tmp_distance;
+            if (!(distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && distance_to_landing(tmp_index, tmp_distance, current_loc))) {
+                continue;
+            }
+            if (min_distance < 0 || tmp_distance <= min_distance) {
+                // Only valid if this is not the final DO_LAND_START
+                possible_min_dist = tmp_distance;
+                possible_index = tmp_index;
+            }
+        }
+    }
+
+    if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
+
+        // if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Rejoin shortest Landing sequence start");
+        _flags.in_landing_sequence = true;
+        return true;
+    }
+
+    // failed to do shortest rejoin calculation, default to closest
+    return jump_to_closest_mission_leg();
+}
+
 
 // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
 bool AP_Mission::jump_to_abort_landing_sequence(void)
@@ -2247,6 +2356,79 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
         }
     }
     // reached end of loop without getting to a landing
+    ret = false;
+
+reset_do_jump_tracking:
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        _jump_tracking[i] = _jump_tracking_backup[i];
+    }
+
+    return ret;
+}
+
+// Approximate the distance travelled to return to the mission path. DO_JUMP commands are observed in look forward.
+// Stop searching once reaching a landing or do-land-start
+bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_distance, uint16_t &rejoin_index, Location current_loc)
+{
+    Location prev_loc;
+    Mission_Command temp_cmd;
+    rejoin_distance = -1;
+    rejoin_index = -1;
+    bool ret = false;
+
+    // back up jump tracking to reset after distance calculation
+    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        _jump_tracking_backup[i] = _jump_tracking[i];
+    }
+
+    // run through remainder of mission to approximate a distance to landing
+    uint16_t index = start_index;
+    for (uint8_t i=0; i<255; i++) {
+        // search until the end of the mission command list
+        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+            if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
+                break;
+            } else {
+                // got to the end of the mission
+                goto reset_do_jump_tracking;
+            }
+        }
+        index = temp_cmd.index + 1;
+
+        if (!(temp_cmd.content.location.lat == 0 && temp_cmd.content.location.lng == 0)) {
+            ret = true;
+            if (prev_loc.lat == 0 && prev_loc.lng == 0) {
+                // Need a valid previous location to do distance to leg calculation
+                prev_loc = temp_cmd.content.location;
+
+                // single point dist calc
+                rejoin_distance = prev_loc.get_distance(current_loc);;
+                rejoin_index = temp_cmd.index;
+
+            } else {
+                // Calculate the distance to rejoin
+                Vector2f mission_vector = prev_loc.get_distance_NE(temp_cmd.content.location);
+                Vector2f pos = prev_loc.get_distance_NE(current_loc);
+
+                float disttemp = Vector2f::closest_distance_between_line_and_point(Vector2f(0,0),mission_vector,pos);
+
+                // store wp location as previous
+                prev_loc = temp_cmd.content.location;
+
+                if (disttemp < rejoin_distance || is_negative(rejoin_distance)) {
+                    rejoin_distance = disttemp;
+                    rejoin_index = temp_cmd.index;
+                }
+            }
+        }
+
+        if (is_landing_type_cmd(temp_cmd.id) || ((temp_cmd.id == MAV_CMD_DO_LAND_START) && (temp_cmd.index != start_index))) {
+            // reached a landing!
+            goto reset_do_jump_tracking;
+        }
+    }
+    // reached end of loop without getting to a landing or DO_LAND_START
     ret = false;
 
 reset_do_jump_tracking:
