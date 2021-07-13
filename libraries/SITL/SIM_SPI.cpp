@@ -21,16 +21,20 @@
 #include <SITL/SITL.h>
 
 #include "SIM_SPI.h"
+#include "SIM_RAMTRON_FM25V02.h"
 
 #include <signal.h>
 
 using namespace SITL;
+
+static RAMTRON_FM25V02 ramtron_FM25V02;  // 32kB 2-byte-addressing
 
 struct spi_device_at_cs_pin {
     uint8_t bus;
     uint8_t cs_pin;
     SPIDevice &device;
 } spi_devices[] {
+    { 0, 0, ramtron_FM25V02 },
 };
 
 void SPI::init()
