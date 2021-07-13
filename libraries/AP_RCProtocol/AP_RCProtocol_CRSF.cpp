@@ -204,7 +204,7 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _last_frame_time_us = timestamp_us;
         // decode here
         if (decode_csrf_packet()) {
-            add_input(MAX_CHANNELS, _channels, false, _link_status.rssi);
+            add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
         }
     }
 }
@@ -341,6 +341,7 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
     } else {
         rssi_dbm = link->uplink_rssi_ant2;
     }
+    _link_status.link_quality = link->uplink_status;
      // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
     if (rssi_dbm < 50) {
         _link_status.rssi = 255;
