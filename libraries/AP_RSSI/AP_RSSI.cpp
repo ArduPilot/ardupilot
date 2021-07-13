@@ -154,6 +154,15 @@ float AP_RSSI::read_receiver_rssi()
     return 0.0f;
 }
 
+// Only valid for RECEIVER type RSSI selections. Returns -1 if protocol does not provide link quality report.
+float AP_RSSI::read_receiver_link_quality()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_link_quality();
+    }
+    return -1;
+}
+
 // Read the receiver RSSI value as an 8-bit integer
 // 0 represents weakest signal, 255 represents maximum signal.
 uint8_t AP_RSSI::read_receiver_rssi_uint8()
