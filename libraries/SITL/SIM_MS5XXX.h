@@ -1,14 +1,16 @@
+#pragma once
+
 #include "SIM_I2CDevice.h"
 
 #include <AP_Common/Bitmask.h>
 
 namespace SITL {
 
-class MS5525 : public I2CDevice
+class MS5XXX : public I2CDevice
 {
 public:
 
-    MS5525();
+    MS5XXX();
 
 protected:
 
@@ -69,37 +71,21 @@ private:
 
     uint32_t command_start_us;
 
-    uint8_t read_prom_addr;
-
-
     uint8_t convert_out[3];
 
-    // this data comes from the datasheet page 7
-    const uint16_t prom[8] {
-        0xFFFF,  // reserved
-        36402, // C1, pressure sensitivity
-        39473, // C2, pressure offset
-        40393, // C3, temperature coeff of press sensit
-        29523, // C4, temperature cofff of press offs
-        29854, // C5, ref temperature
-        21917,  // C6, temperature coeff of temperature
-        0x000c  // checksum
-    };
     bool prom_loaded = false;
-
-    // for 5525DSO-pp001DS
-    const uint8_t Qx_coeff[6] {
-        15, 17, 7, 5, 7, 21
-    };
-
+    uint16_t loaded_prom[128/16];
+    virtual void load_prom(uint16_t *loaded_prom, uint8_t len) const = 0;
 
     uint16_t conversion_time_osr_1024_us = 2280;
 
-    void convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2);
+    virtual void convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2) =0;
+    virtual void convert_forward(int32_t D1, int32_t D2, float &P_Pa, float &Temp_C) = 0;
+    virtual void get_pressure_temperature_readings(float &P_Pa, float &Temp_C) = 0;
+
+
     void convert_D1();
     void convert_D2();
-
-    void convert_forward(int32_t D1, int32_t D2, float &P_Pa, float &Temp_C);
 };
 
 } // namespace SITL
