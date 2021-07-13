@@ -467,6 +467,7 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
+            HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
         )
 
         if self.with_can:
