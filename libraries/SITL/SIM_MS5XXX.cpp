@@ -1,4 +1,4 @@
-#include "SIM_MS5525.h"
+#include "SIM_MS5XXX.h"
 
 #include <SITL/SITL.h>
 
@@ -6,101 +6,56 @@
 
 using namespace SITL;
 
-MS5525::MS5525() :
+MS5XXX::MS5XXX() :
     I2CDevice()
 {
 }
 
-void MS5525::reset()
+void MS5XXX::reset()
 {
     // load prom from internal register:
     prom_loaded = true;
+    load_prom(loaded_prom, sizeof(loaded_prom));
 }
 
-void MS5525::convert_forward(int32_t D1, int32_t D2, float &P_Pa, float &Temp_C)
+void MS5XXX::convert_D1()
 {
-    const uint8_t Q1 = Qx_coeff[0];
-    const uint8_t Q2 = Qx_coeff[1];
-    const uint8_t Q3 = Qx_coeff[2];
-    const uint8_t Q4 = Qx_coeff[3];
-    const uint8_t Q5 = Qx_coeff[4];
-    const uint8_t Q6 = Qx_coeff[5];
+    float P_Pa;
+    float temperature;
+    get_pressure_temperature_readings(P_Pa, temperature);
 
-    // this is the forward conversion copied from the driver:
-    int64_t dT = D2 - int64_t(prom[5]) * (1UL<<Q5);
-    int64_t TEMP = 2000 + (dT*int64_t(prom[6]))/(1UL<<Q6);
-    int64_t OFF =  int64_t(prom[2])*(1UL<<Q2) + (int64_t(prom[4])*dT)/(1UL<<Q4);
-    int64_t SENS = int64_t(prom[1])*(1UL<<Q1) + (int64_t(prom[3])*dT)/(1UL<<Q3);
-    int64_t P = (D1*SENS/(1UL<<21)-OFF)/(1UL<<15);
-    const float PSI_to_Pa = 6894.757f;
-    P_Pa = PSI_to_Pa * 1.0e-4 * P;
-    Temp_C = TEMP * 0.01;
-}
-
-void MS5525::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
-{
-    const uint8_t Q1 = Qx_coeff[0];
-    const uint8_t Q2 = Qx_coeff[1];
-    const uint8_t Q3 = Qx_coeff[2];
-    const uint8_t Q4 = Qx_coeff[3];
-    const uint8_t Q5 = Qx_coeff[4];
-    const uint8_t Q6 = Qx_coeff[5];
-
-    const int64_t TEMP = Temp_C * 100.0f;
-    const float dT = ((TEMP-2000)*(1UL<<Q6))/prom[6];
-    const float PSI_to_Pa = 6894.757f;
-    const float P = P_Pa / (PSI_to_Pa * 1.0e-4);
-    const int64_t SENS = int64_t(prom[1])*(1UL<<Q1) + (int64_t(prom[3])*dT)/(1UL<<Q3);
-    const int64_t OFF =  int64_t(prom[2])*(1UL<<Q2) + (int64_t(prom[4])*dT)/(1UL<<Q4);
-    D1 = (((uint64_t(P*(1U<<15)))+OFF)<<21)/SENS;
-    D2 = dT + int64_t(prom[5]) * (1UL<<Q5);
-
-
-    float f_P_Pa;
-    float f_Temp_C;
-    convert_forward(D1, D2, f_P_Pa, f_Temp_C);
-    if (fabs(f_P_Pa - P_Pa) > 1) {
-        AP_HAL::panic("Invalid conversion");
-    }
-    if (fabs(f_Temp_C - Temp_C) > 0.1) {
-        AP_HAL::panic("Invalid conversion");
-    }
-}
-
-void MS5525::convert_D1()
-{
-    float pressure = AP::sitl()->state.airspeed_raw_pressure[0];
-    if (pressure < 0.1) {
+    if (P_Pa < 0.1) {
         // maths breaks down on very, very low numbers, or there's a
         // bug in the conversion code.  The simulation can pass in
         // very, very low numbers.  Clamp it.
-        pressure = 0.1;
+        P_Pa = 0.1;
     }
-    const float temperature = 25.0f;
 
     uint32_t D1;
     uint32_t D2;
-    convert(pressure, temperature, D1, D2);
+    convert(P_Pa, temperature, D1, D2);
     convert_out[2] = D1 & 0xff;
     D1 >>= 8;
     convert_out[1] = D1 & 0xff;
     D1 >>= 8;
     convert_out[0] = D1 & 0xff;
 }
-void MS5525::convert_D2()
+void MS5XXX::convert_D2()
 {
-    float pressure = AP::sitl()->state.airspeed_raw_pressure[0];
-    if (pressure < 0.1) {
+    float P_Pa;
+    float temperature;
+    get_pressure_temperature_readings(P_Pa, temperature);
+
+    if (P_Pa < 0.1) {
         // maths breaks down on very, very low numbers, or there's a
         // bug in the conversion code.  The simulation can pass in
         // very, very low numbers.  Clamp it.
-        pressure = 0.1;
+        P_Pa = 0.1;
     }
-    const float temperature = 25.0f;
 
     uint32_t D1;
     uint32_t D2;
-    convert(pressure, temperature, D1, D2);
+    convert(P_Pa, temperature, D1, D2);
     convert_out[2] = D2 & 0xff;
     D2 >>= 8;
     convert_out[1] = D2 & 0xff;
@@ -109,7 +64,7 @@ void MS5525::convert_D2()
 }
 
 
-void MS5525::update(const class Aircraft &aircraft)
+void MS5XXX::update(const class Aircraft &aircraft)
 {
     const uint32_t now_us = AP_HAL::micros();
     // static uint32_t then_us = 0;
@@ -184,7 +139,7 @@ void MS5525::update(const class Aircraft &aircraft)
     // float temperature = 25.0f;
 }
 
-int MS5525::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
+int MS5XXX::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 {
     struct I2C::i2c_msg &msg = data->msgs[0];
     // if (data->nmsgs != 1) {
@@ -225,7 +180,7 @@ int MS5525::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             AP_HAL::panic("Unexpected length");
         }
         const uint8_t addr = ((unsigned)cmd - (unsigned)Command::READ_C0)/2;
-        const uint16_t val = htobe16(prom[addr]);
+        const uint16_t val = htobe16(loaded_prom[addr]);
         data->msgs[1].buf[0] = val & 0xff;
         data->msgs[1].buf[1] = val >> 8;
         break;
