@@ -210,7 +210,8 @@ void AP_Logger::Write_RSSI()
     const struct log_RSSI pkt{
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
         time_us       : AP_HAL::micros64(),
-        RXRSSI        : rssi->read_receiver_rssi()
+        RXRSSI        : rssi->read_receiver_rssi(),
+        RXLQ          : rssi->read_receiver_link_quality()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
