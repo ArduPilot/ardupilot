@@ -151,6 +151,33 @@ void AP_Torqeedo::thread_main()
     }
 }
 
+// returns true if communicating with the motor
+bool AP_Torqeedo::healthy()
+{
+    if (!_initialised) {
+        return false;
+    }
+    {
+        WITH_SEMAPHORE(_last_healthy_sem);
+        return ((AP_HAL::millis() - _last_healthy_ms) < 3000);
+    }
+}
+
+// run pre-arm check.  returns false on failure and fills in failure_msg
+bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
+{
+    const char *failure_prefix = "Torqeedo:";
+    if (!_initialised) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s not initialised", failure_prefix);
+        return false;
+    }
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s not healthy", failure_prefix);
+        return false;
+    }
+    return true;
+}
+
 // process a single byte received on serial port
 // return true if a this driver should send a set-motor-speed message
 bool AP_Torqeedo::parse_byte(uint8_t b)
@@ -294,6 +321,13 @@ void AP_Torqeedo::send_motor_speed_cmd()
 
     _last_send_motor_us = AP_HAL::micros();
     _send_delay_us = calc_send_delay_us(buff_size);
+
+    // consider driver healthy
+    {
+        WITH_SEMAPHORE(_last_healthy_sem);
+        _last_healthy_ms = AP_HAL::millis();
+    }
+
 }
 
 // get the AP_Torqeedo singleton
