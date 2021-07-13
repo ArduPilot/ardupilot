@@ -25,9 +25,6 @@
 
 #define ADSB_CHAN_TIMEOUT_MS            15000
 
-#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
-#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
-
 
 extern const AP_HAL::HAL& hal;
 

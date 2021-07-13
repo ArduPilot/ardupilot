@@ -36,12 +36,16 @@
 
 #define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
 
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+
 class AP_ADSB_Backend;
 
 class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
     friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
 
     // constructor
@@ -61,11 +65,20 @@ public:
         None                = 0,
         uAvionix_MAVLink    = 1,
         Sagetech            = 2,
+        uAvionix_UCP        = 3,
     };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
+    };
+
+    // enum for adsb optional features
+    enum class AdsbOption {
+        Inhibit_GPS_tx                  = (1<<0),
+        Autopilot_is_alt_baro           = (1<<1),
+        Squawk_7400_FS_RC               = (1<<2),
+        Squawk_7400_FS_GCS              = (1<<3),
     };
 
     // for holding parameters
@@ -138,6 +151,17 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    bool ident_start() {
+        // if (!enabled() || !healthy()) {
+        //     return false;
+        // }
+        // if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0) {
+        //     return false;
+        // }
+        out_state.ident_pending = true;
+        return true;
+    }
+
     AP_ADSB::Type get_type(uint8_t instance) const;
 
 private:
@@ -162,9 +186,6 @@ private:
 
     // Generates pseudorandom ICAO from gps time, lat, and lon
     uint32_t genICAO(const Location &loc) const;
-
-    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
-    void set_callsign(const char* str, const bool append_icao);
 
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
@@ -209,6 +230,9 @@ private:
         bool        is_flying;
         bool        is_in_auto_mode;
 
+        bool        ident_pending;
+        bool        ident_isActive;
+
         // ADSB-OUT configuration
         struct {
             int32_t     ICAO_id;
@@ -234,6 +258,8 @@ private:
 
     // special ICAO of interest that ignored filters when != 0
     AP_Int32 _special_ICAO_target;
+
+    AP_Int32 _options;
 
     static const uint8_t _max_samples = 30;
     ObjectBuffer<adsb_vehicle_t> _samples{_max_samples};
