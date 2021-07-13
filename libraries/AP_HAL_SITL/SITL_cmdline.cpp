@@ -270,6 +270,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_POSIX
         CMDLINE_SET_STORAGE_POSIX_ENABLED,
 #endif
+#if STORAGE_USE_FRAM
+        CMDLINE_SET_STORAGE_FRAM_ENABLED,
+#endif
     };
 
     const struct GetOptLong::option options[] = {
@@ -324,6 +327,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_POSIX
         {"set-storage-posix-enabled", true,   0, CMDLINE_SET_STORAGE_POSIX_ENABLED},
 #endif
+#if STORAGE_USE_FRAM
+        {"set-storage-fram-enabled", true,   0, CMDLINE_SET_STORAGE_FRAM_ENABLED},
+#endif
         {0, false, 0, 0}
     };
 
@@ -335,6 +341,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // storage defaults are set here:
     bool storage_posix_enabled = true;
     bool storage_flash_enabled = false;
+    bool storage_fram_enabled = false;
     bool erase_all_storage = false;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
@@ -344,6 +351,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
+
+    bool wiping_storage = false;
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
@@ -483,6 +492,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             storage_flash_enabled = atoi(gopt.optarg);
             break;
 #endif
+#if STORAGE_USE_FRAM
+        case CMDLINE_SET_STORAGE_FRAM_ENABLED:
+            storage_fram_enabled = atoi(gopt.optarg);
+            break;
+#endif
         case 'h':
             _usage();
             exit(0);
@@ -555,6 +569,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     hal.set_storage_posix_enabled(storage_posix_enabled);
     hal.set_storage_flash_enabled(storage_flash_enabled);
+    hal.set_storage_fram_enabled(storage_fram_enabled);
 
     if (erase_all_storage) {
         AP_Param::erase_all();
@@ -562,6 +577,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         unlink(AP_Logger_SITL::filename);
 #endif
         unlink("flash.dat");
+        hal.set_wipe_storage(wiping_storage);
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
