@@ -344,6 +344,8 @@ def configure(cfg):
 
     cfg.load('ap_library')
 
+    cfg.load('git_submodule')
+
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
 
@@ -362,7 +364,6 @@ def configure(cfg):
         cfg.env.SUBMODULE_UPDATE = False
 
     cfg.msg('Update submodules', 'yes' if cfg.env.SUBMODULE_UPDATE else 'no')
-    cfg.load('git_submodule')
 
     if cfg.options.enable_benchmarks:
         cfg.load('gbenchmark')
