@@ -547,6 +547,24 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_q_attitude_control, 449,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FF" },  // Q_A_RAT_RLL_FF
     { Parameters::k_param_q_attitude_control, 450,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FF" },  // Q_A_RAT_PIT_FF
     { Parameters::k_param_q_attitude_control, 451,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FF" },  // Q_A_RAT_YAW_FILT
+
+    // tailsitter params have moved but retain the same names
+    { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
+    { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
+    { Parameters::k_param_quadplane, 50,  AP_PARAM_INT8,  "Q_TAILSIT_INPUT" },
+    { Parameters::k_param_quadplane, 51,  AP_PARAM_INT8,  "Q_TAILSIT_MASK" },
+    { Parameters::k_param_quadplane, 52,  AP_PARAM_INT8,  "Q_TAILSIT_MASKCH" },
+    { Parameters::k_param_quadplane, 53,  AP_PARAM_FLOAT, "Q_TAILSIT_VFGAIN" },
+    { Parameters::k_param_quadplane, 54,  AP_PARAM_FLOAT, "Q_TAILSIT_VHGAIN" },
+    { Parameters::k_param_quadplane, 56,  AP_PARAM_FLOAT, "Q_TAILSIT_VHPOW" },
+    { Parameters::k_param_quadplane, 251,   AP_PARAM_FLOAT, "Q_TAILSIT_GSCMAX" },
+    { Parameters::k_param_quadplane, 379,   AP_PARAM_FLOAT, "Q_TAILSIT_RLL_MX" },
+    { Parameters::k_param_quadplane, 635,   AP_PARAM_INT16, "Q_TAILSIT_MOTMX" },
+    { Parameters::k_param_quadplane, 1147,  AP_PARAM_INT16, "Q_TAILSIT_GSCMSK" },
+    { Parameters::k_param_quadplane, 1211,  AP_PARAM_FLOAT, "Q_TAILSIT_GSCMIN" },
+    { Parameters::k_param_quadplane, 1403,  AP_PARAM_FLOAT, "Q_TAILSIT_DSKLD" },
+    { Parameters::k_param_quadplane, 1595,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
+    { Parameters::k_param_quadplane, 1659,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
 };
 
 
@@ -581,8 +599,6 @@ bool QuadPlane::setup(void)
         return false;
     }
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
-
-    enum Rotation rotation = ROTATION_NONE;
 
     /*
       cope with upgrade from old AP_Motors values for frame_class
@@ -651,41 +667,36 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
     }
 
-    if (tailsitter.motor_mask == 0) {
-        // this is a normal quadplane
-        switch ((AP_Motors::motor_frame_class)frame_class) {
-        case AP_Motors::MOTOR_FRAME_TRI:
-            motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsTri::var_info;
-            break;
-        case AP_Motors::MOTOR_FRAME_TAILSITTER:
-            // this is a duo-motor tailsitter (vectored thrust if tilt.tilt_mask != 0)
-            motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsTailsitter::var_info;
-            if (tilt.tilt_type != TILT_TYPE_BICOPTER) {
-                rotation = ROTATION_PITCH_90;
-            }
-            break;
-        case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
+    // Set tailsitter enable flag based on old heuristics
+    if (!tailsitter.enable.configured() && (((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0)) && (tilt.tilt_type != TILT_TYPE_BICOPTER))) {
+        tailsitter.enable.set_and_save(1);
+    }
+
+    // Make sure not both a tailsiter and tiltrotor
+    if (tailsitter.enabled() && (tilt.tilt_mask != 0)) {
+        AP_BoardConfig::config_error("set TAILSIT_ENABLE 0 or TILT_MASK 0");
+    }
+
+    switch ((AP_Motors::motor_frame_class)frame_class) {
+    case AP_Motors::MOTOR_FRAME_TRI:
+        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTri::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        // this is a duo-motor tailsitter
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTailsitter::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
 #ifdef ENABLE_SCRIPTING
             motors = new AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
 #endif // ENABLE_SCRIPTING
             break;
-        default:
-            motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsMatrix::var_info;
-            break;
-        }
-    } else {
-        // this is a copter tailsitter with motor layout specified by frame_class and frame_type
-        // tilting motors are not supported (tiltrotor control variables are ignored)
-        if (tilt.tilt_mask != 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Warning: Motor tilt not supported\n");
-        }
-        rotation = ROTATION_PITCH_90;
+    default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
+        break;
     }
 
     if (!motors) {
@@ -695,7 +706,7 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     // create the attitude view used by the VTOL code
-    ahrs_view = ahrs.create_view(rotation, ahrs_trim_pitch);
+    ahrs_view = ahrs.create_view(tailsitter.enabled() ? ROTATION_PITCH_90 : ROTATION_NONE, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
         AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
     }
