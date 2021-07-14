@@ -741,7 +741,7 @@ void Plane::force_flare(void)
         if (quadplane.tilt.tilt_type == QuadPlane::TILT_TYPE_BICOPTER) {
             tilt = 0; // this is tilts up for a Bicopter
         }
-        if (quadplane.is_tailsitter()) {
+        if (quadplane.tailsitter.enabled()) {
             tilt = SERVO_MAX; //this is tilts up for a tailsitter
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, tilt);
@@ -910,7 +910,7 @@ void Plane::servos_output(void)
     servos_twin_engine_mix();
 
     // cope with tailsitters and bicopters
-    quadplane.tailsitter_output();
+    quadplane.tailsitter.output();
     quadplane.tiltrotor_bicopter();
 
     // support forced flare option
