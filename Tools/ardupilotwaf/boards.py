@@ -68,6 +68,16 @@ class Board:
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_NO_GCS=1']
 
+        # configurations for XRCE-DDS
+        if cfg.options.enable_xrce_dds:
+            cfg.recurse('libraries/AP_XRCE_Client')
+            env.ENABLE_XRCE_DDS = True
+            env.AP_LIBRARIES += [
+                'AP_XRCE_Client'
+            ]
+        else:
+            env.ENABLE_XRCE_DDS = False
+
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')

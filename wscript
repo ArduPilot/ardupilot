@@ -173,6 +173,11 @@ submodules at specific revisions.
                  default=False,
                  help="Enables and sets up ONVIF camera control")
 
+    g.add_option('--enable-xrce-dds', action='store_true',
+                 default=True,
+                 help="Enable the xrce client to connect with ROS2/DDS"
+    )
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -303,10 +308,6 @@ def _collect_autoconfig_files(cfg):
             with open(p, 'rb') as f:
                 cfg.hash = Utils.h_list((cfg.hash, f.read()))
                 cfg.files.append(p)
-
-def add_xrce_linkers(cfg):
-    cfg.env.STLIB_MARKER += ',-lmicrocdr,-lmicroxrcedds_client'
-    cfg.env.SHLIB_MARKER += ',-lmicrocdr,-lmicroxrcedds_client'
 
 def configure(cfg):
 	# we need to enable debug mode when building for gconv, and force it to sitl
@@ -449,9 +450,6 @@ def configure(cfg):
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
-    # add xrce linker flags in waf
-    add_xrce_linkers(cfg)
-    
     _collect_autoconfig_files(cfg)
 
 def collect_dirs_to_recurse(bld, globs, **kw):
@@ -629,6 +627,9 @@ def _build_recursion(bld):
 
     if bld.env.ENABLE_ONVIF:
         dirs_to_recurse.append('libraries/AP_ONVIF')
+
+    if bld.env.ENABLE_XRCE_DDS:
+        dirs_to_recurse.append('libraries/AP_XRCE_Client')
 
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
