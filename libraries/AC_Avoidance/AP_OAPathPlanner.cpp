@@ -58,7 +58,6 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Param{Rover}: OPTIONS
     // @DisplayName: Options while recovering from Object Avoidance
     // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
-    // @Values: 0:Vehicle will return to its original waypoint trajectory, 1:Reset the origin of the waypoint to the present location
     // @Bitmask: 0: Reset the origin of the waypoint to the present location
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT, AP_PARAM_FRAME_ROVER),

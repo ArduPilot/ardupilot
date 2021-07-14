@@ -49,6 +49,13 @@ public:
     };
     AC_WPNav::TerrainSource get_terrain_source() const;
 
+    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+    bool get_terrain_offset(float& offset_cm);
+
+    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
+    //      returns false if conversion failed (likely because terrain data was not available)
+    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
+
     ///
     /// waypoint controller
     ///
@@ -128,7 +135,7 @@ public:
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
-    void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point_xy(Vector2f& stopping_point) const;
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
@@ -194,8 +201,6 @@ public:
 
     // get target yaw in centi-degrees
     float get_yaw() const { return _pos_control.get_yaw_cd(); }
-    float get_yaw_rate_cds() const { return _pos_control.get_yaw_rate_cds(); }
-
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -215,13 +220,6 @@ protected:
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
         uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
     } _flags;
-
-    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
-    bool get_terrain_offset(float& offset_cm);
-
-    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
-    //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
 
     // helper function to calculate scurve jerk and jerk_time values
     // updates _scurve_jerk and _scurve_jerk_time
@@ -274,7 +272,7 @@ protected:
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
 
     // position, velocity and acceleration targets passed to position controller
-    float       _pos_terrain_offset;
+    postype_t   _pos_terrain_offset;
     float       _vel_terrain_offset;
     float       _accel_terrain_offset;
 

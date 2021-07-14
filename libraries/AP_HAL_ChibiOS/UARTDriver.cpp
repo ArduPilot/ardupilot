@@ -1699,6 +1699,44 @@ void UARTDriver::uart_info(ExpandingString &str)
     _last_stats_ms = now_ms;
 }
 
+/*
+  software control of the CTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_CTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // CTS pin is being used
+        return false;
+    }
+    if (sdef.cts_line == 0) {
+        // we don't have a CTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.cts_line, 1);
+    palWriteLine(sdef.cts_line, high?1:0);
+    return true;
+}
+
+/*
+  software control of the RTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_RTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // RTS pin is being used
+        return false;
+    }
+    if (sdef.rts_line == 0) {
+        // we don't have a RTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.rts_line, 1);
+    palWriteLine(sdef.rts_line, high?1:0);
+    return true;
+}
+
 #if HAL_USE_SERIAL_USB == TRUE
 /*
   initialise the USB bus, called from both UARTDriver and stdio for startup debug

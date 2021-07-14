@@ -47,7 +47,23 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x / 100.0f, ekf_offset_neu.y / 100.0f);
+        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+    }
+}
+
+Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(ekf_offset_neu.z, frame);
+
+    // calculate lat, lon
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset_double(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
     }
 }
 
@@ -184,7 +200,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
     }
-    return false;
+    return false;  // LCOV_EXCL_LINE  - not reachable
 }
 
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
@@ -194,7 +210,7 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
         return false;
     }
     vec_ne.x = (lat-ekf_origin.lat) * LATLON_TO_CM;
-    vec_ne.y = (lng-ekf_origin.lng) * LATLON_TO_CM * ekf_origin.longitude_scale();
+    vec_ne.y = diff_longitude(lng,ekf_origin.lng) * LATLON_TO_CM * longitude_scale((lat+ekf_origin.lat)/2);
     return true;
 }
 
@@ -222,7 +238,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 float Location::get_distance(const struct Location &loc2) const
 {
     float dlat = (float)(loc2.lat - lat);
-    float dlng = ((float)(loc2.lng - lng)) * loc2.longitude_scale();
+    float dlng = ((float)diff_longitude(loc2.lng,lng)) * longitude_scale((lat+loc2.lat)/2);
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
@@ -234,24 +250,53 @@ float Location::get_distance(const struct Location &loc2) const
 Vector2f Location::get_distance_NE(const Location &loc2) const
 {
     return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale());
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
-                    (alt - loc2.alt) * 0.01f);
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
+                    (alt - loc2.alt) * 0.01);
+}
+
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+Vector3d Location::get_distance_NED_double(const Location &loc2) const
+{
+    return Vector3d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
+                    (alt - loc2.alt) * 0.01);
+}
+
+Vector2d Location::get_distance_NE_double(const Location &loc2) const
+{
+    return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
+}
+
+Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
+{
+    return Vector2F((loc2.lat - lat) * ftype(LOCATION_SCALING_FACTOR),
+                    diff_longitude(loc2.lng,lng) * ftype(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset(float ofs_north, float ofs_east)
 {
     const int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-    const int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
+    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(lat+dlat/2);
     lat += dlat;
-    lng += dlng;
+    lat = limit_lattitude(lat);
+    lng = wrap_longitude(dlng+lng);
+}
+
+void Location::offset_double(double ofs_north, double ofs_east)
+{
+    const int64_t dlat = ofs_north * double(LOCATION_SCALING_FACTOR_INV);
+    const int64_t dlng = (ofs_east * double(LOCATION_SCALING_FACTOR_INV)) / longitude_scale(lat+dlat/2);
+    lat = limit_lattitude(int64_t(lat)+dlat);
+    lng = wrap_longitude(int64_t(lng)+dlng);
 }
 
 /*
@@ -279,7 +324,7 @@ void Location::offset_bearing_and_pitch(float bearing_deg, float pitch_deg, floa
 }
 
 
-float Location::longitude_scale() const
+float Location::longitude_scale(int32_t lat)
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
     return MAX(scale, 0.01f);
@@ -322,8 +367,8 @@ assert_storage_size<Location, 16> _assert_storage_size_Location;
 // return bearing in centi-degrees from location to loc2
 int32_t Location::get_bearing_to(const struct Location &loc2) const
 {
-    const int32_t off_x = loc2.lng - lng;
-    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale();
+    const int32_t off_x = diff_longitude(loc2.lng,lng);
+    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
@@ -371,4 +416,48 @@ float Location::line_path_proportion(const Location &point1, const Location &poi
         return 1.0f;
     }
     return (vec1 * vec2) / dsquared;
+}
+
+/*
+  wrap longitude for -180e7 to 180e7
+ */
+int32_t Location::wrap_longitude(int64_t lon)
+{
+    if (lon > 1800000000L) {
+        lon = int32_t(lon-3600000000LL);
+    } else if (lon < -1800000000L) {
+        lon = int32_t(lon+3600000000LL);
+    }
+    return int32_t(lon);
+}
+
+/*
+  get lon1-lon2, wrapping at -180e7 to 180e7
+ */
+int32_t Location::diff_longitude(int32_t lon1, int32_t lon2)
+{
+    if ((lon1 & 0x80000000) == (lon2 & 0x80000000)) {
+        // common case of same sign
+        return lon1 - lon2;
+    }
+    int64_t dlon = int64_t(lon1)-int64_t(lon2);
+    if (dlon > 1800000000LL) {
+        dlon -= 3600000000LL;
+    } else if (dlon < -1800000000LL) {
+        dlon += 3600000000LL;
+    }
+    return int32_t(dlon);
+}
+
+/*
+  limit lattitude to -90e7 to 90e7
+ */
+int32_t Location::limit_lattitude(int32_t lat)
+{
+    if (lat > 900000000L) {
+        lat = 1800000000LL - lat;
+    } else if (lat < -900000000L) {
+        lat = -(1800000000LL + lat);
+    }
+    return lat;
 }

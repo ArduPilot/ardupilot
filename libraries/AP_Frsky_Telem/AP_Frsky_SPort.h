@@ -20,7 +20,7 @@ public:
     bool sport_telemetry_push(const uint8_t sensor, const uint8_t frame, const uint16_t appid, const int32_t data);
     // utility method to pack numbers in a compact size
     uint16_t prep_number(int32_t const number, const uint8_t digits, const uint8_t power);
-    
+
     static AP_Frsky_SPort *get_singleton(void) {
         return singleton;
     }
@@ -31,6 +31,7 @@ protected:
 
     struct PACKED {
         bool send_latitude; // sizeof(bool) = 4 ?
+        bool send_airspeed; // toggles 0x5005 between airspeed and groundspeed
         uint32_t gps_lng_sample;
         uint8_t new_byte;
     } _passthrough;

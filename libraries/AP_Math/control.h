@@ -1,5 +1,24 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_WITH_POSTYPE_DOUBLE
+#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#endif
+
+#if HAL_WITH_POSTYPE_DOUBLE
+typedef double postype_t;
+typedef Vector2d Vector2p;
+typedef Vector3d Vector3p;
+#define topostype todouble
+#else
+typedef float postype_t;
+typedef Vector2f Vector2p;
+typedef Vector3f Vector3p;
+#define topostype tofloat
+#endif
+
 /*
   common controller helper functions
  */
@@ -7,20 +26,16 @@
 // update_vel_accel projects the velocity, vel, forward in time based on a time step of dt and acceleration of accel.
 // update_vel_accel - single axis projection.
 void update_vel_accel(float& vel, float accel, float dt, float limit);
-void update_vel_accel_z(Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit);
 
 // update_vel_accel projects the velocity, vel, forward in time based on a time step of dt and acceleration of accel.
 // update_vel_accel - single axis projection.
-void update_pos_vel_accel(float& pos, float& vel, float accel, float dt, float limit);
-void update_pos_vel_accel_z(Vector3f& pos, Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit);
+void update_pos_vel_accel(postype_t & pos, float& vel, float accel, float dt, float limit);
 
 // update_pos_vel_accel_xy - dual axis projection operating on the x, y axis of Vector2f or Vector3f inputs.
-void update_vel_accel(Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
-void update_vel_accel_xy(Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit);
+void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
 
 // update_pos_vel_accel_xy - dual axis projection operating on the x, y axis of Vector2f or Vector3f inputs.
-void update_pos_vel_accel(Vector2f& pos, Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
-void update_pos_vel_accel_xy(Vector3f& pos, Vector3f& vel, const Vector3f& accel, float dt, Vector3f limit);
+void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
 
 /* shape_accel calculates a jerk limited path from the current acceleration to an input acceleration.
  The function takes the current acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -30,13 +45,15 @@ void update_pos_vel_accel_xy(Vector3f& pos, Vector3f& vel, const Vector3f& accel
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+ The function alters the variable accel to follow a jerk limited kinematic path to accel_input
 */
-void shape_accel(float accel_input, float& accel,
-    float accel_min, float accel_max,
-    float tc, float dt);
-
+void shape_accel(const float accel_input, float& accel,
+                 const float accel_min, const float accel_max,
+                 const float tc, const float dt);
 void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
+                    const float accel_max, const float tc, const float dt);
+
+void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
     float accel_max, float tc, float dt);
 
 /* shape_vel calculates a jerk limited path from the current velocity and acceleration to an input velocity.
@@ -48,38 +65,16 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
+ The function alters the variable accel to follow a jerk limited kinematic path to vel_input and accel_input
 */
-void shape_vel_accel(float vel_input, float accel_input,
-    float vel, float& accel,
-    float vel_min, float vel_max,
-    float accel_min, float accel_max,
-    float tc, float dt);
-
-void shape_vel_accel_z(const Vector3f& vel_input, const Vector3f& accel_input,
-    const Vector3f& vel, Vector3f& accel,
-    float vel_min, float vel_max,
-    float accel_min, float accel_max,
-    float tc, float dt);
-
-/* shape_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
- The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
- The kinematic path is constrained by:
-     vel_max : maximum velocity
-     accel_max : maximum acceleration
-     tc : time constant
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
- The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
- This function operates on the x and y axis of both Vector2f or Vector3f inputs.
- The accel_max limit can be removed by setting it to zero.
-*/
-void shape_vel_accel_xy(Vector2f vel_input, const Vector2f& accel_input,
-    const Vector2f& vel, Vector2f& accel, float vel_max, float accel_max, float tc, float dt);
-
-void shape_vel_accel_xy(const Vector3f& vel_input, const Vector3f& accel_input,
-    const Vector3f& vel, Vector3f& accel, float vel_max, float accel_max, float tc, float dt);
+void shape_vel_accel(const float vel_input, const float accel_input,
+                     const float vel, float& accel,
+                     const float vel_min, const float vel_max,
+                     const float accel_min, const float accel_max,
+                     const float tc, const float dt);
+void shape_vel_accel_xy(const Vector2f &vel_input, const Vector2f& accel_input,
+                        const Vector2f& vel, Vector2f& accel,
+                        const float vel_max, const float accel_max, const float tc, const float dt);
 
 /* shape_pos_vel calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -90,38 +85,15 @@ void shape_vel_accel_xy(const Vector3f& vel_input, const Vector3f& accel_input,
  The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
  The time constant also defines the time taken to achieve the maximum acceleration.
  The time constant must be positive.
- The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
+ The function alters the variable accel to follow a jerk limited kinematic path to pos_input, vel_input and accel_input
 */
-void shape_pos_vel_accel(float pos_input, float vel_input, float accel_input,
-    float pos, float vel, float& accel,
-    float vel_correction_max, float vel_min, float vel_max,
-    float accel_min, float accel_max, float tc, float dt);
-
-void shape_pos_vel_accel_z(const Vector3f& pos_input, const Vector3f& vel_input, const Vector3f& accel_input,
-    const Vector3f& pos, const Vector3f& vel, Vector3f& accel,
-    float vel_correction_max, float vel_min, float vel_max,
-    float accel_min, float accel_max, float tc, float dt);
-
-/* shape_pos_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
- The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
- The kinematic path is constrained by:
-     vel_max : maximum velocity
-     accel_max : maximum acceleration
-     tc : time constant
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
- The function alters the input position to be the closest position that the system could reach zero acceleration in the minimum time.
- This function operates only on the x and y axis of the Vector2f or Vector3f inputs.
- The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
-*/
-void shape_pos_vel_accel_xy(const Vector2f& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
-    const Vector2f& pos, const Vector2f& vel, Vector2f& accel,
-    float vel_correction_max, float vel_max, float accel_max, float tc, float dt);
-
-void shape_pos_vel_accel_xy(const Vector3f& pos_input, const Vector3f& vel_input, const Vector3f& accel_input,
-    const Vector3f& pos, const Vector3f& vel, Vector3f& accel,
-    float vel_max, float vel_correction_max, float accel_max, float tc, float dt);
+void shape_pos_vel_accel(const postype_t pos_input, const float vel_input, const float accel_input,
+                         const postype_t pos, const float vel, float& accel,
+                         const float vel_correction_max, const float vel_min, const float vel_max,
+                         const float accel_min, const float accel_max, const float tc, const float dt);
+void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
+                            const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
+                            const float vel_correction_max, const float vel_max, const float accel_max, const float tc, const float dt);
 
 // proportional controller with piecewise sqrt sections to constrain second derivative
 float sqrt_controller(float error, float p, float second_ord_lim, float dt);

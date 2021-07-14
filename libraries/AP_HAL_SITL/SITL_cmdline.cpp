@@ -53,6 +53,7 @@ static void _sig_fpe(int signum)
 {
     fprintf(stderr, "ERROR: Floating point exception - aborting\n");
     AP_HAL::dump_stack_trace();
+    AP_HAL::dump_core_file();
     abort();
 }
 
@@ -61,6 +62,7 @@ static void _sig_segv(int signum)
 {
     fprintf(stderr, "ERROR: segmentation fault - aborting\n");
     AP_HAL::dump_stack_trace();
+    AP_HAL::dump_core_file();
     abort();
 }
 

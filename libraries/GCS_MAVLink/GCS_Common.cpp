@@ -851,6 +851,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
+        { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3469,7 +3471,9 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_RALLY_POINT:
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
+#if HAL_RALLY_ENABLED
         handle_common_rally_message(msg);
+#endif
         break;
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -3813,7 +3817,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_l
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -4758,6 +4762,46 @@ void GCS_MAVLINK::send_generator_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_water_depth() const
+{
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr || !rangefinder->has_data_orient(ROTATION_PITCH_270)) {
+        // no rangefinder or not facing downwards
+        return;
+    }
+
+    const bool sensor_healthy = (rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good);
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_position(loc));
+
+    // get temperature
+    float temp_C = 0.0f;
+    IGNORE_RETURN(rangefinder->get_temp(ROTATION_PITCH_270, temp_C));
+
+    mavlink_msg_water_depth_send(
+        chan,
+        AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+        0,                  // sensor id always zero
+        sensor_healthy,     // sensor healthy
+        loc.lat,            // latitude of vehicle
+        loc.lng,            // longitude of vehicle
+        loc.alt * 0.01f,    // altitude of vehicle (MSL)
+        ahrs.get_roll(),    // roll in radians
+        ahrs.get_pitch(),   // pitch in radians
+        ahrs.get_yaw(),     // yaw in radians
+        rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f,    // distance in meters
+        temp_C);            // temperature in degC
+#endif
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5066,6 +5110,18 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_winch_status();
         break;
 
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+    case MSG_HIGH_LATENCY2:
+#if HAL_HIGH_LATENCY2_ENABLED
+        CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
+        send_high_latency();
+#endif // HAL_HIGH_LATENCY2_ENABLED
+        break;
+
+
     default:
         // try_send_message must always at some stage return true for
         // a message, or we will attempt to infinitely retry the
@@ -5329,9 +5385,11 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
     }
 
+#if HAL_RALLY_ENABLED
     if (AP::rally()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
     }
+#endif
 
     if (AP::fence()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
@@ -5366,3 +5424,117 @@ GCS &gcs()
 {
     return *GCS::get_singleton();
 }
+
+/*
+  send HIGH_LATENCY2 message
+ */
+#if HAL_HIGH_LATENCY2_ENABLED
+void GCS_MAVLINK::send_high_latency() const
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    struct Location global_position_current;
+    UNUSED_RESULT(ahrs.get_position(global_position_current));
+
+    Location cur = AP::gps().location();
+
+    const AP_BattMonitor &battery = AP::battery();
+    float battery_current;
+    int8_t battery_remaining;
+
+    if (battery.healthy() && battery.current_amps(battery_current)) {
+        battery_remaining = battery.capacity_remaining_pct();
+        battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
+    } else {
+        battery_current = -1;
+        battery_remaining = -1;
+    }
+
+    AP_Mission *mission = AP::mission();
+    uint16_t current_waypoint = 0;
+    if (mission != nullptr) {
+        current_waypoint = mission->get_current_nav_index();
+    }
+
+    uint32_t present;
+    uint32_t enabled;
+    uint32_t health;
+    uint16_t failure_flags = 0;
+    gcs().get_sensor_status_flags(present, enabled, health);
+    // Remap HL_FAILURE_FLAG from system status flags
+    if (!(health & MAV_SYS_STATUS_SENSOR_GPS))
+    {
+        failure_flags |= HL_FAILURE_FLAG_GPS;
+    }
+    if (!(health & MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE))
+    {
+        failure_flags |= HL_FAILURE_FLAG_DIFFERENTIAL_PRESSURE;
+    }    
+    if (!(health & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE))
+    {
+        failure_flags |= HL_FAILURE_FLAG_ABSOLUTE_PRESSURE;
+    }    
+    if (!(health & MAV_SYS_STATUS_SENSOR_3D_ACCEL))
+    {
+        failure_flags |= HL_FAILURE_FLAG_3D_ACCEL;
+    }  
+    if (!(health & MAV_SYS_STATUS_SENSOR_3D_GYRO))
+    {
+        failure_flags |= HL_FAILURE_FLAG_3D_GYRO;
+    }  
+    if (!(health & MAV_SYS_STATUS_SENSOR_3D_MAG))
+    {
+        failure_flags |= HL_FAILURE_FLAG_3D_MAG;
+    }  
+    if (!(health & MAV_SYS_STATUS_TERRAIN))
+    {
+        failure_flags |= HL_FAILURE_FLAG_TERRAIN;
+    }  
+    if (!(health & MAV_SYS_STATUS_SENSOR_BATTERY))
+    {
+        failure_flags |= HL_FAILURE_FLAG_BATTERY;
+    }  
+    if (!(health & MAV_SYS_STATUS_SENSOR_RC_RECEIVER))
+    {
+        failure_flags |= HL_FAILURE_FLAG_RC_RECEIVER;
+    }  
+    if (!(health & MAV_SYS_STATUS_GEOFENCE))
+    {
+        failure_flags |= HL_FAILURE_FLAG_GEOFENCE;
+    } 
+    if (!(health & MAV_SYS_STATUS_AHRS))
+    {
+        failure_flags |= HL_FAILURE_FLAG_ESTIMATOR;
+    }
+
+    //send_text(MAV_SEVERITY_INFO, "Yaw: %u", (((uint16_t)ahrs.yaw_sensor / 100) % 360));
+
+    mavlink_msg_high_latency2_send(chan, 
+        AP_HAL::millis(), //[ms] Timestamp (milliseconds since boot or Unix epoch)
+        gcs().frame_type(), // Type of the MAV (quadrotor, helicopter, etc.)
+        MAV_AUTOPILOT_ARDUPILOTMEGA, // Autopilot type / class. Use MAV_AUTOPILOT_INVALID for components that are not flight controllers.
+        gcs().custom_mode(), // A bitfield for use for autopilot-specific flags (2 byte version).
+        cur.lat, // [degE7] Latitude
+        cur.lng, // [degE7] Longitude
+        global_position_current.alt * 0.01f, // [m] Altitude above mean sea level
+        high_latency_target_altitude(), // [m] Altitude setpoint
+        (((uint16_t)ahrs.yaw_sensor / 100) % 360) / 2, // [deg/2] Heading
+        high_latency_tgt_heading(), // [deg/2] Heading setpoint
+        high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
+        abs(vfr_hud_throttle()), // [%] Throttle
+        MIN(vfr_hud_airspeed() * 5, UINT8_MAX), // [m/s*5] Airspeed
+        high_latency_tgt_airspeed(), // [m/s*5] Airspeed setpoint
+        MIN(ahrs.groundspeed() * 5, UINT8_MAX), // [m/s*5] Groundspeed
+        high_latency_wind_speed(), // [m/s*5] Windspeed
+        high_latency_wind_direction(), // [deg/2] Wind heading
+        0, // [dm] Maximum error horizontal position since last message
+        0, // [dm] Maximum error vertical position since last message
+        high_latency_air_temperature(), // [degC] Air temperature from airspeed sensor
+        0, // [dm/s] Maximum climb rate magnitude since last message
+        battery_remaining, // [%] Battery level (-1 if field not provided).
+        current_waypoint, // Current waypoint number
+        failure_flags, // Bitmap of failure flags.
+        base_mode(), // Field for custom payload. base mode (arming status) in ArduPilot's case
+        0, // Field for custom payload.
+        0); // Field for custom payload.
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

@@ -1,16 +1,6 @@
 #include "GCS_Mavlink.h"
 #include "Tracker.h"
 
-/*
- *  !!NOTE!!
- *
- *  the use of NOINLINE separate functions for each message type avoids
- *  a compiler bug in gcc that would cause it to use far more stack
- *  space than is needed. Without the NOINLINE we use the sum of the
- *  stack needed for each message type. Please be careful to follow the
- *  pattern below when adding any new messages
- */
-
 MAV_TYPE GCS_Tracker::frame_type() const
 {
     return MAV_TYPE_ANTENNA_TRACKER;

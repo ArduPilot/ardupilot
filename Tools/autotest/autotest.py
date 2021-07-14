@@ -158,7 +158,7 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.run([test], check=True)
+    subprocess.check_call([test])
 
 
 def run_unit_tests():
@@ -430,6 +430,8 @@ def run_step(step):
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
         "math_check_indexes": opts.math_check_indexes,
+        "ekf_single": opts.ekf_single,
+        "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
     }
@@ -693,9 +695,18 @@ def run_tests(steps):
     global results
 
     corefiles = glob.glob("core*")
+    corefiles.extend(glob.glob("ap-*.core"))
     if corefiles:
         print('Removing corefiles: %s' % str(corefiles))
         for f in corefiles:
+            os.unlink(f)
+
+    diagnostic_files = []
+    for p in "dumpstack.sh_*", "dumpcore.sh_*", "autotest-*tlog":
+        diagnostic_files.extend(glob.glob(p))
+    if diagnostic_files:
+        print('Removing diagnostic files: %s' % str(diagnostic_files))
+        for f in diagnostic_files:
             os.unlink(f)
 
     passed = True
@@ -898,9 +909,13 @@ if __name__ == "__main__":
                            help='do not clean before building',
                            dest="no_clean")
     group_build.add_option("--debug",
-                           default=False,
+                           default=None,
                            action='store_true',
-                           help='make built binaries debug binaries')
+                           help='make built SITL binaries debug binaries')
+    group_build.add_option("--no-debug",
+                           default=None,
+                           action='store_true',
+                           help='do not make built SITL binaries debug binaries')
     group_build.add_option("--coverage",
                            default=False,
                            action='store_true',
@@ -910,6 +925,16 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="math_check_indexes",
                            help="enable checking of math indexes")
+    group_build.add_option("--postype-single",
+                           default=False,
+                           action="store_true",
+                           dest="postype_single",
+                           help="force single precision copter position controller")
+    group_build.add_option("--ekf-single",
+                           default=False,
+                           action="store_true",
+                           dest="ekf_single",
+                           help="force single precision EKF")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -968,6 +993,16 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    # canonicalise on opts.debug:
+    if opts.debug is None and opts.no_debug is None:
+        # default is to create debug SITL binaries
+        opts.debug = True
+    elif opts.debug is not None and opts.no_debug is not None:
+        if opts.debug == opts.no_debug:
+            raise ValueError("no_debug != !debug")
+    elif opts.no_debug is not None:
+        opts.debug = not opts.no_debug
 
     if opts.timeout is None:
         opts.timeout = 5400

@@ -170,7 +170,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on GND_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in GND_EXT_BUS.
     // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06,12:MSP
-    // @Values: 1:BMP085,2:BMP280,4:MS5611,8:MS5607,16:MS5637,32:FBM320,64:DPS280,128:LPS25H,256:Keller,512:MS5837,1024:BMP388,2048:SPL06,4096:MSP
     // @User: Advanced
     AP_GROUPINFO("_PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
@@ -255,6 +254,12 @@ void AP_Baro::calibrate(bool save)
         return;
     }
     
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (AP::sitl()->baro_count == 0) {
+        return;
+    }
+#endif
+
     #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
             BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
@@ -671,7 +676,11 @@ void AP_Baro::init(void)
 #endif
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (sitl->baro_count == 0) {
+        return;
+    }
+#endif
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::config_error("Baro: unable to initialise driver");
     }

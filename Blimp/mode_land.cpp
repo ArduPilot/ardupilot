@@ -1,15 +1,16 @@
 #include "Blimp.h"
-
 /*
- * Init and run calls for stabilize flight mode
+ * Init and run calls for land flight mode
  */
 
-// manual_run - runs the main manual controller
-// should be called at 100hz or more
+// Runs the main land controller
 void ModeLand::run()
 {
-    //stop moving
-
+    //Stop moving
+    motors->right_out = 0;
+    motors->front_out = 0;
+    motors->yaw_out = 0;
+    motors->down_out = 0;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts

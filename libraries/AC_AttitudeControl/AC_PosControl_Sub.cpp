@@ -17,14 +17,14 @@ AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& i
 ///     The time constant also defines the time taken to achieve the maximum acceleration.
 ///     The time constant must be positive.
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-void AC_PosControl_Sub::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, bool force_descend)
+void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool force_descend)
 {
     // check for ekf z position reset
     handle_ekf_z_reset();
 
     // limit desired velocity to prevent breeching altitude limits
     if (_alt_min < 0 && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
-        vel.z = constrain_float(vel.z,
+        vel = constrain_float(vel,
             sqrt_controller(_alt_min-_pos_target.z, 0.0f, _accel_max_z_cmss, 0.0f),
             sqrt_controller(_alt_max-_pos_target.z, 0.0f, _accel_max_z_cmss, 0.0f));
     }
@@ -39,18 +39,18 @@ void AC_PosControl_Sub::input_vel_accel_z(Vector3f& vel, const Vector3f& accel, 
     }
 
     // adjust desired alt if motors have not hit their limits
-    update_pos_vel_accel_z(_pos_target, _vel_desired, _accel_desired, _dt, _limit_vector);
+    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z);
 
     // prevent altitude target from breeching altitude limits
     if (is_negative(_alt_min) && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
         _pos_target.z = constrain_float(_pos_target.z, _alt_min, _alt_max);
     }
 
-    shape_vel_accel(vel.z, accel.z,
+    shape_vel_accel(vel, accel,
         _vel_desired.z, _accel_desired.z,
         _vel_max_down_cms, _vel_max_up_cms,
         -accel_z_cms, accel_z_cms,
         _tc_z_s, _dt);
 
-    update_vel_accel_z(vel, accel, _dt, _limit_vector);
+    update_vel_accel(vel, accel, _dt, _limit_vector.z);
 }

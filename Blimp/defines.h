@@ -138,6 +138,14 @@ enum LoggingParameters {
     LOG_GUIDEDTARGET_MSG,
     LOG_SYSIDD_MSG,
     LOG_SYSIDS_MSG,
+    LOG_FINI_MSG,
+    LOG_FINO_MSG,
+    LOG_PIDD_MSG,
+    LOG_PIVN_MSG,
+    LOG_PIVE_MSG,
+    LOG_PIVD_MSG,
+    LOG_PIVY_MSG,
+
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

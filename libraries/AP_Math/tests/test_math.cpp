@@ -624,11 +624,11 @@ TEST(MathTest, RANDOM16)
 
 TEST(MathTest, VELCORRECTION)
 {
-    static constexpr Vector3f pos{1.0f, 1.0f, 0.0f};
-    static constexpr Matrix3f rot(0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    static constexpr Vector3f rate{-1.0f, -1.0f, -1.0f};
-    EXPECT_TRUE(Vector3f(1.0f, 1.0f, 0.0f) == get_vel_correction_for_sensor_offset(pos, rot, rate));
-    EXPECT_TRUE(Vector3f() == get_vel_correction_for_sensor_offset(Vector3f(), rot, rate));
+    static constexpr Vector3F pos{1.0f, 1.0f, 0.0f};
+    static constexpr Matrix3F rot(0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    static constexpr Vector3F rate{-1.0f, -1.0f, -1.0f};
+    EXPECT_TRUE(Vector3F(1.0f, 1.0f, 0.0f) == get_vel_correction_for_sensor_offset(pos, rot, rate));
+    EXPECT_TRUE(Vector3F() == get_vel_correction_for_sensor_offset(Vector3F(), rot, rate));
 }
 
 TEST(MathTest, LOWPASSALPHA)

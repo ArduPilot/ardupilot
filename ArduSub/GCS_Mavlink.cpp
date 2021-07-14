@@ -2,16 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-/*
- *  !!NOTE!!
- *
- *  the use of NOINLINE separate functions for each message type avoids
- *  a compiler bug in gcc that would cause it to use far more stack
- *  space than is needed. Without the NOINLINE we use the sum of the
- *  stack needed for each message type. Please be careful to follow the
- *  pattern below when adding any new messages
- */
-
 MAV_TYPE GCS_Sub::frame_type() const
 {
     return MAV_TYPE_SUBMARINE;
@@ -799,3 +789,47 @@ int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
     }
     return GCS_MAVLINK::global_position_int_relative_alt();
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    struct Location global_position_current;
+    UNUSED_RESULT(ahrs.get_position(global_position_current));
+
+    //return units are m
+    if (sub.control_mode == AUTO || sub.control_mode == GUIDED) {
+        return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_z_cm());
+    }
+    return 0;
+    
+}
+
+uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
+{
+    // return units are deg/2
+    if (sub.control_mode == AUTO || sub.control_mode == GUIDED) {
+        // need to convert -18000->18000 to 0->360/2
+        return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination()) / 200;
+    }
+    return 0;      
+}
+    
+uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist() const
+{
+    // return units are dm
+    if (sub.control_mode == AUTO || sub.control_mode == GUIDED) {
+        return MIN(sub.wp_nav.get_wp_distance_to_destination() * 0.001, UINT16_MAX);
+    }
+    return 0;
+}
+
+uint8_t GCS_MAVLINK_Sub::high_latency_tgt_airspeed() const
+{
+    // return units are m/s*5
+    if (sub.control_mode == AUTO || sub.control_mode == GUIDED) {
+        return MIN((sub.pos_control.get_vel_desired_cms().length()/100) * 5, UINT8_MAX);
+    }
+    return 0;
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

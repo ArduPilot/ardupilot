@@ -649,6 +649,13 @@ public:
     AP_Float rangefinder_filt;
 #endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
+    AP_Float guided_timeout;
+#endif
+
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    AP_Float terrain_margin;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

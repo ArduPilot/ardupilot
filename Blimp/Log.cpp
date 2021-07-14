@@ -5,6 +5,60 @@
 // Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
 
+struct PACKED log_FINI {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float Right;
+    float Front;
+    float Down;
+    float Yaw;
+};
+
+struct PACKED log_FINO {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float Fin1_Amp;
+    float Fin1_Off;
+    float Fin2_Amp;
+    float Fin2_Off;
+    float Fin3_Amp;
+    float Fin3_Off;
+    float Fin4_Amp;
+    float Fin4_Off;
+};
+
+//Write a fin input packet
+void Blimp::Write_FINI(float right, float front, float down, float yaw)
+{
+    const struct log_FINI pkt{
+        LOG_PACKET_HEADER_INIT(LOG_FINI_MSG),
+        time_us       : AP_HAL::micros64(),
+        Right         : right,
+        Front         : front,
+        Down          : down,
+        Yaw           : yaw
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+//Write a fin output packet
+void Blimp::Write_FINO(float *amp, float *off)
+{
+    const struct log_FINO pkt{
+        LOG_PACKET_HEADER_INIT(LOG_FINO_MSG),
+        time_us       : AP_HAL::micros64(),
+        Fin1_Amp      : amp[0],
+        Fin1_Off      : off[0],
+        Fin2_Amp      : amp[1],
+        Fin2_Off      : off[1],
+        Fin3_Amp      : amp[2],
+        Fin3_Off      : off[2],
+        Fin4_Amp      : amp[3],
+        Fin4_Off      : off[3],
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -22,10 +76,17 @@ struct PACKED log_Control_Tuning {
     int16_t  climb_rate;
 };
 
-// Write a control tuning packet
-void Blimp::Log_Write_Control_Tuning()
+// Write PID packets
+void Blimp::Log_Write_PIDs()
 {
-
+    logger.Write_PID(LOG_PIVN_MSG, pid_vel_xy.get_pid_info_x());
+    logger.Write_PID(LOG_PIVE_MSG, pid_vel_xy.get_pid_info_y());
+    logger.Write_PID(LOG_PIVD_MSG, pid_vel_z.get_pid_info());
+    logger.Write_PID(LOG_PIVY_MSG, pid_vel_yaw.get_pid_info());
+    logger.Write_PID(LOG_PIDN_MSG, pid_pos_xy.get_pid_info_x());
+    logger.Write_PID(LOG_PIDE_MSG, pid_pos_xy.get_pid_info_y());
+    logger.Write_PID(LOG_PIDD_MSG, pid_pos_z.get_pid_info());
+    logger.Write_PID(LOG_PIDY_MSG, pid_pos_yaw.get_pid_info());
 }
 
 // Write an attitude packet
@@ -288,6 +349,56 @@ time_fade_out       : time_fade_out
 const struct LogStructure Blimp::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 
+    // @LoggerMessage: FINI
+    // @Description: Fin input
+    // @Field: TimeUS: Time since system startup
+    // @Field: R: Right
+    // @Field: F: Front
+    // @Field: D: Down
+    // @Field: Y: Yaw
+
+    { LOG_FINI_MSG, sizeof(log_FINI),
+      "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"  },
+
+    // @LoggerMessage: FINO
+    // @Description: Fin output
+    // @Field: TimeUS: Time since system startup
+    // @Field: F1A: Fin 1 Amplitude
+    // @Field: F1O: Fin 1 Offset
+    // @Field: F2A: Fin 2 Amplitude
+    // @Field: F2O: Fin 2 Offset
+    // @Field: F3A: Fin 3 Amplitude
+    // @Field: F3O: Fin 3 Offset
+    // @Field: F4A: Fin 4 Amplitude
+    // @Field: F4O: Fin 4 Offset
+
+    { LOG_FINO_MSG, sizeof(log_FINO),
+      "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"  },
+
+    // @LoggerMessage: PIDD,PIVN,PIVE,PIVD,PIVY
+    // @Description: Proportional/Integral/Derivative gain values
+    // @Field: TimeUS: Time since system startup
+    // @Field: Tar: desired value
+    // @Field: Act: achieved value
+    // @Field: Err: error between target and achieved
+    // @Field: P: proportional part of PID
+    // @Field: I: integral part of PID
+    // @Field: D: derivative part of PID
+    // @Field: FF: controller feed-forward portion of response
+    // @Field: Dmod: scaler applied to D gain to reduce limit cycling
+    // @Field: SRate: slew rate
+    // @Field: Limit: 1 if I term is limited due to output saturation
+    { LOG_PIDD_MSG, sizeof(log_PID),
+      "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIVN_MSG, sizeof(log_PID),
+      "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIVE_MSG, sizeof(log_PID),
+      "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIVD_MSG, sizeof(log_PID),
+      "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+    { LOG_PIVY_MSG, sizeof(log_PID),
+      "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },
+
     // @LoggerMessage: PTUN
     // @Description: Parameter Tuning information
     // @URL: https://ardupilot.org/blimp/docs/tuning.html#in-flight-tuning
@@ -452,9 +563,9 @@ void Blimp::log_init(void)
 
 #else // LOGGING_ENABLED
 
-void Blimp::Log_Write_Control_Tuning() {}
 void Blimp::Log_Write_Performance() {}
 void Blimp::Log_Write_Attitude(void) {}
+void Blimp::Log_Write_PIDs(void) {}
 void Blimp::Log_Write_EKF_POS() {}
 void Blimp::Log_Write_MotBatt() {}
 void Blimp::Log_Write_Data(LogDataID id, int32_t value) {}

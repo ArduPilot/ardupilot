@@ -294,7 +294,7 @@ void Sailboat::update(const struct sitl_input &input)
     velocity_ef = velocity_ef_water + tide_velocity_ef;
 
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
 
     // update lat/lon/altitude
     update_position();

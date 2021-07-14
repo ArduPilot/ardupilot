@@ -207,6 +207,8 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
+        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+
     private:
 
         float look_ahead_yaw();
@@ -219,16 +221,20 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
+        float _fixed_yaw_offset_cd;
 
         // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
+        float _fixed_yaw_slewrate_cds;
+
+        // time of the last yaw update
+        uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _rate_cds;
+        float _yaw_angle_cd;
+        float _yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
 
@@ -380,7 +386,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     void wp_start(const Location& dest_loc);
     void land_start();
-    void land_start(const Vector3f& destination);
+    void land_start(const Vector2f& destination);
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
@@ -442,7 +448,7 @@ private:
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
-    void payload_place_start(const Vector3f& destination);
+    void payload_place_start(const Vector2f& destination);
     void payload_place_run();
     bool payload_place_run_should_run();
     void payload_place_run_loiter();
@@ -845,11 +851,21 @@ public:
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) override;
+    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+
+    // get position, velocity and acceleration targets
+    const Vector3p& get_target_pos() const;
+    const Vector3f& get_target_vel() const;
+    const Vector3f& get_target_accel() const;
 
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
+    bool stabilizing_pos_xy() const;
+    bool stabilizing_vel_xy() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
@@ -863,8 +879,9 @@ public:
     enum class SubMode {
         TakeOff,
         WP,
-        Velocity,
-        PosVel,
+        PosVelAccel,
+        VelAccel,
+        Accel,
         Angle,
     };
 
@@ -872,6 +889,9 @@ public:
 
     void angle_control_start();
     void angle_control_run();
+
+    // return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+    uint32_t get_timeout_ms() const;
 
 protected:
 
@@ -886,19 +906,24 @@ private:
 
     // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
-        AllowArmingFromTX = (1U << 0),
+        AllowArmingFromTX   = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
-        IgnorePilotYaw    = (1U << 2),
+        IgnorePilotYaw      = (1U << 2),
         SetAttitudeTarget_ThrustAsThrust = (1U << 3),
+        DoNotStabilizePositionXY = (1U << 4),
+        DoNotStabilizeVelocityXY = (1U << 5),
     };
 
+    void pva_control_start();
     void pos_control_start();
-    void vel_control_start();
-    void posvel_control_start();
+    void accel_control_start();
+    void velaccel_control_start();
+    void posvelaccel_control_start();
     void takeoff_run();
     void pos_control_run();
-    void vel_control_run();
-    void posvel_control_run();
+    void accel_control_run();
+    void velaccel_control_run();
+    void posvelaccel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool use_pilot_yaw(void) const;

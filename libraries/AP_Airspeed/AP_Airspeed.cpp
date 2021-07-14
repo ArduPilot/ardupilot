@@ -623,6 +623,9 @@ void AP_Airspeed::Log_Airspeed()
 
 bool AP_Airspeed::use(uint8_t i) const
 {
+    if (_force_disable_use) {
+        return false;
+    }
     if (!enabled(i) || !param[i].use) {
         return false;
     }

@@ -70,8 +70,6 @@ bool Sub::set_home(const Location& loc, bool lock)
 
     // init inav and compass declination
     if (!home_was_set) {
-        // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-        scaleLongDown = loc.longitude_scale();
         // record home is set
         AP::logger().Write_Event(LogEvent::SET_HOME);
 

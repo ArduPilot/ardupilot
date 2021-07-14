@@ -56,7 +56,11 @@ class upload_fw(Task.Task):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
-        cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
+        # Refer Tools/scripts/macos_remote_upload.sh for details
+        if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
+            cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
+        else:
+            cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
@@ -382,7 +386,11 @@ def generate_hwdef_h(env):
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
+    if env.HWDEF_EXTRA:
+        cmd += " '{0}'".format(env.HWDEF_EXTRA)
+    if env.BOOTLOADER_OPTION:
+        cmd += " " + env.BOOTLOADER_OPTION
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
@@ -403,11 +411,21 @@ def pre_build(bld):
 
 def build(bld):
 
+
+    hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
+            bld.env.get_flat('PYTHON'),
+            bld.env.AP_HAL_ROOT,
+            bld.env.BUILDROOT,
+            bld.env.default_parameters,
+            bld.env.HWDEF)
+    if bld.env.HWDEF_EXTRA:
+        hwdef_rule += " " + bld.env.HWDEF_EXTRA
+    if bld.env.BOOTLOADER_OPTION:
+        hwdef_rule += " " + bld.env.BOOTLOADER_OPTION
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s'" % (
-            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
+        rule=hwdef_rule,
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld'),

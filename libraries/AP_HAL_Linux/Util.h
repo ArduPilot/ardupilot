@@ -94,6 +94,9 @@ public:
         _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
     }
 
+    // fills data with random values of requested size
+    bool get_random_vals(uint8_t* data, size_t size) override;
+
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     static ToneAlarm_Disco _toneAlarm;

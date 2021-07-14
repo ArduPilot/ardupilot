@@ -1,3 +1,57 @@
+Release 4.1.0beta3 5th July 2021
+--------------------------------
+
+This is a minor update over the 4.0.1beta2 release. It has a few
+important fixes for beta testers:
+
+ - sync with copter 4.1.0beta5
+
+ - added QRTL always option in Q_RTL_MODE
+
+ - added more modes to USE_REV_THRUST parameter
+
+ - added QioTekZealonH743 board type
+
+ - added EKF3 protections for variance collapse
+
+ - added PiccoloCAN servo support
+
+ - improved VTOL position control a long distance from home
+
+ - fixed handling of 180 degree longitude date-line crossing
+
+ - fixed logged after forced arm
+
+ - fixed DShot with quadplane motor test
+
+ - adjusted autotune handling of target filter
+
+ - adjusted default roll/pitch PID filters
+
+Please report all test results, and happy flying!
+
+Release 4.1.0beta2 24th June 2021
+---------------------------------
+
+This is a minor update over the 4.0.1beta1 release. It has a few
+important fixes for beta testers:
+
+ - Fixed a bug in attitude control during the airbrake phase of
+   quadplane landing approach
+
+ - skip POSITION1 stage of landing approach for tailsitters
+
+ - fixed handling of corrupted filesystems on arming, where a long
+   delay during log file creation could cause a watchdog reset
+
+ - fixed build of VRUBrain-v51 board
+
+ - re-enable soaring on MatekF405-Wing
+
+ - fixed calculation of battery consumption on a commanded reset
+
+Please report all test results, and happy flying!
+
 Release 4.1.0beta1 14th June 2021
 ---------------------------------
 

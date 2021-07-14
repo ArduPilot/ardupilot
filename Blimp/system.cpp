@@ -101,6 +101,11 @@ void Blimp::init_ardupilot()
         enable_motor_output();
     }
 
+    //Initialise fin filters
+    vel_xy_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f);
+    vel_z_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 1.0f, 15.0f);
+    vel_yaw_filter.init(scheduler.get_loop_rate_hz(),motors->freq_hz, 5.0f, 15.0f);
+
     // attempt to switch to MANUAL, if this fails then switch to Land
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
         // set mode to MANUAL will trigger mode change notification to pilot
@@ -213,13 +218,8 @@ void Blimp::update_auto_armed()
             set_auto_armed(false);
             return;
         }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
+        // if in a manual flight mode and throttle is zero, auto-armed should become false
         if (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
-            set_auto_armed(false);
-        }
-        // if heliblimps are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if (ap.land_complete && motors->get_spool_state() != Fins::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
     }

@@ -86,12 +86,14 @@ AC_Loiter::AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 }
 
 /// init_target to a position in cm from ekf origin
-void AC_Loiter::init_target(const Vector3f& position)
+void AC_Loiter::init_target(const Vector2f& position)
 {
     sanity_check_params();
 
-    // initialise pos controller speed, acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    // initialise position controller speed and acceleration
+    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
+
     // initialise position controller
     _pos_control.init_xy_controller_stopping_point();
 
@@ -111,11 +113,11 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // initialise position controller speed and acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
+    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise position controller
     _pos_control.init_xy_controller();
-    _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel.x = _pos_control.get_accel_target_cmss().x;
@@ -172,9 +174,11 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
 }
 
 /// get vector to stopping point based on a horizontal position and velocity
-void AC_Loiter::get_stopping_point_xy(Vector3f& stopping_point) const
+void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
+    Vector2p stop;
+    _pos_control.get_stopping_point_xy_cm(stop);
+    stopping_point = stop.tofloat();
 }
 
 /// get maximum lean angle when using loiter
@@ -189,9 +193,6 @@ float AC_Loiter::get_angle_max_cd() const
 /// run the loiter controller
 void AC_Loiter::update(bool avoidance_on)
 {
-    // initialise pos controller speed and acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
-
     calc_desired_velocity(_pos_control.get_dt(), avoidance_on);
     _pos_control.update_xy_controller();
 }
@@ -221,9 +222,6 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     if (nav_dt < 0) {
         return;
     }
-
-    // initialise pos controller speed, acceleration
-    _pos_control.set_max_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
 
     // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &desired_vel_3d = _pos_control.get_vel_desired_cms();
@@ -287,11 +285,10 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     }
 
     // get loiters desired velocity from the position controller where it is being stored.
-    const Vector3f &target_pos_3d = _pos_control.get_pos_target_cm();
-    Vector2f target_pos{target_pos_3d.x, target_pos_3d.y};
+    Vector2p target_pos = _pos_control.get_pos_target_cm().xy();
 
     // update the target position using our predicted velocity
-    target_pos += desired_vel * nav_dt;
+    target_pos += (desired_vel * nav_dt).topostype();
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_pos_vel_accel_xy(target_pos, desired_vel, _desired_accel);
