@@ -58,7 +58,13 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
                 continue
             v1 = getattr(m,f)
             v2 = getattr(mb,f)
-            if v1 != v2:
+            ok = v1 == v2
+            if not ok and args.accuracy > 0:
+                avg = (v1+v2)*0.5
+                margin = args.accuracy*0.01*avg
+                if abs(v1-v2) <= abs(margin):
+                    ok = True
+            if not ok:
                 mismatch = True
                 errors += 1
                 progress("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
@@ -82,6 +88,7 @@ if __name__ == '__main__':
     parser.add_argument("--ekf2-only", action='store_true', help="only check EKF2")
     parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
     parser.add_argument("--verbose", action='store_true', help="verbose output")
+    parser.add_argument("--accuracy", type=float, default=0.0, help="accuracy percentage for match")
     parser.add_argument("logs", metavar="LOG", nargs="+")
 
     args = parser.parse_args()
