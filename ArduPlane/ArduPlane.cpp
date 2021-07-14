@@ -143,7 +143,7 @@ void Plane::ahrs_update()
     roll_limit_cd = aparm.roll_limit_cd;
     pitch_limit_min_cd = aparm.pitch_limit_min_cd;
 
-    if (!quadplane.tailsitter_active()) {
+    if (!quadplane.tailsitter.active()) {
         roll_limit_cd *= ahrs.cos_pitch();
         pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
     }
