@@ -36,6 +36,7 @@ public:
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
+        MISSION_RTL =  27,  // RTL via DO_LAND_START mission items
     };
 
     // constructor
@@ -348,7 +349,7 @@ private:
 
 
 class ModeAuto : public Mode {
-
+friend class Mission_RTL;
 public:
     // inherit constructor
     using Mode::Mode;
@@ -556,6 +557,55 @@ private:
         AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max]; // local copy of the next few mission commands
     } mis_change_detect = {};
 };
+
+#if MODE_RTL_ENABLED == ENABLED && MODE_AUTO_ENABLED == ENABLED
+class Mission_RTL : public Mode {
+public:
+
+    using Mode::Mode;
+
+    Number mode_number() const override { return Number::MISSION_RTL; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+    void exit() override;
+
+    bool requires_GPS() const override;
+    bool has_manual_throttle() const override;
+    bool allows_arming(AP_Arming::Method method) const override;
+    bool is_autopilot() const override;
+    bool in_guided_mode() const override;
+    bool requires_terrain_failsafe() const override;
+    bool has_user_takeoff(bool must_navigate) const override;
+
+protected:
+
+    const char *name() const override { return "MRTL"; }
+    const char *name4() const override { return "MRTL"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
+    bool get_wp(Location &loc) const override;
+
+    bool is_taking_off() const override;
+    bool is_landing() const override;
+
+private:
+
+    enum class Type {
+        NONE,
+        HOME_THEN_LANDING_SEQUENCE,
+        CLOSEST_LANDING_SEQUENCE,
+    };
+
+    enum class SubMode {
+        AUTO,
+        RTL,
+    } submode;
+
+};
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
 /*
@@ -1128,7 +1178,7 @@ private:
 
 
 class ModeRTL : public Mode {
-
+friend class Mission_RTL;
 public:
     // inherit constructor
     using Mode::Mode;

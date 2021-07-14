@@ -687,7 +687,7 @@ Return true if we do not recognize the command so that we move on to the next co
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
-    if (copter.flightmode != &copter.mode_auto) {
+    if (copter.flightmode != &copter.mode_auto && copter.flightmode != &copter.mode_mission_rtl) {
         return false;
     }
 

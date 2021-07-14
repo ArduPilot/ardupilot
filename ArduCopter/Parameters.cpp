@@ -1089,6 +1089,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("TERRAIN_MARGIN", 47, ParametersG2, terrain_margin, 10.0),
 #endif
 
+#if MODE_RTL_ENABLED == ENABLED && MODE_AUTO_ENABLED == ENABLED
+    // @Param: MISSION_RTL
+    // @DisplayName: Enable Mission RTL mode
+    // @Description: Mission RTL mode Automatically begin landing sequence in RTL. This requires the addition of DO_LAND_START mission item or items, which acts as a marker for the start of a landing sequence.
+    // @Values: 0:Disable, 1:Enabled - go HOME then closest landing sequence, 2:Enabled - go directly to closest landing sequence start
+    // @User: Standard
+    AP_GROUPINFO("MISSION_RTL", 48, ParametersG2, mission_RTL_type, 0),
+#endif
+
     AP_GROUPEND
 };
 

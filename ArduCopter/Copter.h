@@ -220,6 +220,7 @@ public:
     friend class ModeThrow;
     friend class ModeZigZag;
     friend class ModeAutorotate;
+    friend class Mission_RTL;
 
     Copter(void);
 
@@ -978,6 +979,9 @@ private:
 #endif
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ModeAutorotate mode_autorotate;
+#endif
+#if MODE_RTL_ENABLED == ENABLED && MODE_AUTO_ENABLED == ENABLED
+    Mission_RTL mode_mission_rtl;
 #endif
 
     // mode.cpp
