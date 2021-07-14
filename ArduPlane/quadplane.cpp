@@ -271,19 +271,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Values: 0:Continuous,1:Binary,2:VectoredYaw,3:Bicopter
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
-    // @Param: TAILSIT_ANGLE
-    // @DisplayName: Tailsitter fixed wing transition angle
-    // @Description: This is the pitch angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
-    // @Units: deg
-    // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle_fw, 45),
-
-    // @Param: TAILSIT_ANG_VT
-    // @DisplayName: Tailsitter VTOL transition angle
-    // @Description: This is the pitch angle at which tailsitter aircraft will change from fixed wing control to VTOL control, if zero Q_TAILSIT_ANGLE will be used
-    // @Units: deg
-    // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANG_VT", 61, QuadPlane, tailsitter.transition_angle_vtol, 0),
+    // 48: TAILSIT_ANGLE
+    // 61: TAILSIT_ANG_VT
 
     // @Param: TILT_RATE_DN
     // @DisplayName: Tiltrotor downwards tilt rate
@@ -293,38 +282,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 10 300
     // @User: Standard
     AP_GROUPINFO("TILT_RATE_DN", 49, QuadPlane, tilt.max_rate_down_dps, 0),
-        
-    // @Param: TAILSIT_INPUT
-    // @DisplayName: Tailsitter input type bitmask
-    // @Description: This controls whether stick input when hovering as a tailsitter follows the conventions for fixed wing hovering or multicopter hovering. When PlaneMode is not enabled (bit0 = 0) the roll stick will roll the aircraft in earth frame and yaw stick will yaw in earth frame. When PlaneMode input is enabled, the roll and yaw sticks are swapped so that the roll stick controls earth-frame yaw and rudder controls earth-frame roll. When body-frame roll is enabled (bit1 = 1), the yaw stick controls earth-frame yaw rate and the roll stick controls roll in the tailsitter's body frame when flying level.
-    // @Bitmask: 0:PlaneMode,1:BodyFrameRoll
-    AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, 0),
 
-    // @Param: TAILSIT_MASK
-    // @DisplayName: Tailsitter input mask
-    // @Description: This controls what channels have full manual control when hovering as a tailsitter and the Q_TAILSIT_MASKCH channel in high. This can be used to teach yourself to prop-hang a 3D plane by learning one or more channels at a time.
-    // @Bitmask: 0:Aileron,1:Elevator,2:Throttle,3:Rudder
-    AP_GROUPINFO("TAILSIT_MASK", 51, QuadPlane, tailsitter.input_mask, 0),
-
-    // @Param: TAILSIT_MASKCH
-    // @DisplayName: Tailsitter input mask channel
-    // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
-    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    AP_GROUPINFO("TAILSIT_MASKCH", 52, QuadPlane, tailsitter.input_mask_chan, 0),
-
-    // @Param: TAILSIT_VFGAIN
-    // @DisplayName: Tailsitter vector thrust gain in forward flight
-    // @Description: This controls the amount of vectored thrust control used in forward flight for a vectored tailsitter
-    // @Range: 0 1
-    // @Increment: 0.01
-    AP_GROUPINFO("TAILSIT_VFGAIN", 53, QuadPlane, tailsitter.vectored_forward_gain, 0),
-
-    // @Param: TAILSIT_VHGAIN
-    // @DisplayName: Tailsitter vector thrust gain in hover
-    // @Description: This controls the amount of vectored thrust control used in hover for a vectored tailsitter
-    // @Range: 0 1
-    // @Increment: 0.01
-    AP_GROUPINFO("TAILSIT_VHGAIN", 54, QuadPlane, tailsitter.vectored_hover_gain, 0.5),
+    // 50: TAILSIT_INPUT
+    // 51: TAILSIT_MASK
+    // 52: TAILSIT_MASKCH
+    // 53: TAILSIT_VFGAIN
+    // 54: TAILSIT_VHGAIN
 
     // @Param: TILT_YAW_ANGLE
     // @DisplayName: Tilt minimum angle for vectored yaw
@@ -332,12 +295,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 30
     AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
 
-    // @Param: TAILSIT_VHPOW
-    // @DisplayName: Tailsitter vector thrust gain power
-    // @Description: This controls the amount of extra pitch given to the vectored control when at high pitch errors
-    // @Range: 0 4
-    // @Increment: 0.1
-    AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
+    // 56: TAILSIT_VHPOW
 
     // @Param: MAV_TYPE
     // @DisplayName: MAVLink type identifier
@@ -354,7 +312,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
 
     // 60 is used above for VELZ_MAX_DN
-    // 61 is used above for TS_ANGLE_VTOL
+    // 61 was used above for TAILSIT_ANG_VT
 
     AP_GROUPEND
 };
@@ -375,12 +333,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
 
-    // @Param: TAILSIT_GSCMAX
-    // @DisplayName: Maximum tailsitter gain scaling
-    // @Description: Maximum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
-    // @Range: 1 5
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_GSCMAX", 3, QuadPlane, tailsitter.throttle_scale_max, 2),
+    // 3: TAILSIT_GSCMAX
 
     // @Param: TRIM_PITCH
     // @DisplayName: Quadplane AHRS trim pitch
@@ -392,13 +345,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: True
     AP_GROUPINFO("TRIM_PITCH", 4, QuadPlane, ahrs_trim_pitch, 0),
 
-    // @Param: TAILSIT_RLL_MX
-    // @DisplayName: Maximum Roll angle
-    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_ANGLE_MAX is used.
-    // @Units: deg
-    // @Range: 0 80
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_RLL_MX", 5, QuadPlane, tailsitter.max_roll_angle, 0),
+    // 5: TAILSIT_RLL_MX
 
 #if QAUTOTUNE_ENABLED
     // @Group: AUTOTUNE_
@@ -424,12 +371,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
-    // @Param: TAILSIT_MOTMX
-    // @DisplayName: Tailsitter motor mask
-    // @Description: Bitmask of motors to remain active in forward flight for a 'Copter' tailsitter. Non-zero indicates airframe is a Copter tailsitter and uses copter style motor layouts determined by Q_FRAME_CLASS and Q_FRAME_TYPE. This should be zero for non-Copter tailsitters.
-    // @User: Standard
-    // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
-    AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
+    // 9: TAILSIT_MOTMX
 
     // @Param: THROTTLE_EXPO
     // @DisplayName: Throttle expo strength
@@ -492,19 +434,8 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist_alt, 0),
 
-    // @Param: TAILSIT_GSCMSK
-    // @DisplayName: Tailsitter gain scaling mask
-    // @Description: Bitmask of gain scaling methods to be applied: Throttle: scale gains with throttle, ATT_THR: reduce gain at high throttle/tilt, 2:Disk theory velocity calculation, requires Q_TAILSIT_DSKLD to be set, ATT_THR must not be set, 3:Altitude correction, scale with air density
-    // @User: Standard
-    // @Bitmask: 0:Throttle,1:ATT_THR,2:Disk Theory,3:Altitude correction
-    AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_THROTTLE),
-
-    // @Param: TAILSIT_GSCMIN
-    // @DisplayName: Minimum tailsitter gain scaling
-    // @Description: Minimum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
-    // @Range: 0.1 1
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
+    // 17: TAILSIT_GSCMSK
+    // 18: TAILSIT_GSCMIN
 
     // @Param: ASSIST_DELAY
     // @DisplayName: Quadplane assistance delay
@@ -522,13 +453,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
-    // @Param: TAILSIT_DSKLD
-    // @DisplayName: Tailsitter disk loading
-    // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. Only used with Q_TAILSIT_GSCMSK = 4
-    // @Units: kg/m/m
-    // @Range: 0 50
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_DSKLD", 21, QuadPlane, tailsitter.disk_loading, 0),
+    // 21: TAILSIT_DSKLD
 
     // @Param: TILT_FIX_ANGLE
     // @DisplayName: Fixed wing tiltrotor angle
@@ -545,19 +470,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TILT_FIX_GAIN", 23, QuadPlane, tilt.fixed_gain, 0),
 
-    // @Param: TAILSIT_RAT_FW
-    // @DisplayName: Tailsitter VTOL to forward flight transition rate
-    // @Description: The pitch rate at which tailsitter aircraft will pitch down in the transition from VTOL to forward flight
-    // @Units: deg/s
-    // @Range: 10 500
-    AP_GROUPINFO("TAILSIT_RAT_FW", 24, QuadPlane, tailsitter.transition_rate_fw, 50),
+    // 24: TAILSIT_RAT_FW
+    // 25: TAILSIT_RAT_VT
 
-    // @Param: TAILSIT_RAT_VT
-    // @DisplayName: Tailsitter forward flight to VTOL transition rate
-    // @Description: The pitch rate at which tailsitter aircraft will pitch up in the transition from forward flight to VTOL
-    // @Units: deg/s
-    // @Range: 10 500
-    AP_GROUPINFO("TAILSIT_RAT_VT", 25, QuadPlane, tailsitter.transition_rate_vtol, 50),
+    // @Group: TAILSIT_
+    // @Path: tailsitter.cpp
+    AP_SUBGROUPINFO(tailsitter, "TAILSIT_", 26, QuadPlane, Tailsitter),
 
     AP_GROUPEND
 };
