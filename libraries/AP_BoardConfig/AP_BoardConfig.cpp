@@ -80,13 +80,8 @@ AP_BoardConfig *AP_BoardConfig::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-    // @Param: PWM_COUNT
-    // @DisplayName: Auxiliary pin config
-    // @Description: Controls number of FMU outputs which are setup for PWM. All unassigned pins can be used for GPIO
-    // @Values: 0:No PWMs,1:One PWMs,2:Two PWMs,3:Three PWMs,4:Four PWMs,5:Five PWMs,6:Six PWMs,7:Seven PWMs,8:Eight PWMs
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
+
+    // index 0 was used by PWM_COUNT
 
 #if AP_FEATURE_RTSCTS
 #ifdef HAL_HAVE_RTSCTS_SERIAL1
