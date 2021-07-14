@@ -336,6 +336,9 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
 void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float pos_offset_z_buffer)
 {
+    // Terrain following velocity scalar must be calculated before we remove the position offset
+    const float offset_z_scaler = pos_offset_z_scaler(pos_offset_z, pos_offset_z_buffer);
+
     // remove terrain offsets for flat earth assumption
     _pos_target.z -= _pos_offset_z;
     _vel_desired.z -= _vel_offset_z;
@@ -369,7 +372,7 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float
     }
 
     // reduce speed if we are reaching the edge of our vertical buffer
-    vel_max_xy_cms *= pos_offset_z_scaler(pos_offset_z, pos_offset_z_buffer);
+    vel_max_xy_cms *= offset_z_scaler;
 
     Vector2f vel;
     Vector2f accel;
@@ -394,13 +397,13 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float
 
 
 /// pos_offset_z_scaler - calculates a multiplier used to reduce the horizontal velocity to allow the z position controller to stay within the provided buffer range
-float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer)
+float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer) const
 {
     if (is_zero(pos_offset_z_buffer)) {
         return 1.0;
     }
     const Vector3f curr_pos = _inav.get_position();
-    float pos_offset_error_z = curr_pos.z - (_pos_target.z + pos_offset_z);
+    float pos_offset_error_z = curr_pos.z - (_pos_target.z - _pos_offset_z + pos_offset_z);
     return constrain_float((1.0 - (fabsf(pos_offset_error_z) - 0.5 * pos_offset_z_buffer) / (0.5 * pos_offset_z_buffer)), 0.01, 1.0);
 }
 
@@ -906,9 +909,9 @@ void AC_PosControl::set_alt_target_with_slew(const float& pos)
 void AC_PosControl::update_pos_offset_z(float pos_offset_z)
 {
 
-    postype_t posp_z = _pos_offset_z;
-    update_pos_vel_accel(posp_z, _vel_offset_z, _accel_offset_z, _dt, MIN(_limit_vector.z, 0.0f));
-    _pos_offset_z = posp_z;
+    postype_t p_offset_z = _pos_offset_z;
+    update_pos_vel_accel(p_offset_z, _vel_offset_z, _accel_offset_z, _dt, MIN(_limit_vector.z, 0.0f));
+    _pos_offset_z = p_offset_z;
 
     // input shape the terrain offset
     shape_pos_vel_accel(pos_offset_z, 0.0f, 0.0f,
