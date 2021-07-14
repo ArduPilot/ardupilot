@@ -528,6 +528,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_DO_LAND_START:
+        break;
+
     default:
         // unable to use the command, allow the vehicle to try the next command
         return false;
@@ -766,6 +769,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
+    case MAV_CMD_DO_LAND_START:
         cmd_complete = true;
         break;
 
