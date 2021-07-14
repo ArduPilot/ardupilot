@@ -994,6 +994,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: LINK_Q_EN
+    // @DisplayName: LINK_Q_EN
+    // @Description: Displays Receiver link quality
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: LINK_Q_X
+    // @DisplayName: LINK_Q_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: LINK_Q_Y
+    // @DisplayName: LINK_Q_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(link_quality, "LINK_Q", 61, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
@@ -1268,6 +1284,19 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     if (ap_rssi) {
         const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
+    }
+}
+
+void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    if (ap_rssi) {
+        const int16_t lqv = ap_rssi->read_receiver_link_quality();
+        if (lqv < 0){
+            backend->write(x, y, false, "%c--", SYM_RSSI);
+        } else {
+            backend->write(x, y, false, "%c%2d", SYM_RSSI, lqv);
+        }
     }
 }
 
@@ -2029,6 +2058,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(restvolt);
     DRAW_SETTING(rssi);
+    DRAW_SETTING(link_quality);
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
