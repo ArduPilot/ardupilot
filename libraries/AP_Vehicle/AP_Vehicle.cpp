@@ -212,6 +212,8 @@ void AP_Vehicle::fast_loop()
   and the maximum time they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
+    SCHED_TASK_CLASS(AP_Notify,    &vehicle.notify,         update,                  50, 300),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &vehicle.ServoRelayEvents, update_events,  50, 150),
 #if HAL_RUNCAM_ENABLED
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
 #endif
