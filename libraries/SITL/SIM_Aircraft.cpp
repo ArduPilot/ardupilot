@@ -34,6 +34,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 using namespace SITL;
 
@@ -457,6 +458,29 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     if (!is_equal(last_speedup, float(sitl->speedup)) && sitl->speedup > 0) {
         set_speedup(sitl->speedup);
         last_speedup = sitl->speedup;
+    }
+
+    // for EKF comparison log relhome pos and velocity at loop rate
+    static uint32_t last_sim2_ms;
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_sim2_ms >= AP::scheduler().get_loop_period_s()*1000) {
+        last_sim2_ms = now_ms;
+// @LoggerMessage: SIM2
+// @Description: Additional simulator state
+// @Field: TimeUS: Time since system startup
+// @Field: PN: North position from home
+// @Field: PE: East position from home
+// @Field: PD: Down position from home
+// @Field: VN: Velocity north
+// @Field: VE: Velocity east
+// @Field: VD: Velocity down
+        Vector3d pos = get_position_relhome();
+        Vector3f vel = get_velocity_ef();
+        AP::logger().Write("SIM2", "TimeUS,PN,PE,PD,VN,VE,VD",
+                           "Qffffff",
+                           AP_HAL::micros64(),
+                           pos.x, pos.y, pos.z,
+                           vel.x, vel.y, vel.z);
     }
 }
 
