@@ -3,7 +3,21 @@
 
 bool ModeQLand::_enter()
 {
-    return plane.mode_qstabilize._enter();
+    plane.mode_qloiter._enter();
+    plane.quadplane.throttle_wait = false;
+    plane.quadplane.setup_target_position();
+    plane.quadplane.poscontrol.set_state(QuadPlane::position_control_state::QPOS_LAND_DESCEND);
+    plane.quadplane.poscontrol.pilot_correction_done = false;
+    plane.quadplane.last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    plane.quadplane.landing_detect.lower_limit_start_ms = 0;
+    plane.quadplane.landing_detect.land_start_ms = 0;
+#if LANDING_GEAR_ENABLED == ENABLED
+    plane.g2.landing_gear.deploy_for_landing();
+#endif
+#if AC_FENCE == ENABLED
+    plane.fence.auto_disable_fence_for_landing();
+#endif
+    return true;
 }
 
 void ModeQLand::update()
@@ -11,3 +25,7 @@ void ModeQLand::update()
     plane.mode_qstabilize.update();
 }
 
+void ModeQLand::run()
+{
+    plane.mode_qloiter.run();
+}
