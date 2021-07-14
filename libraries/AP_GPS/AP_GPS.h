@@ -444,14 +444,6 @@ public:
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const;
 
-    // set position for HIL
-    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms,
-                const Location &location, const Vector3f &velocity, uint8_t num_sats,
-                uint16_t hdop);
-
-    // set accuracy for HIL
-    void setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms);
-
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
 

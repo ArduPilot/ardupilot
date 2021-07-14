@@ -565,7 +565,6 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 #endif
 
 // DM_packing: 267039 events, 0 overruns, 8440834us elapsed, 31us avg, min 31us max 32us 0.488us rms
-    hal.util->perf_begin(_perf_packing);
 
     mavlink_message_t msg;
     mavlink_status_t *chan_status = mavlink_get_channel_status(_link->get_chan());
@@ -579,8 +578,6 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
                                            _target_component_id,
                                            block.seqno,
                                            block.buf);
-
-    hal.util->perf_end(_perf_packing);
 
 #if DF_MAVLINK_DISABLE_INTERRUPTS
     hal.scheduler->restore_interrupts(istate);

@@ -48,8 +48,6 @@ thread_t* volatile UARTDriver::uart_rx_thread_ctx;
 // table to find UARTDrivers from serial number, used for event handling
 UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
-uint32_t UARTDriver::_last_stats_ms;
-
 // event used to wake up waiting thread. This event number is for
 // caller threads
 static const eventmask_t EVT_DATA = EVENT_MASK(10);
@@ -893,7 +891,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                 return; // all done
             }
             // find out how much is still left to write while we still have the lock
-            n = _writebuf.available();
+            n = MIN(_writebuf.available(), n);
         }
 
         dma_handle->lock(); // we have our own thread so grab the lock
@@ -909,6 +907,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                     // low baudrate. Switch off DMA for future
                     // transmits on this low baudrate UART
                     tx_dma_enabled = false;
+                    dma_handle->unlock(false);
+                    break;
                 }
             }
             /*
@@ -978,6 +978,13 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             // update stats
             _total_written += tx_len;
             _tx_stats_bytes += tx_len;
+
+            n -= tx_len;
+        } else {
+            // if we didn't manage to transmit any bytes then stop
+            // processing so we can check flow control state in outer
+            // loop
+            break;
         }
     }
 }
@@ -1671,30 +1678,63 @@ uint8_t UARTDriver::get_options(void) const
     return _last_options;
 }
 
-// request information on uart I/O for @SYS/uarts.txt
+// request information on uart I/O for @SYS/uarts.txt for this uart
 void UARTDriver::uart_info(ExpandingString &str)
 {
-    // a header to allow for machine parsers to determine format
-    str.printf("UARTV1\n");
-
     uint32_t now_ms = AP_HAL::millis();
-    for (uint8_t i = 0; i < UART_MAX_DRIVERS; i++) {
-        UARTDriver* uart = uart_drivers[i];
-
-        if (uart == nullptr || uart->uart_thread_ctx == nullptr) {
-            continue;
-        }
-
-        const char* fmt = "%-8s TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n";
-        str.printf(fmt, uart->uart_thread_name, uart->tx_dma_enabled ? '*' : ' ', uart->_tx_stats_bytes,
-            uart->rx_dma_enabled ? '*' : ' ', uart->_rx_stats_bytes,
-            uart->_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms), uart->_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms));
-
-        uart->_tx_stats_bytes = 0;
-        uart->_rx_stats_bytes = 0;
+    if (sdef.is_usb) {
+        str.printf("OTG%u  ", unsigned(sdef.instance));
+    } else {
+        str.printf("UART%u ", unsigned(sdef.instance));
     }
-
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
+               tx_dma_enabled ? '*' : ' ',
+               unsigned(_tx_stats_bytes),
+               rx_dma_enabled ? '*' : ' ',
+               unsigned(_rx_stats_bytes),
+               unsigned(_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms)),
+               unsigned(_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms)));
+    _tx_stats_bytes = 0;
+    _rx_stats_bytes = 0;
     _last_stats_ms = now_ms;
+}
+
+/*
+  software control of the CTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_CTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // CTS pin is being used
+        return false;
+    }
+    if (sdef.cts_line == 0) {
+        // we don't have a CTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.cts_line, 1);
+    palWriteLine(sdef.cts_line, high?1:0);
+    return true;
+}
+
+/*
+  software control of the RTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_RTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // RTS pin is being used
+        return false;
+    }
+    if (sdef.rts_line == 0) {
+        // we don't have a RTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.rts_line, 1);
+    palWriteLine(sdef.rts_line, high?1:0);
+    return true;
 }
 
 #if HAL_USE_SERIAL_USB == TRUE

@@ -497,7 +497,12 @@ int32_t Mode::get_alt_above_ground_cm(void)
 void Mode::land_run_vertical_control(bool pause_descent)
 {
     float cmb_rate = 0;
+    bool ignore_descent_limit = false;
     if (!pause_descent) {
+
+        // do not ignore limits until we have slowed down for landing
+        ignore_descent_limit = (MAX(g2.land_alt_low,100) > get_alt_above_ground_cm()) || copter.ap.land_complete_maybe;
+
         float max_land_descent_velocity;
         if (g.land_speed_high > 0) {
             max_land_descent_velocity = -g.land_speed_high;
@@ -531,7 +536,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
     }
 
     // update altitude target and call position controller
-    pos_control->set_pos_target_z_from_climb_rate_cm(cmb_rate, true);
+    pos_control->set_pos_target_z_from_climb_rate_cm(cmb_rate, ignore_descent_limit);
     pos_control->update_z_controller();
 }
 
@@ -745,7 +750,7 @@ float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
     }
 
     // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
+    g2.acro_y_expo = constrain_float(g2.acro_y_expo, -0.5f, 1.0f);
 
     // calculate yaw rate request
     float yaw_request;

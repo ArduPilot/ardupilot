@@ -61,8 +61,9 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
 {
     init();
 
-    // leave track as zero length if origin and destination are the same
-    if (origin == destination) {
+    // leave track as zero length if origin and destination are equal or if the new track length squared is zero
+    const Vector3f track_temp = destination - origin;
+    if (track_temp.is_zero() || is_zero(track_temp.length_squared())) {
         return;
     }
 
@@ -84,7 +85,7 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
         return;
     }
 
-    track = destination - origin;
+    track = track_temp;
     const float track_length = track.length();
     if (is_zero(track_length)) {
         // avoid possible divide by zero
@@ -737,7 +738,7 @@ void SCurve::add_segments(float L)
 // Vm - maximum constant velocity
 // L - Length of the path
 // t2_out, t4_out, t6_out are the segment durations needed to achieve the kinimatic path specified by the input variables
-void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &t2_out, float &t4_out, float &t6_out) const
+void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &t2_out, float &t4_out, float &t6_out)
 {
     // init outputs
     Jm_out = 0.0f;
@@ -771,6 +772,7 @@ void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, fl
             // solution = 2 - t6 t4 t2 = 0 1 0
             t2_out = 0.0f;
             t4_out = MIN(-(V0 - Vm + Am * tj + (Am * Am) / Jm) / Am, MAX(((Am * Am) * (-3.0f / 2.0f) + safe_sqrt((Am * Am * Am * Am) * (1.0f / 4.0f) + (Jm * Jm) * (V0 * V0) + (Am * Am) * (Jm * Jm) * (tj * tj) * (1.0f / 4.0f) + Am * (Jm * Jm) * L * 2.0f - (Am * Am) * Jm * V0 + (Am * Am * Am) * Jm * tj * (1.0f / 2.0f) - Am * (Jm * Jm) * V0 * tj) - Jm * V0 - Am * Jm * tj * (3.0f / 2.0f)) / (Am * Jm), ((Am * Am) * (-3.0f / 2.0f) - safe_sqrt((Am * Am * Am * Am) * (1.0f / 4.0f) + (Jm * Jm) * (V0 * V0) + (Am * Am) * (Jm * Jm) * (tj * tj) * (1.0f / 4.0f) + Am * (Jm * Jm) * L * 2.0f - (Am * Am) * Jm * V0 + (Am * Am * Am) * Jm * tj * (1.0f / 2.0f) - Am * (Jm * Jm) * V0 * tj) - Jm * V0 - Am * Jm * tj * (3.0f / 2.0f)) / (Am * Jm)));
+            t4_out = MAX(t4_out, 0.0);
             t6_out = 0.0f;
         }
     } else {
@@ -784,6 +786,7 @@ void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, fl
             // solution = 7 - t6 t4 t2 = 1 1 1
             t2_out = Am / Jm - tj;
             t4_out = MIN(-(V0 - Vm + Am * tj + (Am * Am) / Jm) / Am, MAX(((Am * Am) * (-3.0f / 2.0f) + safe_sqrt((Am * Am * Am * Am) * (1.0f / 4.0f) + (Jm * Jm) * (V0 * V0) + (Am * Am) * (Jm * Jm) * (tj * tj) * (1.0f / 4.0f) + Am * (Jm * Jm) * L * 2.0f - (Am * Am) * Jm * V0 + (Am * Am * Am) * Jm * tj * (1.0f / 2.0f) - Am * (Jm * Jm) * V0 * tj) - Jm * V0 - Am * Jm * tj * (3.0f / 2.0f)) / (Am * Jm), ((Am * Am) * (-3.0f / 2.0f) - safe_sqrt((Am * Am * Am * Am) * (1.0f / 4.0f) + (Jm * Jm) * (V0 * V0) + (Am * Am) * (Jm * Jm) * (tj * tj) * (1.0f / 4.0f) + Am * (Jm * Jm) * L * 2.0f - (Am * Am) * Jm * V0 + (Am * Am * Am) * Jm * tj * (1.0f / 2.0f) - Am * (Jm * Jm) * V0 * tj) - Jm * V0 - Am * Jm * tj * (3.0f / 2.0f)) / (Am * Jm)));
+            t4_out = MAX(t4_out, 0.0);
             t6_out = t2_out;
         }
     }

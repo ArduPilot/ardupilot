@@ -105,7 +105,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
                                                                                            AP_PARAM_FRAME_ROVER |
                                                                                            AP_PARAM_FRAME_COPTER |
                                                                                            AP_PARAM_FRAME_TRICOPTER |
-                                                                                           AP_PARAM_FRAME_HELI),
+                                                                                           AP_PARAM_FRAME_HELI |
+                                                                                           AP_PARAM_FRAME_BLIMP),
 
     // @Param: MIS_ITEMS
     // @DisplayName: Required mission items
@@ -117,8 +118,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters,64:RC Channels,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth,524288:FFT
-    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters,64:RC Channels,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:System,16384:Mission,32768:RangeFinder,65536:Camera,131072:AuxAuth,524288:FFT
     // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
     // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
     // @User: Standard
@@ -202,6 +201,15 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 
 bool AP_Arming::barometer_checks(bool report)
 {
+#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    return true;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (AP::sitl()->baro_count == 0) {
+        // simulate no baro boards
+        return true;
+    }
+#endif
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (!AP::baro().all_healthy()) {
@@ -578,6 +586,10 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         check_failed(ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
         check_passed = false;
     }
+    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
+    }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
         if (!rc().arming_skip_checks_rpy()) {
@@ -741,6 +753,7 @@ bool AP_Arming::rangefinder_checks(bool report)
 
 bool AP_Arming::servo_checks(bool report) const
 {
+#if NUM_SERVO_CHANNELS
     bool check_passed = true;
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
@@ -767,6 +780,9 @@ bool AP_Arming::servo_checks(bool report) const
 #endif
 
     return check_passed;
+#else
+    return false;
+#endif
 }
 
 bool AP_Arming::board_voltage_checks(bool report)
@@ -868,6 +884,7 @@ bool AP_Arming::can_checks(bool report)
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
         char fail_msg[50] = {};
+        (void)fail_msg; // might be left unused
         uint8_t num_drivers = AP::can().get_num_drivers();
 
         for (uint8_t i = 0; i < num_drivers; i++) {
@@ -900,10 +917,12 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_CANManager::Driver_Type_UAVCAN:
                 {
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
                     if (!AP::uavcan_dna_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
                         return false;
                     }
+#endif
                     break;
                 }
                 case AP_CANManager::Driver_Type_ToshibaCAN:
@@ -1167,11 +1186,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         if (!rc_arm_checks(method)) {
             return false;
         }
-    }
-
-    // enable any pending dshot commands to be flushed before sending actual throttle values
-    if (!hal.rcout->prepare_for_arming()) {
-        return false;
     }
 
 #if HAL_GYROFFT_ENABLED

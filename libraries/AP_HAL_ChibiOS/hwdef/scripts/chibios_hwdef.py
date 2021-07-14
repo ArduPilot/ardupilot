@@ -19,7 +19,7 @@ parser.add_argument(
 parser.add_argument(
     '--bootloader', action='store_true', default=False, help='configure for bootloader')
 parser.add_argument(
-    'hwdef', type=str, default=None, help='hardware definition file')
+    'hwdef', type=str, nargs='+', default=None, help='hardware definition file')
 parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
 
@@ -30,7 +30,7 @@ f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
 f1_vtypes = ['CRL', 'CRH', 'ODR']
 f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
-af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
+af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI']
 
 default_gpio = ['INPUT', 'FLOATING']
 
@@ -80,11 +80,17 @@ altlabel = {}
 # list of SPI devices
 spidev = []
 
+# list of QSPI devices
+qspidev = []
+
 # dictionary of ROMFS files
 romfs = {}
 
 # SPI bus list
 spi_list = []
+
+# list of QSPI devices
+qspi_list = []
 
 # all config lines in order
 alllines = []
@@ -712,6 +718,12 @@ def write_mcu_config(f):
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+    defines = get_mcu_config('DEFINES', False)
+    if defines is not None:
+        for d in defines.keys():
+            v = defines[d]
+            f.write("#ifndef %s\n#define %s %s\n#endif\n" % (d, d, v))
+
     if get_config('PROCESS_STACK', required=False):
         env_vars['PROCESS_STACK'] = get_config('PROCESS_STACK')
     else:
@@ -812,6 +824,12 @@ def write_mcu_config(f):
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
 
+    f.write('''
+#ifndef HAL_HAVE_HARDWARE_DOUBLE
+#define HAL_HAVE_HARDWARE_DOUBLE 0
+#endif
+''')
+
     if get_mcu_config('EXPECTED_CLOCK'):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
@@ -833,7 +851,19 @@ def write_mcu_config(f):
 
     # setup for bootloader build
     if args.bootloader:
-        f.write('''
+        if get_config('FULL_CHIBIOS_BOOTLOADER', required=False, default=False):
+            # we got enough space to fit everything so we enable almost everything
+            f.write('''
+#define HAL_BOOTLOADER_BUILD TRUE
+#define HAL_USE_ADC FALSE
+#define HAL_USE_EXT FALSE
+#define HAL_USE_I2C FALSE
+#define HAL_USE_PWM FALSE
+#define HAL_NO_UARTDRIVER
+#define CH_CFG_USE_DYNAMIC FALSE
+''')
+        else:
+            f.write('''
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
 #define HAL_USE_EXT FALSE
@@ -990,6 +1020,7 @@ def write_SPI_table(f):
         f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-","_"))
     f.write("\n")
 
+
 def write_SPI_config(f):
     '''write SPI config defines'''
     global spi_list
@@ -1009,6 +1040,62 @@ def write_SPI_config(f):
             % (n, n, n, n))
     f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
     write_SPI_table(f)
+
+
+def write_QSPI_table(f):
+    '''write SPI device table'''
+    f.write('\n// QSPI device table\n')
+    devlist = []
+    for dev in qspidev:
+        if len(dev) != 6:
+            print("Badly formed QSPIDEV line %s" % dev)
+        name = '"' + dev[0] + '"'
+        bus = dev[1]
+        mode = dev[2]
+        speed = dev[3]
+        size_pow2 = dev[4]
+        ncs_clk_delay = dev[5]
+        if not bus.startswith('QUADSPI') or bus not in qspi_list:
+            error("Bad QUADSPI bus in QSPIDEV line %s" % dev)
+        if mode not in ['MODE1', 'MODE3']:
+            error("Bad MODE in QSPIDEV line %s" % dev)
+        if not speed.endswith('*MHZ') and not speed.endswith('*KHZ'):
+            error("Bad speed value %s in SPIDEV line %s" % (speed, dev))
+
+        devidx = len(devlist)
+        f.write(
+            '#define HAL_QSPI_DEVICE%-2u QSPIDesc(%-17s, %2u, QSPIDEV_%s, %7s, %2u, %2u)\n'
+            % (devidx, name, qspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
+        devlist.append('HAL_QSPI_DEVICE%u' % devidx)
+    f.write('#define HAL_QSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+    for dev in qspidev:
+        f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
+        f.write("#define HAL_QSPI%d_CLK (%s)" % (int(bus[7:]), speed))
+    f.write("\n")
+
+
+def write_QSPI_config(f):
+    '''write SPI config defines'''
+    global qspi_list
+    if len(qspidev) == 0:
+        # nothing to do
+        return
+    for t in list(bytype.keys()) + list(alttype.keys()):
+        if t.startswith('QUADSPI'):
+            qspi_list.append(t)
+    qspi_list = sorted(qspi_list)
+    if len(qspi_list) == 0:
+        return
+    f.write('#define HAL_USE_WSPI TRUE\n')
+    devlist = []
+    for dev in qspi_list:
+        n = int(dev[7:])
+        devlist.append('HAL_QSPI%u_CONFIG' % n)
+        f.write(
+            '#define HAL_QSPI%u_CONFIG { &WSPID%u, %u}\n'
+            % (n, n, n))
+    f.write('#define HAL_QSPI_BUS_LIST %s\n\n' % ','.join(devlist))
+    write_QSPI_table(f)
 
 
 def parse_spi_device(dev):
@@ -1199,12 +1286,11 @@ def write_UART_config(f):
     devnames = "ABCDEFGHI"
     sdev = 0
     idx = 0
-    num_empty_uarts = 0
     for dev in uart_list:
         if dev == 'EMPTY':
             f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                     (devnames[idx], devnames[idx]))
-            num_empty_uarts += 1
+            sdev += 1
         else:
             f.write(
                 '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
@@ -1242,6 +1328,7 @@ def write_UART_config(f):
         elif dev.startswith('OTG'):
             n = int(dev[3:])
         elif dev.startswith('EMPTY'):
+            devlist.append('{}')
             continue
         else:
             error("Invalid element %s in UART_ORDER" % dev)
@@ -1284,7 +1371,9 @@ def write_UART_config(f):
         f.write('#define AP_FEATURE_RTSCTS 1\n')
     if OTG2_index is not None:
         f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
-        f.write('''
+        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
+        if env_vars.get('AP_PERIPH', 0) == 0:
+            f.write('''
 #if HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
 #define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
@@ -1293,7 +1382,6 @@ def write_UART_config(f):
 #define HAL_SERIAL%d_BAUD 115200
 #endif
 ''' % (OTG2_index, OTG2_index))
-        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
 
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
@@ -1307,7 +1395,7 @@ def write_UART_config(f):
         num_uarts -= 1
     if num_uarts > 9:
         error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
-    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
+    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
 
 def write_UART_config_bootloader(f):
@@ -1671,7 +1759,7 @@ def bootloader_path():
     # always embed a bootloader if it is available
     this_dir = os.path.realpath(__file__)
     rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
-    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef[0]))
     bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
     bootloader_path = os.path.join(rootdir,
                                    "Tools",
@@ -1686,8 +1774,12 @@ def bootloader_path():
 def add_bootloader():
     '''added bootloader to ROMFS'''
     bp = bootloader_path()
-    if bp is not None:
+    if bp is not None and int(get_config('BOOTLOADER_EMBED', required=False, default='1')):
         romfs["bootloader.bin"] = bp
+        env_vars['BOOTLOADER_EMBED'] = 1
+    else:
+        env_vars['BOOTLOADER_EMBED'] = 0
+
 
 
 def write_ROMFS(outdir):
@@ -1721,6 +1813,8 @@ def write_peripheral_enable(f):
             f.write('#define STM32_USB_USE_%s                  TRUE\n' % type)
         if type.startswith('I2C'):
             f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
+        if type.startswith('QUADSPI'):
+            f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
 
 def get_dma_exclude(periph_list):
@@ -1782,12 +1876,16 @@ def write_hwdef_header(outfilename):
 #define FALSE 0
 #endif
 
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 ''')
 
     dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))
 
     write_mcu_config(f)
     write_SPI_config(f)
+    write_QSPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
     write_IMU_config(f)
@@ -1973,8 +2071,8 @@ def write_env_py(filename):
     '''write out env.py for environment variables to control the build process'''
 
     # see if board has a defaults.parm file or a --default-parameters file was specified
-    defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
-    defaults_path = os.path.join(os.path.dirname(args.hwdef), args.params)
+    defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
+    defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
     if not args.bootloader:
         if os.path.exists(defaults_path):
@@ -2007,7 +2105,7 @@ def romfs_wildcard(pattern):
 def romfs_add_dir(subdirs):
     '''add a filesystem directory to ROMFS'''
     for dirname in subdirs:
-        romfs_dir = os.path.join(os.path.dirname(args.hwdef), dirname)
+        romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
         if not args.bootloader and os.path.exists(romfs_dir):
             for root, d, files in os.walk(romfs_dir):
                 for f in files:
@@ -2086,6 +2184,8 @@ def process_line(line):
         setup_mcu_type_defaults()
     elif a[0] == 'SPIDEV':
         spidev.append(a[1:])
+    elif a[0] == 'QSPIDEV':
+        qspidev.append(a[1:])
     elif a[0] == 'IMU':
         imu_list.append(a[1:])
     elif a[0] == 'COMPASS':
@@ -2158,6 +2258,9 @@ def add_apperiph_defaults(f):
         return
     print("Setting up as AP_Periph")
     f.write('''
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 0
+#endif
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 0
 #endif
@@ -2166,11 +2269,22 @@ def add_apperiph_defaults(f):
 #define HAL_SERIAL2_PROTOCOL -1
 #define HAL_SERIAL3_PROTOCOL -1
 #define HAL_SERIAL4_PROTOCOL -1
+
+#ifndef HAL_LOGGING_MAVLINK_ENABLED
+#define HAL_LOGGING_MAVLINK_ENABLED 0
+#endif
+#ifndef HAL_MISSION_ENABLED
+#define HAL_MISSION_ENABLED 0
+#endif
+#ifndef HAL_RALLY_ENABLED
+#define HAL_RALLY_ENABLED 0
+#endif
 ''')
             
 
 # process input file
-process_file(args.hwdef)
+for fname in args.hwdef:
+    process_file(fname)
 
 outdir = args.outdir
 if outdir is None:
@@ -2200,6 +2314,6 @@ write_ROMFS(outdir)
 
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
-copy_common_linkerscript(outdir, args.hwdef)
+copy_common_linkerscript(outdir, args.hwdef[0])
 
 write_env_py(os.path.join(outdir, "env.py"))

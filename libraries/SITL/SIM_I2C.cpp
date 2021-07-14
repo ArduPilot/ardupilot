@@ -28,6 +28,7 @@
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_ICM40609.h"
+#include "SIM_MS5525.h"
 
 #include <signal.h>
 
@@ -54,6 +55,7 @@ static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 static ICM40609 icm40609;
+static MS5525 ms5525;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -67,9 +69,10 @@ struct i2c_device_at_address {
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
-    { 1, 0x76, ignored }, // MS56XX
+    { 1, 0x76, ms5525 },
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },
+    { 2, 0x0B, maxell },
     { 2, 0x28, airspeed_dlvr },
 };
 

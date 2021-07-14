@@ -31,8 +31,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     case ROTATION_NONE:
         return;
     case ROTATION_YAW_45: {
-        tmp = HALF_SQRT_2*(float)(x - y);
-        y   = HALF_SQRT_2*(float)(x + y);
+        tmp = HALF_SQRT_2*(ftype)(x - y);
+        y   = HALF_SQRT_2*(ftype)(x + y);
         x = tmp;
         return;
     }
@@ -41,8 +41,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_135: {
-        tmp = -HALF_SQRT_2*(float)(x + y);
-        y   =  HALF_SQRT_2*(float)(x - y);
+        tmp = -HALF_SQRT_2*(ftype)(x + y);
+        y   =  HALF_SQRT_2*(ftype)(x - y);
         x = tmp;
         return;
     }
@@ -50,8 +50,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = -x; y = -y;
         return;
     case ROTATION_YAW_225: {
-        tmp = HALF_SQRT_2*(float)(y - x);
-        y   = -HALF_SQRT_2*(float)(x + y);
+        tmp = HALF_SQRT_2*(ftype)(y - x);
+        y   = -HALF_SQRT_2*(ftype)(x + y);
         x = tmp;
         return;
     }
@@ -60,8 +60,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_315: {
-        tmp = HALF_SQRT_2*(float)(x + y);
-        y   = HALF_SQRT_2*(float)(y - x);
+        tmp = HALF_SQRT_2*(ftype)(x + y);
+        y   = HALF_SQRT_2*(ftype)(y - x);
         x = tmp;
         return;
     }
@@ -70,8 +70,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_45: {
-        tmp = HALF_SQRT_2*(float)(x + y);
-        y   = HALF_SQRT_2*(float)(x - y);
+        tmp = HALF_SQRT_2*(ftype)(x + y);
+        y   = HALF_SQRT_2*(ftype)(x - y);
         x = tmp; z = -z;
         return;
     }
@@ -80,8 +80,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_135: {
-        tmp = HALF_SQRT_2*(float)(y - x);
-        y   = HALF_SQRT_2*(float)(y + x);
+        tmp = HALF_SQRT_2*(ftype)(y - x);
+        y   = HALF_SQRT_2*(ftype)(y + x);
         x = tmp; z = -z;
         return;
     }
@@ -90,8 +90,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_225: {
-        tmp = -HALF_SQRT_2*(float)(x + y);
-        y   =  HALF_SQRT_2*(float)(y - x);
+        tmp = -HALF_SQRT_2*(ftype)(x + y);
+        y   =  HALF_SQRT_2*(ftype)(y - x);
         x = tmp; z = -z;
         return;
     }
@@ -100,8 +100,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_315: {
-        tmp =  HALF_SQRT_2*(float)(x - y);
-        y   = -HALF_SQRT_2*(float)(x + y);
+        tmp =  HALF_SQRT_2*(ftype)(x - y);
+        y   = -HALF_SQRT_2*(ftype)(x + y);
         x = tmp; z = -z;
         return;
     }
@@ -111,8 +111,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_45: {
         tmp = z; z = y; y = -tmp;
-        tmp = HALF_SQRT_2*(float)(x - y);
-        y   = HALF_SQRT_2*(float)(x + y);
+        tmp = HALF_SQRT_2*(ftype)(x - y);
+        y   = HALF_SQRT_2*(ftype)(x + y);
         x = tmp;
         return;
     }
@@ -123,8 +123,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_135: {
         tmp = z; z = y; y = -tmp;
-        tmp = -HALF_SQRT_2*(float)(x + y);
-        y   =  HALF_SQRT_2*(float)(x - y);
+        tmp = -HALF_SQRT_2*(ftype)(x + y);
+        y   =  HALF_SQRT_2*(ftype)(x - y);
         x = tmp;
         return;
     }
@@ -134,8 +134,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_45: {
         tmp = z; z = -y; y = tmp;
-        tmp = HALF_SQRT_2*(float)(x - y);
-        y   = HALF_SQRT_2*(float)(x + y);
+        tmp = HALF_SQRT_2*(ftype)(x - y);
+        y   = HALF_SQRT_2*(ftype)(x + y);
         x = tmp;
         return;
     }
@@ -146,8 +146,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_135: {
         tmp = z; z = -y; y = tmp;
-        tmp = -HALF_SQRT_2*(float)(x + y);
-        y   =  HALF_SQRT_2*(float)(x - y);
+        tmp = -HALF_SQRT_2*(ftype)(x + y);
+        y   =  HALF_SQRT_2*(ftype)(x - y);
         x = tmp;
         return;
     }
@@ -221,32 +221,32 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_90_PITCH_68_YAW_293: {
-        float tmpx = x;
-        float tmpy = y;
-        float tmpz = z;
+        T tmpx = x;
+        T tmpy = y;
+        T tmpz = z;
         x =  0.143039f * tmpx +  0.368776f * tmpy + -0.918446f * tmpz;
         y = -0.332133f * tmpx + -0.856289f * tmpy + -0.395546f * tmpz;
         z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
         return;
     }
     case ROTATION_PITCH_315: {
-        tmp = HALF_SQRT_2*(float)(x - z);
-        z   = HALF_SQRT_2*(float)(x + z);
+        tmp = HALF_SQRT_2*(ftype)(x - z);
+        z   = HALF_SQRT_2*(ftype)(x + z);
         x = tmp;
         return;
     }
     case ROTATION_ROLL_90_PITCH_315: {
         tmp = z; z = y; y = -tmp;
-        tmp = HALF_SQRT_2*(float)(x - z);
-        z   = HALF_SQRT_2*(float)(x + z);
+        tmp = HALF_SQRT_2*(ftype)(x - z);
+        z   = HALF_SQRT_2*(ftype)(x + z);
         x = tmp;
         return;
     }
     case ROTATION_PITCH_7: {
-        const float sin_pitch = 0.12186934340514748f; // sinf(pitch);
-        const float cos_pitch = 0.992546151641322f; // cosf(pitch);
-        float tmpx = x;
-        float tmpz = z;
+        const T sin_pitch = 0.12186934340514748f; // sinF(pitch);
+        const T cos_pitch = 0.992546151641322f; // cosF(pitch);
+        T tmpx = x;
+        T tmpz = z;
         x =  cos_pitch * tmpx + sin_pitch * tmpz;
         z = -sin_pitch * tmpx + cos_pitch * tmpz;
         return;
@@ -284,12 +284,12 @@ void Vector3<T>::rotate_inverse(enum Rotation rotation)
 
 // rotate vector by angle in radians in xy plane leaving z untouched
 template <typename T>
-void Vector3<T>::rotate_xy(float angle_rad)
+void Vector3<T>::rotate_xy(T angle_rad)
 {
-    const float cs = cosf(angle_rad);
-    const float sn = sinf(angle_rad);
-    float rx = x * cs - y * sn;
-    float ry = x * sn + y * cs;
+    const T cs = cosF(angle_rad);
+    const T sn = sinF(angle_rad);
+    T rx = x * cs - y * sn;
+    T ry = x * sn + y * cs;
     x = rx;
     y = ry;
 }
@@ -310,16 +310,16 @@ T Vector3<T>::operator *(const Vector3<T> &v) const
 }
 
 template <typename T>
-float Vector3<T>::length(void) const
+T Vector3<T>::length(void) const
 {
     return norm(x, y, z);
 }
 
 // limit xy component vector to a given length. returns true if vector was limited
 template <typename T>
-bool Vector3<T>::limit_length_xy(float max_length)
+bool Vector3<T>::limit_length_xy(T max_length)
 {
-    const float length_xy = norm(x, y);
+    const T length_xy = norm(x, y);
     if ((length_xy > max_length) && is_positive(length_xy)) {
         x *= (max_length / length_xy);
         y *= (max_length / length_xy);
@@ -411,17 +411,17 @@ bool Vector3<T>::operator !=(const Vector3<T> &v) const
 }
 
 template <typename T>
-float Vector3<T>::angle(const Vector3<T> &v2) const
+T Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    const float len = this->length() * v2.length();
+    const T len = this->length() * v2.length();
     if (len <= 0) {
         return 0.0f;
     }
-    const float cosv = ((*this)*v2) / len;
-    if (fabsf(cosv) >= 1) {
+    const T cosv = ((*this)*v2) / len;
+    if (fabsF(cosv) >= 1) {
         return 0.0f;
     }
-    return acosf(cosv);
+    return acosF(cosv);
 }
 
 // multiplication of transpose by a vector
@@ -445,21 +445,21 @@ Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
 
 // extrapolate position given bearing and pitch (in degrees) and distance
 template <typename T>
-void Vector3<T>::offset_bearing(float bearing, float pitch, float distance)
+void Vector3<T>::offset_bearing(T bearing, T pitch, T distance)
 {
-    y += cosf(radians(pitch)) * sinf(radians(bearing)) * distance;
-    x += cosf(radians(pitch)) * cosf(radians(bearing)) * distance;
-    z += sinf(radians(pitch)) * distance;
+    y += cosF(radians(pitch)) * sinF(radians(bearing)) * distance;
+    x += cosF(radians(pitch)) * cosF(radians(bearing)) * distance;
+    z += sinF(radians(pitch)) * distance;
 }
 
 // distance from the tip of this vector to a line segment specified by two vectors
 template <typename T>
-float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const
+T Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const
 {
     // triangle side lengths
-    const float a = (*this-seg_start).length();
-    const float b = (seg_start-seg_end).length();
-    const float c = (seg_end-*this).length();
+    const T a = (*this-seg_start).length();
+    const T b = (seg_start-seg_end).length();
+    const T c = (seg_end-*this).length();
 
     // protect against divide by zero later
     if (::is_zero(b)) {
@@ -467,23 +467,23 @@ float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3
     }
 
     // semiperimeter of triangle
-    const float s = (a+b+c) * 0.5f;
+    const T s = (a+b+c) * 0.5f;
 
-    float area_squared = s*(s-a)*(s-b)*(s-c);
+    T area_squared = s*(s-a)*(s-b)*(s-c);
     // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
     if (area_squared < 0.0f) {
         area_squared = 0.0f;
     }
-    const float area = safe_sqrt(area_squared);
+    const T area = safe_sqrt(area_squared);
     return 2.0f*area/b;
 }
 
 // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
 template <typename T>
-float Vector3<T>::closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p)
+T Vector3<T>::closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p)
 {    
     const Vector3<T> nearest = point_on_line_closest_to_other_point(w1, w2, p);
-    const float dist = (nearest - p).length();
+    const T dist = (nearest - p).length();
     return dist;
 }
 
@@ -495,29 +495,29 @@ Vector3<T> Vector3<T>::point_on_line_closest_to_other_point(const Vector3<T> &w1
     const Vector3<T> line_vec = w2-w1;
     const Vector3<T> p_vec = p - w1;
     
-    const float line_vec_len = line_vec.length();
+    const T line_vec_len = line_vec.length();
     // protection against divide by zero
     if(::is_zero(line_vec_len)) {
         return {0.0f, 0.0f, 0.0f};
     }
 
-    const float scale = 1/line_vec_len;
+    const T scale = 1/line_vec_len;
     const Vector3<T> unit_vec = line_vec * scale;
     const Vector3<T> scaled_p_vec = p_vec * scale;
 
-    float dot_product = unit_vec * scaled_p_vec;
-    dot_product = constrain_float(dot_product,0.0f,1.0f); 
+    T dot_product = unit_vec * scaled_p_vec;
+    dot_product = constrain_ftype(dot_product,0.0f,1.0f);
  
     const Vector3<T> closest_point = line_vec * dot_product;
     return (closest_point + w1);
 }
 
-// Shortest distance between two line segments
+// Closest point between two line segments
 // This implementation is borrowed from: http://geomalgorithms.com/a07-_distance.html
 // INPUT: 4 points corresponding to start and end of two line segments
-// OUTPUT: shortest distance, and closest point on segment 2, from segment 1, gets passed on reference as "intersection" 
+// OUTPUT: closest point on segment 2, from segment 1, gets passed on reference as "closest_point"
 template <typename T>
-float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& intersection)
+void Vector3<T>::segment_to_segment_closest_point(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& closest_point)
 {
     // direction vectors
     const Vector3<T> line1 = seg1_end - seg1_start;
@@ -525,31 +525,31 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
 
     const Vector3<T> diff = seg1_start - seg2_start;
 
-    const float a = line1*line1;
-    const float b = line1*line2;
-    const float c = line2*line2;
-    const float d = line1*diff;
-    const float e = line2*diff;
+    const T a = line1*line1;
+    const T b = line1*line2;
+    const T c = line2*line2;
+    const T d = line1*diff;
+    const T e = line2*diff;
 
-    const float discriminant = (a*c) - (b*b);
-    float sc, sN, sD = discriminant;       // sc = sN / sD, default sD = D >= 0
-    float tc, tN, tD = discriminant;       // tc = tN / tD, default tD = D >= 0 
-    
+    const T discriminant = (a*c) - (b*b);
+    T sN, sD = discriminant;           // default sD = D >= 0
+    T tc, tN, tD = discriminant;       // tc = tN / tD, default tD = D >= 0
+
     if (discriminant < FLT_EPSILON) {
         sN = 0.0;         // force using point seg1_start on line 1
         sD = 1.0;         // to prevent possible division by 0.0 later
         tN = e;
         tD = c;
-    } else {                 
+    } else {
         // get the closest points on the infinite lines
         sN = (b*e - c*d);
         tN = (a*e - b*d);
-        if (sN < 0.0) {        
+        if (sN < 0.0) {
             // sc < 0 => the s=0 edge is visible
             sN = 0.0;
             tN = e;
             tD = c;
-        } else if (sN > sD) {  
+        } else if (sN > sD) {
             // sc > 1  => the s=1 edge is visible
             sN = sD;
             tN = e + b;
@@ -557,7 +557,7 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
         }
     }
 
-    if (tN < 0.0) {            
+    if (tN < 0.0) {
         // tc < 0 => the t=0 edge is visible
         tN = 0.0;
         // recompute sc for this edge
@@ -569,7 +569,7 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
             sN = -d;
             sD = a;
         }
-    } else if (tN > tD) {      
+    } else if (tN > tD) {
         // tc > 1  => the t=1 edge is visible
         tN = tD;
         // recompute sc for this edge
@@ -582,14 +582,39 @@ float Vector3<T>::segment_to_segment_dist(const Vector3<T>& seg1_start, const Ve
             sD = a;
         }
     }
-    // finally do the division to get sc and tc
-    sc = (fabsf(sN) < FLT_EPSILON ? 0.0 : sN / sD);
+    // finally do the division to get tc
     tc = (fabsf(tN) < FLT_EPSILON ? 0.0 : tN / tD);
 
-    const Vector3<T> closest_line_segment = diff + (line1*sc) - (line2*tc);
-    const float len = closest_line_segment.length();
-    intersection = seg2_start + line2*tc;
-    return len;
+    // closest point on seg2
+    closest_point = seg2_start + line2*tc;
+}
+
+// Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
+template <typename T>
+bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point)
+{
+    Vector3<T> u = seg_end - seg_start;
+    Vector3<T> w = seg_start - plane_point;
+
+    T D = plane_normal * u;
+    T N = -(plane_normal * w);
+
+    if (fabsf(D) < FLT_EPSILON) {
+        if (::is_zero(N)) {
+            // segment lies in this plane
+            return true;
+        } else {
+            // does not intersect
+            return false;
+        }
+    }
+    const T sI = N / D;
+    if (sI < 0 || sI > 1) {
+        // does not intersect
+        return false;
+    }
+    // intersects at unique point
+    return true;
 }
 
 // define for float and double

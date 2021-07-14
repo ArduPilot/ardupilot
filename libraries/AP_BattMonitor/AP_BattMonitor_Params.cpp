@@ -132,6 +132,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
     // @Values{Tracker}: 0:None
+    // @Values{Blimp}: 0:None,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_LOW_ACT", 16, AP_BattMonitor_Params, _failsafe_low_action, 0),
 
@@ -143,6 +144,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
     // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate
     // @Values{Tracker}: 0:None
+    // @Values{Blimp}: 0:None,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_CRT_ACT", 17, AP_BattMonitor_Params, _failsafe_critical_action, 0),
 
@@ -172,7 +174,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Battery monitor options
     // @Description: This sets options to change the behaviour of the battery monitor
-    // @Bitmask: 1:IgnoreUAVCAN SoC
+    // @Bitmask: 0:Ignore UAVCAN SoC
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 

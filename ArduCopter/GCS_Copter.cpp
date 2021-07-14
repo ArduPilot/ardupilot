@@ -134,7 +134,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     switch (copter.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;

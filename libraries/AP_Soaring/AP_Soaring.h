@@ -56,8 +56,8 @@ class SoaringController {
 
     float _thermalability;
 
-    LowPassFilter<float> _position_x_filter;
-    LowPassFilter<float> _position_y_filter;
+    LowPassFilter<float> _position_x_filter{1/60.0};
+    LowPassFilter<float> _position_y_filter{1/60.0};
 
 protected:
     AP_Int8 soar_active;
@@ -118,7 +118,7 @@ public:
 
     float get_vario_reading() const
     {
-        return _vario.displayed_reading;
+        return _vario.get_displayed_value();
     }
 
     void update_vario();
@@ -138,8 +138,6 @@ public:
     float get_thermalling_radius() const;
 
 private:
-    // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
-    LoiterStatus _cruise_criteria_msg_last;
 
     ActiveStatus _last_update_status;
 

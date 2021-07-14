@@ -27,6 +27,10 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_HIGH_LATENCY2_ENABLED
+#define HAL_HIGH_LATENCY2_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
 #ifndef HAL_NO_GCS
 
 // macros used to determine if a message will fit in the space available.
@@ -268,6 +272,10 @@ public:
     void send_rpm() const;
     void send_generator_status() const;
     virtual void send_winch_status() const {};
+    void send_water_depth() const;
+#if HAL_HIGH_LATENCY2_ENABLED
+    void send_high_latency() const;
+#endif // HAL_HIGH_LATENCY2_ENABLED
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -341,8 +349,6 @@ public:
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
 protected:
-
-    virtual bool in_hil_mode() const { return false; }
 
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
@@ -465,6 +471,7 @@ protected:
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
 
+    MAV_RESULT handle_command_run_prearm_checks(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_flash_bootloader(const mavlink_command_long_t &packet);
 
@@ -524,6 +531,16 @@ protected:
     virtual int16_t vfr_hud_throttle() const { return 0; }
     virtual float vfr_hud_alt() const;
 
+#if HAL_HIGH_LATENCY2_ENABLED
+    virtual int16_t high_latency_target_altitude() const { return 0; }
+    virtual uint8_t high_latency_tgt_heading() const { return 0; }
+    virtual uint16_t high_latency_tgt_dist() const { return 0; }
+    virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
+    virtual uint8_t high_latency_wind_speed() const { return 0; }
+    virtual uint8_t high_latency_wind_direction() const { return 0; }
+    virtual int8_t high_latency_air_temperature() const { return 0; }
+#endif // HAL_HIGH_LATENCY2_ENABLED
+
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
@@ -579,12 +596,6 @@ private:
     uint16_t         stream_slowdown_ms;
     // last reported radio buffer percent available
     uint8_t          last_txbuf = 100;
-
-    // perf counters
-    AP_HAL::Util::perf_counter_t _perf_packet;
-    AP_HAL::Util::perf_counter_t _perf_update;
-    char _perf_packet_name[16];
-    char _perf_update_name[16];
 
     // outbound ("deferred message") queue.
 
@@ -855,6 +866,12 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
+
+    // send_sensor_offsets decimates its send rate using this counter:
+    // FIXME: decimate this instead when initialising the message
+    // intervals from the stream rates.  Consider the implications of
+    // doing so vis-a-vis the fact it will consume a bucket.
+    uint8_t send_sensor_offsets_counter;
 
     // if we've ever sent a DISTANCE_SENSOR message out of an
     // orientation we continue to send it out, even if it is not

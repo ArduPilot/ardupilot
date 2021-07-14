@@ -21,6 +21,6 @@ def build(bld):
     # only valid to build with no GCS and no scripting
     if '-DHAL_NO_GCS=1' in bld.env.CXXFLAGS and 'ENABLE_SCRIPTING=1' not in bld.env.DEFINES:
         bld.ap_program(
-            program_groups=['tools'],
+            program_groups=['tool'],
             use='AP_DAL_libs',
         )

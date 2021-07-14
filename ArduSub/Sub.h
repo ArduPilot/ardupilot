@@ -255,10 +255,6 @@ private:
 
     AP_Motors6DOF motors;
 
-    // GPS variables
-    // Sometimes we need to remove the scaling for distance calcs
-    float scaleLongDown;
-
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
 
@@ -376,7 +372,7 @@ private:
 #endif
 
     // terrain handling
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain{mission};
 #endif
 

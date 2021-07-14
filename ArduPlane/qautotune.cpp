@@ -45,6 +45,9 @@ void QAutoTune::init_z_limits()
     plane.quadplane.pos_control->set_max_speed_accel_z(-plane.quadplane.get_pilot_velocity_z_max_dn(),
         plane.quadplane.pilot_velocity_z_max_up,
         plane.quadplane.pilot_accel_z);
+    plane.quadplane.pos_control->set_correction_speed_accel_z(-plane.quadplane.get_pilot_velocity_z_max_dn(),
+        plane.quadplane.pilot_velocity_z_max_up,
+        plane.quadplane.pilot_accel_z);
 }
 
 

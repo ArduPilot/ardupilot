@@ -74,12 +74,6 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         }
     }
 
-#if HIL_SUPPORT
-    if (plane.g.hil_mode == 1) {
-        _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-    }
-#endif
-
     // we are armed if we are not initialising
     if (plane.control_mode != &plane.mode_initializing && plane.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -216,26 +210,6 @@ void GCS_MAVLINK_Plane::send_position_target_global_int()
 }
 
 
-void Plane::send_servo_out(mavlink_channel_t chan)
-{
-    // normalized values scaled to -10000 to 10000
-    // This is used for HIL.  Do not change without discussing with
-    // HIL maintainers
-    mavlink_msg_rc_channels_scaled_send(
-        chan,
-        millis(),
-        0, // port 0
-        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) / 4500.0f),
-        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / 4500.0f),
-        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f),
-        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / 4500.0f),
-        0,
-        0,
-        0,
-        0,
-        rssi.read_receiver_rssi_uint8());
-}
-
 float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 {
     // airspeed sensors are best.  While the AHRS airspeed_estimate
@@ -271,33 +245,11 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
     return AP::baro().get_climb_rate();
 }
 
-/*
-  keep last HIL_STATE message to allow sending SIM_STATE
- */
-#if HIL_SUPPORT
-static mavlink_hil_state_t last_hil_state;
-#endif
-
 // report simulator state
 void GCS_MAVLINK_Plane::send_simstate() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     GCS_MAVLINK::send_simstate();
-#elif HIL_SUPPORT
-    if (plane.g.hil_mode == 1) {
-        mavlink_msg_simstate_send(chan,
-                                  last_hil_state.roll,
-                                  last_hil_state.pitch,
-                                  last_hil_state.yaw,
-                                  last_hil_state.xacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.yacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.zacc*0.001f*GRAVITY_MSS,
-                                  last_hil_state.rollspeed,
-                                  last_hil_state.pitchspeed,
-                                  last_hil_state.yawspeed,
-                                  last_hil_state.lat,
-                                  last_hil_state.lon);
-    }
 #endif
 }
 
@@ -403,12 +355,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     switch (id) {
 
     case MSG_SERVO_OUT:
-#if HIL_SUPPORT
-        if (plane.g.hil_mode == 1) {
-            CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-            plane.send_servo_out(chan);
-        }
-#endif
+        // unused
         break;
 
     case MSG_TERRAIN:
@@ -628,14 +575,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
-
-bool GCS_MAVLINK_Plane::in_hil_mode() const
-{
-#if HIL_SUPPORT
-    return plane.g.hil_mode == 1;
-#endif
-    return false;
-}
 
 /*
   handle a request to switch to guided mode. This happens via a
@@ -1162,65 +1101,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_HIL_STATE:
-    {
-#if HIL_SUPPORT
-        if (plane.g.hil_mode != 1) {
-            break;
-        }
-
-        mavlink_hil_state_t packet;
-        mavlink_msg_hil_state_decode(&msg, &packet);
-
-        // sanity check location
-        if (!check_latlng(packet.lat, packet.lon)) {
-            break;
-        }
-
-        last_hil_state = packet;
-
-        // set gps hil sensor
-        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::AltFrame::ABSOLUTE};
-        Vector3f vel(packet.vx, packet.vy, packet.vz);
-        vel *= 0.01f;
-
-        // setup airspeed pressure based on 3D speed, no wind
-        plane.airspeed.setHIL(sq(vel.length()) / 2.0f + 2013);
-
-        plane.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                         packet.time_usec/1000,
-                         loc, vel, 10, 0);
-
-        // rad/sec
-        Vector3f gyros;
-        gyros.x = packet.rollspeed;
-        gyros.y = packet.pitchspeed;
-        gyros.z = packet.yawspeed;
-
-        // m/s/s
-        Vector3f accels;
-        accels.x = packet.xacc * GRAVITY_MSS*0.001f;
-        accels.y = packet.yacc * GRAVITY_MSS*0.001f;
-        accels.z = packet.zacc * GRAVITY_MSS*0.001f;
-
-        plane.ins.set_gyro(0, gyros);
-        plane.ins.set_accel(0, accels);
-
-        plane.barometer.setHIL(packet.alt*0.001f);
-        plane.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
-        plane.compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-
-        // cope with DCM getting badly off due to HIL lag
-        if (plane.g.hil_err_limit > 0 &&
-            (fabsf(packet.roll - plane.ahrs.roll) > ToRad(plane.g.hil_err_limit) ||
-             fabsf(packet.pitch - plane.ahrs.pitch) > ToRad(plane.g.hil_err_limit) ||
-             wrap_PI(fabsf(packet.yaw - plane.ahrs.yaw)) > ToRad(plane.g.hil_err_limit))) {
-            plane.ahrs.reset_attitude(packet.roll, packet.pitch, packet.yaw);
-        }
-#endif
-        break;
-    }
-
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
     {
@@ -1451,3 +1331,82 @@ uint64_t GCS_MAVLINK_Plane::capabilities() const
 #endif
             GCS_MAVLINK::capabilities());
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    struct Location global_position_current;
+    UNUSED_RESULT(ahrs.get_position(global_position_current));
+
+    const QuadPlane &quadplane = plane.quadplane;
+    //return units are m
+    if (quadplane.show_vtol_view()) {
+        return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_z_cm()) : 0;
+    } else {
+        return 0.01 * (global_position_current.alt + plane.altitude_error_cm);
+    }
+}
+
+uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const
+{
+    // return units are deg/2
+    const QuadPlane &quadplane = plane.quadplane;
+    if (quadplane.show_vtol_view()) {
+        const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
+        return ((uint16_t)(targets.z * 0.01)) / 2;
+    } else {
+        const AP_Navigation *nav_controller = plane.nav_controller;
+        // need to convert -18000->18000 to 0->360/2
+        return wrap_360_cd(nav_controller->target_bearing_cd() ) / 200;
+    }   
+}
+    
+uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
+{
+    // return units are dm
+    const QuadPlane &quadplane = plane.quadplane;
+    if (quadplane.show_vtol_view()) {
+        bool wp_nav_valid = quadplane.using_wp_nav();
+        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) / 10;
+    } else {
+        return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
+    }
+}
+
+uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
+{
+    // return units are m/s*5
+    return plane.target_airspeed_cm * 0.05;
+}
+
+uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
+{
+    Vector3f wind;
+    wind = AP::ahrs().wind_estimate();
+
+    // return units are m/s*5
+    return MIN(wind.length() * 5, UINT8_MAX);
+}
+
+uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
+{
+    const Vector3f wind = AP::ahrs().wind_estimate();
+
+    // return units are deg/2
+    // need to convert -180->180 to 0->360/2
+    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+}
+
+int8_t GCS_MAVLINK_Plane::high_latency_air_temperature() const
+{
+    // return units are degC
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    float air_temperature = 0;
+    if (airspeed != nullptr &&
+        airspeed->enabled()) {
+            airspeed->get_temperature(air_temperature);
+    }
+    return air_temperature;
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

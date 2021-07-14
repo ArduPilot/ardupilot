@@ -15,11 +15,11 @@ void Copter::init_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
    rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
    rangefinder.init(ROTATION_PITCH_270);
-   rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 
    // upward facing range finder
-   rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
 #endif
 }

@@ -90,7 +90,7 @@ protected:
     bool on_ground() const override;
 
     // calculate sea floor depth based for terrain follow
-    float calculate_sea_floor_depth(const Vector3f &/*position*/);
+    float calculate_sea_floor_depth(const Vector3d &/*position*/);
     // calculate rotational and linear accelerations
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     // calculate buoyancy

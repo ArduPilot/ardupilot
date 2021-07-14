@@ -248,11 +248,11 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
         return true;
     }
     if (labs(ahrs_view->roll_sensor) > MAX(4500, plane.roll_limit_cd + 500)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done, roll error");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
         return true;
     }
     if (AP_HAL::millis() - transition_start_ms > ((tailsitter.transition_angle_fw+(transition_initial_pitch*0.01f))/tailsitter.transition_rate_fw)*1500) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done, timeout");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
         return true;
     }
     // still waiting
@@ -278,10 +278,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
             return true;
         }
     }
-    // limit completion angle to just below fixed wing pitch limit
-    const float margin_deg = 3;
-    const float trans_angle = MIN(get_tailsitter_transition_angle_vtol(),
-                                  plane.aparm.pitch_limit_max_cd*0.01-margin_deg);
+    const float trans_angle = get_tailsitter_transition_angle_vtol();
     if (labs(plane.ahrs.pitch_sensor) > trans_angle*100) {
         gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
         return true;
@@ -291,11 +288,11 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
         roll_cd = 18000 - roll_cd;
     }
     if (roll_cd > MAX(4500, plane.roll_limit_cd + 500)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done, roll error");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
         return true;
     }
     if (AP_HAL::millis() - transition_start_ms >  ((trans_angle-(transition_initial_pitch*0.01f))/tailsitter.transition_rate_vtol)*1500) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done, timeout");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
     // still waiting

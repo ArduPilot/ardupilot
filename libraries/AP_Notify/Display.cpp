@@ -15,6 +15,7 @@
 
 /* Notify display driver for 128 x 64 pixel displays */
 #include "Display.h"
+
 #include "Display_SH1106_I2C.h"
 #include "Display_SSD1306_I2C.h"
 #include "Display_SITL.h"

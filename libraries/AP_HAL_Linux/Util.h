@@ -4,7 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat.h"
-#include "Perf.h"
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #include "ToneAlarm_Disco.h"
 #endif
@@ -88,32 +87,15 @@ public:
      */
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
 
-    perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
-    {
-        return Perf::get_singleton()->add(t, name);
-    }
-
-    void perf_begin(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->begin(perf);
-    }
-
-    void perf_end(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->end(perf);
-    }
-
-    void perf_count(perf_counter_t perf) override
-    {
-        return Perf::get_singleton()->count(perf);
-    }
-
     int get_hw_arm32();
 
     bool toneAlarm_init(uint8_t types) override { return _toneAlarm.init(); }
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {
         _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
     }
+
+    // fills data with random values of requested size
+    bool get_random_vals(uint8_t* data, size_t size) override;
 
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO

@@ -87,11 +87,16 @@ void Rover::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     init_rc_in();            // sets up rc channels deadzone
-    g2.motors.init();        // init motors including setting servo out channels ranges
+    g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
+
+#if HAL_TORQEEDO_ENABLED
+    // init torqeedo motor driver
+    g2.torqeedo.init();
+#endif
 
     relay.init();
 

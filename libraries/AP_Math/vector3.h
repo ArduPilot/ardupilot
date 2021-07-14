@@ -60,8 +60,13 @@
 
 #include "rotations.h"
 
+#include "ftype.h"
+
 template <typename T>
 class Matrix3;
+
+template <typename T>
+class Vector2;
 
 template <typename T>
 class Vector3
@@ -80,6 +85,12 @@ public:
     constexpr Vector3<T>(const T x0, const T y0, const T z0)
         : x(x0)
         , y(y0)
+        , z(z0) {}
+
+    //Create a Vector3 from a Vector2 with z
+    constexpr Vector3<T>(const Vector2<T> &v0, const T z0)
+        : x(v0.x)
+        , y(v0.y)
         , z(z0) {}
 
     // test for equality
@@ -161,12 +172,12 @@ public:
     }
 
     // scale a vector3
-    Vector3<T> scale(const float v) const {
+    Vector3<T> scale(const T v) const {
         return *this * v;
     }
     
     // computes the angle between this vector and another vector
-    float angle(const Vector3<T> &v2) const;
+    T angle(const Vector3<T> &v2) const;
 
     // check if any elements are NAN
     bool is_nan(void) const WARN_IF_UNUSED;
@@ -187,7 +198,16 @@ public:
     void rotate_inverse(enum Rotation rotation);
 
     // rotate vector by angle in radians in xy plane leaving z untouched
-    void rotate_xy(float rotation_rad);
+    void rotate_xy(T rotation_rad);
+
+    // return xy components of a vector3 as a vector2.
+    // this returns a reference to the original vector3 xy data
+    const Vector2<T> &xy() const {
+        return *(const Vector2<T> *)this;
+    }
+    Vector2<T> &xy() {
+        return *(Vector2<T> *)this;
+    }
 
     // gets the length of this vector squared
     T  length_squared() const
@@ -196,10 +216,10 @@ public:
     }
 
     // gets the length of this vector
-    float length(void) const;
+    T length(void) const;
 
     // limit xy component vector to a given length. returns true if vector was limited
-    bool limit_length_xy(float max_length);
+    bool limit_length_xy(T max_length);
 
     // normalizes this vector
     void normalize()
@@ -240,19 +260,29 @@ public:
     }
 
     // distance from the tip of this vector to another vector squared (so as to avoid the sqrt calculation)
-    float distance_squared(const Vector3<T> &v) const {
-        const float dist_x = x-v.x;
-        const float dist_y = y-v.y;
-        const float dist_z = z-v.z;
+    T distance_squared(const Vector3<T> &v) const {
+        const T dist_x = x-v.x;
+        const T dist_y = y-v.y;
+        const T dist_z = z-v.z;
         return (dist_x*dist_x + dist_y*dist_y + dist_z*dist_z);
     }
 
     // distance from the tip of this vector to a line segment specified by two vectors
-    float distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const;
+    T distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const;
 
     // extrapolate position given bearing and pitch (in degrees) and distance
-    void offset_bearing(float bearing, float pitch, float distance);
-    
+    void offset_bearing(T bearing, T pitch, T distance);
+
+    /*
+      conversion to/from double
+     */
+    Vector3<float> tofloat() const {
+        return Vector3<float>{float(x),float(y),float(z)};
+    }
+    Vector3<double> todouble() const {
+        return Vector3<double>{x,y,z};
+    }
+
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the
     // zero vector the return from the function will always be the
@@ -270,15 +300,19 @@ public:
     }
 
     // Shortest distance between point(p) to a point contained in the line segment defined by w1,w2
-    static float closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
+    static T closest_distance_between_line_and_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
 
     // Point in the line segment defined by w1,w2 which is closest to point(p)
     static Vector3<T> point_on_line_closest_to_other_point(const Vector3<T> &w1, const Vector3<T> &w2, const Vector3<T> &p);
 
     // This implementation is borrowed from: http://geomalgorithms.com/a07-_distance.html
     // INPUT: 4 points corresponding to start and end of two line segments
-    // OUTPUT: shortest distance between segments, and closest point on segment 2, from segment 1, gets passed on reference as "intersection" 
-    static float segment_to_segment_dist(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& intersection) WARN_IF_UNUSED;
+
+    // OUTPUT: closest point on segment 2, from segment 1, gets passed on reference as "closest_point"
+    static void segment_to_segment_closest_point(const Vector3<T>& seg1_start, const Vector3<T>& seg1_end, const Vector3<T>& seg2_start, const Vector3<T>& seg2_end, Vector3<T>& closest_point);
+
+    // Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
+    static bool segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point);
 };
 
 typedef Vector3<int16_t>                Vector3i;

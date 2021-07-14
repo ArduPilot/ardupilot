@@ -18,6 +18,7 @@
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
 #include "RPM_HarmonicNotch.h"
+#include "RPM_ESC_Telem.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -26,7 +27,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
@@ -64,12 +65,19 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
     AP_GROUPINFO("_PIN",    5, AP_RPM, _pin[0], 54),
-    
+
+    // @Param: _ESC_MASK
+    // @DisplayName: Bitmask of ESC telemetry channels to average
+    // @Description: Mask of channels which support ESC rpm telemetry. RPM telemetry of the selected channels will be averaged
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @User: Advanced
+    AP_GROUPINFO("_ESC_MASK",  6, AP_RPM, _esc_mask[0], 0),
+
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
@@ -86,6 +94,13 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
     AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
+
+    // @Param: 2_ESC_MASK
+    // @DisplayName: Bitmask of ESC telemetry channels to average
+    // @Description: Mask of channels which support ESC rpm telemetry. RPM telemetry of the selected channels will be averaged
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @User: Advanced
+    AP_GROUPINFO("2_ESC_MASK",  13, AP_RPM, _esc_mask[1], 0),
 #endif
 
     AP_GROUPEND
@@ -102,7 +117,7 @@ AP_RPM::AP_RPM(void)
 }
 
 /*
-  initialise the AP_RPM class. 
+  initialise the AP_RPM class.
  */
 void AP_RPM::init(void)
 {
@@ -111,31 +126,33 @@ void AP_RPM::init(void)
         return;
     }
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-        uint8_t type = _type[i];
+        switch (_type[i]) {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-        if (type == RPM_TYPE_PWM) {
+        case RPM_TYPE_PWM:
+        case RPM_TYPE_PIN:
             // PWM option same as PIN option, for upgrade
-            type = RPM_TYPE_PIN;
-        }
-        if (type == RPM_TYPE_PIN) {
             drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
-        }
+            break;
 #endif
-#if EFI_ENABLED
-        if (type == RPM_TYPE_EFI) {
+        case RPM_TYPE_ESC_TELEM:
+            drivers[i] = new AP_RPM_ESC_Telem(*this, i, state[i]);
+            break;
+#if HAL_EFI_ENABLED
+        case RPM_TYPE_EFI:
             drivers[i] = new AP_RPM_EFI(*this, i, state[i]);
-        }
+            break;
 #endif
         // include harmonic notch last
         // this makes whatever process is driving the dynamic notch appear as an RPM value
-        if (type == RPM_TYPE_HNTCH) {
+        case RPM_TYPE_HNTCH:
             drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
-        }
+            break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (type == RPM_TYPE_SITL) {
+        case RPM_TYPE_SITL:
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
-        }
+            break;
 #endif
+        }
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
@@ -161,7 +178,7 @@ void AP_RPM::update(void)
         }
     }
 }
-    
+
 /*
   check if an instance is healthy
  */

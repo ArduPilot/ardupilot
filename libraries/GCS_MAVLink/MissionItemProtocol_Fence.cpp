@@ -45,6 +45,11 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
         ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION;
         p1 = fenceitem.radius;
         break;
+    case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
+    case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
+        // should never have an AC_PolyFenceItem with these types
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        FALLTHROUGH;
     case AC_PolyFenceType::END_OF_STORAGE:
         return false;
     }

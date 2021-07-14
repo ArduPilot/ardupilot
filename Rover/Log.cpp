@@ -76,6 +76,9 @@ void Rover::Log_Write_Depth()
                         loc.lng,
                         (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f),
                         temp_C);
+
+    // send water depth and temp to ground station
+    gcs().send_message(MSG_WATER_DEPTH);
 }
 
 // guided mode logging
@@ -222,7 +225,7 @@ struct PACKED log_Throttle {
     float throttle_out;
     float desired_speed;
     float speed;
-    float accel_y;
+    float accel_x;
 };
 
 // Write a throttle control packet
@@ -238,7 +241,7 @@ void Rover::Log_Write_Throttle()
         throttle_out    : g2.motors.get_throttle(),
         desired_speed   : g2.attitude_control.get_desired_speed(),
         speed           : speed,
-        accel_y         : accel.y
+        accel_x         : accel.x
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -284,10 +287,10 @@ const LogStructure Rover::log_structure[] = {
 // @Field: ThrOut: Throttle Output 
 // @Field: DesSpeed: Desired speed 
 // @Field: Speed: Actual speed
-// @Field: AccY: Vehicle's acceleration in Y-Axis
+// @Field: AccX: Acceleration
 
     { LOG_THR_MSG, sizeof(log_Throttle),
-      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
+      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccX", "s--nno", "F--000" },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination

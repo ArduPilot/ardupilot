@@ -108,6 +108,13 @@ public:
     void set_stop_bits(int n) override;
 
     /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    bool set_RTS_pin(bool high) override;
+    bool set_CTS_pin(bool high) override;
+
+    /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
       time constraint, not an exact time. It is guaranteed that the
@@ -128,8 +135,9 @@ public:
         }
         return _baudrate/(9*1024);
     }
-    // request information on uart I/O
-    static void uart_info(ExpandingString &str);
+
+    // request information on uart I/O for one uart
+    void uart_info(ExpandingString &str) override;
 
     /*
       return true if this UART has DMA enabled on both RX and TX
@@ -217,7 +225,7 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
-    static uint32_t _last_stats_ms;
+    uint32_t _last_stats_ms;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;

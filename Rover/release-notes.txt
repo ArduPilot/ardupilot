@@ -1,5 +1,46 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.1.0-beta5 30-Jun-2021
+Changes from 4.1.0-beta4
+1) Enhancements
+    a) Arming check of distance from EKF origin increased to 250km horizontally (was 50km), 50km vertically (was 500m)
+    b) Pre-arm check of FLTMODE_CH and RCx_OPTION conflict
+    c) QioTekZealotH743 autopilot support
+    d) Scripting support for set home and get EKF origin
+    e) Water depth and temperature sent to GCS using WATER_DEPTH mavlink message
+2) Bug fixes
+    a) EKF alt estimate more robust when using GPS-for-yaw
+    b) EKF origin altitudes consistent across cores even if user takes off with no GPS lock
+    c) Logging start does not affect EKF (EKF could become unhealthy due to timing delays)
+    d) Longitude wrap fixed (allows flying across international date line)
+    e) Position jump fixed during GPS glitch and GPS/Non-GPS transitions
+--------------------------------
+Rover 4.1.0-beta4 12-Jun-2021
+Changes from 4.1.0-beta3
+1) Rover/Boat specific enhancements and bug fixes
+    a) DShot support fixed
+    b) Simple Avoidance fix to allow backing away from obstacles
+    c) THR onboard log message logs forward-back acceleration
+    d) Waypoint delay of -1 does not delay
+2) Minor enhancements (or changes)
+    a) CSRF telemetry improvements to power setting and pass param requests more quickly
+    b) CUAV X7/Nora supports ICM42688P IMU
+    c) Pix32v5 USB product string fixed and IMU heater enabled 
+    d) RunCam Hybrid supported (see RUNCAM_TYPE parameter)
+    e) VisualOdom feature removed from 1MB boards
+3) Bug fixes
+    a) BLHeli Auto only affects telemetry passthrough to ease setup
+    b) Circular complex fence radius not truncated
+    c) CubeOrange serial1/2 DMA fixed
+    d) ESC telemetry fixes including motor index on boards with I/O mcu
+    e) I/O MCU reset fix if user had disabled safety switch (recovery from reset would leave motors not spinning)
+    f) MSP temperature scaling fixed
+    g) PreArm check of roll/pitch and yaw angle difference fixed
+    h) Serial port info file (@SYS/uarts.txt) easier to understand
+    i) Scheduler fix of premature run of tasks every 11min
+    j) Visual odometry yaw alignment fixed
+    k) WPNAV_RADIUS never less than 5cm
+--------------------------------
 Rover 4.1.0-beta3 24-May-2021
 Changes from 4.1.0-beta2
 1) Dshot bug fix for autopilots with I/O boards (CubeBlack, CubeOrange, etc)

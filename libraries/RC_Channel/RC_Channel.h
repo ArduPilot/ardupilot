@@ -205,6 +205,7 @@ public:
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
+        DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -472,6 +473,11 @@ public:
         return _options & uint32_t(Option::ARMING_SKIP_CHECK_RPY);
     }
 
+    bool suppress_crsf_message(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::SUPPRESS_CRSF_MESSAGE));
+    }
+
+
 
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
@@ -511,6 +517,13 @@ public:
         return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
 
+    // check if flight mode channel is assigned RC option
+    // return true if assigned
+    bool flight_mode_channel_conflicts_with_rc_option() const;
+
+    // flight_mode_channel_number must be overridden in vehicle specific code
+    virtual int8_t flight_mode_channel_number() const = 0;
+
 protected:
 
     enum class Option {
@@ -523,6 +536,7 @@ protected:
         ARMING_SKIP_CHECK_RPY   = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
         ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
         CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
+        SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
     };
 
     void new_override_received() {
@@ -542,9 +556,7 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
 
-    // flight_mode_channel_number must be overridden in vehicle specific code
-    virtual int8_t flight_mode_channel_number() const = 0;
-    RC_Channel *flight_mode_channel();
+    RC_Channel *flight_mode_channel() const;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;

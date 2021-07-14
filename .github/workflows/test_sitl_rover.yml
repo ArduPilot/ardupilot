@@ -4,6 +4,9 @@ on: [push, pull_request, workflow_dispatch]
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -45,7 +48,7 @@ jobs:
       - name: build rover ${{ matrix.toolchain }}
         shell: bash
         run: |
-          if [[ ${{ matrix.toolchain }} = "clang" ]]; then
+          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang-7
             export CXX=clang++-7
           fi
@@ -111,6 +114,10 @@ jobs:
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
+             /__w/ardupilot/ardupilot/ap-*.core
+             /__w/ardupilot/ardupilot/core.*
+             /__w/ardupilot/ardupilot/dumpstack.sh_*
+             /__w/ardupilot/ardupilot/dumpcore.sh_*
            retention-days: 14
 
       - name: Archive .bin artifacts

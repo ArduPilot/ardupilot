@@ -350,7 +350,7 @@ void SRV_Channels::push()
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {

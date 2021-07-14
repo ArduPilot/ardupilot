@@ -33,7 +33,9 @@
 #endif
 #endif
 
+#ifndef COMPASS_CAL_ENABLED
 #define COMPASS_CAL_ENABLED !defined(HAL_BUILD_AP_PERIPH)
+#endif
 #define COMPASS_MOT_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 #define COMPASS_LEARN_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 
@@ -289,15 +291,6 @@ public:
     bool configured(uint8_t i);
     bool configured(char *failure_msg, uint8_t failure_msg_len);
 
-    // HIL methods
-    void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag, uint32_t last_update_usec);
-    const Vector3f&   getHIL(uint8_t instance) const;
-    void        _setup_earth_field();
-
-    // enable HIL mode
-    void        set_hil_mode(void) { _hil_mode = true; }
-
     // return last update time in microseconds
     uint32_t last_update_usec(void) const { return last_update_usec(_first_usable); }
     uint32_t last_update_usec(uint8_t i) const { return _get_state(Priority(i)).last_update_usec; }
@@ -306,14 +299,6 @@ public:
     uint32_t last_update_ms(uint8_t i) const { return _get_state(Priority(i)).last_update_ms; }
 
     static const struct AP_Param::GroupInfo var_info[];
-
-    // HIL variables
-    struct {
-        Vector3f Bearth;
-        float last_declination;
-        bool healthy[COMPASS_MAX_INSTANCES];
-        Vector3f field[COMPASS_MAX_INSTANCES];
-    } _hil;
 
     enum LearnType {
         LEARN_NONE=0,
@@ -590,9 +575,6 @@ private:
     Compass_PerMotor _per_motor{*this};
 #endif
     
-    // if we want HIL only
-    bool _hil_mode:1;
-
     AP_Float _calibration_threshold;
 
     // mask of driver types to not load. Bit positions match DEVTYPE_ in backend

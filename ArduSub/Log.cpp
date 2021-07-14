@@ -27,7 +27,7 @@ void Sub::Log_Write_Control_Tuning()
 {
     // get terrain altitude
     float terr_alt = 0.0f;
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     terrain.height_above_terrain(terr_alt, true);
 #endif
 

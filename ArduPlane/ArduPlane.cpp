@@ -112,7 +112,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     SCHED_TASK(efi_update,             10,    200),
 #endif
 };
@@ -132,13 +132,6 @@ constexpr int8_t Plane::_failsafe_priorities[7];
 void Plane::ahrs_update()
 {
     arming.update_soft_armed();
-
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // update hil before AHRS update
-        gcs().update_receive();
-    }
-#endif
 
     ahrs.update();
 
@@ -329,7 +322,7 @@ void Plane::compass_save()
 
 void Plane::efi_update(void)
 {
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     g2.efi.update();
 #endif
 }

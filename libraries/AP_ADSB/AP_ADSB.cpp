@@ -131,7 +131,6 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: RF_CAPABLE
     // @DisplayName: RF capabilities
     // @Description: Describes your hardware RF In/Out capabilities.
-    // @Values: 0:Unknown,1:Rx UAT only,3:Rx UAT and 1090ES,7:Rx&Tx UAT and 1090ES
     // @Bitmask: 0:UAT_in,1:1090ES_in,2:UAT_out,3:1090ES_out
     // @User: Advanced
     AP_GROUPINFO("RF_CAPABLE",  11, AP_ADSB, out_state.cfg.rf_capable, 0),

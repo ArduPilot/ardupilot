@@ -245,7 +245,9 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
+#if HAL_CANMANAGER_ENABLED
     AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
+#endif
     return true;
 }
 
@@ -483,7 +485,7 @@ void SLCAN::CANIface::update_slcan_port()
         }
         _port->lock_port(_serial_lock_key, _serial_lock_key);
         _prev_ser_port = _slcan_ser_port;
-        gcs().send_text(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
         _last_had_activity = AP_HAL::native_millis();
     }
     if (_port == nullptr) {

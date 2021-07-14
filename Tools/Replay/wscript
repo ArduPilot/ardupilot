@@ -23,6 +23,6 @@ def build(bld):
     )
 
     bld.ap_program(
-        program_groups=['tools','replay'],
+        program_groups=['tool','replay'],
         use=vehicle + '_libs',
     )

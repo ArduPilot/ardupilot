@@ -398,12 +398,12 @@ bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle)
 
 // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
 // used in GPS based Simple Avoidance
-float AP_Proximity::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
+bool AP_Proximity::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
 {
     if (!valid_instance(primary_instance)) {
-        return FLT_MAX;
+        return false;
     }
-    return drivers[primary_instance]->distance_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
+    return drivers[primary_instance]->closest_point_from_segment_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
 }
 
 // get distance and angle to closest object (used for pre-arm check)

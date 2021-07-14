@@ -96,7 +96,7 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, extra_args=[]):
+def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, extra_args=[]):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
@@ -104,6 +104,10 @@ def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage
         cmd_configure.append('--coverage')
     if math_check_indexes:
         cmd_configure.append('--enable-math-check-indexes')
+    if ekf_single:
+        cmd_configure.append('--ekf-single')
+    if postype_single:
+        cmd_configure.append('--postype-single')
     if j is not None:
         cmd_configure.extend(['-j', str(j)])
     pieces = [shlex.split(x) for x in extra_args]
@@ -116,7 +120,8 @@ def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
 
-def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
+def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, coverage=False,
+               ekf_single=False, postype_single=False, extra_configure_args=[]):
     """Build desktop SITL."""
 
     # first configure
@@ -125,6 +130,8 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
                       j=j,
                       debug=debug,
                       math_check_indexes=math_check_indexes,
+                      ekf_single=ekf_single,
+                      postype_single=postype_single,
                       coverage=coverage,
                       extra_args=extra_configure_args)
 
@@ -140,13 +147,17 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
     return True
 
 
-def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
+def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
+                   ekf_single=False, postype_single=False,
+                   extra_configure_args=[]):
     # first configure
     if configure:
         waf_configure(board,
                       j=j,
                       debug=debug,
                       math_check_indexes=math_check_indexes,
+                      ekf_single=ekf_single,
+                      postype_single=postype_single,
                       coverage=coverage,
                       extra_args=extra_configure_args)
 
@@ -172,13 +183,16 @@ def build_replay(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
-def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False, extra_configure_args=[]):
+def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
+                ekf_single=False, postype_single=False, extra_configure_args=[]):
     # first configure
     if configure:
         waf_configure(board,
                       j=j,
                       debug=debug,
                       math_check_indexes=math_check_indexes,
+                      ekf_single=ekf_single,
+                      postype_single=postype_single,
                       coverage=coverage,
                       extra_args=extra_configure_args)
 
@@ -278,6 +292,7 @@ def kill_mac_terminal():
 def start_SITL(binary,
                valgrind=False,
                gdb=False,
+               gdb_no_tui=False,
                wipe=False,
                synthetic_clock=True,
                home=None,
@@ -332,6 +347,8 @@ def start_SITL(binary,
             f.write("b %s\n" % (breakpoint,))
         if disable_breakpoints:
             f.write("disable\n")
+        if not gdb_no_tui:
+            f.write("tui enable\n")
         f.write("r\n")
         f.close()
         if sys.platform == "darwin" and os.getenv('DISPLAY'):

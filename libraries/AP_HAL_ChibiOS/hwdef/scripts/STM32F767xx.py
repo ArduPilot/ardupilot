@@ -42,6 +42,10 @@ mcu = {
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
+
+    'DEFINES' : {
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1'
+    }
 }
 
 DMA_Map = {

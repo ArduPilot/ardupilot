@@ -93,10 +93,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     // init flags
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;
-
-    // sanity check some parameters
-    _wp_accel_cmss = MIN(_wp_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
-    _wp_radius_cm = MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN);
 }
 
 // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
@@ -107,7 +103,8 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
         return AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER;
     }
 #if AP_TERRAIN_AVAILABLE
-    if ((_terrain != nullptr) && _terrain->enabled()) {
+    const AP_Terrain *terrain = AP::terrain();
+    if (terrain != nullptr && terrain->enabled()) {
         return AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE;
     } else {
         return AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE;
@@ -127,10 +124,14 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
 void AC_WPNav::wp_and_spline_init(float speed_cms)
 {
+    
+    // sanity check parameters
     // check _wp_accel_cmss is reasonable
-    if (_wp_accel_cmss <= 0) {
-        _wp_accel_cmss.set_and_save(WPNAV_ACCELERATION);
-    }
+    const float wp_accel_cmss = MIN(_wp_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
+    _wp_accel_cmss.set_and_save_ifchanged((_wp_accel_cmss <= 0) ? WPNAV_ACCELERATION : wp_accel_cmss);
+    
+    // check _wp_radius_cm is reasonable
+    _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN));
 
     // initialise position controller
     _pos_control.init_z_controller_stopping_point();
@@ -141,7 +142,9 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
 
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_accel_xy(_wp_desired_speed_xy_cms, _wp_accel_cmss);
+    _pos_control.set_correction_speed_accel_xy(_wp_desired_speed_xy_cms, _wp_accel_cmss);
     _pos_control.set_max_speed_accel_z(-_wp_speed_down_cms, _wp_speed_up_cms, _wp_accel_z_cmss);
+    _pos_control.set_correction_speed_accel_z(-_wp_speed_down_cms, _wp_speed_up_cms, _wp_accel_z_cmss);
 
     // calculate scurve jerk and jerk time
     if (!is_positive(_wp_jerk)) {
@@ -177,7 +180,6 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     // range check target speed
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
         _wp_desired_speed_xy_cms = speed_cms;
-        _pos_control.set_max_speed_accel_xy(_wp_desired_speed_xy_cms, _wp_accel_cmss);
         update_track_with_speed_accel_limits();
     }
 }
@@ -384,30 +386,32 @@ void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
     _pos_control.relax_velocity_controller_xy();
 
     // get current and target locations
-    Vector3f stopping_point;
+    Vector2f stopping_point;
     get_wp_stopping_point_xy(stopping_point);
 
     // shift origin and destination horizontally
-    _origin.x = stopping_point.x;
-    _origin.y = stopping_point.y;
-    _destination.x = stopping_point.x;
-    _destination.y = stopping_point.y;
+    _origin.xy() = stopping_point;
+    _destination.xy() = stopping_point;
 
     // move pos controller target horizontally
     _pos_control.set_pos_target_xy_cm(stopping_point.x, stopping_point.y);
 }
 
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
-void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
+void AC_WPNav::get_wp_stopping_point_xy(Vector2f& stopping_point) const
 {
-	_pos_control.get_stopping_point_xy_cm(stopping_point);
+    Vector2p stop;
+    _pos_control.get_stopping_point_xy_cm(stop);
+    stopping_point = stop.tofloat();
 }
 
 /// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
 void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
 {
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
-    _pos_control.get_stopping_point_z_cm(stopping_point);
+    Vector3p stop;
+    _pos_control.get_stopping_point_xy_cm(stop.xy());
+    _pos_control.get_stopping_point_z_cm(stop.z);
+    stopping_point = stop.tofloat();
 }
 
 /// advance_wp_target_along_track - move target location along track from origin to destination
@@ -418,6 +422,14 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (_terrain_alt && !get_terrain_offset(terr_offset)) {
         return false;
     }
+
+    // input shape the terrain offset
+    shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
+        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
+        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
+        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), _pos_control.get_shaping_tc_z_s(), dt);
+
+    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
 
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
     const Vector3f &curr_pos = _inav.get_position() - Vector3f{0, 0, terr_offset};
@@ -463,21 +475,13 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         s_finished = _spline_this_leg.reached_destination();
     }
 
-    // input shape the terrain offset
-    shape_pos_vel_accel(terr_offset, 0.0f, 0.0f,
-        _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset,
-        0.0f, _pos_control.get_max_speed_down_cms(), _pos_control.get_max_speed_up_cms(),
-        -_pos_control.get_max_accel_z_cmss(), _pos_control.get_max_accel_z_cmss(), 0.05f, dt);
-
-    update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, dt, 0.0f);
-
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_terrain_offset;
     target_vel.z += _vel_terrain_offset;
     target_accel.z += _accel_terrain_offset;
 
     // pass new target to the position controller
-    _pos_control.set_pos_vel_accel(target_pos, target_vel, target_accel);
+    _pos_control.set_pos_vel_accel(target_pos.topostype(), target_vel, target_accel);
 
     // check if we've reached the waypoint
     if (!_flags.reached_destination) {
@@ -573,7 +577,9 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terr_alt = 0.0f;
-        if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr &&
+            terrain->height_above_terrain(terr_alt, true)) {
             offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
             return true;
         }

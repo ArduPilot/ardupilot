@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-"""This script intend to provide a pretty size diff between two binaries."""
+
+'''
+This script intend to provide a pretty size diff between two binaries.
+
+AP_FLAKE8_CLEAN
+'''
+
 import os
 from argparse import ArgumentParser
 from tabulate import tabulate

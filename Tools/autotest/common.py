@@ -1196,6 +1196,7 @@ class AutoTest(ABC):
                  binary,
                  valgrind=False,
                  gdb=False,
+                 gdb_no_tui=False,
                  speedup=None,
                  frame=None,
                  params=None,
@@ -1220,6 +1221,7 @@ class AutoTest(ABC):
         self.binary = binary
         self.valgrind = valgrind
         self.gdb = gdb
+        self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
         self.frame = frame
         self.params = params
@@ -1390,8 +1392,7 @@ class AutoTest(ABC):
         self.progress("Applying default parameters file")
         # setup test parameters
         if self.params is None:
-            self.params = self.model_defaults_filepath(self.vehicleinfo_key(),
-                                                       self.frame)
+            self.params = self.model_defaults_filepath(self.frame)
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
 
@@ -2777,6 +2778,7 @@ class AutoTest(ABC):
             raise NotAchievedException("target temperature")
 
     def onboard_logging_not_log_disarmed(self):
+        self.start_subtest("Test LOG_DISARMED-is-false behaviour")
         self.set_parameter("LOG_DISARMED", 0)
         self.set_parameter("LOG_FILE_DSRMROT", 0)
         self.reboot_sitl()
@@ -2849,6 +2851,7 @@ class AutoTest(ABC):
             self.progress("Unexpected new log found")
 
     def onboard_logging_log_disarmed(self):
+        self.start_subtest("Test LOG_DISARMED-is-true behaviour")
         start_list = self.log_list()
         self.set_parameter("LOG_FILE_DSRMROT", 0)
         self.set_parameter("LOG_DISARMED", 0)
@@ -2923,9 +2926,27 @@ class AutoTest(ABC):
 
         # self.progress("If we re-arm during the HAL_LOGGER_ARM_PERSIST period it should rotate")
 
+    def onboard_logging_forced_arm(self):
+        '''ensure a bug where we didn't start logging when arming was forced
+        does not reappear'''
+        self.start_subtest("Ensure we get a log when force-arming")
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()  # so we'll definitely start a log on arming
+        pre_arming_list = self.log_list()
+        self.wait_ready_to_arm()
+        self.arm_vehicle(force=True)
+        # we might be relying on a thread to actually create the log
+        # file when doing forced-arming; give the file time to appear:
+        self.delay_sim_time(10)
+        post_arming_list = self.log_list()
+        self.disarm_vehicle()
+        if len(post_arming_list) <= len(pre_arming_list):
+            raise NotAchievedException("Did not get a log on forced arm")
+
     def test_onboard_logging(self):
         if self.is_tracker():
             return
+        self.onboard_logging_forced_arm()
         self.onboard_logging_log_disarmed()
         self.onboard_logging_not_log_disarmed()
 
@@ -3550,6 +3571,11 @@ class AutoTest(ABC):
         location.lng = lng
         print("new: %f %f" % (location.lat, location.lng))
 
+    def home_relative_loc_ne(self, n, e):
+        ret = self.home_position_as_mav_location()
+        self.location_offset_ne(ret, n, e)
+        return ret
+
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
@@ -3671,19 +3697,27 @@ class AutoTest(ABC):
                     target_compid=None,
                 ))
 
-    def arm_vehicle(self, timeout=20):
+    def arm_vehicle(self, timeout=20, force=False):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.drain_mav()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                     1,  # ARM
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=timeout)
+        p2 = 0
+        if force:
+            p2 = 2989
+        try:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                         1,  # ARM
+                         p2,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         timeout=timeout)
+        except ValueError as e:
+            # statustexts are queued; give it a second to arrive:
+            self.delay_sim_time(5)
+            raise e
         try:
             self.wait_armed()
         except AutoTestTimeoutException:
@@ -3966,18 +4000,19 @@ class AutoTest(ABC):
     def set_parameter(self, name, value, **kwargs):
         self.set_parameters({name: value}, **kwargs)
 
-    def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, retries=None, verbose=True):
+    def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, verbose=True, attempts=None):
         """Set parameters from vehicle."""
+
         want = copy.copy(parameters)
         self.progress("set_parameters: (%s)" % str(want))
         self.drain_mav()
         if len(want) == 0:
             return
 
-        if retries is None:
+        if attempts is None:
             # we can easily fill ArduPilot's param-set/param-get queue
             # which is quite short.  So we retry *a lot*.
-            retries = (len(want)+1) * 5
+            attempts = len(want) * 10
 
         param_value_messages = []
 
@@ -3991,16 +4026,17 @@ class AutoTest(ABC):
 
         original_values = {}
         autopilot_values = {}
-        for i in range(retries):
+        for i in range(attempts):
             self.drain_mav(quiet=True)
             received = set()
             for (name, value) in want.items():
                 if verbose:
-                    self.progress("%s want=%f autopilot=%s" % (name, value, autopilot_values.get(name, 'None')))
+                    self.progress("%s want=%f autopilot=%s (attempt=%u/%u)" %
+                                  (name, value, autopilot_values.get(name, 'None'), i+1, attempts))
                 if name not in autopilot_values:
                     self.send_get_parameter_direct(name)
                     if verbose:
-                        self.progress("Requesting (%s) (retry=%u)" % (name, i))
+                        self.progress("Requesting (%s)" % (name,))
                     continue
                 delta = abs(autopilot_values[name] - value)
                 if delta <= epsilon_pct*0.01*abs(value):
@@ -5647,9 +5683,12 @@ Also, ignores heartbeats not from our target system'''
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         try:
+            retries = 20
+            if self.gdb:
+                retries = 20000
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=20,
+                retries=retries,
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
@@ -5713,6 +5752,12 @@ Also, ignores heartbeats not from our target system'''
         '''called to move relevant log files from our working directory to the
         buildlogs directory'''
         to_dir = self.logs_dir
+        # move telemetry log files
+        for log in glob.glob("autotest-*.tlog"):
+            bname = os.path.basename(log)
+            newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
+            print("Renaming %s to %s" % (log, newname))
+            shutil.move(log, newname)
         # move binary log files
         for log in sorted(self.bin_logs()):
             bname = os.path.basename(log)
@@ -5721,7 +5766,10 @@ Also, ignores heartbeats not from our target system'''
             shutil.move(log, newname)
         # move core files
         save_binaries = False
-        for log in sorted(glob.glob("core*")):
+        corefiles = []
+        corefiles.extend(glob.glob("core*"))
+        corefiles.extend(glob.glob("ap-*.core"))
+        for log in sorted(corefiles):
             bname = os.path.basename(log)
             newname = os.path.join(to_dir, "%s-%s-%s" % (bname, self.log_name(), name))
             print("Renaming %s to %s" % (log, newname))
@@ -5764,6 +5812,8 @@ Also, ignores heartbeats not from our target system'''
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
+        start_num_message_hooks = len(self.mav.message_hooks)
+
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
         self.set_current_test_name(name)
@@ -5794,7 +5844,6 @@ Also, ignores heartbeats not from our target system'''
             self.context_pop()
         except Exception as e:
             self.print_exception_caught(e, send_statustext=False)
-            self.progress("Not alive after test", send_statustext=False)
             passed = False
 
         ardupilot_alive = False
@@ -5803,6 +5852,7 @@ Also, ignores heartbeats not from our target system'''
             ardupilot_alive = True
         except Exception:
             # process is dead
+            self.progress("Not alive after test", send_statustext=False)
             passed = False
             reset_needed = True
 
@@ -5826,7 +5876,9 @@ Also, ignores heartbeats not from our target system'''
             util.pexpect_close(self._mavproxy)
             self._mavproxy = None
 
-        corefiles = glob.glob("core*")
+        corefiles = []
+        corefiles.extend(glob.glob("core*"))
+        corefiles.extend(glob.glob("ap-*.core"))
         if corefiles:
             self.progress('Corefiles detected: %s' % str(corefiles))
             passed = False
@@ -5834,6 +5886,12 @@ Also, ignores heartbeats not from our target system'''
         if len(self.contexts) != old_contexts_length:
             self.progress("context count mismatch (want=%u got=%u)" %
                           (old_contexts_length, len(self.contexts)))
+            passed = False
+
+        # make sure we don't leave around stray listeners:
+        if len(self.mav.message_hooks) != start_num_message_hooks:
+            self.progress("Stray message listeners: %s" %
+                          str(self.mav.message_hooks))
             passed = False
 
         if passed:
@@ -5928,6 +5986,7 @@ Also, ignores heartbeats not from our target system'''
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
             "gdb": self.gdb,
+            "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": self.sitl_home(),
@@ -7781,7 +7840,7 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
-            self.set_parameter("SIM_BARO_COUNT", 0)
+            self.set_parameter("SIM_BARO_COUNT", -1)
 
             if self.is_tracker():
                 # starts armed...
@@ -7790,7 +7849,8 @@ Also, ignores heartbeats not from our target system'''
 
             self.reboot_sitl(required_bootcount=1)
             self.progress("Waiting for 'Config error'")
-            self.wait_statustext("Config error")
+            # SYSTEM_TIME not sent in config error loop:
+            self.wait_statustext("Config error", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
         except Exception as e:
@@ -8694,6 +8754,8 @@ switch value'''
                                         zero_time_base=True)
 
     def current_onboard_log_contains_message(self, messagetype):
+        self.progress("Checking (%s) for (%s)" %
+                      (self.current_onboard_log_filepath(), messagetype))
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type=messagetype)
         print("m=%s" % str(m))
@@ -8728,7 +8790,7 @@ switch value'''
             self.progress("Failed with timeout")
             self.fail_list.append(["Failed with timeout", None, None])
             if self.logs_dir:
-                if glob.glob("core*"):
+                if glob.glob("core*") or glob.glob("ap-*.core"):
                     self.check_logs("FRAMEWORK")
 
         if self.rc_thread is not None:
@@ -8866,7 +8928,7 @@ switch value'''
         old_mt = self.get_parameter("MIS_TOTAL", attempts=20) # retries to avoid seeming race condition with MAVProxy
         ex = None
         try:
-            self.set_parameter("MIS_TOTAL", 17, retries=0)
+            self.set_parameter("MIS_TOTAL", 17, attempts=1)
         except ValueError as e:
             ex = e
         if ex is None:
@@ -10487,8 +10549,8 @@ switch value'''
 
         return psd
 
-    def model_defaults_filepath(self, vehicle, model):
-
+    def model_defaults_filepath(self, model):
+        vehicle = self.vehicleinfo_key()
         vinfo = vehicleinfo.VehicleInfo()
         defaults_filepath = vinfo.options[vehicle]["frames"][model]["default_params_filename"]
         if isinstance(defaults_filepath, str):

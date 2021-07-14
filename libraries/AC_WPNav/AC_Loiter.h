@@ -17,7 +17,7 @@ public:
     AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// init_target to a position in cm from ekf origin
-    void init_target(const Vector3f& position);
+    void init_target(const Vector2f& position);
 
     /// initialize's position and feed-forward velocity from current pos and velocity
     void init_target();
@@ -36,7 +36,7 @@ public:
     void clear_pilot_desired_acceleration() { _desired_accel.zero(); }
 
     /// get vector to stopping point based on a horizontal position and velocity
-    void get_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_stopping_point_xy(Vector2f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
@@ -85,6 +85,6 @@ protected:
     Vector2f    _predicted_accel;
     Vector2f    _predicted_euler_angle;
     Vector2f    _predicted_euler_rate;
-    float       _brake_timer;
-    float       _brake_accel;
+    uint32_t    _brake_timer;           // system time that brake was initiated
+    float       _brake_accel;           // acceleration due to braking from previous iteration (used for jerk limiting)
 };

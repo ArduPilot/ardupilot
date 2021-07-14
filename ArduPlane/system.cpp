@@ -20,15 +20,6 @@ void Plane::init_ardupilot()
     g2.stats.init();
 #endif
 
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // set sensors to HIL mode
-        ins.set_hil_mode();
-        compass.set_hil_mode();
-        barometer.set_hil_mode();
-    }
-#endif
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // setup any board specific drivers
@@ -89,7 +80,7 @@ void Plane::init_ardupilot()
     AP::compass().init();
 
 // init EFI monitoring
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     g2.efi.init();
 #endif
 
@@ -155,11 +146,6 @@ void Plane::init_ardupilot()
 #if AC_FENCE == ENABLED
     fence.init();
 #endif
-
-#if AP_TERRAIN_AVAILABLE
-    Location::set_terrain(&terrain);
-#endif
-
 }
 
 //********************************************************************************
@@ -366,17 +352,6 @@ void Plane::check_short_failsafe()
 
 void Plane::startup_INS_ground(void)
 {
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        while (barometer.get_last_update() == 0) {
-            // the barometer begins updating when we get the first
-            // HIL_STATE message
-            gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-            hal.scheduler->delay(1000);
-        }
-    }
-#endif
-
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
     } else {

@@ -44,6 +44,10 @@ singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
 singleton AP_AHRS method set_posvelyaw_source_set void uint8_t 0 2
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
+singleton AP_AHRS method set_home boolean Location
+singleton AP_AHRS method get_origin boolean Location'Null
+singleton AP_AHRS method set_origin boolean Location
+singleton AP_AHRS method initialised boolean
 
 include AP_Arming/AP_Arming.h
 
@@ -178,6 +182,14 @@ singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float -FLT_MAX FLT_MAX
 
+include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
+singleton AP_ONVIF depends ENABLE_ONVIF == 1
+singleton AP_ONVIF alias onvif
+singleton AP_ONVIF method start boolean string string string
+singleton AP_ONVIF method set_absolutemove boolean float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
+singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
+
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle scheduler-semaphore
@@ -197,6 +209,7 @@ singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -
 singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
+singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED

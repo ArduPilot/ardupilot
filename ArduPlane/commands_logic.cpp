@@ -302,12 +302,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 //  Nav (Must) commands
 /********************************************************************************/
 
-void Plane::do_RTL(int32_t rtl_altitude)
+void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
 {
     auto_state.next_wp_crosstrack = false;
     auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude);
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -592,7 +592,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             float factor = (dist + cmd_passby) / dist;
 
             flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0f);
-            flex_next_WP_loc.lng = flex_next_WP_loc.lng + (flex_next_WP_loc.lng - prev_WP_loc.lng) * (factor - 1.0f);
+            flex_next_WP_loc.lng = flex_next_WP_loc.lng + Location::diff_longitude(flex_next_WP_loc.lng,prev_WP_loc.lng) * (factor - 1.0f);
         }
     }
 

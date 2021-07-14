@@ -81,6 +81,11 @@ public:
         return _maxClimbRate;
     }
 
+    // return maximum sink rate (+ve number down)
+    float get_max_sinkrate(void) const override {
+        return _maxSinkRate;
+    }
+    
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) override {
         _integSEB_state = 0.0f;

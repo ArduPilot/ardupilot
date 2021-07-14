@@ -20,6 +20,7 @@ parser = optparse.OptionParser("decode_devid.py")
 parser.add_option("-C", "--compass", action='store_true', help='decode compass IDs')
 parser.add_option("-I", "--imu", action='store_true', help='decode IMU IDs')
 parser.add_option("-B", "--baro", action='store_true', help='decode barometer IDs')
+parser.add_option("-A", "--airspeed", action='store_true', help='decode airspeed IDs')
 
 opts, args = parser.parse_args()
 
@@ -108,6 +109,19 @@ baro_types = {
     0x0C : "DEVTYPE_BARO_SPL06",
     0x0D : "DEVTYPE_BARO_UAVCAN",
 }
+
+airspeed_types = {
+    0x01 : "DEVTYPE_AIRSPEED_SITL",
+    0x02 : "DEVTYPE_AIRSPEED_MS4525",
+    0x03 : "DEVTYPE_AIRSPEED_MS5525",
+    0x04 : "DEVTYPE_AIRSPEED_DLVR",
+    0x05 : "DEVTYPE_AIRSPEED_MSP",
+    0x06 : "DEVTYPE_AIRSPEED_SDP3X",
+    0x07 : "DEVTYPE_AIRSPEED_UAVCAN",
+    0x08 : "DEVTYPE_AIRSPEED_ANALOG",
+    0x09 : "DEVTYPE_AIRSPEED_NMEA",
+    0x0A : "DEVTYPE_AIRSPEED_ASP5033",
+}
     
 decoded_devname = ""
 
@@ -120,6 +134,9 @@ if opts.imu:
 if opts.baro:
     decoded_devname = baro_types.get(devtype, "UNKNOWN")
 
+if opts.airspeed:
+    decoded_devname = airspeed_types.get(devtype, "UNKNOWN")
+    
 if bus_type == 3:
     #uavcan devtype represents sensor_id
     print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (

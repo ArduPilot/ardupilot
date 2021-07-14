@@ -31,6 +31,10 @@ public:
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
 
+    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds) override;
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
+
     /*
         all other input functions should zero thrust vectoring and behave as a normal copter
     */

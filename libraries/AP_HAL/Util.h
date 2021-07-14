@@ -139,20 +139,6 @@ public:
     /* Support for an imu heating system */
     virtual void set_imu_target_temp(int8_t *target) {}
     
-    /*
-      performance counter calls - wrapper around original PX4 interface
-     */
-    enum perf_counter_type {
-        PC_COUNT,        /**< count the number of times an event occurs */
-        PC_ELAPSED,      /**< measure the time elapsed performing an event */
-        PC_INTERVAL      /**< measure the interval between instances of an event */
-    };
-    typedef void *perf_counter_t;
-    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return nullptr; }
-    virtual void perf_begin(perf_counter_t h) {}
-    virtual void perf_end(perf_counter_t h) {}
-    virtual void perf_count(perf_counter_t h) {}
-
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,
@@ -195,6 +181,9 @@ public:
 
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
+
+    // generate Random values
+    virtual bool get_random_vals(uint8_t* data, size_t size) { return false; }
 
 protected:
     // we start soft_armed false, so that actuators don't send any

@@ -35,25 +35,18 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK(update_batt_compass,   10,    120),
     SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
-    // SCHED_TASK(auto_disarm_check,     10,     50),
-    // SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(update_altitude,       10,    100),
-    // SCHED_TASK(run_nav_updates,       50,    100),
-    // SCHED_TASK(update_throttle_hover,100,     90),
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75),
     SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,           accumulate,      50,  90),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(fourhundred_hz_logging,400,    50),
+    SCHED_TASK(full_rate_logging,     50,    50),
 #endif
     SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
     SCHED_TASK(check_vibration,       10,     50),
-    // SCHED_TASK(gpsglitch_check,       10,     50),
-    // SCHED_TASK(landinggear_update,    10,     75),
-    // SCHED_TASK(standby_update,        100,    75),
-    // SCHED_TASK(lost_vehicle_check,    10,     50),
+    SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550),
 #if LOGGING_ENABLED == ENABLED
@@ -62,12 +55,9 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50),
-
     SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75),
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
-    // SCHED_TASK_CLASS(AP_TempCalibration,   &blimp.g2.temp_calibration, update,          10, 100),
-
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100),
 #endif
@@ -84,7 +74,7 @@ void Blimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Blimp::_failsafe_priorities[4];
 
-// Main loop - 50hz
+// Main loop
 void Blimp::fast_loop()
 {
     // update INS immediately to get current gyro data populated
@@ -116,13 +106,6 @@ void Blimp::fast_loop()
     }
 
     AP_Vehicle::fast_loop(); //just does gyro fft
-}
-
-// get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-//copied in from Copter's Attitude.cpp
-float Blimp::get_non_takeoff_throttle()
-{
-    return 0.0f; //MIR no idle throttle.
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -158,11 +141,13 @@ void Blimp::update_batt_compass(void)
 }
 
 // Full rate logging of attitude, rate and pid loops
-// should be run at 400hz
-void Blimp::fourhundred_hz_logging()
+void Blimp::full_rate_logging()
 {
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
+    }
+    if (should_log(MASK_LOG_PID)) {
+        Log_Write_PIDs();
     }
 }
 
@@ -171,7 +156,7 @@ void Blimp::fourhundred_hz_logging()
 void Blimp::ten_hz_logging_loop()
 {
     // log attitude data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !blimp.flightmode->logs_attitude()) {
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
     }
     // log EKF attitude data
@@ -199,12 +184,6 @@ void Blimp::ten_hz_logging_loop()
 // twentyfive_hz_logging - should be run at 25hz
 void Blimp::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL for a blimp needs very fast update of the servo values
-    gcs().send_message(MSG_SERVO_OUTPUT_RAW);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
     }
@@ -212,8 +191,6 @@ void Blimp::twentyfive_hz_logging()
     if (should_log(MASK_LOG_IMU)) {
         AP::ins().Write_IMU();
     }
-#endif
-
 }
 
 // three_hz_loop - 3.3hz loop
@@ -235,8 +212,6 @@ void Blimp::one_hz_loop()
     if (!motors->armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.update_orientation();
-
-        // update_using_interlock();
     }
 
     // update assigned functions and enable auxiliary servos
@@ -247,15 +222,16 @@ void Blimp::one_hz_loop()
 
 void Blimp::read_AHRS(void)
 {
-    // Perform IMU calculations and get attitude info
-    //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs().update();
-#endif
-
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
+
+    IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_home(pos_ned));
+
+    vel_yaw = ahrs.get_yaw_rate_earth();
+    Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
+    vel_ned_filtd = {vel_xy_filtd.x, vel_xy_filtd.y, vel_z_filter.apply(vel_ned.z)};
+    vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
 }
 
 // read baro and log control tuning
@@ -265,7 +241,6 @@ void Blimp::update_altitude()
     read_barometer();
 
     if (should_log(MASK_LOG_CTUN)) {
-        Log_Write_Control_Tuning();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #else
@@ -274,28 +249,22 @@ void Blimp::update_altitude()
     }
 }
 
-// vehicle specific waypoint info helpers
-bool Blimp::get_wp_distance_m(float &distance) const
+//Conversions are in 2D so that up remains up in world frame when the blimp is not exactly level.
+void Blimp::rotate_BF_to_NE(Vector2f &vec)
 {
-    // see GCS_MAVLINK_Blimp::send_nav_controller_output()
-    distance = flightmode->wp_distance() * 0.01;
-    return true;
+    float ne_x = vec.x*ahrs.cos_yaw() - vec.y*ahrs.sin_yaw();
+    float ne_y = vec.x*ahrs.sin_yaw() + vec.y*ahrs.cos_yaw();
+    vec.x = ne_x;
+    vec.y = ne_y;
 }
 
-// vehicle specific waypoint info helpers
-bool Blimp::get_wp_bearing_deg(float &bearing) const
+void Blimp::rotate_NE_to_BF(Vector2f &vec)
 {
-    // see GCS_MAVLINK_Blimp::send_nav_controller_output()
-    bearing = flightmode->wp_bearing() * 0.01;
-    return true;
-}
+    float bf_x = vec.x*ahrs.cos_yaw() + vec.y*ahrs.sin_yaw();
+    float bf_y = -vec.x*ahrs.sin_yaw() + vec.y*ahrs.cos_yaw();
+    vec.x = bf_x;
+    vec.y = bf_y;
 
-// vehicle specific waypoint info helpers
-bool Blimp::get_wp_crosstrack_error_m(float &xtrack_error) const
-{
-    // see GCS_MAVLINK_Blimp::send_nav_controller_output()
-    xtrack_error = flightmode->crosstrack_error() * 0.01;
-    return true;
 }
 
 /*

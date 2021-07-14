@@ -9,3 +9,7 @@ void WEAK AP_HAL::dump_stack_trace()
 {
     // stack dump not available on this platform
 }
+void WEAK AP_HAL::dump_core_file()
+{
+    // core dump not available on this platform
+}

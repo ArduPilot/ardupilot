@@ -20,6 +20,7 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 from pymavlink.rotmat import Vector3
+from pysim import vehicleinfo
 
 import operator
 
@@ -522,7 +523,7 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def fly_mission(self, filename, mission_timeout=60.0, strict=True):
+    def fly_mission(self, filename, mission_timeout=60.0, strict=True, quadplane=False):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename, strict=strict)-1
@@ -530,7 +531,10 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
-        self.wait_statustext("Auto disarmed", timeout=60)
+        if quadplane:
+            self.wait_statustext("Throttle disarmed", timeout=60)
+        else:
+            self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
 
     def fly_do_reposition(self):
@@ -607,6 +611,27 @@ class AutoTestPlane(AutoTest):
         self.takeoff(100)
         self.set_parameter("LAND_TYPE", 0)
         self.fly_home_land_and_disarm(timeout=240)
+
+    def SmartBattery(self):
+        self.set_parameters({
+            "BATT_MONITOR": 16,
+            "BATT_BUS": 2,  # specified in SIM_I2C.cpp
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=10)
+        if m is None:
+            raise NotAchievedException("Did not get BATTERY_STATUS message")
+        if m.voltages_ext[0] == 65536:
+            raise NotAchievedException("Flag value rather than voltage")
+        if abs(m.voltages_ext[0] - 1000) > 300:
+            raise NotAchievedException("Did not get good ext voltage (got=%f)" %
+                                       (m.voltages_ext[0],))
+        self.arm_vehicle()
+        self.delay_sim_time(5)
+        self.disarm_vehicle()
+        if not self.current_onboard_log_contains_message("BCL2"):
+            raise NotAchievedException("Expected BCL2 message")
 
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
@@ -1280,8 +1305,7 @@ class AutoTestPlane(AutoTest):
             self.progress("Testing FENCE_ACTION_RTL with rally point")
 
             self.wait_ready_to_arm()
-            loc = self.home_position_as_mav_location()
-            self.location_offset_ne(loc, 50, -50)
+            loc = self.home_relative_loc_ne(50, -50)
 
             self.set_parameter("RALLY_TOTAL", 1)
             self.mav.mav.rally_point_send(target_system,
@@ -1342,8 +1366,7 @@ class AutoTestPlane(AutoTest):
         self.delay_sim_time(1)
 
         # Grab a location for rally point, and upload it.
-        rally_loc = self.home_position_as_mav_location()
-        self.location_offset_ne(rally_loc, -50, -50)
+        rally_loc = self.home_relative_loc_ne(-50, 50)
         self.set_parameter("RALLY_TOTAL", 1)
         self.mav.mav.rally_point_send(target_system,
                                       target_component,
@@ -2067,7 +2090,7 @@ class AutoTestPlane(AutoTest):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath("ArduPlane", model),
+            defaults_filepath=self.model_defaults_filepath(model),
             wipe=True)
 
         self.load_mission('CMAC-soar.txt', strict=False)
@@ -2170,12 +2193,44 @@ class AutoTestPlane(AutoTest):
         self.progress("Mission OK")
 
     def test_airspeed_drivers(self):
-        self.set_parameter("ARSPD_BUS", 2)
-        self.set_parameter("ARSPD_TYPE", 7)  # DLVR
+        airspeed_sensors = [
+            ("MS5525", 3, 1),
+            ("DLVR", 7, 2),
+        ]
+        for (name, t, bus) in airspeed_sensors:
+            self.context_push()
+            if bus is not None:
+                self.set_parameter("ARSPD2_BUS", bus)
+            self.set_parameter("ARSPD2_TYPE", t)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            # insert listener to compare airspeeds:
+            airspeed = [None, None]
+
+            def check_airspeeds(mav, m):
+                m_type = m.get_type()
+                if (m_type == 'NAMED_VALUE_FLOAT' and
+                        m.name == 'AS2'):
+                    airspeed[1] = m.value
+                elif m_type == 'VFR_HUD':
+                    airspeed[0] = m.airspeed
+                else:
+                    return
+                if airspeed[0] is None or airspeed[1] is None:
+                    return
+                delta = abs(airspeed[0] - airspeed[1])
+                if delta > 2:
+                    raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
+            self.install_message_hook_context(check_airspeeds)
+            self.fly_mission("ap1.txt", strict=False)
+            if airspeed[0] is None:
+                raise NotAchievedException("Never saw an airspeed1")
+            if airspeed[1] is None:
+                raise NotAchievedException("Never saw an airspeed2")
+            self.context_pop()
         self.reboot_sitl()
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.fly_mission("ap1.txt", strict=False)
 
     def fly_terrain_mission(self):
 
@@ -2405,6 +2460,11 @@ class AutoTestPlane(AutoTest):
 
         if not bad_value:
             raise NotAchievedException("uncompensated IMUs did not vary enough")
+
+        # the above tests change the internal persistent state of the
+        # vehicle in ways that autotest doesn't track (magically set
+        # parameters).  So wipe the vehicle's eeprom:
+        self.reset_SITL_commandline()
 
     def ekf_lane_switch(self):
 
@@ -2856,6 +2916,71 @@ class AutoTestPlane(AutoTest):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED
         )
 
+    def fly_each_frame(self):
+        vinfo = vehicleinfo.VehicleInfo()
+        vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        known_broken_frames = {
+            "firefly": "falls out of sky after transition",
+            "plane-tailsitter": "does not take off; immediately emits 'AP: Transition VTOL done' while on ground",
+            "quadplane-cl84": "falls out of sky instead of transitioning",
+            "quadplane-tilttri": "falls out of sky instead of transitioning",
+            "quadplane-tilttrivec": "loses attitude control and crashes",
+        }
+        for frame in sorted(vinfo_options["frames"].keys()):
+            self.start_subtest("Testing frame (%s)" % str(frame))
+            if frame in known_broken_frames:
+                self.progress("Actually, no I'm not - it is known-broken (%s)" %
+                              (known_broken_frames[frame]))
+                continue
+            frame_bits = vinfo_options["frames"][frame]
+            print("frame_bits: %s" % str(frame_bits))
+            if frame_bits.get("external", False):
+                self.progress("Actually, no I'm not - it is an external simulation")
+                continue
+            model = frame_bits.get("model", frame)
+            # the model string for Callisto has crap in it.... we
+            # should really have another entry in the vehicleinfo data
+            # to carry the path to the JSON.
+            actual_model = model.split(":")[0]
+            defaults = self.model_defaults_filepath(actual_model)
+            if type(defaults) != list:
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                ["--defaults", ','.join(defaults), ],
+                model=model,
+                wipe=True,
+            )
+            mission_file = "basic.txt"
+            quadplane = self.get_parameter('Q_ENABLE')
+            if quadplane:
+                mission_file = "basic-quadplane.txt"
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.fly_mission(mission_file, strict=False, quadplane=quadplane)
+            self.wait_disarmed()
+
+    def RCDisableAirspeedUse(self):
+        self.set_parameter("RC9_OPTION", 106)
+        self.delay_sim_time(5)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+        self.set_rc(9, 2000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            False,
+            True)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3040,6 +3165,18 @@ class AutoTestPlane(AutoTest):
             ("MAV_DO_AUX_FUNCTION",
              "Test triggering Auxillary Functions via mavlink",
              self.fly_aux_function),
+
+            ("SmartBattery",
+             "Test smart battery logging etc",
+             self.SmartBattery),
+
+            ("FlyEachFrame",
+             "Fly each supported internal frame",
+             self.fly_each_frame),
+
+            ("RCDisableAirspeedUse",
+             "Test RC DisableAirspeedUse option",
+             self.RCDisableAirspeedUse),
 
             ("LogUpload",
              "Log upload",

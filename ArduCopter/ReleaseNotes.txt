@@ -1,5 +1,53 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta5 30-Jun-2021
+Changes from 4.1.0-beta4
+1) Enhancements
+    a) Arming check of distance from EKF origin increased to 250km horizontally (was 50km), 50km vertically (was 500m)
+    b) Position control accuracy improved at very long distances (aka "Loiter bucketing")
+    c) Pre-arm check of FLTMODE_CH and RCx_OPTION conflict
+    d) QioTekZealotH743 autopilot support
+    e) Scripting support for set home and get EKF origin
+2) Bug fixes
+    a) Autonomous mode (Auto, RTL, etc) stopping point calculation fixed (could cause alt drop entering RTL)
+    b) Auto mode Internal Error fixed when origin and destination are very close
+    c) Auto mode Terrain following less bouncy and RNGFND_FILT param added for configurable filtering
+    d) EKF alt estimate more robust when using GPS-for-yaw
+    e) EKF origin altitudes consistent across cores even if user takes off with no GPS lock
+    f) Logging start does not affect EKF (EKF could become unhealthy due to timing delays)
+    g) Loiter rocking while landing fixed
+    h) Loiter speed fixed with low LOIT_ACC_MAX values
+    i) Loiter aggressive deceleration fixed (occured if vehicle was previously switched out of Loiter during decleration)
+    j) Longitude wrap fixed (allows flying across international date line)
+    k) MOT_THST_EXPO limits fixed to allow values between -1 and +1 (was 0.25 to +1)
+    l) Position jump fixed during GPS glitch and GPS/Non-GPS transitions
+    m) Proximity sensor status (used for object avoidance) fixed when using only upward facing lidar
+    n) Vibration failsafe fixed
+    o) 6DOF copter fixed
+------------------------------------------------------------------
+Copter 4.1.0-beta4 14-Jun-2021
+Changes from 4.1.0-beta3
+1) Minor enhancements (or changes)
+    a) CSRF telemetry improvements to power setting and pass param requests more quickly
+    b) CUAV X7/Nora supports ICM42688P IMU
+    c) Pix32v5 USB product string fixed and IMU heater enabled 
+    d) RunCam Hybrid supported (see RUNCAM_TYPE parameter)
+    e) VisualOdom feature removed from 1MB boards
+2) Bug fixes
+    a) BLHeli Auto only affects telemetry passthrough to ease setup
+    b) Circular complex fence radius not truncated
+    c) CubeOrange serial1/2 DMA fixed
+    d) EKF ground effect compensation fixed
+    e) ESC telemetry fixes including motor index on boards with I/O mcu
+    f) I/O MCU reset fix if user had disabled safety switch (recovery from reset would leave motors not spinning)
+    g) MSP temperature scaling fixed
+    h) Pilot yaw rate input during arming ignored
+    i) PreArm check of roll/pitch and yaw angle difference fixed
+    j) Serial port info file (@SYS/uarts.txt) easier to understand
+    k) Scheduler fix of premature run of tasks every 163 seconds
+    l) Visual odometry yaw alignment fixed
+    m) WPNAV_RADIUS never less than 5cm
+------------------------------------------------------------------
 Copter 4.1.0-beta3 24-May-2021
 Changes from 4.1.0-beta2
 1) Dshot bug fix for autopilots with I/O boards (CubeBlack, CubeOrange, etc)

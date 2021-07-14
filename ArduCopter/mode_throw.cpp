@@ -21,9 +21,11 @@ bool ModeThrow::init(bool ignore_checks)
 
     // initialise pos controller speed and acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
+    pos_control->set_correction_speed_accel_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z, BRAKE_MODE_DECEL_RATE);
 
     return true;
 }
@@ -171,8 +173,8 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // use position controller to stop
-        Vector3f vel;
-        Vector3f accel;
+        Vector2f vel;
+        Vector2f accel;
         pos_control->input_vel_accel_xy(vel, accel);
         pos_control->update_xy_controller();
 
