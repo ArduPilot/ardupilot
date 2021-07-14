@@ -679,7 +679,7 @@ void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 /*
   send a new GPS NMEA packet
  */
-void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
+void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance, bool enable_PLSV)
 {
     struct timeval tv;
     struct tm *tm;
@@ -744,6 +744,14 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      heading,
                      dstring);
 
+    if (enable_PLSV) {
+        _gps_nmea_printf(instance, "$PLSV,%04d,%04d,%04d,%02d,%02d,%02d",
+                         int(d->speedN*100),
+                         int(d->speedE*100),
+                         -int(d->speedD*100),
+                         40,40,40);
+    }
+    
     if (_sitl->gps_hdg_enabled[instance] == SITL::SITL::GPS_HEADING_HDT) {
         _gps_nmea_printf(instance, "$GPHDT,%.2f,T", d->yaw);
     }
@@ -1387,6 +1395,10 @@ void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct
 
         case SITL::SITL::GPS_TYPE_FILE:
             _update_gps_file(instance);
+            break;
+
+        case SITL::SITL::GPS_TYPE_NMEA_PLSV:
+            _update_gps_nmea(data, instance, true);
             break;
     }
 }
