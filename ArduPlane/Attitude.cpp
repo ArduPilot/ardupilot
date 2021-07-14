@@ -432,7 +432,7 @@ void Plane::stabilize()
     float speed_scaler = get_speed_scaler();
 
     uint32_t now = AP_HAL::millis();
-    if (quadplane.in_tailsitter_vtol_transition(now)) {
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
         /*
           during transition to vtol in a tailsitter try to raise the
           nose while keeping the wings level
@@ -467,7 +467,7 @@ void Plane::stabilize()
                 control_mode == &mode_qrtl ||
                 control_mode == &mode_qacro ||
                 control_mode == &mode_qautotune) &&
-               !quadplane.in_tailsitter_vtol_transition(now)) {
+               !quadplane.tailsitter.in_vtol_transition(now)) {
         quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
@@ -732,7 +732,7 @@ void Plane::update_load_factor(void)
         // no roll limits when inverted
         return;
     }
-    if (quadplane.tailsitter_active()) {
+    if (quadplane.tailsitter.active()) {
         // no limits while hovering
         return;
     }
