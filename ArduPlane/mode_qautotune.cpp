@@ -3,7 +3,11 @@
 
 bool ModeQAutotune::_enter()
 {
-    return plane.mode_qstabilize._enter();
+#if QAUTOTUNE_ENABLED
+    return plane.quadplane.qautotune.init();
+#else
+    return false;
+#endif
 }
 
 void ModeQAutotune::update()
@@ -18,3 +22,9 @@ void ModeQAutotune::_exit()
 #endif
 }
 
+void ModeQAutotune::run()
+{
+#if QAUTOTUNE_ENABLED
+    plane.quadplane.qautotune.run();
+#endif
+}
