@@ -729,6 +729,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
     case MAV_CMD_NAV_GUIDED_ENABLE:
     case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_LAND_REJOIN:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
     case MAV_CMD_DO_SET_ROI:
@@ -1009,6 +1010,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
 
+    case MAV_CMD_DO_LAND_REJOIN:                        // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
         break;
 
@@ -1465,6 +1467,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
         break;
 
+    case MAV_CMD_DO_LAND_REJOIN:                        // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
         break;
 
@@ -2109,27 +2112,16 @@ bool AP_Mission::jump_to_closest_mission_leg(void)
 
     uint16_t landing_start_index = 0;
     float min_distance = -1;
-    uint16_t possible_index = 0;
-    float possible_min_dist = -1;
 
     // Go through mission looking for shortest distance to landing
     for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
-        if (!read_cmd_from_storage(i, tmp)) {
-            continue;
-        }
-        if (tmp.id == MAV_CMD_DO_LAND_START) {
-            landing_start_index = possible_index;
-            min_distance = possible_min_dist;
+        if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_LAND_REJOIN)) {
             uint16_t tmp_index;
             float tmp_distance;
-            if (!distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc)){
-                continue;
-            }
-            if (min_distance < 0 || tmp_distance <= min_distance) {
-                // Only valid if this is not the final DO_LAND_START
-                possible_min_dist = tmp_distance;
-                possible_index = tmp_index;
+            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
+                min_distance = tmp_distance;
+                landing_start_index = tmp_index;
             }
         }
     }
@@ -2164,27 +2156,16 @@ bool AP_Mission::jump_to_shortest_mission_leg(void)
 
     uint16_t landing_start_index = 0;
     float min_distance = -1;
-    uint16_t possible_index = 0;
-    float possible_min_dist = -1;
 
     // Go through mission looking for shortest distance to landing
     for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
-        if (!read_cmd_from_storage(i, tmp)) {
-            continue;
-        }
-        if (tmp.id == MAV_CMD_DO_LAND_START) {
-            landing_start_index = possible_index;
-            min_distance = possible_min_dist;
+        if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_LAND_REJOIN)) {
             uint16_t tmp_index;
             float tmp_distance;
-            if (!(distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && distance_to_landing(tmp_index, tmp_distance, current_loc))) {
-                continue;
-            }
-            if (min_distance < 0 || tmp_distance <= min_distance) {
-                // Only valid if this is not the final DO_LAND_START
-                possible_min_dist = tmp_distance;
-                possible_index = tmp_index;
+            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && distance_to_landing(tmp_index, tmp_distance, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)) {
+                min_distance = tmp_distance;
+                landing_start_index = tmp_index;
             }
         }
     }
@@ -2323,7 +2304,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
     // run through remainder of mission to approximate a distance to landing
     for (uint8_t i=0; i<255; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
             // get next command
             if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 // we got to the end of the mission
@@ -2386,7 +2367,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
     uint16_t index = start_index;
     for (uint8_t i=0; i<255; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
             if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 break;
             } else {
@@ -2423,7 +2404,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
             }
         }
 
-        if (is_landing_type_cmd(temp_cmd.id) || ((temp_cmd.id == MAV_CMD_DO_LAND_START) && (temp_cmd.index != start_index))) {
+        if (is_landing_type_cmd(temp_cmd.id) || (temp_cmd.id == MAV_CMD_DO_LAND_START)) {
             // reached a landing!
             goto reset_do_jump_tracking;
         }
@@ -2529,6 +2510,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "EngineControl";
     case MAV_CMD_CONDITION_YAW:
         return "CondYaw";
+    case MAV_CMD_DO_LAND_REJOIN:
+        return "LandReJoin";
     case MAV_CMD_DO_LAND_START:
         return "LandStart";
     case MAV_CMD_NAV_DELAY:
