@@ -121,11 +121,6 @@ public:
 #endif
     }
 
-    // get number of PWM outputs enabled on FMU
-    static uint8_t get_pwm_count(void) {
-        return _singleton?_singleton->pwm_count.get():8;
-    }
-
     // get alternative config selection
     uint8_t get_alt_config(void) {
         return uint8_t(_alt_config.get());
@@ -210,7 +205,6 @@ private:
     static AP_BoardConfig *_singleton;
     
     AP_Int16 vehicleSerialNumber;
-    AP_Int8 pwm_count;
 
     struct {
         AP_Int8 safety_enable;
