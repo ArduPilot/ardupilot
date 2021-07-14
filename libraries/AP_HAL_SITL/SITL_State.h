@@ -166,7 +166,7 @@ private:
     void _update_gps_mtk19(const struct gps_data *d, uint8_t instance);
     uint8_t _gps_nmea_checksum(const char *s);
     void _gps_nmea_printf(uint8_t instance, const char *fmt, ...);
-    void _update_gps_nmea(const struct gps_data *d, uint8_t instance);
+    void _update_gps_nmea(const struct gps_data *d, uint8_t instance, bool enable_PLSV=false);
     void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload, uint8_t instance);
     void _update_gps_sbp(const struct gps_data *d, uint8_t instance);
     void _update_gps_sbp2(const struct gps_data *d, uint8_t instance);
