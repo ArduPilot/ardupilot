@@ -494,6 +494,12 @@ int32_t Mode::get_alt_above_ground_cm(void)
     return copter.current_loc.alt;
 }
 
+// returns true if pilot is reposition the vehicle manually in landing modes
+bool Mode::land_repo_active() const
+{
+    return copter.ap.land_repo_active;
+}
+
 void Mode::land_run_vertical_control(bool pause_descent)
 {
     float cmb_rate = 0;
@@ -640,6 +646,53 @@ void Mode::land_run_horizontal_control()
         attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
     }
 }
+
+#if PRECISION_LANDING == ENABLED
+// Go towards a position commanded by prec land state machine in order to retry landing
+// The passed in location is expected to be NED and in cm
+void Mode::land_retry_position(const Vector3f &retry_loc)
+{
+    if (!copter.failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+                set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+            }
+        }
+
+        if (g.land_repositioning) {
+            float target_roll = 0.0f;
+            float target_pitch = 0.0f;
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
+            // record if pilot has overridden roll or pitch
+            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!copter.ap.land_repo_active) {
+                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                }
+                // this flag will be checked by prec land state machine later and any further landing retires will be cancelled
+                copter.ap.land_repo_active = true;
+            }
+        }
+    }
+
+    // set the target
+    pos_control->set_pos_target_xy_cm(retry_loc.x, retry_loc.y);
+    pos_control->set_pos_target_z_cm(-retry_loc.z);
+
+    pos_control->update_z_controller();
+
+    // run loiter controller
+    loiter_nav->update();
+
+    const Vector3f thrust_vector{loiter_nav->get_thrust_vector()};
+
+    // roll, pitch from position controller, yaw heading from auto_heading()
+    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
+}
+#endif
 
 float Mode::throttle_hover() const
 {

@@ -22,6 +22,12 @@ bool ModeRTL::init(bool ignore_checks)
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precland state machine
+    precland_statemachine.init();
+#endif
+
     return true;
 }
 
@@ -405,8 +411,12 @@ void ModeRTL::land_run(bool disarm_on_land)
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    land_run_horizontal_control();
-    land_run_vertical_control();
+#if PRECISION_LANDING == ENABLED
+        // the state machine takes care of the entire landing procedure
+        precland_statemachine.update_precland_state_machine();
+#else
+        run_land_controllers();
+#endif
 }
 
 void ModeRTL::build_path()

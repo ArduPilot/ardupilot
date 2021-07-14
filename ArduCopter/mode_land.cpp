@@ -40,6 +40,11 @@ bool ModeLand::init(bool ignore_checks)
     copter.fence.auto_disable_fence_for_landing();
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // initialise precland state machine
+    precland_statemachine.init();
+#endif
+
     return true;
 }
 
@@ -77,9 +82,12 @@ void ModeLand::gps_run()
         if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
         }
-
-        land_run_horizontal_control();
-        land_run_vertical_control(land_pause);
+#if PRECISION_LANDING == ENABLED
+        // the state machine takes care of the entire landing procedure
+        precland_statemachine.update_precland_state_machine();
+#else
+        run_land_controllers(land_pause);
+#endif
     }
 }
 
