@@ -1468,7 +1468,6 @@ private:
     bool throw_position_good() const;
     bool throw_height_good() const;
     bool throw_attitude_good() const;
-    bool throttle_is_unlimited() const;
 
     // Throw stages
     enum ThrowModeStage {
