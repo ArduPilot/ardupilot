@@ -59,24 +59,21 @@ protected:
     void read(void) override;
 
     // reads the pack full charge capacity
-    // returns true if the read was successful, or if we already knew the pack capacity
-    bool read_full_charge_capacity(void);
+    void read_full_charge_capacity(void);
 
     // reads the remaining capacity
-    // returns true if the read was successful, which is only considered to be the
-    // we know the full charge capacity
-    bool read_remaining_capacity(void);
+    // which will only be read if we know the full charge capacity (accounting for battery degradation)
+    void read_remaining_capacity(void);
 
     // return a scaler that should be multiplied by the battery's reported capacity numbers to arrive at the actual capacity in mAh
     virtual uint16_t get_capacity_scaler() const { return 1; }
 
     // reads the temperature word from the battery
-    // returns true if the read was successful
-    virtual bool read_temp(void);
+    virtual void read_temp(void);
 
     // reads the serial number if it's not already known
-    // returns true if the read was successful, or the number was already known
-    bool read_serial_number(void);
+    // returns if the serial number was already known
+    void read_serial_number(void);
 
     // reads the battery's cycle count
     void read_cycle_count();
