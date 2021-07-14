@@ -53,7 +53,6 @@ public:
 
     void control_run(void);
     void control_auto(void);
-    bool init_mode(void);
     bool setup(void);
 
     void vtol_position_controller(void);
@@ -256,30 +255,16 @@ private:
 
     // update yaw target for tiltrotor transition
     void update_yaw_target();
-    
-    // main entry points for VTOL flight modes
-    void init_stabilize(void);
-    void control_stabilize(void);
 
     void check_attitude_relax(void);
-    void init_qacro(void);
     float get_pilot_throttle(void);
-    void control_qacro(void);
-    void init_hover(void);
     void control_hover(void);
     void relax_attitude_control();
 
-
-    void init_loiter(void);
-    void init_qland(void);
-    void control_loiter(void);
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
 
-    void init_qrtl(void);
-    void control_qrtl(void);
-    
     float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
