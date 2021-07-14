@@ -10,8 +10,14 @@
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "fcntl.h"
+
+#ifndef AP_XRCE_ENABLED
+#define AP_XRCE_ENABLED (BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_XRCE_ENABLED
+
 #define STREAM_HISTORY 8
-#define BUFFER_SIZE_UDP    UXR_CONFIG_UDP_TRANSPORT_MTU * STREAM_HISTORY
 #define BUFFER_SIZE_SERIAL UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY
 
 extern const AP_HAL::HAL& hal;
@@ -23,47 +29,44 @@ private:
     // Initialize
     uint32_t max_topics; // Maximum number of topics the client can use
     
-    
-    char* ip;
-    char* port;
-    
-    uint32_t fd;
+    // Serial Device 
+    uint8_t fd;
     uint8_t relativeSerialAgentAddr;
     uint8_t relativeSerialClientAddr;
-    uxrUDPTransport udp_transport; // Client uxr serial transport
+    
     uxrSerialTransport serial_transport; // client uxr serial transport
     uxrSession session; //Session
 
     // Input Stream
 
-    uint8_t input_reliable_stream[BUFFER_SIZE_UDP];
+    uint8_t input_reliable_stream[BUFFER_SIZE_SERIAL];
     uxrStreamId reliable_in;
     
     // Output Stream
 
-    uint8_t output_reliable_stream[BUFFER_SIZE_UDP];
+    uint8_t output_reliable_stream[BUFFER_SIZE_SERIAL];
     uxrStreamId reliable_out;
     
     // Create
     // Participant
 
-    uxrObjectId participant_id ; 
-    uint16_t participant_req ;
+    uxrObjectId participant_id; 
+    uint16_t participant_req;
     
     // Topic
     
-    uxrObjectId topic_id ; 
-    uint16_t topic_req ;
+    uxrObjectId topic_id; 
+    uint16_t topic_req;
     
     // Publisher
     
-    uxrObjectId pub_id ; 
-    uint16_t pub_req ;
+    uxrObjectId pub_id; 
+    uint16_t pub_req;
     
     // DataWriter
     
-    uxrObjectId dwriter_id ;
-    uint16_t dwriter_req ;
+    uxrObjectId dwriter_id;
+    uint16_t dwriter_req;
     
     //Status requests
     uint8_t status[4];
@@ -77,23 +80,15 @@ private:
 
     // connection parametrics
     bool connected;
-    bool use_serial;
 
 public:
     // Constructor (takes maximum number of topics as argument,by default it is 1)
-    AP_XRCE_Client(uint32_t maxtopics=1,bool useserial=false) {
+    AP_XRCE_Client(uint32_t maxtopics=1) {
+        
         this->max_topics = maxtopics;
-        ip=(char *)"127.0.0.1";
-        port=(char *)"14551";
-        this->use_serial=useserial;
-        if(this->use_serial) {
-            this->relativeSerialClientAddr=1;
-            this->relativeSerialAgentAddr=0;
-        }
-        else{
-            ip=(char *)"127.0.0.1";
-            port=(char *)"14551";
-        }
+        
+        relativeSerialClientAddr=0;
+        relativeSerialAgentAddr=1;
         
         connected=true;
         
@@ -115,3 +110,4 @@ public:
     AP_HAL::Semaphore* get_clientsemaphore();
 };
 
+#endif
