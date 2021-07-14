@@ -214,6 +214,65 @@ bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
     return true;
 }
 
+// get the highest ESC current if available, returns true if there is valid data for at least one ESC
+bool AP_ESC_Telem::get_highest_current(float& amps) const
+{
+    uint8_t valid_escs = 0;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        float temp_amps;
+        if (get_current(i, temp_amps)) {
+            amps = MAX(amps, temp_amps);
+            valid_escs++;
+        }
+    }
+
+    return valid_escs > 0;
+}
+
+// get the average ESC current between all ESCs if available, returns true if there is valid data for at least one ESC
+bool AP_ESC_Telem::get_average_current(float& amps_avg) const
+{
+    float amps_acc = 0.0f;
+    uint8_t valid_escs = 0;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        float esc_amps;
+        if (get_current(i, esc_amps)) {
+            amps_acc += esc_amps;
+            valid_escs++;
+        }
+    }
+
+    if (valid_escs > 0) {
+        amps_avg = amps_acc / valid_escs;
+        return true;
+    }
+
+    return false;
+}
+
+// get the sum of the ESCs measured current if available, returns true if there is valid data for at least one ESC
+bool AP_ESC_Telem::get_total_current(float& amps) const
+{
+    float amps_acc = 0.0f;
+    uint8_t valid_escs = 0;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        float esc_amps;
+        if (get_current(i, esc_amps)) {
+            amps_acc += esc_amps;
+        }
+    }
+
+    if (valid_escs > 0) {
+        amps = amps_acc;
+        return true;
+    }
+
+    return false;
+}
+
 // get an individual ESC's voltage in Volt if available, returns true on success
 bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 {
