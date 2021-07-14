@@ -45,13 +45,19 @@ void Plane::set_control_channels(void)
     channel_airbrake = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
 
     // update manual forward throttle channel assignment
+#if HAL_QUADPLANE_ENABLED
     quadplane.rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+#endif
 
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
     }
 
-    if (!quadplane.enable) {
+    bool quadplane_available = false;
+#if HAL_QUADPLANE_ENABLED
+    quadplane_available = quadplane.available();
+#endif
+    if (!quadplane_available) {
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
         // scaling
@@ -207,7 +213,9 @@ void Plane::read_radio()
     rudder_arm_disarm_check();
 
     // potentially swap inputs for tailsitters
+#if HAL_QUADPLANE_ENABLED
     quadplane.tailsitter_check_input();
+#endif
 
     // check for transmitter tuning changes
     tuning.check_input(control_mode->mode_number());
@@ -254,6 +262,7 @@ void Plane::control_failsafe()
         throttle_nudge = 0;
 
         switch (control_mode->mode_number()) {
+#if HAL_QUADPLANE_ENABLED
             case Mode::Number::QSTABILIZE:
             case Mode::Number::QHOVER:
             case Mode::Number::QLOITER:
@@ -267,6 +276,7 @@ void Plane::control_failsafe()
                     break;
                 }
                 FALLTHROUGH;
+#endif
             default:
                 channel_throttle->set_control_in(0);
                 break;

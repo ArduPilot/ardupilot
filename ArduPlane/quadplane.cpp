@@ -1,4 +1,7 @@
 #include "Plane.h"
+
+#if HAL_QUADPLANE_ENABLED
+
 #include "AC_AttitudeControl/AC_AttitudeControl_TS.h"
 
 const AP_Param::GroupInfo QuadPlane::var_info[] = {
@@ -4169,3 +4172,5 @@ void QuadPlane::set_desired_spool_state(AP_Motors::DesiredSpoolState state)
 }
 
 QuadPlane *QuadPlane::_singleton = nullptr;
+
+#endif  // HAL_QUADPLANE_ENABLED

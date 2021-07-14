@@ -16,11 +16,13 @@ AP_AdvancedFailsafe_Plane::AP_AdvancedFailsafe_Plane(AP_Mission &_mission) :
  */
 void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 {
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available() && _terminate_action == TERMINATE_ACTION_LAND) {
         // perform a VTOL landing
         plane.set_mode(plane.mode_qland, ModeReason::FENCE_BREACHED);
         return;
     }
+#endif
 
     plane.g2.servo_channels.disable_passthrough(true);
     
@@ -50,8 +52,10 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 
     plane.servos_output();
 
+#if HAL_QUADPLANE_ENABLED
     plane.quadplane.afs_terminate();
-    
+#endif
+
     // also disarm to ensure that ignition is cut
     plane.arming.disarm(AP_Arming::Method::AFS);
 }
@@ -78,11 +82,13 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available()) {
         // setup AP_Motors outputs for failsafe
         uint16_t mask = plane.quadplane.motors->get_motor_mask();
         hal.rcout->set_failsafe_pwm(mask, plane.quadplane.thr_min_pwm);
     }
+#endif
 }
 
 /*

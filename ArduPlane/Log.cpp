@@ -10,6 +10,7 @@ void Plane::Log_Write_Attitude(void)
     targets.y = nav_pitch_cd;
     targets.z = 0; //Plane does not have the concept of navyaw. This is a placeholder.
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
         // we need the attitude targets from the AC_AttitudeControl controller, as they
         // account for the acceleration limits.
@@ -20,8 +21,13 @@ void Plane::Log_Write_Attitude(void)
         targets *= degrees(100.0f);
         quadplane.ahrs_view->Write_AttitudeView(targets);
     } else {
+#endif
         ahrs.Write_Attitude(targets);
+#if HAL_QUADPLANE_ENABLED
     }
+#endif
+
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
         // log quadplane PIDs separately from fixed wing PIDs
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
@@ -29,6 +35,7 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
         logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
     }
+#endif
 
     logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
     logger.Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
@@ -379,8 +386,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Sscl: speed scalar for tailsitter control surfaces
 // @Field: Trn: Transistion state
 // @Field: Ast: Q assist active state
+#if HAL_QUADPLANE_ENABLED
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "QffffffeccffBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trn,Ast", "s----mmmnn----", "F----00000-0--" },
+#endif
 
 // @LoggerMessage: PIQR,PIQP,PIQY,PIQA
 // @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
@@ -514,10 +523,12 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.initialised) {
         logger.Write_MessageF("QuadPlane Frame: %s/%s", quadplane.motors->get_frame_string(),
                                                         quadplane.motors->get_type_string());
     }
+#endif
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();

@@ -29,17 +29,24 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         AP_Mission::Mission_Command next_nav_cmd;
         const uint16_t next_index = mission.get_current_nav_index() + 1;
-        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND) &&
-            !quadplane.is_vtol_land(next_nav_cmd.id);
+        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND);
+#if HAL_QUADPLANE_ENABLED
+        // vtol landing is not considered to be a landing approach
+        if (!quadplane.is_vtol_land(next_nav_cmd.id)) {
+            auto_state.wp_is_land_approach = false;
+        }
+#endif
     }
 
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         crash_state.is_crashed = false;
+#if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_takeoff(cmd.id)) {
             return quadplane.do_vtol_takeoff(cmd);
         }
+#endif
         do_takeoff(cmd);
         break;
 
@@ -48,10 +55,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
+#if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
             crash_state.is_crashed = false;
             return quadplane.do_vtol_land(cmd);            
         }
+#endif
         do_land(cmd);
         break;
 
@@ -83,6 +92,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_altitude_wait(cmd);
         break;
 
+#if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         crash_state.is_crashed = false;
         return quadplane.do_vtol_takeoff(cmd);
@@ -99,7 +109,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         } else {
             return quadplane.do_vtol_land(cmd);
         }
-        
+#endif
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -175,9 +186,11 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     case MAV_CMD_DO_VTOL_TRANSITION:
         plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
         break;
+#endif
 
     case MAV_CMD_DO_ENGINE_CONTROL:
         plane.g2.ice_control.engine_control(cmd.content.do_engine_control.start_control,
@@ -207,18 +220,22 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_takeoff(cmd.id)) {
             return quadplane.verify_vtol_takeoff(cmd);
         }
+#endif
         return verify_takeoff();
 
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_LAND:
+#if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
             return quadplane.verify_vtol_land();            
         }
+#endif
         if (flight_stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_ABORT_LAND) {
             return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
 
@@ -255,6 +272,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_ALTITUDE_WAIT:
         return verify_altitude_wait(cmd);
 
+#if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return quadplane.verify_vtol_takeoff(cmd);
 
@@ -266,6 +284,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         } else {
             return quadplane.verify_vtol_land();
         }
+#endif
 
     // Conditional commands
 
@@ -387,6 +406,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 #endif
 }
 
+#if HAL_QUADPLANE_ENABLED
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 {
     //set target alt
@@ -405,6 +425,7 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
 }
+#endif
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 {
@@ -950,6 +971,7 @@ void Plane::exit_mission_callback()
     }
 }
 
+#if HAL_QUADPLANE_ENABLED
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
@@ -957,6 +979,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             {
                 // fly home and loiter at RTL alt
                 update_loiter(fabsf(quadplane.fw_land_approach_radius));
+
                 if (plane.reached_loiter_target()) {
                     // decend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
@@ -1053,13 +1076,16 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 
     return false;
 }
+#endif
 
 bool Plane::verify_loiter_heading(bool init)
 {
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_auto()) {
         // skip heading verify if in VTOL auto
         return true;
     }
+#endif
 
     //Get the lat/lon of next Nav waypoint after this one:
     AP_Mission::Mission_Command next_nav_cmd;

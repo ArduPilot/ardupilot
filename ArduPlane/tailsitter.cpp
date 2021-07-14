@@ -21,6 +21,7 @@
 #include <math.h>
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
 /*
   return true when flying a tailsitter
  */
@@ -270,6 +271,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
         return true;
     }
     // for vectored tailsitters at zero pilot throttle
+#if HAL_QUADPLANE_ENABLED
     if ((plane.quadplane.get_pilot_throttle() < .05f) && plane.quadplane._is_vectored) {
         // if we are not moving (hence on the ground?) or don't know
         // transition immediately to tilt motors up and prevent prop strikes
@@ -278,6 +280,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
             return true;
         }
     }
+#endif
     const float trans_angle = get_tailsitter_transition_angle_vtol();
     if (labs(plane.ahrs.pitch_sensor) > trans_angle*100) {
         gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
@@ -487,3 +490,5 @@ void QuadPlane::tailsitter_speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
+
+#endif

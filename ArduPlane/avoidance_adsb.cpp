@@ -27,8 +27,11 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
     if (plane.control_mode == &plane.mode_manual ||
         (plane.control_mode == &plane.mode_auto && !plane.auto_state.takeoff_complete) ||
         (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) || // TODO: consider allowing action during approach
-        plane.control_mode == &plane.mode_autotune ||
-        plane.control_mode == &plane.mode_qland) {
+        plane.control_mode == &plane.mode_autotune
+#if HAL_QUADPLANE_ENABLED
+        || plane.control_mode == &plane.mode_qland
+#endif
+        ) {
         actual_action = MAV_COLLISION_ACTION_NONE;
     }
 
@@ -43,9 +46,12 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
 
         case MAV_COLLISION_ACTION_HOVER:
             if (failsafe_state_change) {
+#if HAL_QUADPLANE_ENABLED
                 if (plane.quadplane.is_flying()) {
                     plane.set_mode(plane.mode_qloiter, ModeReason::AVOIDANCE);
-                } else {
+                } else
+#endif
+                {
                     plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE);
                 }
             }

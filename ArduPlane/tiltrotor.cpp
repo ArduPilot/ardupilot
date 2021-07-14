@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 /*
   control code for tiltrotors and tiltwings. Enabled by setting
   Q_TILT_MASK to a non-zero value
@@ -468,3 +470,5 @@ void QuadPlane::tiltrotor_bicopter(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  tilt_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 }
+
+#endif  // HAL_QUADPLANE_ENABLED

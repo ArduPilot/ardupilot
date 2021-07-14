@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQRTL::_enter()
 {
     return plane.mode_qstabilize._enter();
@@ -43,3 +45,4 @@ bool ModeQRTL::update_target_altitude()
     return true;
 }
 
+#endif
