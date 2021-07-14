@@ -60,14 +60,14 @@
 #include <AP_LandingGear/AP_LandingGear.h>  // Landing Gear library
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
-#include <AP_Arming/AP_Arming.h>
-#include <AP_SmartRTL/AP_SmartRTL.h>
-#include <AP_TempCalibration/AP_TempCalibration.h>
-#include <AC_AutoTune/AC_AutoTune.h>
-#include <AP_Parachute/AP_Parachute.h>
-#include <AC_Sprayer/AC_Sprayer.h>
-#include <AP_ADSB/AP_ADSB.h>
-#include <AP_Proximity/AP_Proximity.h>
+#include <AP_Arming/AP_Arming.h>            // ArduPilot motor arming library
+#include <AP_SmartRTL/AP_SmartRTL.h>        // ArduPilot Smart Return To Launch Mode (SRTL) library
+#include <AP_TempCalibration/AP_TempCalibration.h>  // temperature calibration library
+#include <AC_AutoTune/AC_AutoTune.h>        // ArduCopter autotune library. support for autotune of multirotors.
+#include <AP_Parachute/AP_Parachute.h>      // ArduPilot parachute release library
+#include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
+#include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
+#include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 
 // Configuration
 #include "defines.h"

@@ -628,9 +628,6 @@ def _build_recursion(bld):
     if bld.env.ENABLE_ONVIF:
         dirs_to_recurse.append('libraries/AP_ONVIF')
 
-    if bld.env.ENABLE_XRCE_DDS:
-        dirs_to_recurse.append('libraries/AP_XRCE_Client')
-
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
             bld,
