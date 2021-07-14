@@ -164,6 +164,32 @@ public:
 
     AP_ADSB::Type get_type(uint8_t instance) const;
 
+    struct {
+        // from gdl90 status message and ownship message
+        bool      airborne;
+        bool      interrogatedSinceLast;
+        bool      identActive;
+        bool      x_bit;
+        bool      modeAEnabled;
+        bool      modeCEnabled;
+        bool      modeSEnabled;
+        bool      es1090TxEnabled;
+        uint16_t  squawkCode;
+        uint8_t   NIC;
+        uint8_t   NACp;
+        uint8_t   temperature;
+        char      flight_id[8];
+
+        // no connection to ping200x
+        bool      noComms = 1;
+
+        // from gdl90 heartbeat message
+        bool      functionFailureGnssNo3dFix;
+        bool      functionFailureGnssUnavailable;
+        bool      functionFailureTransmitSystem;
+        bool      maintenanceRequired;
+    } tx_status;
+
 private:
     static AP_ADSB *_singleton;
 
@@ -222,31 +248,6 @@ private:
         uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
         uint16_t    send_index[MAVLINK_COMM_NUM_BUFFERS];
     } in_state;
-
-    struct {
-        // from gdl90 status message
-        bool      interrogatedSinceLast;
-        bool      airborne;
-        bool      identActive;
-        bool      modeAEnabled;
-        bool      modeCEnabled;
-        bool      modeSEnabled;
-        bool      es1090TxEnabled;
-        uint16_t  squawkCode;
-        bool      x_bit;
-        uint8_t   NACp;
-        uint8_t   NIC;
-        uint8_t   temperature;
-
-        // from gdl90 heartbeat message
-        bool      maintenanceRequired;
-        bool      functionFailureGnssUnavailable;
-        bool      functionFailureGnssNo3dFix;
-        bool      functionFailureTransmitSystem;
-
-        // no connection to ping200x
-        bool      noComms = 1;
-    } tx_status;
 
     // ADSB-OUT state. Maintains export data
     struct {

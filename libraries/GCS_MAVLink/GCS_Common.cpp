@@ -4816,12 +4816,31 @@ void GCS_MAVLINK::send_water_depth() const
 
 void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 {
-    AP_ADSB adsb = AP_ADSB::get_singleton();
+    AP_ADSB *adsb = AP_ADSB::get_singleton();
     if(adsb == nullptr) return;
     mavlink_msg_uavionix_adsb_out_status_send(
         chan,
-        AP_HAL::millis(),
-        adsb->tx_status.
+        /*uint8_t state*/
+            !adsb->tx_status.airborne << 0 | // this field is "ON_GROUND" in MAVLink message, so flip it
+            adsb->tx_status.interrogatedSinceLast << 1 |
+            adsb->tx_status.identActive << 2 |
+            adsb->tx_status.x_bit << 3 |
+            adsb->tx_status.modeAEnabled << 4 |
+            adsb->tx_status.modeCEnabled << 5 |
+            adsb->tx_status.modeSEnabled << 6 |
+            adsb->tx_status.es1090TxEnabled << 7,
+        adsb->tx_status.squawkCode,
+        /*uint8_t NIC_NACp*/
+            adsb->tx_status.NIC << 0 |
+            adsb->tx_status.NACp << 4,
+        adsb->tx_status.temperature,
+        /*uint8_t fault*/
+            adsb->tx_status.noComms << 3 |
+            adsb->tx_status.functionFailureGnssNo3dFix << 4 |
+            adsb->tx_status.functionFailureGnssUnavailable << 5 |
+            adsb->tx_status.functionFailureTransmitSystem << 6 |
+            adsb->tx_status.maintenanceRequired << 7,
+        adsb->tx_status.flight_id
     );
 }
 
@@ -5140,7 +5159,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     #if HAL_ADSB_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
-        CHECK_PAYLOAD_SIZE(ADSB_OUT_STATUS);
+        CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
         break;
     #endif

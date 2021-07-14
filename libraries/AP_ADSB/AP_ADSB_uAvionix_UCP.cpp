@@ -87,6 +87,15 @@ void AP_ADSB_uAvionix_UCP::update()
         run_state.last_packet_GPS_ms = now_ms;
         send_GPS_Data();
     }
+
+    // if the transponder has stopped giving us the data needed to 
+    // fill the transponder status mavlink message, reset that data.
+    if ((now_ms - run_state.last_packet_Transponder_Status_ms >= 10000 && run_state.last_packet_Transponder_Status_ms != 0)
+        || (now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 10000 && run_state.last_packet_Transponder_Heartbeat_ms != 0)
+        || (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000 && run_state.last_packet_Transponder_Ownship_ms != 0))
+    {
+        _frontend.tx_status.noComms = 1;
+    }
 }
 
 
@@ -103,8 +112,9 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         _frontend.tx_status.functionFailureGnssUnavailable = rx.decoded.heartbeat.status.two.functionFailureGnssUnavailable;
         _frontend.tx_status.functionFailureGnssNo3dFix = rx.decoded.heartbeat.status.two.functionFailureGnssNo3dFix;
         _frontend.tx_status.functionFailureTransmitSystem = rx.decoded.heartbeat.status.two.functionFailureTransmitSystem;
+        _frontend.tx_status.noComms = 0;
         
-        const uint32_t now_ms = AP_HAL::millis();
+        const uint32_t now_ms = run_state.last_packet_Transponder_Heartbeat_ms = AP_HAL::millis();
         if (run_state.first_packet_Heartbeat_ms > 0){
         // Disabled entirely for now. GPS messages will simply not be sent. 
         // Controls whether to send GPS messages based on whether the transponder has its own GPS. 
@@ -114,11 +124,9 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         //     }
         } else {
             run_state.first_packet_Heartbeat_ms = now_ms;
-            _frontend.tx_status.noComms = 0;
         }
-
+        }
         break;
-        }
 
     case GDL90_ID_IDENTIFICATION:
         // The Identification message contains information used to identify the connected device. The
@@ -155,9 +163,12 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         // Ownship message will be transmitted with a period of one second regardless of data status or
         // update for the UCP protocol. All fields in the ownship message are transmitted MSB first
         memcpy(&rx.decoded.ownship_report, msg.raw, sizeof(rx.decoded.ownship_report));
-        _frontend.tx_status.airborne = rx.decoded.ownship_report.report.misc >= 8;
+        run_state.last_packet_Transponder_Ownship_ms = AP_HAL::millis();        
+        _frontend.tx_status.airborne = 1;// (rx.decoded.ownship_report.report.altitudeMisc & 8) != 0; // for some reason this doesn't match "airborne" in the ownship report, so we hardcode instead
         _frontend.tx_status.NACp = rx.decoded.ownship_report.report.NACp;
         _frontend.tx_status.NIC = rx.decoded.ownship_report.report.NIC;
+        memcpy(_frontend.tx_status.flight_id, rx.decoded.ownship_report.report.callsign, sizeof(_frontend.tx_status.flight_id));
+        _frontend.tx_status.noComms = 0;
         // _frontend.tx_status.temperature = rx.decoded.ownship_report.report.temperature; // there is no message in the vocabulary of the 200x that has board temperature
         break;
 
@@ -174,6 +185,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
     case GDL90_ID_TRANSPONDER_STATUS:
         memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
+        run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
         _frontend.tx_status.identActive = rx.decoded.transponder_status.identActive;
         _frontend.tx_status.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
         _frontend.tx_status.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;
@@ -181,6 +193,8 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         _frontend.tx_status.es1090TxEnabled = rx.decoded.transponder_status.es1090TxEnabled;
         _frontend.tx_status.squawkCode = rx.decoded.transponder_status.squawkCode;
         _frontend.tx_status.x_bit = rx.decoded.transponder_status.x_bit;
+        _frontend.tx_status.noComms = 0;
+
         if (!run_state.first_packet_Tx_Status_recieved)
         {
             // set initial control message contents to transponder defaults
@@ -190,8 +204,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.ctrl.es1090TxEnabled = _frontend.tx_status.es1090TxEnabled;
             _frontend.out_state.ctrl.squawkCode = _frontend.tx_status.squawkCode;
             _frontend.out_state.ctrl.x_bit = _frontend.tx_status.x_bit;
-
-            _frontend.tx_status.noComms = 0;
             run_state.first_packet_Tx_Status_recieved = true;
         }
         break;
