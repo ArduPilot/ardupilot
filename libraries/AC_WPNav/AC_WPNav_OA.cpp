@@ -87,7 +87,9 @@ bool AC_WPNav_OA::update_wpnav()
         Location oa_origin_new, oa_destination_new;
         AP_OAPathPlanner::OAPathPlannerUsed path_planner_used = AP_OAPathPlanner::OAPathPlannerUsed::None;
         const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc, origin_loc, destination_loc, oa_origin_new, oa_destination_new, path_planner_used);
+
         switch (oa_retstate) {
+
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
                 // object avoidance has become inactive so reset target to original destination
@@ -95,6 +97,7 @@ bool AC_WPNav_OA::update_wpnav()
                 _oa_state = oa_retstate;
             }
             break;
+
         case AP_OAPathPlanner::OA_PROCESSING:
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error stop the vehicle
@@ -109,6 +112,7 @@ bool AC_WPNav_OA::update_wpnav()
                 }
             }
             break;
+
         case AP_OAPathPlanner::OA_SUCCESS:
 
             // handling of returned destination depends upon path planner used
@@ -170,8 +174,7 @@ bool AC_WPNav_OA::update_wpnav()
                 return true;
             }
 
-            case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerVertical:
-            {
+            case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerVertical: {
                 _oa_state = oa_retstate;
                 _oa_destination = oa_destination_new;
 
@@ -190,14 +193,12 @@ bool AC_WPNav_OA::update_wpnav()
                 // update horizontal position controller (vertical is updated in vehicle code)
                 _pos_control.update_xy_controller();
 
-                // Note: do not update yaw or yaw rate as we do for BendyRuler horizontal
-
                 // return success without calling parent AC_WPNav
                 return true;
             }
 
-            } // case AP_OAPathPlanner::OA_SUCCESS
-        } // switch (oa_retstate)
+            }
+        }
     }
 
     // run the non-OA update
