@@ -2571,6 +2571,9 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
 {
+    if (isnan(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
     const uint32_t mavlink_id = (uint32_t)packet.param1;
     const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
     if (id == MSG_LAST) {
@@ -4279,18 +4282,18 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.command = in.command;
     out.current = 0;
     out.autocontinue = 0;
-    out.param1 = in.param1;
-    out.param2 = in.param2;
-    out.param3 = in.param3;
-    out.param4 = in.param4;
+    out.param1 = isnan(in.param1)?std::numeric_limits<double>::quiet_NaN():in.param1;
+    out.param2 = isnan(in.param2)?std::numeric_limits<double>::quiet_NaN():in.param2;
+    out.param3 = isnan(in.param3)?std::numeric_limits<double>::quiet_NaN():in.param3;
+    out.param4 = isnan(in.param4)?std::numeric_limits<double>::quiet_NaN():in.param4;
     if (command_long_stores_location((MAV_CMD)in.command)) {
         out.x = in.param5 *1e7;
         out.y = in.param6 *1e7;
     } else {
-        out.x = in.param5;
-        out.y = in.param6;
+        out.x = isnan(in.param5)?std::numeric_limits<double>::quiet_NaN():in.param5;
+        out.y = isnan(in.param6)?std::numeric_limits<double>::quiet_NaN():in.param6;
     }
-    out.z = in.param7;
+    out.z = isnan(in.param7)?std::numeric_limits<double>::quiet_NaN():in.param7;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
