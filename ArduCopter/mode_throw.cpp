@@ -57,7 +57,8 @@ void ModeThrow::run()
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
 
-    } else if (stage == Throw_Wait_Throttle_Unlimited && throttle_is_unlimited()) {
+    } else if (stage == Throw_Wait_Throttle_Unlimited &&
+               motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
         stage = Throw_Uprighting;
     } else if (stage == Throw_Uprighting && throw_attitude_good()) {
@@ -305,19 +306,4 @@ bool ModeThrow::throw_position_good() const
     return (pos_control->get_pos_error_xy_cm() < 50.0f);
 }
 
-bool ModeThrow::throttle_is_unlimited() const
-{
-    switch (motors->get_spool_state()) {
-    case AP_Motors::SpoolState::SHUT_DOWN:
-    case AP_Motors::SpoolState::GROUND_IDLE:
-    case AP_Motors::SpoolState::SPOOLING_UP:
-        return false;
-    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
-        return true;
-    case AP_Motors::SpoolState::SPOOLING_DOWN:
-        return false;
-    }
-    // compiler ensures we never get here
-    return true;
-}
 #endif
