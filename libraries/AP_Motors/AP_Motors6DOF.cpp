@@ -195,6 +195,15 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         add_motor_raw_6dof(AP_MOTORS_MOT_4,     -1.0f,          0,              0,              -1.0f,              0,                  0,              4);
         add_motor_raw_6dof(AP_MOTORS_MOT_5,     0,              0,              0,              0,                  0,                  1.0f,           5);
         break;
+    case SUB_FRAME_QUAD_1:
+        _frame_class_string = "QUAD_1";
+        add_motor_raw_6dof(AP_MOTORS_MOT_1,    -1.0f,          -1.0f,              1.0f,           0,                  1.0f,               0,              1);
+        add_motor_raw_6dof(AP_MOTORS_MOT_2,     1.0f,          -1.0f,             -1.0f,           0,                  1.0f,               0,              2);
+        add_motor_raw_6dof(AP_MOTORS_MOT_3,    -1.0f,           1.0f,             -1.0f,           0,                  1.0f,               0,              3);
+        add_motor_raw_6dof(AP_MOTORS_MOT_4,     1.0f,           1.0f,              1.0f,           0,                  1.0f,               0,              4);
+        add_motor_raw_6dof(AP_MOTORS_MOT_5,     0,              0,                 0.2f,           1.0f,               0,                  0,              5);
+        add_motor_raw_6dof(AP_MOTORS_MOT_6,     0,              0.2f,              0,              0,                  0,                  1.0f,           6);
+        break;
     }
 }
 
