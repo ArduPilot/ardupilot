@@ -1,0 +1,153 @@
+#include "AP_GPS_BinaryCRCMessageParser.h"
+
+extern const AP_HAL::HAL& hal;
+
+#define AP_GPS_COMMON_BINARY_CRC_MSG_PARSER_DEBUG 0
+
+#if AP_GPS_COMMON_BINARY_CRC_MSG_PARSER_DEBUG
+# define Debug(fmt, args ...)                  \
+do {                                            \
+    hal.console->printf("%s:%d: " fmt "\n",     \
+                        __FUNCTION__, __LINE__, \
+                        ## args);               \
+    hal.scheduler->delay(1);                    \
+} while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
+AP_GPS_BinaryCRCMessageParser::AP_GPS_BinaryCRCMessageParser(const std::vector<uint8_t> &preambles,  uint8_t min_header_length, uint8_t max_header_length, uint16_t max_body_length)
+    :_preambles(preambles),
+    _min_header_length(min_header_length),
+    _max_header_length(max_header_length),
+    _max_body_length(max_body_length)   
+{
+}
+
+AP_GPS_BinaryCRCMessageParser::~AP_GPS_BinaryCRCMessageParser()
+{
+}
+
+bool AP_GPS_BinaryCRCMessageParser::parse(uint8_t data)
+{
+    uint8_t *msg_header_buff = get_message_header_buff();
+    uint8_t *msg_body_buff = get_message_body_buff();
+    reset:
+        switch (_decode_step) {
+            default:
+            case 0: //preambles
+                if (data == _preambles[_preamble_step]) {
+                    msg_header_buff[_preamble_step] = data;
+                    _preamble_step++;
+                    _read_size = _preamble_step;
+                    Debug("Got preamble %x",data);
+                } else if(0 == _preamble_step) {  // failed check the first preamble
+                    break;
+                } else {
+                    reset_parse();
+                    goto reset;
+                }       
+                if(_preamble_step >= _preambles.size()) {   // finish preambles 
+                    _decode_step++;
+                    Debug("Preambles exit");
+                }
+                break;
+            case 1: //get real header length
+                msg_header_buff[_read_size] = data;
+                _read_size++;
+                if(_read_size >= _min_header_length) {
+                    uint8_t header_len = get_message_header_length_from_header_buff();
+                    if(header_len < _min_header_length || header_len > _max_header_length) {
+                        Debug("Wrong header length : %u in header buff",header_len);
+                        Debug("buffinfo:%x,%x,%x,%u,size:%lu",msg_header_buff[0],msg_header_buff[1],msg_header_buff[2],msg_header_buff[3],_read_size);
+                        reset_parse();
+                        goto reset;
+                    }
+                    _real_header_length = header_len;
+                    _decode_step++;
+                    Debug("Got real message header length: %u",header_len);
+                }
+                break;
+            case 2: // header data
+                if (_read_size < _real_header_length) {
+                    msg_header_buff[_read_size] = data;
+                    _read_size++;
+                    break;
+                } else {
+                    uint16_t body_len = get_message_body_length_from_header_buff();
+                    if(body_len > _max_body_length) {
+                        Debug("Wrong body length : %u in header buff",body_len);
+                        reset_parse();
+                        goto reset;
+                    }
+                    _real_body_length = body_len;
+                    _decode_step++;
+                    Debug("Header data exit,Got real body length:%u",body_len);
+                }   // current data have not been readed, goto next case to read the data
+            case 3: //body data
+                if(_read_size < (_real_header_length + _real_body_length)) {
+                    msg_body_buff[_read_size - _real_header_length] = data;
+                    _read_size++;
+                    break;
+                } else {
+                    _decode_step++;
+                    Debug("Body data exit");
+                }   // current data have not been readed, goto next case to read the data 
+            case 4: //CRC1
+                _msg_crc = (uint32_t) (data << 0);
+                _decode_step++;
+                break;
+            case 5: //CRC2
+                _msg_crc += (uint32_t) (data << 8);
+                _decode_step++;
+                break;
+            case 6: //CRC3
+                _msg_crc += (uint32_t) (data << 16);
+                _decode_step++;
+                break;
+            case 7: //CRC4
+                _msg_crc += (uint32_t) (data << 24);
+                reset_parse();
+
+                uint32_t real_crc = calculate_block_crc32((uint32_t)_real_header_length, msg_header_buff, (uint32_t)0);
+                real_crc = calculate_block_crc32((uint32_t)_real_body_length, msg_body_buff, real_crc);
+
+                if(real_crc != _msg_crc){
+                    Debug("CRC check failed,msg_crc:%lx,real_crc:%lx",_msg_crc,real_crc);
+                    goto reset;
+                }
+                Debug("Got new message");
+                return process_message();   /**< One whole message received */
+        }
+
+    return false;
+}
+
+void AP_GPS_BinaryCRCMessageParser::reset_parse()
+{
+    _decode_step = 0;
+    _read_size = 0;
+    _preamble_step = 0;
+}
+
+uint32_t AP_GPS_BinaryCRCMessageParser::crc32_value(uint32_t icrc)
+{
+    int i;
+    uint32_t crc = icrc;
+    for ( i = 8 ; i > 0; i-- ) {
+        if ( crc & 1 ) {
+            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
+        } else {
+            crc >>= 1;
+        }    
+    }
+    return crc;
+}
+
+uint32_t AP_GPS_BinaryCRCMessageParser::calculate_block_crc32(uint32_t length, uint8_t *buffer, uint32_t crc)
+{
+    while ( length-- != 0 ) {
+        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (crc32_value(((uint32_t) crc ^ *buffer++) & 0xff));
+    }
+    return( crc );
+}
