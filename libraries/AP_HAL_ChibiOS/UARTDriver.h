@@ -41,7 +41,6 @@ public:
     void end() override;
     void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
 
@@ -202,7 +201,6 @@ private:
 #endif
     volatile bool _in_rx_timer;
     volatile bool _in_tx_timer;
-    bool _blocking_writes;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
