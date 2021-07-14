@@ -22,11 +22,6 @@
 #ifndef _Num_H_
 #define _Num_H_
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -34,6 +29,12 @@ extern "C"
  * @brief This struct represents the structure Num defined by the user in the IDL file.
  * @ingroup NUM
  */
+
+/*
+    We are using typedef for the topics/struct as this would help us properly differentiate the serialization/deserialization functions
+    for the different ROS 2 topics.
+*/
+
 typedef struct Num
 {
     int32_t num;
@@ -44,10 +45,5 @@ struct ucdrBuffer;
 bool Num_serialize_topic(struct ucdrBuffer* writer, const Num* topic);
 bool Num_deserialize_topic(struct ucdrBuffer* reader, Num* topic);
 uint32_t Num_size_of_topic(const Num* topic, uint32_t size);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _Num_H_

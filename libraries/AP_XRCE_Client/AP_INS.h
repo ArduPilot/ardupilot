@@ -22,10 +22,6 @@
 #ifndef _AP_INS_H_
 #define _AP_INS_H_
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -34,6 +30,12 @@ extern "C"
  * @brief This struct represents the structure AP_INS defined by the user in the IDL file.
  * @ingroup AP_INS
  */
+
+/*
+    We are using typedef for the topics/struct as this would help us properly differentiate the serialization/deserialization functions
+    for the different ROS 2 topics.
+*/
+
 typedef struct AP_INS
 {
     int32_t accel_count;
@@ -48,10 +50,5 @@ struct ucdrBuffer;
 bool AP_INS_serialize_topic(struct ucdrBuffer* writer, const AP_INS* topic);
 bool AP_INS_deserialize_topic(struct ucdrBuffer* reader, AP_INS* topic);
 uint32_t AP_INS_size_of_topic(const AP_INS* topic, uint32_t size);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _AP_INS_H_
