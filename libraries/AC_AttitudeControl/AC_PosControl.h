@@ -46,6 +46,9 @@ public:
     /// get_dt - gets time delta in seconds for all position controllers
     float get_dt() const { return _dt; }
 
+    /// get_shaping_tc_xy_s - gets the time constant of the xy kinimatic path generation in seconds
+    float get_shaping_tc_xy_s() const { return _shaping_tc_xy_s; }
+
     /// get_shaping_tc_z_s - gets the time constant of the z kinimatic path generation in seconds
     float get_shaping_tc_z_s() const { return _shaping_tc_z_s; }
 
@@ -60,7 +63,7 @@ public:
     void input_pos_xyz(const Vector3p& pos, float pos_offset_z, float pos_offset_z_buffer);
 
     /// pos_offset_z_scaler - calculates a multiplier used to reduce the horizontal velocity to allow the z position controller to stay within the provided buffer range
-    float pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer);
+    float pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer) const;
 
     ///
     /// Lateral position controller
@@ -293,6 +296,15 @@ public:
 
     /// set_pos_offset_z_cm - set altitude offset in cm above home
     void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z; }
+
+    /// get_pos_offset_z_cm - returns altitude offset in cm above home
+    float get_pos_offset_z_cm() const { return _pos_offset_z; }
+
+    /// get_vel_offset_z_cm - returns current vertical offset speed in cm/s
+    float get_vel_offset_z_cms() const { return _vel_offset_z; }
+
+    /// get_accel_offset_z_cm - returns current vertical offset acceleration in cm/s/s
+    float get_accel_offset_z_cmss() const { return _accel_offset_z; }
 
 
     /// Outputs
