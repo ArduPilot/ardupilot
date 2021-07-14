@@ -46,6 +46,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
+#include <AP_XRCE_Client/AP_XRCE_Client.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -244,11 +245,6 @@ public:
     AP_Frsky_Parameters frsky_parameters;
 #endif
 
-    /*
-      Returns the pan and tilt for use by onvif camera in scripting
-     */
-    virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
-
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -340,6 +336,13 @@ protected:
 #endif
 
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
+
+#if AP_XRCE_ENABLED
+    // Declare the xrce client for communication with ROS2 and DDS(common for all vehicles)
+    AP_XRCE_Client xrce_client;
+    void init_xrce_client();
+    void update_topics();
+#endif
 
 private:
 
