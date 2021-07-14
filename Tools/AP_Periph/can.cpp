@@ -1705,6 +1705,10 @@ void AP_Periph_FW::can_gps_update(void)
         for (uint8_t i=0; i<3; i++) {
             pkt.ned_velocity[i] = vel[i];
         }
+        if (!gps.have_vertical_velocity()) {
+            // when no vertical velocity we report Z velocity as NaN
+            pkt.ned_velocity[2] = nanf("");
+        }
         pkt.sats_used = gps.num_sats();
         switch (gps.status()) {
         case AP_GPS::GPS_Status::NO_GPS:
