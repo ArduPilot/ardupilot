@@ -70,7 +70,8 @@ void AP_LeakDetector::init()
 {
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
         switch (_pin[i]) {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5)
         case 50 ... 55:
             _state[i].instance = i;
             _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
