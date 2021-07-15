@@ -96,6 +96,8 @@
 #define EK3_POSXY_STATE_LIMIT 1.0e6
 #endif
 
+#define BAD_IMU_DATA_ACC_P_NSE 5.0f
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
