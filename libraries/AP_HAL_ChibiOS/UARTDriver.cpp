@@ -654,11 +654,6 @@ bool UARTDriver::is_initialized()
     return _tx_initialised && _rx_initialised;
 }
 
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _blocking_writes = blocking;
-}
-
 bool UARTDriver::tx_pending() { return _writebuf.available() > 0; }
 
 
@@ -780,28 +775,16 @@ size_t UARTDriver::write(uint8_t c)
     if (lock_write_key != 0) {
         return 0;
     }
-    _write_mutex.take_blocking();
+    WITH_SEMAPHORE(_write_mutex);
 
     if (!_tx_initialised) {
-        _write_mutex.give();
         return 0;
     }
 
-    while (_writebuf.space() == 0) {
-        if (!_blocking_writes || unbuffered_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        // release the semaphore while sleeping
-        _write_mutex.give();
-        hal.scheduler->delay(1);
-        _write_mutex.take_blocking();
-    }
     size_t ret = _writebuf.write(&c, 1);
-    if (unbuffered_writes) {
+    if (ret > 0 && unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
-    _write_mutex.give();
     return ret;
 }
 
@@ -812,22 +795,10 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (_blocking_writes && !unbuffered_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
-    }
-
     WITH_SEMAPHORE(_write_mutex);
 
     size_t ret = _writebuf.write(buffer, size);
-    if (unbuffered_writes) {
+    if (ret > 0 && unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
     return ret;
