@@ -1495,7 +1495,7 @@ void AP_BLHeli::log_bidir_telemetry(void)
     // ask the next ESC for telemetry
     uint8_t idx_pos = last_telem_esc;
     uint8_t idx = (idx_pos + 1) % num_motors;
-    for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+    for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
         if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
             break;
         }
@@ -1564,7 +1564,7 @@ void AP_BLHeli::update_telemetry(void)
         // ask the next ESC for telemetry
         uint8_t idx_pos = last_telem_esc;
         uint8_t idx = (idx_pos + 1) % num_motors;
-        for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+        for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
             if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
                 break;
             }
