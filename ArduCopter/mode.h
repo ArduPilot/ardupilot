@@ -604,6 +604,8 @@ private:
         RTL,
     } submode;
 
+    AP_Mission::Mission_Backup backup;
+
 };
 #endif
 

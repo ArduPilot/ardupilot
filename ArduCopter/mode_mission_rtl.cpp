@@ -10,7 +10,10 @@
 
 bool Mission_RTL::init(bool ignore_checks)
 {
-    // Go staight to landing sequence in auto submode
+    // back up Auto mode state
+    copter.mode_auto.mission.backup_mission(backup);
+
+    // Go straight to landing sequence in auto submode
     if (((Type)g2.mission_RTL_type.get() == Type::CLOSEST_LANDING_SEQUENCE) && copter.mode_auto.mission.jump_to_landing_sequence()) {
         submode = SubMode::AUTO;
         copter.mode_auto.mission.set_force_resume(true);
@@ -63,6 +66,9 @@ void Mission_RTL::exit()
     } else {
         copter.mode_rtl.exit();
     }
+
+    // restore mission state back to where it was when we entered
+    copter.mode_auto.mission.restore_mission(backup);
 }
 
 bool Mission_RTL::requires_GPS() const
