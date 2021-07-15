@@ -1885,11 +1885,11 @@ void NavEKF3_core::ConstrainVariances()
         zeroRows(P,10,12);
     }
 
-    const ftype minStateVarTarget = 1E-8;
+    const ftype minStateVarTarget = 1E-11;
     if (!inhibitDelVelBiasStates) {
 
         // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
-        const ftype minSafeStateVar = 1e-9;
+        const ftype minSafeStateVar = minStateVarTarget * 0.1f;
         ftype maxStateVar = minSafeStateVar;
         bool resetRequired = false;
         for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
