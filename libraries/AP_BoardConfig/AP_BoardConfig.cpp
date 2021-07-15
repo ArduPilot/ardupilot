@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #ifdef HAL_HAVE_RTSCTS_SERIAL1
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
-    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
+    // @Description: Enable flow control on serial 1 (telemetry 1). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #ifdef HAL_HAVE_RTSCTS_SERIAL2
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
-    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and STATE. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Description: Enable flow control on serial 2 (telemetry 2). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
