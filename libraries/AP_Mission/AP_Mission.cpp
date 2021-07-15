@@ -99,14 +99,14 @@ void AP_Mission::resume()
         _flags.state = MISSION_RUNNING;
 
         // if no valid nav command index restart from beginning
-        if (_nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        if (_mis_state.nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
             start();
             return;
         }
     }
 
     // ensure cache coherence
-    if (!read_cmd_from_storage(_nav_cmd.index, _nav_cmd)) {
+    if (!read_cmd_from_storage(_mis_state.nav_cmd.index, _mis_state.nav_cmd)) {
         // if we failed to read the command from storage, then the command may have
         // been from a previously loaded mission it is illogical to ever resume
         // flying to a command that has been excluded from the current mission
@@ -115,16 +115,16 @@ void AP_Mission::resume()
     }
 
     // rewind the mission wp if the repeat distance has been set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-    if (_repeat_dist > 0 && _wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
+    if (_mis_state.repeat_dist > 0 && _mis_state.wp_index_history[LAST_WP_PASSED] != AP_MISSION_CMD_INDEX_NONE) {
         // if not already in a resume state calculate the position to rewind to
         Mission_Command tmp_cmd;
         if (!_flags.resuming_mission && calc_rewind_pos(tmp_cmd)) {
-            _resume_cmd = tmp_cmd;
+            _mis_state.resume_cmd = tmp_cmd;
         }
 
         // resume mission to rewound position
-        if (_resume_cmd.index != AP_MISSION_CMD_INDEX_NONE && start_command(_resume_cmd)) {
-            _nav_cmd = _resume_cmd;
+        if (_mis_state.resume_cmd.index != AP_MISSION_CMD_INDEX_NONE && start_command(_mis_state.resume_cmd)) {
+            _mis_state.nav_cmd = _mis_state.resume_cmd;
             _flags.nav_cmd_loaded = true;
             // set flag to prevent history being re-written
             _flags.resuming_mission = true;
@@ -137,12 +137,12 @@ void AP_Mission::resume()
     // re-entering AUTO mode and the nav_cmd callback needs to be run
     // to setup the current target waypoint
 
-    if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
+    if (_flags.do_cmd_loaded && _mis_state.do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
         // restart the active do command, which will also load the nav command for us
-        set_current_cmd(_do_cmd.index);
+        set_current_cmd(_mis_state.do_cmd.index);
     } else if (_flags.nav_cmd_loaded) {
         // restart the active nav command
-        set_current_cmd(_nav_cmd.index);
+        set_current_cmd(_mis_state.nav_cmd.index);
     }
 
     // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
@@ -153,7 +153,7 @@ void AP_Mission::resume()
 bool AP_Mission::starts_with_takeoff_cmd()
 {
     Mission_Command cmd = {};
-    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _mis_state.nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }
@@ -183,11 +183,11 @@ bool AP_Mission::starts_with_takeoff_cmd()
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
 void AP_Mission::start_or_resume()
 {
-    if (_restart == 1 && !_force_resume) {
+    if (_restart == 1 && !_mis_state.force_resume) {
         start();
     } else {
         resume();
-        _force_resume = false;
+        _mis_state.force_resume = false;
     }
 }
 
@@ -198,11 +198,11 @@ void AP_Mission::reset()
     _flags.do_cmd_loaded   = false;
     _flags.do_cmd_all_done = false;
     _flags.in_landing_sequence = false;
-    _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
-    _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
-    _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
-    _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
-    _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
+    _mis_state.nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
     init_jump_tracking();
     reset_wp_history();
 }
@@ -220,8 +220,8 @@ bool AP_Mission::clear()
     _cmd_total.set_and_save(0);
 
     // clear index to commands
-    _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
 
@@ -250,10 +250,10 @@ void AP_Mission::update()
     update_exit_position();
 
     // save persistent waypoint_num for watchdog restore
-    hal.util->persistent_data.waypoint_num = _nav_cmd.index;
+    hal.util->persistent_data.waypoint_num = _mis_state.nav_cmd.index;
 
     // check if we have an active nav command
-    if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+    if (!_flags.nav_cmd_loaded || _mis_state.nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
         // advance in mission if no active nav command
         if (!advance_current_nav_cmd()) {
             // failure to advance nav command means mission has completed
@@ -262,7 +262,7 @@ void AP_Mission::update()
         }
     } else {
         // run the active nav command
-        if (verify_command(_nav_cmd)) {
+        if (verify_command(_mis_state.nav_cmd)) {
             // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
             // immediately advance to the next mission command
@@ -279,8 +279,8 @@ void AP_Mission::update()
         advance_current_do_cmd();
     } else {
         // check the active do command
-        if (verify_command(_do_cmd)) {
-            // mark _do_cmd as complete
+        if (verify_command(_mis_state.do_cmd)) {
+            // mark _mis_state.do_cmd as complete
             _flags.do_cmd_loaded = false;
         }
     }
@@ -416,7 +416,7 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 {
     Mission_Command cmd;
-    if (!get_next_nav_cmd(_nav_cmd.index+1, cmd)) {
+    if (!get_next_nav_cmd(_mis_state.nav_cmd.index+1, cmd)) {
         return default_angle;
     }
     // special handling for nav commands with no target location
@@ -425,9 +425,9 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
         return default_angle;
     }
     if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
-        return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
+        return (_mis_state.nav_cmd.content.set_yaw_speed.angle_deg * 100);
     }
-    return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
+    return _mis_state.nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
@@ -450,7 +450,7 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
     }
 
     // stop the current running do command
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.do_cmd_loaded = false;
     _flags.do_cmd_all_done = false;
 
@@ -459,9 +459,9 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
 
     // if index is zero then the user wants to completely restart the mission
     if (index == 0 || _flags.state == MISSION_COMPLETE) {
-        _prev_nav_cmd_id    = AP_MISSION_CMD_ID_NONE;
-        _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
-        _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.prev_nav_cmd_id    = AP_MISSION_CMD_ID_NONE;
+        _mis_state.prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
         // reset the jump tracking to zero
         init_jump_tracking();
         if (index == 0) {
@@ -476,19 +476,19 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
         while (!_flags.nav_cmd_loaded) {
             // get next command
             if (!get_next_cmd(index, cmd, true)) {
-                _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+                _mis_state.nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
                 return false;
             }
 
             // check if navigation or "do" command
             if (is_nav_cmd(cmd)) {
                 // set current navigation command
-                _nav_cmd = cmd;
+                _mis_state.nav_cmd = cmd;
                 _flags.nav_cmd_loaded = true;
             } else {
                 // set current do command
                 if (!_flags.do_cmd_loaded) {
-                    _do_cmd = cmd;
+                    _mis_state.do_cmd = cmd;
                     _flags.do_cmd_loaded = true;
                 }
             }
@@ -532,7 +532,7 @@ bool AP_Mission::restart_current_nav_cmd()
         return false;
     }
 
-    return set_current_cmd(_nav_cmd.index);
+    return set_current_cmd(_mis_state.nav_cmd.index);
 }
 
 // returns false on any issue at all.
@@ -1671,12 +1671,12 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     }
 
     // stop the current running do command
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.do_cmd_loaded = false;
     _flags.do_cmd_all_done = false;
 
     // get starting point for search
-    uint16_t cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
+    uint16_t cmd_index = starting_index > 0 ? starting_index - 1 : _mis_state.nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
@@ -1699,28 +1699,28 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         // check if navigation or "do" command
         if (is_nav_cmd(cmd)) {
             // save previous nav command index
-            _prev_nav_cmd_id = _nav_cmd.id;
-            _prev_nav_cmd_index = _nav_cmd.index;
+            _mis_state.prev_nav_cmd_id = _mis_state.nav_cmd.id;
+            _mis_state.prev_nav_cmd_index = _mis_state.nav_cmd.index;
             // save separate previous nav command index if it contains lat,long,alt
             if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
-                _prev_nav_cmd_wp_index = _nav_cmd.index;
+                _mis_state.prev_nav_cmd_wp_index = _mis_state.nav_cmd.index;
             }
             // set current navigation command and start it
-            _nav_cmd = cmd;
-            if (start_command(_nav_cmd)) {
+            _mis_state.nav_cmd = cmd;
+            if (start_command(_mis_state.nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
             }
             // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
             // and prevent history being re-written until vehicle returns to interrupted position
-            if (_repeat_dist > 0 && !_flags.resuming_mission && _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_nav_cmd.content.location.lat == 0 && _nav_cmd.content.location.lng == 0)) {
+            if (_mis_state.repeat_dist > 0 && !_flags.resuming_mission && _mis_state.nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_mis_state.nav_cmd.content.location.lat == 0 && _mis_state.nav_cmd.content.location.lng == 0)) {
                 // update mission history. last index position is always the most recent wp loaded.
                 for (uint8_t i=0; i<AP_MISSION_MAX_WP_HISTORY-1; i++) {
-                    _wp_index_history[i] = _wp_index_history[i+1];
+                    _mis_state.wp_index_history[i] = _mis_state.wp_index_history[i+1];
                 }
-                _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1] = _nav_cmd.index;
+                _mis_state.wp_index_history[AP_MISSION_MAX_WP_HISTORY-1] = _mis_state.nav_cmd.index;
             }
             // check if the vehicle is resuming and has returned to where it was interrupted
-            if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
+            if (_flags.resuming_mission && _mis_state.nav_cmd.index == _mis_state.wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
                 // vehicle has resumed previous position
                 gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
                 _flags.resuming_mission = false;
@@ -1729,9 +1729,9 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         } else {
             // set current do command and start it (if not already set)
             if (!_flags.do_cmd_loaded) {
-                _do_cmd = cmd;
+                _mis_state.do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
-                start_command(_do_cmd);
+                start_command(_mis_state.do_cmd);
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
@@ -1762,12 +1762,12 @@ void AP_Mission::advance_current_do_cmd()
     }
 
     // get starting point for search
-    uint16_t cmd_index = _do_cmd.index;
+    uint16_t cmd_index = _mis_state.do_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     } else {
         // start from one position past the current do command
-        cmd_index = _do_cmd.index + 1;
+        cmd_index = _mis_state.do_cmd.index + 1;
     }
 
     // find next do command
@@ -1779,9 +1779,9 @@ void AP_Mission::advance_current_do_cmd()
     }
 
     // set current do command and start it
-    _do_cmd = cmd;
+    _mis_state.do_cmd = cmd;
     _flags.do_cmd_loaded = true;
-    start_command(_do_cmd);
+    start_command(_mis_state.do_cmd);
 }
 
 /// get_next_cmd - gets next command found at or after start_index
@@ -1893,8 +1893,8 @@ bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
 void AP_Mission::init_jump_tracking()
 {
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i].index = AP_MISSION_CMD_INDEX_NONE;
-        _jump_tracking[i].num_times_run = 0;
+        _mis_state.jump_tracking[i].index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.jump_tracking[i].num_times_run = 0;
     }
 }
 
@@ -1909,12 +1909,12 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            return _jump_tracking[i].num_times_run;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
-            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 0;
+        if (_mis_state.jump_tracking[i].index == cmd.index) {
+            return _mis_state.jump_tracking[i].num_times_run;
+        } else if (_mis_state.jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in _mis_state.jump_tracking array
+            _mis_state.jump_tracking[i].index = cmd.index;
+            _mis_state.jump_tracking[i].num_times_run = 0;
             return 0;
         }
     }
@@ -1935,16 +1935,16 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            _jump_tracking[i].num_times_run++;
+        if (_mis_state.jump_tracking[i].index == cmd.index) {
+            _mis_state.jump_tracking[i].num_times_run++;
             if (send_gcs_msg) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _mis_state.jump_tracking[i].index, _mis_state.jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             }
             return;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
+        } else if (_mis_state.jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
             // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 1;
+            _mis_state.jump_tracking[i].index = cmd.index;
+            _mis_state.jump_tracking[i].num_times_run = 1;
             return;
         }
     }
@@ -2124,7 +2124,7 @@ bool AP_Mission::is_best_land_sequence(void)
 
     // get distance to landing if continue along current mission path
     float dist_continue_to_land;
-    if (!distance_to_landing(_nav_cmd.index, dist_continue_to_land, current_loc)) {
+    if (!distance_to_landing(_mis_state.nav_cmd.index, dist_continue_to_land, current_loc)) {
         // cant get a valid distance to landing
         return false;
     }
@@ -2148,9 +2148,9 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
     bool ret;
 
     // back up jump tracking to reset after distance calculation
-    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    Mission_state_struct::jump_tracking_struct jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking_backup[i] = _jump_tracking[i];
+        jump_tracking_backup[i] = _mis_state.jump_tracking[i];
     }
 
     // run through remainder of mission to approximate a distance to landing
@@ -2193,7 +2193,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 
 reset_do_jump_tracking:
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i] = _jump_tracking_backup[i];
+        _mis_state.jump_tracking[i] = jump_tracking_backup[i];
     }
 
     return ret;
@@ -2336,19 +2336,19 @@ bool AP_Mission::contains_item(MAV_CMD command) const
 void AP_Mission::reset_wp_history(void)
 {
     for (uint8_t i = 0; i<AP_MISSION_MAX_WP_HISTORY; i++) {
-        _wp_index_history[i] = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.wp_index_history[i] = AP_MISSION_CMD_INDEX_NONE;
     }
-    _resume_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _mis_state.resume_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.resuming_mission = false;
-    _repeat_dist = 0;
+    _mis_state.repeat_dist = 0;
 }
 
 // store the latest reported position incase of mission exit and rewind resume
 void AP_Mission::update_exit_position(void)
 {
-    if (!AP::ahrs().get_position(_exit_position)) {
-        _exit_position.lat = 0;
-        _exit_position.lng = 0;
+    if (!AP::ahrs().get_position(_mis_state.exit_position)) {
+        _mis_state.exit_position.lat = 0;
+        _mis_state.exit_position.lng = 0;
     }
 }
 
@@ -2356,32 +2356,32 @@ void AP_Mission::update_exit_position(void)
 bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
 {
     // check for a recent history
-    if (_wp_index_history[LAST_WP_PASSED] == AP_MISSION_CMD_INDEX_NONE) {
+    if (_mis_state.wp_index_history[LAST_WP_PASSED] == AP_MISSION_CMD_INDEX_NONE) {
         // no saved history so can't rewind
         return false;
     }
 
     // check that we have a valid exit position
-    if (_exit_position.lat == 0 && _exit_position.lng == 0) {
+    if (_mis_state.exit_position.lat == 0 && _mis_state.exit_position.lng == 0) {
         return false;
     }
 
     Mission_Command temp_cmd;
-    float rewind_distance = _repeat_dist; //(m)
+    float rewind_distance = _mis_state.repeat_dist; //(m)
     uint16_t resume_index;
-    Location prev_loc = _exit_position;
+    Location prev_loc = _mis_state.exit_position;
 
     for (int8_t i = (LAST_WP_PASSED); i>=0; i--) {
 
         // to get this far there has to be at least one 'passed wp' stored in history.  This is to check incase
         // of history array no being completely filled with valid waypoints upon resume.
-        if (_wp_index_history[i] == AP_MISSION_CMD_INDEX_NONE) {
+        if (_mis_state.wp_index_history[i] == AP_MISSION_CMD_INDEX_NONE) {
             // no more stored history
             resume_index = i+1;
             break;
         }
 
-        if (!read_cmd_from_storage(_wp_index_history[i], temp_cmd)) {
+        if (!read_cmd_from_storage(_mis_state.wp_index_history[i], temp_cmd)) {
             // if read from storage failed then don't use rewind
             return false;
         }
@@ -2415,7 +2415,7 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
     Location passed_wp_loc = temp_cmd.content.location;
 
     // fetch next destination wp
-    if (!read_cmd_from_storage(_wp_index_history[resume_index+1], temp_cmd)) {
+    if (!read_cmd_from_storage(_mis_state.wp_index_history[resume_index+1], temp_cmd)) {
         // if read from storage failed then don't use rewind
         return false;
     }

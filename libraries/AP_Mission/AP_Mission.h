@@ -313,10 +313,7 @@ public:
     AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
-        _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
-        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE)
+        _mission_complete_fn(mission_complete_fn)
     {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
@@ -329,8 +326,11 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
 
         // clear commands
-        _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-        _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.prev_nav_cmd_id = AP_MISSION_CMD_ID_NONE;
+        _mis_state.prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+        _mis_state.prev_nav_cmd_wp_index =AP_MISSION_CMD_INDEX_NONE;
     }
 
     // get singleton instance
@@ -423,7 +423,7 @@ public:
     /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const
     {
-        return _nav_cmd;
+        return _mis_state.nav_cmd;
     }
 
     /// get_current_nav_index - returns the current "navigation" command index
@@ -431,13 +431,13 @@ public:
     /// used in MAVLink reporting of the mission command
     uint16_t get_current_nav_index() const
     {
-        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index;
+        return _mis_state.nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_mis_state.nav_cmd.index;
     }
 
     /// get_current_nav_id - return the id of the current nav command
     uint16_t get_current_nav_id() const
     {
-        return _nav_cmd.id;
+        return _mis_state.nav_cmd.id;
     }
 
     /// get_prev_nav_cmd_id - returns the previous "navigation" command id
@@ -445,7 +445,7 @@ public:
     ///     we do not return the entire command to save on RAM
     uint16_t get_prev_nav_cmd_id() const
     {
-        return _prev_nav_cmd_id;
+        return _mis_state.prev_nav_cmd_id;
     }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
@@ -453,7 +453,7 @@ public:
     ///     we do not return the entire command to save on RAM
     uint16_t get_prev_nav_cmd_index() const
     {
-        return _prev_nav_cmd_index;
+        return _mis_state.prev_nav_cmd_index;
     }
 
     /// get_prev_nav_cmd_with_wp_index - returns the previous "navigation" commands index that contains a waypoint (i.e. position in the mission command list)
@@ -461,7 +461,7 @@ public:
     ///     we do not return the entire command to save on RAM
     uint16_t get_prev_nav_cmd_with_wp_index() const
     {
-        return _prev_nav_cmd_wp_index;
+        return _mis_state.prev_nav_cmd_wp_index;
     }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -477,13 +477,13 @@ public:
     /// get_current_do_cmd - returns active "do" command
     const Mission_Command& get_current_do_cmd() const
     {
-        return _do_cmd;
+        return _mis_state.do_cmd;
     }
 
     /// get_current_do_cmd_id - returns id of the active "do" command
     uint16_t get_current_do_cmd_id() const
     {
-        return _do_cmd.id;
+        return _mis_state.do_cmd.id;
     }
 
     // set_current_cmd - jumps to command specified by index
@@ -559,7 +559,7 @@ public:
     // force mission to resume when start_or_resume() is called
     void set_force_resume(bool force_resume)
     {
-        _force_resume = force_resume;
+        _mis_state.force_resume = force_resume;
     }
 
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
@@ -591,12 +591,27 @@ public:
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
-private:
-    static AP_Mission *_singleton;
+    // internal variables structs
+    struct Mission_state_struct {
+        bool                    force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
+        uint16_t                repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
+        struct Mission_Command  nav_cmd;   // current "navigation" command.  It's position in the command list is held in _mis_state.nav_cmd.index
+        struct Mission_Command  do_cmd;    // current "do" command.  It's position in the command list is held in _mis_state.do_cmd.index
+        struct Mission_Command  resume_cmd;  // virtual wp command that is used to resume mission if the mission needs to be rewound on resume.
+        uint16_t                prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
+        uint16_t                prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
+        uint16_t                prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
+        struct Location         exit_position;  // the position in the mission that the mission was exited
 
-    static StorageAccess _storage;
+        // mission WP resume history
+        uint16_t wp_index_history[AP_MISSION_MAX_WP_HISTORY]; // storing the nav_cmd index for the last 6 WPs
 
-    static bool stored_in_location(uint16_t id);
+        // jump related variables
+        struct jump_tracking_struct {
+            uint16_t index;                 // index of do-jump commands in mission
+            int16_t num_times_run;          // number of times this jump command has been run
+        } jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    };
 
     struct Mission_Flags {
         mission_state state;
@@ -605,10 +620,32 @@ private:
         bool do_cmd_all_done;        // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
-    } _flags;
+    };
 
-    // mission WP resume history
-    uint16_t _wp_index_history[AP_MISSION_MAX_WP_HISTORY]; // storing the nav_cmd index for the last 6 WPs
+    // struct for saving and restoring mission state
+    struct Mission_Backup {
+        Mission_state_struct state;
+        Mission_Flags flags;
+    };
+
+    void backup_mission(Mission_Backup &backup) {
+        memcpy(&backup.flags, &_flags, sizeof(backup.flags));
+        memcpy(&backup.state, &_mis_state, sizeof(backup.state));
+    };
+
+    void restore_mission(Mission_Backup backup) {
+        memcpy(&_flags, &backup.flags, sizeof(_flags));
+        memcpy(&_mis_state, &backup.state, sizeof(_mis_state));
+    };
+
+private:
+    static AP_Mission *_singleton;
+
+    static StorageAccess _storage;
+
+    static bool stored_in_location(uint16_t id);
+
+    Mission_Flags _flags;
 
     ///
     /// private methods
@@ -687,21 +724,7 @@ private:
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // internal variables
-    bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
-    uint16_t                _repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-    struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
-    struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
-    struct Mission_Command  _resume_cmd;  // virtual wp command that is used to resume mission if the mission needs to be rewound on resume.
-    uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
-    uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
-    uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
-    struct Location         _exit_position;  // the position in the mission that the mission was exited
-
-    // jump related variables
-    struct jump_tracking_struct {
-        uint16_t index;                 // index of do-jump commands in mission
-        int16_t num_times_run;          // number of times this jump command has been run
-    } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    Mission_state_struct _mis_state;
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
