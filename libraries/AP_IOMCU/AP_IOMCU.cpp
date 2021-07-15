@@ -72,7 +72,6 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
-    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
@@ -108,7 +107,6 @@ void AP_IOMCU::thread_main(void)
     chEvtSignal(thread_ctx, initial_event_mask);
 
     uart.begin(1500*1000, 128, 128);
-    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
     trigger_event(IOEVENT_INIT);
