@@ -172,10 +172,6 @@ define BOARD_PWM_COUNT_DEFAULT 4
 # Pin for PWM Voltage Selection
 PB4 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
 
-# Relays default to use GPIO pins 54 and 55.
-define RELAY1_PIN_DEFAULT 54
-define RELAY2_PIN_DEFAULT 55
-
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.
 PD15 MPU_DRDY INPUT
