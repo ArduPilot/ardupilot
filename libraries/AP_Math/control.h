@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "vector2.h"
+#include "vector3.h"
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
 #define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024

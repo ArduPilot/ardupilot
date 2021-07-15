@@ -34,6 +34,7 @@
 #endif
 
 #include <cmath>
+#include <float.h>
 #include <AP_Common/AP_Common.h>
 #include "ftype.h"
 

@@ -128,7 +128,8 @@ void AR_WPNav::update(float dt)
 
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
+        AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination, path_planner_used);
         switch (oa_retstate) {
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             _oa_active = false;

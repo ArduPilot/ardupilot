@@ -118,6 +118,12 @@ public:
      */
     float line_path_proportion(const Location &point1, const Location &point2) const;
 
+    // update altitude and alt-frame base on this location's horizontal position between point1 and point2
+    // this location's lat,lon is used to calculate the alt of the closest point on the line between point1 and point2
+    // origin and destination's altitude frames must be the same
+    // this alt-frame will be updated to match the destination alt frame
+    void linearly_interpolate_alt(const Location &point1, const Location &point2);
+
     bool initialised() const { return (lat !=0 || lng != 0 || alt != 0); }
 
     // wrap longitude at -180e7 to 180e7
