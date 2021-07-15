@@ -51,7 +51,6 @@ public:
     virtual void end() = 0;
     virtual void flush() = 0;
     virtual bool is_initialized() = 0;
-    virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
