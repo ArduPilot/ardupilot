@@ -74,14 +74,14 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Description: Input Pin A
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
-    AP_GROUPINFO("_PINA",    4, AP_WheelEncoder, _pina[0], 55),
+    AP_GROUPINFO("_PINA",    4, AP_WheelEncoder, _pina[0], -1),
 
     // @Param: _PINB
     // @DisplayName: Input Pin B
     // @Description: Input Pin B
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
-    AP_GROUPINFO("_PINB",    5, AP_WheelEncoder, _pinb[0], 54),
+    AP_GROUPINFO("_PINB",    5, AP_WheelEncoder, _pinb[0], -1),
 
 #if WHEELENCODER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
