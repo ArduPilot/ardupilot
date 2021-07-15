@@ -1135,7 +1135,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         ftype _gyrNoise = constrain_ftype(frontend->_gyrNoise, 0.0f, 1.0f);
         daxVar = dayVar = dazVar = sq(dt*_gyrNoise);
     }
-    ftype _accNoise = constrain_ftype(frontend->_accNoise, 0.0f, 10.0f);
+    ftype _accNoise = badIMUdata ? BAD_IMU_DATA_ACC_P_NSE : constrain_ftype(frontend->_accNoise, 0.0f, 10.0f);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
 
     if (!inhibitDelVelBiasStates) {
