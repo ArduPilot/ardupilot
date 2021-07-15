@@ -11,7 +11,6 @@ public:
     void end() override {  };
     void flush() override {  };
     bool is_initialized() override { return true; };
-    void set_blocking_writes(bool blocking) override {  };
     bool tx_pending() override { return false; };
     uint32_t available() override { return 1; };
     uint32_t txspace() override { return _txspace; };
