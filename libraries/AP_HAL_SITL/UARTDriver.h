@@ -38,11 +38,6 @@ public:
 
     ssize_t get_system_outqueue_length() const;
 
-    void set_blocking_writes(bool blocking) override
-    {
-        _nonblocking_writes = !blocking;
-    }
-
     bool tx_pending() override {
         return false;
     }
@@ -98,7 +93,6 @@ private:
     struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
-    bool _nonblocking_writes;
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
