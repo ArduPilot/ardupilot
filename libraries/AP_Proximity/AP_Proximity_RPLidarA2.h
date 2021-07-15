@@ -44,53 +44,37 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override;
-    float distance_min() const override;
+    float distance_max() const override {
+        return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
+    }
+    float distance_min() const override {
+        return 0.20f;  //20cm min range RPLIDAR2
+    }
 
 private:
-    enum rp_state {
-            rp_unknown = 0,
-            rp_resetted,
-            rp_responding,
-            rp_measurements,
-            rp_health
-        };
 
-    enum ResponseType {
-        ResponseType_Descriptor = 0,
-        ResponseType_SCAN,
-        ResponseType_EXPRESS,
-        ResponseType_Health
-    };
+    enum class State {
+        RESET = 56,
+        AWAITING_RESPONSE,
+        AWAITING_SCAN_DATA,
+        AWAITING_HEALTH,
+    } _state = State::RESET;
 
-    // initialise sensor (returns true if sensor is successfully initialised)
-    bool initialise();
-    void set_scan_mode();
+    void send_command(uint8_t command);
 
-    // send request for something from sensor
-    void send_request_for_health();
     void parse_response_data();
-    void parse_response_descriptor();
+    void parse_response_health();
+
     void get_readings();
-    void reset_rplidar();
+    void reset();  // resets input state machine
 
-    // reply related variables
-    uint8_t _descriptor[7];
-    char _rp_systeminfo[63];
-    bool _descriptor_data;
-    bool _information_data;
-    bool _resetted;
-    bool _initialised;
+    // remove bytes from read buffer:
+    void consume_bytes(uint16_t count);
 
-    uint8_t _payload_length;
-    uint8_t _cnt;
     uint8_t _sync_error ;
     uint16_t _byte_count;
 
     // request related variables
-    enum ResponseType _response_type;         ///< response from the lidar
-    enum rp_state _rp_state;
-    uint32_t  _last_request_ms;               ///< system time of last request
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
     uint32_t  _last_reset_ms;
 
@@ -114,11 +98,31 @@ private:
         uint16_t error_code;                  ///< the related error code
     };
 
+    struct PACKED _descriptor {
+        uint8_t bytes[7];
+    };
+
+    // we don't actually *need* to store this.  If we don't, _payload
+    // can be just 7 bytes, but that doesn't make for efficient
+    // reading.  It also simplifies the state machine to have the read
+    // buffer at least this big.  Note that we force the buffer to a
+    // larger size below anyway.
+    struct PACKED _rpi_information {
+        uint8_t bytes[63];
+    };
+
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
         _sensor_scan sensor_scan;
         _sensor_health sensor_health;
-    } payload;
+        _descriptor descriptor;
+        _rpi_information information;
+        uint8_t forced_buffer_size[128]; // just so we read(...) efficiently
+    } _payload;
+    static_assert(sizeof(_payload) >= 63, "Needed for parsing out reboot data");
+
+
+    bool make_first_byte_in_payload(uint8_t desired_byte);
 };
 
 #endif // HAL_PROXIMITY_ENABLED

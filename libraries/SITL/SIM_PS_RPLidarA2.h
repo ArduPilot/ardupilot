@@ -101,12 +101,14 @@ private:
         SCAN = 0x20,
         FORCE_SCAN = 0x21,
         RESET = 0x40,
+        GET_DEVICE_INFO = 0x50,
         GET_HEALTH = 0x52,
     };
 
     void move_preamble_in_buffer();
 
     enum class DataType {
+        Unknown04 = 0x04, // uint8_t ?!
         Unknown06 = 0x06, // uint8_t ?!
         Unknown81 = 0x81, // uint8_t ?!
     };
@@ -124,6 +126,9 @@ private:
     // the driver expects to see an "R" followed by 62 bytes more crap.
     static const constexpr char *FIRMWARE_INFO = "R12345678901234567890123456789012345678901234567890123456789012";
     uint8_t _firmware_info_offset;
+
+    // this will be pure-virtual in a notional RPLidar base class:
+    uint8_t device_info_model() const { return 0x28; }
 };
 
 };
