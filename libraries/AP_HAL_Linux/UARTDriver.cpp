@@ -279,18 +279,13 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
-int16_t UARTDriver::read()
+ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
 {
     if (!_initialised) {
         return -1;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-
-    return byte;
+    return _readbuf.read(buffer, count);
 }
 
 bool UARTDriver::discard_input()

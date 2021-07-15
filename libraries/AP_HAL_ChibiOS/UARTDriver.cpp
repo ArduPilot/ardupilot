@@ -676,11 +676,26 @@ bool UARTDriver::discard_input()
     return true;
 }
 
+ssize_t UARTDriver::read_locked(uint8_t *buffer, uint16_t count, uint32_t key)
+{
+    if (lock_read_key != 0 && key != lock_read_key) {
+        return -1;
+    }
+    return read_lock_checked(buffer, count);
+}
+
 ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
 {
     if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
         return -1;
     }
+    return read_lock_checked(buffer, count);
+}
+
+// internal method called to read data from UART after the lock
+// has been checked:
+ssize_t UARTDriver::read_lock_checked(uint8_t *buffer, uint16_t count)
+{
     if (!_rx_initialised) {
         return -1;
     }
@@ -695,44 +710,6 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     }
 
     return ret;
-}
-
-int16_t UARTDriver::read()
-{
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
-        return -1;
-    }
-    if (!_rx_initialised) {
-        return -1;
-    }
-
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-
-    return byte;
-}
-
-int16_t UARTDriver::read_locked(uint32_t key)
-{
-    if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
-    }
-    if (!_rx_initialised) {
-        return -1;
-    }
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-    return byte;
 }
 
 /* write one byte to the port */
