@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef BOARD_RSSI_ANA_PIN
-#define BOARD_RSSI_ANA_PIN 0
+#define BOARD_RSSI_ANA_PIN -1
 #endif
 
 #ifndef BOARD_RSSI_ANA_PIN_HIGH
