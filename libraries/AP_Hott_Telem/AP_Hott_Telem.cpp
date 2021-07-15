@@ -407,7 +407,6 @@ void AP_Hott_Telem::loop(void)
 {
     uart->begin(19200, 10, 10);
     uart->set_unbuffered_writes(true);
-    uart->set_blocking_writes(true);
 
     while (true) {
         hal.scheduler->delay_microseconds(1500);
