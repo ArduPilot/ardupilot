@@ -173,6 +173,16 @@ void AP_InertialSensor_SITL::generate_accel()
             accel.x = accel.y = accel.z = sitl->accel_fail[accel_instance];
         }
 
+        if (sitl->accel_clip[accel_instance] > 0) {
+            const float limit = sitl->accel_clip[accel_instance]*GRAVITY_MSS;
+            _clip_limit = 0.95*limit;
+            accel.x = constrain_float(accel.x, -limit, limit);
+            accel.y = constrain_float(accel.y, -limit, limit);
+            accel.z = constrain_float(accel.z, -limit, limit);
+        } else {
+            _clip_limit = 0.95*16*GRAVITY_MSS;
+        }
+        
         sitl->imu_tcal[gyro_instance].sitl_apply_accel(T, accel);
 
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
