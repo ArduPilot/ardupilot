@@ -9,7 +9,6 @@ void Empty::UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) {}
 void Empty::UARTDriver::end() {}
 void Empty::UARTDriver::flush() {}
 bool Empty::UARTDriver::is_initialized() { return false; }
-void Empty::UARTDriver::set_blocking_writes(bool blocking) {}
 bool Empty::UARTDriver::tx_pending() { return false; }
 
 /* Empty implementations of Stream virtual methods */

@@ -11,7 +11,6 @@ public:
     void end() override;
     void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
     /* Empty implementations of Stream virtual methods */
