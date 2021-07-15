@@ -925,7 +925,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                if (!horizInhibit && !inhibitDelVelBiasStates) {
+                if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
                         if (!dvelBiasAxisInhibit[i-13]) {
                             Kfusion[i] = P[i][stateIndex]*SK;
@@ -1404,7 +1404,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1581,7 +1581,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1759,7 +1759,7 @@ void NavEKF3_core::FuseBodyVel()
 
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
