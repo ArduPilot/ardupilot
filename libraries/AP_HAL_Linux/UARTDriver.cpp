@@ -243,15 +243,6 @@ bool UARTDriver::is_initialized()
 
 
 /*
-  enable or disable blocking writes
- */
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _nonblocking_writes = !blocking;
-}
-
-
-/*
   do we have any bytes pending transmission?
  */
 bool UARTDriver::tx_pending()
@@ -313,13 +304,6 @@ size_t UARTDriver::write(uint8_t c)
         return 0;
     }
 
-    while (_writebuf.space() == 0) {
-        if (_nonblocking_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        hal.scheduler->delay(1);
-    }
     size_t ret = _writebuf.write(&c, 1);
     _write_mutex.give();
     return ret;
@@ -335,18 +319,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     }
     if (!_write_mutex.take_nonblocking()) {
         return 0;
-    }
-    if (!_nonblocking_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        _write_mutex.give();
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
     }
 
     size_t ret = _writebuf.write(buffer, size);
