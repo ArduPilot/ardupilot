@@ -18,9 +18,15 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-#define WINDVANE_DEFAULT_PIN 15                     // default wind vane sensor analog pin
-#define WINDSPEED_DEFAULT_SPEED_PIN 14              // default pin for reading speed from ModernDevice rev p wind sensor
-#define WINDSPEED_DEFAULT_TEMP_PIN 13               // default pin for reading temperature from ModernDevice rev p wind sensor
+#ifndef WINDVANE_DEFAULT_PIN
+#define WINDVANE_DEFAULT_PIN -1                     // default wind vane sensor analog pin
+#endif
+#ifndef WINDSPEED_DEFAULT_SPEED_PIN
+#define WINDSPEED_DEFAULT_SPEED_PIN -1              // default pin for reading speed from ModernDevice rev p wind sensor
+#endif
+#ifndef WINDSPEED_DEFAULT_TEMP_PIN
+#define WINDSPEED_DEFAULT_TEMP_PIN -1               // default pin for reading temperature from ModernDevice rev p wind sensor
+#endif
 #define WINDSPEED_DEFAULT_VOLT_OFFSET 1.346f        // default voltage offset between speed and temp pins from ModernDevice rev p wind sensor
 
 class AP_WindVane_Backend;
