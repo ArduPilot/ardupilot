@@ -1051,19 +1051,26 @@ class AutoTestCopter(AutoTest):
         # takeoff in Loiter to 20m
         self.takeoff(20, mode="LOITER")
 
-        # simulate accel bias caused by high vibration
+        # simulate clipping on accelerometers by changing dynamic range to
+        # 4g and adding some motor frequency vibration
         self.set_parameters({
-            'SIM_ACC1_BIAS_Z': 2,
-            'SIM_ACC2_BIAS_Z': 2,
-            'SIM_ACC3_BIAS_Z': 2,
+            'SIM_ACC1_RND': 2,
+            'SIM_ACC2_RND': 2,
+            'SIM_ACC3_RND': 2,
+            'SIM_ACCEL1_CLIP': 5,
+            'SIM_ACCEL2_CLIP': 5,
+            'SIM_ACCEL3_CLIP': 5,
+            'SIM_VIB_MOT_MAX' : 10,
+            'SIM_VIB_MOT_MULT' : 5,
         })
 
         # wait for Vibration compensation warning and change to LAND mode
         self.wait_statustext("Vibration compensation ON", timeout=30)
         self.wait_mode("LAND")
 
-        # check vehicle descends to 2m or less within 30 seconds
-        self.wait_altitude(-5, 2, timeout=30, relative=True)
+        # check vehicle descends to 2m or less within 40 seconds
+        # use GPS altitude as EKF altitude will be unreliable
+        self.wait_altitude(-5, 2, timeout=40, relative=True, use_GPS=True)
 
         # force disarm of vehicle (it will likely not automatically disarm)
         self.disarm_vehicle(force=True)
