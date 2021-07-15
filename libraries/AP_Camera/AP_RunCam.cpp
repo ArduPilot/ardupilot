@@ -791,7 +791,6 @@ void AP_RunCam::start_uart()
     uart->configure_parity(0);
     uart->set_stop_bits(1);
     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    uart->set_blocking_writes(false);   // updates run in the main thread
     uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
     uart->begin(115200, 10, 10);
     uart->discard_input();
