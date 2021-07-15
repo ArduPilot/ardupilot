@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _PIN
     // @DisplayName: Input pin number
     // @Description: Which pin to use
-    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     AP_GROUPINFO("_PIN",    5, AP_RPM, _pin[0], -1),
 
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: 2_PIN
     // @DisplayName: RPM2 input pin number
     // @Description: Which pin to use
-    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
 
