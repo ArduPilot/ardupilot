@@ -72,7 +72,7 @@ bool AP_GPS_BinaryCRCMessageParser::parse(uint8_t data)
                 if (_read_size < _real_header_length) {
                     msg_header_buff[_read_size] = data;
                     _read_size++;
-                    break;
+                    
                 } else {
                     uint16_t body_len = get_message_body_length_from_header_buff();
                     if(body_len > _max_body_length) {
@@ -83,16 +83,20 @@ bool AP_GPS_BinaryCRCMessageParser::parse(uint8_t data)
                     _real_body_length = body_len;
                     _decode_step++;
                     Debug("Header data exit,Got real body length:%u",body_len);
-                }   // current data have not been readed, goto next case to read the data
+                    goto reset; // current data have not been readed, goto next case to read the data
+                }   
+                break;
             case 3: //body data
                 if(_read_size < (_real_header_length + _real_body_length)) {
                     msg_body_buff[_read_size - _real_header_length] = data;
                     _read_size++;
-                    break;
+                    
                 } else {
                     _decode_step++;
                     Debug("Body data exit");
-                }   // current data have not been readed, goto next case to read the data 
+                    goto reset; // current data have not been readed, goto next case to read the data 
+                }   
+                break;
             case 4: //CRC1
                 _msg_crc = (uint32_t) (data << 0);
                 _decode_step++;
