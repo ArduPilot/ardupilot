@@ -37,13 +37,14 @@ public:
     UARTDriver &operator=(const UARTDriver&) = delete;
 
     void begin(uint32_t b) override;
+    void begin_locked(uint32_t b, uint32_t write_key) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
     void end() override;
     void flush() override;
     bool is_initialized() override;
     void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
-
+    uint32_t get_usb_baud() const override;
 
     uint32_t available() override;
     uint32_t available_locked(uint32_t key) override;
@@ -91,6 +92,7 @@ public:
         uint8_t rxinv_polarity;
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
+        uint8_t endpoint_id;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
