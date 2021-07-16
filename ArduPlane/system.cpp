@@ -203,6 +203,14 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return true;
     }
 
+    if (new_mode.is_vtol_mode()) {
+        if (!quadplane.setup()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "QuadPlane not setup");
+            return false;
+        }
+        plane.auto_state.vtol_mode = true;
+    }
+
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");

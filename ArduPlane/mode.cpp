@@ -67,6 +67,9 @@ bool Mode::enter()
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
 
+    // stop ESC cal
+    AP_Notify::flags.esc_calibration = false;
+
     bool enter_result = _enter();
 
     if (enter_result) {

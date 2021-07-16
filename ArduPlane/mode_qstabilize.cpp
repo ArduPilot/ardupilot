@@ -3,12 +3,7 @@
 
 bool ModeQStabilize::_enter()
 {
-    if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
-        plane.control_mode = plane.previous_mode;
-    } else {
-        plane.auto_state.vtol_mode = true;
-    }
-
+    plane.quadplane.throttle_wait = false;
     return true;
 }
 
@@ -66,4 +61,17 @@ void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float 
     } else {
         plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min_cd, plane.quadplane.aparm.angle_max);
     }
+}
+
+void ModeQStabilize::run()
+{
+    // special check for ESC calibration in QSTABILIZE
+    if (plane.quadplane.esc_calibration != 0) {
+        plane.quadplane.run_esc_calibration();
+        return;
+    }
+
+    // normal QSTABILIZE mode
+    float pilot_throttle_scaled = plane.quadplane.get_pilot_throttle();
+    plane.quadplane.hold_stabilize(pilot_throttle_scaled);
 }

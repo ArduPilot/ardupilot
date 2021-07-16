@@ -183,19 +183,13 @@ void Plane::stabilize_pitch(float speed_scaler)
 void Plane::stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
+        control_mode->is_vtol_mode() ||
         control_mode == &mode_acro ||
         control_mode == &mode_fbwa ||
         control_mode == &mode_autotune ||
         control_mode == &mode_fbwb ||
         control_mode == &mode_cruise ||
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qrtl ||
-        control_mode == &mode_qacro ||
-        control_mode == &mode_training ||
-        control_mode == &mode_qautotune) {
+        control_mode == &mode_training) {
         return;
     }
     int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -214,19 +208,13 @@ void Plane::stabilize_stick_mixing_direct()
 void Plane::stabilize_stick_mixing_fbw()
 {
     if (!stick_mixing_enabled() ||
+        control_mode->is_vtol_mode() ||
         control_mode == &mode_acro ||
         control_mode == &mode_fbwa ||
         control_mode == &mode_autotune ||
         control_mode == &mode_fbwb ||
         control_mode == &mode_cruise ||
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qrtl ||
-        control_mode == &mode_qacro ||
         control_mode == &mode_training ||
-        control_mode == &mode_qautotune ||
         (control_mode == &mode_auto && g.auto_fbw_steer == 42)) {
         return;
     }
@@ -456,15 +444,18 @@ void Plane::stabilize()
         stabilize_training(speed_scaler);
     } else if (control_mode == &mode_acro) {
         stabilize_acro(speed_scaler);
-    } else if ((control_mode == &mode_qstabilize ||
-                control_mode == &mode_qhover ||
-                control_mode == &mode_qloiter ||
-                control_mode == &mode_qland ||
-                control_mode == &mode_qrtl ||
-                control_mode == &mode_qacro ||
-                control_mode == &mode_qautotune) &&
-               !quadplane.in_tailsitter_vtol_transition(now)) {
-        quadplane.control_run();
+    } else if (control_mode->is_vtol_mode() && !quadplane.in_tailsitter_vtol_transition(now)) {
+        if (quadplane.initialised) {
+            control_mode->run();
+
+            // we also stabilize using fixed wing surfaces
+            if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
+                plane.stabilize_acro(speed_scaler);
+            } else {
+                plane.stabilize_roll(speed_scaler);
+                plane.stabilize_pitch(speed_scaler);
+            }
+        }
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
