@@ -469,6 +469,7 @@ public:
     AP_Vector3f accel_trim;
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     AP_Float accel_clip[INS_MAX_INSTANCES];  // accelerometer clip limit
+    AP_Float accel_dBoct[INS_MAX_INSTANCES];  // accelerometer dB/octave harmonics
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
     AP_Int8 accel_fail_mask;

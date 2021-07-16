@@ -441,6 +441,10 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_GROUPINFO("ACCEL2_CLIP",  27, SITL, accel_clip[1],  0),
     AP_GROUPINFO("ACCEL3_CLIP",  28, SITL, accel_clip[2],  0),
 
+    AP_GROUPINFO("ACCEL1_DBOCT",  29, SITL, accel_dBoct[0],  0),
+    AP_GROUPINFO("ACCEL2_DBOCT",  30, SITL, accel_dBoct[1],  0),
+    AP_GROUPINFO("ACCEL3_DBOCT",  31, SITL, accel_dBoct[2],  0),
+    
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
