@@ -1115,7 +1115,6 @@ group_sim.add_option("--ekf-single",
                      action='store_true',
                      help="use single precision in EKF")
 group_sim.add_option("--enable-xrce-dds", action='store_true',
-                     default=True,
                      help="Enable the xrce client to connect with ROS2/DDS")
                      
 parser.add_option_group(group_sim)
