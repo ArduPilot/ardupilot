@@ -81,11 +81,53 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
 
     // @Param: 2_PIN
-    // @DisplayName: RPM2 input pin number
+    // @DisplayName: RPM3 input pin number
     // @Description: Which pin to use
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
-    AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
+    AP_GROUPINFO("2_PIN", 12, AP_RPM, _pin[1], -1),
+    
+    // @Param: 3_TYPE
+    // @DisplayName: Third RPM type
+    // @Description: What type of RPM sensor is connected
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
+    // @User: Advanced
+    AP_GROUPINFO("3_TYPE", 13, AP_RPM, _type[2], 0),
+
+    // @Param: 3_SCALING
+    // @DisplayName: RPM scaling
+    // @Description: Scaling factor between sensor reading and RPM.
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("3_SCALING", 14, AP_RPM, _scaling[2], 1.0f),
+
+    // @Param: 3_PIN
+    // @DisplayName: RPM3 input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("3_PIN", 15, AP_RPM, _pin[2], -1),
+    
+    // @Param: 4_TYPE
+    // @DisplayName: Fourth RPM type
+    // @Description: What type of RPM sensor is connected
+    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch
+    // @User: Advanced
+    AP_GROUPINFO("4_TYPE",    16, AP_RPM, _type[3], 0),
+
+    // @Param: 4_SCALING
+    // @DisplayName: RPM scaling
+    // @Description: Scaling factor between sensor reading and RPM.
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("4_SCALING", 17, AP_RPM, _scaling[3], 1.0f),
+
+    // @Param: 4_PIN
+    // @DisplayName: RPM4 input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("4_PIN",    18, AP_RPM, _pin[3], -1),
 #endif
 
     AP_GROUPEND
