@@ -4,6 +4,23 @@
 
 AP_HAL::UARTDriver *xrce_port;
 
+// Constructor (takes maximum number of topics as argument,by default it is 1)
+AP_XRCE_Client::AP_XRCE_Client(uint32_t maxtopics)
+    : max_topics(maxtopics)
+{
+    relativeSerialClientAddr=0;
+    relativeSerialAgentAddr=1;
+    connected=true;
+    ins_topic.accel_count=0;
+    ins_topic.gyro_count=0;
+
+    for(uint8_t i=0;i<3;i++) {
+        ins_topic.accel_scale[i]=0.0;
+        ins_topic.accel_offsets[i]=0.0;
+        ins_topic.gyro_offsets[i]=0.0;
+    }
+}
+
 bool AP_XRCE_Client::init()
 {
     xrce_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_ROS2, 0);

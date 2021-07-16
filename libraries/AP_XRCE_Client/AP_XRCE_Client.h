@@ -23,7 +23,7 @@ class AP_XRCE_Client {
 private:
 
     // Initialize
-    uint32_t max_topics; // Maximum number of topics the client can use
+    const uint32_t max_topics; // Maximum number of topics the client can use
     
     // Serial Device 
     uint8_t fd;
@@ -77,26 +77,8 @@ private:
     bool connected;
 
 public:
-    // Constructor (takes maximum number of topics as argument,by default it is 1)
-    AP_XRCE_Client(uint32_t maxtopics=1) {
-        
-        this->max_topics = maxtopics;
-        
-        relativeSerialClientAddr=0;
-        relativeSerialAgentAddr=1;
-        
-        connected=true;
-        
-        //this->topic.num=0;
-        
-        this->ins_topic.accel_count=0;
-        this->ins_topic.gyro_count=0;
-        for(uint8_t i=0;i<3;i++){
-            this->ins_topic.accel_scale[i]=0.0;
-            this->ins_topic.accel_offsets[i]=0.0;
-            this->ins_topic.gyro_offsets[i]=0.0;
-        }
-    }
+    // Constructor
+    AP_XRCE_Client(uint32_t maxtopics=1);
 
     bool init();
     bool create();
