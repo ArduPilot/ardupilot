@@ -1853,8 +1853,12 @@ void NavEKF3_core::ConstrainVariances()
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
     for (uint8_t i=4; i<=5; i++) P[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
 
-    // check for collapse of the vertical velocity variance
-    if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
+    // if vibration affected use sensor observation variances to set a floor on the state variances
+    if (badIMUdata) {
+        P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
+        P[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
+    } else if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
+        // handle collapse of the vertical velocity variance
         P[6][6] = VEL_STATE_MIN_VARIANCE;
         // this counter is decremented by 1 each prediction cycle in CovariancePrediction
         // resulting in the count from each clip event fading to zero over 1 second which
