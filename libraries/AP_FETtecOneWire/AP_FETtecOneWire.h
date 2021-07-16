@@ -172,11 +172,10 @@ private:
         bool telem_expected;                 ///< this ESC is fully configured and is now expected to send us telemetry
 #endif
 
-        uint8_t id;         ///< FETtec ESC ID
         uint8_t servo_ofs;  ///< offset into ArduPilot servo array
         bool is_awake;
         void set_state(ESCState _state) {
-            fet_debug("Moving ESC.id=%u from state=%u to state=%u", (unsigned)id, (unsigned)state, (unsigned)_state);
+            fet_debug("Moving ESC.servo_ofs=%u from state=%u to state=%u", (unsigned)servo_ofs, (unsigned)state, (unsigned)_state);
             state = _state;
         };
         ESCState state = ESCState::UNINITIALISED;

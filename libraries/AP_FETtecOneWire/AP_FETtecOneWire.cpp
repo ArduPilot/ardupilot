@@ -138,12 +138,10 @@ void AP_FETtecOneWire::init()
     // inside FETtec ESCs need to be contiguous and start at ID 1
     // which is important for sending "fast throttle" commands.
     uint8_t esc_offset = 0;  // offset into our device-driver dynamically-allocated array of ESCSs
-    uint8_t esc_id = 1;      // ESC ids inside FETtec protocol are one-indexed
     uint8_t servo_chan_offset = 0;  // offset into _motor_mask_parameter array
     for (uint32_t mask = _motor_mask; mask != 0; mask >>= 1, servo_chan_offset++) {
         if (mask & 0x1) {
             _escs[esc_offset].servo_ofs = servo_chan_offset;
-            _escs[esc_offset].id = esc_id++;
             esc_offset++;
         }
     }
@@ -489,23 +487,11 @@ void AP_FETtecOneWire::read_data_from_uart()
 
         // borrow the "OK" message to retrieve the esc id from the buffer:
         const uint8_t esc_id = u.packed_ok.esc_id;
-        bool handled = false;
-        // FIXME: we could scribble down the last ESC we sent a
-        // message to here and use it rather than doing this linear
-        // search:
-        for (uint8_t i=0; i<_esc_count; i++) {
-            auto &esc = _escs[i];
-            if (esc.id != esc_id) {
-                continue;
-            }
-            handle_message(esc, frame_length);
-            handled = true;
-            break;
-        }
-        if (!handled) {
+        if (esc_id > 0 && esc_id <= _esc_count) {
+            handle_message(_escs[esc_id-1], frame_length);
+        } else {
             _unknown_esc_message++;
         }
-
         consume_bytes(frame_length);
     }
 }
@@ -565,11 +551,11 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values)
     uint8_t esc_id_to_request_telem_from = 0;
 #if HAL_WITH_ESC_TELEM
     ESC &esc_to_req_telem_from = _escs[_esc_ofs_to_request_telem_from++];
+    esc_id_to_request_telem_from = _esc_ofs_to_request_telem_from;
     if (_esc_ofs_to_request_telem_from >= _esc_count) {
         _esc_ofs_to_request_telem_from = 0;
     }
     esc_to_req_telem_from.telem_expected = true;
-    esc_id_to_request_telem_from = esc_to_req_telem_from.id;
     _fast_throttle_cmd_count++;
 #endif
 
@@ -655,13 +641,14 @@ void AP_FETtecOneWire::configure_escs()
     // case we're in one-wire mode
     for (uint8_t i=0; i<_esc_count; i++) {
         auto &esc = _escs[i];
+        uint8_t esc_id = i + 1;
         switch (esc.state) {
         case ESCState::UNINITIALISED:
             esc.state = ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE;
             FALLTHROUGH;
         case ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE:
             // probe for bootloader or running firmware
-            if (transmit_config_request(PackedMessage<OK>{esc.id, OK{}})) {
+            if (transmit_config_request(PackedMessage<OK>{esc_id, OK{}})) {
                 esc.set_state(ESCState::WAITING_OK_FOR_RUNNING_SW_TYPE);
             }
             return;
@@ -671,7 +658,7 @@ void AP_FETtecOneWire::configure_escs()
             }
             return;
         case ESCState::WANT_SEND_START_FW:
-            if (transmit_config_request(PackedMessage<START_FW>{esc.id, START_FW{}})) {
+            if (transmit_config_request(PackedMessage<START_FW>{esc_id, START_FW{}})) {
                 esc.set_state(ESCState::WAITING_OK_FOR_START_FW);
             }
             return;
@@ -679,21 +666,21 @@ void AP_FETtecOneWire::configure_escs()
             return;
 #if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
         case ESCState::WANT_SEND_REQ_TYPE:
-            if (transmit_config_request(PackedMessage<REQ_TYPE>{esc.id, REQ_TYPE{}})) {
+            if (transmit_config_request(PackedMessage<REQ_TYPE>{esc_id, REQ_TYPE{}})) {
                 esc.set_state(ESCState::WAITING_ESC_TYPE);
             }
             return;
         case ESCState::WAITING_ESC_TYPE:
             return;
         case ESCState::WANT_SEND_REQ_SW_VER:
-            if (transmit_config_request(PackedMessage<REQ_SW_VER>{esc.id, REQ_SW_VER{}})) {
+            if (transmit_config_request(PackedMessage<REQ_SW_VER>{esc_id, REQ_SW_VER{}})) {
                 esc.set_state(ESCState::WAITING_SW_VER);
             }
             return;
         case ESCState::WAITING_SW_VER:
             return;
         case ESCState::WANT_SEND_REQ_SN:
-            if (transmit_config_request(PackedMessage<REQ_SN>{esc.id, REQ_SN{}})) {
+            if (transmit_config_request(PackedMessage<REQ_SN>{esc_id, REQ_SN{}})) {
                 esc.set_state(ESCState::WAITING_SN);
             }
             return;
@@ -702,7 +689,7 @@ void AP_FETtecOneWire::configure_escs()
 #endif  // HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
 #if HAL_WITH_ESC_TELEM
         case ESCState::WANT_SEND_SET_TLM_TYPE:
-            if (transmit_config_request(PackedMessage<SET_TLM_TYPE>{esc.id, SET_TLM_TYPE{1}})) {
+            if (transmit_config_request(PackedMessage<SET_TLM_TYPE>{esc_id, SET_TLM_TYPE{1}})) {
                 esc.set_state(ESCState::WAITING_SET_TLM_TYPE_OK);
             }
             return;
@@ -711,10 +698,10 @@ void AP_FETtecOneWire::configure_escs()
 #endif
         case ESCState::WANT_SEND_SET_FAST_COM_LENGTH:
             // FIXME: tidy this up a bit
-            if (transmit_config_request(PackedMessage<SET_FAST_COM_LENGTH>{esc.id,
+            if (transmit_config_request(PackedMessage<SET_FAST_COM_LENGTH>{esc_id,
                             SET_FAST_COM_LENGTH{
                             _fast_throttle_byte_count,
-                                _escs[0].id,
+                                1,
                                 _esc_count
                                 }})) {
                 esc.set_state(ESCState::WAITING_SET_FAST_COM_LENGTH_OK);
@@ -787,7 +774,7 @@ void AP_FETtecOneWire::update()
         } else {
             motor_pwm[i] = constrain_int16(c->get_output_pwm(), 1000, 2000);
         }
-        fet_debug("esc=%u in: %u", esc.id, motor_pwm[i]);
+        fet_debug("esc=%u in: %u", i+1U, motor_pwm[i]);
         if (_reverse_mask_parameter & (1U << i)) {
             motor_pwm[i] = 2000-motor_pwm[i];
         }
@@ -814,7 +801,7 @@ void AP_FETtecOneWire::update()
                 continue;
             }
             esc.last_reset_us = now;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting it", esc.id);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting it", i+1U);
             esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
         }
     }
@@ -848,7 +835,7 @@ void AP_FETtecOneWire::beep(const uint8_t beep_frequency)
         if (esc.state != ESCState::RUNNING) {
             continue;
         }
-        transmit_config_request(PackedMessage<Beep>{esc.id, Beep{beep_frequency}});
+        transmit_config_request(PackedMessage<Beep>{uint8_t(i+1), Beep{beep_frequency}});
     }
 }
 #endif  // HAL_AP_FETTEC_ESC_BEEP
@@ -867,7 +854,7 @@ void AP_FETtecOneWire::led_color(const uint8_t r, const uint8_t g, const uint8_t
         if (esc.state != ESCState::RUNNING) {
             continue;
         }
-        transmit_config_request(PackedMessage<LEDColour>{esc.id, LEDColour{r, g, b}});
+        transmit_config_request(PackedMessage<LEDColour>{uint8_t(i+1), LEDColour{r, g, b}});
     }
 }
 #endif  // HAL_AP_FETTEC_ESC_LIGHT
