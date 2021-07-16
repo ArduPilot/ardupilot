@@ -4,21 +4,10 @@
 
 AP_HAL::UARTDriver *xrce_port;
 
-AP_HAL::Semaphore *AP_XRCE_Client::get_clientsemaphore()
-{
-    return &(AP::ahrs().get_semaphore());
-}
-
 bool AP_XRCE_Client::init()
 {
     xrce_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_ROS2, 0);
     if (xrce_port == nullptr) {
-        return false;
-    }
-
-    _csem = AP_XRCE_Client::get_clientsemaphore();
-    if (!_csem){
-        hal.console->printf("No semaphore");
         return false;
     }
 
@@ -38,7 +27,7 @@ bool AP_XRCE_Client::init()
 }
 bool AP_XRCE_Client::create()
 {
-    WITH_SEMAPHORE(_csem);
+    WITH_SEMAPHORE(csem);
     participant_id=uxr_object_id(0x01,UXR_PARTICIPANT_ID);
     const char* participant_xml = "<dds>"
                                     "<participant>"
@@ -85,7 +74,7 @@ bool AP_XRCE_Client::create()
 
 void AP_XRCE_Client::write()
 {
-    WITH_SEMAPHORE(_csem);
+    WITH_SEMAPHORE(csem);
     if(connected)
     {
         ucdrBuffer ub;
@@ -101,7 +90,7 @@ void AP_XRCE_Client::updateINSTopic(AP_InertialSensor &ins)
     if (xrce_port == nullptr) {
         return;
     }
-    WITH_SEMAPHORE(_csem);
+    WITH_SEMAPHORE(csem);
     ins_topic.accel_count=ins.get_accel_count();
     ins_topic.gyro_count=ins.get_gyro_count();
     connected = uxr_run_session_time(&session,1000);

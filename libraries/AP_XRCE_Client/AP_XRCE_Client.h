@@ -71,8 +71,7 @@ private:
     Num topic;  // simple int topic for testing
     AP_INS ins_topic; // INS topics
 
-    // Semaphore
-    AP_HAL::Semaphore *_csem;
+    HAL_Semaphore csem;
 
     // connection parametrics
     bool connected;
@@ -103,7 +102,6 @@ public:
     bool create();
     void write();
     void updateINSTopic(AP_InertialSensor& ins); 
-    AP_HAL::Semaphore* get_clientsemaphore();
 };
 
 #endif // AP_XRCE_ENABLED
