@@ -72,6 +72,7 @@ HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 // Member Methods
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _state, nullptr),
+    interim_state(_state),
     role(_role)
 {
     param_int_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_int, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);

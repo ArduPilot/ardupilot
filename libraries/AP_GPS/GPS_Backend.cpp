@@ -385,11 +385,8 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
-            state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
-            state.have_gps_yaw = true;
-            state.gps_yaw_time_ms = AP_HAL::millis();
-            interim_state.gps_yaw = state.gps_yaw;
-            interim_state.have_gps_yaw = state.have_gps_yaw;
+            interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
+            interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
         }
     }
