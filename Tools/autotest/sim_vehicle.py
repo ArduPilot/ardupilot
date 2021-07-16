@@ -336,6 +336,9 @@ def do_build(opts, frame_options):
     if opts.ekf_single:
         cmd_configure.append("--ekf-single")
 
+    if opts.enable_xrce_dds:
+        cmd_configure.append("--enable-xrce-dds")
+        
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -1114,6 +1117,9 @@ group_sim.add_option("--ekf-double",
 group_sim.add_option("--ekf-single",
                      action='store_true',
                      help="use single precision in EKF")
+group_sim.add_option("--enable-xrce-dds", action='store_true',
+                     help="Enable the xrce client to connect with ROS2/DDS")
+                     
 parser.add_option_group(group_sim)
 
 
