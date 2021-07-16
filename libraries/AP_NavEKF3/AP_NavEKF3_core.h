@@ -102,6 +102,9 @@
 // Number of milliseconds of bad IMU data before a reset to vertical position and velocity height sources is performed
 #define BAD_IMU_DATA_TIMEOUT_MS 1000
 
+// number of milliseconds the bad IMU data response settings will be held after the last bad IMU data is detected
+#define BAD_IMU_DATA_HOLD_MS 10000
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
