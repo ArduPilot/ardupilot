@@ -71,7 +71,22 @@ public:
     bool get_RTCMV3(const uint8_t *&data, uint16_t &len) override;
     void clear_RTCMV3() override;
 #endif
+
 private:
+
+    bool param_configured = true;
+    enum config_step {
+        STEP_SET_TYPE = 0,
+        STEP_SET_MB_CAN_TX,
+        STEP_SAVE_AND_REBOOT,
+        STEP_FINISHED
+    };
+    uint8_t cfg_step;
+    bool requires_save_and_reboot;
+
+    // returns true once configuration has finished
+    bool do_config(void);
+
     void handle_fix_msg(const FixCb &cb);
     void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
@@ -79,8 +94,8 @@ private:
     void handle_status_msg(const StatusCb &cb);
 
 #if GPS_MOVING_BASELINE
-    void handle_moving_baseline_msg(const MovingBaselineDataCb &cb);
-    void handle_relposheading_msg(const RelPosHeadingCb &cb);
+    void handle_moving_baseline_msg(const MovingBaselineDataCb &cb, uint8_t node_id);
+    void handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id);
 #endif
 
     static bool take_registry();
@@ -90,18 +105,6 @@ private:
     bool _new_data;
     AP_GPS::GPS_State interim_state;
 
-#if GPS_MOVING_BASELINE
-    bool _new_heading_data;
-    struct {
-        uint32_t time_ms;
-        float reported_heading;
-        bool reported_heading_acc_available;
-        float reported_heading_acc;
-        float relative_distance;
-        float relative_down_pos;
-    } heading_interim_state;
-    HAL_Semaphore sem_heading;
-#endif
     HAL_Semaphore sem;
 
     uint8_t _detected_module;
@@ -132,4 +135,11 @@ private:
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
 
+    FUNCTOR_DECLARE(param_int_cb, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
+    FUNCTOR_DECLARE(param_float_cb, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_DECLARE(param_save_cb, void, AP_UAVCAN*, const uint8_t, bool);
+
+    bool handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, const uint8_t node_id, const char* name, int32_t &value);
+    bool handle_param_get_set_response_float(AP_UAVCAN* ap_uavcan, const uint8_t node_id, const char* name, float &value);
+    void handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8_t node_id, bool success);
 };

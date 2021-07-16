@@ -1868,7 +1868,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         // always bail out in this case, it's used to indicate we have yet to receive a valid
         // hardware generation, however the user may have inhibited us detecting the generation
         // so if we aren't allowed to do configuration, we will accept this as the default delay
-        return gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_ENABLE;
+        return gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE;
     case UBLOX_5:
     case UBLOX_6:
     default:
