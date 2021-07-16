@@ -174,7 +174,6 @@ submodules at specific revisions.
                  help="Enables and sets up ONVIF camera control")
 
     g.add_option('--enable-xrce-dds', action='store_true',
-                 default=True,
                  help="Enable the xrce client to connect with ROS2/DDS"
     )
 

@@ -75,8 +75,10 @@ class Board:
             env.AP_LIBRARIES += [
                 'AP_XRCE_Client'
             ]
+            env.DEFINES.update(AP_XRCE_ENABLED = 1)
         else:
             env.ENABLE_XRCE_DDS = False
+            env.DEFINES.update(AP_XRCE_ENABLED = 0)
 
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
