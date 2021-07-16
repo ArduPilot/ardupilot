@@ -39,6 +39,21 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define GPS_UAVCAN_DEBUGGING 0
+
+#if GPS_UAVCAN_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 #define LOG_TAG "GPS"
 
 UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
@@ -58,7 +73,11 @@ HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _state, nullptr),
     role(_role)
-{}
+{
+    param_int_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_int, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
+    param_float_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_float, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
+    param_save_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_save_response, void, AP_UAVCAN*, const uint8_t, bool);
+}
 
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 {
@@ -185,7 +204,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         return NULL;
     }
     // initialise the backend based on the UAVCAN Moving baseline selection
-    switch (_gps.get_type(found_match)) {
+    switch (_gps.get_type(_state.instance)) {
         case AP_GPS::GPS_TYPE_UAVCAN:
             backend = new AP_GPS_UAVCAN(_gps, _state, AP_GPS::GPS_ROLE_NORMAL);
             break;
@@ -738,9 +757,49 @@ void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, ui
 }
 #endif
 
+bool AP_GPS_UAVCAN::do_config()
+{
+    AP_UAVCAN *ap_uavcan = _detected_modules[_detected_module].ap_uavcan;
+    if (ap_uavcan == nullptr) {
+        return false;
+    }
+    uint8_t node_id = _detected_modules[_detected_module].node_id;
+    
+    switch(cfg_step) {
+        case STEP_SET_TYPE:
+            ap_uavcan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);
+            break;
+        case STEP_SET_MB_CAN_TX:
+            if (role != AP_GPS::GPS_Role::GPS_ROLE_NORMAL) {
+                ap_uavcan->get_parameter_on_node(node_id, "GPS_MB_ONLY_PORT", &param_int_cb);
+            } else {
+                cfg_step++;
+            }
+            break;
+        case STEP_SAVE_AND_REBOOT:
+            if (requires_save_and_reboot) {
+                ap_uavcan->save_parameters_on_node(node_id, &param_save_cb);
+            } else {
+                cfg_step++;
+            }
+            break;
+        case STEP_FINISHED:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
 // Consume new data and mark it received
 bool AP_GPS_UAVCAN::read(void)
 {
+    if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_ALL) {
+        if (!do_config()) {
+            return false;
+        }
+    }
+
     WITH_SEMAPHORE(sem);
     if (_new_data) {
         _new_data = false;
@@ -803,6 +862,69 @@ void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
     if (_detected_module == 0) {
         _detected_modules[0].ap_uavcan->send_RTCMStream(data, len);
     }
+}
+
+/*
+    handle param get/set response
+*/
+bool AP_GPS_UAVCAN::handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, uint8_t node_id, const char* name, int32_t &value)
+{
+    Debug("AP_GPS_UAVCAN: param set/get response from %d %s %ld\n", node_id, name, value);
+    if (strcmp(name, "GPS_TYPE") == 0 && cfg_step == STEP_SET_TYPE) {
+        if (role == AP_GPS::GPS_ROLE_MB_BASE && value != AP_GPS::GPS_TYPE_UBLOX_RTK_BASE) {
+            value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_BASE;
+            requires_save_and_reboot = true;
+            return true;
+        } else if (role == AP_GPS::GPS_ROLE_MB_ROVER && value != AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER) {
+            value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_ROVER;
+            requires_save_and_reboot = true;
+            return true;
+        } else {
+            cfg_step++;
+        }
+    }
+
+    if (strcmp(name, "GPS_MB_ONLY_PORT") == 0 && cfg_step == STEP_SET_MB_CAN_TX) {
+        if (gps._driver_options == 0 && value != 1) {
+            // set up so that another CAN port is used for the Moving Baseline Data
+            // setting this value will allow another CAN port to be used as dedicated
+            // line for the Moving Baseline Data
+            value = 1;
+            requires_save_and_reboot = true;
+            return true;
+        } else if (gps._driver_options != 0 && value != 0) {
+            // set up so that all CAN ports are used for the Moving Baseline Data
+            value = 0;
+            requires_save_and_reboot = true;
+            return true;
+        } else {
+            cfg_step++;
+        }
+    }
+    return false;
+}
+
+bool AP_GPS_UAVCAN::handle_param_get_set_response_float(AP_UAVCAN* ap_uavcan, uint8_t node_id, const char* name, float &value)
+{
+    Debug("AP_GPS_UAVCAN: param set/get response from %d %s %f\n", node_id, name, value);
+    return false;
+}
+
+void AP_GPS_UAVCAN::handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8_t node_id, bool success)
+{
+    Debug("AP_GPS_UAVCAN: param save response from %d %s\n", node_id, success ? "success" : "failure");
+
+    if (cfg_step != STEP_SAVE_AND_REBOOT) {
+        return;
+    }
+
+    if (success) {
+        cfg_step++;
+    }
+    // Also send reboot command
+    // this is ok as we are sending from UAVCAN thread context
+    Debug("AP_GPS_UAVCAN: sending reboot command %d\n", node_id);
+    ap_uavcan->send_reboot_request(node_id);
 }
 
 #endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
