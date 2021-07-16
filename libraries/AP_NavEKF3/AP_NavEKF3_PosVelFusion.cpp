@@ -688,7 +688,7 @@ void NavEKF3_core::FuseVelPosNED()
             const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
             const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS_DATA_CHECKS[2]))) {
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * R_OBS[5]) && (sq(velDErr) > 9.0f * R_OBS[2])) {
                 badIMUdata_ms = imuSampleTime_ms;
             } else {
                 goodIMUdata_ms = imuSampleTime_ms;
