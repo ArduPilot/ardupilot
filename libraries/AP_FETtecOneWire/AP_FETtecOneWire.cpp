@@ -765,16 +765,13 @@ void AP_FETtecOneWire::update()
     for (uint8_t i = 0; i < _esc_count; i++) {
         const ESC &esc = _escs[i];
         const SRV_Channel* c = SRV_Channels::srv_channel(esc.servo_ofs);
-        if (c == nullptr) { // this should never ever happen, but just in case ...
+        // check if safety switch has been pushed
+        if (   (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED)
+            || (c == nullptr)) {  // this should never ever happen, but just in case ...
             motor_pwm[i] = 1000;  // stop motor
             continue;
         }
-        // check if safety switch has been pushed
-        if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-            motor_pwm[i] = 1000;  // stop motor
-        } else {
-            motor_pwm[i] = constrain_int16(c->get_output_pwm(), 1000, 2000);
-        }
+        motor_pwm[i] = constrain_int16(c->get_output_pwm(), 1000, 2000);
         fet_debug("esc=%u in: %u", i+1U, motor_pwm[i]);
         if (_reverse_mask_parameter & (1U << i)) {
             motor_pwm[i] = 2000-motor_pwm[i];
