@@ -569,6 +569,17 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 
 void UARTDriver::begin(uint32_t b)
 {
+    if (lock_write_key != 0) {
+        return;
+    }
+    begin(b, 0, 0);
+}
+
+void UARTDriver::begin_locked(uint32_t b, uint32_t key)
+{
+    if (lock_write_key != 0 && key != lock_write_key) {
+        return;
+    }
     begin(b, 0, 0);
 }
 
@@ -617,6 +628,20 @@ void UARTDriver::set_blocking_writes(bool blocking)
 }
 
 bool UARTDriver::tx_pending() { return false; }
+
+
+/*
+    get the requested usb baudrate - 0 = none
+*/
+uint32_t UARTDriver::get_usb_baud() const
+{
+#if HAL_USE_SERIAL_USB
+    if (sdef.is_usb) {
+        return ::get_usb_baud(sdef.endpoint_id);
+    }
+#endif
+    return 0;
+}
 
 /* Empty implementations of Stream virtual methods */
 uint32_t UARTDriver::available() {
