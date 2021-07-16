@@ -89,6 +89,7 @@ public:
         MSP = 32,
         USD1_CAN = 33,
         SITL = 100,
+        TOF10120_I2C = 120,
     };
 
     enum class Function {
