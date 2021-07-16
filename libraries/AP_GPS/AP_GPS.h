@@ -119,6 +119,8 @@ public:
         GPS_TYPE_MSP = 19,
         GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
         GPS_TYPE_EXTERNAL_AHRS = 21,
+        GPS_TYPE_UAVCAN_RTK_BASE = 22,
+        GPS_TYPE_UAVCAN_RTK_ROVER = 23,
     };
 
     /// GPS status codes
@@ -199,6 +201,11 @@ public:
         uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
         int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
     };
+
+#if GPS_MOVING_BASELINE
+    FUNCTOR_TYPEDEF(MovingBaselineDataCb, void, const uint8_t*&, uint16_t);
+    FUNCTOR_TYPEDEF(RelPosHeadingCb , void, uint32_t, float, float, float, float);
+#endif
 
     /// Startup initialisation.
     void init(const AP_SerialManager& serial_manager);
@@ -531,6 +538,13 @@ public:
         DoNotChange = 2,
     };
 
+#if GPS_MOVING_BASELINE
+    // methods used by UAVCAN GPS driver and AP_Periph for moving baseline
+    void inject_MBL_data(uint8_t* data, uint16_t length);
+    void set_MBL_data_cb(MovingBaselineDataCb cb) { _mbl_data_cb = cb; }
+    void set_RelPosHeading_cb(RelPosHeadingCb cb) { _relposheading_cb = cb; }
+#endif // GPS_MOVING_BASELINE
+
 protected:
 
     // configuration parameters
@@ -688,7 +702,8 @@ private:
     // Auto configure types
     enum GPS_AUTO_CONFIG {
         GPS_AUTO_CONFIG_DISABLE = 0,
-        GPS_AUTO_CONFIG_ENABLE  = 1
+        GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY  = 1,
+        GPS_AUTO_CONFIG_ENABLE_ALL = 2,
     };
 
     enum class GPSAutoSwitch {
@@ -708,6 +723,11 @@ private:
     // logging support
     void Write_GPS(uint8_t instance);
 
+    // MovingBaseline data Callbacks
+#if GPS_MOVING_BASELINE
+    MovingBaselineDataCb _mbl_data_cb;
+    RelPosHeadingCb _relposheading_cb;
+#endif
 };
 
 namespace AP {

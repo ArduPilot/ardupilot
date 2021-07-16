@@ -162,6 +162,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(gps_port, "GPS_PORT", HAL_PERIPH_GPS_PORT_DEFAULT),
+
+#if HAL_NUM_CAN_IFACES >= 2
+    // @Param: MB_CAN_PORT
+    // @DisplayName: Moving Baseline CAN Port option
+    // @Description: This is the dedicated CAN port on which moving baseline data will be transmitted.
+    // @Values: 0:Sends moving baseline data on all ports,1:auto select remaining port for transmitting Moving baseline Data
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(gps_mb_only_can_port, "GPS_MB_ONLY_PORT", 0),
+#endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
@@ -331,6 +341,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+
+    // @Group: SERIAL
+    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
+    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 #endif
 
     AP_VAREND

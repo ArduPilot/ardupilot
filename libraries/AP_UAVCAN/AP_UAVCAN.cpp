@@ -41,6 +41,7 @@
 #include <ardupilot/indication/SafetyState.hpp>
 #include <ardupilot/indication/Button.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
+#include <ardupilot/gnss/MovingBaselineData.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
 
@@ -114,6 +115,19 @@ static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#if GPS_MOVING_BASELINE
+static uavcan::Publisher<ardupilot::gnss::MovingBaselineData>* moving_baseline_data[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#endif
+
+// Clients
+UC_CLIENT_CALL_REGISTRY_BINDER(ParamGetSetCb, uavcan::protocol::param::GetSet);
+static uavcan::ServiceClient<uavcan::protocol::param::GetSet, ParamGetSetCb>* param_get_set_client[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::protocol::param::GetSet::Request param_getset_req[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+UC_CLIENT_CALL_REGISTRY_BINDER(ParamExecuteOpcodeCb, uavcan::protocol::param::ExecuteOpcode);
+static uavcan::ServiceClient<uavcan::protocol::param::ExecuteOpcode, ParamExecuteOpcodeCb>* param_execute_opcode_client[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::protocol::param::ExecuteOpcode::Request param_save_req[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
 
 // subscribers
 
@@ -183,7 +197,7 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wframe-larger-than=1400"
+#pragma GCC diagnostic error "-Wframe-larger-than=1700"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -294,6 +308,17 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
     
+#if GPS_MOVING_BASELINE
+    moving_baseline_data[driver_index] = new uavcan::Publisher<ardupilot::gnss::MovingBaselineData>(*_node);
+    moving_baseline_data[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    moving_baseline_data[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    AP::gps().set_MBL_data_cb(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::moving_baseline_data_cb, void, const uint8_t *&, uint16_t));
+#endif
+
+    param_get_set_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::GetSet, ParamGetSetCb>(*_node, ParamGetSetCb(this, &AP_UAVCAN::handle_param_get_set_response));
+
+    param_execute_opcode_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::ExecuteOpcode, ParamExecuteOpcodeCb>(*_node, ParamExecuteOpcodeCb(this, &AP_UAVCAN::handle_param_save_response));
+
     safety_button_listener[driver_index] = new uavcan::Subscriber<ardupilot::indication::Button, ButtonCb>(*_node);
     if (safety_button_listener[driver_index]) {
         safety_button_listener[driver_index]->start(ButtonCb(this, &handle_button));
@@ -392,6 +417,8 @@ void AP_UAVCAN::loop(void)
         buzzer_send();
         rtcm_stream_send();
         safety_state_send();
+        send_parameter_request();
+        send_parameter_save_request();
         AP::uavcan_dna_server().verify_nodes(this);
     }
 }
@@ -630,6 +657,73 @@ void AP_UAVCAN::rtcm_stream_send()
     rtcm_stream[_driver_index]->broadcast(msg);
 }
 
+#if GPS_MOVING_BASELINE
+void AP_UAVCAN::moving_baseline_data_cb(const uint8_t *&data, uint16_t len)
+{
+    bool send_moving_baseline = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // Check if we have a receiver marked as UAVCAN RTK ROVER
+        // only then we send the moving baseline message
+        if (AP::gps().get_type(i) == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER) {
+            send_moving_baseline = true;
+        } 
+    }
+    if (!send_moving_baseline) {
+        // nothing to do
+        return;
+    }
+
+    WITH_SEMAPHORE(_mbl_data.sem);
+
+    if (_mbl_data.frames == nullptr) {
+        // give enough space for a full round from a NTRIP server with all
+        // constellations
+        _mbl_data.frames = new ObjectBuffer<AP_UAVCAN::MBLFrame>(8);
+    }
+    if (_mbl_data.frames == nullptr ||
+        _mbl_data.frames->get_size() == 0) {
+        return;
+    }
+    MBLFrame frame;
+    memcpy(frame.data, data, len);
+    frame.len = len;
+    _mbl_data.frames->push(frame);
+}
+
+void AP_UAVCAN::moving_baseline_data_send()
+{
+    if (_mbl_data.frames == nullptr ||
+        _mbl_data.frames->available() == 0) {
+        // nothing to send
+        return;
+    }
+    bool send_moving_baseline = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // Check if we have a receiver marked as UAVCAN RTK ROVER
+        // only then we send the moving baseline message
+        if (AP::gps().get_type(i) == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER) {
+            send_moving_baseline = true;
+        } 
+    }
+
+    if (!send_moving_baseline) {
+        return;
+    }
+    WITH_SEMAPHORE(_mbl_data.sem);
+    MBLFrame frame;
+    if (!_mbl_data.frames->pop(frame)) {
+        return;
+    }
+    ardupilot::gnss::MovingBaselineData msg;
+    static_assert(RTCM3_MAX_PACKET_LEN == msg.data.MaxSize, "RTCM3_MAX_PACKET_LEN must match MovingBaseline::data::MaxSize");
+
+    for (uint16_t i=0; i<frame.len; i++) {
+        msg.data.push_back(frame.data[i]);
+    }
+    moving_baseline_data[_driver_index]->broadcast(msg);
+}
+#endif // GPS_MOVING_BASELINE
+
 // SafetyState send
 void AP_UAVCAN::safety_state_send()
 {
@@ -833,6 +927,175 @@ void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugC
         AP::logger().Write_MessageF("CAN[%u] %s", node_id, msg.text.c_str());
     }
 #endif
+}
+
+void AP_UAVCAN::send_parameter_request()
+{
+    WITH_SEMAPHORE(_param_sem);
+    if (param_request_sent) {
+        return;
+    }
+    param_get_set_client[_driver_index]->call(param_request_node_id, param_getset_req[_driver_index]);
+    param_request_sent = true;
+}
+
+bool AP_UAVCAN::set_parameter_on_node(uint8_t node_id, const char *name, float value, ParamGetSetFloatCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr) {
+        //busy
+        return false;
+    }
+    param_getset_req[_driver_index].index = 0;
+    param_getset_req[_driver_index].name = name;
+    param_getset_req[_driver_index].value.to<uavcan::protocol::param::Value::Tag::real_value>() = value;
+    param_float_cb = cb;
+    param_request_sent = false;
+    param_request_node_id = node_id;
+    return true;
+}
+
+bool AP_UAVCAN::set_parameter_on_node(uint8_t node_id, const char *name, int32_t value, ParamGetSetIntCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr) {
+        //busy
+        return false;
+    }
+    param_getset_req[_driver_index].index = 0;
+    param_getset_req[_driver_index].name = name;
+    param_getset_req[_driver_index].value.to<uavcan::protocol::param::Value::Tag::integer_value>() = value;
+    param_int_cb = cb;
+    param_request_sent = false;
+    param_request_node_id = node_id;
+    return true;
+}
+
+bool AP_UAVCAN::get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetFloatCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr) {
+        //busy
+        return false;
+    }
+    param_getset_req[_driver_index].index = 0;
+    param_getset_req[_driver_index].name = name;
+    param_getset_req[_driver_index].value.to<uavcan::protocol::param::Value::Tag::empty>();
+    param_float_cb = cb;
+    param_request_sent = false;
+    param_request_node_id = node_id;
+    return true;
+}
+
+bool AP_UAVCAN::get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetIntCb *cb)
+{
+    WITH_SEMAPHORE(_param_sem);
+    if (param_int_cb != nullptr ||
+        param_float_cb != nullptr) {
+        //busy
+        return false;
+    }
+    param_getset_req[_driver_index].index = 0;
+    param_getset_req[_driver_index].name = name;
+    param_getset_req[_driver_index].value.to<uavcan::protocol::param::Value::Tag::empty>();
+    param_int_cb = cb;
+    param_request_sent = false;
+    param_request_node_id = node_id;
+    return true;
+}
+
+void AP_UAVCAN::handle_param_get_set_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamGetSetCb &cb)
+{
+    WITH_SEMAPHORE(ap_uavcan->_param_sem);
+    if (!ap_uavcan->param_int_cb &&
+        !ap_uavcan->param_float_cb) {
+        return;
+    }
+    uavcan::protocol::param::GetSet::Response rsp = cb.rsp->getResponse();
+    if (rsp.value.is(uavcan::protocol::param::Value::Tag::integer_value) && ap_uavcan->param_int_cb) {
+        int32_t val = rsp.value.to<uavcan::protocol::param::Value::Tag::integer_value>();
+        if ((*ap_uavcan->param_int_cb)(ap_uavcan, node_id, rsp.name.c_str(), val)) {
+            // we want the parameter to be set with val
+            param_getset_req[ap_uavcan->_driver_index].index = 0;
+            param_getset_req[ap_uavcan->_driver_index].name = rsp.name;
+            param_getset_req[ap_uavcan->_driver_index].value.to<uavcan::protocol::param::Value::Tag::integer_value>() = val;
+            ap_uavcan->param_int_cb = ap_uavcan->param_int_cb;
+            ap_uavcan->param_request_sent = false;
+            ap_uavcan->param_request_node_id = node_id;
+            return;
+        }
+    } else if (rsp.value.is(uavcan::protocol::param::Value::Tag::real_value) && ap_uavcan->param_float_cb) {
+        float val = rsp.value.to<uavcan::protocol::param::Value::Tag::real_value>();
+        if ((*ap_uavcan->param_float_cb)(ap_uavcan, node_id, rsp.name.c_str(), val)) {
+            // we want the parameter to be set with val
+            param_getset_req[ap_uavcan->_driver_index].index = 0;
+            param_getset_req[ap_uavcan->_driver_index].name = rsp.name;
+            param_getset_req[ap_uavcan->_driver_index].value.to<uavcan::protocol::param::Value::Tag::real_value>() = val;
+            ap_uavcan->param_float_cb = ap_uavcan->param_float_cb;
+            ap_uavcan->param_request_sent = false;
+            ap_uavcan->param_request_node_id = node_id;
+            return;
+        }
+    }
+    ap_uavcan->param_int_cb = nullptr;
+    ap_uavcan->param_float_cb = nullptr;
+}
+
+
+void AP_UAVCAN::send_parameter_save_request()
+{
+    WITH_SEMAPHORE(_param_save_sem);
+    if (param_save_request_sent) {
+        return;
+    }
+    param_execute_opcode_client[_driver_index]->call(param_save_request_node_id, param_save_req[_driver_index]);
+    param_save_request_sent = true;
+}
+
+bool AP_UAVCAN::save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb)
+{
+    WITH_SEMAPHORE(_param_save_sem);
+    if (save_param_cb != nullptr) {
+        //busy
+        return false;
+    }
+
+    param_save_req[_driver_index].opcode = uavcan::protocol::param::ExecuteOpcode::Request::OPCODE_SAVE;
+    param_save_request_sent = false;
+    param_save_request_node_id = node_id;
+    save_param_cb = cb;
+    return true;
+}
+
+// handle parameter save request response
+void AP_UAVCAN::handle_param_save_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamExecuteOpcodeCb &cb)
+{
+    WITH_SEMAPHORE(ap_uavcan->_param_save_sem);
+    if (!ap_uavcan->save_param_cb) {
+        return;
+    }
+    uavcan::protocol::param::ExecuteOpcode::Response rsp = cb.rsp->getResponse();
+    (*ap_uavcan->save_param_cb)(ap_uavcan, node_id, rsp.ok);
+    ap_uavcan->save_param_cb = nullptr;
+}
+
+// Send Reboot command
+// Note: Do not call this from outside UAVCAN thread context,
+// THIS IS NOT A THREAD SAFE API!
+void AP_UAVCAN::send_reboot_request(uint8_t node_id)
+{
+    if (_node == nullptr) {
+        return;
+    }
+    uavcan::protocol::RestartNode::Request request;
+    request.magic_number = uavcan::protocol::RestartNode::Request::MAGIC_NUMBER;
+    uavcan::ServiceClient<uavcan::protocol::RestartNode> client(*_node);
+    client.setCallback([](const uavcan::ServiceCallResult<uavcan::protocol::RestartNode>& call_result){});
+
+    client.call(node_id, request);
 }
 
 #endif // HAL_NUM_CAN_IFACES
