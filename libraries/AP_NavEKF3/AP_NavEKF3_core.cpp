@@ -233,6 +233,8 @@ void NavEKF3_core::InitialiseVariables()
     hgtTimeout = true;
     tasTimeout = true;
     badIMUdata = false;
+    badIMUdata_ms = 0;
+    goodIMUdata_ms = 0;
     vertVelVarClipCounter = 0;
     finalInflightYawInit = false;
     dtIMUavg = ins.get_loop_delta_t();
@@ -1135,7 +1137,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         ftype _gyrNoise = constrain_ftype(frontend->_gyrNoise, 0.0f, 1.0f);
         daxVar = dayVar = dazVar = sq(dt*_gyrNoise);
     }
-    ftype _accNoise = badIMUdata ? BAD_IMU_DATA_ACC_P_NSE : constrain_ftype(frontend->_accNoise, 0.0f, 10.0f);
+    ftype _accNoise = badIMUdata ? BAD_IMU_DATA_ACC_P_NSE : constrain_ftype(frontend->_accNoise, 0.0f, BAD_IMU_DATA_ACC_P_NSE);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
 
     if (!inhibitDelVelBiasStates) {
