@@ -343,6 +343,7 @@ struct PACKED log_XKQ {
 // @Field: BI: barometer selection index
 // @Field: GI: GPS selection index
 // @Field: AI: airspeed selection index
+// @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -351,6 +352,7 @@ struct PACKED log_XKFS {
     uint8_t baro_index;
     uint8_t gps_index;
     uint8_t airspeed_index;
+    uint8_t source_set;
 };
 
 // @LoggerMessage: XKTV
@@ -436,7 +438,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------"}, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
+      "XKFS","QBBBBBB","TimeUS,C,MI,BI,GI,AI,SS", "s#-----", "F------" }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000"}, \
