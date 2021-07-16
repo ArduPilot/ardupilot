@@ -7234,7 +7234,7 @@ class AutoTestCopter(AutoTest):
             "SERVO8_FUNCTION": 36,
         })
         self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
-        self.FETtecESC_safety_switch()
+        #self.FETtecESC_safety_switch()
         self.FETtecESC_esc_power_checks()
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()

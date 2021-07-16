@@ -171,10 +171,6 @@ void AP_FETtecOneWire::init()
 #endif
     _min_update_period_us = (fast_throttle_byte_count + telemetry_byte_count) * 9 * 1000000 / uart_baud + 300; // 300us extra reserve
 
-    // tell SRV_Channels about ESC capabilities
-    // FIXME: should we wait until we've seen all ESCs before doing this?
-    SRV_Channels::set_digital_outputs(_motor_mask, 0);
-
     _init_done = true;
 }
 
@@ -758,6 +754,16 @@ void AP_FETtecOneWire::update()
     // run ESC configuration state machines if needed
     if (_running_mask != _motor_mask) {
         configure_escs();
+        if (!_digital_outputs_init_done) {
+            return; // do not send fast-throttle until all ESCs are configured and running
+        }
+    } else {
+        if (!_digital_outputs_init_done) {
+            // Now that all ESCs are configured,
+            // tell SRV_Channels about ESC capabilities
+            SRV_Channels::set_digital_outputs(_motor_mask, 0);
+            _digital_outputs_init_done = true;
+        }
     }
 
     // get ESC set points

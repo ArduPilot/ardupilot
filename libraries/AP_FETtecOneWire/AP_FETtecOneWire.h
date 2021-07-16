@@ -205,6 +205,7 @@ private:
 
     bool _init_done;     ///< device driver is initialized; ESCs may still need to be configured
     bool _invalid_mask;  ///< true if the mask parameter is invalid
+    bool _digital_outputs_init_done;  ///< SRV_Channels::set_digital_outputs() is done
 
     enum class FrameSource : uint8_t {
         MASTER     = 0x01,  ///< master is always 0x01
