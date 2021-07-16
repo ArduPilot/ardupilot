@@ -351,6 +351,10 @@ public:
     // returns true when the yaw angle has been aligned
     bool yawAlignmentComplete(void) const;
 
+    // returns true when the state estimates for the selected core are significantly degraded by vibration
+    // if instance < 0, the primary instance will be used
+    bool isVibrationAffected(int8_t instance) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

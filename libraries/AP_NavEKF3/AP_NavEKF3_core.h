@@ -403,6 +403,9 @@ public:
 
     void Log_Write(uint64_t time_us);
 
+    // returns true when the state estimates are significantly degraded by vibration
+    bool isVibrationAffected() const { return badIMUdata; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
