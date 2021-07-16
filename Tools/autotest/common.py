@@ -1209,6 +1209,7 @@ class AutoTest(ABC):
                  _show_test_timings=False,
                  logs_dir=None,
                  force_ahrs_type=None,
+                 replay=False,
                  sup_binaries=[]):
 
         self.start_time = time.time()
@@ -1253,6 +1254,7 @@ class AutoTest(ABC):
         self.total_waiting_to_arm_time = 0
         self.waiting_to_arm_count = 0
         self.force_ahrs_type = force_ahrs_type
+        self.replay = replay
         if self.force_ahrs_type is not None:
             self.force_ahrs_type = int(self.force_ahrs_type)
         self.logs_dir = logs_dir
@@ -2170,6 +2172,8 @@ class AutoTest(ABC):
             if self.force_ahrs_type == 3:
                 ret["EK3_ENABLE"] = 1
             ret["AHRS_EKF_TYPE"] = self.force_ahrs_type
+        if self.replay:
+            ret["LOG_REPLAY"] = 1
         return ret
 
     def apply_default_parameter_list(self):
