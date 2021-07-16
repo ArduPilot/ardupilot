@@ -147,8 +147,10 @@ void AP_Periph_FW::init()
         gps.set_log_gps_bit(MASK_LOG_GPS);
 #endif
         gps.init(serial_manager);
+#if GPS_MOVING_BASELINE
         gps.set_MBL_data_cb(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::send_moving_baseline_msg, void, const uint8_t*&, uint16_t));
         gps.set_RelPosHeading_cb(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::send_relposheading_msg, void, uint32_t, float, float, float, float));
+#endif
     }
 #endif
 

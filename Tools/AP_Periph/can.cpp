@@ -82,6 +82,14 @@ extern AP_Periph_FW periph;
 #define HAL_CAN_POOL_SIZE 4000
 #endif
 
+#define DEBUG_PRINTS 0
+
+#if DEBUG_PRINTS
+ # define Debug(fmt, args ...)  do {can_printf(fmt "\n", ## args);} while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
 static struct instance_t {
     uint8_t index;
     CanardInstance canard;
@@ -101,6 +109,29 @@ static struct instance_t {
     HALSITL::CANIface* iface;
 #endif
 } instances[HAL_NUM_CAN_IFACES];
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
+static ioline_t can_term_lines[] = {
+HAL_GPIO_PIN_TERMCAN1
+
+#if HAL_NUM_CAN_IFACES > 2 
+#ifdef HAL_GPIO_PIN_TERMCAN2
+,HAL_GPIO_PIN_TERMCAN2
+#else
+#error "Only one Can Terminator defined with over two CAN Ifaces"
+#endif
+#endif
+
+#if HAL_NUM_CAN_IFACES > 2 
+#ifdef HAL_GPIO_PIN_TERMCAN3
+,HAL_GPIO_PIN_TERMCAN3
+#else
+#error "Only two Can Terminator defined with three CAN Ifaces"
+#endif
+#endif
+
+};
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
 
 #ifndef CAN_APP_NODE_NAME
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
@@ -490,6 +521,21 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
 
         canardSetLocalNodeID(ins, allocated_node_id);
         printf("IF%d Node ID allocated: %d\n", can_ins->index, allocated_node_id);
+
+#if defined(HAL_PERIPH_ENABLE_GPS) && HAL_NUM_CAN_IFACES >= 2
+        if (periph.g.gps_mb_only_can_port) {
+            // we need to assign the unallocated port to be used for Moving Baseline only
+            periph.gps_mb_can_port = (can_ins->index+1)%HAL_NUM_CAN_IFACES;
+            if (canardGetLocalNodeID(&instances[periph.gps_mb_can_port].canard) == CANARD_BROADCAST_NODE_ID) {
+                // copy node id from the primary iface
+                canardSetLocalNodeID(&instances[periph.gps_mb_can_port].canard, allocated_node_id);
+#ifdef HAL_GPIO_PIN_TERMCAN1
+                // also terminate the lines as we don't have any other device on this port
+                palWriteLine(can_term_lines[periph.gps_mb_can_port], 1);
+#endif
+            }
+        }
+#endif
     }
 }
 
@@ -610,6 +656,7 @@ static void handle_MovingBaselineData(CanardInstance* ins, CanardRxTransfer* tra
         return;
     }
     periph.gps.inject_MBL_data(msg.data.data, msg.data.len);
+    Debug("MovingBaselineData: len=%u\n", msg.data.len);
 }
 #endif // GPS_MOVING_BASELINE
 
@@ -1057,13 +1104,18 @@ static void canard_broadcast(uint64_t data_type_signature,
         if (canardGetLocalNodeID(&ins.canard) == CANARD_BROADCAST_NODE_ID) {
             continue;
         }
-        canardBroadcast(&ins.canard,
-                        data_type_signature,
-                        data_type_id,
-                        &ins.transfer_id,
-                        priority,
-                        payload,
-                        payload_len);
+#if defined(HAL_PERIPH_ENABLE_GPS) && HAL_NUM_CAN_IFACES >= 2
+        if (ins.index != periph.gps_mb_can_port) 
+#endif
+        {
+            canardBroadcast(&ins.canard,
+                            data_type_signature,
+                            data_type_id,
+                            &ins.transfer_id,
+                            priority,
+                            payload,
+                            payload_len);
+        }
     }
 }
 
@@ -1862,16 +1914,6 @@ void AP_Periph_FW::send_moving_baseline_msg(const uint8_t *&data, uint16_t len)
     if (len == 0 || data == nullptr) {
         return;
     }
-    // static uint32_t data_cnt = 0;
-    // static uint32_t last_moving_baseline_ms = 0;
-    // if (AP_HAL::millis() - last_moving_baseline_ms > 1000) {
-    //     can_printf("RATE: %lu bps", data_cnt);
-    //     data_cnt = 0;
-    // }
-    // data_cnt += len;
-    // if (data_cnt > 0) {
-    //     return;
-    // }
     // send the packet from Moving Base to be used RelPosHeading calc by GPS module
     ardupilot_gnss_MovingBaselineData mbldata {};
     // get the data from the moving base
@@ -1880,13 +1922,25 @@ void AP_Periph_FW::send_moving_baseline_msg(const uint8_t *&data, uint16_t len)
     mbldata.data.data = (uint8_t*)data;
     uint8_t buffer[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE] {};
     const uint16_t total_size = ardupilot_gnss_MovingBaselineData_encode(&mbldata, buffer);
-    canardBroadcast(&canard,
-                    ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
-                    ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                    &transfer_id,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+
+#if HAL_NUM_CAN_IFACES >= 2
+    if (gps_mb_can_port != -1 && (gps_mb_can_port < HAL_NUM_CAN_IFACES)) {
+        canardBroadcast(&instances[gps_mb_can_port].canard,
+                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
+                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
+                        &instances[gps_mb_can_port].transfer_id,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+    } else 
+#endif
+    {
+        canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
+                        ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+    }
 #endif // HAL_PERIPH_ENABLE_GPS && GPS_MOVING_BASELINE
 }
 
@@ -1903,10 +1957,8 @@ void AP_Periph_FW::send_relposheading_msg(uint32_t timestamp, float reported_hea
     relpos.reported_heading_acc_available = true;
     uint8_t buffer[ARDUPILOT_GNSS_RELPOSHEADING_MAX_SIZE] {};
     const uint16_t total_size = ardupilot_gnss_RelPosHeading_encode(&relpos, buffer);
-    canardBroadcast(&canard,
-                    ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
+    canard_broadcast(ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
                     ARDUPILOT_GNSS_RELPOSHEADING_ID,
-                    &transfer_id,
                     CANARD_TRANSFER_PRIORITY_LOW,
                     &buffer[0],
                     total_size);

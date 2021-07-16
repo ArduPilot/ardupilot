@@ -111,6 +111,9 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
+#if HAL_NUM_CAN_IFACES >= 2
+    int8_t gps_mb_can_port = -1;
+#endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
