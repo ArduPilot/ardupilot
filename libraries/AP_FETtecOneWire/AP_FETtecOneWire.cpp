@@ -525,7 +525,7 @@ void AP_FETtecOneWire::pack_fast_throttle_command(const uint16_t *motor_values, 
     // C = frame header
     fast_throttle_command[0] = esc_id_to_request_telem_from << 4; // 0 here means no telemetry request
     fast_throttle_command[0] |= ((motor_values[0] >> 10) & 0x01) << 3;
-    fast_throttle_command[0] |= 0x01;  // FrameSource::MASTER
+    fast_throttle_command[0] |= (uint8_t)FrameSource::MASTER;
 
     // byte 2:
     // AAABBBBB
