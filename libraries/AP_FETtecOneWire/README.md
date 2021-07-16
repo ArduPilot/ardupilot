@@ -148,6 +148,27 @@ The answer to a fast-throttle command frame is a `PackedMessage<TLM>` message fr
 The data is forwarded to the `AP_ESC_Telem` class that distributes it to other parts of the ArduPilot code.
 
 
+## Function structure
+
+There are two public top level functions `update()` and `pre_arm_check()`. And these two call all other private internal functions:
+
+update()
+  init()
+    init_uart()
+  read_data_from_uart()
+    move_frame_source_in_receive_buffer()
+      consume_bytes()
+    consume_bytes()
+    handle_message()             <-- RX state machine
+      buffer_contains_ok()
+      handle_message_telem()
+  configure_escs()               <-- TX state machine
+    transmit_config_request()
+      transmit()
+  escs_set_values()
+    pack_fast_throttle_command()
+    transmit()
+pre_arm_check()
 
 ## Extra features
 
