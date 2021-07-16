@@ -180,6 +180,8 @@ protected:
 
     bool can_checks(bool report);
 
+    bool fettec_checks(bool display_failure) const;
+
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;

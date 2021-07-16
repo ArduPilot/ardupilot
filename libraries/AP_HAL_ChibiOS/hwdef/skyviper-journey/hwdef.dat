@@ -139,3 +139,4 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 8192
 
 # Disable un-needed hardware drivers
 define HAL_WITH_ESC_TELEM 0
+define HAL_AP_FETTEC_ONEWIRE_ENABLED 0
