@@ -95,7 +95,8 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         mag_index      : magSelectIndex,
         baro_index     : selected_baro,
         gps_index      : selected_gps,
-        airspeed_index : getActiveAirspeed()
+        airspeed_index : getActiveAirspeed(),
+        source_set     : frontend->sources.getPosVelYawSourceSet()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
