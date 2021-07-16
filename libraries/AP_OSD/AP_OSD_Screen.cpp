@@ -995,6 +995,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
 
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Param: LINK_Q_EN
     // @DisplayName: LINK_Q_EN
     // @Description: Displays Receiver link quality
@@ -1009,7 +1013,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @DisplayName: LINK_Q_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
-    AP_SUBGROUPINFO(link_quality, "LINK_Q", 61, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1017,6 +1022,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 AP_OSD_Screen::AP_OSD_Screen()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info2);
 }
 
 //Symbols

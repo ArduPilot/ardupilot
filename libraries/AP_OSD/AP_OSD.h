@@ -121,6 +121,7 @@ public:
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 
 private:
     friend class AP_MSP;
