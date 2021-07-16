@@ -7,14 +7,42 @@ def configure(cfg):
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/core/serialization/*.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/util/*.c'))]
-    cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/ip_posix.c'))]
-    cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/udp/udp_transport_posix.c'))]
-    cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/udp/udp_transport.c'))]
+    #cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/ip_posix.c'))]
+    #cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/udp/udp_transport_posix.c'))]
+    #cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/ip/udp/udp_transport.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/serial/serial_transport.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/serial/serial_transport_posix.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-XRCE-DDS-Client/src/c/profile/transport/stream_framing/stream_framing_protocol.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-CDR/src/c/types/*.c'))]
     cfg.env.XRCE_DEPENDENCIES+=[str(source) for source in (cfg.srcnode.ant_glob('modules/Micro-CDR/src/c/common.c'))]
-    cfg.env.INCLUDES+=[cfg.srcnode.make_node('modules/Micro-XRCE-DDS-Client/include/uxr/client/').abspath(),cfg.srcnode.make_node('modules/Micro-CDR/src/c/').abspath(),cfg.srcnode.make_node('modules/Micro-CDR/include/ucdr/').abspath()]
+    bldnode = cfg.bldnode.make_node(cfg.variant)
+    cfg.env.INCLUDES+=[bldnode.find_or_declare('modules/Micro-XRCE-DDS-Client/include').abspath(),
+                       bldnode.find_or_declare('modules/Micro-CDR/include').abspath(),
+                       cfg.srcnode.make_node('modules/Micro-XRCE-DDS-Client/include/').abspath(),
+                       cfg.srcnode.make_node('modules/Micro-XRCE-DDS-Client/include/uxr/client/').abspath(),
+                       cfg.srcnode.make_node('modules/Micro-CDR/src/c/').abspath(),
+                       cfg.srcnode.make_node('modules/Micro-CDR/include/').abspath(),
+                       cfg.srcnode.make_node('modules/Micro-CDR/include/ucdr/').abspath()]
+
+    # auto update submodules
     cfg.env.append_value('GIT_SUBMODULES', 'Micro-XRCE-DDS-Client')
     cfg.env.append_value('GIT_SUBMODULES','Micro-CDR')
+
+def build(bld):
+    config_h_in = [ 'modules/Micro-XRCE-DDS-Client/include/uxr/client/config.h.in',
+                    'modules/Micro-CDR/include/ucdr/config.h.in' ]
+    config_h_in_nodes = [ bld.srcnode.make_node(h) for h in config_h_in ]
+    config_h_nodes = [ bld.bldnode.find_or_declare(h[:-3]) for h in config_h_in ]
+
+    for i in range(len(config_h_nodes)):
+        print("building %s" % config_h_nodes[i].abspath())
+        bld(
+            # build config.h file
+            source=config_h_in_nodes[i],
+            target=config_h_nodes[i],
+            rule="%s %s/%s %s %s" % (bld.env.get_flat('PYTHON'),
+                                  bld.env.SRCROOT, "libraries/AP_XRCE_Client/gen_config_h.py",
+                                  config_h_in_nodes[i].abspath(),
+                                  config_h_nodes[i].abspath()),
+            group='dynamic_sources'
+        )
