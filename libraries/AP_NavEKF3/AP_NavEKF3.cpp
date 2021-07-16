@@ -1990,3 +1990,15 @@ bool NavEKF3::yawAlignmentComplete(void) const
     }
     return core[primary].have_aligned_yaw();
 }
+
+// returns true when the state estimates for the selected core are significantly degraded by vibration
+bool NavEKF3::isVibrationAffected(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+    if (core) {
+        return core[instance].isVibrationAffected();
+    }
+    return false;
+}
