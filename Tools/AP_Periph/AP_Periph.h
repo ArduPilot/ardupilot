@@ -85,10 +85,8 @@ public:
     void can_update();
     void can_mag_update();
     void can_gps_update();
-    void send_moving_baseline_msg(const uint8_t *&data, uint16_t len);
-    void send_relposheading_msg(uint32_t timestamp, float reported_heading, 
-                                          float relative_distance, float relative_down_pos,
-                                          float reported_heading_acc);
+    void send_moving_baseline_msg();
+    void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
     void can_rangefinder_update();
@@ -111,6 +109,9 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
+#if HAL_NUM_CAN_IFACES >= 2
+    int8_t gps_mb_can_port = -1;
+#endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
