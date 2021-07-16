@@ -33,17 +33,29 @@ public:
     // return the average motor RPM
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
 
+    // get the highest ESC RPM if available, returns true if there is valid data for at least one ESC
+    bool get_highest_motor_rpm(float& rpm) const;
+
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
+
+    // get the highest ESC temperature in centi-degrees if available, returns true if there is valid data for at least one ESC
+    bool get_highest_temperature(int16_t& temp) const;
 
     // get an individual motor's temperature in centi-degrees if available, returns true on success
     bool get_motor_temperature(uint8_t esc_index, int16_t& temp) const;
 
-    // get the highest ESC temperature in centi-degrees if available, returns true if there is valid data for at least one ESC
-    bool get_highest_motor_temperature(int16_t& temp) const;
-
     // get an individual ESC's current in Ampere if available, returns true on success
     bool get_current(uint8_t esc_index, float& amps) const;
+
+    // get the highest ESC current if available, returns true if there is valid data for at least one ESC
+    bool get_highest_current(float& amps) const;
+
+    // get the average ESC current between all ESCs if available, returns true if there is valid data for at least one ESC
+    bool get_average_current(float& amps_avg) const;
+
+    // get the sum of the ESCs measured current if available, returns true if there is valid data for at least one ESC
+    bool get_total_current(float& amps) const;
 
     // get an individual ESC's usage time in seconds if available, returns true on success
     bool get_usage_seconds(uint8_t esc_index, uint32_t& usage_sec) const;
