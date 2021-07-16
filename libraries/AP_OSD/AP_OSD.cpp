@@ -35,6 +35,9 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Terrain/AP_Terrain.h>
 
+// macro for easy use of var_info2
+#define AP_SUBGROUPINFO2(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info2 }, AP_PARAM_FLAG_NESTED_OFFSET }
+
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
     // @Param: _TYPE
@@ -211,6 +214,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Path: AP_OSD_ParamScreen.cpp
     AP_SUBGROUPINFO(param_screen[1], "6_", 22, AP_OSD, AP_OSD_ParamScreen),
 #endif
+
+    // additional tables to go beyond 63 limit
+    AP_SUBGROUPINFO2(screen[0], "1_", 27, AP_OSD, AP_OSD_Screen),
+    AP_SUBGROUPINFO2(screen[1], "2_", 28, AP_OSD, AP_OSD_Screen),
+    AP_SUBGROUPINFO2(screen[2], "3_", 29, AP_OSD, AP_OSD_Screen),
+    AP_SUBGROUPINFO2(screen[3], "4_", 30, AP_OSD, AP_OSD_Screen),
+
     AP_GROUPEND
 };
 
