@@ -153,6 +153,12 @@ enum class LogEvent : uint8_t {
     FENCE_FLOOR_ENABLE = 80,
     FENCE_FLOOR_DISABLE = 81,
 
+    // if the EKF's source input set is changed (e.g. via a switch or
+    // a script), we log an event:
+    EK3_SOURCES_SET_TO_PRIMARY = 85,
+    EK3_SOURCES_SET_TO_SECONDARY = 86,
+    EK3_SOURCES_SET_TO_TERTIARY = 87,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
