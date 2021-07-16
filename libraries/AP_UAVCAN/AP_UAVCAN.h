@@ -28,7 +28,8 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
-
+#include <uavcan/protocol/param/GetSet.hpp>
+#include <uavcan/protocol/param/ExecuteOpcode.hpp>
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 #include <AP_GPS/RTCM3_Parser.h>
 
@@ -58,6 +59,8 @@ class TrafficReportCb;
 class ActuatorStatusCb;
 class ESCStatusCb;
 class DebugCb;
+class ParamGetSetCb;
+class ParamExecuteOpcodeCb;
 
 #if defined(__GNUC__) && (__GNUC__ > 8)
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
@@ -85,6 +88,17 @@ class DebugCb;
             DISABLE_W_CAST_FUNCTION_TYPE_POP \
     }
 
+#define UC_CLIENT_CALL_REGISTRY_BINDER(ClassName_, DataType_) \
+    class ClassName_ : public AP_UAVCAN::ClientCallRegistryBinder<DataType_> { \
+        typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
+        public: \
+            ClassName_() : ClientCallRegistryBinder() {} \
+            DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
+            ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
+                ClientCallRegistryBinder(uc, (ClientCallRegistry)ffunc) {} \
+            DISABLE_W_CAST_FUNCTION_TYPE_POP \
+    }
+
 class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
 public:
     AP_UAVCAN();
@@ -101,6 +115,9 @@ public:
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
 
+    FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
+    FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_UAVCAN*,  const uint8_t, bool);
 
     ///// SRV output /////
     void SRV_push_servos(void);
@@ -113,6 +130,21 @@ public:
 
     // send RTCMStream packets
     void send_RTCMStream(const uint8_t *data, uint32_t len);
+
+    // Send Reboot command
+    // Note: Do not call this from outside UAVCAN thread context,
+    // you can call this from uavcan callbacks and handlers.
+    // THIS IS NOT A THREAD SAFE API!
+    void send_reboot_request(uint8_t node_id);
+
+    // set param value
+    bool set_parameter_on_node(uint8_t node_id, const char *name, float value, ParamGetSetFloatCb *cb);
+    bool set_parameter_on_node(uint8_t node_id, const char *name, int32_t value, ParamGetSetIntCb *cb);
+    bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetFloatCb *cb);
+    bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetIntCb *cb);
+
+    // Save parameters
+    bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
 
     template <typename DataType_>
     class RegistryBinder {
@@ -140,6 +172,31 @@ public:
         const uavcan::ReceivedDataStructure<DataType_> *msg;
     };
 
+    // ClientCallRegistryBinder
+    template <typename DataType_>
+    class ClientCallRegistryBinder {
+    protected:
+        typedef void (*ClientCallRegistry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const ClientCallRegistryBinder& _cb);
+        AP_UAVCAN* _uc;
+        ClientCallRegistry _ffunc;
+    public:
+        ClientCallRegistryBinder() :
+            _uc(),
+            _ffunc(),
+            rsp() {}
+
+        ClientCallRegistryBinder(AP_UAVCAN* uc, ClientCallRegistry ffunc) :
+            _uc(uc),
+            _ffunc(ffunc),
+            rsp(nullptr) {}
+
+        void operator()(const uavcan::ServiceCallResult<DataType_>& _rsp) {
+            rsp = &_rsp;
+            _ffunc(_uc, _rsp.getCallID().server_node_id.get(), *this);
+        }
+        const uavcan::ServiceCallResult<DataType_> *rsp;
+    };
+
 private:
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
@@ -165,8 +222,28 @@ private:
 
     // Moving Baseline data callback
     void moving_baseline_data_cb(const uint8_t *&data, uint16_t len);
+
     // send Moving Baseline data
     void moving_baseline_data_send();
+
+    // send parameter get/set request
+    void send_parameter_request();
+    
+    // send parameter save request
+    void send_parameter_save_request();
+
+    // set parameter on a node
+    ParamGetSetIntCb *param_int_cb;
+    ParamGetSetFloatCb *param_float_cb;
+    bool param_request_sent = true;
+    HAL_Semaphore _param_sem;
+    uint8_t param_request_node_id;
+
+    // save parameters on a node
+    ParamSaveCb *save_param_cb;
+    bool param_save_request_sent = true;
+    HAL_Semaphore _param_save_sem;
+    uint8_t param_save_request_node_id;
 
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
@@ -251,6 +328,8 @@ private:
     static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
     static bool is_esc_data_index_valid(const uint8_t index);
     static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
+    static void handle_param_get_set_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamGetSetCb &cb);
+    static void handle_param_save_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamExecuteOpcodeCb &cb);
 };
 
 #endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
