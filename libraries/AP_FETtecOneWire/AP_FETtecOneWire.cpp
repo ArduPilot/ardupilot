@@ -524,6 +524,7 @@ void AP_FETtecOneWire::pack_fast_throttle_command(const uint16_t *motor_values, 
     // and all bits from all other throttle values, followed by the CRC byte
     uint8_t mot = 0;
     uint8_t bits_remaining_in_this_pwm = 7;
+    fast_throttle_command[length-2] = 0;
     for (uint8_t out_byte_offset = 2; out_byte_offset<length; out_byte_offset++) {
         if (bits_remaining_in_this_pwm >= 8) {
             // const uint8_t mask = 0xFF << (11-bits_remaining_in_this_pwm);
