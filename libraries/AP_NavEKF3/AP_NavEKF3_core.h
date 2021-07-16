@@ -96,7 +96,11 @@
 #define EK3_POSXY_STATE_LIMIT 1.0e6
 #endif
 
+// IMU acceleration process noise in m/s/s used when bad vibration affected IMU accel is detected
 #define BAD_IMU_DATA_ACC_P_NSE 5.0f
+
+// Number of milliseconds of bad IMU data before a reset to vertical position and velocity height sources is performed
+#define BAD_IMU_DATA_TIMEOUT_MS 1000
 
 class NavEKF3_core : public NavEKF_core_common
 {
@@ -960,6 +964,8 @@ private:
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
+    uint32_t badIMUdata_ms;         // time stamp bad IMU data was last detected
+    uint32_t goodIMUdata_ms;        // time stamp good IMU data was last detected
     uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit
 
     ftype gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
