@@ -689,9 +689,15 @@ void NavEKF3_core::FuseVelPosNED()
             const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
             if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS_DATA_CHECKS[2]))) {
+                badIMUdata_ms = imuSampleTime_ms;
+            } else {
+                goodIMUdata_ms = imuSampleTime_ms;
+            }
+            if (imuSampleTime_ms - badIMUdata_ms < 10000) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
+
             }
         }
 
@@ -1217,7 +1223,8 @@ void NavEKF3_core::selectHeightForFusion()
     // If we haven't fused height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
     hgtRetryTime_ms = ((useGpsVertVel || useExtNavVel) && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
-    if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms) {
+    if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms ||
+        (badIMUdata && (imuSampleTime_ms - goodIMUdata_ms < BAD_IMU_DATA_TIMEOUT_MS))) {
         hgtTimeout = true;
     } else {
         hgtTimeout = false;
