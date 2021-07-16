@@ -47,6 +47,7 @@ public:
         MOTOR_FRAME_DECA = 14,
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
         MOTOR_FRAME_6DOF_SCRIPTING = 16,
+        MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX = 17,
     };
 
     // return string corresponding to frame_class
