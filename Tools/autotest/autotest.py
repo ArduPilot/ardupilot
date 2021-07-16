@@ -510,6 +510,7 @@ def run_step(step):
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
+        "replay": opts.replay,
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
     }
@@ -975,6 +976,9 @@ if __name__ == "__main__":
                          dest="force_ahrs_type",
                          default=None,
                          help="force a specific AHRS type (e.g. 10 for SITL-ekf")
+    group_sim.add_option("", "--replay",
+                         action='store_true',
+                         help="enable replay logging for tests")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
