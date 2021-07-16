@@ -1,3 +1,5 @@
+#if AP_XRCE_ENABLED
+
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 
@@ -10,12 +12,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "fcntl.h"
-
-#ifndef AP_XRCE_ENABLED
-#define AP_XRCE_ENABLED (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#if AP_XRCE_ENABLED
 
 #define STREAM_HISTORY 8
 #define BUFFER_SIZE_SERIAL UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY
@@ -110,4 +106,6 @@ public:
     AP_HAL::Semaphore* get_clientsemaphore();
 };
 
-#endif
+#endif // AP_XRCE_ENABLED
+
+
