@@ -125,10 +125,13 @@ void AP_InertialSensor_SITL::generate_accel()
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = sitl->vibe_freq;
 
+        // more vibe on Z axis (as is common with most mounts)
+        const float z_scale = 2.0;
+
         if (!vibe_freq.is_zero() && motors_on) {
             accel.x += sinf(accel_time * 2 * M_PI * vibe_freq.x) * calculate_noise(accel_noise, noise_variation);
             accel.y += sinf(accel_time * 2 * M_PI * vibe_freq.y) * calculate_noise(accel_noise, noise_variation);
-            accel.z += sinf(accel_time * 2 * M_PI * vibe_freq.z) * calculate_noise(accel_noise, noise_variation);
+            accel.z += z_scale * sinf(accel_time * 2 * M_PI * vibe_freq.z) * calculate_noise(accel_noise, noise_variation);
             accel_time += 1.0f / (accel_sample_hz * nsamples);
         }
 
@@ -148,6 +151,19 @@ void AP_InertialSensor_SITL::generate_accel()
                 accel.x += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                 accel.y += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                 accel.z += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                const float dBoct = sitl->accel_dBoct[accel_instance];
+                if (dBoct > 0) {
+                    // include harmonics
+                    for (uint8_t h=2; h<40; h++) {
+                        const float phase2 = phase*h;
+                        const float octave = logf(h)/logf(2);
+                        const float attenuation = powf(10,-octave*dBoct*0.1);
+                        accel.x += attenuation * sinf(phase2) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                        accel.y += attenuation * sinf(phase2) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                        accel.z += z_scale * attenuation * sinf(phase2) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                    }
+                }
+
             }
         }
 
