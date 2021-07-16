@@ -87,7 +87,9 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
     _detected_modules[_detected_module].driver = nullptr;
 
 #if GPS_MOVING_BASELINE
-    delete rtcm3_parser;
+    if (rtcm3_parser != nullptr) {
+        delete rtcm3_parser;
+    }
 #endif
 }
 
@@ -250,9 +252,9 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
             }
         }
 #if GPS_MOVING_BASELINE
-        if (_detected_modules[found_match].driver->role == AP_GPS::GPS_ROLE_MB_BASE) {
-            _detected_modules[found_match].driver->rtcm3_parser = new RTCM3_Parser;
-            if (_detected_modules[found_match].driver->rtcm3_parser == nullptr) {
+        if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
+            backend->rtcm3_parser = new RTCM3_Parser;
+            if (backend->rtcm3_parser == nullptr) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UAVCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
         }
@@ -629,10 +631,15 @@ void AP_GPS_UAVCAN::handle_status_msg(const StatusCb &cb)
 /*
   handle moving baseline data.
   */
-void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb)
+void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb, uint8_t node_id)
 {
     WITH_SEMAPHORE(sem);
-    if ((rtcm3_parser == nullptr) || (role != AP_GPS::GPS_ROLE_MB_BASE)) {
+    if (role != AP_GPS::GPS_ROLE_MB_BASE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Base", node_id);
+        return;
+    }
+
+    if (rtcm3_parser == nullptr) {
         return;
     }
     for (const auto &c : cb.msg->data) {
@@ -643,12 +650,13 @@ void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb)
 /*
     handle relposheading message
 */
-void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb)
+void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id)
 {
     if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Rover", node_id);
         return;
     }
- 
+
     WITH_SEMAPHORE(sem);
 
     interim_state.gps_yaw_configured = true;
@@ -743,7 +751,7 @@ void AP_GPS_UAVCAN::handle_moving_baseline_msg_trampoline(AP_UAVCAN* ap_uavcan, 
     WITH_SEMAPHORE(_sem_registry);
     AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
     if (driver != nullptr) {
-        driver->handle_moving_baseline_msg(cb);
+        driver->handle_moving_baseline_msg(cb, node_id);
     }
 }
 
@@ -753,7 +761,7 @@ void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, ui
     WITH_SEMAPHORE(_sem_registry);
     AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
     if (driver != nullptr) {
-        driver->handle_relposheading_msg(cb);
+        driver->handle_relposheading_msg(cb, node_id);
     }
 }
 #endif
