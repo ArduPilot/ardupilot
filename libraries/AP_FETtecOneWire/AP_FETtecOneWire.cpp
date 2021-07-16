@@ -27,7 +27,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_AP_FETTEC_HALF_DUPLEX
 static constexpr uint32_t HALF_DUPLEX_BAUDRATE = 2000000;
+#endif
 static constexpr uint32_t FULL_DUPLEX_BAUDRATE =  500000;
 
 const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] {

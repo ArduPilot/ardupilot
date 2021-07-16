@@ -26,22 +26,22 @@
 
 // Support both full-duplex at 500Kbit/s as well as half-duplex at 2Mbit/s (optional feature)
 #ifndef HAL_AP_FETTEC_HALF_DUPLEX
-#define HAL_AP_FETTEC_HALF_DUPLEX 1
+#define HAL_AP_FETTEC_HALF_DUPLEX 0
 #endif
 
 // Get static info from the ESCs (optional feature)
 #ifndef HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
-#define HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO 1
+#define HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO 0
 #endif
 
 // provide beep support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_BEEP
-#define HAL_AP_FETTEC_ESC_BEEP 1
+#define HAL_AP_FETTEC_ESC_BEEP 0
 #endif
 
 // provide light support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_LIGHT
-#define HAL_AP_FETTEC_ESC_LIGHT 1
+#define HAL_AP_FETTEC_ESC_LIGHT 0
 #endif
 
 #if HAL_AP_FETTEC_ONEWIRE_ENABLED
