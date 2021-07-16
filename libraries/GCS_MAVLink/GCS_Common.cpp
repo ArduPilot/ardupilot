@@ -4823,8 +4823,8 @@ void GCS_MAVLINK::send_uavionix_adsb_out_status() const
         /*uint8_t state*/
             !adsb->tx_status.airborne << 0 | // this field is "ON_GROUND" in MAVLink message, so flip it
             adsb->tx_status.interrogatedSinceLast << 1 |
-            adsb->tx_status.identActive << 2 |
-            adsb->tx_status.x_bit << 3 |
+            adsb->tx_status.x_bit << 2 |
+            adsb->tx_status.identActive << 3 |
             adsb->tx_status.modeAEnabled << 4 |
             adsb->tx_status.modeCEnabled << 5 |
             adsb->tx_status.modeSEnabled << 6 |
