@@ -693,7 +693,7 @@ void NavEKF3_core::FuseVelPosNED()
             } else {
                 goodIMUdata_ms = imuSampleTime_ms;
             }
-            if (imuSampleTime_ms - badIMUdata_ms < 10000) {
+            if (imuSampleTime_ms - badIMUdata_ms < BAD_IMU_DATA_HOLD_MS) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
