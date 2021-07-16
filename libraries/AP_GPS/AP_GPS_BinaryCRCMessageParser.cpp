@@ -132,9 +132,8 @@ void AP_GPS_BinaryCRCMessageParser::reset_parse()
 
 uint32_t AP_GPS_BinaryCRCMessageParser::crc32_value(uint32_t icrc)
 {
-    int i;
     uint32_t crc = icrc;
-    for ( i = 8 ; i > 0; i-- ) {
+    for (int i = 8 ; i > 0; i-- ) {
         if ( crc & 1 ) {
             crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
         } else {
@@ -149,5 +148,5 @@ uint32_t AP_GPS_BinaryCRCMessageParser::calculate_block_crc32(uint32_t length, u
     while ( length-- != 0 ) {
         crc = ((crc >> 8) & 0x00FFFFFFL) ^ (crc32_value(((uint32_t) crc ^ *buffer++) & 0xff));
     }
-    return( crc );
+    return crc;
 }

@@ -40,19 +40,19 @@ private:
     uint32_t crc32_value(uint32_t icrc);
     uint32_t calculate_block_crc32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
-    const uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
+    static const uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
 
     const std::vector<uint8_t> _preambles;
     uint8_t _min_header_length;
     uint8_t _max_header_length;
     uint16_t _max_body_length;
 
-    uint8_t _decode_step = 0;   // step number of message decode
-    uint32_t _msg_crc = 0;      // message crc data
-    uint32_t _read_size = 0;    // readed size of current message
-    uint8_t _preamble_step = 0; // step of preamble decode
-    uint8_t _real_header_length = 0;    //header length from real message header
-    uint16_t _real_body_length = 0;     //body length from read message header
+    uint8_t _decode_step;   // step number of message decode
+    uint32_t _msg_crc;      // message crc data
+    uint32_t _read_size;    // readed size of current message
+    uint8_t _preamble_step; // step of preamble decode
+    uint8_t _real_header_length;    //header length from real message header
+    uint16_t _real_body_length;     //body length from read message header
 };
 
 
