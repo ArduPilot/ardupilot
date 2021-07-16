@@ -7,6 +7,10 @@
 // fence_check - ask fence library to check for breaches and initiate the response
 void Plane::fence_check()
 {
+    if (fence.conv_alt_frame()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Alt frame change successful");
+    }
+    
     const uint8_t orig_breaches = fence.get_breaches();
 
     // check for new breaches; new_breaches is bitmask of fence types breached

@@ -8,6 +8,10 @@
 // called at 1hz
 void Copter::fence_check()
 {
+    if (fence.conv_alt_frame()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Alt frame change successful");
+    }
+    
     const uint8_t orig_breaches = fence.get_breaches();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
