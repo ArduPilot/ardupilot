@@ -48,6 +48,7 @@
 #include "AP_RangeFinder_SITL.h"
 #include "AP_RangeFinder_MSP.h"
 #include "AP_RangeFinder_USD1_CAN.h"
+#include "AP_RangeFinder_TOF10120_I2C.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -357,6 +358,20 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
+                                                                  hal.i2c_mgr->get_device(i, addr)),
+                             instance)) {
+                break;
+            }
+        }
+        break;
+    }
+    case Type::TOF10120_I2C: {
+        uint8_t addr = AP_RANGE_FINDER_TOF10120_I2C_DEFAULT_ADDR;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_TOF10120_I2C::detect(state[instance], params[instance],
                                                                   hal.i2c_mgr->get_device(i, addr)),
                              instance)) {
                 break;
