@@ -862,7 +862,7 @@ void NavEKF3_core::readAirSpdData()
         tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
         tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
         tasDataDelayed.time_ms = 0;
-        usingDefaultAirspeed = frontend->_airDataMask & (1<<2);
+        usingDefaultAirspeed = true;
     } else {
         usingDefaultAirspeed = false;
     }
