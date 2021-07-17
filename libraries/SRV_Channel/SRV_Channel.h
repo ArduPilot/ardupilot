@@ -50,6 +50,7 @@ public:
 
     typedef enum
     {
+        k_GPIO                  = -1,           ///< used as GPIO pin (input or output)
         k_none                  = 0,            ///< disabled
         k_manual                = 1,            ///< manual, just pass-thru the RC in signal
         k_flap                  = 2,            ///< flap
@@ -530,6 +531,11 @@ public:
 
     // initialize before any call to push
     static void init();
+
+    // return true if a channel is set to type GPIO
+    static bool is_GPIO(uint8_t channel) {
+        return channel_function(channel) == SRV_Channel::k_GPIO;
+    }
 
 private:
 
