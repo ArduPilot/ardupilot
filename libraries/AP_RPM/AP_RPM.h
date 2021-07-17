@@ -60,9 +60,9 @@ public:
     AP_Int8  _type[RPM_MAX_INSTANCES];
     AP_Int8  _pin[RPM_MAX_INSTANCES];
     AP_Float _scaling[RPM_MAX_INSTANCES];
-    AP_Float _maximum[RPM_MAX_INSTANCES];
-    AP_Float _minimum[RPM_MAX_INSTANCES];
-    AP_Float _quality_min[RPM_MAX_INSTANCES];
+    AP_Float _maximum;
+    AP_Float _minimum;
+    AP_Float _quality_min;
     AP_Int32 _esc_mask[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
