@@ -55,8 +55,8 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        ftype temp = (tasErrVar + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= tasErrVar) {
+        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (temp >= tasDataDelayed.tasVariance) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
         } else {
@@ -237,7 +237,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastPosPassTime_ms) > frontend->deadReckonDeclare_ms) && ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
     const bool noYawSensor = !use_compass() && !using_external_yaw();
-    const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
+    const bool f_required = (noYawSensor && (frontend->_airDataMask & (1<<1))) || is_dead_reckoning;
 
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     const bool f_beta_feasible = (assume_zero_sideslip() && !inhibitWindStates);
@@ -245,7 +245,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
     if (f_beta_feasible && f_timeTrigger) {
         // unless air data is required to constrain drift, it is only used to update wind state estimates
-        if (f_required || (frontend->_betaMask & (1<<0))) {
+        if (f_required || (frontend->_airDataMask & (1<<0))) {
             // we are required to correct all states
             airDataFusionWindOnly = false;
         } else {
@@ -428,12 +428,7 @@ void NavEKF3_core::FuseSideslip()
         }
 
         // calculate predicted sideslip angle and innovation using small angle approximation
-        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
-
-        // reject measurement if greater than 3-sigma inconsistency
-        if (innovBeta > 0.5f) {
-            return;
-        }
+        innovBeta = constrain_ftype(vel_rel_wind.y / vel_rel_wind.x, -0.5f, 0.5f);
 
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
