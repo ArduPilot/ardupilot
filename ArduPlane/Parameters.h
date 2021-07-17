@@ -77,7 +77,7 @@ public:
         k_param_ins,                // libraries/AP_InertialSensor variables
         k_param_takeoff_throttle_min_speed,
         k_param_takeoff_throttle_min_accel,
-        k_param_takeoff_heading_hold, // unused
+        k_param_takeoff_ground_pitch,
         k_param_level_roll_limit,
         k_param_hil_servos_unused,  // unused
         k_param_vtail_output, // unused
@@ -456,6 +456,7 @@ public:
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
+    AP_Float takeoff_ground_pitch;
     AP_Int8 takeoff_throttle_delay;
     AP_Int8 takeoff_tdrag_elevator;
     AP_Float takeoff_tdrag_speed1;

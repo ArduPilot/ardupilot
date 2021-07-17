@@ -52,6 +52,11 @@ public:
         _reverse = reverse;
     }
 
+    void set_rate_bias(float rate_bias) {
+        _last_rate_bias = rate_bias;
+        _last_rate_bias_updated_t = _last_t;
+    }
+
 private:
     AP_Float _tau;
 	AP_Float _K_FF;
@@ -62,6 +67,13 @@ private:
     AP_Int16  _imax;
 	uint32_t _last_t;
 	float _last_out;
+
+    /*
+      variables used by functionality that allows pilot to bias the rate demand when
+      operating in an angle cr lateral acceleration control mode
+    */
+    float _last_rate_bias;      // last received rate bias in deg/sec
+    uint32_t _last_rate_bias_updated_t; // system time _last_rate_bias was updated (msec)
 
 	AP_Float _deratespeed;
 	AP_Float _deratefactor;
