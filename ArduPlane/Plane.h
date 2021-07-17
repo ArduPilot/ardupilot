@@ -1139,6 +1139,12 @@ private:
 
     FlareMode flare_mode;
 
+    // expo handling
+    float channel_expo(int16_t rin, int8_t expo) const;
+    float roll_in_expo(void) const;
+    float pitch_in_expo(void) const;
+    float rudder_in_expo(void) const;
+
 public:
     void failsafe_check(void);
     bool set_target_location(const Location& target_loc) override;

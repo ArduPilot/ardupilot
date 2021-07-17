@@ -1225,6 +1225,37 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Param: MAN_EXPO_ROLL
+    // @DisplayName: Manual control expo for roll
+    // @Description: Percentage exponential for roll input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_ROLL", 29, ParametersG2, man_expo_roll, 0),
+
+    // @Param: MAN_EXPO_PITCH
+    // @DisplayName: Manual input expo for pitch
+    // @Description: Percentage exponential for pitch input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_PITCH", 30, ParametersG2, man_expo_pitch, 0),
+
+    // @Param: MAN_EXPO_RUDDER
+    // @DisplayName: Manual input expo for rudder
+    // @Description: Percentage exponential for rudder input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_RUDDER", 31, ParametersG2, man_expo_rudder, 0),
+
+    // @Param: ONESHOT_MASK
+    // @DisplayName: Oneshot output mask
+    // @Description: Mask of output channels to use oneshot on
+    // @User: Advanced
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
+    AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
+    
     AP_GROUPEND
 };
 
