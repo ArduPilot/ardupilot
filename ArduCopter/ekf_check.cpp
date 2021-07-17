@@ -145,6 +145,10 @@ bool Copter::ekf_over_threshold()
         return true;
     }
 
+    if (vibration_check.high_vibes) {
+        return true;
+    }
+
     return false;
 }
 
