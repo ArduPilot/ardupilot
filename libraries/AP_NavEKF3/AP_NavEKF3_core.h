@@ -105,6 +105,11 @@
 // number of milliseconds the bad IMU data response settings will be held after the last bad IMU data is detected
 #define BAD_IMU_DATA_HOLD_MS 10000
 
+// wind state variance limits
+#define WIND_VEL_VARIANCE_MAX 400.0f
+#define WIND_VEL_VARIANCE_MIN 0.25f
+
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -541,6 +546,7 @@ private:
 
     struct tas_elements : EKF_obs_element_t {
         ftype       tas;            // true airspeed measurement (m/sec)
+        ftype       tasVariance;    // variance of true airspeed measurement (m/sec)^2
     };
 
     struct of_elements : EKF_obs_element_t {
@@ -1036,6 +1042,7 @@ private:
     Vector3F magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     ftype tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
+    bool windStatesAligned;         // true when wind states have been aligned
     bool inhibitMagStates;          // true when magnetic field states are inactive
     bool lastInhibitMagStates;      // previous inhibitMagStates
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
@@ -1069,7 +1076,6 @@ private:
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
-    ftype tasErrVar;                // TAS error variance (m/s)**2
     bool usingDefaultAirspeed;      // true when a default airspeed is being used instead of a measured value
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
