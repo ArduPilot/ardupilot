@@ -532,7 +532,7 @@ class AutoTestPlane(AutoTest):
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         if quadplane:
-            self.wait_statustext("Throttle disarmed", timeout=60)
+            self.wait_statustext("Throttle disarmed", timeout=70)
         else:
             self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
