@@ -390,3 +390,26 @@ bool Plane::rc_failsafe_active(void) const
     }
     return false;
 }
+
+/*
+  expo handling for MANUAL, ACRO and TRAINING modes
+ */
+float Plane::channel_expo(int16_t rin, int8_t expo) const
+{
+    return SERVO_MAX * expo_curve(constrain_float(expo*0.01, 0, 1), rin/float(SERVO_MAX));
+}
+
+float Plane::roll_in_expo(void) const
+{
+    return channel_expo(channel_roll->get_control_in_zero_dz(), g2.man_expo_roll);
+}
+
+float Plane::pitch_in_expo(void) const
+{
+    return channel_expo(channel_pitch->get_control_in_zero_dz(), g2.man_expo_pitch);
+}
+
+float Plane::rudder_in_expo(void) const
+{
+    return channel_expo(channel_rudder->get_control_in_zero_dz(), g2.man_expo_rudder);
+}
