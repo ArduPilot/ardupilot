@@ -40,7 +40,7 @@ private:
     uint32_t crc32_value(uint32_t icrc);
     uint32_t calculate_block_crc32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
-    static const uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
+    static constexpr uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
 
     const std::vector<uint8_t> _preambles;
     uint8_t _min_header_length;
@@ -54,5 +54,4 @@ private:
     uint8_t _real_header_length;    //header length from real message header
     uint16_t _real_body_length;     //body length from read message header
 };
-
 
