@@ -167,10 +167,6 @@ void Rover::startup_ground(void)
 #ifdef ENABLE_SCRIPTING
     g2.scripting.init();
 #endif // ENABLE_SCRIPTING
-
-    // we don't want writes to the serial port to cause us to pause
-    // so set serial ports non-blocking once we are ready to drive
-    serial_manager.set_blocking_writes_all(false);
 }
 
 // update the ahrs flyforward setting which can allow
