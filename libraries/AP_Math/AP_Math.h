@@ -271,7 +271,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-constexpr float expo_curve(float alpha, float input);
+float expo_curve(float alpha, float input);
 
 /* throttle curve generator
  * thr_mid: output at mid stick
