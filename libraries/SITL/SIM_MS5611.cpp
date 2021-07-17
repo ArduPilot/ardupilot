@@ -81,13 +81,11 @@ void MS5611::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
 
 void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
 {
-    float sigma, delta, theta;
-
     float sim_alt = AP::sitl()->state.altitude;
     sim_alt += 2 * rand_float();
 
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-    P_Pa = SSL_AIR_PRESSURE * delta;
-
-    Temp_C = (30.0 + C_TO_KELVIN) * theta - C_TO_KELVIN;  // Assume 30 degrees at sea level - converted to degrees Kelvin
+    float p, T;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T);
+    P_Pa = p;
+    Temp_C = T - C_TO_KELVIN;
 }
