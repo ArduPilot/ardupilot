@@ -77,7 +77,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = usingDefaultAirspeed || imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500;
+            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500 && useAirspeed());
             if (haveAirspeedMeasurement) {
                 trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
                 const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;

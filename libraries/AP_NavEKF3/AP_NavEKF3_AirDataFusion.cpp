@@ -237,7 +237,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastPosPassTime_ms) > frontend->deadReckonDeclare_ms) && ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
     const bool noYawSensor = !use_compass() && !using_external_yaw();
-    const bool f_required = (noYawSensor && (frontend->_airDataMask & (1<<1))) || is_dead_reckoning;
+    const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
 
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     const bool f_beta_feasible = (assume_zero_sideslip() && !inhibitWindStates);
@@ -245,7 +245,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
     if (f_beta_feasible && f_timeTrigger) {
         // unless air data is required to constrain drift, it is only used to update wind state estimates
-        if (f_required || (frontend->_airDataMask & (1<<0))) {
+        if (f_required || (frontend->_betaMask & (1<<0))) {
             // we are required to correct all states
             airDataFusionWindOnly = false;
         } else {
