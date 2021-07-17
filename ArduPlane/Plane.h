@@ -1139,6 +1139,11 @@ private:
 
     FlareMode flare_mode;
 
+    // expo handling
+    float roll_in_expo(bool use_dz) const;
+    float pitch_in_expo(bool use_dz) const;
+    float rudder_in_expo(bool use_dz) const;
+
 public:
     void failsafe_check(void);
 #ifdef ENABLE_SCRIPTING

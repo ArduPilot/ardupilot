@@ -63,10 +63,10 @@ void Plane::failsafe_check(void)
         // pass RC inputs to outputs every 20ms
         RC_Channels::clear_overrides();
 
-        int16_t roll = channel_roll->get_control_in_zero_dz();
-        int16_t pitch = channel_pitch->get_control_in_zero_dz();
+        int16_t roll = roll_in_expo(false);
+        int16_t pitch = pitch_in_expo(false);
         int16_t throttle = get_throttle_input(true);
-        int16_t rudder = channel_rudder->get_control_in_zero_dz();
+        int16_t rudder = rudder_in_expo(false);
 
         if (!hal.util->get_soft_armed()) {
             throttle = 0;
