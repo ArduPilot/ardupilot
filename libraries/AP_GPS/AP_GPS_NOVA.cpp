@@ -41,7 +41,7 @@ do {                                            \
 AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
-    AP_GPS_BinaryCRCMessageParser({0xaa,0x44,0x12},4,sizeof(nova_msg.header),sizeof(nova_msg.data))
+    AP_GPS_BinaryCRCMessageParser({0xaa,0x44,0x12}, 4, sizeof(nova_msg.header), sizeof(nova_msg.data))
 {
     const char *init_str = _initialisation_blob[0];
     const char *init_str1 = _initialisation_blob[1];
