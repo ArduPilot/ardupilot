@@ -842,6 +842,7 @@ void NavEKF3_core::readAirSpdData()
         tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
+        tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
 
         // Correct for the average intersampling delay due to the filter update rate
         tasDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -849,18 +850,22 @@ void NavEKF3_core::readAirSpdData()
         // Save data into the buffer to be fused when the fusion time horizon catches up with it
         storedTAS.push(tasDataNew);
     }
+
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+
     float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
-    // Allow use of a default value if the measurement times out
-    if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 5000 && is_positive(defaultAirSpeed)) {
+    // Allow use of a default value if enabled
+    if (!useAirspeed() &&
+        imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200 &&
+        is_positive(defaultAirSpeed)) {
         tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-        easErrVar = MAX(defaultAirSpeedVariance, easErrVar);
-        usingDefaultAirspeed = true;
+        tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
+        tasDataDelayed.time_ms = 0;
+        usingDefaultAirspeed = frontend->_airDataMask & (1<<2);
     } else {
         usingDefaultAirspeed = false;
     }
-    tasErrVar =  easErrVar * sq(EAS2TAS);
 }
 
 /********************************************************

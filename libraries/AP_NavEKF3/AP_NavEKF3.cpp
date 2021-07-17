@@ -39,7 +39,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.2
+#define WIND_P_NSE_DEFAULT      1.0
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
@@ -65,7 +65,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -91,7 +91,7 @@
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #else
 // build type not specified, use copter defaults
@@ -117,7 +117,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -371,7 +371,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This state process noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
-    // @Range: 0.01 1.0
+    // @Range: 0.01 2.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
@@ -380,10 +380,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
-    // @Range: 0.0 1.0
+    // @Range: 0.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 0.5f),
+    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 1.0f),
 
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
@@ -416,13 +416,13 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
-    // @Param: BETA_MASK
+    // @Param: ADATA_MASK
     // @DisplayName: Bitmask controlling sidelip angle fusion
-    // @Description: 1 byte bitmap controlling use of sideslip angle fusion for estimation of non wind states during operation of 'fly forward' vehicle types such as fixed wing planes. By assuming that the angle of sideslip is small, the wind velocity state estimates are corrected  whenever the EKF is not dead reckoning (e.g. has an independent velocity or position sensor such as GPS). This behaviour is on by default and cannot be disabled. When the EKF is dead reckoning, the wind states are used as a reference, enabling use of the small angle of sideslip assumption to correct non wind velocity states (eg attitude, velocity, position, etc) and improve navigation accuracy. This behaviour is on by default and cannot be disabled. The behaviour controlled by this parameter is the use of the small angle of sideslip assumption to correct non wind velocity states when the EKF is NOT dead reckoning. This is primarily of benefit to reduce the buildup of yaw angle errors during straight and level flight without a yaw sensor (e.g. magnetometer or dual antenna GPS yaw) provided aerobatic flight maneuvers with large sideslip angles are not performed. The 'always' option might be used where the yaw sensor is intentionally not fitted or disabled. The 'WhenNoYawSensor' option might be used if a yaw sensor is fitted, but protection against in-flight failure and continual rejection by the EKF is desired. For vehicles operated within visual range of the operator performing frequent turning maneuvers, setting this parameter is unnecessary.
-    // @Bitmask: 0:Always,1:WhenNoYawSensor
+    // @Description: 1 byte bitmap controlling use of sideslip angle and estimated airspeed during operation of 'fly forward' vehicle types such as fixed wing planes. By assuming that the angle of sideslip is small, the wind velocity state estimates are corrected  whenever the EKF is not dead reckoning (e.g. has an independent velocity or position sensor such as GPS). This behaviour is on by default and cannot be disabled. When the EKF is dead reckoning, the wind states are used as a reference, enabling use of the small angle of sideslip assumption to correct non wind velocity states (eg attitude, velocity, position, etc) and improve navigation accuracy. This behaviour is on by default and cannot be disabled. The behaviour controlled by this parameter is the use of the small angle of sideslip assumption and the use of the estimated airspeed (average of ARSPD_FBW_MIN and ARSPD_FBW_MAX) to correct non wind velocity states when the EKF is NOT dead reckoning. This is primarily of benefit to reduce the buildup of yaw angle errors during straight and level flight without a yaw sensor (e.g. magnetometer or dual antenna GPS yaw) provided aerobatic flight maneuvers with large sideslip angles are not performed. The 'SideslipAlways' option might be used where the yaw sensor is intentionally not fitted or disabled. The 'SideslipWhenFailedYawSensor' option might be used if a yaw sensor is fitted, but protection against in-flight failure and continual rejection by the EKF is desired. For vehicles operated within visual range of the operator performing frequent turning maneuvers, setting this parameter is unnecessary. The AirspeedAlways option might be used when operating without an airspeed sensor and when the TRIM_THROTTLE has been adjusted to fly close to the average of ARSPD_FBW_MIN and ARSPD_FBW_MAX.
+    // @Bitmask: 0:SideslipAlways,1:SideslipWhenFailedYawSensor,2:AirspeedAlways
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("BETA_MASK", 36, NavEKF3, _betaMask, 0),
+    AP_GROUPINFO("ADATA_MASK", 36, NavEKF3, _airDataMask, 0),
 
     // control of magnetic yaw angle fusion
 

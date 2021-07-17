@@ -268,6 +268,7 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
+    windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
@@ -1946,7 +1947,7 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitWindStates) {
-        for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,1.0e3f);
+        for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
     } else {
         zeroCols(P,22,23);
         zeroRows(P,22,23);
