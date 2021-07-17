@@ -312,26 +312,28 @@ void Plane::stabilize_yaw(float speed_scaler)
  */
 void Plane::stabilize_training(float speed_scaler)
 {
+    const float rexpo = roll_in_expo(false);
+    const float pexpo = pitch_in_expo(false);
     if (training_manual_roll) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
     } else {
         // calculate what is needed to hold
         stabilize_roll(speed_scaler);
-        if ((nav_roll_cd > 0 && channel_roll->get_control_in() < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
-            (nav_roll_cd < 0 && channel_roll->get_control_in() > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
+        if ((nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
+            (nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
             // allow user to get out of the roll
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
         }
     }
 
     if (training_manual_pitch) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
     } else {
         stabilize_pitch(speed_scaler);
-        if ((nav_pitch_cd > 0 && channel_pitch->get_control_in() < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
-            (nav_pitch_cd < 0 && channel_pitch->get_control_in() > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
+        if ((nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
+            (nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
         }
     }
 
@@ -345,8 +347,10 @@ void Plane::stabilize_training(float speed_scaler)
  */
 void Plane::stabilize_acro(float speed_scaler)
 {
-    float roll_rate = (channel_roll->get_control_in()/4500.0f) * g.acro_roll_rate;
-    float pitch_rate = (channel_pitch->get_control_in()/4500.0f) * g.acro_pitch_rate;
+    const float rexpo = roll_in_expo(true);
+    const float pexpo = pitch_in_expo(true);
+    float roll_rate = (rexpo/float(SERVO_MAX)) * g.acro_roll_rate;
+    float pitch_rate = (pexpo/float(SERVO_MAX)) * g.acro_pitch_rate;
 
     /*
       check for special roll handling near the pitch poles
