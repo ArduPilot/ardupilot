@@ -384,13 +384,13 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         if (now - last_print_ms >= 5000) {
             last_print_ms = now;
             va_list arg_list;
-            char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
+            char printfmt[2*MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
             hal.util->snprintf(printfmt, sizeof(printfmt), "Config error: %s\n", fmt);
             va_start(arg_list, fmt);
             vprintf(printfmt, arg_list);
             va_end(arg_list);
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+            char taggedfmt[2*MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
             hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
             va_start(arg_list, fmt);
             gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);

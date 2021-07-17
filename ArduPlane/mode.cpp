@@ -91,7 +91,7 @@ bool Mode::enter()
 
 bool Mode::is_vtol_man_throttle() const
 {
-    if (plane.quadplane.is_tailsitter_in_fw_flight() &&
+    if (plane.quadplane.tailsitter.is_in_fw_flight() &&
         plane.quadplane.assisted_flight) {
         // We are a tailsitter that has fully transitioned to Q-assisted forward flight.
         // In this case the forward throttle directly drives the vertical throttle so

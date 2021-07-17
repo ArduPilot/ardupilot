@@ -80,7 +80,7 @@ bool Plane::auto_takeoff_check(void)
         goto no_launch;
     }
 
-    if (!quadplane.is_tailsitter() &&
+    if (!quadplane.tailsitter.enabled() &&
         !(g2.flight_options & FlightOptions::DISABLE_TOFF_ATTITUDE_CHK)) {
         // Check aircraft attitude for bad launch
         if (ahrs.pitch_sensor <= -3000 || ahrs.pitch_sensor >= 4500 ||
