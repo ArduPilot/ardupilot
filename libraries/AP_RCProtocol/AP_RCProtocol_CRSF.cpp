@@ -27,6 +27,30 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#define CRSF_SUBSET_RC_STARTING_CHANNEL_BITS        5
+#define CRSF_SUBSET_RC_STARTING_CHANNEL_MASK        0x1F
+#define CRSF_SUBSET_RC_RES_CONFIGURATION_BITS       2
+#define CRSF_SUBSET_RC_RES_CONFIGURATION_MASK       0x03
+#define CRSF_SUBSET_RC_RESERVED_CONFIGURATION_BITS  1
+
+#define CRSF_RC_CHANNEL_SCALE_LEGACY                0.62477120195241f
+#define CRSF_SUBSET_RC_RES_CONF_10B                 0
+#define CRSF_SUBSET_RC_RES_BITS_10B                 10
+#define CRSF_SUBSET_RC_RES_MASK_10B                 0x03FF
+#define CRSF_SUBSET_RC_CHANNEL_SCALE_10B            1.0f
+#define CRSF_SUBSET_RC_RES_CONF_11B                 1
+#define CRSF_SUBSET_RC_RES_BITS_11B                 11
+#define CRSF_SUBSET_RC_RES_MASK_11B                 0x07FF
+#define CRSF_SUBSET_RC_CHANNEL_SCALE_11B            0.5f
+#define CRSF_SUBSET_RC_RES_CONF_12B                 2
+#define CRSF_SUBSET_RC_RES_BITS_12B                 12
+#define CRSF_SUBSET_RC_RES_MASK_12B                 0x0FFF
+#define CRSF_SUBSET_RC_CHANNEL_SCALE_12B            0.25f
+#define CRSF_SUBSET_RC_RES_CONF_13B                 3
+#define CRSF_SUBSET_RC_RES_BITS_13B                 13
+#define CRSF_SUBSET_RC_RES_MASK_13B                 0x1FFF
+#define CRSF_SUBSET_RC_CHANNEL_SCALE_13B            0.125f
+
 /*
  * CRSF protocol
  *
@@ -88,6 +112,10 @@ static const char* get_frame_type(uint8_t byte)
         return "SETTINGS_ENTRY";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
         return "UNKNOWN";
     }
@@ -285,10 +313,22 @@ bool AP_RCProtocol_CRSF::decode_csrf_packet()
         case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
             decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
+            _crsf_v3_active = false;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
         case CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
+            break;
+        case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
+            _crsf_v3_active = true;
+            rc_active = !_uart; // only accept RC data if we are not in standalone mode
+            break;
+        case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+            process_link_stats_rx_frame((uint8_t*)&_frame.payload);
+            break;
+        case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+            process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
         default:
             break;
@@ -298,9 +338,77 @@ bool AP_RCProtocol_CRSF::decode_csrf_packet()
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
     }
+    // process any pending baudrate changes before reading another frame
+    if (_new_baud_rate > 0) {
+        AP_HAL::UARTDriver *uart = get_current_UART();
+
+        if (uart) {
+            hal.scheduler->delay_microseconds(100);
+            uart->begin(_new_baud_rate, 128, 128);
+        }
+        _new_baud_rate = 0;
+    }
 #endif
 
     return rc_active;
+}
+
+/*
+  decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)
+  must be used on multiples of 8 channels
+*/
+void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
+{
+    const SubsetChannelsFrame* channel_data = (const SubsetChannelsFrame*)payload;
+
+    // get the channel resolution settings
+    uint8_t channelBits;
+    uint16_t channelMask;
+    float channelScale;
+
+    switch (channel_data->res_configuration) {
+    case CRSF_SUBSET_RC_RES_CONF_10B:
+        channelBits = CRSF_SUBSET_RC_RES_BITS_10B;
+        channelMask = CRSF_SUBSET_RC_RES_MASK_10B;
+        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_10B;
+        break;
+    default:
+    case CRSF_SUBSET_RC_RES_CONF_11B:
+        channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
+        channelMask = CRSF_SUBSET_RC_RES_MASK_11B;
+        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_11B;
+        break;
+    case CRSF_SUBSET_RC_RES_CONF_12B:
+        channelBits = CRSF_SUBSET_RC_RES_BITS_12B;
+        channelMask = CRSF_SUBSET_RC_RES_MASK_12B;
+        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_12B;
+        break;
+    case CRSF_SUBSET_RC_RES_CONF_13B:
+        channelBits = CRSF_SUBSET_RC_RES_BITS_13B;
+        channelMask = CRSF_SUBSET_RC_RES_MASK_13B;
+        channelScale = CRSF_SUBSET_RC_CHANNEL_SCALE_13B;
+        break;
+    }
+
+    // calculate the number of channels packed
+    uint8_t numOfChannels = ((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits;
+
+    // unpack the channel data
+    uint8_t bitsMerged = 0;
+    uint32_t readValue = 0;
+    uint8_t readByteIndex = 1;
+
+    for (uint8_t n = 0; n < numOfChannels; n++) {
+        while (bitsMerged < channelBits) {
+            uint8_t readByte = payload[readByteIndex++];
+            readValue |= ((uint32_t) readByte) << bitsMerged;
+            bitsMerged += 8;
+        }
+        _channels[channel_data->starting_channel + n] =
+            uint16_t(channelScale * float(uint16_t(readValue & channelMask)) + 988);
+        readValue >>= channelBits;
+        bitsMerged -= channelBits;
+    }
 }
 
 // send out telemetry
@@ -355,6 +463,22 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
     _link_status.rf_mode = static_cast<RFMode>(MIN(link->rf_mode, 3U));
 }
 
+// process link statistics to get RX RSSI
+void AP_RCProtocol_CRSF::process_link_stats_rx_frame(const void* data)
+{
+    const LinkStatisticsRXFrame* link = (const LinkStatisticsRXFrame*)data;
+
+    _link_status.rssi = link->rssi_percent * 255.0f / 100.0f;
+}
+
+// process link statistics to get TX RSSI
+void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
+{
+    const LinkStatisticsTXFrame* link = (const LinkStatisticsTXFrame*)data;
+
+    _link_status.rssi = link->rssi_percent * 255.0f / 100.0f;
+}
+
 // process a byte provided by a uart
 void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
 {
@@ -374,6 +498,25 @@ void AP_RCProtocol_CRSF::start_uart()
     _uart->set_blocking_writes(false);
     _uart->set_options(_uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
     _uart->begin(CRSF_BAUDRATE, 128, 128);
+}
+
+// change the baudrate of the protocol if we are able
+bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
+{
+    AP_HAL::UARTDriver* uart = get_available_UART();
+    if (uart == nullptr) {
+        return false;
+    }
+    if (baudrate > CRSF_BAUDRATE && !uart->is_dma_enabled()) {
+        return false;
+    }
+    if (baudrate > 1000000) {
+        return false;
+    }
+
+    _new_baud_rate = baudrate;
+
+    return true;
 }
 
 namespace AP {
