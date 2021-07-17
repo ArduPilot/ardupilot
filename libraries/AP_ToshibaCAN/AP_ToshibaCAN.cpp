@@ -31,8 +31,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_CANMANAGER_ENABLED
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "ToshibaCAN",  fmt, #args); } while (0)
-
+#else
+#define debug_can(level_debug, fmt, args...)
+#endif
 
 // stupid compiler is not able to optimise this under gnu++11
 // move this back when moving to gnu++17
@@ -297,6 +300,7 @@ void AP_ToshibaCAN::loop()
         if (send_stage == 8) {
             AP_HAL::CANFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
+#if HAL_WITH_ESC_TELEM
                 // decode rpm and voltage data
                 if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // copy contents to our structure
@@ -376,6 +380,7 @@ void AP_ToshibaCAN::loop()
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::USAGE);
                     }
                 }
+#endif // HAL_WITH_ESC_TELEM
             }
 
             // update bitmask of escs that replied

@@ -73,7 +73,11 @@
 #define STM32_VOS                           STM32_VOS_SCALE1
 #define STM32_PWR_CR1                       (PWR_CR1_SVOS_1 | PWR_CR1_SVOS_0)
 #define STM32_PWR_CR2                       (PWR_CR2_BREN)
+#ifdef SMPS_PWR
+#define STM32_PWR_CR3                       (PWR_CR3_SMPSEN | PWR_CR3_USB33DEN)
+#else
 #define STM32_PWR_CR3                       (PWR_CR3_LDOEN | PWR_CR3_USB33DEN)
+#endif
 #define STM32_PWR_CPUCR                     0
 
 /*
@@ -94,7 +98,7 @@
 #define STM32_HSE_ENABLED                   FALSE
 #define STM32_HSI_ENABLED                   TRUE
 #define STM32_PLL1_DIVM_VALUE               4
-#define STM32_PLL2_DIVM_VALUE               4
+#define STM32_PLL2_DIVM_VALUE               8
 #define STM32_PLL3_DIVM_VALUE               4
 #define STM32_PLLSRC                        STM32_PLLSRC_HSI_CK
 #define STM32_MCO1SEL                       STM32_MCO1SEL_HSI_CK
@@ -121,7 +125,7 @@
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_HSI_ENABLED                   FALSE
 #define STM32_PLL1_DIVM_VALUE               3
-#define STM32_PLL2_DIVM_VALUE               3
+#define STM32_PLL2_DIVM_VALUE               2
 #define STM32_PLL3_DIVM_VALUE               6
 
 #elif STM32_HSECLK == 25000000U
@@ -129,7 +133,7 @@
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_HSI_ENABLED                   FALSE
 #define STM32_PLL1_DIVM_VALUE               2
-#define STM32_PLL2_DIVM_VALUE               2
+#define STM32_PLL2_DIVM_VALUE               5
 #define STM32_PLL3_DIVM_VALUE               5
 #else
 #error "Unsupported HSE clock"
@@ -142,27 +146,43 @@
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               16
-#define STM32_PLL2_DIVP_VALUE               1
-#define STM32_PLL2_DIVQ_VALUE               4
-#define STM32_PLL2_DIVR_VALUE               2
+#define STM32_PLL2_DIVN_VALUE               45
+#define STM32_PLL2_DIVP_VALUE               2
+#define STM32_PLL2_DIVQ_VALUE               5
+#define STM32_PLL2_DIVR_VALUE               1
 
 #define STM32_PLL3_DIVN_VALUE               15
 #define STM32_PLL3_DIVP_VALUE               3
 #define STM32_PLL3_DIVQ_VALUE               5
 #define STM32_PLL3_DIVR_VALUE               8
 
-#elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U) || (STM32_HSECLK == 24000000U)
+#elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U)
 // common clock tree for multiples of 8MHz crystals
 #define STM32_PLL1_DIVN_VALUE               100
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               25
+#define STM32_PLL2_DIVN_VALUE               45
 #define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               4
-#define STM32_PLL2_DIVR_VALUE               4
+#define STM32_PLL2_DIVQ_VALUE               5
+#define STM32_PLL2_DIVR_VALUE               1
+
+#define STM32_PLL3_DIVN_VALUE               72
+#define STM32_PLL3_DIVP_VALUE               3
+#define STM32_PLL3_DIVQ_VALUE               6
+#define STM32_PLL3_DIVR_VALUE               9
+
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLL1_DIVN_VALUE               100
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVN_VALUE               30
+#define STM32_PLL2_DIVP_VALUE               2
+#define STM32_PLL2_DIVQ_VALUE               5
+#define STM32_PLL2_DIVR_VALUE               1
 
 #define STM32_PLL3_DIVN_VALUE               72
 #define STM32_PLL3_DIVP_VALUE               3
@@ -175,10 +195,10 @@
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               12
-#define STM32_PLL2_DIVP_VALUE               1
-#define STM32_PLL2_DIVQ_VALUE               2
-#define STM32_PLL2_DIVR_VALUE               3
+#define STM32_PLL2_DIVN_VALUE               72
+#define STM32_PLL2_DIVP_VALUE               2
+#define STM32_PLL2_DIVQ_VALUE               5
+#define STM32_PLL2_DIVR_VALUE               1
 
 #define STM32_PLL3_DIVN_VALUE               48
 #define STM32_PLL3_DIVP_VALUE               3
@@ -245,7 +265,7 @@
 #ifndef STM32_CKPERSEL
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #endif
-#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL2_R_CK
+#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 #define STM32_QSPISEL                       STM32_QSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
@@ -553,3 +573,12 @@
 #define STM32_SDC_MAX_CLOCK                 12500000
 #endif
 
+#ifndef STM32_WSPI_USE_QUADSPI1
+#define STM32_WSPI_USE_QUADSPI1                  FALSE
+#endif
+
+#if STM32_WSPI_USE_QUADSPI1
+#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    STM32_MDMA_CHANNEL_ID_ANY
+#define STM32_WSPI_QUADSPI1_MDMA_PRIORITY   1
+#define STM32_WSPI_QUADSPI1_PRESCALER_VALUE ((STM32_QSPICLK / HAL_QSPI1_CLK) - 1)
+#endif

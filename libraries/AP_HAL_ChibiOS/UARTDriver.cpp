@@ -308,6 +308,16 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 #endif
 
+#if defined(USART_CR1_FIFOEN)
+    // enable the UART FIFO on G4 and H7. This allows for much higher baudrates
+    // without data loss when not using DMA
+    if (_last_options & OPTION_NOFIFO) {
+        _cr1_options &= ~USART_CR1_FIFOEN;
+    } else {
+        _cr1_options |= USART_CR1_FIFOEN;
+    }
+#endif
+
     /*
       allocate the write buffer
      */
@@ -899,7 +909,13 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
 
         if (dma_handle->has_contention()) {
-            if (_baudrate <= 115200) {
+            // on boards with a hw fifo we can use a higher threshold for disabling DMA
+#if defined(USART_CR1_FIFOEN)
+            const uint32_t baud_threshold = 460800;
+#else
+            const uint32_t baud_threshold = 115200;
+#endif
+            if (_baudrate <= baud_threshold) {
                 contention_counter += 3;
                 if (contention_counter > 1000) {
                     // more than 25% of attempts to use this DMA
@@ -1697,6 +1713,44 @@ void UARTDriver::uart_info(ExpandingString &str)
     _tx_stats_bytes = 0;
     _rx_stats_bytes = 0;
     _last_stats_ms = now_ms;
+}
+
+/*
+  software control of the CTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_CTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // CTS pin is being used
+        return false;
+    }
+    if (sdef.cts_line == 0) {
+        // we don't have a CTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.cts_line, 1);
+    palWriteLine(sdef.cts_line, high?1:0);
+    return true;
+}
+
+/*
+  software control of the RTS pin if available. Return false if
+  not available
+*/
+bool UARTDriver::set_RTS_pin(bool high)
+{
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
+        // RTS pin is being used
+        return false;
+    }
+    if (sdef.rts_line == 0) {
+        // we don't have a RTS pin on this UART
+        return false;
+    }
+    palSetLineMode(sdef.rts_line, 1);
+    palWriteLine(sdef.rts_line, high?1:0);
+    return true;
 }
 
 #if HAL_USE_SERIAL_USB == TRUE

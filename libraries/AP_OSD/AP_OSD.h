@@ -121,6 +121,7 @@ public:
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 
 private:
     friend class AP_MSP;
@@ -137,6 +138,7 @@ private:
     AP_OSD_Setting altitude{true, 23, 8};
     AP_OSD_Setting bat_volt{true, 24, 1};
     AP_OSD_Setting rssi{true, 1, 1};
+    AP_OSD_Setting link_quality{false,1,1};
     AP_OSD_Setting restvolt{false, 24, 2};
     AP_OSD_Setting avgcellvolt{false, 24, 3};
     AP_OSD_Setting current{true, 25, 2};
@@ -156,9 +158,9 @@ private:
     AP_OSD_Setting aspd2{false, 0, 0};
     AP_OSD_Setting vspeed{true, 24, 9};
 #if HAL_WITH_ESC_TELEM
-    AP_OSD_Setting blh_temp {false, 24, 13};
-    AP_OSD_Setting blh_rpm{false, 22, 12};
-    AP_OSD_Setting blh_amps{false, 24, 14};
+    AP_OSD_Setting esc_temp {false, 24, 13};
+    AP_OSD_Setting esc_rpm{false, 22, 12};
+    AP_OSD_Setting esc_amps{false, 24, 14};
 #endif
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
@@ -203,6 +205,7 @@ private:
     void draw_avgcellvolt(uint8_t x, uint8_t y);
     void draw_restvolt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
+    void draw_link_quality(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
@@ -228,9 +231,9 @@ private:
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
 #if HAL_WITH_ESC_TELEM
-    void draw_blh_temp(uint8_t x, uint8_t y);
-    void draw_blh_rpm(uint8_t x, uint8_t y);
-    void draw_blh_amps(uint8_t x, uint8_t y);
+    void draw_esc_temp(uint8_t x, uint8_t y);
+    void draw_esc_rpm(uint8_t x, uint8_t y);
+    void draw_esc_amps(uint8_t x, uint8_t y);
 #endif
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);

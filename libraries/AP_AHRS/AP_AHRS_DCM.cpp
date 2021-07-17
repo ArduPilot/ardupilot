@@ -239,12 +239,6 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     _last_startup_ms = AP_HAL::millis();
 }
 
-// reset the current attitude, used by HIL
-void AP_AHRS_DCM::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
-{
-    _dcm_matrix.from_euler(_roll, _pitch, _yaw);
-}
-
 /*
  *  check the DCM matrix for pathological values
  */
@@ -420,7 +414,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (AP::gps().status() <= AP_GPS::NO_FIX || !_gps_use) {
+    if (AP::gps().status() <= AP_GPS::NO_FIX || _gps_use == GPSUse::Disable) {
         return false;
     }
     return true;
@@ -1037,15 +1031,21 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
-    loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
+    const auto &baro = AP::baro();
+    const auto &gps = AP::gps();
+    if (_gps_use == GPSUse::EnableWithHeight &&
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        loc.alt = gps.location().alt;
+    } else {
+        loc.alt = baro.get_altitude() * 100 + _home.alt;
+    }
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
     loc.offset(_position_offset_north, _position_offset_east);
-    const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
-        _gps.get_lag(gps_delay_sec);
-        loc.offset_bearing(_gps.ground_course(), _gps.ground_speed() * gps_delay_sec);
+        gps.get_lag(gps_delay_sec);
+        loc.offset_bearing(gps.ground_course(), gps.ground_speed() * gps_delay_sec);
     }
     return _have_position;
 }
@@ -1095,6 +1095,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
 
 bool AP_AHRS_DCM::set_home(const Location &loc)
 {
+    WITH_SEMAPHORE(_rsem);
     // check location is valid
     if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
         return false;
@@ -1130,7 +1131,13 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
 //  a relative ground position to home in meters, Down
 void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
 {
-    posD = -AP::baro().get_altitude();
+    const auto &gps = AP::gps();
+    if (_gps_use == GPSUse::EnableWithHeight &&
+        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        posD = (_home.alt - gps.location().alt) * 0.01;
+    } else {
+        posD = -AP::baro().get_altitude();
+    }
 }
 
 /*

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <AP_Math/AP_Math.h>
 
 union nav_filter_status {
     struct {

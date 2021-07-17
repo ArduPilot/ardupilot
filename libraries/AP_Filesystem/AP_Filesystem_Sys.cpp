@@ -104,7 +104,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "uarts.txt") == 0) {
         hal.util->uart_info(*r.str);
     }
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can_log.txt") == 0) {
         AP::can().log_retrieve(*r.str);

@@ -89,15 +89,15 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: s
     // @Range: 0 30
     // @Increment: 1
-    GSCALAR(telem_delay,            "TELEM_DELAY",     0),
+    GSCALAR(telem_delay, "TELEM_DELAY",     0),
 
     // @Param: GCS_PID_MASK
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw,8:AccelZ
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
-    GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+    // @Values: 0:None,1:VELX,2:VELY,4:VELZ,8:VELYAW,16:POSX,32:POSY,64:POSZ,128:POSYAW,15:Vel only,51:XY only,204:ZYaw only,240:Pos only,255:All
+    // @Bitmask: 0:VELX,1:VELY,2:VELZ;3:VELYAW;4:POSX,5:POSY;6:POZ;7:POSYAW
+    GSCALAR(gcs_pid_mask, "GCS_PID_MASK",     0),
 
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
@@ -112,49 +112,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 100 900
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
-
-    // @Param: WP_YAW_BEHAVIOR
-    // @DisplayName: Yaw behaviour during missions
-    // @Description: Determines how the autopilot controls the yaw during missions and RTL
-    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
-    // @User: Standard
-    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
-
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: LAND_SPEED_HIGH
-    // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
-    // @Units: cm/s
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
-
-    // @Param: PILOT_SPEED_UP
-    // @DisplayName: Pilot maximum vertical speed ascending
-    // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
-    // @Units: cm/s
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
-
-    // @Param: PILOT_ACCEL_Z
-    // @DisplayName: Pilot vertical acceleration
-    // @Description: The vertical acceleration used when pilot is controlling the altitude
-    // @Units: cm/s/s
-    // @Range: 50 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(pilot_accel_z,  "PILOT_ACCEL_Z",    PILOT_ACCEL_Z_DEFAULT),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
@@ -240,7 +197,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,397310:All+FastIMU+PID,655358:All+FullIMU,0:Disabled
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -272,39 +228,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
 
-    // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 1000 8000
-    // @User: Advanced
-    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
-
-    // @Param: PHLD_BRAKE_RATE
-    // @DisplayName: PosHold braking rate
-    // @Description: PosHold flight mode's rotation rate during braking in deg/sec
-    // @Units: deg/s
-    // @Range: 4 12
-    // @User: Advanced
-    GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
-
-    // @Param: PHLD_BRAKE_ANGLE
-    // @DisplayName: PosHold braking angle max
-    // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 2000 4500
-    // @User: Advanced
-    GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
-
-    // @Param: LAND_REPOSITION
-    // @DisplayName: Land repositioning
-    // @Description: Enables user input during LAND mode, the landing phase of RTL, and auto mode landings.
-    // @Values: 0:No repositioning, 1:Repositioning
-    // @User: Advanced
-    GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
-
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
@@ -326,6 +249,63 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
 
+    // @Param: MAX_VEL_XY
+    // @DisplayName: Max XY Velocity
+    // @Description: Sets the maximum XY velocity, in m/s
+    // @Range: 0.2 5
+    // @User: Standard
+    GSCALAR(max_vel_xy, "MAX_VEL_XY", 0.5),
+
+    // @Param: MAX_VEL_Z
+    // @DisplayName: Max Z Velocity
+    // @Description: Sets the maximum Z velocity, in m/s
+    // @Range: 0.2 5
+    // @User: Standard
+    GSCALAR(max_vel_z, "MAX_VEL_Z", 0.4),
+
+    // @Param: MAX_VEL_YAW
+    // @DisplayName: Max yaw Velocity
+    // @Description: Sets the maximum yaw velocity, in rad/s
+    // @Range: 0.2 5
+    // @User: Standard
+    GSCALAR(max_vel_yaw, "MAX_VEL_YAW", 0.5),
+
+    // @Param: MAX_POS_XY
+    // @DisplayName: Max XY Position change
+    // @Description: Sets the maximum XY position change, in m/s
+    // @Range: 0.1 5
+    // @User: Standard
+    GSCALAR(max_pos_xy, "MAX_POS_XY", 0.2),
+
+    // @Param: MAX_POS_Z
+    // @DisplayName: Max Z Position change
+    // @Description: Sets the maximum Z position change, in m/s
+    // @Range: 0.1 5
+    // @User: Standard
+    GSCALAR(max_pos_z, "MAX_POS_Z", 0.15),
+
+    // @Param: MAX_POS_YAW
+    // @DisplayName: Max Yaw Position change
+    // @Description: Sets the maximum Yaw position change, in rad/s
+    // @Range: 0.1 5
+    // @User: Standard
+    GSCALAR(max_pos_yaw, "MAX_POS_YAW", 0.3),
+
+    // @Param: SIMPLE_MODE
+    // @DisplayName: Simple mode
+    // @Description: Simple mode for Position control - "forward" moves blimp in +ve X direction world-frame
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    GSCALAR(simple_mode, "SIMPLE_MODE", 0),
+
+    // @Param: DIS_MASK
+    // @DisplayName: Disable output mask
+    // @Description: Mask for disabling one or more of the 4 output axis in mode Velocity or Loiter
+    // @Values: 0:All enabled,1:Right,2:Front,4:Down,8:Yaw,3:Down and Yaw only,12:Front & Right only
+    // @Bitmask: 0:Right,1:Front,2:Down,3:Yaw
+    // @User: Standard
+    GSCALAR(dis_mask, "DIS_MASK", 0),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
@@ -335,25 +315,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
-    // @Param: ACRO_RP_P
-    // @DisplayName: Acro Roll and Pitch P gain
-    // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-    GSCALAR(acro_rp_p,                 "ACRO_RP_P",           ACRO_RP_P),
-
-    // @Param: ACRO_YAW_P
-    // @DisplayName: Acro Yaw P gain
-    // @Description: Converts pilot yaw input into a desired rate of rotation.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-    GSCALAR(acro_yaw_p,                 "ACRO_YAW_P",           ACRO_YAW_P),
-
     // variables not in the g class which contain EEPROM saved variables
-
-    // @Group: RELAY_
-    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY_", AP_Relay),
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
@@ -362,26 +324,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,            "INS_", AP_InertialSensor),
-
-    // // @Group: WPNAV_
-    // // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    // GOBJECTPTR(wp_nav, "WPNAV_",       AC_WPNav),
-
-    // // @Group: LOIT_
-    // // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
-    // GOBJECTPTR(loiter_nav, "LOIT_", AC_Loiter),
-
-    // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
-    // #if FRAME_CONFIG == HELI_FRAME
-    //     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Heli),
-    // #else
-    //     GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
-    // #endif
-
-    // @Group: PSC
-    // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    // GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -454,9 +396,9 @@ const AP_Param::Info Blimp::var_info[] = {
     GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -494,6 +436,329 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Path: Fins.cpp
     GOBJECTPTR(motors, "FINS_", Fins),
 
+    // @Param: VELXY_P
+    // @DisplayName: Velocity (horizontal) P gain
+    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELXY_I
+    // @DisplayName: Velocity (horizontal) I gain
+    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELXY_D
+    // @DisplayName: Velocity (horizontal) D gain
+    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELXY_IMAX
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELXY_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELXY_D_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELXY_FF
+    // @DisplayName: Velocity (horizontal) feed forward gain
+    // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_xy, "VELXY_", AC_PID_2D),
+
+    // @Param: VELZ_P
+    // @DisplayName: Velocity (vertical) P gain
+    // @Description: Velocity (vertical) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELZ_I
+    // @DisplayName: Velocity (vertical) I gain
+    // @Description: Velocity (vertical) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELZ_D
+    // @DisplayName: Velocity (vertical) D gain
+    // @Description: Velocity (vertical) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELZ_IMAX
+    // @DisplayName: Velocity (vertical) integrator maximum
+    // @Description: Velocity (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELZ_FILT
+    // @DisplayName: Velocity (vertical) input filter
+    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELZ_D_FILT
+    // @DisplayName: Velocity (vertical) input filter
+    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELZ_FF
+    // @DisplayName: Velocity (vertical) feed forward gain
+    // @Description: Velocity (vertical) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_z, "VELZ_", AC_PID_Basic),
+
+    // @Param: VELYAW_P
+    // @DisplayName: Velocity (yaw) P gain
+    // @Description: Velocity (yaw) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELYAW_I
+    // @DisplayName: Velocity (yaw) I gain
+    // @Description: Velocity (yaw) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELYAW_D
+    // @DisplayName: Velocity (yaw) D gain
+    // @Description: Velocity (yaw) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELYAW_IMAX
+    // @DisplayName: Velocity (yaw) integrator maximum
+    // @Description: Velocity (yaw) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: VELYAW_FILT
+    // @DisplayName: Velocity (yaw) input filter
+    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELYAW_D_FILT
+    // @DisplayName: Velocity (yaw) input filter
+    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELYAW_FF
+    // @DisplayName: Velocity (yaw) feed forward gain
+    // @Description: Velocity (yaw) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_yaw, "VELYAW_", AC_PID_Basic),
+
+    // @Param: POSXY_P
+    // @DisplayName: Position (horizontal) P gain
+    // @Description: Position (horizontal) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: POSXY_I
+    // @DisplayName: Position (horizontal) I gain
+    // @Description: Position (horizontal) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POSXY_D
+    // @DisplayName: Position (horizontal) D gain
+    // @Description: Position (horizontal) D gain.  Corrects short-term changes in position
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSXY_IMAX
+    // @DisplayName: Position (horizontal) integrator maximum
+    // @Description: Position (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: POSXY_FILT
+    // @DisplayName: Position (horizontal) input filter
+    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSXY_D_FILT
+    // @DisplayName: Position (horizontal) input filter
+    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSXY_FF
+    // @DisplayName: Position (horizontal) feed forward gain
+    // @Description: Position (horizontal) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_pos_xy, "POSXY_", AC_PID_2D),
+
+    // @Param: POSZ_P
+    // @DisplayName: Position (vertical) P gain
+    // @Description: Position (vertical) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: POSZ_I
+    // @DisplayName: Position (vertical) I gain
+    // @Description: Position (vertical) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POSZ_D
+    // @DisplayName: Position (vertical) D gain
+    // @Description: Position (vertical) D gain.  Corrects short-term changes in position
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSZ_IMAX
+    // @DisplayName: Position (vertical) integrator maximum
+    // @Description: Position (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: POSZ_FILT
+    // @DisplayName: Position (vertical) input filter
+    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSZ_D_FILT
+    // @DisplayName: Position (vertical) input filter
+    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSZ_FF
+    // @DisplayName: Position (vertical) feed forward gain
+    // @Description: Position (vertical) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_pos_z, "POSZ_", AC_PID_Basic),
+
+    // @Param: POSYAW_P
+    // @DisplayName: Position (yaw) axis controller P gain
+    // @Description: Position (yaw) axis controller P gain.
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSYAW_I
+    // @DisplayName: Position (yaw) axis controller I gain
+    // @Description: Position (yaw) axis controller I gain.
+    // @Range: 0.0 3.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSYAW_IMAX
+    // @DisplayName: Position (yaw) axis controller I gain maximum
+    // @Description: Position (yaw) axis controller I gain maximum.
+    // @Range: 0 4000
+    // @Increment: 10
+    // @Units: d%
+    // @User: Standard
+
+    // @Param: POSYAW_D
+    // @DisplayName: Position (yaw) axis controller D gain
+    // @Description: Position (yaw) axis controller D gain.
+    // @Range: 0.001 0.1
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSYAW_FF
+    // @DisplayName: Position (yaw) axis controller feed forward
+    // @Description: Position (yaw) axis controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSYAW_FLTT
+    // @DisplayName: Position (yaw) target frequency filter in Hz
+    // @Description: Position (yaw) target frequency filter in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_FLTE
+    // @DisplayName: Position (yaw) error frequency filter in Hz
+    // @Description: Position (yaw) error frequency filter in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_FLTD
+    // @DisplayName: Position (yaw) derivative input filter in Hz
+    // @Description: Position (yaw) derivative input filter in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSYAW_SMAX
+    // @DisplayName: Yaw slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+    GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
+
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&blimp, {group_info : AP_Vehicle::var_info} },
@@ -506,28 +771,12 @@ const AP_Param::Info Blimp::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
-    // @Param: WP_NAVALT_MIN
-    // @DisplayName: Minimum navigation altitude
-    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
-
     // @Param: DEV_OPTIONS
     // @DisplayName: Development options
     // @Description: Bitmask of developer options. The meanings of the bit fields in this parameter may vary at any time. Developers should check the source code for current meaning
-    // @Bitmask: 0:ADSBMavlinkProcessing,1:DevOptionVFR_HUDRelativeAlt,2:SetAttitudeTarget_ThrustAsThrust
+    // @Bitmask: 0:Unknown
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
-
-    // @Param: ACRO_Y_EXPO
-    // @DisplayName: Acro Yaw Expo
-    // @Description: Acro yaw expo to allow faster rotation when stick at edges
-    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
-    // @Range: -0.5 1.0
-    // @User: Advanced
-    AP_GROUPINFO("ACRO_Y_EXPO", 9, ParametersG2, acro_y_expo, ACRO_Y_EXPO_DEFAULT),
-
 
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
@@ -544,8 +793,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
-    // @Description: Controls major frame class for multiblimp component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca
+    // @Description: Controls major frame class for blimp.
+    // @Values: 0:Finnedblimp
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),
@@ -558,12 +807,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels_Blimp),
 
-    // // 18 was used by AP_VisualOdom
-
-    // // @Group: TCAL
-    // // @Path: ../libraries/AP_TempCalibration/AP_TempCalibration.cpp
-    // AP_SUBGROUPINFO(temp_calibration, "TCAL", 19, ParametersG2, AP_TempCalibration),
-
     // @Param: PILOT_SPEED_DN
     // @DisplayName: Pilot maximum vertical speed descending
     // @Description: The maximum vertical descending velocity the pilot may request in cm/s
@@ -572,15 +815,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
-
-    // @Param: LAND_ALT_LOW
-    // @DisplayName: Land alt low
-    // @Description: Altitude during Landing at which vehicle slows to LAND_SPEED
-    // @Units: cm
-    // @Range: 100 10000
-    // @Increment: 10
-    // @User: Advanced
-    AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low, 1000),
 
 #ifdef ENABLE_SCRIPTING
     // @Group: SCR_
@@ -635,7 +869,6 @@ ParametersG2::ParametersG2(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-
 void Blimp::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
@@ -667,6 +900,5 @@ void Blimp::load_parameters(void)
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     // setup AP_Param frame type flags
-    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
-
+    AP_Param::set_frame_type_flags(AP_PARAM_FRAME_BLIMP);
 }

@@ -19,10 +19,12 @@
 #include <AP_Common/Location.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 
+#ifndef AP_TERRAIN_AVAILABLE
 #if HAVE_FILESYSTEM_SUPPORT && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
 #else
 #define AP_TERRAIN_AVAILABLE 0
+#endif
 #endif
 
 #if AP_TERRAIN_AVAILABLE
@@ -101,6 +103,7 @@ public:
     void update(void);
 
     bool enabled() const { return enable; }
+    void set_enabled(bool _enable) { enable = _enable; }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }

@@ -106,12 +106,6 @@ void Copter::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-    // init Location class
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location::set_terrain(&terrain);
-    wp_nav->set_terrain(&terrain);
-#endif
-
 #if AC_OAPATHPLANNER_ENABLED == ENABLED
     g2.oa.init();
 #endif
@@ -140,18 +134,6 @@ void Copter::init_ardupilot()
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
-#endif
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        delay(1000);
-    }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
 #endif
 
     // read Baro pressure at ground

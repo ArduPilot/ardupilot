@@ -209,9 +209,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
-    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. Note that reverse thrust is only ever auto-enabled in auto-throttle modes. In modes where throttle control is pilot controlled the ability to do reverse thrust is controlled by throttle stick input. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages.
-    // @Values: 0:Never,1:AutoAlways,2:AutoLanding
-    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AUTO_LANDING_PATTERN
+    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages. Reverse thrust is always used in MANUAL mode if enabled with THR_MIN < 0. In non-autothrottle controlled modes, if reverse thrust is not used, then THR_MIN is effectively set to 0 for that mode.
+    // @Values: 0:MANUAL ONLY,1:AutoAlways,2:AutoLanding
+    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AUTO_LANDING_PATTERN,12:FBWA,13:ACRO,14:STABILIZE,15:THERMAL
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
@@ -637,7 +637,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all log types by setting this to 65535. The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
-    // @Values: 0:Disabled,65535:All-Default
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
@@ -739,32 +738,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
-
-#if HIL_SUPPORT
-    // @Param: HIL_MODE
-    // @DisplayName: HIL mode enable
-    // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    // @RebootRequired: True
-    GSCALAR(hil_mode,               "HIL_MODE",      0),
-#endif
-
-    // @Param: HIL_SERVOS
-    // @DisplayName: HIL Servos enable
-    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(hil_servos,            "HIL_SERVOS",      0),
-
-    // @Param: HIL_ERR_LIMIT
-    // @DisplayName: Limit of error in HIL attitude before reset
-    // @Description: This controls the maximum error in degrees on any axis before HIL will reset the DCM attitude to match the HIL_STATE attitude. This limit will prevent poor timing on HIL from causing a major attitude error. If the value is zero then no limit applies.
-    // @Units: deg
-    // @Range: 0 90
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
 
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
@@ -1199,7 +1172,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
     // @Group: EFI
     // @Path: ../libraries/AP_EFI/AP_EFI.cpp
     AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
@@ -1488,6 +1461,8 @@ void Plane::load_parameters(void)
 #if AP_TERRAIN_AVAILABLE
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
 #endif
+
+    g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

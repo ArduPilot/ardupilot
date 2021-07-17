@@ -1,11 +1,9 @@
 include ../CubeOrange/hwdef.dat
 
-undef COMPASS
 undef IOMCU_UART
 undef USART6
 undef ROMFS
 undef HAL_HAVE_SAFETY_SWITCH
-undef IMU
 undef HAL_CHIBIOS_ARCH_FMUV3
 undef BOOTLOADER_DEV_LIST
 
@@ -19,11 +17,15 @@ define PERIPH_FW TRUE
 
 define HAL_BUILD_AP_PERIPH
 
+define HAL_PERIPH_ENABLE_BATTERY
+define HAL_PERIPH_ENABLE_BATTERY_MPPT_PACKETDIGITAL
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
+
+define HAL_INS_ENABLED 1
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
@@ -45,8 +47,6 @@ define NO_DATAFLASH TRUE
 define HAL_NO_RCIN_THREAD
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-
-define HAL_PERIPH_ENABLE_BATTERY
 
 define HAL_CAN_DEFAULT_NODE_ID 0
 

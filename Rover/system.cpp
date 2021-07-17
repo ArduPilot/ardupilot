@@ -93,6 +93,11 @@ void Rover::init_ardupilot()
     // init wheel encoders
     g2.wheel_encoder.init();
 
+#if HAL_TORQEEDO_ENABLED
+    // init torqeedo motor driver
+    g2.torqeedo.init();
+#endif
+
     relay.init();
 
 #if HAL_MOUNT_ENABLED

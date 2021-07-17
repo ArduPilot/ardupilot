@@ -40,14 +40,6 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // check if motor interlock aux switch is in use
-    // if it is, switch needs to be in disabled position to arm
-    // otherwise exit immediately.  This check to be repeated,
-    // as state can change at any time.
-    if (blimp.ap.using_interlock && blimp.ap.motor_interlock_switch) {
-        check_failed(display_failure, "Motor Interlock Enabled");
-    }
-
     // if pre arm checks are disabled run only the mandatory checks
     if (checks_to_perform == 0) {
         return mandatory_checks(display_failure);
@@ -153,22 +145,6 @@ bool AP_Arming_Blimp::parameter_checks(bool display_failure)
                 check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check FS_THR_VALUE");
                 return false;
             }
-        }
-        if (blimp.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
-            // FS_GCS_ENABLE == 2 has been removed
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
-        }
-
-        // lean angle parameter check
-        if (blimp.aparm.angle_max < 1000 || blimp.aparm.angle_max > 8000) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check ANGLE_MAX");
-            return false;
-        }
-
-        // pilot-speed-up parameter check
-        if (blimp.g.pilot_speed_up <= 0) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
-            return false;
         }
     }
 
@@ -289,6 +265,15 @@ bool AP_Arming_Blimp::mandatory_gps_checks(bool display_failure)
         return true;
     }
 
+    // check for GPS glitch (as reported by EKF)
+    nav_filter_status filt_status;
+    if (ahrs.get_filter_status(filt_status)) {
+        if (filt_status.flags.gps_glitching) {
+            check_failed(display_failure, "GPS glitching");
+            return false;
+        }
+    }
+
     // if we got here all must be ok
     return true;
 }
@@ -399,7 +384,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         blimp.arming_altitude_m = blimp.inertial_nav.get_altitude() * 0.01;
     }
 
-    // enable gps velocity based centrefugal force compensation
+    // enable gps velocity based centrifugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 

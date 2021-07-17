@@ -12,6 +12,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+static const uint32_t EKF_INIT_TIME_MS = 2000; // EKF initialisation requires this many milliseconds of good sensor data
+static const uint32_t EKF_INIT_SENSOR_MIN_UPDATE_MS = 500; // Sensor must update within this many ms during EKF init, else init will fail
+static const uint32_t LANDING_TARGET_TIMEOUT_MS = 2000; // Sensor must update within this many ms, else prec landing will be switched off
+
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: ENABLED
     // @DisplayName: Precision Land enabled/disabled
@@ -220,7 +224,12 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
 bool AC_PrecLand::target_acquired()
 {
-    _target_acquired = _target_acquired && (AP_HAL::millis()-_last_update_ms) < 2000;
+    if ((AP_HAL::millis()-_last_update_ms) > LANDING_TARGET_TIMEOUT_MS) {
+        // not had a sensor update since a long time
+        // probably lost the target
+        _estimator_initialized = false;
+        _target_acquired = false;
+    }
     return _target_acquired;
 }
 
@@ -328,7 +337,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
-                if (!target_acquired()) {
+                if (!_estimator_initialized) {
+                    // start init of EKF. We will let the filter consume the data for a while before it available for consumption
                     // reset filter state
                     if (inertial_data_delayed->inertialNavVelocityValid) {
                         _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
@@ -338,7 +348,9 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                         _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
                     }
                     _last_update_ms = AP_HAL::millis();
-                    _target_acquired = true;
+                    _estimator_init_ms = AP_HAL::millis();
+                    // we have initialized the estimator but will not use the values for sometime so that EKF settles down
+                    _estimator_initialized = true;
                 } else {
                     float NIS_x = _ekf_x.getPosNIS(_target_pos_rel_meas_NED.x, xy_pos_var);
                     float NIS_y = _ekf_y.getPosNIS(_target_pos_rel_meas_NED.y, xy_pos_var);
@@ -347,12 +359,14 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                         _ekf_x.fusePos(_target_pos_rel_meas_NED.x, xy_pos_var);
                         _ekf_y.fusePos(_target_pos_rel_meas_NED.y, xy_pos_var);
                         _last_update_ms = AP_HAL::millis();
-                        _target_acquired = true;
                     } else {
                         _outlier_reject_count++;
                     }
                 }
             }
+
+            // check EKF was properly initialized when the sensor detected a landing target
+            check_ekf_init_timeout();
 
             // Output prediction
             if (target_acquired()) {
@@ -368,22 +382,33 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
     }
 }
 
+
+// check if EKF got the time to initialize when the landing target was first detected
+// Expects sensor to update within EKF_INIT_SENSOR_MIN_UPDATE_MS milliseconds till EKF_INIT_TIME_MS milliseconds have passed
+// after this period landing target estimates can be used by vehicle
+void AC_PrecLand::check_ekf_init_timeout()
+{
+    if (!target_acquired() && _estimator_initialized) {
+        // we have just got the target in sight
+        if (AP_HAL::millis()-_last_update_ms > EKF_INIT_SENSOR_MIN_UPDATE_MS) {
+            // we have lost the target, not enough readings to initialize the EKF
+            _estimator_initialized = false;
+        } else if (AP_HAL::millis()-_estimator_init_ms > EKF_INIT_TIME_MS) {
+            // the target has been visible for a while, EKF should now have initialized to a good value
+            _target_acquired = true;
+        }
+    }
+}
+
 bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
 {
     if (_backend->have_los_meas() && _backend->los_meas_time_ms() != _last_backend_los_meas_ms) {
         _last_backend_los_meas_ms = _backend->los_meas_time_ms();
         _backend->get_los_body(target_vec_unit_body);
-
-        // Apply sensor yaw alignment rotation
-        float sin_yaw_align = sinf(radians(_yaw_align*0.01f));
-        float cos_yaw_align = cosf(radians(_yaw_align*0.01f));
-        Matrix3f Rz = Matrix3f(
-            cos_yaw_align, -sin_yaw_align, 0,
-            sin_yaw_align, cos_yaw_align, 0,
-            0, 0, 1
-        );
-
-        target_vec_unit_body = Rz*target_vec_unit_body;
+        if (!is_zero(_yaw_align)) {
+            // Apply sensor yaw alignment rotation
+            target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
+        }
         return true;
     } else {
         return false;
@@ -396,25 +421,35 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     if (retrieve_los_meas(target_vec_unit_body)) {
         const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
-        Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
-        bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
-        bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
+        const Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
+        const bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+        const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
             float dist, alt;
+            // figure out ned camera orientation w.r.t its offset
+            Vector3f cam_pos_ned;
+            if (!_cam_offset.get().is_zero()) {
+                // user has specifed offset for camera
+                // take its height into account while calculating distance
+                cam_pos_ned = inertial_data_delayed->Tbn * _cam_offset;
+            }
             if (_backend->distance_to_target() > 0.0f) {
+                // sensor has provided distance to landing target
                 dist = _backend->distance_to_target();
                 alt = dist * target_vec_unit_ned.z;
             } else {
-                alt = MAX(rangefinder_alt_m, 0.0f);
+                // sensor only knows the horizontal location of the landing target
+                // rely on rangefinder for the vertical target
+                alt = MAX(rangefinder_alt_m - cam_pos_ned.z, 0.0f);
                 dist = alt / target_vec_unit_ned.z;
             }
 
             // Compute camera position relative to IMU
-            Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
-            Vector3f cam_pos_ned = inertial_data_delayed->Tbn * (_cam_offset.get() - accel_body_offset);
+            const Vector3f accel_pos_ned = inertial_data_delayed->Tbn * AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
+            const Vector3f cam_pos_ned_rel_imu = cam_pos_ned - accel_pos_ned;
 
             // Compute target position relative to IMU
-            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt) + cam_pos_ned;
+            _target_pos_rel_meas_NED = Vector3f{target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt} + cam_pos_ned_rel_imu;
             return true;
         }
     }

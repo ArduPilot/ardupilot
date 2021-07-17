@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
-    // @DisplayName: BLHeli auto-enable for multicopter motors
+    // @DisplayName: BLHeli pass-thru auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
@@ -743,8 +743,9 @@ bool AP_BLHeli::BL_ConnectEx(void)
 
     blheli.interface_mode[blheli.chan] = 0;
 
-    uint16_t *devword = (uint16_t *)blheli.deviceInfo[blheli.chan];
-    switch (*devword) {
+    uint16_t devword;
+    memcpy(&devword, blheli.deviceInfo[blheli.chan], sizeof(devword));
+    switch (devword) {
     case 0x9307:
     case 0x930A:
     case 0x930F:
@@ -769,7 +770,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
             debug("Interface type imARM_BLB");
         } else {
             blheli.ack = ACK_D_GENERAL_ERROR;
-            debug("Unknown interface type 0x%04x", *devword);
+            debug("Unknown interface type 0x%04x", devword);
             break;
         }
     }
@@ -1270,19 +1271,10 @@ void AP_BLHeli::update(void)
         }
     }
 
-    // check the user hasn't goofed, this also prevents weird crashes on arming
-    if (!initialised && channel_mask.get() == 0 && channel_auto.get() == 0
-        && (channel_bidir_dshot_mask.get() != 0
-            || channel_reversible_mask.get() != 0
-            || channel_reversed_mask.get() != 0)) {
-        AP_BoardConfig::config_error("DSHOT needs SERVO_BLH_AUTO or _MASK");
-    }
-
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
             run_connection_test(run_test.get() - 1);
         }
-        return;
     }
 }
 
@@ -1296,15 +1288,18 @@ void AP_BLHeli::init(void)
 
     run_test.set_and_notify(0);
 
-    if (last_control_port > 0 && last_control_port != control_port) {
-        gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+last_control_port), nullptr);
-        last_control_port = -1;
-    }
-    if (gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+control_port),
-                                           FUNCTOR_BIND_MEMBER(&AP_BLHeli::protocol_handler,
-                                                               bool, uint8_t, AP_HAL::UARTDriver *))) {
-        debug("BLHeli installed on port %u", (unsigned)control_port);
-        last_control_port = control_port;
+    // only install pass-thru protocol handler if either auto or the motor mask are set
+    if (channel_mask.get() != 0 || channel_auto.get() != 0) {
+        if (last_control_port > 0 && last_control_port != control_port) {
+            gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+last_control_port), nullptr);
+            last_control_port = -1;
+        }
+        if (gcs().install_alternative_protocol((mavlink_channel_t)(MAVLINK_COMM_0+control_port),
+                                            FUNCTOR_BIND_MEMBER(&AP_BLHeli::protocol_handler,
+                                                                bool, uint8_t, AP_HAL::UARTDriver *))) {
+            debug("BLHeli installed on port %u", (unsigned)control_port);
+            last_control_port = control_port;
+        }
     }
 
 #if HAL_WITH_IO_MCU
@@ -1364,20 +1359,18 @@ void AP_BLHeli::init(void)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
-    if (channel_auto.get() == 1) {
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
-        AP_MotorsUGV *motors = AP::motors_ugv();
+    AP_MotorsUGV *motors = AP::motors_ugv();
 #else
-        AP_Motors *motors = AP::motors();
+    AP_Motors *motors = AP::motors();
 #endif
-        if (motors) {
-            uint16_t motormask = motors->get_motor_mask();
-            // set the rest of the digital channels
-            if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
-                digital_mask |= motormask;
-            }
-            mask |= motormask;
+    if (motors) {
+        uint16_t motormask = motors->get_motor_mask();
+        // set the rest of the digital channels
+        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+            digital_mask |= motormask;
         }
+        mask |= motormask;
     }
 #endif
     // tell SRV_Channels about ESC capabilities
@@ -1417,6 +1410,7 @@ void AP_BLHeli::init(void)
  */
 void AP_BLHeli::read_telemetry_packet(void)
 {
+#if HAL_WITH_ESC_TELEM
     uint8_t buf[telem_packet_size];
     if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
         // short read, we should have 10 bytes ready when this function is called
@@ -1470,6 +1464,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                             t.consumption_mah,
                             trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
     }
+#endif // HAL_WITH_ESC_TELEM
 }
 
 /*

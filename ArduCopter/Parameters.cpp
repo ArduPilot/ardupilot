@@ -331,7 +331,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,397310:All+FastIMU+PID,655358:All+FullIMU,0:Disabled
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -701,7 +700,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
 #endif
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
@@ -1028,7 +1027,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: GUID_OPTIONS
     // @DisplayName: Guided mode options
     // @Description: Options that can be applied to change guided mode behaviour
-    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget_ThrustAsThrust
+    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget_ThrustAsThrust,4:DoNotStabilizePositionXY,5:DoNotStabilizeVelocityXY
     // @User: Advanced
     AP_GROUPINFO("GUID_OPTIONS", 41, ParametersG2, guided_options, 0),
 #endif
@@ -1057,6 +1056,38 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0:Disable thrust loss check, 1:Disable yaw imbalance warning
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
+
+#if RANGEFINDER_ENABLED == ENABLED
+    // @Param: RNGFND_FILT
+    // @DisplayName: Rangefinder filter
+    // @Description: Rangefinder filter to smooth distance.  Set to zero to disable filtering
+    // @Units: Hz
+    // @Range: 0 5
+    // @Increment: 0.05
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("RNGFND_FILT", 45, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT),
+#endif
+
+#if MODE_GUIDED_ENABLED == ENABLED
+    // @Param: GUID_TIMEOUT
+    // @DisplayName: Guided mode timeout
+    // @Description: Guided mode timeout after which vehicle will stop or return to level if no updates are received from caller.  Only applicable during velocity, acceleration or angle control
+    // @Units: s
+    // @Range: 0.1 5
+    // @User: Advanced
+    AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
+#endif
+
+#if AP_TERRAIN_AVAILABLE
+    // @Param: TERRAIN_MARGIN
+    // @DisplayName: Terrain following altitude margin
+    // @Description: Terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)
+    // @Units: m
+    // @Range: 0.1 100
+    // @User: Advanced
+    AP_GROUPINFO("TERRAIN_MARGIN", 47, ParametersG2, terrain_margin, 10.0),
+#endif
 
     AP_GROUPEND
 };

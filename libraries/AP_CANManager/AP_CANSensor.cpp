@@ -24,18 +24,45 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_CANMANAGER_ENABLED
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, _driver_name, fmt, ##args); } while (0)
+#else
+#define debug_can(level_debug, fmt, args...)
+#endif
 
 CANSensor::CANSensor(const char *driver_name, AP_CANManager::Driver_Type dtype, uint16_t stack_size) :
     _driver_name(driver_name),
     _stack_size(stack_size)
 {
+#if HAL_CANMANAGER_ENABLED
     if (!AP::can().register_driver(dtype, this)) {
         debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", driver_name);
     } else {
         debug_can(AP_CANManager::LOG_INFO, "%s: constructed", driver_name);
     }
+#elif defined(HAL_BUILD_AP_PERIPH)
+    register_driver_periph(dtype);
+#endif
 }
+#ifdef HAL_BUILD_AP_PERIPH
+CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
+
+void CANSensor::register_driver_periph(const AP_CANManager::Driver_Type dtype)
+{
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        if (_periph[i].protocol != dtype) {
+            continue;
+        }
+
+        if (!add_interface(_periph[i].iface)) {
+            continue;
+        }
+
+        init(0, false); // TODO: allow multiple drivers
+        return;
+    }
+}
+#endif
 
 void CANSensor::init(uint8_t driver_index, bool enable_filters)
 {
@@ -48,6 +75,7 @@ void CANSensor::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
     // get CAN manager instance
     _can_driver = AP::can().get_driver(driver_index);
 
@@ -55,6 +83,7 @@ void CANSensor::init(uint8_t driver_index, bool enable_filters)
         debug_can(AP_CANManager::LOG_ERROR, "no CAN driver");
         return;
     }
+#endif
 
     // start thread for receiving and sending CAN frames
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&CANSensor::loop, void), _driver_name, _stack_size, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
@@ -65,8 +94,6 @@ void CANSensor::init(uint8_t driver_index, bool enable_filters)
     _initialized = true;
 
     debug_can(AP_CANManager::LOG_INFO, "init done");
-
-    return;
 }
 
 bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
@@ -119,7 +146,13 @@ void CANSensor::loop()
         // don't process packets till startup complete
         hal.scheduler->delay(1);
     }
+
+#ifdef HAL_BUILD_AP_PERIPH
+    const uint32_t LOOP_INTERVAL_US = 1000;
+#else
     const uint32_t LOOP_INTERVAL_US = AP::scheduler().get_loop_period_us();
+#endif
+
     while (true) {
         uint64_t timeout = AP_HAL::micros64() + LOOP_INTERVAL_US;
 

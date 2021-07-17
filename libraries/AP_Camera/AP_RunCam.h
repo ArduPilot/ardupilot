@@ -62,7 +62,8 @@ public:
         Disabled = 0,
         SplitMicro = 1, // video support only
         Split = 2, // camera and video support
-        Split4k = 3 // video support only + 5key OSD
+        Split4k = 3, // video support only + 5key OSD
+        Hybrid = 4, // video support + QR mode switch
     };
 
     // operation of camera button simulation
@@ -217,7 +218,7 @@ private:
     static const uint8_t  RUNCAM_NUM_EXPECTED_RESPONSES = 4;
     static const uint8_t  RUNCAM_MAX_MENUS =              1;
     static const uint8_t  RUNCAM_MAX_MENU_LENGTH =        6;
-    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       3;
+    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       4;
 
     // supported features, usually probed from the device
     AP_Int16 _features;

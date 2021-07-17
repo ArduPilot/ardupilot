@@ -42,9 +42,9 @@ const AP_Param::GroupInfo AP_MSP::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: MSP OSD Options
     // @Description: A bitmask to set some MSP specific options
-    // @Bitmask: 0:EnableTelemetryMode
+    // @Bitmask: 0:EnableTelemetryMode, 1: DJIWorkarounds
     // @User: Standard
-    AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, 0),
+    AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, OPTION_TELEMETRY_DJI_WORKAROUNDS),
 
     AP_GROUPEND
 };
@@ -149,8 +149,8 @@ void AP_MSP::init_osd()
     _osd_item_settings[OSD_HOME_DIST] = &osd->screen[0].home_dist;
     _osd_item_settings[OSD_NUMERICAL_HEADING] = &osd->screen[0].heading;
     _osd_item_settings[OSD_NUMERICAL_VARIO] = &osd->screen[0].vspeed;
-#ifdef HAVE_AP_BLHELI_SUPPORT
-    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[0].blh_temp;
+#if HAL_WITH_ESC_TELEM
+    _osd_item_settings[OSD_ESC_TMP] = &osd->screen[0].esc_temp;
 #endif
     _osd_item_settings[OSD_RTC_DATETIME] = &osd->screen[0].clk;
 #endif  // OSD_ENABLED

@@ -68,7 +68,12 @@ AP_Periph_FW::AP_Periph_FW()
 #if HAL_LOGGING_ENABLED
     : logger(g.log_bitmask)
 #endif
-{}
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Periph_FW must be singleton");
+    }
+    _singleton = this;
+}
 
 #if HAL_LOGGING_ENABLED
 const struct LogStructure AP_Periph_FW::log_structure[] = {
@@ -81,7 +86,9 @@ void AP_Periph_FW::init()
     
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
+#ifndef DISABLE_WATCHDOG
     stm32_watchdog_init();
+#endif
 
     stm32_watchdog_pat();
 
@@ -299,7 +306,9 @@ void AP_Periph_FW::update()
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED
-        palToggleLine(HAL_GPIO_PIN_LED);
+        if (!no_iface_finished_dna) {
+            palToggleLine(HAL_GPIO_PIN_LED);
+        }
 #endif
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
@@ -448,6 +457,13 @@ void AP_Periph_FW::prepare_reboot()
         // delay to give the ACK a chance to get out, the LEDs to flash,
         // the IO board safety to be forced on, the parameters to flush,
         hal.scheduler->delay(40);
+}
+
+AP_Periph_FW *AP_Periph_FW::_singleton;
+
+AP_Periph_FW& AP::periph()
+{
+    return *AP_Periph_FW::get_singleton();
 }
 
 AP_HAL_MAIN();

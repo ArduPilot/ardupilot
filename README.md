@@ -64,7 +64,7 @@ It is continually being expanded to provide support for new emerging vehicle typ
 
 - Help other users with log analysis in the [support forums](https://discuss.ardupilot.org/)
 
-- Improve the wiki and chat with other [wiki editors on Gitter](https://gitter.im/ArduPilot/ardupilot_wiki)
+- Improve the wiki and chat with other [wiki editors on Discord #documentation](https://discord.com/channels/ardupilot)
 
 - Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
 

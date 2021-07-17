@@ -195,7 +195,7 @@ void SilentWings::process_packet()
     curr_location.lng = pkt.position_longitude * 1.0e7;
     curr_location.alt = pkt.altitude_msl * 100.0f;
     ground_level = curr_location.alt * 0.01f - pkt.altitude_ground;
-    Vector3f posdelta = home.get_distance_NED(curr_location);
+    Vector3f posdelta = origin.get_distance_NED(curr_location);
     position.x = posdelta.x;
     position.y = posdelta.y;
     position.z = posdelta.z;
@@ -209,6 +209,8 @@ void SilentWings::process_packet()
         // reset home location
         home.lat = curr_location.lat;
         home.lng = curr_location.lng;
+        origin.lat = home.lat;
+        origin.lng = home.lng;
         // Resetting altitude reference point in flight can throw off a bunch
         // of important calculations, so let the home altitude always be 0m MSL
         home.alt = 0;

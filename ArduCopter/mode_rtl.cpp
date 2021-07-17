@@ -22,6 +22,8 @@ bool ModeRTL::init(bool ignore_checks)
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
+    // reset flag indicating if pilot has applied roll or pitch inputs during landing
+    copter.ap.land_repo_active = false;
     return true;
 }
 
@@ -263,7 +265,7 @@ void ModeRTL::descent_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
 
     // initialise altitude target to stopping point
     pos_control->init_z_controller_stopping_point();
@@ -356,7 +358,7 @@ void ModeRTL::land_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -412,10 +414,10 @@ void ModeRTL::land_run(bool disarm_on_land)
 void ModeRTL::build_path()
 {
     // origin point is our stopping point
-    Vector3f stopping_point;
-    pos_control->get_stopping_point_xy_cm(stopping_point);
-    pos_control->get_stopping_point_z_cm(stopping_point);
-    rtl_path.origin_point = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
+    Vector3p stopping_point;
+    pos_control->get_stopping_point_xy_cm(stopping_point.xy());
+    pos_control->get_stopping_point_z_cm(stopping_point.z);
+    rtl_path.origin_point = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
     rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
     // compute return target
@@ -544,7 +546,7 @@ void ModeRTL::compute_return_target()
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }
 
-bool ModeRTL::get_wp(Location& destination)
+bool ModeRTL::get_wp(Location& destination) const
 {
     // provide target in states which use wp_nav
     switch (_state) {

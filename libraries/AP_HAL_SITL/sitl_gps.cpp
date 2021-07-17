@@ -1219,6 +1219,15 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
     char c;
 
+    if (AP_HAL::millis() < 20000) {
+        // apply the init offsets for the first 20s. This allows for
+        // having the origin a long way from the takeoff location,
+        // which makes testing long flights easier
+        latitude += _sitl->gps_init_lat_ofs;
+        longitude += _sitl->gps_init_lon_ofs;
+        altitude += _sitl->gps_init_alt_ofs;
+    }
+
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position &&
         _have_lock &&

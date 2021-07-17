@@ -110,10 +110,15 @@ void flash_set_keep_unlocked(bool set)
 /*
   read a word at offset relative to flash base
  */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 uint32_t flash_func_read_word(uint32_t offset)
 {
     return *(const uint32_t *)(flash_base + offset);
 }
+#pragma pop
 
 bool flash_func_write_word(uint32_t offset, uint32_t v)
 {

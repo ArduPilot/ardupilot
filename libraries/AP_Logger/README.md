@@ -71,6 +71,8 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 'v' | "V" | Volt|
 | 'P' | "Pa" | Pascal|
 | 'w' | "Ohm" | Ohm|
+| 'W' | "W" | watt |
+| 'X' | "W.h" | watt hour |
 | 'Y' | "us" | pulse width modulation in microseconds|
 | 'z' | "Hz" | Hertz|
 | '#' | "instance" | (e.g.)Sensor instance number|

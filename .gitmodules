@@ -19,3 +19,6 @@
 [submodule "modules/libcanard"]
 	path = modules/libcanard
 	url = git://github.com/ArduPilot/libcanard.git
+[submodule "modules/gsoap"]
+	path = modules/gsoap
+	url = https://github.com/ArduPilot/gsoap

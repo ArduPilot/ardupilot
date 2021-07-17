@@ -69,8 +69,6 @@ static const struct SPIDriverInfo {
     uint8_t dma_channel_tx;
 } spi_devices[] = { HAL_SPI_BUS_LIST };
 
-#define MHZ (1000U*1000U)
-#define KHZ (1000U)
 // device list comes from hwdef.dat
 ChibiOS::SPIDesc SPIDeviceManager::device_table[] = { HAL_SPI_DEVICE_LIST };
 
@@ -179,7 +177,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     bool ret = true;
 
 #if defined(HAL_SPI_USE_POLLED)
-    for (uint16_t i=0; i<len; i++) {
+    for (uint32_t i=0; i<len; i++) {
         uint8_t ret = spiPolledExchange(spi_devices[device_desc.bus].driver, send?send[i]:0);
         if (recv) {
             recv[i] = ret;

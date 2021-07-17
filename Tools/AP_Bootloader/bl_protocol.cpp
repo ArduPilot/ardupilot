@@ -241,7 +241,9 @@ jump_to_app()
     // watchdog reset and the firmware hasn't changed the RTC flag to
     // indicate that it has been running OK for 30s then we will stay
     // in bootloader
+#ifndef DISABLE_WATCHDOG
     stm32_watchdog_init();
+#endif
     stm32_watchdog_pat();
 #endif
 

@@ -73,7 +73,8 @@ const struct UnitStructure log_Units[] = {
     { 'v', "V" },             // Volt
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
-    { 'W', "Watt" },        // Watt
+    { 'W', "Watt" },          // Watt
+    { 'X', "W.h" },           // Watt hour
     { 'Y', "us" },            // pulse width modulation in microseconds
     { 'z', "Hz" },            // Hertz
     { '#', "instance" }       // (e.g.)Sensor instance number
@@ -285,6 +286,7 @@ struct PACKED log_RSSI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     float RXRSSI;
+    float RXLQ;
 };
 
 struct PACKED log_Optflow {
@@ -1104,6 +1106,7 @@ struct PACKED log_PSCZ {
 // @Description: Received Signal Strength Indicator for RC receiver
 // @Field: TimeUS: Time since system startup
 // @Field: RXRSSI: RSSI
+// @Field: RXLQ: RX Link Quality
 
 // @LoggerMessage: SIM
 // @Description: SITL simulator state
@@ -1228,7 +1231,7 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------"  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
-      "RSSI",  "Qf",     "TimeUS,RXRSSI", "s-", "F-"  }, \
+      "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--"  }, \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \

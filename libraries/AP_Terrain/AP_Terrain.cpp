@@ -30,6 +30,12 @@ extern const AP_HAL::HAL& hal;
 
 AP_Terrain *AP_Terrain::singleton;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define TERRAIN_ENABLE_DEFAULT 0
+#else
+#define TERRAIN_ENABLE_DEFAULT 1
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: ENABLE
@@ -37,7 +43,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Description: enable terrain data. This enables the vehicle storing a database of terrain data on the SD card. The terrain data is requested from the ground station as needed, and stored for later use on the SD card. To be useful the ground station must support TERRAIN_REQUEST messages and have access to a terrain database, such as the SRTM database.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Terrain, enable, 1, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Terrain, enable, TERRAIN_ENABLE_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // @Param: SPACING
     // @DisplayName: Terrain grid spacing

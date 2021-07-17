@@ -238,7 +238,10 @@ public:
     // !!! Note ObjectBuffer_TS is a duplicate of this, update in both places !!!
     const T *readptr(uint32_t &n) {
         uint32_t avail_bytes = 0;
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wcast-align"
         const T *ret = (const T *)buffer->readptr(avail_bytes);
+        #pragma pop
         if (!ret || avail_bytes < sizeof(T)) {
             return nullptr;
         }
@@ -414,7 +417,10 @@ public:
     const T *readptr(uint32_t &n) {
         WITH_SEMAPHORE(sem);
         uint32_t avail_bytes = 0;
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wcast-align"
         const T *ret = (const T *)buffer->readptr(avail_bytes);
+        #pragma pop
         if (!ret || avail_bytes < sizeof(T)) {
             return nullptr;
         }

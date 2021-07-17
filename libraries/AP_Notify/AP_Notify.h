@@ -73,6 +73,7 @@ public:
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
         Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
         Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
+        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED
         Notify_LED_MAX
     };
 
@@ -156,6 +157,9 @@ public:
 
     // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
+
+    // handle RGB from Scripting
+    static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);

@@ -22,13 +22,6 @@
 # define ADVANCED_FAILSAFE DISABLED
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
-#define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
 # define ARMING_DELAY_SEC 2.0f
 #endif

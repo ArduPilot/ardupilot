@@ -27,6 +27,10 @@ public:
     // give RGB and flash rate, used with scripting
     virtual void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) {}
 
+    // RGB control multiple leds independently
+    // give RGB value for single led
+    virtual void rgb_set_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id) {}
+
     // this pointer is used to read the parameters relative to devices
     const AP_Notify *pNotify;
 };

@@ -121,6 +121,7 @@ truename_map = {
     "ArduPlane": "Plane",
     "AntennaTracker": "Tracker",
     "AP_Periph": "AP_Periph",
+    "Blimp": "Blimp",
 }
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
@@ -275,6 +276,10 @@ def process_library(vehicle, library, pathprefix=None):
                     continue
                 value = re.sub('@PREFIX@', library.name, field[2])
                 setattr(p, field[0], value)
+
+            if (getattr(p, 'Values', None) is not None and
+                    getattr(p, 'Bitmask', None) is not None):
+                error("Both @Values and @Bitmask present")
 
             if (getattr(p, 'Values', None) is None and
                     getattr(p, 'Bitmask', None) is None):

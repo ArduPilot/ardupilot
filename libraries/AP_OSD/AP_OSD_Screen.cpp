@@ -154,7 +154,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: SATS_EN
     // @DisplayName: SATS_EN
-    // @Description: Displays number of acquired sattelites
+    // @Description: Displays number of acquired satellites
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: SATS_X
@@ -344,54 +344,55 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
+
 #if HAL_WITH_ESC_TELEM
-    // @Param: BLHTEMP_EN
-    // @DisplayName: BLHTEMP_EN
+    // @Param: ESCTEMP_EN
+    // @DisplayName: ESCTEMP_EN
     // @Description: Displays first esc's temp
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BLHTEMP_X
-    // @DisplayName: BLHTEMP_X
+    // @Param: ESCTEMP_X
+    // @DisplayName: ESCTEMP_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BLHTEMP_Y
-    // @DisplayName: BLHTEMP_Y
+    // @Param: ESCTEMP_Y
+    // @DisplayName: ESCTEMP_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
-    AP_SUBGROUPINFO(blh_temp, "BLHTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(esc_temp, "ESCTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BLHRPM_EN
-    // @DisplayName: BLHRPM_EN
+    // @Param: ESCRPM_EN
+    // @DisplayName: ESCRPM_EN
     // @Description: Displays first esc's rpm
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BLHRPM_X
-    // @DisplayName: BLHRPM_X
+    // @Param: ESCRPM_X
+    // @DisplayName: ESCRPM_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BLHRPM_Y
-    // @DisplayName: BLHRPM_Y
+    // @Param: ESCRPM_Y
+    // @DisplayName: ESCRPM_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
-    AP_SUBGROUPINFO(blh_rpm, "BLHRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(esc_rpm, "ESCRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BLHAMPS_EN
-    // @DisplayName: BLHAMPS_EN
+    // @Param: ESCAMPS_EN
+    // @DisplayName: ESCAMPS_EN
     // @Description: Displays first esc's current
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BLHAMPS_X
-    // @DisplayName: BLHAMPS_X
+    // @Param: ESCAMPS_X
+    // @DisplayName: ESCAMPS_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BLHAMPS_Y
-    // @DisplayName: BLHAMPS_Y
+    // @Param: ESCAMPS_Y
+    // @DisplayName: ESCAMPS_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
-    AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(esc_amps, "ESCAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
     // @Param: GPSLAT_EN
     // @DisplayName: GPSLAT_EN
@@ -993,6 +994,27 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
+
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
+    // @Param: LINK_Q_EN
+    // @DisplayName: LINK_Q_EN
+    // @Description: Displays Receiver link quality
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: LINK_Q_X
+    // @DisplayName: LINK_Q_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: LINK_Q_Y
+    // @DisplayName: LINK_Q_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1000,6 +1022,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 AP_OSD_Screen::AP_OSD_Screen()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info2);
 }
 
 //Symbols
@@ -1267,6 +1290,19 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     if (ap_rssi) {
         const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
+    }
+}
+
+void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    if (ap_rssi) {
+        const int16_t lqv = ap_rssi->read_receiver_link_quality();
+        if (lqv < 0){
+            backend->write(x, y, false, "%c--", SYM_RSSI);
+        } else {
+            backend->write(x, y, false, "%c%2d", SYM_RSSI, lqv);
+        }
     }
 }
 
@@ -1622,7 +1658,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
 }
 
 #if HAL_WITH_ESC_TELEM
-void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
 {
     int16_t etemp;
     // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
@@ -1630,11 +1666,10 @@ void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
         return;
     }
 
-    uint8_t esc_temp = uint8_t(etemp / 100);
-    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, etemp / 100), u_icon(TEMPERATURE));
 }
 
-void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_esc_rpm(uint8_t x, uint8_t y)
 {
     float rpm;
     // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
@@ -1646,14 +1681,14 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
     backend->write(x, y, false, format, krpm, SYM_KILO, SYM_RPM);
 }
 
-void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_esc_amps(uint8_t x, uint8_t y)
 {
-    float esc_amps;
+    float amps;
     // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-    if (!AP::esc_telem().get_current(0, esc_amps)) {
+    if (!AP::esc_telem().get_current(0, amps)) {
         return;
     }
-    backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
+    backend->write(x, y, false, "%4.1f%c", amps, SYM_AMP);
 }
 #endif
 
@@ -1956,7 +1991,7 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
         powr = vtx->get_power_mw();
     }
-    backend->write(x, y, false, "%4hu%c", powr, SYM_MW);
+    backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYM_MW);
 }
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
@@ -2029,6 +2064,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(restvolt);
     DRAW_SETTING(rssi);
+    DRAW_SETTING(link_quality);
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
@@ -2054,10 +2090,10 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(clk);
     DRAW_SETTING(vtx_power);
 
-#ifdef HAL_WITH_ESC_TELEM
-    DRAW_SETTING(blh_temp);
-    DRAW_SETTING(blh_rpm);
-    DRAW_SETTING(blh_amps);
+#if HAL_WITH_ESC_TELEM
+    DRAW_SETTING(esc_temp);
+    DRAW_SETTING(esc_rpm);
+    DRAW_SETTING(esc_amps);
 #endif
 
     DRAW_SETTING(gps_latitude);

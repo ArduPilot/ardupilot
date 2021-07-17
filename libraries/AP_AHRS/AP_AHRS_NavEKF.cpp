@@ -517,26 +517,6 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 #endif
 }
 
-// reset the current attitude, used on new IMU calibration
-void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
-{
-    // support locked access functions to AHRS data
-    WITH_SEMAPHORE(_rsem);
-    
-    AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
-    _dcm_attitude = {roll, pitch, yaw};
-#if HAL_NAVEKF2_AVAILABLE
-    if (_ekf2_started) {
-        _ekf2_started = EKF2.InitialiseFilter();
-    }
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    if (_ekf3_started) {
-        _ekf3_started = EKF3.InitialiseFilter();
-    }
-#endif
-}
-
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
@@ -992,6 +972,7 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 // from which to decide the origin on its own
 bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 {
+    WITH_SEMAPHORE(_rsem);
 #if HAL_NAVEKF2_AVAILABLE
     const bool ret2 = EKF2.setOriginLLH(loc);
 #endif
@@ -1436,7 +1417,7 @@ void AP_AHRS_NavEKF::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !get_origin(originLLH)) {
-        posD = -AP::baro().get_altitude();
+        AP_AHRS_DCM::get_relative_position_D_home(posD);
         return;
     }
 

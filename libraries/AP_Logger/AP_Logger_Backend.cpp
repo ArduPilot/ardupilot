@@ -468,7 +468,7 @@ void AP_Logger_Backend::PrepForArming()
     if (logging_started()) {
         return;
     }
-    start_new_log();
+    PrepForArming_start_logging();
 }
 
 bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)

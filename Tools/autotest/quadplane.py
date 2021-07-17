@@ -46,6 +46,9 @@ class AutoTestQuadPlane(AutoTest):
     def get_normal_armable_modes_list():
         return []
 
+    def vehicleinfo_key(self):
+        return 'ArduPlane'
+
     def default_frame(self):
         return "quadplane"
 
@@ -71,7 +74,7 @@ class AutoTestQuadPlane(AutoTest):
         pass
 
     def defaults_filepath(self):
-        return self.model_defaults_filepath("ArduPlane", self.frame)
+        return self.model_defaults_filepath(self.frame)
 
     def is_plane(self):
         return True
@@ -592,6 +595,7 @@ class AutoTestQuadPlane(AutoTest):
             "FRSkyPassThrough": "Currently failing",
             "CPUFailsafe": "servo channel values not scaled like ArduPlane",
             "GyroFFT": "flapping test",
+            "ConfigErrorLoop": "failing because RC values not settable",
         }
 
     def test_pilot_yaw(self):

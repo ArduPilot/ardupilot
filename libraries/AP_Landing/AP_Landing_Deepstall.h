@@ -22,6 +22,10 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include <PID/PID.h>
 
+#ifndef HAL_LANDING_DEEPSTALL_ENABLED
+#define HAL_LANDING_DEEPSTALL_ENABLED 1
+#endif
+
 class AP_Landing;
 
 /// @class  AP_Landing_Deepstall

@@ -13,32 +13,10 @@ public:
 
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
-        MANUAL =        0,  // manual control similar to Copter's stabilize mode
+        MANUAL =        0,  // manual control
         LAND =          1,  // currently just stops moving
-        // STABILIZE =     0,  // manual airframe angle with manual throttle
-        // ACRO =          1,  // manual body-frame angular rate with manual throttle
-        // ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-        // AUTO =          3,  // fully automatic waypoint control using mission commands
-        // GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-        // LOITER =        5,  // automatic horizontal acceleration with automatic throttle
-        // RTL =           6,  // automatic return to launching point
-        // CIRCLE =        7,  // automatic circular flight with automatic throttle
-        // LAND =          9,  // automatic landing with horizontal position control
-        // DRIFT =        11,  // semi-automous position, yaw and throttle control
-        // SPORT =        13,  // manual earth-frame angular rate control with manual throttle
-        // FLIP =         14,  // automatically flip the vehicle on the roll axis
-        // AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
-        // POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-        // BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-        // THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
-        // AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
-        // GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
-        // SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
-        // FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
-        // FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
-        // ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
-        // SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
-        // AUTOROTATE =   26,  // Autonomous autorotation
+        VELOCITY =      2,  // velocity mode
+        LOITER =        3,  // loiter mode (position hold)
     };
 
     // constructor
@@ -69,18 +47,10 @@ public:
     {
         return false;
     }
-    virtual bool logs_attitude() const
-    {
-        return false;
-    }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
-
-    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
-    // virtual bool is_taking_off() const;
-    // static void takeoff_stop() { takeoff.stop(); }
 
     virtual bool is_landing() const
     {
@@ -113,22 +83,8 @@ public:
 
     void update_navigation();
 
-    int32_t get_alt_above_ground_cm(void);
-
     // pilot input processing
     void get_pilot_desired_accelerations(float &right_out, float &front_out) const;
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
-    float get_pilot_desired_throttle() const;
-
-    // returns climb target_rate reduced to avoid obstacles and
-    // altitude fence
-    float get_avoidance_adjusted_climbrate(float target_rate);
-
-    // const Vector3f& get_vel_desired_cms() {
-    //     // note that position control isn't used in every mode, so
-    //     // this may return bogus data:
-    //     return pos_control->get_vel_desired_cms();
-    // }
 
 protected:
 
@@ -137,17 +93,11 @@ protected:
 
     // helper functions
     bool is_disarmed_or_landed() const;
-    void zero_throttle_and_relax_ac(bool spool_up = false);
-    void zero_throttle_and_hold_attitude();
-    void make_safe_spool_down();
 
     // functions to control landing
     // in modes that support landing
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
-
-    // return expected input throttle setting to hover:
-    virtual float throttle_hover() const;
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -227,13 +177,10 @@ public:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_climb_rate(float throttle_control);
-    float get_non_takeoff_throttle(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
     GCS_Blimp &gcs();
     void set_throttle_takeoff(void);
-    uint16_t get_pilot_speed_dn(void);
 
     // end pass-through functions
 };
@@ -277,6 +224,93 @@ protected:
 
 private:
 
+};
+
+class ModeVelocity : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return false;
+        //TODO
+    }
+
+protected:
+
+    const char *name() const override
+    {
+        return "VELOCITY";
+    }
+    const char *name4() const override
+    {
+        return "VELY";
+    }
+
+private:
+
+};
+
+class ModeLoiter : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return false;
+        //TODO
+    }
+
+protected:
+
+    const char *name() const override
+    {
+        return "LOITER";
+    }
+    const char *name4() const override
+    {
+        return "LOIT";
+    }
+
+private:
+    Vector3f target_pos;
+    float target_yaw;
+    float loop_period;
 };
 
 class ModeLand : public Mode

@@ -59,6 +59,7 @@ private:
 
     enum msp_option_e : uint8_t {
         OPTION_TELEMETRY_MODE = 1U<<0,
+        OPTION_TELEMETRY_DJI_WORKAROUNDS = 1U<<1
     };
 
     AP_MSP_Telem_Backend *_backends[MSP_MAX_INSTANCES];

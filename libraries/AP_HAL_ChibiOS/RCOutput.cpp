@@ -480,18 +480,6 @@ void RCOutput::disable_ch(uint8_t chan)
     }
 }
 
-bool RCOutput::prepare_for_arming()
-{
-    // force all the ESCs to be active, in the future consider returning false
-    // if ESCs are not active that we require
-    _active_escs_mask = (en_mask << chan_offset);
-#ifdef DISABLE_DSHOT
-    return true;
-#else
-    return _dshot_command_queue.is_empty();
-#endif
-}
-
 void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
     if (chan >= max_channels) {
@@ -594,14 +582,15 @@ void RCOutput::push_local(void)
                     period_us = group.dshot_pulse_time_us;
                 }
 #endif //#ifndef DISABLE_DSHOT
-                if (period_us > widest_pulse) {
-                    widest_pulse = period_us;
-                }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
                     group.current_mode == MODE_NEOPIXEL ||
                     group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
+                    // only control widest pulse for oneshot and dshot
+                    if (period_us > widest_pulse) {
+                        widest_pulse = period_us;
+                    }
                     const uint8_t i = &group - pwm_group_list;
                     need_trigger |= (1U<<i);
                 }
@@ -1167,7 +1156,6 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
         // send a dshot command
         if (!hal.util->get_soft_armed()
             && is_dshot_protocol(group.current_mode)
-            && group_escs_active(group) // only send when someone is listening
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
@@ -1347,6 +1335,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
     }
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+    bool armed = hal.util->get_soft_armed();
 
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
 
@@ -1356,12 +1345,12 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 #ifdef HAL_WITH_BIDIR_DSHOT
             // retrieve the last erpm values
             const uint16_t erpm = group.bdshot.erpm[i];
-
+#if HAL_WITH_ESC_TELEM
             // update the ESC telemetry data
             if (erpm < 0xFFFF && group.bdshot.enabled) {
                 update_rpm(chan, erpm * 200 / _bdshot.motor_poles, get_erpm_error_rate(chan));
             }
-
+#endif
             _bdshot.erpm[chan] = erpm;
 #endif
             uint16_t pwm = period[chan];
@@ -1394,6 +1383,11 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
+            }
+
+            if (!armed) {
+                // when disarmed we always send a zero value
+                value = 0;
             }
 
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc

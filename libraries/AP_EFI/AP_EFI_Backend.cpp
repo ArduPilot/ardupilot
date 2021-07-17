@@ -15,7 +15,7 @@
 
 #include "AP_EFI.h"
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
 
 #include "AP_EFI_Backend.h"
 
@@ -41,4 +41,4 @@ float AP_EFI_Backend::get_coef2(void) const
 {
     return frontend.coef2;
 }
-#endif // EFI_ENABLED
+#endif // HAL_EFI_ENABLED
