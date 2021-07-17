@@ -359,49 +359,48 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELXY", (int)i+1);
                 return false;
             }
+        }
+        // check posz
+        switch ((SourceZ)_source_set[i].posz.get()) {
+        case SourceZ::BARO:
+            baro_required = true;
+            break;
+        case SourceZ::RANGEFINDER:
+            rangefinder_required = true;
+            break;
+        case SourceZ::GPS:
+            gps_required = true;
+            break;
+        case SourceZ::BEACON:
+            beacon_required = true;
+            break;
+        case SourceZ::EXTNAV:
+            visualodom_required = true;
+            break;
+        case SourceZ::NONE:
+        default:
+            // invalid posz value
+            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
+            return false;
+        }
 
-            // check posz
-            switch ((SourceZ)_source_set[i].posz.get()) {
-            case SourceZ::BARO:
-                baro_required = true;
-                break;
-            case SourceZ::RANGEFINDER:
-                rangefinder_required = true;
-                break;
-            case SourceZ::GPS:
-                gps_required = true;
-                break;
-            case SourceZ::BEACON:
-                beacon_required = true;
-                break;
-            case SourceZ::EXTNAV:
-                visualodom_required = true;
-                break;
-            case SourceZ::NONE:
-            default:
-                // invalid posz value
-                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
-                return false;
-            }
-
-            // check velz
-            switch ((SourceZ)_source_set[i].velz.get()) {
-            case SourceZ::NONE:
-                break;
-            case SourceZ::GPS:
-                gps_required = true;
-                break;
-            case SourceZ::EXTNAV:
-                visualodom_required = true;
-                break;
-            case SourceZ::BARO:
-            case SourceZ::RANGEFINDER:
-            case SourceZ::BEACON:
-            default:
-                // invalid velz value
-                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
-                return false;
-            }
+        // check velz
+        switch ((SourceZ)_source_set[i].velz.get()) {
+        case SourceZ::NONE:
+            break;
+        case SourceZ::GPS:
+            gps_required = true;
+            break;
+        case SourceZ::EXTNAV:
+            visualodom_required = true;
+            break;
+        case SourceZ::BARO:
+        case SourceZ::RANGEFINDER:
+        case SourceZ::BEACON:
+        default:
+            // invalid velz value
+            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
+            return false;
         }
 
         // check yaw
