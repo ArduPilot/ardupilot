@@ -163,8 +163,8 @@ bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
 
 bool AP_Mission::command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd)
 {
-    _repeat_dist = cmd.p1;
-    gcs().send_text(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_repeat_dist);
+    _mis_state.repeat_dist = cmd.p1;
+    gcs().send_text(MAV_SEVERITY_INFO, "Resume repeat dist set to %u m",_mis_state.repeat_dist);
     return true;
 }
 

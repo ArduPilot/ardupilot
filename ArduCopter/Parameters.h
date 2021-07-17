@@ -656,6 +656,11 @@ public:
 #if AP_TERRAIN_AVAILABLE
     AP_Float terrain_margin;
 #endif
+
+#if MODE_RTL_ENABLED == ENABLED && MODE_AUTO_ENABLED == ENABLED
+    AP_Int8 mission_RTL_type;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

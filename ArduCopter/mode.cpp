@@ -169,6 +169,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_RTL_ENABLED == ENABLED && MODE_AUTO_ENABLED == ENABLED
+        case Mode::Number::MISSION_RTL:
+            ret = &mode_mission_rtl;
+            break;
+#endif
+
         default:
             break;
     }
