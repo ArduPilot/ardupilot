@@ -645,6 +645,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "BeastF7",
                 "FlywooF745",
                 "luminousbee5",
+                "MambaF405US-I2C",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
