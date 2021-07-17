@@ -573,6 +573,8 @@ public:
     AP_Int8         man_expo_roll;
     AP_Int8         man_expo_pitch;
     AP_Int8         man_expo_rudder;
+
+    AP_Int32        oneshot_mask;
 };
 
 extern const AP_Param::Info var_info[];
