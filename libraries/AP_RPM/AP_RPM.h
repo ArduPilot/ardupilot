@@ -59,9 +59,9 @@ public:
     AP_Int8  _type[RPM_MAX_INSTANCES];
     AP_Int8  _pin[RPM_MAX_INSTANCES];
     AP_Float _scaling[RPM_MAX_INSTANCES];
-    AP_Float _maximum[RPM_MAX_INSTANCES];
-    AP_Float _minimum[RPM_MAX_INSTANCES];
-    AP_Float _quality_min[RPM_MAX_INSTANCES];
+    AP_Float _maximum;
+    AP_Float _minimum;
+    AP_Float _quality_min;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -99,7 +99,7 @@ private:
 
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
-    uint8_t num_instances:4;
+    uint8_t num_instances:3;  // This is a bit field not =
 
     void detect_instance(uint8_t instance);
 };

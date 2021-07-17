@@ -42,21 +42,21 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Description: Maximum RPM to report
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 100000),
+    AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum, 100000),
 
     // @Param: _MIN
     // @DisplayName: Minimum RPM
     // @Description: Minimum RPM to report
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 10),
+    AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum, 10),
 
     // @Param: _MIN_QUAL
     // @DisplayName: Minimum Quality
     // @Description: Minimum data quality to be used
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
+    AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min, 0.5),
 
     // @Param: _PIN
     // @DisplayName: Input pin number
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
 
     // @Param: 2_PIN
-    // @DisplayName: RPM3 input pin number
+    // @DisplayName: RPM2 input pin number
     // @Description: Which pin to use
     // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
     // @User: Standard
@@ -214,7 +214,7 @@ bool AP_RPM::healthy(uint8_t instance) const
     }
 
     // check that data quality is above minimum required
-    if (state[instance].signal_quality < _quality_min[0]) {
+    if (state[instance].signal_quality < _quality_min.get()) {
         return false;
     }
 
