@@ -4748,8 +4748,26 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
-    def get_altitude(self, relative=False, timeout=30):
+    def get_altitude(self, relative=False, use_GPS=False, timeout=30):
         '''returns vehicles altitude in metres, possibly relative-to-home'''
+        if use_GPS:
+            # use GPS altitude
+            if relative:
+                # use GPS altitude above home
+                home = self.mav.messages.get("HOME_POSITION", None)
+                if home is None:
+                    home = self.poll_home_position(quiet=True)
+                base_alt = home.altitude*0.001
+            else:
+                base_alt = 0.0
+            msg = self.mav.recv_match(type='GPS_RAW_INT',
+                                      blocking=True,
+                                      timeout=timeout)
+            if msg is None:
+                raise MsgRcvTimeoutException("Failed to get GPS_RAW_INT")
+            return msg.alt*0.001 - base_alt
+
+        # use GLOBAL_POSITION_INT
         msg = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                   blocking=True,
                                   timeout=timeout)
@@ -4759,7 +4777,7 @@ class AutoTest(ABC):
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
 
-    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
+    def wait_altitude(self, altitude_min, altitude_max, relative=False, use_GPS=False, timeout=30, **kwargs):
         """Wait for a given altitude range."""
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
 
@@ -4774,6 +4792,7 @@ class AutoTest(ABC):
             target=altitude_min,
             current_value_getter=lambda: self.get_altitude(
                 relative=relative,
+                use_GPS=use_GPS,
                 timeout=timeout,
             ),
             accuracy=(altitude_max - altitude_min),

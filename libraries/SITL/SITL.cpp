@@ -267,6 +267,11 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
 
     AP_GROUPINFO("ESC_TELEM", 40, SITL, esc_telem, 1),
 
+    // @Param: SAIL_TYPE
+    // @DisplayName: Sailboat simulation sail type
+    // @Description: 0: mainsail with sheet, 1: directly actuated wing
+    AP_GROUPINFO("SAIL_TYPE",     41, SITL, sail_type, 0),
+
     // user settable parameters for the 1st airspeed sensor
     AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
     AP_GROUPINFO("ARSPD_OFS",     51, SITL,  arspd_offset[0], 2013),
@@ -432,12 +437,14 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
     AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
 
-    // @Param: SAIL_TYPE
-    // @DisplayName: Sailboat simulation sail type
-    // @Description: 0: mainsail with sheet, 1: directly actuated wing
-    AP_GROUPINFO("SAIL_TYPE",     26, SITL, sail_type, 0),
+    AP_GROUPINFO("ACCEL1_CLIP",  26, SITL, accel_clip[0],  0),
+    AP_GROUPINFO("ACCEL2_CLIP",  27, SITL, accel_clip[1],  0),
+    AP_GROUPINFO("ACCEL3_CLIP",  28, SITL, accel_clip[2],  0),
 
-
+    AP_GROUPINFO("ACCEL1_DBOCT",  29, SITL, accel_dBoct[0],  0),
+    AP_GROUPINFO("ACCEL2_DBOCT",  30, SITL, accel_dBoct[1],  0),
+    AP_GROUPINFO("ACCEL3_DBOCT",  31, SITL, accel_dBoct[2],  0),
+    
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
