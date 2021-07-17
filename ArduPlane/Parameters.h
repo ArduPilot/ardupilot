@@ -569,6 +569,10 @@ public:
 
     // min initial climb in RTL
     AP_Int16        rtl_climb_min;
+
+    AP_Int8         man_expo_roll;
+    AP_Int8         man_expo_pitch;
+    AP_Int8         man_expo_rudder;
 };
 
 extern const AP_Param::Info var_info[];
