@@ -81,8 +81,8 @@ void AP_RPM_Pin::update(void)
         hal.scheduler->restore_interrupts(irqstate);
 
         const float scaling = ap_rpm._scaling[state.instance];
-        float maximum = ap_rpm._maximum[state.instance];
-        float minimum = ap_rpm._minimum[state.instance];
+        float maximum = ap_rpm._maximum.get();
+        float minimum = ap_rpm._minimum.get();
         float quality = 0;
         float rpm = scaling * (1.0e6 / dt_avg) * 60;
         float filter_value = signal_quality_filter.get();
