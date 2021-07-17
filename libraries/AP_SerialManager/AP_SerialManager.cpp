@@ -524,6 +524,7 @@ void AP_SerialManager::init()
 #if HAL_MSP_ENABLED                    
                 case SerialProtocol_MSP:
                 case SerialProtocol_DJI_FPV:
+                case SerialProtocol_MSP_DisplayPort:
                     // baudrate defaults to 115200
                     state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
                     uart->begin(map_baudrate(state[i].baud),

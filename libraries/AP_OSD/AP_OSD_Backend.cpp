@@ -19,6 +19,7 @@
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
+constexpr uint8_t AP_OSD_Backend::symbols[AP_OSD_NUM_SYMBOLS];
 
 #define SYM_DIG_OFS_1 0x90
 #define SYM_DIG_OFS_2 0xA0
@@ -79,4 +80,9 @@ FileData *AP_OSD_Backend::load_font_data(uint8_t font_num)
         }
     }
     return fd;
+}
+
+void AP_OSD_Backend::init_symbol_set(uint8_t *lookup_table, const uint8_t size)
+{
+    memcpy(lookup_table, symbols, size);
 }
