@@ -65,7 +65,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.5
+#define WIND_P_NSE_DEFAULT      0.25
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -91,7 +91,7 @@
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
-#define WIND_P_NSE_DEFAULT      0.5
+#define WIND_P_NSE_DEFAULT      0.25
 
 #else
 // build type not specified, use copter defaults
