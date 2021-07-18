@@ -39,7 +39,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      1.0
+#define WIND_P_NSE_DEFAULT      0.5
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
