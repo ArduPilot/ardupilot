@@ -68,7 +68,7 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
-#include <AP_Motors/AP_MotorsUGV.h>
+#include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 
 #ifdef ENABLE_SCRIPTING
