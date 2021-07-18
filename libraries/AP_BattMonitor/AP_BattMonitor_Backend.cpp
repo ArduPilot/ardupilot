@@ -110,10 +110,10 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
 {
     const uint32_t now = AP_HAL::millis();
 
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    Failsafes fs;
+    check_failsafe_types(fs);
 
-    if (critical_voltage) {
+    if (fs.critical_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.critical_voltage_start_ms == 0) {
             _state.critical_voltage_start_ms = now;
@@ -126,11 +126,11 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         _state.critical_voltage_start_ms = 0;
     }
 
-    if (critical_capacity) {
+    if (fs.critical_capacity) {
         return AP_BattMonitor::Failsafe::Critical;
     }
 
-    if (low_voltage) {
+    if (fs.low_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.low_voltage_start_ms == 0) {
             _state.low_voltage_start_ms = now;
@@ -143,8 +143,12 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         _state.low_voltage_start_ms = 0;
     }
 
-    if (low_capacity) {
+    if (fs.low_capacity) {
         return AP_BattMonitor::Failsafe::Low;
+    }
+
+    if (fs.above_temperature || fs.below_temperature) {
+        return AP_BattMonitor::Failsafe::Unhealthy;
     }
 
     // if we've gotten this far then battery is ok
@@ -162,8 +166,8 @@ static bool update_check(size_t buflen, char *buffer, bool failed, const char *m
 
 bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
 {
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    Failsafes fs;
+    check_failsafe_types(fs);
 
     bool below_arming_voltage = is_positive(_params._arming_minimum_voltage) &&
                                 (_state.voltage < _params._arming_minimum_voltage);
@@ -178,17 +182,19 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
 
     bool result =      update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
-    result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
-    result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
-    result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
-    result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
+    result = result && update_check(buflen, buffer, fs.low_voltage,  "low voltage failsafe");
+    result = result && update_check(buflen, buffer, fs.low_capacity, "low capacity failsafe");
+    result = result && update_check(buflen, buffer, fs.critical_voltage, "critical voltage failsafe");
+    result = result && update_check(buflen, buffer, fs.critical_capacity, "critical capacity failsafe");
     result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical > low");
     result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical > low");
+    result = result && update_check(buflen, buffer, fs.below_temperature, "below minimum arming temperature");
+    result = result && update_check(buflen, buffer, fs.above_temperature, "above maximum arming temperature");
 
     return result;
 }
 
-void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
+void AP_BattMonitor_Backend::check_failsafe_types(Failsafes& fs) const
 {
     // use voltage or sag compensated voltage
     float voltage_used;
@@ -204,32 +210,37 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
 
     // check critical battery levels
     if ((voltage_used > 0) && (_params._critical_voltage > 0) && (voltage_used < _params._critical_voltage)) {
-        critical_voltage = true;
+        fs.critical_voltage = true;
     } else {
-        critical_voltage = false;
+        fs.critical_voltage = false;
     }
 
     // check capacity failsafe if current monitoring is enabled
     if (has_current() && (_params._critical_capacity > 0) &&
         ((_params._pack_capacity - _state.consumed_mah) < _params._critical_capacity)) {
-        critical_capacity = true;
+        fs.critical_capacity = true;
     } else {
-        critical_capacity = false;
+        fs.critical_capacity = false;
     }
 
     if ((voltage_used > 0) && (_params._low_voltage > 0) && (voltage_used < _params._low_voltage)) {
-        low_voltage = true;
+        fs.low_voltage = true;
     } else {
-        low_voltage = false;
+        fs.low_voltage = false;
     }
 
     // check capacity if current monitoring is enabled
     if (has_current() && (_params._low_capacity > 0) &&
         ((_params._pack_capacity - _state.consumed_mah) < _params._low_capacity)) {
-        low_capacity = true;
+        fs.low_capacity = true;
     } else {
-        low_capacity = false;
+        fs.low_capacity = false;
     }
+    
+    fs.below_temperature = has_temperature() && !is_equal(_params._minimum_temperature.get(), DEFAULT_FAILSAFE_TEMPERATURE) &&
+                                    (_state.temperature < _params._minimum_temperature);
+    fs.above_temperature = has_temperature() && !is_equal(_params._maximum_temperature.get(), DEFAULT_FAILSAFE_TEMPERATURE) &&
+                                    (_state.temperature > _params._maximum_temperature);
 }
 
 /*

@@ -84,8 +84,17 @@ protected:
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
     AP_BattMonitor_Params               &_params;   // reference to this instances parameters (held in the front-end)
 
+    struct Failsafes{
+        bool low_voltage;
+        bool low_capacity;
+        bool critical_voltage;
+        bool critical_capacity;
+        bool below_temperature;
+        bool above_temperature;
+    };
+
     // checks what failsafes could be triggered
-    void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
+    void check_failsafe_types(Failsafes& failsafes) const;
 
 private:
     // resistance estimate

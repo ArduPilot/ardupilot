@@ -75,8 +75,9 @@ public:
     // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
     enum class Failsafe : uint8_t {
         None = 0,
+        Unhealthy,
         Low,
-        Critical
+        Critical,
     };
 
     // Battery monitor driver types

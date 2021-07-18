@@ -2,6 +2,8 @@
 
 #include <AP_Param/AP_Param.h>
 
+#define DEFAULT_FAILSAFE_TEMPERATURE -200.0f // Default arming temperature in Celsius
+
 class AP_BattMonitor_Params {
 public:
     static const struct AP_Param::GroupInfo var_info[];
@@ -43,4 +45,8 @@ public:
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
+    AP_Int8  _failsafe_unhealthy_action; /// action to perform on an unhealthy failsafe
+
+    AP_Float _minimum_temperature;      /// [degC] minimum temperature
+    AP_Float _maximum_temperature;      /// [degC] maximum temperature
 };
