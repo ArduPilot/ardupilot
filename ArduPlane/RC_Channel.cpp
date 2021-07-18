@@ -148,6 +148,8 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     // the following functions do not need to be initialised:
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
+    case AUX_FUNC::ACRO:
+    case AUX_FUNC::TRAINING:
     case AUX_FUNC::FLAP:
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::INVERTED:
@@ -212,7 +214,15 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::CIRCLE:
         do_aux_function_change_mode(Mode::Number::CIRCLE, ch_flag);
         break;
-            
+
+    case AUX_FUNC::ACRO:
+        do_aux_function_change_mode(Mode::Number::ACRO, ch_flag);
+        break;
+
+    case AUX_FUNC::TRAINING:
+        do_aux_function_change_mode(Mode::Number::TRAINING, ch_flag);
+        break;
+        
     case AUX_FUNC::LOITER:
         do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
         break;        
