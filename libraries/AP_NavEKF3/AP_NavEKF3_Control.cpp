@@ -66,7 +66,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         inhibitWindStates = true;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
-               sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f)) {
+               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
         inhibitWindStates = false;
         updateStateIndexLim();
         // set states and variances
