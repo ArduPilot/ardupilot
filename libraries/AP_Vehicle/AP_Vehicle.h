@@ -178,6 +178,7 @@ public:
     // returns true if the vehicle has crashed
     virtual bool is_crashed() const;
 
+#ifdef ENABLE_SCRIPTING
     /*
       methods to control vehicle for use by scripting
     */
@@ -192,6 +193,8 @@ public:
 
     // set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+#endif // ENABLE_SCRIPTING
+
 
     // control outputs enumeration
     enum class ControlOutput {
