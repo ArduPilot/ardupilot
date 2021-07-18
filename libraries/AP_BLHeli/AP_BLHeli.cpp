@@ -28,7 +28,7 @@
 #include <AP_Math/crc.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_Motors/AP_MotorsUGV.h>
+#include <AR_Motors/AP_MotorsUGV.h>
 #else
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
