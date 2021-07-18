@@ -13,9 +13,23 @@ def quat2Rot(q):
     q2 = q[2]
     q3 = q[3]
 
-    Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
-                  [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
-                   [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
+    # This form is the one normally used in flight dynamics and inertial navigation texts, eg
+    # Aircraft Control and Simulation, Stevens,B.L, Lewis,F.L, Johnson,E.N, Third Edition, eqn 1.8-18
+    # It does produce second order terms in the covariance prediction that can be problematic
+    # with single precision processing.
+    # It requires the quternion to be unit length.
+    # Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
+    #               [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
+    #                [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
+
+    # This form removes q1 from the 0,0, q2 from the 1,1 and q3 from the 2,2 entry and results
+    # in a covariance prediction that is better conditioned.
+    # It requires the quaternion to be unit length and is mathematically identical
+    # to the alternate form when q0**2 + q1**2 + q2**2 + q3**2 = 1
+    # See https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
+    Rot = Matrix([[1 - 2*(q2**2 + q3**2), 2*(q1*q2 - q0*q3)    , 2*(q1*q3 + q0*q2)    ],
+                 [2*(q1*q2 + q0*q3)     , 1 - 2*(q1**2 + q3**2), 2*(q2*q3 - q0*q1)    ],
+                 [2*(q1*q3-q0*q2)       , 2*(q2*q3 + q0*q1)    , 1 - 2*(q1**2 + q2**2)]])
 
     return Rot
 

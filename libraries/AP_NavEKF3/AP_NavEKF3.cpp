@@ -22,10 +22,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01f
-#define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.0E-02f
+#define ACC_P_NSE_DEFAULT       2.5E-01f
+#define GBIAS_P_NSE_DEFAULT     3.0E-04f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -39,7 +39,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.2
+#define WIND_P_NSE_DEFAULT      0.5
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
@@ -48,10 +48,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01f
-#define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.0E-02f
+#define ACC_P_NSE_DEFAULT       2.5E-01f
+#define GBIAS_P_NSE_DEFAULT     3.0E-04f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -65,7 +65,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -74,10 +74,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       3.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01f
-#define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.0E-02f
+#define ACC_P_NSE_DEFAULT       2.5E-01f
+#define GBIAS_P_NSE_DEFAULT     3.0E-04f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -91,7 +91,7 @@
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #else
 // build type not specified, use copter defaults
@@ -100,10 +100,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01f
-#define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.0E-02f
+#define ACC_P_NSE_DEFAULT       2.5E-01f
+#define GBIAS_P_NSE_DEFAULT     3.0E-04f
+#define ABIAS_P_NSE_DEFAULT     1.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -117,7 +117,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.1
+#define WIND_P_NSE_DEFAULT      0.5
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -371,7 +371,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This state process noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
-    // @Range: 0.01 1.0
+    // @Range: 0.01 2.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
@@ -380,10 +380,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
-    // @Range: 0.0 1.0
+    // @Range: 0.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 0.5f),
+    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 1.0f),
 
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
@@ -1985,4 +1985,16 @@ bool NavEKF3::yawAlignmentComplete(void) const
         return false;
     }
     return core[primary].have_aligned_yaw();
+}
+
+// returns true when the state estimates for the selected core are significantly degraded by vibration
+bool NavEKF3::isVibrationAffected(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+    if (core) {
+        return core[instance].isVibrationAffected();
+    }
+    return false;
 }
