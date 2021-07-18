@@ -1147,8 +1147,11 @@ private:
 
 public:
     void failsafe_check(void);
+#ifdef ENABLE_SCRIPTING
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern Plane plane;
