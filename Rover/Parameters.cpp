@@ -431,7 +431,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 7 was used by AP_VisualOdometry
 
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsUGV.cpp
+    // @Path: ../libraries/AR_Motors/AP_MotorsUGV.cpp
     AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
 
     // @Group: WENC
