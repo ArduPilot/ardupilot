@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "AP_InertialNav.h"
 
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -49,7 +50,10 @@ void AP_InertialNav_NavEKF::update(bool high_vibes)
 nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
     nav_filter_status status;
-    _ahrs_ekf.get_filter_status(status);
+    if (!_ahrs_ekf.get_filter_status(status)) {
+        // hand back random stack values to caller
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     return status;
 }
 
