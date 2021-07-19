@@ -149,7 +149,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // @Param: TEMP_MIN
     // @DisplayName: Minimum temperature
-    // @Description: The temperature which the battery must be above to not trigger a failsafe, -200 disables the check
+    // @Description: Trigger a failsafe if the battery temperature is below this threshold, -200 disables the check
     // @Units: degC
     // @Increment: 0.1
     // @User: Advanced
@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // @Param: TEMP_MAX
     // @DisplayName: Maximum temperature
-    // @Description: The temperature which the battery must be below to not trigger a failsafe, -200 disables the check
+    // @Description: Trigger a failsafe if the battery temperature is above this threshold, -200 disables the check
     // @Units: degC
     // @Increment: 0.1
     // @User: Advanced

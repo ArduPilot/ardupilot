@@ -52,6 +52,15 @@ void AP_BattMonitor_SMBus::init(void)
     }
 }
 
+// Reset frontend failsafes to present backend state
+// don't allow reset of remaining capacity for SMBus
+bool AP_BattMonitor_SMBus::reset_remaining(float percentage)
+{
+    // reset failsafe state for this backend
+    _state.failsafe = update_failsafes();
+    return true;
+}
+
 // return true if cycle count can be provided and fills in cycles argument
 bool AP_BattMonitor_SMBus::get_cycle_count(uint16_t &cycles) const
 {

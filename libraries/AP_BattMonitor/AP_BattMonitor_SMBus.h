@@ -46,8 +46,9 @@ public:
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
 
+    // Reset frontend failsafes to present backend state
     // don't allow reset of remaining capacity for SMBus
-    bool reset_remaining(float percentage) override { return false; }
+    bool reset_remaining(float percentage) override;
 
     // return true if cycle count can be provided and fills in cycles argument
     bool get_cycle_count(uint16_t &cycles) const override;
