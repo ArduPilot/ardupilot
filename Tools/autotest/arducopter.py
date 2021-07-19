@@ -718,6 +718,26 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_RC_FAIL", 0)
         self.end_subtest("Completed Radio failsafe RTL in mission without option to continue")
 
+        # Test RC failure in GUIDED with FS_OPTIONS set to continue. Then trigger RC failsafe
+        # and switch mode to STABILIZE.  Check that we now follow the FS_ACTION to switch to LAND
+        self.start_subtest("Radio failsafe when switch out of guided and FS_OPTIONS=4")
+        # Continue if in Guided on RC failsafe
+        self.set_parameter('FS_OPTIONS', 4)
+        # We need to have GCS failsafe enabled if we want to continue in guided on an RC failsafe
+        self.set_parameter('FS_GCS_ENABLE', 1)
+        # Enabled action = always land
+        self.set_parameter('FS_THR_ENABLE', 3)
+        self.takeoff(alt_min=20, mode="GUIDED")
+        self.set_rc(3, 2000) # might as well have a proper flyway
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(5)
+        self.wait_mode("GUIDED")
+
+        # Now change to stabilize to see if a rc failsafe is evoked
+        self.send_cmd_do_set_mode("STABILIZE")
+        self.wait_mode("LAND")
+        self.wait_landed_and_disarmed()
+
         self.progress("All radio failsafe tests complete")
         self.set_parameter('FS_THR_ENABLE', 0)
         self.reboot_sitl()
