@@ -1060,7 +1060,7 @@ class AutoTestCopter(AutoTest):
 
         # wait for Vibration compensation warning and change to LAND mode
         self.wait_statustext("Vibration compensation ON", timeout=30)
-        self.wait_mode("LAND")
+        self.change_mode("LAND")
 
         # check vehicle descends to 2m or less within 30 seconds
         self.wait_altitude(-5, 2, timeout=30, relative=True)
