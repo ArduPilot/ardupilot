@@ -19,7 +19,10 @@ void Sub::update_surface_and_bottom_detector()
     }
 
     Vector3f velocity;
-    ahrs.get_velocity_NED(velocity);
+    if (!ahrs.get_velocity_NED(velocity)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        // continue using zero velocity
+    }
 
     // check that we are not moving up or down
     bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
