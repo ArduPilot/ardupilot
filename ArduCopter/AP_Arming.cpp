@@ -558,7 +558,10 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     if (copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
-        ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        if (!ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance)) {
+            check_failed(display_failure, "Failed to retrieve variances");
+            return false;
+        }
         if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
             check_failed(display_failure, "EKF compass variance");
             return false;
@@ -821,11 +824,13 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
-
-        // we have reset height, so arming height is zero
-        copter.arming_altitude_m = 0;
+        if (!ahrs.resetHeightDatum()) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        } else {
+            AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
+            // we have reset height, so arming height is zero
+            copter.arming_altitude_m = 0;
+        }
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!copter.set_home_to_current_location(false)) {
