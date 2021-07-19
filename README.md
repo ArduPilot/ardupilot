@@ -14,11 +14,10 @@
 
 [![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
-Ardupilot is the most advanced, full-featured and reliable open source autopilot software available. It has
-been under development since 2010 by a diverse team of professional engineers, computer scientists and community contributors.
-Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional
-airplanes, quadplanes, multirotors, and helicopters, to rovers, boats, balancebots and even submarines. It is continually being expanded to provide
-support for new emerging vehicle types.
+ArduPilot is the most advanced, full-featured and reliable open source autopilot software available.
+It has been under development since 2010 by a diverse team of professional engineers, computer scientists and community contributors.
+Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots and even submarines.
+It is continually being expanded to provide support for new emerging vehicle types.
 
 ## The ArduPilot project is made up of: ##
 
@@ -59,13 +58,13 @@ support for new emerging vehicle types.
 
 - The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
 
-- We have an active group of Beta Testers to help us improve our code: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
+- We have an active group of Beta Testers to help us improve our code: [release procedures](https://ardupilot.org/dev/docs/release-procedures.html)
 
 - Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
 
 - Help other users with log analysis in the [support forums](https://discuss.ardupilot.org/)
 
-- Improve the wiki and chat with other [wiki editors on Gitter](https://gitter.im/ArduPilot/ardupilot_wiki)
+- Improve the wiki and chat with other [wiki editors on Discord #documentation](https://discord.com/channels/ardupilot)
 
 - Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
 
@@ -103,6 +102,9 @@ for reviewing patches on their specific area.
   - ***Subsystem***: DataFlash, Tools
 - [Randy Mackay](https://github.com/rmackay9):
   - ***Vehicle***: Copter, Rover, AntennaTracker
+- [Siddharth Purohit](https://github.com/bugobliterator):
+  - ***Subsystem***: CAN, Compass
+  - ***Board***: Cube*
 - [Tom Pittenger](https://github.com/magicrub):
   - ***Vehicle***: Plane
 - [Bill Geyer](https://github.com/bnsgeyer):
@@ -111,9 +113,6 @@ for reviewing patches on their specific area.
   - ***Vehicle***: TradHeli
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo):
   - ***Board***: VRBrain
-- [Eugene Shamaev](https://github.com/EShamaev):
-  - ***Subsystem***: CAN bus
-  - ***Subsystem***: UAVCAN
 - [Georgii Staroselskii](https://github.com/staroselskii):
   - ***Board***: NavIO
 - [Gustavo José de Sousa](https://github.com/guludo):

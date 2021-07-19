@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
- APM automatic test suite
- Andrew Tridgell, October 2011
+APM automatic test suite.
+
+Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
@@ -27,6 +28,7 @@ import ardusub
 import antennatracker
 import quadplane
 import balancebot
+import sailboat
 
 import examples
 from pysim import util
@@ -39,11 +41,12 @@ tester = None
 
 
 def buildlogs_dirpath():
+    """Return BUILDLOGS directory path."""
     return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
 
 def buildlogs_path(path):
-    """return a string representing path in the buildlogs directory"""
+    """Return a string representing path in the buildlogs directory."""
     bits = [buildlogs_dirpath()]
     if isinstance(path, list):
         bits.extend(path)
@@ -54,7 +57,6 @@ def buildlogs_path(path):
 
 def get_default_params(atype, binary):
     """Get default parameters."""
-
     # use rover simulator so SITL is not starved of input
     HOME = mavutil.location(40.071374969556928,
                             -105.22978898137808,
@@ -95,6 +97,7 @@ def get_default_params(atype, binary):
 
 
 def build_all_filepath():
+    """Get build_all.sh path."""
     return util.reltopdir('Tools/scripts/build_all.sh')
 
 
@@ -124,12 +127,12 @@ def build_binaries():
     return True
 
 
-def build_examples():
+def build_examples(**kwargs):
     """Build examples."""
     for target in 'fmuv2', 'Pixhawk1', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target)
+            util.build_examples(target, **kwargs)
         except Exception as e:
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -138,12 +141,12 @@ def build_examples():
     return True
 
 
-def build_unit_tests():
+def build_unit_tests(**kwargs):
     """Build tests."""
     for target in ['linux']:
         print("Running build.unit_tests for %s" % target)
         try:
-            util.build_tests(target)
+            util.build_tests(target, **kwargs)
         except Exception as e:
             print("Failed build.unit_tests on board=%s" % target)
             print(str(e))
@@ -153,27 +156,35 @@ def build_unit_tests():
 
 
 def run_unit_test(test):
+    """Run unit test file."""
     print("Running (%s)" % test)
     subprocess.check_call([test])
 
 
 def run_unit_tests():
+    """Run all unit tests files."""
     binary_dir = util.reltopdir(os.path.join('build',
                                              'linux',
                                              'tests',
                                              ))
     tests = glob.glob("%s/*" % binary_dir)
     success = True
+    fail_list = []
     for test in tests:
         try:
             run_unit_test(test)
-        except Exception as e:
-            print("Exception running (%s): %s" % (test, e.message))
+        except subprocess.CalledProcessError:
+            print("Exception running (%s)" % test)
+            fail_list.append(os.path.basename(test))
             success = False
+    print("Failing tests:")
+    for failure in fail_list:
+        print("  %s" % failure)
     return success
 
 
 def run_clang_scan_build():
+    """Run Clang Scan-build utility."""
     if util.run_cmd("scan-build python waf configure",
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-configure")
@@ -193,10 +204,12 @@ def run_clang_scan_build():
 
 
 def param_parse_filepath():
+    """Get param_parse.py script path."""
     return util.reltopdir('Tools/autotest/param_metadata/param_parse.py')
 
 
 def all_vehicles():
+    """Get all vehicles name."""
     return ('ArduPlane',
             'ArduCopter',
             'Rover',
@@ -216,6 +229,7 @@ def build_parameters():
 
 
 def mavtogpx_filepath():
+    """Get mavtogpx script path."""
     return util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py")
 
 
@@ -298,12 +312,14 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
+    "Sailboat": "ardurover",
     "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
     "CAN": "arducopter",
 }
 
 
 def binary_path(step, debug=False):
+    """Get vehicle binary path."""
     try:
         vehicle = step.split(".")[1]
     except Exception:
@@ -334,6 +350,7 @@ def binary_path(step, debug=False):
 
 
 def split_specific_test_step(step):
+    """Extract test from argument."""
     print('step=%s' % str(step))
     m = re.match("((fly|drive|dive|test)[.][^.]+)[.](.*)", step)
     if m is None:
@@ -342,6 +359,7 @@ def split_specific_test_step(step):
 
 
 def find_specific_test_to_run(step):
+    """Find test to run in argument."""
     t = split_specific_test_step(step)
     if t is None:
         return None
@@ -364,6 +382,7 @@ tester_class_map = {
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
+    "test.Sailboat": sailboat.AutoTestSailboat,
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
@@ -376,6 +395,7 @@ suplementary_test_binary_map = {
 
 
 def run_specific_test(step, *args, **kwargs):
+    """Run a specific test."""
     t = split_specific_test_step(step)
     if t is None:
         return []
@@ -398,7 +418,6 @@ def run_specific_test(step, *args, **kwargs):
 
 def run_step(step):
     """Run one step."""
-
     # remove old logs
     util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
 
@@ -411,7 +430,10 @@ def run_step(step):
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
         "math_check_indexes": opts.math_check_indexes,
+        "ekf_single": opts.ekf_single,
+        "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
+        "coverage": opts.coverage,
     }
 
     if opts.Werror:
@@ -480,6 +502,7 @@ def run_step(step):
         "use_map": opts.map,
         "valgrind": opts.valgrind,
         "gdb": opts.gdb,
+        "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
@@ -487,6 +510,7 @@ def run_step(step):
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
+        "replay": opts.replay,
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
     }
@@ -513,7 +537,7 @@ def run_step(step):
         return build_binaries()
 
     if step == 'build.examples':
-        return build_examples()
+        return build_examples(**build_opts)
 
     if step == 'run.examples':
         return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
@@ -525,7 +549,7 @@ def run_step(step):
         return convert_gpx()
 
     if step == 'build.unit_tests':
-        return build_unit_tests()
+        return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
         return run_unit_tests()
@@ -538,7 +562,9 @@ def run_step(step):
 
 class TestResult(object):
     """Test result class."""
+
     def __init__(self, name, result, elapsed):
+        """Init test result class."""
         self.name = name
         self.result = result
         self.elapsed = "%.1f" % elapsed
@@ -546,14 +572,18 @@ class TestResult(object):
 
 class TestFile(object):
     """Test result file."""
+
     def __init__(self, name, fname):
+        """Init test result file."""
         self.name = name
         self.fname = fname
 
 
 class TestResults(object):
     """Test results class."""
+
     def __init__(self):
+        """Init test results class."""
         self.date = time.asctime()
         self.githash = util.run_cmd('git rev-parse HEAD',
                                     output=True,
@@ -587,10 +617,7 @@ class TestResults(object):
             self.addimage(name, os.path.basename(f))
 
     def generate_badge(self):
-        """
-        Gets the badge template, populates and saves the result to buildlogs
-        path.
-        """
+        """Get the badge template, populates and saves the result to buildlogs path."""
         passed_tests = len([t for t in self.tests if "PASSED" in t.result])
         total_tests = len(self.tests)
         badge_color = "#4c1" if passed_tests == total_tests else "#e05d44"
@@ -668,6 +695,21 @@ def run_tests(steps):
     """Run a list of steps."""
     global results
 
+    corefiles = glob.glob("core*")
+    corefiles.extend(glob.glob("ap-*.core"))
+    if corefiles:
+        print('Removing corefiles: %s' % str(corefiles))
+        for f in corefiles:
+            os.unlink(f)
+
+    diagnostic_files = []
+    for p in "dumpstack.sh_*", "dumpcore.sh_*", "autotest-*tlog":
+        diagnostic_files.extend(glob.glob(p))
+    if diagnostic_files:
+        print('Removing diagnostic files: %s' % str(diagnostic_files))
+        for f in diagnostic_files:
+            os.unlink(f)
+
     passed = True
     failed = []
     failed_testinstances = dict()
@@ -733,7 +775,7 @@ def run_tests(steps):
     return passed
 
 
-vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter']
+vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat']
 
 
 def list_subtests():
@@ -787,7 +829,10 @@ if __name__ == "__main__":
         os.putenv('TMPDIR', util.reltopdir('tmp'))
 
     class MyOptionParser(optparse.OptionParser):
+        """Custom option parse class."""
+
         def format_epilog(self, formatter):
+            """Retun customized option parser epilog."""
             return self.epilog
 
     parser = MyOptionParser(
@@ -865,14 +910,32 @@ if __name__ == "__main__":
                            help='do not clean before building',
                            dest="no_clean")
     group_build.add_option("--debug",
+                           default=None,
+                           action='store_true',
+                           help='make built SITL binaries debug binaries')
+    group_build.add_option("--no-debug",
+                           default=None,
+                           action='store_true',
+                           help='do not make built SITL binaries debug binaries')
+    group_build.add_option("--coverage",
                            default=False,
                            action='store_true',
-                           help='make built binaries debug binaries')
+                           help='make built binaries coverage binaries')
     group_build.add_option("--enable-math-check-indexes",
                            default=False,
                            action="store_true",
                            dest="math_check_indexes",
                            help="enable checking of math indexes")
+    group_build.add_option("--postype-single",
+                           default=False,
+                           action="store_true",
+                           dest="postype_single",
+                           help="force single precision copter position controller")
+    group_build.add_option("--ekf-single",
+                           default=False,
+                           action="store_true",
+                           dest="ekf_single",
+                           help="force single precision EKF")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -888,6 +951,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under gdb')
+    group_sim.add_option("--gdb-no-tui",
+                         default=False,
+                         action='store_true',
+                         help='when running under GDB do NOT start in TUI mode')
     group_sim.add_option("--gdbserver",
                          default=False,
                          action='store_true',
@@ -909,6 +976,9 @@ if __name__ == "__main__":
                          dest="force_ahrs_type",
                          default=None,
                          help="force a specific AHRS type (e.g. 10 for SITL-ekf")
+    group_sim.add_option("", "--replay",
+                         action='store_true',
+                         help="enable replay logging for tests")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
@@ -927,6 +997,16 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    # canonicalise on opts.debug:
+    if opts.debug is None and opts.no_debug is None:
+        # default is to create debug SITL binaries
+        opts.debug = True
+    elif opts.debug is not None and opts.no_debug is not None:
+        if opts.debug == opts.no_debug:
+            raise ValueError("no_debug != !debug")
+    elif opts.no_debug is not None:
+        opts.debug = not opts.no_debug
 
     if opts.timeout is None:
         opts.timeout = 5400
@@ -958,6 +1038,7 @@ if __name__ == "__main__":
         'defaults.Rover',
         'test.Rover',
         'test.BalanceBot',
+        'test.Sailboat',
 
         'build.Copter',
         'defaults.Copter',

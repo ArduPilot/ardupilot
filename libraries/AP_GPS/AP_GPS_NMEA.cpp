@@ -29,6 +29,7 @@
 ///
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/NMEA.h>
 
 #include <ctype.h>
 #include <stdint.h>
@@ -73,41 +74,6 @@ bool AP_GPS_NMEA::read(void)
         }
     }
     return parsed;
-}
-
-/*
-  formatted print of NMEA message to the port, with checksum appended
- */
-bool AP_GPS_NMEA::nmea_printf(const char *fmt, ...) const
-{
-    char *s = nullptr;
-    char trailer[6];
-    va_list ap;
-
-    va_start(ap, fmt);
-    int ret = vasprintf(&s, fmt, ap);
-    va_end(ap);
-    if (ret == -1 || s == nullptr) {
-        // allocation failed
-        return false;
-    }
-
-    // calculate the checksum
-    uint8_t cs = 0;
-    const uint8_t *b = (const uint8_t *)s+1;
-    while (*b) {
-        cs ^= *b++;
-    }
-    uint32_t len = strlen(s);
-    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)cs);
-    if (port->txspace() < len + 5) {
-        free(s);
-        return false;
-    }
-    port->write((const uint8_t*)s, len);
-    port->write((const uint8_t*)trailer, 5);
-    free(s);
-    return true;
 }
 
 bool AP_GPS_NMEA::_decode(char c)
@@ -270,7 +236,7 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_VTG_ms = 1;
     }
 
-    if (now - _last_HDT_ms > 300) {
+    if (now - _last_HDT_THS_ms > 300) {
         // we have lost GPS yaw
         state.have_gps_yaw = false;
     }
@@ -279,7 +245,7 @@ bool AP_GPS_NMEA::_have_new_message()
     const int32_t dt_ms = now - _last_fix_ms;
     if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
         get_type() == AP_GPS::GPS_TYPE_ALLYSTAR) {
-        nmea_printf("$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
+        nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
                     1000U/gps._rate_ms[state.instance],
                     gps._rate_ms[state.instance]);
     }
@@ -369,7 +335,8 @@ bool AP_GPS_NMEA::_term_complete()
                     // VTG has no fix indicator, can't change fix status
                     break;
                 case _GPS_SENTENCE_HDT:
-                    _last_HDT_ms = now;
+                case _GPS_SENTENCE_THS:
+                    _last_HDT_THS_ms = now;
                     state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                     state.have_gps_yaw = true;
                     // remember that we are setup to provide yaw. With
@@ -402,6 +369,10 @@ bool AP_GPS_NMEA::_term_complete()
                     // Only these sentences give us information about
                     // fix status.
                     state.status = AP_GPS::NO_FIX;
+                    break;
+                case _GPS_SENTENCE_THS:
+                    state.have_gps_yaw = false;
+                    break;
                 }
             }
             // see if we got a good message
@@ -439,6 +410,8 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_HDT;
             // HDT doesn't have a data qualifier
             _gps_data_good = true;
+        } else if (strcmp(term_type, "THS") == 0) {
+            _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
             // VTG may not contain a data qualifier, presume the solution is good
@@ -450,7 +423,7 @@ bool AP_GPS_NMEA::_term_complete()
         return false;
     }
 
-    // 32 = RMC, 64 = GGA, 96 = VTG, 128 = HDT
+    // 32 = RMC, 64 = GGA, 96 = VTG, 128 = HDT, 160 = THS
     if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
         switch (_sentence_type + _term_number) {
         // operational status
@@ -461,6 +434,9 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_GGA + 6: // Fix data (GGA)
             _gps_data_good = _term[0] > '0';
             _new_quality_indicator = _term[0] - '0';
+            break;
+        case _GPS_SENTENCE_THS + 2: // validity (THS)
+            _gps_data_good = _term[0] == 'A';
             break;
         case _GPS_SENTENCE_VTG + 9: // validity (VTG) (we may not see this field)
             _gps_data_good = _term[0] != 'N';
@@ -513,6 +489,9 @@ bool AP_GPS_NMEA::_term_complete()
             _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
             break;
         case _GPS_SENTENCE_HDT + 1: // Course (HDT)
+            _new_gps_yaw = _parse_decimal_100(_term);
+            break;
+        case _GPS_SENTENCE_THS + 1: // Course (THS)
             _new_gps_yaw = _parse_decimal_100(_term);
             break;
         case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)

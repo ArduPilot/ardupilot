@@ -31,8 +31,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_CANMANAGER_ENABLED
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "ToshibaCAN",  fmt, #args); } while (0)
-
+#else
+#define debug_can(level_debug, fmt, args...)
+#endif
 
 // stupid compiler is not able to optimise this under gnu++11
 // move this back when moving to gnu++17
@@ -297,6 +300,7 @@ void AP_ToshibaCAN::loop()
         if (send_stage == 8) {
             AP_HAL::CANFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
+#if HAL_WITH_ESC_TELEM
                 // decode rpm and voltage data
                 if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + TOSHIBACAN_MAX_NUM_ESCS)) {
                     // copy contents to our structure
@@ -305,19 +309,24 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     const uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].rpm = (int16_t)be16toh(reply_data.rpm);
-                        _telemetry[esc_id].current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f);    // milli-amps to centi-amps
-                        _telemetry[esc_id].voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
-                        _telemetry[esc_id].count++;
-                        _telemetry[esc_id].new_data = true;
+                        update_rpm(esc_id, (int16_t)be16toh(reply_data.rpm));
+
                         // update total current
                         const uint32_t now_ms = AP_HAL::native_millis();
                         const uint32_t diff_ms = now_ms - _telemetry[esc_id].last_update_ms;
+                        TelemetryData t {};
+                        t.voltage = float(be16toh(reply_data.voltage_mv)) * 0.001f;  // millivolts to volts
+                        t.current = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.001f); // milli-amps to amps
                         if (diff_ms <= 1000) {
-                            // convert centi-amps miiliseconds to mAh
-                            _telemetry[esc_id].current_tot_mah += _telemetry[esc_id].current_ca * diff_ms * centiamp_ms_to_mah;
+                            // convert centi-amps miliseconds to mAh
+                            _telemetry[esc_id].current_tot_mah += t.current * diff_ms * amp_ms_to_mah;
                         }
+                        t.consumption_mah = _telemetry[esc_id].current_tot_mah;
+                        update_telem_data(esc_id, t,
+                            AP_ESC_Telem_Backend::TelemetryType::CURRENT
+                                | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+                                | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+
                         _telemetry[esc_id].last_update_ms = now_ms;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
                     }
@@ -340,10 +349,16 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].esc_temp = temp_max < 100 ? 0 : temp_max / 5 - 20;
-                        _telemetry[esc_id].motor_temp = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
+                        const int16_t esc_temp_deg = temp_max < 100 ? 0 : temp_max / 5 - 20;
+                        const int16_t motor_temp_deg = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
+
+                        TelemetryData t {
+                            .temperature_cdeg = int16_t(esc_temp_deg * 100)
+                        };
+                        t.motor_temp_cdeg = int16_t(motor_temp_deg * 100);
+                        update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE |
+                            AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
                     }
                 }
 
@@ -358,11 +373,14 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA3;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].usage_sec = usage_sec;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
+
+                        TelemetryData t {};
+                        t.usage_s = usage_sec;
+                        update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::USAGE);
                     }
                 }
+#endif // HAL_WITH_ESC_TELEM
             }
 
             // update bitmask of escs that replied
@@ -456,102 +474,6 @@ void AP_ToshibaCAN::update()
         }
         update_count++;
     }
-
-    // log ESCs telemetry info
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger && logger->logging_enabled()) {
-        WITH_SEMAPHORE(_telem_sem);
-
-        // log if any new data received.  Logging only supports up to 8 ESCs
-        const uint64_t time_us = AP_HAL::native_micros64();
-        for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 8); i++) {
-            if (_telemetry[i].new_data) {
-                logger->Write_ESC(i, time_us,
-                              _telemetry[i].rpm * 100U,
-                              _telemetry[i].voltage_cv,
-                              _telemetry[i].current_ca,
-                              _telemetry[i].esc_temp * 100U,
-                              constrain_float(_telemetry[i].current_tot_mah, 0, UINT16_MAX),
-                              _telemetry[i].motor_temp * 100U);
-                _telemetry[i].new_data = false;
-            }
-        }
-    }
-}
-
-// send ESC telemetry messages over MAVLink
-void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-    // compile time check this method handles the correct number of motors
-    static_assert(TOSHIBACAN_MAX_NUM_ESCS == 12, "update AP_ToshibaCAN::send_esc_telemetry_mavlink only handles 12 motors");
-
-    // return immediately if no ESCs have been found
-    if (_esc_present_bitmask == 0) {
-        return;
-    }
-
-    // output telemetry messages
-    {
-        // take semaphore to access telemetry data
-        WITH_SEMAPHORE(_telem_sem);
-
-        // loop through 3 groups of 4 ESCs
-        for (uint8_t i = 0; i < 3; i++) {
-
-            // return if no space in output buffer to send mavlink messages
-            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                return;
-            }
-
-            // skip this group of ESCs if no data to send
-            if ((_esc_present_bitmask & ((uint32_t)0x0F << i*4)) == 0) {
-                continue;
-            }
-
-            // arrays to hold output
-            uint8_t temperature[4] {};
-            uint16_t voltage[4] {};
-            uint16_t current[4] {};
-            uint16_t current_tot[4] {};
-            uint16_t rpm[4] {};
-            uint16_t count[4] {};
-
-            // fill in output arrays
-            for (uint8_t j = 0; j < 4; j++) {
-                uint8_t esc_id = i * 4 + j;
-                temperature[j] = _telemetry[esc_id].esc_temp;
-                voltage[j] = _telemetry[esc_id].voltage_cv;
-                current[j] = _telemetry[esc_id].current_ca;
-                current_tot[j] = constrain_float(_telemetry[esc_id].current_tot_mah, 0, UINT16_MAX);
-                rpm[j] = abs(_telemetry[esc_id].rpm);   // mavlink message only accepts positive rpm values
-                count[j] = _telemetry[esc_id].count;
-            }
-
-            // send messages
-            switch (i) {
-                case 0:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                    break;
-                case 1:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                    break;
-                case 2:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-}
-
-// return total usage time in seconds
-uint32_t AP_ToshibaCAN::get_usage_seconds(uint8_t esc_id) const
-{
-    if (esc_id >= TOSHIBACAN_MAX_NUM_ESCS) {
-        return 0;
-    }
-    return _telemetry[esc_id].usage_sec;
 }
 
 // helper function to create motor_request_data_cmd_t

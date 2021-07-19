@@ -26,7 +26,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_RLL_D
@@ -95,7 +94,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_PIT_D
@@ -164,7 +162,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_YAW_D
@@ -333,20 +330,20 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
-    _rate_target_ang_vel += _rate_sysid_ang_vel;
+    _ang_vel_body += _sysid_ang_vel_body;
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(_rate_target_ang_vel.x, gyro_latest.x, _motors.limit.roll) + _actuator_sysid.x);
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _motors.limit.roll) + _actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_rate_target_ang_vel.y, gyro_latest.y, _motors.limit.pitch) + _actuator_sysid.y);
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _motors.limit.pitch) + _actuator_sysid.y);
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_rate_target_ang_vel.z, gyro_latest.z, _motors.limit.yaw) + _actuator_sysid.z);
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _motors.limit.yaw) + _actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
-    _rate_sysid_ang_vel.zero();
+    _sysid_ang_vel_body.zero();
     _actuator_sysid.zero();
 
     control_monitor_update();

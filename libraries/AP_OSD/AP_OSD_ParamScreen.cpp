@@ -150,12 +150,12 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
     }
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     {
-        { 1, { 232, 0, 1 }, OSD_PARAM_NONE },               // RLL2SRV_P
-        { 2, { 232, 0, 3 }, OSD_PARAM_NONE },               // RLL2SRV_I
-        { 3, { 232, 0, 2 }, OSD_PARAM_NONE },               // RLL2SRV_D
-        { 4, { 233, 0, 1 }, OSD_PARAM_NONE },               // PTCH2SRV_P
-        { 5, { 233, 0, 3 }, OSD_PARAM_NONE },               // PTCH2SRV_I
-        { 6, { 233, 0, 2 }, OSD_PARAM_NONE },               // PTCH2SRV_D
+        { 1, { 232, 0, 265 }, OSD_PARAM_NONE },             // RLL_RATE_FF
+        { 2, { 232, 0, 4041 }, OSD_PARAM_NONE },            // RLL_RATE_P
+        { 3, { 232, 0, 73 }, OSD_PARAM_NONE },              // RLL_RATE_I
+        { 4, { 233, 0, 267 }, OSD_PARAM_NONE },             // PTCH_RATE_FF
+        { 5, { 233, 0, 4043 }, OSD_PARAM_NONE },            // PTCH_RATE_P
+        { 6, { 233, 0, 75 }, OSD_PARAM_NONE },              // PTCH_RATE_I
         { 7, { 233, 0, 6 }, OSD_PARAM_NONE },               // PTCH2SRV_RLL
         { 8, { 199, 0, 1 }, OSD_PARAM_NONE },               // TUNE_PARAM
         { 9, { 199, 0, 320 }, OSD_PARAM_NONE }              // TUNE_RANGE
@@ -261,7 +261,7 @@ void AP_OSD_ParamScreen::draw_parameter(uint8_t number, uint8_t x, uint8_t y)
             if (metadata != nullptr && val >= 0 && val < metadata->values_max) {
                 backend->write(value_pos, y, value_blink, "%s", metadata->values[val]);
             } else {
-                backend->write(value_pos, y, value_blink, "%d", val);
+                backend->write(value_pos, y, value_blink, "%d", (signed)val);
             }
             break;
         }

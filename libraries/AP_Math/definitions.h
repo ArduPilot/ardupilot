@@ -7,7 +7,7 @@
 #ifdef M_PI
 # undef M_PI
 #endif
-#define M_PI      (3.141592653589793f)
+#define M_PI      (3.141592653589793)
 
 #ifdef M_PI_2
 # undef M_PI_2
@@ -51,8 +51,9 @@ static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 
 // convert a longitude or latitude point to meters or centimeters.
 // Note: this does not include the longitude scaling which is dependent upon location
-#define LATLON_TO_M     0.01113195f
-#define LATLON_TO_CM    1.113195f
+#define LATLON_TO_M     0.011131884502145034
+#define LATLON_TO_M_INV 89.83204953368922
+#define LATLON_TO_CM    1.1131884502145034
 
 // Semi-major axis of the Earth, in meters.
 static const double WGS84_A = 6378137.0;

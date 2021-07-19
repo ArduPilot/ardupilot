@@ -94,7 +94,7 @@ static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz"
 
 using namespace ChibiOS;
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANFDIface", fmt, ##args); } while (0)
 #else
 #define Debug(fmt, args...)
@@ -763,7 +763,7 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
             }
             if (event_handle_ != nullptr) {
                 stats.num_events++;
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
                 evt_src_.signalI(1 << self_index_);
 #endif
             }
@@ -868,7 +868,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index)
     }
     if (event_handle_ != nullptr) {
         stats.num_events++;
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
         evt_src_.signalI(1 << self_index_);
 #endif
     }
@@ -886,6 +886,7 @@ void CANIface::pollErrorFlagsFromISR()
     const uint8_t cel = can_->ECR >> 16;
 
     if (cel != 0) {
+        stats.ecr = can_->ECR;
         for (int i = 0; i < NumTxMailboxes; i++) {
             if (!pending_tx_[i].abort_on_error || pending_tx_[i].aborted) {
                 continue;
@@ -935,7 +936,7 @@ uint32_t CANIface::getErrorCount() const
            stats.tx_timedout;
 }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_CFG_USE_EVENTS == TRUE
 ChibiOS::EventSource CANIface::evt_src_;
 bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
 {
@@ -1041,7 +1042,8 @@ void CANIface::get_stats(ExpandingString &str)
                "rx_overflow:    %lu\n"
                "rx_errors:      %lu\n"
                "num_busoff_err: %lu\n"
-               "num_events:     %lu\n",
+               "num_events:     %lu\n"
+               "ECR:            %lx\n",
                stats.tx_requests,
                stats.tx_rejected,
                stats.tx_success,
@@ -1051,7 +1053,8 @@ void CANIface::get_stats(ExpandingString &str)
                stats.rx_overflow,
                stats.rx_errors,
                stats.num_busoff_err,
-               stats.num_events);
+               stats.num_events,
+               stats.ecr);
 }
 #endif
 

@@ -18,7 +18,7 @@
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
 
 class CANTester : public AP_CANDriver
 {

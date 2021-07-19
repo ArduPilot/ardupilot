@@ -5,6 +5,8 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
+class ExpandingString;
+
 /* Pure virtual UARTDriver class */
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
@@ -72,6 +74,7 @@ public:
         OPTION_NODMA_RX           = (1U<<8), // don't use DMA for RX
         OPTION_NODMA_TX           = (1U<<9), // don't use DMA for TX
         OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
+        OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
     };
 
     enum flow_control {
@@ -119,4 +122,19 @@ public:
     virtual uint32_t bw_in_kilobytes_per_second() const {
         return 57;
     }
+
+    /*
+      return true if this UART has DMA enabled on both RX and TX
+     */
+    virtual bool is_dma_enabled() const { return false; }
+
+    // request information on uart I/O for this uart, for @SYS/uarts.txt
+    virtual void uart_info(ExpandingString &str) {}
+
+    /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    virtual bool set_RTS_pin(bool high) { return false; };
+    virtual bool set_CTS_pin(bool high) { return false; };
 };

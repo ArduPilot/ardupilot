@@ -69,8 +69,6 @@ static const struct SPIDriverInfo {
     uint8_t dma_channel_tx;
 } spi_devices[] = { HAL_SPI_BUS_LIST };
 
-#define MHZ (1000U*1000U)
-#define KHZ (1000U)
 // device list comes from hwdef.dat
 ChibiOS::SPIDesc SPIDeviceManager::device_table[] = { HAL_SPI_DEVICE_LIST };
 
@@ -179,7 +177,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     bool ret = true;
 
 #if defined(HAL_SPI_USE_POLLED)
-    for (uint16_t i=0; i<len; i++) {
+    for (uint32_t i=0; i<len; i++) {
         uint8_t ret = spiPolledExchange(spi_devices[device_desc.bus].driver, send?send[i]:0);
         if (recv) {
             recv[i] = ret;
@@ -229,7 +227,9 @@ bool SPIDevice::clock_pulse(uint32_t n)
         acquire_bus(false, true);
         bus.semaphore.give();
     } else {
-        bus.semaphore.assert_owner();
+        if (!bus.semaphore.check_owner()) {
+            return false;
+        }
         spiIgnore(spi_devices[device_desc.bus].driver, n);
     }
     return true;
@@ -269,7 +269,6 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("SPI: not owner of 0x%x\n", unsigned(get_bus_id()));
         return false;
     }
     if ((send_len == recv_len && send == recv) || !send || !recv) {
@@ -292,7 +291,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
-    bus.semaphore.assert_owner();
+    if (!bus.semaphore.check_owner()) {
+        return false;
+    }
     uint8_t buf[len];
     memcpy(buf, send, len);
     bool ret = do_transfer(buf, buf, len);
@@ -323,7 +324,9 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 */
 bool SPIDevice::acquire_bus(bool set, bool skip_cs)
 {
-    bus.semaphore.assert_owner();
+    if (!bus.semaphore.check_owner()) {
+        return false;
+    }
     if (set && cs_forced) {
         return true;
     }

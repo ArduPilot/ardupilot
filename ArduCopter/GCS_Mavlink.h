@@ -35,6 +35,8 @@ protected:
 
     void handle_mount_message(const mavlink_message_t &msg) override;
 
+    void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
+
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     void send_nav_controller_output() const override;
@@ -66,4 +68,13 @@ private:
     void send_winch_status() const override;
 
     void send_wind() const;
+
+#if HAL_HIGH_LATENCY2_ENABLED
+    int16_t high_latency_target_altitude() const override;
+    uint8_t high_latency_tgt_heading() const override;
+    uint16_t high_latency_tgt_dist() const override;
+    uint8_t high_latency_tgt_airspeed() const override;
+    uint8_t high_latency_wind_speed() const override;
+    uint8_t high_latency_wind_direction() const override;
+#endif // HAL_HIGH_LATENCY2_ENABLED
 };

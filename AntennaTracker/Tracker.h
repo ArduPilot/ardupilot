@@ -1,7 +1,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
 
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -232,6 +232,7 @@ private:
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed() const;
+    bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const override;
 
     // Arming/Disarming management class
     AP_Arming_Tracker arming;

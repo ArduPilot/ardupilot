@@ -1,7 +1,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
- 
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ void Tracker::one_second_loop()
 void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
     if (should_log(MASK_LOG_ATTITUDE)) {
         Log_Write_Attitude();

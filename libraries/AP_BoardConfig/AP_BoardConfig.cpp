@@ -171,7 +171,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SAFETY_MASK
     // @DisplayName: Outputs which ignore the safety switch state
     // @Description: A bitmask which controls what outputs can move while the safety switch has not been pressed
-    // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Output1,1:Output2,2:Output3,3:Output4,4:Output5,5:Output6,6:Output7,7:Output8,8:Output9,9:Output10,10:Output11,11:Output12,12:Output13,13:Output14
     // @RebootRequired: True
     // @User: Advanced
@@ -181,7 +180,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_HAVE_IMU_HEATER
     // @Param: IMU_TARGTEMP
     // @DisplayName: Target IMU temperature
-    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET -1 on The Cube. A value of -1 sets PH1 behaviour 
+    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced

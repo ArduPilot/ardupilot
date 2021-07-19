@@ -83,12 +83,27 @@ template float safe_sqrt<float>(const float v);
 template float safe_sqrt<double>(const double v);
 
 /*
+  replacement for std::swap() needed for STM32
+ */
+static void swap_float(float &f1, float &f2)
+{
+    float tmp = f1;
+    f1 = f2;
+    f2 = tmp;
+}
+
+/*
  * linear interpolation based on a variable in a range
  */
 float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high)
 {
+    if (var_low > var_high) {
+        // support either polarity
+        swap_float(var_low, var_high);
+        swap_float(low_output, high_output);
+    }
     if (var_value <= var_low) {
         return low_output;
     }
@@ -229,35 +244,24 @@ long wrap_360_cd(const long angle)
     }
     return res;
 }
-template <typename T>
-float wrap_PI(const T radian)
+
+ftype wrap_PI(const ftype radian)
 {
-    auto res = wrap_2PI(radian);
+    ftype res = wrap_2PI(radian);
     if (res > M_PI) {
         res -= M_2PI;
     }
     return res;
 }
 
-template float wrap_PI<int>(const int radian);
-template float wrap_PI<short>(const short radian);
-template float wrap_PI<float>(const float radian);
-template float wrap_PI<double>(const double radian);
-
-template <typename T>
-float wrap_2PI(const T radian)
+ftype wrap_2PI(const ftype radian)
 {
-    float res = fmodf(static_cast<float>(radian), M_2PI);
+    ftype res = fmodF(radian, M_2PI);
     if (res < 0) {
         res += M_2PI;
     }
     return res;
 }
-
-template float wrap_2PI<int>(const int radian);
-template float wrap_2PI<short>(const short radian);
-template float wrap_2PI<float>(const float radian);
-template float wrap_2PI<double>(const double radian);
 
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
@@ -282,6 +286,7 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 }
 
 template float constrain_value_line<float>(const float amt, const float low, const float high, uint32_t line);
+template double constrain_value_line<double>(const double amt, const double low, const double high, uint32_t line);
 
 template <typename T>
 T constrain_value(const T amt, const T low, const T high)
@@ -371,15 +376,15 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2)
  * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
  * angular_rate is rad/sec
  */
-Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate)
+Vector3F get_vel_correction_for_sensor_offset(const Vector3F &sensor_offset_bf, const Matrix3F &rot_ef_to_bf, const Vector3F &angular_rate)
 {
     if (sensor_offset_bf.is_zero()) {
-        return Vector3f();
+        return Vector3F();
     }
 
     // correct velocity
-    const Vector3f vel_offset_body = angular_rate % sensor_offset_bf;
-    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
+    const Vector3F vel_offset_body = angular_rate % sensor_offset_bf;
+    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0;
 }
 
 /*
@@ -403,7 +408,26 @@ void fill_nanf(float *f, uint16_t count)
         *f++ = n;
     }
 }
+
+void fill_nanf(double *f, uint16_t count)
+{
+    while (count--) {
+        *f++ = std::numeric_limits<double>::signaling_NaN();
+    }
+}
 #endif
+
+// Convert 16-bit fixed-point to float
+float fixed2float(const uint16_t input, const uint8_t fractional_bits)
+{
+    return ((float)input / (float)(1U << fractional_bits));
+}
+
+// Convert float to 16-bit fixed-point
+uint16_t float2fixed(const float input, const uint8_t fractional_bits)
+{
+    return (uint16_t)(roundf(input * (1U << fractional_bits)));
+}
 
 /*
   calculate turn rate in deg/sec given a bank angle and airspeed for a

@@ -74,6 +74,9 @@ public:
     // return string corresponding to frame_type
     virtual const char* get_type_string() const { return ""; }
 
+    // returns a formatted string into buffer, e.g. "QUAD/X"
+    void get_frame_and_type_string(char *buffer, uint8_t buflen) const;
+
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
@@ -112,8 +115,11 @@ public:
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
+    float               get_roll_ff() const { return _roll_in_ff; }
     float               get_pitch() const { return _pitch_in; }
+    float               get_pitch_ff() const { return _pitch_in_ff; }
     float               get_yaw() const { return _yaw_in; }
+    float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
@@ -288,7 +294,6 @@ private:
     bool _initialised_ok;    // 1 if initialisation was successful
 
     static AP_Motors *_singleton;
-
 };
 
 namespace AP {

@@ -1,0 +1,20 @@
+name: Notify users based on issue labels
+
+on:
+  issues:
+      types: [labeled]
+  pull_request_target:
+      types: [labeled]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+        - uses: bugobliterator/issue-label-notification-action@master
+          with:
+             recipients: |
+                  CAN=@bugobliterator
+                  AP_Periph=@bugobliterator
+                  ChibiOS=@bugobliterator
+                  Compass=@bugobliterator
+                  bootloader=@bugobliterator

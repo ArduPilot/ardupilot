@@ -19,6 +19,8 @@ public:
     /// Constructor for PID
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
 
+    CLASS_NO_COPY(AC_HELI_PID);
+
     /// update_leaky_i - replacement for get_i but output is leaked at leak_rate
     void       update_leaky_i(float leak_rate);
 

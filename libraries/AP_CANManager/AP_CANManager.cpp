@@ -20,7 +20,7 @@
 #include <AP_Common/AP_Common.h>
 #include "AP_CANManager.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>

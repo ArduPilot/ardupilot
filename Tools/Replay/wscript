@@ -18,10 +18,11 @@ def build(bld):
             'AP_Arming',
             'AP_RCMapper',
             'AP_OSD',
+            'AP_Avoidance',
         ],
     )
 
     bld.ap_program(
-        program_groups=['tools','replay'],
+        program_groups=['tool','replay'],
         use=vehicle + '_libs',
     )

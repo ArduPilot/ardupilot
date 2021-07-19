@@ -18,18 +18,15 @@ enum autopilot_yaw_mode {
     AUTO_YAW_FIXED =            3,  // point towards a particular angle (no pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
-    AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
-    AUTO_YAW_CIRCLE =           7,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+    AUTO_YAW_ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
+    AUTO_YAW_RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
+    AUTO_YAW_CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
 };
 
 // Frame types
 #define UNDEFINED_FRAME 0
 #define MULTICOPTER_FRAME 1
 #define HELI_FRAME 2
-
-// HIL enumerations
-#define HIL_MODE_DISABLED               0
-#define HIL_MODE_SENSORS                1
 
 // Tuning enumeration
 enum tuning_func {
@@ -83,43 +80,12 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicopters)
 
-// Auto modes
-enum AutoMode {
-    Auto_TakeOff,
-    Auto_WP,
-    Auto_Land,
-    Auto_RTL,
-    Auto_CircleMoveToEdge,
-    Auto_Circle,
-    Auto_NavGuided,
-    Auto_Loiter,
-    Auto_LoiterToAlt,
-    Auto_NavPayloadPlace,
-};
-
-// Guided modes
-enum GuidedMode {
-    Guided_TakeOff,
-    Guided_WP,
-    Guided_Velocity,
-    Guided_PosVel,
-    Guided_Angle,
-};
 
 // Airmode
 enum class AirMode {
     AIRMODE_NONE,
     AIRMODE_DISABLED,
     AIRMODE_ENABLED,
-};
-
-// Safe RTL states
-enum SmartRTLState {
-    SmartRTL_WaitForPathCleanup,
-    SmartRTL_PathFollow,
-    SmartRTL_PreLandPosition,
-    SmartRTL_Descend,
-    SmartRTL_Land
 };
 
 enum PayloadPlaceStateType {
@@ -140,7 +106,6 @@ enum PayloadPlaceStateType {
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
     DevOptionVFR_HUDRelativeAlt = 2,
-    DevOptionSetAttitudeTarget_ThrustAsThrust = 4,
 };
 
 //  Logging parameters
@@ -154,7 +119,6 @@ enum LoggingParameters {
      LOG_MOTBATT_MSG,
      LOG_PARAMTUNE_MSG,
      LOG_HELI_MSG,
-     LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
      LOG_SYSIDD_MSG,
      LOG_SYSIDS_MSG,

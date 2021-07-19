@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -266,6 +266,16 @@ uint32_t StorageAccess::read_uint32(uint16_t loc) const
 }
 
 /*
+  read a float
+ */
+float StorageAccess::read_float(uint16_t loc) const
+{
+    float v;
+    read_block(&v, loc, sizeof(v));
+    return v;
+}
+
+/*
   write a byte
  */
 void StorageAccess::write_byte(uint16_t loc, uint8_t value) const
@@ -285,6 +295,14 @@ void StorageAccess::write_uint16(uint16_t loc, uint16_t value) const
   write a uint32
  */
 void StorageAccess::write_uint32(uint16_t loc, uint32_t value) const
+{
+    write_block(loc, &value, sizeof(value));
+}
+
+/*
+  write a float
+ */
+void StorageAccess::write_float(uint16_t loc, float value) const
 {
     write_block(loc, &value, sizeof(value));
 }

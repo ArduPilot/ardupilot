@@ -1,6 +1,6 @@
 # PWM input to Hardpoint output trigger firmware
 
-include ../f103-periph/hwdef.dat
+include ../f103-periph/hwdef.inc
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

@@ -2,6 +2,7 @@
 
 local scripting_rc_1 = rc:find_channel_for_option(300)
 local scripting_rc_2 = rc:find_channel_for_option(301)
+local flip_flop = 0
 
 function update()
   pwm1 = rc:get_pwm(1)
@@ -26,6 +27,17 @@ function update()
       gcs:send_text(0, "Scripting switch is high")
     end
   end
+
+  -- we can also call functions that are available to RC switches
+  -- 28 is Relay one
+  rc:run_aux_function(28, flip_flop)
+
+  if (flip_flop == 0) then
+    flip_flop = 2 -- switch high
+  else
+    flip_flop = 0 -- switch low
+  end
+
 
   return update, 1000 -- reschedules the loop
 end

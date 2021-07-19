@@ -7,13 +7,12 @@ bool Sub::surface_init()
         return false;
     }
 
-    // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
-    pos_control.set_max_accel_z(wp_nav.get_accel_z());
+    // initialize vertical speeds and acceleration
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.init_z_controller();
 
     return true;
 
@@ -30,6 +29,7 @@ void Sub::surface_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+        pos_control.init_z_controller();
         return;
     }
 
@@ -49,13 +49,13 @@ void Sub::surface_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
-    float cmb_rate = constrain_float(fabsf(wp_nav.get_default_speed_up()), 1, pos_control.get_max_speed_up());
+    float cmb_rate = constrain_float(fabsf(wp_nav.get_default_speed_up()), 1, pos_control.get_max_speed_up_cms());
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;
 
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, true);
+    pos_control.set_pos_target_z_from_climb_rate_cm(cmb_rate, true);
     pos_control.update_z_controller();
 
     // pilot has control for repositioning

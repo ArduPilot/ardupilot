@@ -223,6 +223,7 @@ static Empty::OpticalFlow opticalFlow;
 
 static Empty::DSP dspDriver;
 static Empty::Flash flashDriver;
+static Empty::QSPIDeviceManager qspi_mgr_instance;
 
 #if HAL_NUM_CAN_IFACES
 static CANIface* canDrivers[HAL_NUM_CAN_IFACES];
@@ -241,6 +242,7 @@ HAL_Linux::HAL_Linux() :
         &uartIDriver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
+        &qspi_mgr_instance,
         &analogIn,
         &storageDriver,
         &uartADriver,
@@ -311,6 +313,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
         {"module-directory",    true,  0, 'M'},
+        {"defaults",            true,  0, 'd'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
@@ -364,6 +367,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             module_path = gopt.optarg;
             break;
 #endif
+        case 'd':
+            utilInstance.set_custom_defaults_path(gopt.optarg);
+            break;
         case 'h':
             _usage();
             exit(0);

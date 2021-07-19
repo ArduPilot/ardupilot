@@ -19,7 +19,6 @@
 #define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
-#define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
 #define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
 
 /*
@@ -204,6 +203,9 @@ private:
     // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
     void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
+    // Logging function
+    void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
+
     // parameters
     AP_Int8 _enabled;
     AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
@@ -213,6 +215,7 @@ private:
     AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
     AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
     AP_Float _accel_max;        // maximum accelration while simple avoidance is active
+    AP_Float _backup_deadzone;  // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude

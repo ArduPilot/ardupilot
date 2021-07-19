@@ -814,7 +814,7 @@ private:
     void update_load_factor(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
-    int32_t get_RTL_altitude() const;
+    int32_t get_RTL_altitude_cm() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
@@ -853,9 +853,6 @@ private:
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
-
-    // GCS_Mavlink.cpp
-    void send_servo_out(mavlink_channel_t chan);
 
     // Log.cpp
     void Log_Write_Fast(void);

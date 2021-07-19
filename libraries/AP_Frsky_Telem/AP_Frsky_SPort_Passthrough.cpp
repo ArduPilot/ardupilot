@@ -9,6 +9,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AC_Fence/AC_Fence.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -43,6 +44,10 @@ for FrSky SPort Passthrough
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
+#define AP_FS_OFFSET                12
+#define AP_FENCE_PRESENT_OFFSET     13
+#define AP_FENCE_BREACH_OFFSET      14
+#define AP_THROTTLE_OFFSET          19
 #define AP_IMU_TEMP_MIN             19.0f
 #define AP_IMU_TEMP_MAX             82.0f
 #define AP_IMU_TEMP_OFFSET          26
@@ -54,12 +59,14 @@ for FrSky SPort Passthrough
 #define VELANDYAW_XYVEL_OFFSET      9
 #define VELANDYAW_YAW_LIMIT         0x7FF
 #define VELANDYAW_YAW_OFFSET        17
+#define VELANDYAW_ARSPD_OFFSET      28
 // for attitude (roll, pitch) and range data
 #define ATTIANDRNG_ROLL_LIMIT       0x7FF
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
-
+// for terrain data
+#define TERRAIN_UNHEALTHY_OFFSET    13
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_SPort_Passthrough *AP_Frsky_SPort_Passthrough::singleton;
@@ -115,6 +122,9 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
     set_scheduler_entry(UDATA, 5000, 200);      // user data
+
+    // initialize default sport sensor ID
+    set_sensor_id(_frsky_parameters->_dnlink_id, downlink_sensor_id);
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
     // initialize sport sensor IDs
@@ -183,8 +193,8 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         break;
     case GPS_LAT:
     case GPS_LON:
-        // force gps coords to use sensor 0x1B, always send when used with external data
-        packet_ready = _use_external_data || (_passthrough.new_byte == SENSOR_ID_27);
+        // force gps coords to use default sensor ID, always send when used with external data
+        packet_ready = _use_external_data || (_passthrough.new_byte == downlink_sensor_id);
         break;
     case AP_STATUS:
         packet_ready = gcs().vehicle_initialised();
@@ -496,7 +506,7 @@ bool AP_Frsky_SPort_Passthrough::is_passthrough_byte(const uint8_t byte) const
         return true;
     }
 #endif
-    return byte == SENSOR_ID_27;
+    return byte == downlink_sensor_id;
 }
 
 /*
@@ -521,6 +531,22 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
     // bad ekf flag
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
+    // generic failsafe
+    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio)<<AP_FS_OFFSET;
+    // fence status
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        ap_status |= (uint8_t)(fence->enabled() && fence->present()) << AP_FENCE_PRESENT_OFFSET;
+        ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
+    }
+    // signed throttle [-100,100] scaled down to [-63,63] on 7 bits, MSB for sign + 6 bits for 0-63
+    int16_t throttle = gcs().get_hud_throttle();
+    uint8_t scaled_throttle = constrain_int16(abs(throttle*0.63f),0,63);
+    // add sign
+    if (throttle < 0) {
+        scaled_throttle |= 0x1<<6;
+    }
+    ap_status |= scaled_throttle<<AP_THROTTLE_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
     return ap_status;
@@ -574,17 +600,31 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     float vspd = get_vspeed_ms();
     // vertical velocity in dm/s
     uint32_t velandyaw = prep_number(roundf(vspd * 10), 2, 1);
+    float airspeed_m;       // m/s
+    float hspeed_m;         // m/s
+    bool airspeed_estimate_true;
     AP_AHRS &_ahrs = AP::ahrs();
-    WITH_SEMAPHORE(_ahrs.get_semaphore());
-    // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
-    const AP_Airspeed *aspeed = AP::airspeed();
-    if (aspeed && aspeed->enabled()) {
-        velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
-    } else { // otherwise send groundspeed estimate from ahrs
-        velandyaw |= prep_number(roundf(_ahrs.groundspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+    {
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        hspeed_m = _ahrs.groundspeed(); // default is to use groundspeed
+        airspeed_estimate_true = AP::ahrs().airspeed_estimate_true(airspeed_m);
     }
+    bool option_airspeed_enabled = (_frsky_parameters->_options & frsky_options_e::OPTION_AIRSPEED_AND_GROUNDSPEED) != 0;
+    // airspeed estimate + airspeed option disabled (default) => send airspeed (we give priority to airspeed over groundspeed)
+    // airspeed estimate + airspeed option enabled => alternate airspeed/groundspeed, i.e send airspeed only when _passthrough.send_airspeed==true
+    if (airspeed_estimate_true && (!option_airspeed_enabled || _passthrough.send_airspeed)) {
+        hspeed_m = airspeed_m;
+    }
+    // horizontal velocity in dm/s
+    velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
+    // flag the airspeed bit if required
+    if (airspeed_estimate_true && option_airspeed_enabled && _passthrough.send_airspeed) {
+        velandyaw |= 1U<<VELANDYAW_ARSPD_OFFSET;
+    }
+    // toggle air/ground speed selector
+    _passthrough.send_airspeed = !_passthrough.send_airspeed;
     return velandyaw;
 }
 
@@ -647,6 +687,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_terrain(void)
         // vehicle height above terrain
         value |= prep_number(roundf(height_above_terrain * 10), 3, 2);
     }
+    // terrain unhealthy flag
+    value |= (uint8_t)(terrain->status() == AP_Terrain::TerrainStatus::TerrainStatusUnhealthy) << TERRAIN_UNHEALTHY_OFFSET;
 #endif
     return value;
 }

@@ -43,6 +43,7 @@ bool ExpandingString::expand(uint32_t min_extra_space_needed)
 
     buflen = newsize;
     buf = (char *)newbuf;
+    memset(&buf[used], 0, newsize-used);
 
     return true;
 }
@@ -84,16 +85,19 @@ void ExpandingString::printf(const char *format, ...)
 /*
   print into the buffer, expanding if needed
  */
-void ExpandingString::append(const char *s, uint32_t len)
+bool ExpandingString::append(const char *s, uint32_t len)
 {
     if (allocation_failed) {
-        return;
+        return false;
     }
     if (buflen - used < len && !expand(len)) {
-        return;
+        return false;
     }
-    memcpy(&buf[used], s, len);
+    if (s != nullptr) {
+        memcpy(&buf[used], s, len);
+    }
     used += len;
+    return true;
 }
 
 ExpandingString::~ExpandingString()

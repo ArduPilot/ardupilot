@@ -20,7 +20,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include "AP_CANManager.h"
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
 #include "AP_CANTester.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
@@ -378,7 +378,7 @@ bool CANTester::test_busoff_recovery()
     uint64_t timestamp;
     AP_HAL::CANIface::CanIOFlags flags;
     AP_HAL::CANFrame bo_frame;
-    bo_frame.id = (12 | AP_HAL::CANFrame::FlagEFF);
+    bo_frame.id = (10 | AP_HAL::CANFrame::FlagEFF);
     memset(bo_frame.data, 0xA, sizeof(bo_frame.data));
     bo_frame.dlc = AP_HAL::CANFrame::MaxDataLen;
     bool bus_off_detected = false;
@@ -401,12 +401,12 @@ bool CANTester::test_busoff_recovery()
         return false;
     }
     gcs().send_text(MAV_SEVERITY_ERROR, "BusOff detected remove Fault.");
-    hal.scheduler->delay(1000);
+    hal.scheduler->delay(4000);
     gcs().send_text(MAV_SEVERITY_ERROR, "Running Loopback test.");
     //Send Dummy Frames to clear the error
-    _can_ifaces[0]->send(bo_frame, AP_HAL::native_micros64(), 0);
-    bo_frame.id += 1;
-    _can_ifaces[1]->send(bo_frame, AP_HAL::native_micros64(), 0);
+    while (!write_frame(0, bo_frame,100)) {}
+    bo_frame.id -= 1;
+    while (!write_frame(1, bo_frame,100)) {}
     //Clear the CAN bus Rx Buffer
     hal.scheduler->delay(1000);
     _can_ifaces[0]->clear_rx();

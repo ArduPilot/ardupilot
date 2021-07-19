@@ -105,9 +105,14 @@ bool AP_ToneAlarm::init()
     if (pNotify->buzzer_enabled() == false) {
         return false;
     }
-    if (!hal.util->toneAlarm_init()) {
+#if ((defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM) && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || \
+    CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
+    CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
         return false;
     }
+#endif
+
 
     // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot

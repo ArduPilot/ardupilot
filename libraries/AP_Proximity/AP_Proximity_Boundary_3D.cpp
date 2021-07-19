@@ -73,24 +73,6 @@ void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch
     update_boundary(face);
 }
 
-// add a distance to the boundary if it is shorter than any other provided distance since the last time the boundary was reset
-// pitch and yaw are in degrees, distance is in meters
-void AP_Proximity_Boundary_3D::add_distance(float pitch, float yaw, float distance)
-{
-    Face face = get_face(pitch, yaw);
-    if (!face.valid()) {
-        return;
-    }
-    
-    if (!_distance_valid[face.layer][face.sector] || (distance < _distance[face.layer][face.sector])) {
-        _distance[face.layer][face.sector] = distance;
-        _distance_valid[face.layer][face.sector] = true;
-        _angle[face.layer][face.sector] = yaw;
-        _pitch[face.layer][face.sector] = pitch;
-        set_filtered_distance(face, distance);
-    }
-}
-
 // apply a new cutoff_freq to low-pass filter
 void AP_Proximity_Boundary_3D::apply_filter_freq(float cutoff_freq)
 {
@@ -174,14 +156,6 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face &face)
     const uint8_t prev_sector_ccw = get_prev_sector(prev_sector);
     if (!_distance_valid[layer][prev_sector_ccw]) {
         _boundary_points[layer][prev_sector_ccw] = _sector_edge_vector[layer][prev_sector_ccw] * shortest_distance;
-    }
-}
-
-// update middle layer boundary points
-void AP_Proximity_Boundary_3D::update_middle_boundary()
-{
-    for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
-        update_boundary(Face{PROXIMITY_MIDDLE_LAYER, sector});
     }
 }
 
@@ -296,21 +270,32 @@ bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_
 // Appropriate layer and sector are found from the passed obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from the segment that was passed, in body-frame.
-// Used by GPS based Simple Avoidance  - for "brake mode" 
-// FLT_MAX is returned if the obstacle_num provided does not produce a valid obstacle
-float AP_Proximity_Boundary_3D::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
-{   
-    Face face; 
+// Addionally a 3-D plane is constructed using the closest point found above as normal, and a point on the line segment in the boundary.
+// True is returned when the passed line segment intersects this plane.
+// This helps us know if the passed line segment was in the direction of the boundary, or going in a different direction.
+// Used by GPS based Simple Avoidance  - for "brake mode"
+// False is returned if the obstacle_num provided does not produce a valid obstacle
+bool AP_Proximity_Boundary_3D::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
+{
+    Face face;
     if (!convert_obstacle_num_to_face(obstacle_num, face)) {
         // not a valid a face
-        return FLT_MAX;
+        return false;
     }
 
     const uint8_t sector_end = face.sector;
     const uint8_t sector_start = get_next_sector(face.sector);
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
-    return Vector3f::segment_to_segment_dist(seg_start, seg_end, start, end, closest_point);
+
+    // closest point between passed line segment and boundary
+    Vector3f::segment_to_segment_closest_point(seg_start, seg_end, start, end, closest_point);
+    if (closest_point == start) {
+        // draw a plane using the closest point as normal vector, and a point on the boundary
+        // return false if the passed segment does not intersect the plane
+        return Vector3f::segment_plane_intersect(seg_start, seg_end, closest_point, end);
+    }
+    return Vector3f::segment_plane_intersect(seg_start, seg_end, closest_point, start);
 }
 
 // get distance and angle to closest object (used for pre-arm check)
@@ -402,6 +387,40 @@ bool AP_Proximity_Boundary_3D::get_layer_distances(uint8_t layer_number, float d
     }
 
     return valid_distances;
+}
+
+// reset the temporary boundary. This fills in distances with FLT_MAX
+void AP_Proximity_Temp_Boundary::reset()
+{
+    for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
+        for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+            _distances[layer][sector] = FLT_MAX;
+        }
+    }
+}
+
+// add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
+// pitch and yaw are in degrees, distance is in meters
+void AP_Proximity_Temp_Boundary::add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance)
+{
+    if (face.valid() && distance < _distances[face.layer][face.sector]) {
+        _distances[face.layer][face.sector] = distance;
+        _angle[face.layer][face.sector] = yaw;
+        _pitch[face.layer][face.sector] = pitch;
+    }
+}
+
+// fill the original 3D boundary with the contents of this temporary boundary
+void AP_Proximity_Temp_Boundary::update_3D_boundary(AP_Proximity_Boundary_3D &boundary)
+{
+    for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
+        for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+            if (_distances[layer][sector] < FLT_MAX) {
+                AP_Proximity_Boundary_3D::Face face{layer, sector};
+                boundary.set_face_attributes(face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector]);
+            }
+        }
+    }
 }
 
 #endif // HAL_PROXIMITY_ENABLED

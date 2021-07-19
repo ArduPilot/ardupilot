@@ -79,8 +79,8 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
-    // @Description: Harmonic Notch Filter options. Double-notches can provide deeper attenuation across a wider bandwidth than single notches and are suitable for larger aircraft. Dynamic harmonics attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values.
-    // @Bitmask: 0:Double notch,1:Dynamic harmonic
+    // @Description: Harmonic Notch Filter options. Double-notches can provide deeper attenuation across a wider bandwidth than single notches and are suitable for larger aircraft. Dynamic harmonics attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz.
+    // @Bitmask: 0:Double notch,1:Dynamic harmonic,2:Update at loop rate
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OPTS", 8, HarmonicNotchFilterParams, _options, 0),

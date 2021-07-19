@@ -33,6 +33,7 @@ namespace SITL {
 #define STEERING_SERVO_CH   0   // steering controlled by servo output 1
 #define MAINSAIL_SERVO_CH   3   // main sail controlled by servo output 4
 #define THROTTLE_SERVO_CH   2   // throttle controlled by servo output 3
+#define DIRECT_WING_SERVO_CH 4
 
     // very roughly sort of a stability factors for waves
 #define WAVE_ANGLE_GAIN 1
@@ -45,6 +46,7 @@ Sailboat::Sailboat(const char *frame_str) :
     sail_area(1.0)
 {
     motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
+    lock_step_scheduled = true;
 }
 
 // calculate the lift and drag as values from 0 to 1
@@ -54,16 +56,22 @@ void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, f
     const uint16_t index_width_deg = 10;
     const uint8_t index_max = ARRAY_SIZE(lift_curve) - 1;
 
+    // Convert to expected range
+    angle_of_attack_deg = wrap_180(angle_of_attack_deg);
+
+    // assume a symmetrical airfoil
+    const float aoa = fabs(angle_of_attack_deg);
+
     // check extremes
-    if (angle_of_attack_deg <= 0.0f) {
+    if (aoa <= 0.0f) {
         lift = lift_curve[0];
         drag = drag_curve[0];
-    } else if (angle_of_attack_deg >= index_max * index_width_deg) {
+    } else if (aoa >= index_max * index_width_deg) {
         lift = lift_curve[index_max];
         drag = drag_curve[index_max];
     } else {
-        uint8_t index = constrain_int16(angle_of_attack_deg / index_width_deg, 0, index_max);
-        float remainder = angle_of_attack_deg - (index * index_width_deg);
+        uint8_t index = constrain_int16(aoa / index_width_deg, 0, index_max);
+        float remainder = aoa - (index * index_width_deg);
         lift = linear_interpolate(lift_curve[index], lift_curve[index+1], remainder, 0.0f, index_width_deg);
         drag = linear_interpolate(drag_curve[index], drag_curve[index+1], remainder, 0.0f, index_width_deg);
     }
@@ -71,6 +79,11 @@ void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, f
     // apply scaling by wind speed
     lift *= wind_speed * sail_area;
     drag *= wind_speed * sail_area;
+
+    if (is_negative(angle_of_attack_deg)) {
+        // invert lift for negative aoa
+        lift *= -1;
+    }
 }
 
 // return turning circle (diameter) in meters for steering angle proportion in the range -1 to +1
@@ -169,9 +182,6 @@ void Sailboat::update(const struct sitl_input &input)
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
     float steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
 
-    // calculate mainsail angle from servo output 4, 0 to 90 degrees
-    float mainsail_angle_bf = constrain_float((input.servos[MAINSAIL_SERVO_CH]-1000)/1000.0f * 90.0f, 0.0f, 90.0f);
-
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
     // Note than the SITL wind direction is defined as the direction the wind is travelling to
     // This is accounted for in these calculations
@@ -185,8 +195,28 @@ void Sailboat::update(const struct sitl_input &input)
     rpm[0] = wind_apparent_speed;
     airspeed_pitot = wind_apparent_speed;
 
-    // calculate angle-of-attack from wind to mainsail
-    float aoa_deg = MAX(fabsf(wind_apparent_dir_bf) - mainsail_angle_bf, 0);
+    float aoa_deg = 0.0f;
+    if (sitl->sail_type.get() == 1) {
+        // directly actuated wing
+        float wing_angle_bf = constrain_float((input.servos[DIRECT_WING_SERVO_CH]-1500)/500.0f * 90.0f, -90.0f, 90.0f);
+
+        aoa_deg = wind_apparent_dir_bf - wing_angle_bf;
+
+    } else {
+        // mainsail with sheet
+
+        // calculate mainsail angle from servo output 4, 0 to 90 degrees
+        float mainsail_angle_bf = constrain_float((input.servos[MAINSAIL_SERVO_CH]-1000)/1000.0f * 90.0f, 0.0f, 90.0f);
+
+        // calculate angle-of-attack from wind to mainsail, cannot have negative angle of attack, sheet would go slack
+        aoa_deg = MAX(fabsf(wind_apparent_dir_bf) - mainsail_angle_bf, 0);
+
+        if (is_negative(wind_apparent_dir_bf)) {
+            // take into account the current tack
+            aoa_deg *= -1;
+        }
+
+    }
 
     // calculate Lift force (perpendicular to wind direction) and Drag force (parallel to wind direction)
     float lift_wf, drag_wf;
@@ -195,7 +225,7 @@ void Sailboat::update(const struct sitl_input &input)
     // rotate lift and drag from wind frame into body frame
     const float sin_rot_rad = sinf(radians(wind_apparent_dir_bf));
     const float cos_rot_rad = cosf(radians(wind_apparent_dir_bf));
-    const float force_fwd = fabsf(lift_wf * sin_rot_rad) - (drag_wf * cos_rot_rad);
+    const float force_fwd = (lift_wf * sin_rot_rad) - (drag_wf * cos_rot_rad);
 
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;
@@ -264,7 +294,7 @@ void Sailboat::update(const struct sitl_input &input)
     velocity_ef = velocity_ef_water + tide_velocity_ef;
 
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
 
     // update lat/lon/altitude
     update_position();

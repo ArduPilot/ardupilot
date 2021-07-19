@@ -37,8 +37,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: THST_EXPO
     // @DisplayName: Thrust Curve Expo
-    // @Description: Motor thrust curve exponent (from 0 for linear to 1.0 for second order curve)
-    // @Range: 0.25 0.8
+    // @Description: Motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)
+    // @Range: -1.0 1.0
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 8, AP_MotorsMulticopter, _thrust_curve_expo, AP_MOTORS_THST_EXPO_DEFAULT),
 
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: BAT_VOLT_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
-    // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.4 * cell count, 0 = Disabled
+    // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
     // @Range: 6 53
     // @Units: V
     // @User: Advanced
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: BAT_VOLT_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
-    // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled
+    // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
     // @Range: 6 42
     // @Units: V
     // @User: Advanced
@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
 
     // @Param: PWM_MIN
-    // @DisplayName: PWM output miniumum
+    // @DisplayName: PWM output minimum
     // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors, 0 = use input RC3_MIN
     // @Units: PWM
     // @Range: 0 2000
@@ -339,13 +339,13 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) const
 {
     float throttle_ratio = thrust;
-    // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
+    // apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
-    if (fabsf(thrust_curve_expo) < 0.001) {
+    if (is_zero(thrust_curve_expo)) {
         // zero expo means linear, avoid floating point exception for small values
-        return thrust;
+        return _lift_max * thrust;
     }
-    if (!is_zero(_batt_voltage_filt.get())) {
+    if (is_positive(_batt_voltage_filt.get())) {
         throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo * _batt_voltage_filt.get());
     } else {
         throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo);
@@ -512,10 +512,10 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
     _throttle_radio_min = radio_min;
     _throttle_radio_max = radio_max;
 
-    if (_pwm_type >= PWM_TYPE_DSHOT150 && _pwm_type <= PWM_TYPE_DSHOT1200) {
-        // force PWM range for DShot ESCs
-        _pwm_min.set(1000);
-        _pwm_max.set(2000);
+    // if all outputs are digital adjust the range
+    if (SRV_Channels::have_digital_outputs(get_motor_mask())) {
+        _pwm_min = 1000;
+        _pwm_max = 2000;
     }
 
     hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());

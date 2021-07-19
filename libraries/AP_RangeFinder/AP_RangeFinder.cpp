@@ -540,7 +540,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 
     case Type::UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
         /*
           the UAVCAN driver gets created when we first receive a
           measurement. We take the instance slot now, even if we don't
@@ -742,6 +742,16 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
     return backend->get_mav_distance_sensor_type();
+}
+
+// get temperature reading in C.  returns true on success and populates temp argument
+bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->get_temp(temp);
 }
 
 // Write an RFND (rangefinder) packet

@@ -18,6 +18,9 @@ FLASH_RESERVE_START_KB 0
 PB5 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
 
+# Avoid buzzer scream
+PC9 BUZZER OUTPUT LOW PULLDOWN
+
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 64
 

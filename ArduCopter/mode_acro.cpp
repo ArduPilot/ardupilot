@@ -27,13 +27,13 @@ void ModeAcro::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_target_and_rate(true);
         attitude_control->reset_rate_controller_I_terms();
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
-        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
         break;
 
@@ -111,7 +111,7 @@ void ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, 
     }
 
     // range check expo
-    g.acro_rp_expo = constrain_float(g.acro_rp_expo, 0.0f, 1.0f);
+    g.acro_rp_expo = constrain_float(g.acro_rp_expo, -0.5f, 1.0f);
     
     // calculate roll, pitch rate requests
     if (is_zero(g.acro_rp_expo)) {

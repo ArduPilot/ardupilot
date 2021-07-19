@@ -145,6 +145,10 @@ enum {
     USE_REVERSE_THRUST_FBWB                     = (1<<9),
     USE_REVERSE_THRUST_GUIDED                   = (1<<10),
     USE_REVERSE_THRUST_AUTO_LANDING_PATTERN     = (1<<11),
+    USE_REVERSE_THRUST_FBWA                   = (1<<12),
+    USE_REVERSE_THRUST_ACRO                   = (1<<13),
+    USE_REVERSE_THRUST_STABILIZE            = (1<<14),
+    USE_REVERSE_THRUST_THERMAL             = (1<<15),
 };
 
 enum FlightOptions {
@@ -153,6 +157,8 @@ enum FlightOptions {
     DISABLE_TOFF_ATTITUDE_CHK = (1 << 2),
     CRUISE_TRIM_AIRSPEED = (1 << 3),
     CLIMB_BEFORE_TURN = (1 << 4),
+    ACRO_YAW_DAMPER = (1 << 5),
+    SURPRESS_TKOFF_SCALING = (1<<6),
 };
 
 enum CrowFlapOptions {

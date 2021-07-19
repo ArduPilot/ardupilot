@@ -235,7 +235,7 @@ void Shared_DMA::dma_info(ExpandingString &str)
     // no buffer allocated, start counting
     if (_contention_stats == nullptr) {
         _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
-        return;
+        // return zeros on first fetch
     }
 
     // a header to allow for machine parsers to determine format

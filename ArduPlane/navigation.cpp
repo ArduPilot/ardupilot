@@ -199,12 +199,19 @@ void Plane::calc_airspeed_errors()
                          // fallover to normal airspeed
                          target_airspeed_cm = aparm.airspeed_cruise_cm;
                      }
+        } else if (quadplane.in_vtol_land_approach()) {
+            target_airspeed_cm = quadplane.get_land_airspeed() * 100;
         } else {
             // normal AUTO mode and new_airspeed variable was set by DO_CHANGE_SPEED command while in AUTO mode
             if (new_airspeed_cm > 0) {
                 target_airspeed_cm = new_airspeed_cm;
-           }
+            } else {
+                // fallover to normal airspeed
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
         }
+    } else if (control_mode == &mode_qrtl && quadplane.in_vtol_land_approach()) {
+        target_airspeed_cm = quadplane.get_land_airspeed() * 100;
     } else {
         // Normal airspeed target for all other cases
         target_airspeed_cm = aparm.airspeed_cruise_cm;
@@ -235,8 +242,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Apply airspeed limit
-    if (target_airspeed_cm > (aparm.airspeed_max * 100))
-        target_airspeed_cm = (aparm.airspeed_max * 100);
+    target_airspeed_cm = constrain_int32(target_airspeed_cm, aparm.airspeed_min*100, aparm.airspeed_max*100);
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed

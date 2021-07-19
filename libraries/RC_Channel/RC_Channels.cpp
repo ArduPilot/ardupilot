@@ -95,7 +95,10 @@ int16_t RC_Channels::get_receiver_rssi(void)
 {
     return hal.rcin->get_rssi();
 }
-
+int16_t RC_Channels::get_receiver_link_quality(void)
+{
+    return hal.rcin->get_rx_link_quality();
+}
 void RC_Channels::clear_overrides(void)
 {
     RC_Channels &_rc = rc();
@@ -105,6 +108,18 @@ void RC_Channels::clear_overrides(void)
     // we really should set has_new_overrides to true, and rerun read_input from
     // the vehicle code however doing so currently breaks the failsafe system on
     // copter and plane, RC_Channels needs to control failsafes to resolve this
+}
+
+uint16_t RC_Channels::get_override_mask(void)
+{
+    uint16_t ret = 0;
+    RC_Channels &_rc = rc();
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        if (_rc.channel(i)->has_override()) {
+            ret |= (1U << i);
+        }
+    }
+    return ret;
 }
 
 void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
@@ -171,7 +186,7 @@ void RC_Channels::init_aux_all()
 //
 // Support for mode switches
 //
-RC_Channel *RC_Channels::flight_mode_channel()
+RC_Channel *RC_Channels::flight_mode_channel() const
 {
     const int8_t num = flight_mode_channel_number();
     if (num <= 0) {
@@ -180,7 +195,7 @@ RC_Channel *RC_Channels::flight_mode_channel()
     if (num >= NUM_RC_CHANNELS) {
         return nullptr;
     }
-    return channel(num-1);
+    return rc_channel(num-1);
 }
 
 void RC_Channels::reset_mode_switch()
@@ -203,6 +218,17 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
+}
+
+// check if flight mode channel is assigned RC option
+// return true if assigned
+bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
+{
+    RC_Channel *chan = flight_mode_channel();
+    if (chan == nullptr) {
+        return false;
+    }
+    return (RC_Channel::aux_func_t)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
 }
 
 /*

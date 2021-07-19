@@ -23,7 +23,7 @@ bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command
     default:
         return false;
     }
-    rc().do_aux_function(function, pos);
+    rc().run_aux_function(function, pos, RC_Channel::AuxFuncTriggerSource::MISSION);
     return true;
 }
 

@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
-#define HAL_LOGGING_STACK_SIZE 1024
+#define HAL_LOGGING_STACK_SIZE 1324
 #endif
 
 #ifndef HAL_LOGGING_MAV_BUFSIZE
@@ -60,7 +60,6 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
-    // @Values: 0:None,1:File,2:MAVLink,3:File and MAVLink,4:Block,6:Block and MAVLink
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
@@ -92,12 +91,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, AP_Logger, _params.file_disarm_rot,       0),
 
+#if HAL_LOGGING_MAVLINK_ENABLED
     // @Param: _MAV_BUFSIZE
     // @DisplayName: Maximum AP_Logger MAVLink Backend buffer size
     // @Description: Maximum amount of memory to allocate to AP_Logger-over-mavlink
     // @User: Advanced
     // @Units: kB
     AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_LOGGING_MAV_BUFSIZE),
+#endif
 
     // @Param: _FILE_TIMEOUT
     // @DisplayName: Timeout before giving up on file writes
@@ -136,7 +137,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
     if (hal.util->was_watchdog_armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -620,6 +621,19 @@ bool AP_Logger::should_log(const uint32_t mask) const
     return true;
 }
 
+/*
+  return true if in log download which should prevent logging
+ */
+bool AP_Logger::in_log_download() const
+{
+    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+        // when we have a BLOCK backend then listing completely prevents logging
+        return transfer_activity != TransferActivity::IDLE;
+    }
+    // for other backends listing does not interfere with logging
+    return transfer_activity == TransferActivity::SENDING;
+}
+
 const struct UnitStructure *AP_Logger::unit(uint16_t num) const
 {
     return &_units[num];
@@ -690,6 +704,20 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
     save_format_Replay(pBuffer);
 #endif
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
+}
+
+// only the first backend write need succeed for us to be successful
+bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) 
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    
+    for (uint8_t i=1; i<_next_backend; i++) {
+        backends[i]->WriteBlock(pBuffer, size);
+    }
+
+    return backends[0]->WriteBlock(pBuffer, size);
 }
 
 // write a replay block. This differs from other as it returns false if a backend doesn't
@@ -806,7 +834,9 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 }
 
 void AP_Logger::periodic_tasks() {
+#ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
+#endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
@@ -844,6 +874,7 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
 }
 
+#if HAL_RALLY_ENABLED
 void AP_Logger::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
@@ -855,6 +886,7 @@ void AP_Logger::Write_Rally()
 {
     FOR_EACH_BACKEND(Write_Rally());
 }
+#endif
 
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
@@ -1297,67 +1329,6 @@ void AP_Logger::start_io_thread(void)
 /* End of Write support */
 
 #undef FOR_EACH_BACKEND
-
-// Write information about a series of IMU readings to log:
-bool AP_Logger::Write_ISBH(const uint16_t seqno,
-                                     const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
-                                     const uint8_t sensor_instance,
-                                     const uint16_t mult,
-                                     const uint16_t sample_count,
-                                     const uint64_t sample_us,
-                                     const float sample_rate_hz)
-{
-    if (_next_backend == 0) {
-        return false;
-    }
-    const struct log_ISBH pkt{
-        LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
-        time_us        : AP_HAL::micros64(),
-        seqno          : seqno,
-        sensor_type    : (uint8_t)sensor_type,
-        instance       : sensor_instance,
-        multiplier     : mult,
-        sample_count   : sample_count,
-        sample_us      : sample_us,
-        sample_rate_hz : sample_rate_hz,
-    };
-
-    // only the first backend need succeed for us to be successful
-    for (uint8_t i=1; i<_next_backend; i++) {
-        backends[i]->WriteBlock(&pkt, sizeof(pkt));
-    }
-
-    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
-}
-
-
-// Write a series of IMU readings to log:
-bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
-                                     const uint16_t seqno,
-                                     const int16_t x[32],
-                                     const int16_t y[32],
-                                     const int16_t z[32])
-{
-    if (_next_backend == 0) {
-        return false;
-    }
-    struct log_ISBD pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ISBD_MSG),
-        time_us    : AP_HAL::micros64(),
-        isb_seqno  : isb_seqno,
-        seqno      : seqno
-    };
-    memcpy(pkt.x, x, sizeof(pkt.x));
-    memcpy(pkt.y, y, sizeof(pkt.y));
-    memcpy(pkt.z, z, sizeof(pkt.z));
-
-    // only the first backend need succeed for us to be successful
-    for (uint8_t i=1; i<_next_backend; i++) {
-        backends[i]->WriteBlock(&pkt, sizeof(pkt));
-    }
-
-    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
-}
 
 // Wrote an event packet
 void AP_Logger::Write_Event(LogEvent id)

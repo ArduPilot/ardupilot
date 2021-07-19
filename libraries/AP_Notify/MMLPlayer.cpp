@@ -6,7 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_CANManager/AP_CANManager.h>
 #endif
@@ -64,13 +64,14 @@ void MMLPlayer::start_note(float duration, float frequency, float volume)
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(frequency, volume, _note_duration_us/1000U);
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // support CAN buzzers too
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
-        if (uavcan != nullptr) {
+        if (uavcan != nullptr &&
+            (AP::notify().get_buzzer_types() & AP_Notify::Notify_Buzz_UAVCAN)) {
             uavcan->set_buzzer_tone(frequency, _note_duration_us*1.0e-6);
         }
     }

@@ -56,15 +56,21 @@ public:
     T apply(const T &sample, float cutoff_freq, float dt);
     T apply(const T &sample);
 
+    CLASS_NO_COPY(DigitalLPF);
+
     void compute_alpha(float sample_freq, float cutoff_freq);
     
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
     void reset(T value);
+    void reset() {
+        initialised = false;
+    }
 
 private:
     T _output;
     float alpha = 1.0f;
+    bool initialised;
 };
 
 // LPF base class
@@ -74,6 +80,8 @@ public:
     LowPassFilter();
     LowPassFilter(float cutoff_freq);
     LowPassFilter(float sample_freq, float cutoff_freq);
+
+    CLASS_NO_COPY(LowPassFilter);
 
     // change parameters
     void set_cutoff_frequency(float cutoff_freq);
@@ -85,8 +93,8 @@ public:
     T apply(T sample);
     const T &get() const;
     void reset(T value);
-    void reset(void) { reset(T()); }
-    
+    void reset(void) { _filter.reset(); }
+
 protected:
     float _cutoff_freq;
 

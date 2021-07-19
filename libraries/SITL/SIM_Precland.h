@@ -28,7 +28,7 @@ public:
     };
 
     // update precland state
-    void update(const Location &loc, const Vector3f &position);
+    void update(const Location &loc, const Vector3d &position);
 
     // true if precland sensor is online and healthy
     bool healthy() const { return _healthy; }
@@ -36,7 +36,7 @@ public:
     // timestamp of most recent data read from the sensor
     uint32_t last_update_ms() const { return _last_update_ms; }
 
-    const Vector3f &get_target_position() const { return _target_pos; }
+    const Vector3d &get_target_position() const { return _target_pos; }
     bool is_enabled() const {return static_cast<bool>(_enable);}
     void set_default_location(float lat, float lon, int16_t yaw);
     static const struct AP_Param::GroupInfo var_info[];
@@ -50,6 +50,7 @@ public:
     AP_Int32 _rate;
     AP_Float _alt_limit;
     AP_Float _dist_limit;
+    bool _over_precland_base;
 
     enum PreclandType {
         PRECLAND_TYPE_CYLINDER = 0,
@@ -59,7 +60,7 @@ public:
 private:
     uint32_t _last_update_ms;
     bool _healthy;
-    Vector3f _target_pos;
+    Vector3d _target_pos;
 };
 
 }

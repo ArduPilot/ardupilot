@@ -19,7 +19,11 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
+#if !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#define AP_BATT_MONITOR_CELLS_MAX           14
+#else
 #define AP_BATT_MONITOR_CELLS_MAX           12
+#endif
 
 #ifndef HAL_BATTMON_SMBUS_ENABLE
 #define HAL_BATTMON_SMBUS_ENABLE 1
@@ -39,6 +43,7 @@ class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
+class AP_BattMonitor_MPPT_PacketDigital;
 
 class AP_BattMonitor
 {
@@ -54,6 +59,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
+    friend class AP_BattMonitor_MPPT_PacketDigital;
 
 public:
 
@@ -84,6 +90,7 @@ public:
         GENERATOR_ELEC             = 17,
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
+        MPPT_PacketDigital         = 20,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -210,6 +217,9 @@ public:
     // reset battery remaining percentage
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
+
+    // Returns mavlink charge state
+    MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -14,10 +14,10 @@ bool Sub::circle_init()
     circle_pilot_yaw_override = false;
 
     // initialize speeds and accelerations
-    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
-    pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_max_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_accel_xy(wp_nav.get_default_speed_xy(), wp_nav.get_wp_acceleration());
+    pos_control.set_correction_speed_accel_xy(wp_nav.get_default_speed_xy(), wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise circle controller including setting the circle center based on vehicle speed
     circle_nav.init();
@@ -33,10 +33,8 @@ void Sub::circle_run()
     float target_climb_rate = 0;
 
     // update parameters, to allow changing at runtime
-    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
-    pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_max_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_accel_xy(wp_nav.get_default_speed_xy(), wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -45,7 +43,6 @@ void Sub::circle_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.set_alt_target_to_current_alt();
         return;
     }
 
@@ -83,6 +80,6 @@ void Sub::circle_run()
     }
 
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
     pos_control.update_z_controller();
 }

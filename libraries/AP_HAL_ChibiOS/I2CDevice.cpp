@@ -53,11 +53,19 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #endif
 
 // values calculated with STM32CubeMX tool, PCLK=54MHz
-#define HAL_I2C_F7_100_TIMINGR 0x20404768
+#ifndef HAL_I2C_F7_100_TIMINGR
+#define HAL_I2C_F7_100_TIMINGR 0x30812E3E
+#endif
+#ifndef HAL_I2C_F7_400_TIMINGR
 #define HAL_I2C_F7_400_TIMINGR 0x6000030D
+#endif
 
+#ifndef HAL_I2C_H7_100_TIMINGR
 #define HAL_I2C_H7_100_TIMINGR 0x00707CBB
+#endif
+#ifndef HAL_I2C_H7_400_TIMINGR
 #define HAL_I2C_H7_400_TIMINGR 0x00300F38
+#endif
 
 /*
   enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low

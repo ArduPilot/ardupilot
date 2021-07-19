@@ -191,7 +191,7 @@ private:
     bool _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
-    bool _vtx_gcs_pending;
+    bool _vtx_changes_pending;
     bool _vtx_use_set_freq; // should frequency set by band/channel or frequency
 
     // value for current baud adjust
@@ -265,5 +265,8 @@ private:
 
     // change baud automatically when request-response fails many times
     void update_baud_rate();
+
+    void set_configuration_pending(bool pending) { _vtx_changes_pending = pending; }
+    bool is_configuration_pending(){ return _vtx_changes_pending;}
 };
 #endif

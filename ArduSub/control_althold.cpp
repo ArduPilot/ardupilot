@@ -12,14 +12,13 @@ bool Sub::althold_init()
         return false;
     }
 
-    // initialize vertical speeds and leash lengths
+    // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
-    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_max_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.init_z_controller();
 
     last_pilot_heading = ahrs.yaw_sensor;
 
@@ -33,15 +32,14 @@ void Sub::althold_run()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_max_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        pos_control.relax_z_controller(motors.get_throttle_hover());
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
@@ -111,14 +109,14 @@ void Sub::control_depth() {
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values
-        pos_control.relax_alt_hold_controllers();
+        pos_control.relax_z_controller(channel_throttle->norm_input());
         engageStopZ = true;
         lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z());
     } else { // hold z
 
         if (ap.at_bottom) {
-            pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
-            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+            pos_control.init_z_controller();
+            pos_control.set_pos_target_z_cm(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
         }
 
         // Detects a zero derivative
@@ -127,7 +125,7 @@ void Sub::control_depth() {
         // or smaller input signals
         if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z()))) {
             engageStopZ = false;
-            pos_control.relax_alt_hold_controllers();
+            pos_control.init_z_controller();
         }
 
         pos_control.update_z_controller();

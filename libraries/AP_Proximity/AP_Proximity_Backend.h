@@ -24,7 +24,7 @@
 
 #define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
 #define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
-#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 1000 // we should check the 3D boundary faces after every this many ms
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 750 // we should check the 3D boundary faces after every this many ms
 
 class AP_Proximity_Backend
 {
@@ -60,7 +60,7 @@ public:
     
     // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
     // used in GPS based Simple Avoidance
-    float distance_to_obstacle(const uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const { return boundary.distance_to_obstacle(obstacle_num , seg_start, seg_end, closest_point); } 
+    bool closest_point_from_segment_to_obstacle(const uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const { return boundary.closest_point_from_segment_to_obstacle(obstacle_num , seg_start, seg_end, closest_point); }
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings

@@ -53,10 +53,13 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         return false;
     }
     Priority prio = Priority(i);
+
+#if COMPASS_MAX_INSTANCES > 1
     if (_priority_did_list[prio] != _priority_did_stored_list[prio]) {
         gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires reboot after priority change");
         return false;
     }
+#endif
     
     if (_calibrator[prio] == nullptr) {
         _calibrator[prio] = new CompassCalibrator();

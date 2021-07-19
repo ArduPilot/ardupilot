@@ -132,8 +132,8 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // reset the accumulated body delta angle and time
     // don't do the calculation if not enough time lapsed for a reliable body rate measurement
     if (delTimeOF > 0.01f) {
-        flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
-        flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
+        flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_ftype((rawGyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
+        flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_ftype((rawGyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
         delAngBodyOF.zero();
         delTimeOF = 0.0f;
     }
@@ -161,9 +161,9 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         }
         // write uncorrected flow rate measurements
         // note correction for different axis and sign conventions used by the px4flow sensor
-        ofDataNew.flowRadXY = - rawFlowRates; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
+        ofDataNew.flowRadXY = (-rawFlowRates).toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
-        ofDataNew.body_offset = posOffset;
+        ofDataNew.body_offset = posOffset.toftype();
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -274,7 +274,7 @@ void NavEKF2_core::readMagData()
         compass.last_update_usec(magSelectIndex) - lastMagUpdate_us > 70000) {
 
         // detect changes to magnetometer offset parameters and reset states
-        Vector3f nowMagOffsets = compass.get_offsets(magSelectIndex);
+        Vector3F nowMagOffsets = compass.get_offsets(magSelectIndex).toftype();
         bool changeDetected = lastMagOffsetsValid && (nowMagOffsets != lastMagOffsets);
         if (changeDetected) {
             // zero the learned magnetometer bias states
@@ -302,7 +302,7 @@ void NavEKF2_core::readMagData()
         magDataNew.time_ms -= localFilterTimeStep_ms/2;
 
         // read compass data and scale to improve numerical conditioning
-        magDataNew.mag = compass.get_field(magSelectIndex) * 0.001f;
+        magDataNew.mag = compass.get_field(magSelectIndex).toftype() * 0.001f;
 
         // check for consistent data between magnetometers
         consistentMagData = compass.consistent();
@@ -373,7 +373,7 @@ void NavEKF2_core::readIMUData()
     learnInactiveBiases();
 
     readDeltaVelocity(accel_index_active, imuDataNew.delVel, imuDataNew.delVelDT);
-    accelPosOffset = ins.get_imu_pos_offset(accel_index_active);
+    accelPosOffset = ins.get_imu_pos_offset(accel_index_active).toftype();
     imuDataNew.accel_index = accel_index_active;
 
     // Get delta angle data from primary gyro or primary if not available
@@ -399,7 +399,7 @@ void NavEKF2_core::readIMUData()
     imuQuatDownSampleNew.normalize();
 
     // Rotate the latest delta velocity into body frame at the start of accumulation
-    Matrix3f deltaRotMat;
+    Matrix3F deltaRotMat;
     imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
 
     // Apply the delta velocity to the delta velocity accumulator
@@ -427,7 +427,7 @@ void NavEKF2_core::readIMUData()
         storedIMU.push_youngest_element(imuDataDownSampledNew);
 
         // calculate the achieved average time step rate for the EKF
-        float dtNow = constrain_float(0.5f*(imuDataDownSampledNew.delAngDT+imuDataDownSampledNew.delVelDT),0.0f,10.0f*EKF_TARGET_DT);
+        ftype dtNow = constrain_ftype(0.5f*(imuDataDownSampledNew.delAngDT+imuDataDownSampledNew.delVelDT),0.0f,10.0f*EKF_TARGET_DT);
         dtEkfAvg = 0.98f * dtEkfAvg + 0.02f * dtNow;
 
         // zero the accumulated IMU data and quaternion
@@ -451,7 +451,7 @@ void NavEKF2_core::readIMUData()
 
         // protect against delta time going to zero
         // TODO - check if calculations can tolerate 0
-        float minDT = 0.1f*dtEkfAvg;
+        ftype minDT = 0.1f*dtEkfAvg;
         imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
@@ -471,11 +471,15 @@ void NavEKF2_core::readIMUData()
 
 // read the delta velocity and corresponding time interval from the IMU
 // return false if data is not available
-bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
+bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3F &dVel, ftype &dVel_dt) {
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
-        ins.get_delta_velocity(ins_index,dVel, dVel_dt);
+        Vector3f dVelF;
+        float dVel_dtF;
+        ins.get_delta_velocity(ins_index, dVelF, dVel_dtF);
+        dVel = dVelF.toftype();
+        dVel_dt = dVel_dtF;
         dVel_dt = MAX(dVel_dt,1.0e-4f);
         dVel_dt = MIN(dVel_dt,1.0e-1f);
         return true;
@@ -526,11 +530,11 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.sensor_idx = gps.primary_sensor();
 
             // read the NED velocity from the GPS
-            gpsDataNew.vel = gps.velocity();
+            gpsDataNew.vel = gps.velocity().toftype();
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
-            float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
+            ftype alpha = constrain_ftype(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
             if (!gps.speed_accuracy(gpsSpdAccRaw)) {
@@ -584,7 +588,13 @@ void NavEKF2_core::readGpsData()
 
             // see if we can get origin from frontend
             if (!validOrigin && frontend->common_origin_valid) {
-                setOrigin(frontend->common_EKF_origin);
+
+                if (!setOrigin(frontend->common_EKF_origin)) {
+                    // set an error as an attempt was made to set the origin more than once
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    return;
+                }
+
             }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
@@ -592,7 +602,17 @@ void NavEKF2_core::readGpsData()
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
-                setOrigin(gpsloc);
+                Location gpsloc_fieldelevation = gpsloc;
+                // if flying, correct for height change from takeoff so that the origin is at field elevation
+                if (inFlight) {
+                    gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+                }
+
+                if (!setOrigin(gpsloc_fieldelevation)) {
+                    // set an error as an attempt was made to set the origin more than once
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    return;
+                }
 
                 // set the NE earth magnetic field states using the published declination
                 // and set the corresponding variances and covariances
@@ -609,7 +629,7 @@ void NavEKF2_core::readGpsData()
             if (gpsGoodToAlign && !have_table_earth_field) {
                 const auto *compass = dal.get_compass();
                 if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
-                    table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
+                    table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc).toftype();
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
                     have_table_earth_field = true;
@@ -622,7 +642,7 @@ void NavEKF2_core::readGpsData()
             
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
-                gpsDataNew.pos = EKF_origin.get_distance_NE(gpsloc);
+                gpsDataNew.pos = EKF_origin.get_distance_NE_ftype(gpsloc);
                 if ((frontend->_originHgtMode & (1<<2)) == 0) {
                     gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
                 } else {
@@ -643,11 +663,15 @@ void NavEKF2_core::readGpsData()
 
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
-bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt) {
+bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3F &dAng, ftype &dAng_dt) {
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        ins.get_delta_angle(ins_index, dAng, dAng_dt);
+        Vector3f dAngF;
+        float dAng_dtF;
+        ins.get_delta_angle(ins_index, dAngF, dAng_dtF);
+        dAng = dAngF.toftype();
+        dAng_dt = dAng_dtF;
         dAng_dt = MAX(dAng_dt,1.0e-4f);
         dAng_dt = MIN(dAng_dt,1.0e-1f);
         return true;
@@ -672,7 +696,7 @@ void NavEKF2_core::readBaroData()
 
         // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
         // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
-        if (getTakeoffExpected()) {
+        if (dal.get_takeoff_expected() && !assume_zero_sideslip()) {
             baroDataNew.hgt = MAX(baroDataNew.hgt, meaHgtAtTakeOff);
         }
 
@@ -699,7 +723,7 @@ void NavEKF2_core::readBaroData()
 void NavEKF2_core::calcFiltBaroOffset()
 {
     // Apply a first order LPF with spike protection
-    baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
+    baroHgtOffset += 0.1f * constrain_ftype(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
 }
 
 // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
@@ -708,14 +732,14 @@ void NavEKF2_core::correctEkfOriginHeight()
     // Estimate the WGS-84 height of the EKF's origin using a Bayes filter
 
     // calculate the variance of our a-priori estimate of the ekf origin height
-    float deltaTime = constrain_float(0.001f * (imuDataDelayed.time_ms - lastOriginHgtTime_ms), 0.0f, 1.0f);
+    ftype deltaTime = constrain_ftype(0.001f * (imuDataDelayed.time_ms - lastOriginHgtTime_ms), 0.0f, 1.0f);
     if (activeHgtSource == HGT_SOURCE_BARO) {
         // Use the baro drift rate
-        const float baroDriftRate = 0.05f;
+        const ftype baroDriftRate = 0.05f;
         ekfOriginHgtVar += sq(baroDriftRate * deltaTime);
     } else if (activeHgtSource == HGT_SOURCE_RNG) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
-        const float maxTerrGrad = 0.25f;
+        const ftype maxTerrGrad = 0.25f;
         ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
     } else {
         // by definition our height source is absolute so cannot run this filter
@@ -725,16 +749,16 @@ void NavEKF2_core::correctEkfOriginHeight()
 
     // calculate the observation variance assuming EKF error relative to datum is independent of GPS observation error
     // when not using GPS as height source
-    float originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
+    ftype originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
 
     // calculate the correction gain
-    float gain = ekfOriginHgtVar / (ekfOriginHgtVar + originHgtObsVar);
+    ftype gain = ekfOriginHgtVar / (ekfOriginHgtVar + originHgtObsVar);
 
     // calculate the innovation
-    float innovation = - stateStruct.position.z - gpsDataDelayed.hgt;
+    ftype innovation = - stateStruct.position.z - gpsDataDelayed.hgt;
 
     // check the innovation variance ratio
-    float ratio = sq(innovation) / (ekfOriginHgtVar + originHgtObsVar);
+    ftype ratio = sq(innovation) / (ekfOriginHgtVar + originHgtObsVar);
 
     // correct the EKF origin and variance estimate if the innovation is less than 5-sigma
     if (ratio < 25.0f && gpsAccuracyGood) {
@@ -821,7 +845,7 @@ void NavEKF2_core::readRngBcnData()
             rngBcnDataNew.rng = beacon->beacon_distance(index);
 
             // set the beacon position
-            rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
+            rngBcnDataNew.beacon_posNED = beacon->beacon_position(index).toftype();
 
             // identify the beacon identifier
             rngBcnDataNew.beacon_ID = index;
@@ -835,15 +859,20 @@ void NavEKF2_core::readRngBcnData()
     }
 
     // Check if the beacon system has returned a 3D fix
-    if (beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+    Vector3f beaconVehiclePosNEDF;
+    float beaconVehiclePosErrF;
+    if (beacon->get_vehicle_position_ned(beaconVehiclePosNEDF, beaconVehiclePosErrF)) {
         rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
     }
+    beaconVehiclePosNED = beaconVehiclePosNEDF.toftype();
+    beaconVehiclePosErr = beaconVehiclePosErrF;
+
 
     // Check if the range beacon data can be used to align the vehicle position
     if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f && rngBcnAlignmentCompleted) {
         // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
-        float posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
-        float posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
+        ftype posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
+        ftype posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
         if (posDiffSq < 9.0f*posDiffVar) {
             rngBcnGoodToAlign = true;
             // Set the EKF origin and magnetic field declination if not previously set
@@ -927,8 +956,8 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         extNavDataNew.posReset = false;
     }
 
-    extNavDataNew.pos = pos;
-    extNavDataNew.quat = quat;
+    extNavDataNew.pos = pos.toftype();
+    extNavDataNew.quat = quat.toftype();
     extNavDataNew.posErr = posErr;
     extNavDataNew.angErr = angErr;
     timeStamp_ms = timeStamp_ms - delay_ms;
@@ -944,7 +973,7 @@ void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 /*
   return declination in radians
 */
-float NavEKF2_core::MagDeclination(void) const
+ftype NavEKF2_core::MagDeclination(void) const
 {
     // if we are using the WMM tables then use the table declination
     // to ensure consistency with the table mag field. Otherwise use
@@ -986,15 +1015,15 @@ void NavEKF2_core::learnInactiveBiases(void)
             // get filtered gyro and use the difference between the
             // corrected gyro on the active IMU and the inactive IMU
             // to move the inactive bias towards the right value
-            Vector3f filtered_gyro_active = ins.get_gyro(gyro_index_active) - (stateStruct.gyro_bias/dtEkfAvg);
-            Vector3f filtered_gyro_inactive = ins.get_gyro(i) - (inactiveBias[i].gyro_bias/dtEkfAvg);
-            Vector3f error = filtered_gyro_active - filtered_gyro_inactive;
+            Vector3F filtered_gyro_active = ins.get_gyro(gyro_index_active).toftype() - (stateStruct.gyro_bias/dtEkfAvg);
+            Vector3F filtered_gyro_inactive = ins.get_gyro(i).toftype() - (inactiveBias[i].gyro_bias/dtEkfAvg);
+            Vector3F error = filtered_gyro_active - filtered_gyro_inactive;
 
             // prevent a single large error from contaminating bias estimate
-            const float bias_limit = radians(5);
-            error.x = constrain_float(error.x, -bias_limit, bias_limit);
-            error.y = constrain_float(error.y, -bias_limit, bias_limit);
-            error.z = constrain_float(error.z, -bias_limit, bias_limit);
+            const ftype bias_limit = radians(5);
+            error.x = constrain_ftype(error.x, -bias_limit, bias_limit);
+            error.y = constrain_ftype(error.y, -bias_limit, bias_limit);
+            error.z = constrain_ftype(error.z, -bias_limit, bias_limit);
 
             // slowly bring the inactive gyro in line with the active gyro. This corrects a 5 deg/sec
             // gyro bias error in around 1 minute
@@ -1015,13 +1044,13 @@ void NavEKF2_core::learnInactiveBiases(void)
             // get filtered accel and use the difference between the
             // corrected accel on the active IMU and the inactive IMU
             // to move the inactive bias towards the right value
-            float filtered_accel_active = ins.get_accel(accel_index_active).z - (stateStruct.accel_zbias/dtEkfAvg);
-            float filtered_accel_inactive = ins.get_accel(i).z - (inactiveBias[i].accel_zbias/dtEkfAvg);
-            float error = filtered_accel_active - filtered_accel_inactive;
+            ftype filtered_accel_active = ins.get_accel(accel_index_active).z - (stateStruct.accel_zbias/dtEkfAvg);
+            ftype filtered_accel_inactive = ins.get_accel(i).z - (inactiveBias[i].accel_zbias/dtEkfAvg);
+            ftype error = filtered_accel_active - filtered_accel_inactive;
 
             // prevent a single large error from contaminating bias estimate
-            const float bias_limit = 1; // m/s/s
-            error = constrain_float(error, -bias_limit, bias_limit);
+            const ftype bias_limit = 1; // m/s/s
+            error = constrain_ftype(error, -bias_limit, bias_limit);
 
             // slowly bring the inactive accel in line with the active accel
             // this learns 0.5m/s/s bias in about 1 minute
@@ -1050,7 +1079,7 @@ void NavEKF2_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
 
     extNavVelMeasTime_ms = timeStamp_ms;
     useExtNavVel = true;
-    extNavVelNew.vel = vel;
+    extNavVelNew.vel = vel.toftype();
     extNavVelNew.err = err;
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate

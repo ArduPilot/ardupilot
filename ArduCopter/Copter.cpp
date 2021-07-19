@@ -175,7 +175,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,          10,    100),
 #endif
-#if AC_TERRAIN == ENABLED
+#if AP_TERRAIN_AVAILABLE
     SCHED_TASK(terrain_update,        10,    100),
 #endif
 #if GRIPPER_ENABLED == ENABLED
@@ -419,11 +419,11 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
+    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        logger.Write_Vibration();
+        AP::ins().Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
@@ -447,25 +447,13 @@ void Copter::ten_hz_logging_loop()
 // twentyfive_hz_logging - should be run at 25hz
 void Copter::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL for a copter needs very fast update of the servo values
-    gcs().send_message(MSG_SERVO_OUTPUT_RAW);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
-#endif
-
-#if PRECISION_LANDING == ENABLED
-    // log output
-    Log_Write_Precland();
-#endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -607,13 +595,6 @@ void Copter::update_super_simple_bearing(bool force_update)
 
 void Copter::read_AHRS(void)
 {
-    // Perform IMU calculations and get attitude info
-    //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs().update();
-#endif
-
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
 }

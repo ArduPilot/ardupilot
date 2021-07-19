@@ -40,17 +40,17 @@ void Sub::init_ardupilot()
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        AP_Param::set_default_by_name("BARO_EXT_BUS", 0);
         break;
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
-        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        AP_Param::set_by_name("BARO_EXT_BUS", 1);
         break;
     default:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
         break;
     }
 #else
-    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+    AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
 #endif
     celsius.init(barometer.external_bus());
 
@@ -84,21 +84,8 @@ void Sub::init_ardupilot()
     AP::compass().init();
 
 #if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
-
-    // init Location class
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location::set_terrain(&terrain);
-    wp_nav.set_terrain(&terrain);
-#endif
-
-    pos_control.set_dt(MAIN_LOOP_SECONDS);
-
-    // init the optical flow sensor
-#if OPTFLOW == ENABLED
-    init_optflow();
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
 #endif
 
 #if HAL_MOUNT_ENABLED

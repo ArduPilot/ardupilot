@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/AP_HAL.h>
 
+#if HAL_INS_ACCELCAL_ENABLED
 #define AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS 1000
 
 #define _printf(fmt, args ...) do {                                     \
@@ -388,3 +389,4 @@ bool AP_AccelCal::running(void) const
 {
     return _status == ACCEL_CAL_WAITING_FOR_ORIENTATION || _status == ACCEL_CAL_COLLECTING_SAMPLE;
 }
+#endif //HAL_INS_ACCELCAL_ENABLED

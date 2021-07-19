@@ -11,9 +11,6 @@ build = {
 
 # MCU parameters
 mcu = {
-    # location of MCU serial number
-    'UDID_START' : 0x1FF1E800,
-
     # DMA peripheral capabilities:
     # - can't use ITCM or DTCM for any DMA
     # - SPI1 to SPI5 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
@@ -29,8 +26,8 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
-        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
         (0x30040000,  32, 0), # SRAM3.
@@ -42,6 +39,10 @@ mcu = {
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
+
+    'DEFINES' : {
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1'
+    }
 }
 
 pincount = {

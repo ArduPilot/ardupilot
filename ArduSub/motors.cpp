@@ -167,8 +167,8 @@ void Sub::translate_circle_nav_rp(float &lateral_out, float &forward_out)
 void Sub::translate_pos_control_rp(float &lateral_out, float &forward_out)
 {
     // get roll and pitch targets in centidegrees
-    int32_t lateral = pos_control.get_roll();
-    int32_t forward = -pos_control.get_pitch(); // output is reversed
+    int32_t lateral = pos_control.get_roll_cd();
+    int32_t forward = -pos_control.get_pitch_cd(); // output is reversed
 
     // constrain target forward/lateral values
     lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);

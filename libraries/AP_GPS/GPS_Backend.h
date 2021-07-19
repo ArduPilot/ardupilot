@@ -84,6 +84,11 @@ public:
         return _last_itow;
     }
 
+    enum DriverOptions : int16_t {
+        UBX_MBUseUart2    = (1 << 0U),
+        SBF_UseBaseForYaw = (1 << 1U),
+    };
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
@@ -115,11 +120,6 @@ protected:
     void set_uart_timestamp(uint16_t nbytes);
 
     void check_new_itow(uint32_t itow, uint32_t msg_length);
-
-    enum DriverOptions : int16_t {
-        UBX_MBUseUart2    = (1 << 0U),
-        SBF_UseBaseForYaw = (1 << 1U),
-    };
 
     /*
       access to driver option bits

@@ -56,6 +56,10 @@
 #define HAL_WITH_RAMTRON 0
 #endif
 
+#ifndef HAL_WITH_EKF_DOUBLE
+#define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
@@ -106,6 +110,14 @@
 // we support RC serial for BLHeli pass-thru
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL !defined(HAL_BUILD_AP_PERIPH)
+#endif
+
+#ifndef HAL_DSHOT_ALARM
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && HAL_USE_PWM == TRUE
+#define HAL_DSHOT_ALARM 1
+#else
+#define HAL_DSHOT_ALARM 0
+#endif
 #endif
 
 // by default assume first I2C bus is internal

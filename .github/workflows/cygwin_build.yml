@@ -1,0 +1,34 @@
+name: Cygwin Build
+
+on: [push, pull_request, workflow_dispatch]
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: 'windows-latest'
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Install cygwin
+        env:
+          HOME: ${{ runner.workspace }}/ardupilot
+        run: |
+          choco install cygwin --params "/InstallDir:C:\Cygwin /NoStartMenu /NoAdmin"
+          choco install cygwin32-gcc-g++ python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git libexpat procps gettext --source cygwin
+          C:\Cygwin\bin\bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
+      - name: Build SITL
+        env:
+          HOME: ${{ runner.workspace }}/ardupilot
+        run: |
+          C:\Cygwin\bin\bash --login -c "Tools/scripts/cygwin_build.sh"
+
+      - name: Archive build
+        uses: actions/upload-artifact@v2
+        with:
+           name: binaries
+           path: artifacts
+           retention-days: 7

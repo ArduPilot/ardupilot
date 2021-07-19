@@ -76,7 +76,7 @@ elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; 
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -121,7 +121,7 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
@@ -184,7 +184,7 @@ echo "Done!"
 if [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -193,7 +193,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'groovy' ]; then
+  if [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
@@ -256,6 +256,8 @@ heading "Adding ArduPilot Tools to environment"
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+
+if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
@@ -265,6 +267,7 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
 }
+fi
 
 exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {

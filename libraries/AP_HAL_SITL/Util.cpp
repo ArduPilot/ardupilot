@@ -162,3 +162,20 @@ void HALSITL::Util::commandline_arguments(uint8_t &argc, char * const *&argv)
     argv = saved_argv;
 }
 
+/**
+ * This method will read random values with set size.
+ */
+bool HALSITL::Util::get_random_vals(uint8_t* data, size_t size)
+{
+    int dev_random = open("/dev/urandom", O_RDONLY);
+    if (dev_random < 0) {
+        return false;
+    }
+    ssize_t result = read(dev_random, data, size);
+    if (result < 0) {
+        close(dev_random);
+        return false;
+    }
+    close(dev_random);
+    return true;
+}

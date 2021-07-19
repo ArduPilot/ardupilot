@@ -19,6 +19,7 @@
 #include "AP_Filesystem_Param.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <ctype.h>
 
 #define PACKED_NAME "param.pck"
 
@@ -31,9 +32,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags)
         errno = ENOENT;
         return -1;
     }
-    if ((flags & O_ACCMODE) != O_RDONLY) {
-        return -1;
-    }
+    bool read_only = ((flags & O_ACCMODE) == O_RDONLY);
     uint8_t idx;
     for (idx=0; idx<max_open_file; idx++) {
         if (!file[idx].open) {
@@ -45,15 +44,27 @@ int AP_Filesystem_Param::open(const char *fname, int flags)
         return -1;
     }
     struct rfile &r = file[idx];
-    r.cursors = new cursor[num_cursors];
-    if (r.cursors == nullptr) {
-        errno = ENOMEM;
-        return -1;
+    if (read_only) {
+        r.cursors = new cursor[num_cursors];
+        if (r.cursors == nullptr) {
+            errno = ENOMEM;
+            return -1;
+        }
     }
     r.file_ofs = 0;
     r.open = true;
     r.start = 0;
     r.count = 0;
+    r.writebuf = nullptr;
+    if (!read_only) {
+        // setup for upload
+        r.writebuf = new ExpandingString();
+        if (r.writebuf == nullptr) {
+            close(idx);
+            errno = ENOMEM;
+            return -1;
+        }
+    }
 
     /*
       allow for URI style arguments param.pck?start=N&count=C
@@ -99,9 +110,17 @@ int AP_Filesystem_Param::close(int fd)
         return -1;
     }
     struct rfile &r = file[fd];
+    int ret = 0;
+    if (r.writebuf != nullptr && !finish_upload(r)) {
+        errno = EINVAL;
+        ret = -1;
+    }
     r.open = false;
     delete [] r.cursors;
-    return 0;
+    r.cursors = nullptr;
+    delete r.writebuf;
+    r.writebuf = nullptr;
+    return ret;
 }
 
 /*
@@ -239,6 +258,11 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     }
 
     struct rfile &r = file[fd];
+    if (r.writebuf != nullptr) {
+        // no read on upload
+        errno = EINVAL;
+        return -1;
+    }
     size_t header_total = 0;
 
     /*
@@ -254,6 +278,14 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         return -1;
     }
 
+    if (r.file_size != 0) {
+        // ensure we don't try to read past EOF
+        if (r.file_ofs > r.file_size) {
+            count = 0;
+        } else {
+            count = MIN(count, r.file_size - r.file_ofs);
+        }
+    }
 
     if (r.file_ofs < sizeof(struct header)) {
         struct header hdr;
@@ -321,7 +353,13 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
         uint8_t tbuf[max_pack_len];
         uint8_t len = pack_param(r, c, tbuf);
         if (len == 0) {
-            // no more params
+            // no more params, use this to trigger EOF in later reads
+            const uint32_t size = r.file_ofs + total;
+            if (r.file_size == 0) {
+                r.file_size = size;
+            } else {
+                r.file_size = MIN(size, r.file_size);
+            }
             break;
         }
         uint8_t n = MIN(len, count);
@@ -383,4 +421,169 @@ bool AP_Filesystem_Param::check_file_name(const char *name)
         return true;
     }
     return false;
+}
+
+/*
+  support param upload
+ */
+int32_t AP_Filesystem_Param::write(int fd, const void *buf, uint32_t count)
+{
+    if (fd < 0 || fd >= max_open_file || !file[fd].open) {
+        errno = EBADF;
+        return -1;
+    }
+    struct rfile &r = file[fd];
+    if (r.writebuf == nullptr) {
+        errno = EBADF;
+        return -1;
+    }
+    struct header hdr;
+    if (r.file_ofs == 0 && count >= sizeof(hdr)) {
+        // pre-expand the buffer to the full size when we get the header
+        memcpy(&hdr, buf, sizeof(hdr));
+        if (hdr.magic == pmagic) {
+            const uint32_t flen = hdr.total_params;
+            if (flen > r.writebuf->get_length()) {
+                if (!r.writebuf->append(nullptr, flen - r.writebuf->get_length())) {
+                    // not enough memory
+                    return -1;
+                }
+            }
+        }
+    }
+    if (r.file_ofs + count > r.writebuf->get_length()) {
+        if (!r.writebuf->append(nullptr, r.file_ofs + count - r.writebuf->get_length())) {
+            return -1;
+        }
+    }
+    uint8_t *b = (uint8_t *)r.writebuf->get_writeable_string();
+    memcpy(&b[r.file_ofs], buf, count);
+    r.file_ofs += count;
+    return count;
+}
+
+/*
+  parse incoming parameters
+ */
+bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
+{
+    need_retry = false;
+
+    const uint8_t *b = (const uint8_t *)r.writebuf->get_string();
+    uint32_t length = r.writebuf->get_length();
+    struct header hdr;
+    if (length < sizeof(hdr)) {
+        return false;
+    }
+    memcpy(&hdr, b, sizeof(hdr));
+    if (hdr.magic != pmagic) {
+        return false;
+    }
+    if (length != hdr.total_params) {
+        return false;
+    }
+    b += sizeof(hdr);
+
+    char last_name[17] {};
+
+    for (uint16_t i=0; i<hdr.num_params; i++) {
+        enum ap_var_type ptype = (enum ap_var_type)(b[0]&0x0F);
+        uint8_t flags = (enum ap_var_type)(b[0]>>4);
+        if (flags != 0) {
+            return false;
+        }
+        uint8_t common_len = b[1]&0xF;
+        uint8_t name_len = (b[1]>>4)+1;
+        if (common_len + name_len > 16) {
+            return false;
+        }
+        char name[17];
+        memcpy(name, last_name, common_len);
+        memcpy(&name[common_len], &b[2], name_len);
+        name[common_len+name_len] = 0;
+
+        memcpy(last_name, name, sizeof(name));
+        enum ap_var_type ptype2 = AP_PARAM_NONE;
+        uint16_t flags2;
+
+        b += 2 + name_len;
+
+        AP_Param *p = AP_Param::find(name, &ptype2, &flags2);
+        if (p == nullptr) {
+            if (ptype == AP_PARAM_INT8) {
+                b++;
+            } else if (ptype == AP_PARAM_INT16) {
+                b += 2;
+            } else {
+                b += 4;
+            }
+            continue;
+        }
+
+        /*
+          if we are enabling a subsystem we need a small delay between
+          parameters to allow main thread to perform any allocation of
+          backends
+        */
+        bool need_delay = ((flags2 & AP_PARAM_FLAG_ENABLE) != 0 &&
+                           ptype2 == AP_PARAM_INT8 &&
+                           ((AP_Int8 *)p)->get() == 0);
+
+        if (ptype == ptype2 && ptype == AP_PARAM_INT32) {
+            // special handling of int32_t to preserve all bits
+            int32_t v;
+            memcpy(&v, b, sizeof(v));
+            ((AP_Int32 *)p)->set(v);
+            b += 4;
+        } else if (ptype == AP_PARAM_INT8) {
+            if (need_delay && b[0] == 0) {
+                need_delay = false;
+            }
+            p->set_float((int8_t)b[0], ptype2);
+            b += 1;
+        } else if (ptype == AP_PARAM_INT16) {
+            int16_t v;
+            memcpy(&v, b, sizeof(v));
+            p->set_float(float(v), ptype2);
+            b += 2;
+        } else if (ptype == AP_PARAM_INT32) {
+            int32_t v;
+            memcpy(&v, b, sizeof(v));
+            p->set_float(float(v), ptype2);
+            b += 4;
+        } else if (ptype == AP_PARAM_FLOAT) {
+            float v;
+            memcpy(&v, b, sizeof(v));
+            p->set_float(v, ptype2);
+            b += 4;
+        }
+
+        p->save_sync(false, false);
+
+        if (need_delay) {
+            // let main thread have some time to init backends
+            need_retry = true;
+            hal.scheduler->delay(100);
+        }
+    }
+    return true;
+}
+
+
+/*
+  parse incoming parameters
+ */
+bool AP_Filesystem_Param::finish_upload(const rfile &r)
+{
+    uint8_t loops = 0;
+    while (loops++ < 4) {
+        bool need_retry;
+        if (!param_upload_parse(r, need_retry)) {
+            return false;
+        }
+        if (!need_retry) {
+            break;
+        }
+    }
+    return true;
 }

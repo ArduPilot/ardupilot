@@ -190,8 +190,8 @@ This list is automatically generated from the latest ardupilot source code, and 
         return self.tablify(rows, headings=render_info["headings"])
 
     def emit(self, g):
-        tag = '%s Parameters' % self.escape(g.name)
-        reference = "parameters_" + g.name
+        tag = '%s Parameters' % self.escape(g.reference)
+        reference = "parameters_" + g.reference
 
         field_table_info = {
             "Values": {

@@ -45,7 +45,10 @@ public:
         VTX_PITMODE_UNTIL_ARM = (1 << 1),
         VTX_PITMODE_ON_DISARM = (1 << 2),
         VTX_UNLOCKED          = (1 << 3),
+        VTX_PULLDOWN          = (1 << 4),
     };
+
+    static const char *band_names[];
 
     enum VideoBand {
         BAND_A,
@@ -99,7 +102,7 @@ public:
     uint8_t get_configured_options() const { return _options; }
     uint8_t get_options() const { return _current_options; }
     bool has_option(VideoOptions option) const { return _options.get() & uint8_t(option); }
-    bool update_options() const { return _defaults_set && _options != _current_options; }
+    bool update_options() const;
     // get / set whether the vtx is enabled
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }
@@ -111,6 +114,9 @@ public:
     bool set_defaults();
     // display the current VTX settings in the GCS
     void announce_vtx_settings() const;
+
+    void set_configuration_finished(bool configuration_finished) { _configuration_finished = configuration_finished; }
+    bool is_configuration_finished() { return _configuration_finished; }
 
     static AP_VideoTX *singleton;
 
@@ -142,6 +148,8 @@ private:
     bool _initialized;
     // when defaults have been configured
     bool _defaults_set;
+    // true when configuration have been applied succesfully to the VTX
+    bool _configuration_finished;
 };
 
 namespace AP {

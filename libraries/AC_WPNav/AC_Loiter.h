@@ -17,7 +17,7 @@ public:
     AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// init_target to a position in cm from ekf origin
-    void init_target(const Vector3f& position);
+    void init_target(const Vector2f& position);
 
     /// initialize's position and feed-forward velocity from current pos and velocity
     void init_target();
@@ -27,22 +27,22 @@ public:
 
     /// set pilot desired acceleration in centi-degrees
     //   dt should be the time (in seconds) since the last call to this function
-    void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd, float dt);
+    void set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd);
 
     /// gets pilot desired acceleration, body frame, [forward,right]
-    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_desired_accel.x, _desired_accel.y); }
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f{_desired_accel.x, _desired_accel.y}; }
 
     /// clear pilot desired acceleration
     void clear_pilot_desired_acceleration() { _desired_accel.zero(); }
 
     /// get vector to stopping point based on a horizontal position and velocity
-    void get_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_stopping_point_xy(Vector2f& stopping_point) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_pos_error_xy(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
 
     /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target_cd(); }
 
     /// get maximum lean angle when using loiter
     float get_angle_max_cd() const;
@@ -51,8 +51,9 @@ public:
     void update(bool avoidance_on = true);
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll(); }
-    float get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -84,6 +85,6 @@ protected:
     Vector2f    _predicted_accel;
     Vector2f    _predicted_euler_angle;
     Vector2f    _predicted_euler_rate;
-    float       _brake_timer;
-    float       _brake_accel;
+    uint32_t    _brake_timer;           // system time that brake was initiated
+    float       _brake_accel;           // acceleration due to braking from previous iteration (used for jerk limiting)
 };

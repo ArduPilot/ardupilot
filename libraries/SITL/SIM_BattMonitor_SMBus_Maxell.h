@@ -19,7 +19,8 @@ public:
 
     Maxell();
 
-    uint8_t cellcount() const override { return 3; }
+    uint8_t cellcount() const override { return 14; }
+    uint8_t connected_cells() const override { return 14; }
 
 };
 

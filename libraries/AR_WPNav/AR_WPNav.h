@@ -70,7 +70,7 @@ public:
     float oa_wp_bearing_cd() const { return _oa_wp_bearing_cd; }
 
     // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
-    void set_turn_params(float turn_max_g, float turn_radius, bool pivot_possible);
+    void set_turn_params(float turn_radius, bool pivot_possible);
 
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
@@ -123,19 +123,20 @@ private:
     AP_Float _overshoot;            // maximum horizontal overshoot in meters
     AP_Int16 _pivot_angle;          // angle error that leads to pivot turn
     AP_Int16 _pivot_rate;           // desired turn rate during pivot turns in deg/sec
+    AP_Float _pivot_delay;          // waiting time after pivot turn
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
     AP_Navigation& _nav_controller; // navigation controller (aka L1 controller)
 
     // variables held in vehicle code (for now)
-    float _turn_max_mss;            // lateral acceleration maximum in m/s/s
     float _turn_radius;             // vehicle turn radius in meters
     bool _pivot_possible;           // true if vehicle can pivot
     bool _pivot_active;             // true if vehicle is currently pivoting
 
     // variables for navigation
     uint32_t _last_update_ms;       // system time of last call to update
+    uint32_t _pivot_start_ms;       // system time when pivot turn started
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set

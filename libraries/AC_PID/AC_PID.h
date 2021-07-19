@@ -24,6 +24,8 @@ public:
     AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
            float dt, float initial_srmax=0, float initial_srtau=1.0);
 
+    CLASS_NO_COPY(AC_PID);
+
     // set_dt - set time step in seconds
     void set_dt(float dt);
 
@@ -77,10 +79,13 @@ public:
     AP_Float &kP() { return _kp; }
     AP_Float &kI() { return _ki; }
     AP_Float &kD() { return _kd; }
+    AP_Float &kIMAX() { return _kimax; }
     AP_Float &ff() { return _kff;}
     AP_Float &filt_T_hz() { return _filt_T_hz; }
     AP_Float &filt_E_hz() { return _filt_E_hz; }
     AP_Float &filt_D_hz() { return _filt_D_hz; }
+    AP_Float &slew_limit() { return _slew_rate_max; }
+
     float imax() const { return _kimax.get(); }
     float get_filt_alpha(float filt_hz) const;
     float get_filt_T_alpha() const;
@@ -105,6 +110,12 @@ public:
     void set_integrator(float target, float measurement, float i);
     void set_integrator(float error, float i);
     void set_integrator(float i);
+
+    // set slew limiter scale factor
+    void set_slew_limit_scale(int8_t scale) { _slew_limit_scale = scale; }
+
+    // return current slew rate of slew limiter. Will return 0 if SMAX is zero
+    float get_slew_rate(void) const { return _slew_limiter.get_slew_rate(); }
 
     const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
@@ -143,6 +154,7 @@ protected:
     float _target;            // target value to enable filtering
     float _error;             // error value to enable filtering
     float _derivative;        // derivative value to enable filtering
+    int8_t _slew_limit_scale;
     uint16_t _reset_counter;  // loop counter for reset decay
     uint64_t _reset_last_update; //time in microseconds of last update to reset_I
 

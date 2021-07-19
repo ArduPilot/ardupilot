@@ -34,6 +34,10 @@
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
+#if NUM_SERVO_CHANNELS == 0
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
@@ -202,6 +206,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_RATE",  23, SRV_Channels, dshot_rate, 0),
 
+    // @Param: _DSHOT_ESC
+    // @DisplayName: Servo DShot ESC type
+    // @Description: This sets the DShot ESC type for all outputs. The ESC type affects the range of DShot commands available. None means that no dshot commands will be executed.
+    // @Values: 0:None,1:BLHeli32/BLHeli_S/Kiss
+    // @User: Advanced
+    AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
+
     AP_GROUPEND
 };
 
@@ -229,12 +240,15 @@ SRV_Channels::SRV_Channels(void)
     blheli_ptr = &blheli;
 #endif
 #endif // HAL_BUILD_AP_PERIPH
-
 }
 
 // SRV_Channels initialization
 void SRV_Channels::init(void)
 {
+    // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr->init();
+#endif
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 }
 
@@ -336,7 +350,7 @@ void SRV_Channels::push()
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {

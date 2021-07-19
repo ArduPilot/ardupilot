@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 # Testing an ArduPilot VM:
+# rm -rf /vagrant/build
 # dpkg -l | grep modemmanager
 # sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
@@ -101,7 +102,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
   config.vm.define "bionic32", autostart: false do |bionic32|
     bionic32.vm.box = "ubuntu/bionic32"
@@ -111,7 +112,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   config.vm.define "bionic64", primary: true do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -120,7 +121,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS
+  # 18.04 LTS EOL April 2023
   config.vm.define "bionic64-desktop", primary: true do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
@@ -167,7 +168,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #    eoan.vm.boot_timeout = 1200
 #  end
 
-  # 20.04 LTS
+  # 20.04 LTS  EOL April 2025
   config.vm.define "focal", autostart: false do |focal|
     focal.vm.box = "ubuntu/focal64"
     focal.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -176,8 +177,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     focal.vm.boot_timeout = 1200
   end
-
-  # 20.04 LTS
   config.vm.define "focal-desktop", autostart: false do |focal|
     focal.vm.box = "ubuntu/focal64"
     focal.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
@@ -196,6 +195,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.name = "ArduPilot (groovy)"
     end
     groovy.vm.boot_timeout = 1200
+  end
+
+  # 21.04
+  config.vm.define "hirsute", autostart: false do |hirsute|
+    hirsute.vm.box = "ubuntu/hirsute64"
+    hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    hirsute.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (hirsute)"
+    end
+    hirsute.vm.boot_timeout = 1200
+  end
+  config.vm.define "hirsute-desktop", autostart: false do |hirsute|
+    hirsute.vm.box = "ubuntu/hirsute64"
+    hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    hirsute.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (hirsute-desktop)"
+      vb.gui = true
+    end
+    hirsute.vm.boot_timeout = 1200
   end
 
 end

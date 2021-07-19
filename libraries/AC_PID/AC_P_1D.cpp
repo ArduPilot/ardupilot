@@ -20,12 +20,11 @@ AC_P_1D::AC_P_1D(float initial_p, float dt) :
     AP_Param::setup_object_defaults(this, var_info);
 
     _kp = initial_p;
-    _lim_D_Out = 10.0f;     // maximum first differential of output
 }
 
 // update_all - set target and measured inputs to P controller and calculate outputs
 // target and measurement are filtered
-// if measurement is further than error_min or error_max (see set_limits_error method)
+// if measurement is further than error_min or error_max (see set_limits method)
 //   the target is moved closer to the measurement and limit_min or limit_max will be set true
 float AC_P_1D::update_all(float &target, float measurement, bool &limit_min, bool &limit_max)
 {
@@ -33,33 +32,65 @@ float AC_P_1D::update_all(float &target, float measurement, bool &limit_min, boo
     limit_max = false;
 
     // calculate distance _error
-    float error = target - measurement;
+    _error = target - measurement;
 
-    if (error < _lim_err_min) {
-        error = _lim_err_min;
-        target = measurement + error;
+    if (is_negative(_error_min) && (_error < _error_min)) {
+        _error = _error_min;
+        target = measurement + _error;
         limit_min = true;
-    } else if (error > _lim_err_max) {
-        error = _lim_err_max;
-        target = measurement + error;
+    } else if (is_positive(_error_max) && (_error > _error_max)) {
+        _error = _error_max;
+        target = measurement + _error;
         limit_max = true;
     }
 
-    // ToDo: Replace sqrt_controller with optimal acceleration and jerk limited curve
     // MIN(_Dxy_max, _D2xy_max / _kxy_P) limits the max accel to the point where max jerk is exceeded
-    return sqrt_controller(error, _kp, _lim_D_Out, _dt);
+    return sqrt_controller(_error, _kp, _D1_max, _dt);
 }
 
-// set limits on error, output and output from D term
-// in normal use the lim_err_min and lim_out_min will be negative
+// set_limits - sets the maximum error to limit output and first and second derivative of output
 // when using for a position controller, lim_err will be position error, lim_out will be correction velocity, lim_D will be acceleration, lim_D2 will be jerk
-void AC_P_1D::set_limits_error(float lim_err_min, float lim_err_max, float lim_out_min, float lim_out_max, float lim_D_Out, float lim_D2_Out)
+void AC_P_1D::set_limits(float output_min, float output_max, float D_Out_max, float D2_Out_max)
 {
-    _lim_D_Out = lim_D_Out;
-    if (is_positive(lim_D2_Out)) {
-        // limit the first derivative so as not to exceed the second derivative
-        _lim_D_Out = MIN(_lim_D_Out, lim_D2_Out / _kp);
+    _D1_max = 0.0f;
+    _error_min = 0.0f;
+    _error_max = 0.0f;
+
+    if (is_positive(D_Out_max)) {
+        _D1_max = D_Out_max;
     }
-    _lim_err_min = MAX(inv_sqrt_controller(lim_out_min, _kp, _lim_D_Out), lim_err_min);
-    _lim_err_max = MAX(inv_sqrt_controller(lim_out_max, _kp, _lim_D_Out), lim_err_max);
+
+    if (is_positive(D2_Out_max) && is_positive(_kp)) {
+        // limit the first derivative so as not to exceed the second derivative
+        _D1_max = MIN(_D1_max, D2_Out_max / _kp);
+    }
+
+    if (is_negative(output_min) && is_positive(_kp)) {
+        _error_min = inv_sqrt_controller(output_min, _kp, _D1_max);
+    }
+
+    if (is_positive(output_max) && is_positive(_kp)) {
+        _error_max = inv_sqrt_controller(output_max, _kp, _D1_max);
+    }
+}
+
+// set_error_limits - reduce maximum error to error_max
+// to be called after setting limits
+void AC_P_1D::set_error_limits(float error_min, float error_max)
+{
+    if (is_negative(error_min)) {
+        if (!is_zero(_error_min)) {
+            _error_min = MAX(_error_min, error_min);
+        } else {
+            _error_min = error_min;
+        }
+    }
+
+    if (is_positive(error_max)) {
+        if (!is_zero(_error_max)) {
+            _error_max = MIN(_error_max, error_max);
+        } else {
+            _error_max = error_max;
+        }
+    }
 }

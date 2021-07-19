@@ -1,5 +1,5 @@
 #include "Copter.h"
-#include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -106,27 +106,16 @@ void Copter::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
-    // make optflow available to AHRS
-    ahrs.set_optflow(&optflow);
-#endif
-
-    // init Location class
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location::set_terrain(&terrain);
-    wp_nav->set_terrain(&terrain);
-#endif
-
 #if AC_OAPATHPLANNER_ENABLED == ENABLED
     g2.oa.init();
 #endif
 
     attitude_control->parameter_sanity_check();
-    pos_control->set_dt(scheduler.get_loop_period_s());
 
-
-    // init the optical flow sensor
-    init_optflow();
+#if OPTFLOW == ENABLED
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
+#endif      // OPTFLOW == ENABLED
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
@@ -145,18 +134,6 @@ void Copter::init_ardupilot()
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
-#endif
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        delay(1000);
-    }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
 #endif
 
     // read Baro pressure at ground
@@ -278,12 +255,12 @@ void Copter::update_dynamic_notch()
             }
             break;
 #endif
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
         case HarmonicNotchDynamicMode::UpdateBLHeli: // BLHeli based tracking
             // set the harmonic notch filter frequency scaled on measured frequency
             if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
                 float notches[INS_MAX_NOTCHES];
-                const uint8_t num_notches = AP_BLHeli::get_singleton()->get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
+                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
 
                 for (uint8_t i = 0; i < num_notches; i++) {
                     notches[i] =  MAX(ref_freq, notches[i]);
@@ -294,7 +271,7 @@ void Copter::update_dynamic_notch()
                     ins.update_harmonic_notch_freq_hz(throttle_freq);
                 }
             } else {
-                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP_BLHeli::get_singleton()->get_average_motor_frequency_hz() * ref));
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));
             }
             break;
 #endif
@@ -544,7 +521,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
         
-    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
+    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control, scheduler.get_loop_period_s());
     if (pos_control == nullptr) {
         AP_BoardConfig::config_error("Unable to allocate PosControl");
     }

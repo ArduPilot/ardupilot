@@ -23,24 +23,13 @@
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
 
 #define WPNAV_WP_ACCEL_Z_DEFAULT        100.0f      // default vertical acceleration between waypoints in cm/s/s
-#define WPNAV_YAW_VEL_MIN                   10      // target velocity must be at least 10cm/s for vehicle's yaw to change
 
 class AC_WPNav
 {
 public:
 
-    // spline segment end types enum
-    enum spline_segment_end_type {
-        SEGMENT_END_STOP = 0,
-        SEGMENT_END_STRAIGHT,
-        SEGMENT_END_SPLINE
-    };
-
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
-
-    /// provide pointer to terrain database
-    void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
 
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
@@ -56,6 +45,13 @@ public:
         TERRAIN_FROM_TERRAINDATABASE,
     };
     AC_WPNav::TerrainSource get_terrain_source() const;
+
+    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
+    bool get_terrain_offset(float& offset_cm);
+
+    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
+    //      returns false if conversion failed (likely because terrain data was not available)
+    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
 
     ///
     /// waypoint controller
@@ -124,11 +120,6 @@ public:
     bool set_wp_destination_NED(const Vector3f& destination_NED);
     bool set_wp_destination_next_NED(const Vector3f& destination_NED);
 
-    /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
-    ///     used to reset the position just before takeoff
-    ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
-    void shift_wp_origin_to_current_pos();
-
     /// shifts the origin and destination horizontally to the current position
     ///     used to reset the track when taking off without horizontal position control
     ///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
@@ -141,7 +132,7 @@ public:
 
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
-    void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point_xy(Vector2f& stopping_point) const;
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
@@ -167,10 +158,6 @@ public:
     ///
     /// spline methods
     ///
-
-    // get target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() const;
-    float get_yaw_rate_cds() const;
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -205,9 +192,12 @@ public:
     ///
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    float get_roll() const { return _pos_control.get_roll(); }
-    float get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll_cd(); }
+    float get_pitch() const { return _pos_control.get_pitch_cd(); }
+    Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
+    // get target yaw in centi-degrees
+    float get_yaw() const { return _pos_control.get_yaw_cd(); }
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -221,30 +211,12 @@ public:
 
 protected:
 
-    // segment types, either straight or spine
-    enum SegmentType {
-        SEGMENT_STRAIGHT = 0,
-        SEGMENT_SPLINE = 1
-    };
-
     // flags structure
     struct wpnav_flags {
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
-        SegmentType segment_type        : 1;    // active segment is either straight or spline
         uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
     } _flags;
-
-    // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
-    bool get_terrain_offset(float& offset_cm);
-
-    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
-    //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
-
-    // set heading used for spline and waypoint navigation
-    void set_yaw_cd(float heading_cd);
-    void set_yaw_rate_cds(float yaw_rate_cds);
 
     // helper function to calculate scurve jerk and jerk_time values
     // updates _scurve_jerk and _scurve_jerk_time
@@ -255,7 +227,6 @@ protected:
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain;
 
     // parameters
     AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
@@ -288,8 +259,6 @@ protected:
     Vector3f    _destination;           // target destination in cm from ekf origin
     float       _track_error_xy;        // horizontal error of the actual position vs the desired position
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
-    float       _yaw;                   // current yaw heading in centi-degrees based on track direction
-    float       _yaw_rate_cds;          // current yaw rate in centi-degrees/second based on track curvature
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
@@ -299,7 +268,7 @@ protected:
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
 
     // position, velocity and acceleration targets passed to position controller
-    float       _pos_terrain_offset;
+    postype_t   _pos_terrain_offset;
     float       _vel_terrain_offset;
     float       _accel_terrain_offset;
 

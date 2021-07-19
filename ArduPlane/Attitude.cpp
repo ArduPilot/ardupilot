@@ -46,6 +46,11 @@ float Plane::get_speed_scaler(void)
         // no speed estimate and not armed, use a unit scaling
         speed_scaler = 1;
     }
+    if (!plane.ahrs.airspeed_sensor_enabled()  && 
+        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        return MIN(speed_scaler, 1.0f) ;
+    }
     return speed_scaler;
 }
 
@@ -59,6 +64,15 @@ bool Plane::stick_mixing_enabled(void)
 #else
     const bool stickmixing = true;
 #endif
+    if (control_mode == &mode_qrtl &&
+        quadplane.poscontrol.get_state() >= QuadPlane::QPOS_POSITION1) {
+        // user may be repositioning
+        return false;
+    }
+    if (quadplane.in_vtol_land_poscontrol()) {
+        // user may be repositioning
+        return false;
+    }
     if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
@@ -104,9 +118,19 @@ void Plane::stabilize_roll(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, 
-                                                                                         speed_scaler, 
-                                                                                         disable_integrator));
+    int32_t roll_out;
+    if (!quadplane.use_fw_attitude_controllers()) {
+        // use the VTOL rate for control, to ensure consistency
+        const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
+        roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
+           opposing integrators balancing between the two controllers
+        */
+        rollController.decay_I();
+    } else {
+        roll_out = rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
 /*
@@ -129,14 +153,28 @@ void Plane::stabilize_pitch(float speed_scaler)
         disable_integrator = true;
     }
 
-   // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
-    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !control_mode->does_auto_throttle() && flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
-       demanded_pitch = landing.get_pitch_cd();
-   }
+    int32_t pitch_out;
+    if (!quadplane.use_fw_attitude_controllers()) {
+        // use the VTOL rate for control, to ensure consistency
+        const auto &pid_info = quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
+        pitch_out = pitchController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
+           opposing integrators balancing between the two controllers
+        */
+        pitchController.decay_I();
+    } else {
+        // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
+        if (!quadplane.in_transition() &&
+            !control_mode->is_vtol_mode() &&
+            channel_throttle->in_trim_dz() &&
+            !control_mode->does_auto_throttle() &&
+            flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+            demanded_pitch = landing.get_pitch_cd();
+        }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
-                                                                                           speed_scaler, 
-                                                                                           disable_integrator));
+        pitch_out = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
 /*
@@ -363,10 +401,17 @@ void Plane::stabilize_acro(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
-    /*
-      manual rudder for now
-     */
-    steering_control.steering = steering_control.rudder = rudder_input();
+    steering_control.steering = rudder_input();
+
+    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+        // use yaw controller
+        calc_nav_yaw_coordinated(speed_scaler);
+    } else {
+        /*
+          manual rudder
+        */
+        steering_control.rudder = steering_control.steering;
+    }
 }
 
 /*

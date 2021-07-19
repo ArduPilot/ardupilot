@@ -167,8 +167,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
-    // @Description: Bitmask of options to use with airspeed. Disable and/or re-enable sensor based on the difference between airspeed and ground speed based on ARSPD_WIND_MAX threshold, if set
-    // @Bitmask: 0:Disable sensor, 1:Re-enable sensor
+    // @Description: Bitmask of options to use with airspeed. 0:Disable use based on airspeed/groundspeed mismatch (see ARSPD_WIND_MAX), 1:Automatically reenable use based on airspeed/groundspeed mismatch recovery (see ARSPD_WIND_MAX) 2:Disable voltage correction
+    // @Bitmask: 0:SpeedMismatchDisable, 1:AllowSpeedMismatchRecovery, 2:DisableVoltageCorrection
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, OPTIONS_DEFAULT),
 
@@ -257,6 +257,23 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // Note that 21, 22 and 23 are used above by the _OPTIONS, _WIND_MAX and _WIND_WARN parameters.  Do not use them!!
 
+    // @Param: _DEVID
+    // @DisplayName: Airspeed ID
+    // @Description: Airspeed sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_DEVID", 24, AP_Airspeed, param[0].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
+#if AIRSPEED_MAX_SENSORS > 1
+    // @Param: 2_DEVID
+    // @DisplayName: Airspeed2 ID
+    // @Description: Airspeed2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("2_DEVID", 25, AP_Airspeed, param[1].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+#endif
+    
+    
     AP_GROUPEND
 };
 
@@ -394,10 +411,6 @@ float AP_Airspeed::get_pressure(uint8_t i)
 {
     if (!enabled(i)) {
         return 0;
-    }
-    if (state[i].hil_set) {
-        state[i].healthy = true;
-        return state[i].hil_pressure;
     }
     float pressure = 0;
     if (sensor[i]) {
@@ -625,19 +638,11 @@ void AP_Airspeed::Log_Airspeed()
     }
 }
 
-void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
-{
-    state[0].raw_airspeed = airspeed;
-    state[0].airspeed = airspeed;
-    state[0].last_pressure = diff_pressure;
-    state[0].last_update_ms = AP_HAL::millis();
-    state[0].hil_pressure = diff_pressure;
-    state[0].hil_set = true;
-    state[0].healthy = true;
-}
-
 bool AP_Airspeed::use(uint8_t i) const
 {
+    if (_force_disable_use) {
+        return false;
+    }
     if (!enabled(i) || !param[i].use) {
         return false;
     }

@@ -111,6 +111,9 @@ public:
     // get the pitch angular velocity limit in radians/s
     float get_ang_vel_pitch_max_radss() const { return _ang_vel_pitch_max; }
 
+    // get the yaw slew limit
+    float get_slew_yaw_cds() const { return _slew_yaw; }
+
     // get the rate control input smoothing time constant
     float get_input_tc() const { return _input_tc; }
 
@@ -120,7 +123,7 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
-    // Used by child class AC_AttitudeControl_TS to change behavior for tailsitter quadplanes
+    // Used by child class AC_AttitudeControl_TS to change behaviour for tailsitter quadplanes
     virtual void relax_attitude_controllers(bool exclude_pitch) { relax_attitude_controllers(); }
 
     // reset rate controller I terms
@@ -129,14 +132,13 @@ public:
     // reset rate controller I terms smoothly to zero in 0.5 seconds
     void reset_rate_controller_I_terms_smoothly();
 
-    // Sets attitude target to vehicle attitude
-    void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target_quat); }
+    // Sets attitude target to vehicle attitude and sets all rates to zero
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_target_and_rate(bool reset_rate = true);
 
-    // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z) * 100.0f); }
-
-    // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
-    void shift_ef_yaw_target(float yaw_shift_cd);
+    // Sets yaw target to vehicle heading and sets yaw rate to zero
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_yaw_target_and_rate(bool reset_rate = true);
 
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();
@@ -146,10 +148,6 @@ public:
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
-
-    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    virtual void input_euler_angle_roll_pitch_yaw_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float euler_yaw_rate_cds);
-
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
@@ -173,6 +171,14 @@ public:
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
+    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
+    virtual void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
+
+    // Converts thrust vector and heading angle to quaternion rotation in the earth frame
+    Quaternion attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const;
+
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
 
@@ -191,32 +197,32 @@ public:
     // attitude controller's target attitude.
     // **NOTE** Using vector3f*deg(100) is more efficient than deg(vector3f)*100 or deg(vector3d*100) because it gives the
     // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
-    Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle * degrees(100.0f); }
-    const Vector3f & get_att_target_euler_rad() const { return _attitude_target_euler_angle; }
+    Vector3f get_att_target_euler_cd() const { return _euler_angle_target * degrees(100.0f); }
+    const Vector3f & get_att_target_euler_rad() const { return _euler_angle_target; }
 
     // Return the body-to-NED target attitude used by the quadplane-specific attitude control input methods
-    Quaternion get_attitude_target_quat() const { return _attitude_target_quat; }
+    Quaternion get_attitude_target_quat() const { return _attitude_target; }
 
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
     // Set x-axis angular velocity in centidegrees/s
-    void rate_bf_roll_target(float rate_cds) { _rate_target_ang_vel.x = radians(rate_cds * 0.01f); }
+    void rate_bf_roll_target(float rate_cds) { _ang_vel_body.x = radians(rate_cds * 0.01f); }
 
     // Set y-axis angular velocity in centidegrees/s
-    void rate_bf_pitch_target(float rate_cds) { _rate_target_ang_vel.y = radians(rate_cds * 0.01f); }
+    void rate_bf_pitch_target(float rate_cds) { _ang_vel_body.y = radians(rate_cds * 0.01f); }
 
     // Set z-axis angular velocity in centidegrees/s
-    void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds * 0.01f); }
+    void rate_bf_yaw_target(float rate_cds) { _ang_vel_body.z = radians(rate_cds * 0.01f); }
 
     // Set x-axis system identification angular velocity in degrees/s
-    void rate_bf_roll_sysid(float rate) { _rate_sysid_ang_vel.x = rate; }
+    void rate_bf_roll_sysid(float rate) { _sysid_ang_vel_body.x = rate; }
 
     // Set y-axis system identification angular velocity in degrees/s
-    void rate_bf_pitch_sysid(float rate) { _rate_sysid_ang_vel.y = rate; }
+    void rate_bf_pitch_sysid(float rate) { _sysid_ang_vel_body.y = rate; }
 
     // Set z-axis system identification angular velocity in degrees/s
-    void rate_bf_yaw_sysid(float rate) { _rate_sysid_ang_vel.z = rate; }
+    void rate_bf_yaw_sysid(float rate) { _sysid_ang_vel_body.z = rate; }
 
     // Set x-axis system identification actuator
     void actuator_roll_sysid(float command) { _actuator_sysid.x = command; }
@@ -246,7 +252,7 @@ public:
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw() / _p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _rate_target_ang_vel + _rate_sysid_ang_vel; }
+    Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
@@ -283,7 +289,8 @@ public:
 
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
-    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);
+    static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  smoothing_gain,  accel_max,  target_ang_vel,  0.0f,  0.0f,  dt); }
 
     // limits the acceleration and deceleration of a velocity request
     static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
@@ -298,12 +305,16 @@ public:
     // translates body frame acceleration limits to the euler axis
     Vector3f euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel);
 
-    // thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
-    // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-    void thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_error_angle);
-
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
+
+    // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
+    // The maximum error in the yaw axis is limited based on the angle yaw P value and acceleration.
+    void thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const;
+
+    // thrust_vector_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
+    // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
+    void thrust_vector_rotation_angles(const Quaternion& attitude_target, const Quaternion& attitude_body, Quaternion& thrust_vector_correction, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const;
 
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
@@ -396,33 +407,30 @@ protected:
 
     // This represents a 321-intrinsic rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller, in radians.
-    Vector3f            _attitude_target_euler_angle;
+    Vector3f            _euler_angle_target;
 
     // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
     // second.
-    Vector3f            _attitude_target_euler_rate;
-
-    Vector3f            _attitude_desired_euler_rate;
-    Vector3f            _attitude_correction_euler_rate;
+    Vector3f            _euler_rate_target;
 
     // This represents a quaternion rotation in NED frame to the target (setpoint)
     // attitude used in the attitude controller.
-    Quaternion          _attitude_target_quat;
+    Quaternion          _attitude_target;
 
     // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as an angular velocity vector, in radians per second in
     // the target attitude frame.
-    Vector3f            _attitude_target_ang_vel;
+    Vector3f            _ang_vel_target;
 
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller.
-    Vector3f            _rate_target_ang_vel;
+    Vector3f            _ang_vel_body;
 
     // This is the the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.
     // It is reset to zero immediately after it is used.
-    Vector3f            _rate_sysid_ang_vel;
+    Vector3f            _sysid_ang_vel_body;
 
     // This is the the unitless value added to the output of the PID by the System Identification Mode.
     // It is reset to zero immediately after it is used.

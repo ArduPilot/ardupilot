@@ -72,8 +72,6 @@ FLASH_SIZE_KB 2048
 USB_VENDOR 0x2DAE # ONLY FOR USE BY ProfiCNC / HEX! NOBODY ELSE
 USB_PRODUCT 0x1012
 USB_STRING_MANUFACTURER "Hex/ProfiCNC"
-USB_STRING_PRODUCT "CubeYellow"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the

@@ -57,7 +57,7 @@ bool AP_SmartAudio::init()
             | AP_HAL::UARTDriver::OPTION_HDPLEX | AP_HAL::UARTDriver::OPTION_PULLDOWN_TX | AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
-                                          512, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+                                          768, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
             return false;
         }
 
@@ -68,18 +68,18 @@ bool AP_SmartAudio::init()
 
 void AP_SmartAudio::loop()
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay(100);
     }
 
-    uint8_t res_retries=0;
     // allocate response buffer
     uint8_t _response_buffer[AP_SMARTAUDIO_MAX_PACKET_SIZE];
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
     _port->begin(_smartbaud, AP_SMARTAUDIO_UART_BUFSIZE_RX, AP_SMARTAUDIO_UART_BUFSIZE_TX);
 
-    //bool tried = false;
 
     while (true) {
         // now time to control loop switching
@@ -126,9 +126,6 @@ void AP_SmartAudio::loop()
             // setup sheduler delay to 50 ms again after response processes
             if (!read_response(_response_buffer)) {
                 hal.scheduler->delay(10);
-                res_retries++;
-            } else {
-                res_retries = 0;
             }
 
         } else if (_is_waiting_response) { // timeout
@@ -141,13 +138,15 @@ void AP_SmartAudio::loop()
             if (AP::vtx().have_params_changed() ||_vtx_power_change_pending
                 || _vtx_freq_change_pending || _vtx_options_change_pending) {
                 update_vtx_params();
-                _vtx_gcs_pending = true;
+                set_configuration_pending(true);
+                vtx.set_configuration_finished(false);
                 // we've tried to udpate something, re-request the settings so that they
                 // are reflected correctly
                 request_settings();
-            } else if (_vtx_gcs_pending) {
+            } else if (is_configuration_pending()) {
                 AP::vtx().announce_vtx_settings();
-                _vtx_gcs_pending = false;
+                set_configuration_pending(false);
+                vtx.set_configuration_finished(true);
             }
         }
     }
@@ -208,14 +207,18 @@ void AP_SmartAudio::update_vtx_params()
 
         // prioritize pitmode changes
         if (_vtx_options_change_pending) {
+            debug("update mode '%c%c%c%c'", (mode & 0x8) ? 'U' : 'L',
+                (mode & 0x4) ? 'N' : ' ', (mode & 0x2) ? 'O' : ' ', (mode & 0x1) ? 'I' : ' ');
             set_operation_mode(mode);
         } else if (_vtx_freq_change_pending) {
+            debug("update frequency");
             if (_vtx_use_set_freq) {
                 set_frequency(vtx.get_configured_frequency_mhz(), false);
             } else {
                 set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
             }
         } else if (_vtx_power_change_pending) {
+            debug("update power");
             switch (_protocol_version) {
             case SMARTAUDIO_SPEC_PROTOCOL_v21:
                 set_power(vtx.get_configured_power_dbm() | 0x80);
@@ -233,9 +236,10 @@ void AP_SmartAudio::update_vtx_params()
                 break;
             }
         }
+    } else {
+        vtx.set_configuration_finished(true);
     }
 }
-
 /**
  * Sends an SmartAudio Command to the vtx, waits response on the update event
  * @param frameBuffer frameBuffer to send over the wire
@@ -243,6 +247,8 @@ void AP_SmartAudio::update_vtx_params()
  */
 void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     if (size <= 0 || _port == nullptr) {
         return;
     }
@@ -250,6 +256,9 @@ void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
     const uint8_t *request = reinterpret_cast<const uint8_t*>(&requestFrame);
 
     // write request
+    if (vtx.has_option(AP_VideoTX::VideoOptions::VTX_PULLDOWN)) {
+        _port->write((uint8_t)0x00);
+    }
     _port->write(request, size);
     _port->flush();
 
@@ -474,8 +483,14 @@ void AP_SmartAudio::print_bytes_to_hex_string(const char* msg, const uint8_t buf
 
 void AP_SmartAudio::print_settings(const Settings* settings)
 {
-    debug("SETTINGS: VER: %u, MD: 0x%x, CH: %u, PWR: %u, FREQ: %u, BND: %u",
-            settings->version, settings->mode, settings->channel, settings->power, settings->frequency, settings->band);
+    debug("SETTINGS: VER: %u, MD: '%c%c%c%c%c', CH: %u, PWR: %u, DBM: %u FREQ: %u, BND: %u",
+            settings->version,
+            (settings->mode & 0x10) ? 'U' : 'L',
+            (settings->mode & 0x8) ? 'O' : ' ',
+            (settings->mode & 0x4) ? 'I' : ' ',
+            (settings->mode & 0x2) ? 'P' : ' ',
+            (settings->mode & 0x1) ? 'F' : 'C',
+            settings->channel, settings->power, settings->power_in_dbm, settings->frequency, settings->band);
 }
 
 void AP_SmartAudio::update_vtx_settings(const Settings& settings)
@@ -496,7 +511,7 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
 
     // PITMODE | UNLOCKED
     // SmartAudio 2.1 dropped support for outband pitmode so we won't support it
-    uint8_t opts = ((settings.mode & 0x2) >> 1) | ((settings.mode & 0x10) >> 3);
+    uint8_t opts = ((settings.mode & 0x2) >> 1) | ((settings.mode & 0x10) >> 1);
     vtx.set_options(opts);
 
     // make sure the configured values now reflect reality

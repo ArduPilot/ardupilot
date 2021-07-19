@@ -38,7 +38,7 @@
 
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
-#define MEM_REGION_FLAG_SDCARD 4
+#define MEM_REGION_FLAG_AXI_BUS 4
 
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
@@ -119,7 +119,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     if (size == 0) {
         return NULL;
     }
-    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_SDCARD);
+    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS);
     const uint8_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
     void *p = NULL;
     uint8_t i;
@@ -145,8 +145,8 @@ static void *malloc_flags(size_t size, uint32_t flags)
             !(memory_regions[i].flags & MEM_REGION_FLAG_DMA_OK)) {
             continue;
         }
-        if ((flags & MEM_REGION_FLAG_SDCARD) &&
-            !(memory_regions[i].flags & MEM_REGION_FLAG_SDCARD)) {
+        if ((flags & MEM_REGION_FLAG_AXI_BUS) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_AXI_BUS)) {
             continue;
         }
         if ((flags & MEM_REGION_FLAG_FAST) &&
@@ -219,7 +219,7 @@ static void *malloc_flags_guard(size_t size, uint32_t flags)
 {
     chMtxLock(&mem_mutex);
 
-    if (flags & (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_SDCARD)) {
+    if (flags & (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS)) {
         size = (size + (DMA_ALIGNMENT-1U)) & ~(DMA_ALIGNMENT-1U);
     } else {
         size = (size + (MIN_ALIGNMENT-1U)) & ~(MIN_ALIGNMENT-1U);
@@ -353,13 +353,13 @@ void *malloc_dma(size_t size)
 }
 
 /*
-  allocate DMA-safe memory for microSD transfers. This is only
-  different on H7 where SDMMC IDMA can't use SRAM4
+  allocate from memory connected to AXI Bus if available
+  else just allocate dma safe memory
  */
-void *malloc_sdcard_dma(size_t size)
+void *malloc_axi_sram(size_t size)
 {
 #if defined(STM32H7)
-    return malloc_flags(size, MEM_REGION_FLAG_SDCARD);
+    return malloc_flags(size, MEM_REGION_FLAG_AXI_BUS);
 #else
     return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
 #endif

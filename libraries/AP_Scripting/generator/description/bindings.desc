@@ -44,6 +44,10 @@ singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
 singleton AP_AHRS method set_posvelyaw_source_set void uint8_t 0 2
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
+singleton AP_AHRS method set_home boolean Location
+singleton AP_AHRS method get_origin boolean Location'Null
+singleton AP_AHRS method set_origin boolean Location
+singleton AP_AHRS method initialised boolean
 
 include AP_Arming/AP_Arming.h
 
@@ -178,6 +182,14 @@ singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float -FLT_MAX FLT_MAX
 
+include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
+singleton AP_ONVIF depends ENABLE_ONVIF == 1
+singleton AP_ONVIF alias onvif
+singleton AP_ONVIF method start boolean string string string
+singleton AP_ONVIF method set_absolutemove boolean float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
+singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
+
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle scheduler-semaphore
@@ -197,6 +209,7 @@ singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -
 singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
+singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -224,8 +237,10 @@ ap_object RC_Channel method norm_input_ignore_trim float
 
 include RC_Channel/RC_Channel.h
 singleton RC_Channels alias rc
+singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
+singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
 
 include AP_SerialManager/AP_SerialManager.h
 
@@ -245,7 +260,14 @@ singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 
 include AP_ESC_Telem/AP_ESC_Telem.h
+singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem alias esc_telem
+singleton AP_ESC_Telem method get_rpm boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
+singleton AP_ESC_Telem method get_motor_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
+singleton AP_ESC_Telem method get_current boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_voltage boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
+singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
 
 include AP_Param/AP_Param.h
@@ -314,6 +336,7 @@ singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD
 singleton AP_MotorsMatrix alias MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
+singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
 singleton AP_Frsky_SPort alias frsky_sport

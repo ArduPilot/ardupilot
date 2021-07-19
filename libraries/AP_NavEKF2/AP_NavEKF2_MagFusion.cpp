@@ -24,9 +24,9 @@ void NavEKF2_core::controlMagYawReset()
         gpsYawResetRequest = false;
     }
 
-    // Quaternion and delta rotation vector that are re-used for different calculations
-    Vector3f deltaRotVecTemp;
-    Quaternion deltaQuatTemp;
+    // QuaternionF and delta rotation vector that are re-used for different calculations
+    Vector3F deltaRotVecTemp;
+    QuaternionF deltaQuatTemp;
 
     bool flightResetAllowed = false;
     bool initialResetAllowed = false;
@@ -61,7 +61,7 @@ void NavEKF2_core::controlMagYawReset()
 
         // check for increasing height
         bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
-        float yawInnovIncrease = fabsf(innovYaw) - fabsf(yawInnovAtLastMagReset);
+        ftype yawInnovIncrease = fabsF(innovYaw) - fabsF(yawInnovAtLastMagReset);
 
         // check for increasing yaw innovations
         bool yawInnovIncreasing = yawInnovIncrease > 0.25f;
@@ -96,14 +96,14 @@ void NavEKF2_core::controlMagYawReset()
         // if a yaw reset has been requested, apply the updated quaternion to the current state
         if (extNavYawResetRequest) {
             // get the euler angles from the current state estimate
-            Vector3f eulerAnglesOld;
+            Vector3F eulerAnglesOld;
             stateStruct.quat.to_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesOld.z);
 
             // previous value used to calculate a reset delta
-            Quaternion prevQuat = stateStruct.quat;
+            QuaternionF prevQuat = stateStruct.quat;
 
             // Get the Euler angles from the external vision data
-            Vector3f eulerAnglesNew;
+            Vector3F eulerAnglesNew;
             extNavDataDelayed.quat.to_euler(eulerAnglesNew.x, eulerAnglesNew.y, eulerAnglesNew.z);
 
             // the new quaternion uses the old roll/pitch and new yaw angle
@@ -128,16 +128,16 @@ void NavEKF2_core::controlMagYawReset()
 
         } else if (magYawResetRequest || magStateResetRequest) {
             // get the euler angles from the current state estimate
-            Vector3f eulerAngles;
+            Vector3F eulerAngles;
             stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
             // Use the Euler angles and magnetometer measurement to update the magnetic field states
             // and get an updated quaternion
-            Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+            QuaternionF newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
             if (magYawResetRequest) {
                 // previous value used to calculate a reset delta
-                Quaternion prevQuat = stateStruct.quat;
+                QuaternionF prevQuat = stateStruct.quat;
 
                 // update the quaternion states using the new yaw angle
                 stateStruct.quat = newQuat;
@@ -148,14 +148,14 @@ void NavEKF2_core::controlMagYawReset()
 
                 // send initial alignment status to console
                 if (!yawAlignComplete) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u MAG%u initial yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
                 }
 
                 // send in-flight yaw alignment status to console
                 if (finalResetRequest) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u MAG%u in-flight yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
                 } else if (interimResetRequest) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 IMU%u MAG%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index, (unsigned)magSelectIndex);
                 }
 
                 // update the yaw reset completed status
@@ -181,17 +181,17 @@ void NavEKF2_core::realignYawGPS()
 {
     if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > 25.0f) {
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
-        Vector3f eulerAngles;
+        Vector3F eulerAngles;
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
         // calculate course yaw angle
-        float velYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
+        ftype velYaw = atan2F(stateStruct.velocity.y,stateStruct.velocity.x);
 
         // calculate course yaw angle from GPS velocity
-        float gpsYaw = atan2f(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
+        ftype gpsYaw = atan2F(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
 
         // Check the yaw angles for consistency
-        float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),fabsf(wrap_PI(gpsYaw - eulerAngles.z)));
+        ftype yawErr = MAX(fabsF(wrap_PI(gpsYaw - velYaw)),fabsF(wrap_PI(gpsYaw - eulerAngles.z)));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
         bool badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
@@ -332,8 +332,8 @@ void NavEKF2_core::FuseMagnetometer()
     ftype &magXbias = mag_state.magXbias;
     ftype &magYbias = mag_state.magYbias;
     ftype &magZbias = mag_state.magZbias;
-    Matrix3f &DCM = mag_state.DCM;
-    Vector3f &MagPred = mag_state.MagPred;
+    Matrix3F &DCM = mag_state.DCM;
+    Vector3F &MagPred = mag_state.MagPred;
     ftype &R_MAG = mag_state.R_MAG;
     ftype *SH_MAG = &mag_state.SH_MAG[0];
     Vector24 H_MAG;
@@ -374,7 +374,7 @@ void NavEKF2_core::FuseMagnetometer()
     }
 
     // scale magnetometer observation error with total angular rate to allow for timing errors
-    R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*delAngCorrected.length() / imuDataDelayed.delAngDT);
+    R_MAG = sq(constrain_ftype(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*delAngCorrected.length() / imuDataDelayed.delAngDT);
 
     // calculate common expressions used to calculate observation jacobians an innovation variance for each component
     SH_MAG[0] = sq(q0) - sq(q1) + sq(q2) - sq(q3);
@@ -426,7 +426,7 @@ void NavEKF2_core::FuseMagnetometer()
 
     // calculate the innovation test ratios
     for (uint8_t i = 0; i<=2; i++) {
-        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
+        magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (ftype)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
     }
 
     // check the last values from all components and set magnetometer health accordingly
@@ -448,7 +448,7 @@ void NavEKF2_core::FuseMagnetometer()
         if (obsIndex == 0)
         {
             // calculate observation jacobians
-            memset(&H_MAG, 0, sizeof(H_MAG));
+            ZERO_FARRAY(H_MAG);
             H_MAG[1] = SH_MAG[6] - magD*SH_MAG[2] - magN*SH_MAG[5];
             H_MAG[2] = magE*SH_MAG[0] + magD*SH_MAG[3] - magN*(SH_MAG[8] - 2.0f*q1*q2);
             H_MAG[16] = SH_MAG[1];
@@ -508,7 +508,7 @@ void NavEKF2_core::FuseMagnetometer()
         else if (obsIndex == 1) // we are now fusing the Y measurement
         {
             // calculate observation jacobians
-            memset(&H_MAG, 0, sizeof(H_MAG));
+            ZERO_FARRAY(H_MAG);
             H_MAG[0] = magD*SH_MAG[2] - SH_MAG[6] + magN*SH_MAG[5];
             H_MAG[2] = - magE*SH_MAG[4] - magD*SH_MAG[7] - magN*SH_MAG[1];
             H_MAG[16] = 2.0f*q1*q2 - SH_MAG[8];
@@ -567,7 +567,7 @@ void NavEKF2_core::FuseMagnetometer()
         else if (obsIndex == 2) // we are now fusing the Z measurement
         {
             // calculate observation jacobians
-            memset(&H_MAG, 0, sizeof(H_MAG));
+            ZERO_FARRAY(H_MAG);
             H_MAG[0] = magN*(SH_MAG[8] - 2.0f*q1*q2) - magD*SH_MAG[3] - magE*SH_MAG[0];
             H_MAG[1] = magE*SH_MAG[4] + magD*SH_MAG[7] + magN*SH_MAG[1];
             H_MAG[16] = SH_MAG[5];
@@ -720,60 +720,60 @@ void NavEKF2_core::FuseMagnetometer()
 */
 void NavEKF2_core::fuseEulerYaw()
 {
-    float q0 = stateStruct.quat[0];
-    float q1 = stateStruct.quat[1];
-    float q2 = stateStruct.quat[2];
-    float q3 = stateStruct.quat[3];
+    ftype q0 = stateStruct.quat[0];
+    ftype q1 = stateStruct.quat[1];
+    ftype q2 = stateStruct.quat[2];
+    ftype q3 = stateStruct.quat[3];
 
     // compass measurement error variance (rad^2) set to parameter value as a default
-    float R_YAW = sq(frontend->_yawNoise);
+    ftype R_YAW = sq(frontend->_yawNoise);
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
-    float predicted_yaw;
-    float measured_yaw;
-    float H_YAW[3];
-    Matrix3f Tbn_zeroYaw;
+    ftype predicted_yaw;
+    ftype measured_yaw;
+    ftype H_YAW[3];
+    Matrix3F Tbn_zeroYaw;
 
-    if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+    if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
         // calculate observation jacobian when we are observing the first rotation in a 321 sequence
-        float t2 = q0*q0;
-        float t3 = q1*q1;
-        float t4 = q2*q2;
-        float t5 = q3*q3;
-        float t6 = t2+t3-t4-t5;
-        float t7 = q0*q3*2.0f;
-        float t8 = q1*q2*2.0f;
-        float t9 = t7+t8;
-        float t10 = sq(t6);
+        ftype t2 = q0*q0;
+        ftype t3 = q1*q1;
+        ftype t4 = q2*q2;
+        ftype t5 = q3*q3;
+        ftype t6 = t2+t3-t4-t5;
+        ftype t7 = q0*q3*2.0f;
+        ftype t8 = q1*q2*2.0f;
+        ftype t9 = t7+t8;
+        ftype t10 = sq(t6);
         if (t10 > 1e-6f) {
             t10 = 1.0f / t10;
         } else {
             return;
         }
-        float t11 = t9*t9;
-        float t12 = t10*t11;
-        float t13 = t12+1.0f;
-        float t14;
-        if (fabsf(t13) > 1e-3f) {
+        ftype t11 = t9*t9;
+        ftype t12 = t10*t11;
+        ftype t13 = t12+1.0f;
+        ftype t14;
+        if (fabsF(t13) > 1e-3f) {
             t14 = 1.0f/t13;
         } else {
             return;
         }
-        float t15 = 1.0f/t6;
+        ftype t15 = 1.0f/t6;
         H_YAW[0] = 0.0f;
         H_YAW[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
         H_YAW[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
 
         // calculate predicted and measured yaw angle
-        Vector3f euler321;
+        Vector3F euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
         predicted_yaw = euler321.z;
         if (use_compass() && yawAlignComplete && magStateInitComplete) {
             // Use measured mag components rotated into earth frame to measure yaw
             Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
-            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
+            Vector3F magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2F(magMeasNED.y, magMeasNED.x) + MagDeclination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
             R_YAW = sq(extNavDataDelayed.angErr);
@@ -781,7 +781,7 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler321.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance, velInnovLength;
+                ftype gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
                     gsfYawVariance < sq(radians(15.0f)) &&
@@ -799,42 +799,42 @@ void NavEKF2_core::fuseEulerYaw()
         }
     } else {
         // calculate observation jacobian when we are observing a rotation in a 312 sequence
-        float t2 = q0*q0;
-        float t3 = q1*q1;
-        float t4 = q2*q2;
-        float t5 = q3*q3;
-        float t6 = t2-t3+t4-t5;
-        float t7 = q0*q3*2.0f;
-        float t10 = q1*q2*2.0f;
-        float t8 = t7-t10;
-        float t9 = sq(t6);
+        ftype t2 = q0*q0;
+        ftype t3 = q1*q1;
+        ftype t4 = q2*q2;
+        ftype t5 = q3*q3;
+        ftype t6 = t2-t3+t4-t5;
+        ftype t7 = q0*q3*2.0f;
+        ftype t10 = q1*q2*2.0f;
+        ftype t8 = t7-t10;
+        ftype t9 = sq(t6);
         if (t9 > 1e-6f) {
             t9 = 1.0f/t9;
         } else {
             return;
         }
-        float t11 = t8*t8;
-        float t12 = t9*t11;
-        float t13 = t12+1.0f;
-        float t14;
-        if (fabsf(t13) > 1e-3f) {
+        ftype t11 = t8*t8;
+        ftype t12 = t9*t11;
+        ftype t13 = t12+1.0f;
+        ftype t14;
+        if (fabsF(t13) > 1e-3f) {
             t14 = 1.0f/t13;
         } else {
             return;
         }
-        float t15 = 1.0f/t6;
+        ftype t15 = 1.0f/t6;
         H_YAW[0] = -t14*(t15*(q0*q2*2.0+q1*q3*2.0)-t8*t9*(q0*q1*2.0-q2*q3*2.0));
         H_YAW[1] = 0.0f;
         H_YAW[2] = t14*(t15*(t2+t3-t4-t5)+t8*t9*(t7+t10));
 
         // calculate predicted and measured yaw angle
-        Vector3f euler312 = stateStruct.quat.to_vector312();
+        Vector3F euler312 = stateStruct.quat.to_vector312();
         predicted_yaw = euler312.z;
         if (use_compass() && yawAlignComplete && magStateInitComplete) {
             // Use measured mag components rotated into earth frame to measure yaw
             Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
-            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
+            Vector3F magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2F(magMeasNED.y, magMeasNED.x) + MagDeclination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
             R_YAW = sq(extNavDataDelayed.angErr);
@@ -842,7 +842,7 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler312.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance, velInnovLength;
+                ftype gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
                     gsfYawVariance < sq(radians(15.0f)) &&
@@ -861,14 +861,14 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // Calculate the innovation
-    float innovation = wrap_PI(predicted_yaw - measured_yaw);
+    ftype innovation = wrap_PI(predicted_yaw - measured_yaw);
 
     // Copy raw value to output variable used for data logging
     innovYaw = innovation;
 
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 3 elements in H are non zero
-    float PH[3];
-    float varInnov = R_YAW;
+    ftype PH[3];
+    ftype varInnov = R_YAW;
     for (uint8_t rowIndex=0; rowIndex<=2; rowIndex++) {
         PH[rowIndex] = 0.0f;
         for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
@@ -876,7 +876,7 @@ void NavEKF2_core::fuseEulerYaw()
         }
         varInnov += H_YAW[rowIndex]*PH[rowIndex];
     }
-    float varInnovInv;
+    ftype varInnovInv;
     if (varInnov >= R_YAW) {
         varInnovInv = 1.0f / varInnov;
         // output numerical health status
@@ -900,7 +900,7 @@ void NavEKF2_core::fuseEulerYaw()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_yawInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (ftype)frontend->_yawInnovGate, 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
@@ -930,7 +930,7 @@ void NavEKF2_core::fuseEulerYaw()
     }
     for (uint8_t row = 0; row <= stateIndexLim; row++) {
         for (uint8_t column = 0; column <= stateIndexLim; column++) {
-            float tmp = KH[row][0] * P[0][column];
+            ftype tmp = KH[row][0] * P[0][column];
             tmp += KH[row][1] * P[1][column];
             tmp += KH[row][2] * P[2][column];
             KHP[row][column] = tmp;
@@ -986,14 +986,14 @@ void NavEKF2_core::fuseEulerYaw()
  * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
  * or some other absolute position or velocity reference
 */
-void NavEKF2_core::FuseDeclination(float declErr)
+void NavEKF2_core::FuseDeclination(ftype declErr)
 {
     // declination error variance (rad^2)
-    const float R_DECL = sq(declErr);
+    const ftype R_DECL = sq(declErr);
 
     // copy required states to local variables
-    float magN = stateStruct.earth_magfield.x;
-    float magE = stateStruct.earth_magfield.y;
+    ftype magN = stateStruct.earth_magfield.x;
+    ftype magE = stateStruct.earth_magfield.y;
 
     // prevent bad earth field states from causing numerical errors or exceptions
     if (magN < 1e-3f) {
@@ -1001,27 +1001,27 @@ void NavEKF2_core::FuseDeclination(float declErr)
     }
 
     // Calculate observation Jacobian and Kalman gains
-    float t2 = magE*magE;
-    float t3 = magN*magN;
-    float t4 = t2+t3;
-    float t5 = 1.0f/t4;
-    float t22 = magE*t5;
-    float t23 = magN*t5;
-    float t6 = P[16][16]*t22;
-    float t13 = P[17][16]*t23;
-    float t7 = t6-t13;
-    float t8 = t22*t7;
-    float t9 = P[16][17]*t22;
-    float t14 = P[17][17]*t23;
-    float t10 = t9-t14;
-    float t15 = t23*t10;
-    float t11 = R_DECL+t8-t15; // innovation variance
+    ftype t2 = magE*magE;
+    ftype t3 = magN*magN;
+    ftype t4 = t2+t3;
+    ftype t5 = 1.0f/t4;
+    ftype t22 = magE*t5;
+    ftype t23 = magN*t5;
+    ftype t6 = P[16][16]*t22;
+    ftype t13 = P[17][16]*t23;
+    ftype t7 = t6-t13;
+    ftype t8 = t22*t7;
+    ftype t9 = P[16][17]*t22;
+    ftype t14 = P[17][17]*t23;
+    ftype t10 = t9-t14;
+    ftype t15 = t23*t10;
+    ftype t11 = R_DECL+t8-t15; // innovation variance
     if (t11 < R_DECL) {
         return;
     }
-    float t12 = 1.0f/t11;
+    ftype t12 = 1.0f/t11;
 
-    float H_MAG[24];
+    ftype H_MAG[24];
 
     H_MAG[16] = -magE*t5;
     H_MAG[17] = magN*t5;
@@ -1036,10 +1036,10 @@ void NavEKF2_core::FuseDeclination(float declErr)
     }
 
     // get the magnetic declination
-    float magDecAng = MagDeclination();
+    ftype magDecAng = MagDeclination();
 
     // Calculate the innovation
-    float innovation = atan2f(magE , magN) - magDecAng;
+    ftype innovation = atan2F(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {
@@ -1120,18 +1120,18 @@ void NavEKF2_core::alignMagStateDeclination()
     }
 
     // get the magnetic declination
-    float magDecAng = MagDeclination();
+    ftype magDecAng = MagDeclination();
 
     // rotate the NE values so that the declination matches the published value
-    Vector3f initMagNED = stateStruct.earth_magfield;
-    float magLengthNE = norm(initMagNED.x,initMagNED.y);
-    stateStruct.earth_magfield.x = magLengthNE * cosf(magDecAng);
-    stateStruct.earth_magfield.y = magLengthNE * sinf(magDecAng);
+    Vector3F initMagNED = stateStruct.earth_magfield;
+    ftype magLengthNE = norm(initMagNED.x,initMagNED.y);
+    stateStruct.earth_magfield.x = magLengthNE * cosF(magDecAng);
+    stateStruct.earth_magfield.y = magLengthNE * sinF(magDecAng);
 
     if (!inhibitMagStates) {
         // zero the corresponding state covariances if magnetic field state learning is active
-        float var_16 = P[16][16];
-        float var_17 = P[17][17];
+        ftype var_16 = P[16][16];
+        ftype var_17 = P[17][17];
         zeroRows(P,16,17);
         zeroCols(P,16,17);
         P[16][16] = var_16;
@@ -1168,7 +1168,7 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         return false;
     };
 
-    float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
+    ftype yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
     if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
         is_positive(yawVarianceEKFGSF) &&
         yawVarianceEKFGSF < sq(radians(15.0f)) &&
@@ -1207,15 +1207,15 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
 
 }
 
-void NavEKF2_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDeltaYaw)
+void NavEKF2_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, bool isDeltaYaw)
 {
-    Quaternion quatBeforeReset = stateStruct.quat;
+    QuaternionF quatBeforeReset = stateStruct.quat;
 
     // check if we should use a 321 or 312 Rotation sequence and update the quaternion
     // states using the preferred yaw definition
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
-    Vector3f eulerAngles;
-    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+    Vector3F eulerAngles;
+    if (fabsF(prevTnb[2][0]) < fabsF(prevTnb[2][1])) {
         // rolled more than pitched so use 321 rotation order
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
         if (isDeltaYaw) {
@@ -1234,15 +1234,15 @@ void NavEKF2_core::resetQuatStateYawOnly(float yaw, float yawVariance, bool isDe
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
     
-    float deltaYaw = wrap_PI(yaw - eulerAngles.z);
+    ftype deltaYaw = wrap_PI(yaw - eulerAngles.z);
 
     // calculate the change in the quaternion state and apply it to the output history buffer
-    Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
+    QuaternionF quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
 
     // rotate attitude error variances into earth frame
-    Vector3f bf_variances = Vector3f(P[0][0], P[1][1], P[2][2]);
-    Vector3f ef_variances = prevTnb.transposed() * bf_variances;
+    Vector3F bf_variances = Vector3F(P[0][0], P[1][1], P[2][2]);
+    Vector3F ef_variances = prevTnb.transposed() * bf_variances;
 
     // reset vertical component to supplied value
     ef_variances.z = yawVariance;

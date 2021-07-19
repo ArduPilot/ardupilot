@@ -15,7 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #include "AP_CANManager.h"
 
 // table of user settable CAN bus parameters

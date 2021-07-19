@@ -24,6 +24,11 @@
 *****************************************/
 void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
+    if (!(control_mode->does_auto_throttle() || quadplane.in_assisted_flight() || quadplane.in_vtol_mode())) {
+        // only do throttle slew limiting in modes where throttle control is automatic
+        return;
+    }
+
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
@@ -556,7 +561,7 @@ void Plane::set_servos_controlled(void)
 
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
     const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (arming.is_armed()) {
+    if (!is_flying() && arming.is_armed()) {
         // Check if rate of change of velocity along X axis exceeds 1-g which normally indicates a throw.
         // Tests with hand carriage of micro UAS indicates that a 1-g threshold does not false trigger prior
         // to the throw, but there is margin to increase this threshold if false triggering becomes problematic.
@@ -565,7 +570,7 @@ void Plane::set_servos_controlled(void)
         bool throw_detected = accel_x_due_to_throw > GRAVITY_MSS;
         bool throttle_up_detected = throttle > aparm.throttle_cruise;
         if (throw_detected || throttle_up_detected) {
-            plane.ahrs.setTakeoffExpected(true);
+            plane.ahrs.set_takeoff_expected(true);
         }
     }
 }
@@ -836,13 +841,8 @@ void Plane::set_servos(void)
     // set airbrake outputs
     airbrake_update();
 
-    if (control_mode->does_auto_throttle() ||
-        quadplane.in_assisted_flight() ||
-        quadplane.in_vtol_mode()) {
-        /* only do throttle slew limiting in modes where throttle
-         *  control is automatic */
-        throttle_slew_limit(SRV_Channel::k_throttle);
-    }
+    // slew rate limit throttle
+    throttle_slew_limit(SRV_Channel::k_throttle);
 
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
@@ -868,19 +868,6 @@ void Plane::set_servos(void)
             break;
         }
     }
-
-#if HIL_SUPPORT
-    if (g.hil_mode == 1) {
-        // get the servos to the GCS immediately for HIL
-        if (HAVE_PAYLOAD_SPACE(MAVLINK_COMM_0, RC_CHANNELS_SCALED)) {
-            send_servo_out(MAVLINK_COMM_0);
-        }
-        if (!g.hil_servos) {
-            // we don't run the output mixer
-            return;
-        }
-    }
-#endif
 
     if (landing.get_then_servos_neutral() > 0 &&
             control_mode == &mode_auto &&

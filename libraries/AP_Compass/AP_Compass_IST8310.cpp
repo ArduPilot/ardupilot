@@ -24,6 +24,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define WAI_REG 0x0
 #define DEVICE_ID 0x10
@@ -170,9 +171,6 @@ bool AP_Compass_IST8310::init()
     _periodic_handle = _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
         FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
 
-    _perf_xfer_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_xfer_err");
-    _perf_bad_data = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "IST8310_bad_data");
-
     return true;
 
 fail:
@@ -183,7 +181,6 @@ fail:
 void AP_Compass_IST8310::start_conversion()
 {
     if (!_dev->write_register(CNTL1_REG, CNTL1_VAL_SINGLE_MEASUREMENT_MODE)) {
-        hal.util->perf_count(_perf_xfer_err);
         _ignore_next_sample = true;
     }
 }
@@ -204,7 +201,6 @@ void AP_Compass_IST8310::timer()
 
     bool ret = _dev->read_registers(OUTPUT_X_L_REG, (uint8_t *) &buffer, sizeof(buffer));
     if (!ret) {
-        hal.util->perf_count(_perf_xfer_err);
         return;
     }
 
@@ -224,7 +220,6 @@ void AP_Compass_IST8310::timer()
     if (x > IST8310_MAX_VAL_XY || x < IST8310_MIN_VAL_XY ||
         y > IST8310_MAX_VAL_XY || y < IST8310_MIN_VAL_XY ||
         z > IST8310_MAX_VAL_Z  || z < IST8310_MIN_VAL_Z) {
-        hal.util->perf_count(_perf_bad_data);
         return;
     }
 
@@ -234,6 +229,19 @@ void AP_Compass_IST8310::timer()
     /* Resolution: 0.3 µT/LSB - already convert to milligauss */
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
+#ifdef HAL_IST8310_I2C_HEATER_OFFSET
+    /*
+      the internal IST8310 can be impacted by the magnetic field from
+      a heater. We use the heater duty cycle to correct for the error
+     */
+    if (!is_external(_instance) && AP_HAL::Device::devid_get_bus_type(_dev->get_bus_id()) == AP_HAL::Device::BUS_TYPE_I2C) {
+        const auto *bc = AP::boardConfig();
+        if (bc) {
+            field += HAL_IST8310_I2C_HEATER_OFFSET * bc->get_heater_duty_cycle() * 0.01;
+        }
+    }
+#endif
+    
     accumulate_sample(field, _instance);
 }
 

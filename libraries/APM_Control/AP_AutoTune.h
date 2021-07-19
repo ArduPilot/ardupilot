@@ -4,17 +4,15 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AC_PID/AC_PID.h>
 
 class AP_AutoTune {
 public:
     struct ATGains {
         AP_Float tau;
-        AP_Float P;
-        AP_Float I;
-        AP_Float D;
-        AP_Float FF;
-        AP_Int16 rmax;
-        AP_Int16 imax;
+        AP_Int16 rmax_pos;
+        AP_Int16 rmax_neg;
+        float FF, P, I, D, IMAX, flt_T;
     };
 
     enum ATType {
@@ -25,17 +23,24 @@ public:
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
         uint64_t time_us;
-        uint8_t  type;
-        uint8_t  state;
-        int16_t  servo;
-        float    demanded;
-        float    achieved;
-        float    P;
+        uint8_t type;
+        uint8_t state;
+        float actuator;
+        float desired_rate;
+        float actual_rate;
+        float FF_single;
+        float FF;
+        float P;
+        float I;
+        float D;
+        uint8_t action;
+        float rmax;
+        float tau;
     };
 
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, AC_PID &rpid);
 
     // called when autotune mode is entered
     void start(void);
@@ -45,23 +50,21 @@ public:
     void stop(void);
 
     // update called whenever autotune mode is active. This is
-    // typically at 50Hz
-    void update(float desired_rate, float achieved_rate, float servo_out);
+    // called at the main loop rate
+    void update(AP_Logger::PID_Info &pid_info, float scaler, float angle_err_deg);
 
     // are we running?
-    bool running:1;
+    bool running;
     
 private:
     // the current gains
     ATGains &current;
+    AC_PID &rpid;
 
     // what type of autotune is this
     ATType type;
 
 	const AP_Vehicle::FixedWing &aparm;
-
-    // did we saturate surfaces?
-    bool saturated_surfaces:1;
 
     // values to restore if we leave autotune mode
     ATGains restore; 
@@ -73,25 +76,61 @@ private:
     ATGains next_save;
 
     // time when we last saved
-    uint32_t last_save_ms = 0;
+    uint32_t last_save_ms;
+
+    // last logging time
+    uint32_t last_log_ms;
 
     // the demanded/achieved state
-    enum ATState {DEMAND_UNSATURATED,
-                  DEMAND_UNDER_POS, 
-                  DEMAND_OVER_POS,
-                  DEMAND_UNDER_NEG,
-                  DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;
+    enum class ATState {IDLE,
+                        DEMAND_POS,
+                        DEMAND_NEG};
+    ATState state;
+
+    // the demanded/achieved state
+    enum class Action {NONE,
+                       LOW_RATE,
+                       SHORT,
+                       RAISE_PD,
+                       LOWER_PD,
+                       IDLE_LOWER_PD};
+    Action action;
 
     // when we entered the current state
-    uint32_t state_enter_ms = 0;
+    uint32_t state_enter_ms;
 
     void check_save(void);
     void check_state_exit(uint32_t state_time_ms);
     void save_gains(const ATGains &v);
 
-    void write_log(float servo, float demanded, float achieved);
+    void save_float_if_changed(AP_Float &v, float value);
+    void save_int16_if_changed(AP_Int16 &v, int16_t value);
+    void state_change(ATState newstate);
 
-    void log_param_change(float v, const char *suffix);
-    void save_float_if_changed(AP_Float &v, float value, const char *suffix);
-    void save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix);
+    // get gains with PID components
+    ATGains get_gains(const ATGains &current);
+    void set_gains(const ATGains &v);
+
+    // update rmax and tau towards target
+    void update_rmax();
+
+    // 5 point mode filter for FF estimate
+    ModeFilterFloat_Size5 ff_filter;
+
+    LowPassFilterFloat actuator_filter;
+    LowPassFilterFloat rate_filter;
+    LowPassFilterFloat target_filter;
+
+    float max_actuator;
+    float min_actuator;
+    float max_rate;
+    float min_rate;
+    float max_target;
+    float min_target;
+    float max_P;
+    float max_D;
+    float min_Dmod;
+    float max_Dmod;
+    float max_SRate;
+    float FF_single;
 };

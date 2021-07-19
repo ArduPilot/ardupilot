@@ -52,6 +52,7 @@ public:
     virtual bool init(bool ignore_checks) {
         return true;
     }
+    virtual void exit() {};
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
@@ -78,7 +79,7 @@ public:
     virtual bool requires_terrain_failsafe() const { return false; }
 
     // functions for reporting to GCS
-    virtual bool get_wp(Location &loc) { return false; };
+    virtual bool get_wp(Location &loc) const { return false; };
     virtual int32_t wp_bearing() const { return 0; }
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
@@ -94,10 +95,10 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
-    const Vector3f& get_desired_velocity() {
+    const Vector3f& get_vel_desired_cms() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:
-        return pos_control->get_desired_velocity();
+        return pos_control->get_vel_desired_cms();
     }
 
 protected:
@@ -156,16 +157,14 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void get_climb_rates(float& pilot_climb_rate,
-                             float& takeoff_climb_rate);
+        void do_pilot_takeoff(float& pilot_climb_rate);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
     private:
         bool _running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
+        float take_off_start_alt;
+        float take_off_complete_alt ;
     };
 
     static _TakeOff takeoff;
@@ -208,6 +207,8 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
+        void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+
     private:
 
         float look_ahead_yaw();
@@ -220,16 +221,20 @@ public:
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
+        float _fixed_yaw_offset_cd;
 
         // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
+        float _fixed_yaw_slewrate_cds;
+
+        // time of the last yaw update
+        uint32_t _last_update_ms;
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _rate_cds;
+        float _yaw_angle_cd;
+        float _yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
 
@@ -275,7 +280,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
@@ -350,23 +355,38 @@ public:
     Number mode_number() const override { return Number::AUTO; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
+    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED; }
+
+    // Auto modes
+    enum class SubMode : uint8_t {
+        TAKEOFF,
+        WP,
+        LAND,
+        RTL,
+        CIRCLE_MOVE_TO_EDGE,
+        CIRCLE,
+        NAVGUIDED,
+        LOITER,
+        LOITER_TO_ALT,
+        NAV_PAYLOAD_PLACE,
+    };
 
     // Auto
-    AutoMode mode() const { return _mode; }
+    SubMode mode() const { return _mode; }
 
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
     void wp_start(const Location& dest_loc);
     void land_start();
-    void land_start(const Vector3f& destination);
+    void land_start(const Vector2f& destination);
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
@@ -399,7 +419,7 @@ protected:
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
-    bool get_wp(Location &loc) override;
+    bool get_wp(Location &loc) const override;
 
 private:
 
@@ -428,14 +448,14 @@ private:
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
-    void payload_place_start(const Vector3f& destination);
+    void payload_place_start(const Vector2f& destination);
     void payload_place_run();
     bool payload_place_run_should_run();
     void payload_place_run_loiter();
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
@@ -548,7 +568,6 @@ public:
     void run() override;
 
 protected:
-    bool start(void) override;
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
     void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
@@ -567,6 +586,7 @@ public:
     Number mode_number() const override { return Number::AUTOTUNE; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -575,7 +595,6 @@ public:
     bool is_autopilot() const override { return false; }
 
     void save_tuning_gains();
-    void stop();
     void reset();
 
 protected:
@@ -614,8 +633,6 @@ protected:
     const char *name4() const override { return "BRAK"; }
 
 private:
-
-    void init_target();
 
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
@@ -833,9 +850,22 @@ public:
     void set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool get_wp(Location &loc) override;
+    bool get_wp(Location &loc) const override;
+    void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
+    void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+
+    // get position, velocity and acceleration targets
+    const Vector3p& get_target_pos() const;
+    const Vector3f& get_target_vel() const;
+    const Vector3f& get_target_accel() const;
+
+    // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
+    bool set_attitude_target_provides_thrust() const;
+    bool stabilizing_pos_xy() const;
+    bool stabilizing_vel_xy() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
@@ -846,10 +876,22 @@ public:
 
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
-    GuidedMode mode() const { return guided_mode; }
+    enum class SubMode {
+        TakeOff,
+        WP,
+        PosVelAccel,
+        VelAccel,
+        Accel,
+        Angle,
+    };
+
+    SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
+
+    // return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+    uint32_t get_timeout_ms() const;
 
 protected:
 
@@ -864,24 +906,30 @@ private:
 
     // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
-        AllowArmingFromTX = (1U << 0),
+        AllowArmingFromTX   = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
-        IgnorePilotYaw    = (1U << 2),
+        IgnorePilotYaw      = (1U << 2),
+        SetAttitudeTarget_ThrustAsThrust = (1U << 3),
+        DoNotStabilizePositionXY = (1U << 4),
+        DoNotStabilizeVelocityXY = (1U << 5),
     };
 
+    void pva_control_start();
     void pos_control_start();
-    void vel_control_start();
-    void posvel_control_start();
+    void accel_control_start();
+    void velaccel_control_start();
+    void posvelaccel_control_start();
     void takeoff_run();
     void pos_control_run();
-    void vel_control_run();
-    void posvel_control_run();
+    void accel_control_run();
+    void velaccel_control_run();
+    void posvelaccel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
-    GuidedMode guided_mode = Guided_TakeOff;
+    SubMode guided_mode = SubMode::TakeOff;
     bool send_notification;     // used to send one time notification to ground station
 
 };
@@ -1100,18 +1148,18 @@ public:
     bool requires_terrain_failsafe() const override { return true; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) override;
+    bool get_wp(Location &loc) const override;
 
     // RTL states
-    enum RTLState {
-        RTL_Starting,
-        RTL_InitialClimb,
-        RTL_ReturnHome,
-        RTL_LoiterAtHome,
-        RTL_FinalDescent,
-        RTL_Land
+    enum class SubMode : uint8_t {
+        STARTING,
+        INITIAL_CLIMB,
+        RETURN_HOME,
+        LOITER_AT_HOME,
+        FINAL_DESCENT,
+        LAND
     };
-    RTLState state() { return _state; }
+    SubMode state() { return _state; }
 
     // this should probably not be exposed
     bool state_complete() const { return _state_complete; }
@@ -1154,7 +1202,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1205,9 +1253,18 @@ public:
     bool is_autopilot() const override { return true; }
 
     void save_position();
-    void exit();
+    void exit() override;
 
     bool is_landing() const override;
+
+    // Safe RTL states
+    enum class SubMode : uint8_t {
+        WAIT_FOR_PATH_CLEANUP,
+        PATH_FOLLOW,
+        PRELAND_POSITION,
+        DESCEND,
+        LAND
+    };
 
 protected:
 
@@ -1215,7 +1272,7 @@ protected:
     const char *name4() const override { return "SRTL"; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) override;
+    bool get_wp(Location &loc) const override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
@@ -1226,7 +1283,7 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
+    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
@@ -1408,14 +1465,15 @@ protected:
 private:
 
     bool throw_detected();
-    bool throw_position_good();
-    bool throw_height_good();
-    bool throw_attitude_good();
+    bool throw_position_good() const;
+    bool throw_height_good() const;
+    bool throw_attitude_good() const;
 
     // Throw stages
     enum ThrowModeStage {
         Throw_Disarmed,
         Throw_Detecting,
+        Throw_Wait_Throttle_Unlimited,
         Throw_Uprighting,
         Throw_HgtStabilise,
         Throw_PosHold
@@ -1466,7 +1524,7 @@ public:
     Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1480,7 +1538,7 @@ protected:
     const char *name4() const override { return "FOLL"; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) override;
+    bool get_wp(Location &loc) const override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
 
@@ -1509,7 +1567,7 @@ public:
     } zigzag_direction;
 
     bool init(bool ignore_checks) override;
-    void exit();
+    void exit() override;
     void run() override;
 
     // auto control methods.  copter flies grid pattern

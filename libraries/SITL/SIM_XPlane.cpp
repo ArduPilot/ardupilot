@@ -115,7 +115,7 @@ bool XPlane::receive_data(void)
                                     one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator |
                                     one << Mixture);
     Location loc {};
-    Vector3f pos;
+    Vector3d pos;
     uint32_t wait_time_ms = 1;
     uint32_t now = AP_HAL::millis();
 
@@ -303,6 +303,7 @@ bool XPlane::receive_data(void)
         }
     }
     position = pos + position_zero;
+    position.xy() += origin.get_distance_NE_double(home);
     update_position();
     time_advance();
 
@@ -318,6 +319,7 @@ bool XPlane::receive_data(void)
         home.lat = loc.lat;
         home.lng = loc.lng;
         home.alt = loc.alt;
+        origin = home;
         position.x = 0;
         position.y = 0;
         position.z = 0;

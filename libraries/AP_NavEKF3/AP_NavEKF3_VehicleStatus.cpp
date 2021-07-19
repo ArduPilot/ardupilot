@@ -22,7 +22,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     }
 
     // User defined multiplier to be applied to check thresholds
-    float checkScaler = 0.01f*(float)frontend->_gpsCheckScaler;
+    ftype checkScaler = 0.01f*(ftype)frontend->_gpsCheckScaler;
 
     if (gpsGoodToAlign) {
         /*
@@ -51,9 +51,9 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     const auto &gps = dal.gps();
 
     const struct Location &gpsloc = gps.location(preferred_gps); // Current location
-    const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
+    const ftype posFiltTimeConst = 10.0; // time constant used to decay position drift
     // calculate time lapsed since last update and limit to prevent numerical errors
-    float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
+    ftype deltaTime = constrain_ftype(ftype(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
     lastPreAlignGpsCheckTime_ms = imuDataDelayed.time_ms;
     // Sum distance moved
     gpsDriftNE += gpsloc_prev.get_distance(gpsloc);
@@ -81,8 +81,8 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     if (gpsDataNew.have_vz && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
-        gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
+        gpsVertVelFilt = constrain_ftype(gpsVertVelFilt,-10.0f,10.0f);
+        gpsVertVelFail = (fabsF(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
     } else {
         gpsVertVelFail = false;
     }
@@ -91,7 +91,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     if (gpsVertVelFail) {
         dal.snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS vertical speed %.2fm/s (needs %.2f)", (double)fabsf(gpsVertVelFilt), (double)(0.3f*checkScaler));
+                           "GPS vertical speed %.2fm/s (needs %.2f)", (double)fabsF(gpsVertVelFilt), (double)(0.3f*checkScaler));
         gpsCheckStatus.bad_vert_vel = true;
     } else {
         gpsCheckStatus.bad_vert_vel = false;
@@ -102,8 +102,8 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     bool gpsHorizVelFail;
     if (onGround) {
         gpsHorizVelFilt = 0.1f * norm(gpsDataDelayed.vel.x,gpsDataDelayed.vel.y) + 0.9f * gpsHorizVelFilt;
-        gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
+        gpsHorizVelFilt = constrain_ftype(gpsHorizVelFilt,-10.0f,10.0f);
+        gpsHorizVelFail = (fabsF(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
@@ -240,14 +240,14 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
     // use a simple criteria based on the GPS receivers claimed speed accuracy and the EKF innovation consistency checks
 
     // set up varaibles and constants used by filter that is applied to GPS speed accuracy
-    const float alpha1 = 0.2f; // coefficient for first stage LPF applied to raw speed accuracy data
-    const float tau = 10.0f; // time constant (sec) of peak hold decay
+    const ftype alpha1 = 0.2f; // coefficient for first stage LPF applied to raw speed accuracy data
+    const ftype tau = 10.0f; // time constant (sec) of peak hold decay
     if (lastGpsCheckTime_ms == 0) {
         lastGpsCheckTime_ms =  imuSampleTime_ms;
     }
-    float dtLPF = (imuSampleTime_ms - lastGpsCheckTime_ms) * 1e-3f;
+    ftype dtLPF = (imuSampleTime_ms - lastGpsCheckTime_ms) * 1e-3f;
     lastGpsCheckTime_ms = imuSampleTime_ms;
-    float alpha2 = constrain_float(dtLPF/tau,0.0f,1.0f);
+    ftype alpha2 = constrain_ftype(dtLPF/tau,0.0f,1.0f);
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
@@ -256,7 +256,7 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
     }
 
     // filter the raw speed accuracy using a LPF
-    sAccFilterState1 = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
+    sAccFilterState1 = constrain_ftype((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
     sAccFilterState2 = MAX(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
@@ -305,7 +305,7 @@ void NavEKF3_core::detectFlight()
 
     if (assume_zero_sideslip()) {
         // To be confident we are in the air we use a criteria which combines arm status, ground speed, airspeed and height change
-        float gndSpdSq = sq(gpsDataNew.vel.x) + sq(gpsDataNew.vel.y);
+        ftype gndSpdSq = sq(gpsDataNew.vel.x) + sq(gpsDataNew.vel.y);
         bool highGndSpd = false;
         bool highAirSpd = false;
         bool largeHgtChange = false;
@@ -319,19 +319,19 @@ void NavEKF3_core::detectFlight()
         }
 
         // trigger on ground speed
-        const float gndSpdThresholdSq = sq(5.0f);
+        const ftype gndSpdThresholdSq = sq(5.0f);
         if (gndSpdSq > gndSpdThresholdSq + sq(gpsSpdAccuracy)) {
             highGndSpd = true;
         }
 
         // trigger if more than 10m away from initial height
-        if (fabsf(hgtMea) > 10.0f) {
+        if (fabsF(hgtMea) > 10.0f) {
             largeHgtChange = true;
         }
 
         if (motorsArmed) {
             onGround = false;
-            if (highGndSpd && (expectTakeoff || highAirSpd || largeHgtChange)) {
+            if (highGndSpd && (dal.get_takeoff_expected() || highAirSpd || largeHgtChange)) {
                 // to a high certainty we are flying
                 inFlight = true;
             }
@@ -387,16 +387,11 @@ void NavEKF3_core::detectFlight()
         }
     }
 
-    // check if vehicle control code has told the EKF to prepare for takeoff or landing
-    // and if rotor-wash ground interaction is expected to cause Baro errors
-    expectGndEffectTakeoff = updateTakeoffExpected() && !assume_zero_sideslip();
-    updateTouchdownExpected();
-
     // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
     if ((!prevOnGround && onGround) || !gpsSpdAccPass) {
         // disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || expectTakeoff) && gpsSpdAccPass) {
+    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || dal.get_takeoff_expected()) && gpsSpdAccPass) {
         // flying or about to fly so reset counters and enable filter bank when GPS is good
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
@@ -412,47 +407,6 @@ void NavEKF3_core::detectFlight()
     prevOnGround = onGround;
     prevInFlight = inFlight;
 
-}
-
-// update and return the status that indicates takeoff is expected so that we can compensate for expected
-// barometer errors due to rotor-wash ground interaction and start the EKF-GSF yaw estimator prior to
-// takeoff movement
-bool NavEKF3_core::updateTakeoffExpected()
-{
-    if (expectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectTakeoff = false;
-    }
-
-    return expectTakeoff;
-}
-
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-// causes the EKF to start the EKF-GSF yaw estimator
-void NavEKF3_core::setTakeoffExpected(bool val)
-{
-    takeoffExpectedSet_ms = imuSampleTime_ms;
-    expectTakeoff = val;
-}
-
-
-// update and return the status that indicates touchdown is expected so that we can compensate for expected
-// barometer errors due to rotor-wash ground interaction
-bool NavEKF3_core::updateTouchdownExpected()
-{
-    if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectGndEffectTouchdown = false;
-    }
-
-    return expectGndEffectTouchdown;
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF3_core::setTouchdownExpected(bool val)
-{
-    touchdownExpectedSet_ms = imuSampleTime_ms;
-    expectGndEffectTouchdown = val;
 }
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference

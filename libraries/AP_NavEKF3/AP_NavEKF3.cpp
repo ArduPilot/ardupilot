@@ -470,7 +470,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: RNG_USE_HGT
     // @DisplayName: Range finder switch height percentage
-    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND_MAX_CM). This will not work unless Baro or GPS height is selected as the primary height source vis EK3_ALT_SOURCE = 0 or 2 respectively.  This feature should not be used for terrain following as it is designed  for vertical takeoff and landing with climb above  the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
+    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFNDx_MAX_CM) and the primary height source is Baro or GPS (see EK3_SRCx_POSZ).  This feature should not be used for terrain following as it is designed for vertical takeoff and landing with climb above the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
     // @Range: -1 70
     // @Increment: 1
     // @User: Advanced
@@ -703,6 +703,14 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("OGNM_TEST_SF", 6, NavEKF3, _ognmTestScaleFactor, 2.0f),
+
+    // @Param: GND_EFF_DZ
+    // @DisplayName: Baro height ground effect dead zone
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when takeing off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. 
+    // @Range: 0.0 10.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
 
     AP_GROUPEND
 };
@@ -1049,7 +1057,7 @@ void NavEKF3::updateCoreRelativeErrors()
             // reduce error for a core only if its better than the primary lane by at least the Relative Error Threshold, this should prevent unnecessary lane changes
             if (error > 0 || error < -MAX(_err_thresh, 0.05)) {
                 coreRelativeErrors[i] += error;
-                coreRelativeErrors[i] = constrain_float(coreRelativeErrors[i], -CORE_ERR_LIM, CORE_ERR_LIM);
+                coreRelativeErrors[i] = constrain_ftype(coreRelativeErrors[i], -CORE_ERR_LIM, CORE_ERR_LIM);
             }
         }
     }
@@ -1350,9 +1358,11 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) {
-        // we don't allow setting of the EKF origin if using GPS to prevent
-        // accidental setting of EKF origin with invalid position or height
+    if ((sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) || common_origin_valid) {
+        // we don't allow setting of the EKF origin if using GPS
+        // or if the EKF origin has already been set.
+        // This is to prevent accidental setting of EKF origin with an
+        // invalid position or height or causing upsets from a shifting origin.
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 refusing set origin");
         return false;
     }
@@ -1580,21 +1590,6 @@ void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms,
     }
 }
 
-// return data for debugging body frame odometry fusion
-uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const
-{
-    uint32_t ret = 0;
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
-
-    if (core) {
-        ret = core[instance].getBodyFrameOdomDebug(velInnov, velInnovVar);
-    }
-
-    return ret;
-}
-
 // parameter conversion of EKF3 parameters
 void NavEKF3::convert_parameters()
 {
@@ -1696,41 +1691,6 @@ void NavEKF3::convert_parameters()
     }
 }
 
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-// causes the EKF to start the EKF-GSF yaw estimator
-void NavEKF3::setTakeoffExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event3(AP_DAL::Event::setTakeoffExpected);
-    } else {
-        AP::dal().log_event3(AP_DAL::Event::unsetTakeoffExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTakeoffExpected(val);
-        }
-    }
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF3::setTouchdownExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event3(AP_DAL::Event::setTouchdownExpected);
-    } else {
-        AP::dal().log_event3(AP_DAL::Event::unsetTouchdownExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTouchdownExpected(val);
-        }
-    }
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
 // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -1780,19 +1740,6 @@ void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getFilterStatus(status);
-    } else {
-        memset(&status, 0, sizeof(status));
-    }
-}
-
-/*
-return filter gps quality check status
-*/
-void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getFilterGpsStatus(status);
     } else {
         memset(&status, 0, sizeof(status));
     }

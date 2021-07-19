@@ -244,6 +244,11 @@ public:
     AP_Frsky_Parameters frsky_parameters;
 #endif
 
+    /*
+      Returns the pan and tilt for use by onvif camera in scripting
+     */
+    virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -307,7 +312,9 @@ protected:
     AP_VisualOdom visual_odom;
 #endif
 
+#if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+#endif
 
 #if HAL_MSP_ENABLED
     AP_MSP msp;
@@ -343,8 +350,12 @@ private:
     // statustext:
     void send_watchdog_reset_statustext();
 
+    // run notch update at either loop rate or 200Hz
+    void update_dynamic_notch_at_specified_rate();
+
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
+    uint32_t _last_notch_update_ms; // last time update_dynamic_notch() was run
 
     static AP_Vehicle *_singleton;
 

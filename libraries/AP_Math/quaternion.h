@@ -23,32 +23,33 @@
 #endif
 #include <math.h>
 
-class Quaternion {
+template <typename T>
+class QuaternionT {
 public:
-    float        q1, q2, q3, q4;
+    T        q1, q2, q3, q4;
 
     // constructor creates a quaternion equivalent
     // to roll=0, pitch=0, yaw=0
-    Quaternion()
+    QuaternionT<T>()
     {
         q1 = 1;
         q2 = q3 = q4 = 0;
     }
 
     // setting constructor
-    Quaternion(const float _q1, const float _q2, const float _q3, const float _q4) :
+    QuaternionT<T>(const T _q1, const T _q2, const T _q3, const T _q4) :
         q1(_q1), q2(_q2), q3(_q3), q4(_q4)
     {
     }
 
     // setting constructor
-    Quaternion(const float _q[4]) :
+    QuaternionT<T>(const T _q[4]) :
         q1(_q[0]), q2(_q[1]), q3(_q[2]), q4(_q[3])
     {
     }
 
     // function call operator
-    void operator()(const float _q1, const float _q2, const float _q3, const float _q4)
+    void operator()(const T _q1, const T _q2, const T _q3, const T _q4)
     {
         q1 = _q1;
         q2 = _q2;
@@ -64,12 +65,10 @@ public:
 
     // return the rotation matrix equivalent for this quaternion
     void        rotation_matrix(Matrix3f &m) const;
-
-    // return the rotation matrix equivalent for this quaternion after normalization
-    void        rotation_matrix_norm(Matrix3f &m) const;
+    void        rotation_matrix(Matrix3d &m) const;
 
     // return the rotation matrix equivalent for this quaternion
-    void		from_rotation_matrix(const Matrix3f &m);
+    void		from_rotation_matrix(const Matrix3<T> &m);
 
     // create a quaternion from a given rotation
     void        from_rotation(enum Rotation rotation);
@@ -78,58 +77,59 @@ public:
     void        rotate(enum Rotation rotation);
 
     // convert a vector from earth to body frame
-    void        earth_to_body(Vector3f &v) const;
+    void        earth_to_body(Vector3<T> &v) const;
 
     // create a quaternion from Euler angles
-    void        from_euler(float roll, float pitch, float yaw);
+    void        from_euler(T roll, T pitch, T yaw);
 
     // create a quaternion from Euler angles applied in yaw, roll, pitch order
     // instead of the normal yaw, pitch, roll order
-    void        from_vector312(float roll, float pitch, float yaw);
+    void        from_vector312(T roll, T pitch, T yaw);
 
     // convert this quaternion to a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
-    void        to_axis_angle(Vector3f &v) const;
+    void        to_axis_angle(Vector3<T> &v) const;
 
     // create a quaternion from a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
-    void        from_axis_angle(Vector3f v);
+    void        from_axis_angle(Vector3<T> v);
 
     // create a quaternion from its axis-angle representation
     // the axis vector must be length 1. the rotation angle theta is in radians
-    void        from_axis_angle(const Vector3f &axis, float theta);
+    void        from_axis_angle(const Vector3<T> &axis, T theta);
 
     // rotate by the provided rotation vector
-    void        rotate(const Vector3f &v);
+    void        rotate(const Vector3<T> &v);
 
     // create a quaternion from a rotation vector
     // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-    void        from_axis_angle_fast(Vector3f v);
+    void        from_axis_angle_fast(Vector3<T> v);
 
     // create a quaternion from its axis-angle representation
     // the axis vector must be length 1, theta should less than 0.17 radians (i.e. 10 degrees)
-    void        from_axis_angle_fast(const Vector3f &axis, float theta);
+    void        from_axis_angle_fast(const Vector3<T> &axis, T theta);
 
     // rotate by the provided rotation vector
     // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
-    void        rotate_fast(const Vector3f &v);
+    void        rotate_fast(const Vector3<T> &v);
 
     // get euler roll angle
-    float       get_euler_roll() const;
+    T       get_euler_roll() const;
 
     // get euler pitch angle
-    float       get_euler_pitch() const;
+    T       get_euler_pitch() const;
 
     // get euler yaw angle
-    float       get_euler_yaw() const;
+    T       get_euler_yaw() const;
 
     // create eulers from a quaternion
     void        to_euler(float &roll, float &pitch, float &yaw) const;
+    void        to_euler(double &roll, double &pitch, double &yaw) const;
 
     // create eulers from a quaternion
-    Vector3f    to_vector312(void) const;
+    Vector3<T>    to_vector312(void) const;
 
-    float length(void) const;
+    T length(void) const;
     void normalize();
 
     // initialise the quaternion to no rotation
@@ -139,34 +139,52 @@ public:
         q2 = q3 = q4 = 0.0f;
     }
 
-    Quaternion inverse(void) const;
+    QuaternionT<T> inverse(void) const;
 
     // reverse the rotation of this quaternion
     void invert();
 
     // allow a quaternion to be used as an array, 0 indexed
-    float & operator[](uint8_t i)
+    T & operator[](uint8_t i)
     {
-        float *_v = &q1;
+        T *_v = &q1;
 #if MATH_CHECK_INDEXES
         assert(i < 4);
 #endif
         return _v[i];
     }
 
-    const float & operator[](uint8_t i) const
+    const T & operator[](uint8_t i) const
     {
-        const float *_v = &q1;
+        const T *_v = &q1;
 #if MATH_CHECK_INDEXES
         assert(i < 4);
 #endif
         return _v[i];
     }
 
-    Quaternion operator*(const Quaternion &v) const;
-    Quaternion &operator*=(const Quaternion &v);
-    Quaternion operator/(const Quaternion &v) const;
+    QuaternionT<T> operator*(const QuaternionT<T> &v) const;
+    Vector3<T> operator*(const Vector3<T> &v) const;
+    QuaternionT<T> &operator*=(const QuaternionT<T> &v);
+    QuaternionT<T> operator/(const QuaternionT<T> &v) const;
 
     // angular difference between quaternions
-    Quaternion angular_difference(const Quaternion &v) const;
+    QuaternionT<T> angular_difference(const QuaternionT<T> &v) const;
+
+    // absolute (e.g. always positive) earth-frame roll-pitch difference (in radians) between this Quaternion and another
+    T roll_pitch_difference(const QuaternionT<T> &v) const;
+
+    // double/float conversion
+    QuaternionT<double> todouble(void) const {
+        return QuaternionT<double>(q1,q2,q3,q4);
+    }
+    QuaternionT<float> tofloat(void) const {
+        return QuaternionT<float>(q1,q2,q3,q4);
+    }
 };
+
+typedef QuaternionT<float> Quaternion;
+typedef QuaternionT<double> QuaternionD;
+
+
+

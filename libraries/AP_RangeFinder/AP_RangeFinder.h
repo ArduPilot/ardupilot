@@ -181,6 +181,9 @@ public:
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
 
+    // get temperature reading in C.  returns true on success and populates temp argument
+    bool get_temp(enum Rotation orientation, float &temp) const;
+
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.

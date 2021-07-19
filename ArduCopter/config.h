@@ -39,13 +39,6 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
- #define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -92,16 +85,16 @@
  # define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
 #endif
 
+#ifndef RANGEFINDER_FILT_DEFAULT
+ # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
+#endif
+
 #ifndef SURFACE_TRACKING_VELZ_MAX
  # define SURFACE_TRACKING_VELZ_MAX 150     // max vertical speed change while surface tracking with rangefinder
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_WPNAV_FILT_HZ
- # define RANGEFINDER_WPNAV_FILT_HZ   0.5f // filter frequency for rangefinder altitude provided to waypoint navigation class
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
@@ -175,8 +168,8 @@
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
-#ifndef EKF_ORIGIN_MAX_DIST_M
- # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
+#ifndef EKF_ORIGIN_MAX_ALT_KM
+ # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
 
 #ifndef COMPASS_CAL_STICK_GESTURE_TIME
@@ -662,11 +655,7 @@
  #define AC_RALLY   ENABLED
 #endif
 
-#ifndef AC_TERRAIN
- #define AC_TERRAIN ENABLED
-#endif
-
-#if AC_TERRAIN && !AC_RALLY
+#if AP_TERRAIN_AVAILABLE && !AC_RALLY
  #error Terrain relies on Rally which is disabled
 #endif
 
@@ -698,7 +687,7 @@
   #error ModeAuto requires ModeRTL which is disabled
 #endif
 
-#if AC_TERRAIN && !MODE_AUTO_ENABLED
+#if AP_TERRAIN_AVAILABLE && !MODE_AUTO_ENABLED
   #error Terrain requires ModeAuto which is disabled
 #endif
 

@@ -78,9 +78,6 @@ public:
     void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
-    // reset the current attitude, used on new IMU calibration
-    void reset_attitude(const float &roll, const float &pitch, const float &yaw) override;
-
     // dead-reckoning support
     bool get_position(struct Location &loc) const override;
 
@@ -151,10 +148,10 @@ public:
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
     // from which to decide the origin on its own
-    bool set_origin(const Location &loc) override;
+    bool set_origin(const Location &loc) override WARN_IF_UNUSED;
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool get_origin(Location &ret) const override;
+    bool get_origin(Location &ret) const override WARN_IF_UNUSED;
 
     bool have_inertial_nav() const override;
 
@@ -196,8 +193,6 @@ public:
 
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
-
-    void set_ekf_use(bool setting);
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
@@ -279,9 +274,6 @@ public:
 
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const override;
-
-    void setTakeoffExpected(bool val);
-    void setTouchdownExpected(bool val);
 
     bool getGpsGlitchStatus() const;
 
@@ -390,8 +382,7 @@ private:
         True = 1,
         UNKNOWN = 3,
     };
-    TriState touchdownExpectedState = TriState::UNKNOWN;
-    TriState takeoffExpectedState = TriState::UNKNOWN;
+
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
     EKFType last_active_ekf_type;

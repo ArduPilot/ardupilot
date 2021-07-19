@@ -46,71 +46,61 @@ void AP_BattMonitor_SMBus::read(void)
 }
 
 // reads the pack full charge capacity
-// returns true if the read was successful, or if we already knew the pack capacity
-bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
+// returns if we already knew the pack capacity
+void AP_BattMonitor_SMBus::read_full_charge_capacity(void)
 {
-    uint16_t data;
-
     if (_full_charge_capacity != 0) {
-        return true;
-    } else if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
-        _full_charge_capacity = data * get_capacity_scaler();
-        return true;
+        return;
     }
-    return false;
+
+    if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, _full_charge_capacity)) {
+        _full_charge_capacity *= get_capacity_scaler();
+    }
 }
 
 // reads the remaining capacity
-// returns true if the read was successful, which is only considered to be the
-// we know the full charge capacity
-bool AP_BattMonitor_SMBus::read_remaining_capacity(void)
+// which will only be read if we know the full charge capacity (accounting for battery degradation)
+void AP_BattMonitor_SMBus::read_remaining_capacity(void)
 {
     int32_t capacity = _params._pack_capacity;
 
-    if (capacity > 0) {
-        uint16_t data;
-        if (read_word(BATTMONITOR_SMBUS_REMAINING_CAPACITY, data)) {
-            _state.consumed_mah = MAX(0, capacity - (data * get_capacity_scaler()));
-            return true;
-        }
+    if (capacity <= 0) {
+        return;
     }
 
-    return false;
+    uint16_t data;
+    if (read_word(BATTMONITOR_SMBUS_REMAINING_CAPACITY, data)) {
+        _state.consumed_mah = MAX(0, capacity - (data * get_capacity_scaler()));
+    }
 }
 
 // reads the temperature word from the battery
-// returns true if the read was successful
-bool AP_BattMonitor_SMBus::read_temp(void)
+void AP_BattMonitor_SMBus::read_temp(void)
 {
     uint16_t data;
-    if (read_word(BATTMONITOR_SMBUS_TEMP, data)) {
+    if (!read_word(BATTMONITOR_SMBUS_TEMP, data)) {
         _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
-
-        _state.temperature_time = AP_HAL::millis();
-        _state.temperature = ((float)(data - 2731)) * 0.1f;
-        return true;
+        return;
     }
-    
-    _has_temperature = false;
+    _has_temperature = true;
 
-    return false;
+    _state.temperature_time = AP_HAL::millis();
+    _state.temperature = (data * 0.1f) - C_TO_KELVIN;
 }
 
 // reads the serial number if it's not already known
-// returns true if the read was successful or the number was already known
-bool AP_BattMonitor_SMBus::read_serial_number(void)
+// returns if the serial number was already known
+void AP_BattMonitor_SMBus::read_serial_number(void)
 {
-    uint16_t data;
-
     // don't recheck the serial number if we already have it
     if (_serial_number != -1) {
-        return true;
-    } else if (read_word(BATTMONITOR_SMBUS_SERIAL, data)) {
-        _serial_number = data;
-        return true;
+        return;
     }
 
-    return false;
+    uint16_t data;
+    if (read_word(BATTMONITOR_SMBUS_SERIAL, data)) {
+        _serial_number = data;
+    }
 }
 
 // reads the battery's cycle count
@@ -189,4 +179,3 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
-

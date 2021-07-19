@@ -23,6 +23,8 @@
 #include "AP_WindVane_SITL.h"
 #include "AP_WindVane_NMEA.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: TYPE
@@ -33,13 +35,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_WindVane, _direction_type, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: RC_IN_NO
-    // @DisplayName: Wind vane sensor RC Input Channel
-    // @Description: RC Input Channel to use as wind angle value
-    // @Range: 0 16
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("RC_IN_NO", 2, AP_WindVane, _rc_in_no, 0),
+    // 2 was RC_IN_NO
 
     // @Param: DIR_PIN
     // @DisplayName: Wind vane analog voltage pin for direction
@@ -76,8 +72,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("DIR_OFS", 6, AP_WindVane, _dir_analog_bearing_offset, 0.0f),
 
     // @Param: DIR_FILT
-    // @DisplayName: Wind vane direction low pass filter frequency
-    // @Description: Wind vane direction low pass filter frequency, a value of -1 disables filter
+    // @DisplayName: apparent Wind vane direction low pass filter frequency
+    // @Description: apparent Wind vane direction low pass filter frequency, a value of -1 disables filter
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("DIR_FILT", 7, AP_WindVane, _dir_filt_hz, 0.5f),
@@ -139,11 +135,18 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("SPEED_OFS", 14, AP_WindVane, _speed_sensor_voltage_offset, WINDSPEED_DEFAULT_VOLT_OFFSET),
 
     // @Param: SPEED_FILT
-    // @DisplayName: Wind speed low pass filter frequency
-    // @Description: Wind speed low pass filter frequency, a value of -1 disables filter
+    // @DisplayName: apparent wind speed low pass filter frequency
+    // @Description: apparent Wind speed low pass filter frequency, a value of -1 disables filter
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("SPEED_FILT", 15, AP_WindVane, _speed_filt_hz, 0.5f),
+
+    // @Param: TRUE_FILT
+    // @DisplayName: True speed and direction low pass filter frequency
+    // @Description: True speed and direction low pass filter frequency, a value of -1 disables filter
+    // @Units: Hz
+    // @User: Standard
+    AP_GROUPINFO("TRUE_FILT", 16, AP_WindVane, _true_filt_hz, 0.05f),
 
     AP_GROUPEND
 };
@@ -251,17 +254,17 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
 // update wind vane, expected to be called at 20hz
 void AP_WindVane::update()
 {
-    bool have_speed = _speed_driver != nullptr;
-    bool have_direciton = _direction_driver != nullptr;
+    const bool have_speed = _speed_driver != nullptr;
+    const bool have_direction = _direction_driver != nullptr;
 
     // exit immediately if not enabled
-    if (!enabled() || (!have_speed && !have_direciton)) {
+    if (!enabled() || (!have_speed && !have_direction)) {
         return;
     }
 
     // calibrate if booted and disarmed
     if (!hal.util->get_soft_armed()) {
-        if (_calibration == 1 && have_direciton) {
+        if (_calibration == 1 && have_direction) {
             _direction_driver->calibrate();
         } else if (_calibration == 2 && have_speed) {
             _speed_driver->calibrate();
@@ -280,20 +283,90 @@ void AP_WindVane::update()
     }
 
     // read apparent wind direction
-    if (_speed_apparent >= _dir_speed_cutoff && have_direciton) {
-        // only update if enough wind to move vane
+    if (have_direction) {
         _direction_driver->update_direction();
     }
 
-    // calculate true wind speed and direction from apparent wind
-    if (have_speed && have_direciton) {
-        update_true_wind_speed_and_direction();
+    if (have_speed && have_direction) {
+        if (_speed_apparent >= _dir_speed_cutoff) {
+            // calculate true wind speed and direction from apparent wind
+            update_true_wind_speed_and_direction();
+        } else {
+            // assume true wind has not changed, calculate the apparent wind direction and speed
+            update_apparent_wind_dir_from_true();
+        }
     } else {
-        // no wind speed sensor, so can't do true wind calcs
-        _direction_true = _direction_apparent_ef;
-        _speed_true = 0.0f;
-        return;
+        // only have direction, can't do true wind calcs, set true direction to apparent + heading
+        _direction_true_raw = wrap_PI(_direction_apparent_raw + AP::ahrs().yaw);
+        _speed_true_raw = 0.0f;
     }
+
+    /*
+        Apply filters
+        https://en.wikipedia.org/wiki/Mean_of_circular_quantities
+    */
+    float filtered_sin;
+    float filtered_cos;
+
+    // apparent speed
+    if (is_positive(_speed_filt_hz)) {
+        _speed_apparent_filt.set_cutoff_frequency(_speed_filt_hz);
+        _speed_apparent = _speed_apparent_filt.apply(_speed_apparent_raw,0.05f);
+    } else {
+        _speed_apparent = _speed_apparent_raw;
+    }
+
+    // apparent direction
+    if (is_positive(_dir_filt_hz)) {
+        _direction_apparent_sin_filt.set_cutoff_frequency(_dir_filt_hz);
+        _direction_apparent_cos_filt.set_cutoff_frequency(_dir_filt_hz);
+        filtered_sin = _direction_apparent_sin_filt.apply(sinf(_direction_apparent_raw),0.05f);
+        filtered_cos = _direction_apparent_cos_filt.apply(cosf(_direction_apparent_raw),0.05f);
+        _direction_apparent = atan2f(filtered_sin, filtered_cos);
+    } else {
+        _direction_apparent = _direction_apparent_raw;
+    }
+
+    // apparent direction for tack threshold, hard coded freq
+    filtered_sin = _tack_sin_filt.apply(sinf(_direction_apparent_raw),0.05f);
+    filtered_cos = _tack_cos_filt.apply(cosf(_direction_apparent_raw),0.05f);
+    _direction_tack = atan2f(filtered_sin, filtered_cos);
+    _current_tack = is_negative(_direction_tack) ? Sailboat_Tack::TACK_PORT : Sailboat_Tack::TACK_STARBOARD;
+
+    // true wind direction and speed, both at the same freq
+    if (is_positive(_true_filt_hz)) {
+        _speed_true_filt.set_cutoff_frequency(_true_filt_hz);
+        _direction_true_sin_filt.set_cutoff_frequency(_true_filt_hz);
+        _direction_true_cos_filt.set_cutoff_frequency(_true_filt_hz);
+
+        _speed_true = _speed_true_filt.apply(_speed_true_raw,0.05f);
+        filtered_sin = _direction_true_sin_filt.apply(sinf(_direction_true_raw),0.05f);
+        filtered_cos = _direction_true_cos_filt.apply(cosf(_direction_true_raw),0.05f);
+        _direction_true = atan2f(filtered_sin, filtered_cos);
+    } else {
+        _speed_true = _speed_true_raw;
+        _direction_true = _direction_true_raw;
+    }
+
+// @LoggerMessage: WIND
+// @Description: Windvane readings
+// @Field: TimeUS: Time since system startup
+// @Field: DrRaw: raw apparent wind direction direct from sensor, in body-frame
+// @Field: DrApp: Apparent wind direction, in body-frame
+// @Field: DrTru: True wind direction
+// @Field: SpdRaw: raw wind speed direct from sensor
+// @Field: SpdApp: Apparent wind Speed
+// @Field: SpdTru: True wind speed
+    AP::logger().Write("WIND", "TimeUS,DrRaw,DrApp,DrTru,SpdRaw,SpdApp,SpdTru",
+                        "sddhnnn", "F000000", "Qffffff",
+                        AP_HAL::micros64(),
+                        degrees(_direction_apparent_raw),
+                        degrees(_direction_apparent),
+                        degrees(_direction_true),
+                        _speed_apparent_raw,
+                        _speed_apparent,
+                        _speed_true);
+
 }
 
 
@@ -347,21 +420,42 @@ void AP_WindVane::update_true_wind_speed_and_direction()
     Vector3f veh_velocity;
     if (!AP::ahrs().get_velocity_NED(veh_velocity)) {
         // if no vehicle speed use apparent speed and direction directly
-        _direction_true = _direction_apparent_ef;
-        _speed_true = _speed_apparent;
+        _direction_true_raw = _direction_apparent_raw;
+        _speed_true_raw = _speed_apparent;
         return;
     }
 
     // convert apparent wind speed and direction to 2D vector in same frame as vehicle velocity
-    const float wind_dir_180 = wrap_PI(_direction_apparent_ef + radians(180));
+    const float wind_dir_180 = _direction_apparent_raw + AP::ahrs().yaw + radians(180);
     const Vector2f wind_apparent_vec(cosf(wind_dir_180) * _speed_apparent, sinf(wind_dir_180) * _speed_apparent);
 
     // add vehicle velocity
     Vector2f wind_true_vec = Vector2f(wind_apparent_vec.x + veh_velocity.x, wind_apparent_vec.y + veh_velocity.y);
 
     // calculate true speed and direction
-    _direction_true = wrap_PI(atan2f(wind_true_vec.y, wind_true_vec.x) - radians(180));
-    _speed_true = wind_true_vec.length();
+    _direction_true_raw = wrap_PI(atan2f(wind_true_vec.y, wind_true_vec.x) - radians(180));
+    _speed_true_raw = wind_true_vec.length();
+}
+
+// apparent wind is low, can't trust sensors, assume true wind has not changed and calculate apparent wind
+void AP_WindVane::update_apparent_wind_dir_from_true()
+{
+    // if no vehicle speed, can't do calcs
+    Vector3f veh_velocity;
+    if (!AP::ahrs().get_velocity_NED(veh_velocity)) {
+        return;
+    }
+
+    // convert true wind speed and direction to 2D vector in same frame as vehicle velocity
+    const float wind_dir_180 = _direction_true + radians(180);
+    const Vector2f wind_true_vec(cosf(wind_dir_180) * _speed_true, sinf(wind_dir_180) * _speed_true);
+
+    // add vehicle velocity
+    Vector2f wind_apparent_vec = Vector2f(wind_true_vec.x - veh_velocity.x, wind_true_vec.y - veh_velocity.y);
+
+    // calculate apartment speed and direction
+    _direction_apparent_raw = wrap_PI(atan2f(wind_apparent_vec.y, wind_apparent_vec.x) - radians(180) - AP::ahrs().yaw);
+    _speed_apparent_raw = wind_apparent_vec.length();
 }
 
 AP_WindVane *AP_WindVane::_singleton = nullptr;

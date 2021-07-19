@@ -21,6 +21,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 
+#if NUM_SERVO_CHANNELS == 0
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 /// map a function to a servo channel and output it
@@ -187,6 +191,7 @@ void SRV_Channels::update_aux_servo_function(void)
 }
 
 /// Should be called after the the servo functions have been initialized
+/// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
     hal.rcout->set_default_rate(uint16_t(_singleton->default_rate.get()));
@@ -215,17 +220,32 @@ void SRV_Channels::enable_aux_servos()
             c.set_output_pwm(c.servo_max);
             c.output_ch();
         }
+    }
 
-        /*
-          for channels which have been marked as digital output then the
-          MIN/MAX/TRIM values have no meaning for controlling output, as
-          the HAL handles the scaling. We still need to cope with places
-          in the code that may try to set a PWM value however, so to
-          ensure consistency we force the MIN/MAX/TRIM to be consistent
-          across all digital channels. We use a MIN/MAX of 1000/2000, and
-          set TRIM to either 1000 or 1500 depending on whether the channel
-          is reversible
-        */
+    // propagate channel masks to the ESCS
+    hal.rcout->update_channel_masks();
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr->update();
+#endif
+}
+
+/*
+    for channels which have been marked as digital output then the
+    MIN/MAX/TRIM values have no meaning for controlling output, as
+    the HAL handles the scaling. We still need to cope with places
+    in the code that may try to set a PWM value however, so to
+    ensure consistency we force the MIN/MAX/TRIM to be consistent
+    across all digital channels. We use a MIN/MAX of 1000/2000, and
+    set TRIM to either 1000 or 1500 depending on whether the channel
+    is reversible
+*/
+void SRV_Channels::set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask) {
+    digital_mask |= dig_mask;
+    reversible_mask |= rev_mask;
+
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
         if (digital_mask & (1U<<i)) {
             c.servo_min.set(1000);
             c.servo_max.set(2000);
@@ -236,10 +256,6 @@ void SRV_Channels::enable_aux_servos()
             }
         }
     }
-
-#if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->update();
-#endif
 }
 
 /// enable output channels using a channel mask

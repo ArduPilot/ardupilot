@@ -6,13 +6,14 @@
 #include "AP_BattMonitor_SMBus_Maxell.h"
 #include "AP_BattMonitor_SMBus_Rotoye.h"
 #include "AP_BattMonitor_Bebop.h"
-#include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_ESC.h"
 #include "AP_BattMonitor_SMBus_SUI.h"
 #include "AP_BattMonitor_SMBus_NeoDesign.h"
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_MPPT_PacketDigital.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -154,6 +155,12 @@ AP_BattMonitor::init()
                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
                 break;
+            case Type::NeoDesign:
+                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
+                drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance],
+                                                                 hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                         100000, true, 20));
+                break;
 #endif // HAL_BATTMON_SMBUS_ENABLE
             case Type::BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
@@ -166,8 +173,8 @@ AP_BattMonitor::init()
 #endif
                 break;
             case Type::BLHeliESC:
-#ifdef HAVE_AP_BLHELI_SUPPORT
-                drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
+#if HAL_WITH_ESC_TELEM && !defined(HAL_BUILD_AP_PERIPH)
+                drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
 #endif
                 break;
             case Type::Sum:
@@ -181,12 +188,7 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_FUEL_ENABLE
-            case Type::NeoDesign:
-                _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_INTERNAL),
-                drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance],
-                                                                 hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                         100000, true, 20));
-                break;
+
 #if GENERATOR_ENABLED
             case Type::GENERATOR_ELEC:
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
@@ -195,6 +197,11 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
                 break;
 #endif // GENERATOR_ENABLED
+#if HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
+            case Type::MPPT_PacketDigital:
+                drivers[instance] = new AP_BattMonitor_MPPT_PacketDigital(*this, state[instance], _params[instance]);
+                break;
+#endif // HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
             case Type::NONE:
             default:
                 break;
@@ -580,6 +587,31 @@ bool AP_BattMonitor::reset_remaining_mask(uint16_t battery_mask, float percentag
         AP_Notify::flags.failsafe_battery = false;
     }
     return ret;
+}
+
+// Returns the mavlink charge state. The following mavlink charge states are not used
+// MAV_BATTERY_CHARGE_STATE_EMERGENCY , MAV_BATTERY_CHARGE_STATE_FAILED
+// MAV_BATTERY_CHARGE_STATE_UNHEALTHY, MAV_BATTERY_CHARGE_STATE_CHARGING
+MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t instance) const 
+{
+    if (instance >= _num_instances) {
+        return MAV_BATTERY_CHARGE_STATE_UNDEFINED;
+    }
+
+    switch (state[instance].failsafe) {
+
+    case Failsafe::None:
+        return MAV_BATTERY_CHARGE_STATE_OK;
+
+    case Failsafe::Low:
+        return MAV_BATTERY_CHARGE_STATE_LOW;
+
+    case Failsafe::Critical:
+        return MAV_BATTERY_CHARGE_STATE_CRITICAL;
+    }
+
+    // Should not reach this
+    return MAV_BATTERY_CHARGE_STATE_UNDEFINED;
 }
 
 namespace AP {

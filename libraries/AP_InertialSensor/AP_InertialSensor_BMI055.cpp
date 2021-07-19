@@ -101,8 +101,10 @@ AP_InertialSensor_BMI055::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI055::start()
 {
-    accel_instance = _imu.register_accel(ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055));
-    gyro_instance = _imu.register_gyro(GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI055));
+    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055)) ||
+        !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI055))) {
+        return;
+    }
 
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);

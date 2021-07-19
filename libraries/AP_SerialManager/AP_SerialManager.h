@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -151,6 +151,7 @@ public:
         SerialProtocol_ADSB = 35,
         SerialProtocol_AHRS = 36,
         SerialProtocol_SmartAudio = 37,
+        SerialProtocol_Torqeedo = 39,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 

@@ -13,22 +13,21 @@ bool Sub::poshold_init()
     if (!position_ok()) {
         return false;
     }
-    pos_control.init_vel_controller_xyz();
-    pos_control.set_desired_velocity_xy(0, 0);
-    pos_control.set_target_to_stopping_point_xy();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_max_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_accel_xy(wp_nav.get_default_speed_xy(), wp_nav.get_wp_acceleration());
+    pos_control.set_correction_speed_accel_xy(wp_nav.get_default_speed_xy(), wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.init_xy_controller_stopping_point();
+    pos_control.init_z_controller();
 
     // Stop all thrusters
     attitude_control.set_throttle_out(0.5f ,true, g.throttle_filt);
     attitude_control.relax_attitude_controllers();
-    pos_control.relax_alt_hold_controllers();
+    pos_control.relax_z_controller(0.5f);
 
     last_pilot_heading = ahrs.yaw_sensor;
 
@@ -46,8 +45,8 @@ void Sub::poshold_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out(0.5f ,true, g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.set_target_to_stopping_point_xy();
-        pos_control.relax_alt_hold_controllers();
+        pos_control.init_xy_controller_stopping_point();
+        pos_control.relax_z_controller(0.5f);
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
@@ -63,19 +62,15 @@ void Sub::poshold_run()
     float lateral_out = 0;
     float forward_out = 0;
 
-    pos_control.set_desired_velocity_xy(0,0);
-
     if (position_ok()) {
         // Allow pilot to reposition the sub
         if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
-            pos_control.set_target_to_stopping_point_xy();
+            pos_control.init_xy_controller_stopping_point();
         }
         translate_pos_control_rp(lateral_out, forward_out);
         pos_control.update_xy_controller();
     } else {
-        pos_control.init_vel_controller_xyz();
-        pos_control.set_desired_velocity_xy(0, 0);
-        pos_control.set_target_to_stopping_point_xy();
+        pos_control.init_xy_controller_stopping_point();
     }
     motors.set_forward(forward_out + pilot_forward);
     motors.set_lateral(lateral_out + pilot_lateral);

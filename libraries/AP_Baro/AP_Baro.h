@@ -12,7 +12,9 @@
 #endif
 
 // maximum number of sensor instances
+#ifndef BARO_MAX_INSTANCES
 #define BARO_MAX_INSTANCES 3
+#endif
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
@@ -60,7 +62,12 @@ public:
 
     // healthy - returns true if sensor and derived altitude are good
     bool healthy(void) const { return healthy(_primary); }
+#ifdef HAL_BUILD_AP_PERIPH
+    // calibration and alt check not valid for AP_Periph
+    bool healthy(uint8_t instance) const { return sensors[instance].healthy; }
+#else
     bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated; }
+#endif
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
@@ -138,13 +145,6 @@ public:
     float get_external_temperature(void) const { return get_external_temperature(_primary); };
     float get_external_temperature(const uint8_t instance) const;
 
-    // HIL (and SITL) interface, setting altitude
-    void setHIL(float altitude_msl);
-
-    // HIL (and SITL) interface, setting pressure, temperature, altitude and climb_rate
-    // used by Replay
-    void setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms);
-
     // Set the primary baro
     void set_primary_baro(uint8_t primary) { _primary_baro.set_and_save(primary); };
 
@@ -154,27 +154,12 @@ public:
     // Get the type (Air or Water) of a particular instance
     baro_type_t get_type(uint8_t instance) { return sensors[instance].type; };
 
-    // HIL variables
-    struct {
-        float pressure;
-        float temperature;
-        float altitude;
-        float climb_rate;
-        uint32_t last_update_ms;
-        bool updated:1;
-        bool have_alt:1;
-        bool have_last_update:1;
-    } _hil;
-
     // register a new sensor, claiming a sensor slot. If we are out of
     // slots it will panic
     uint8_t register_sensor(void);
 
     // return number of registered sensors
     uint8_t num_instances(void) const { return _num_sensors; }
-
-    // enable HIL mode
-    void set_hil_mode(void) { _hil_mode = true; }
 
     // set baro drift amount
     void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
@@ -291,7 +276,6 @@ private:
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
     AP_Float                            _user_ground_temperature; // user override of the ground temperature used for EAS2TAS
-    bool                                _hil_mode:1;
     float                               _guessed_ground_temperature; // currently ground temperature estimate using our best abailable source
 
     // when did we last notify the GCS of new pressure reference?

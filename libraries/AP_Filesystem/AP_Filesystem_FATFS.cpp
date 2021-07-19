@@ -285,6 +285,7 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags)
     FIL *fh;
     int res;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT();
@@ -359,6 +360,7 @@ int AP_Filesystem_FATFS::close(int fileno)
     FIL *fh;
     int res;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     errno = 0;
@@ -389,6 +391,7 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
     int res;
     FIL *fh;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT();
@@ -439,6 +442,7 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
     FIL *fh;
     errno = 0;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT();
@@ -486,6 +490,7 @@ int AP_Filesystem_FATFS::fsync(int fileno)
     FIL *fh;
     int res;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     errno = 0;
@@ -515,6 +520,7 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
     FIL *fh;
     errno = 0;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     // fileno_to_fatfs checks for fd out of bounds
@@ -565,6 +571,7 @@ int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
     time_t epoch;
     uint16_t mode;
 
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT();
@@ -628,6 +635,7 @@ int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
 
 int AP_Filesystem_FATFS::unlink(const char *pathname)
 {
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     errno = 0;
@@ -641,6 +649,7 @@ int AP_Filesystem_FATFS::unlink(const char *pathname)
 
 int AP_Filesystem_FATFS::mkdir(const char *pathname)
 {
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     errno = 0;
@@ -664,6 +673,7 @@ struct DIR_Wrapper {
 
 void *AP_Filesystem_FATFS::opendir(const char *pathdir)
 {
+    FS_CHECK_ALLOWED(nullptr);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT_NULL();
@@ -691,6 +701,7 @@ void *AP_Filesystem_FATFS::opendir(const char *pathdir)
 
 struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
 {
+    FS_CHECK_ALLOWED(nullptr);
     WITH_SEMAPHORE(sem);
     DIR *dirp = (DIR *)dirp_void;
 
@@ -723,6 +734,7 @@ struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
 int AP_Filesystem_FATFS::closedir(void *dirp_void)
 {
     DIR *dirp = (DIR *)dirp_void;
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     struct DIR_Wrapper *d = (struct DIR_Wrapper *)dirp;
@@ -743,6 +755,7 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
 // return free disk space in bytes
 int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 {
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     FATFS *fs;
@@ -764,6 +777,7 @@ int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 // return total disk space in bytes
 int64_t AP_Filesystem_FATFS::disk_space(const char *path)
 {
+    FS_CHECK_ALLOWED(-1);
     WITH_SEMAPHORE(sem);
 
     CHECK_REMOUNT();
@@ -812,6 +826,7 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
     fno.fdate = fdate;
     fno.ftime = ftime;
 
+    FS_CHECK_ALLOWED(false);
     WITH_SEMAPHORE(sem);
 
     return f_utime(filename, (FILINFO *)&fno) == FR_OK;
@@ -822,6 +837,7 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
 */
 bool AP_Filesystem_FATFS::retry_mount(void)
 {
+    FS_CHECK_ALLOWED(false);
     WITH_SEMAPHORE(sem);
     return sdcard_retry();
 }
