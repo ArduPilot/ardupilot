@@ -616,12 +616,14 @@ void SoloGimbalEKF::fuseVelocity()
         // Calculate the velocity measurement innovation using the SoloGimbalEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
         if (YawAligned) {
-            Vector3f measVelNED = Vector3f(0,0,0);
+            Vector3f measVelNED;
             nav_filter_status main_ekf_status;
 
             if (_ahrs.get_filter_status(main_ekf_status)) {
                 if (main_ekf_status.flags.horiz_vel) {
-                    _ahrs.get_velocity_NED(measVelNED);
+                    if (!_ahrs.get_velocity_NED(measVelNED)) {
+                        // measVelNED remains zero
+                    }
                 }
             }
 
@@ -870,18 +872,19 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
 
     // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
-    Vector3f earth_magfield = Vector3f(0,0,0);
-    _ahrs.get_mag_field_NED(earth_magfield);
-
+    Vector3f earth_magfield;
     float declination;
-    if (!earth_magfield.is_zero()) {
+    if (_ahrs.get_mag_field_NED(earth_magfield) &&
+        !earth_magfield.is_zero()) {
         declination = atan2f(earth_magfield.y,earth_magfield.x);
     } else {
         declination = _ahrs.get_compass()->get_declination();
     }
 
-    Vector3f body_magfield = Vector3f(0,0,0);
-    _ahrs.get_mag_field_correction(body_magfield);
+    Vector3f body_magfield;
+    if (!_ahrs.get_mag_field_correction(body_magfield)) {
+        // body_magfield remains zero, hopefully
+    }
 
     // Define rotation from magnetometer to NED axes
     Matrix3f Tmn = Tsn*Tms;
