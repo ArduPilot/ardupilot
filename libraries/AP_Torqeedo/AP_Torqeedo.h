@@ -67,6 +67,12 @@ private:
         WAITING_FOR_FOOTER,
     };
 
+    enum class DebugLevel {
+        NONE = 0,
+        LOGGING_ONLY = 1,
+        LOGGING_AND_GCS = 2
+    };
+
     // initialise serial port and gpio pins (run from background thread)
     // returns true on success
     bool init_internals();
@@ -88,10 +94,14 @@ private:
     // value is taken directly from SRV_Channel
     void send_motor_speed_cmd();
 
+    // output logging and debug messages (if required)
+    void log_and_debug();
+
     // parameters
     AP_Int8 _enable;        // 1 if torqeedo feature is enabled
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
+    AP_Enum<DebugLevel> _debug_level;  // debug level
 
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
@@ -103,6 +113,7 @@ private:
     // health reporting
     uint32_t _last_healthy_ms;      // system time (in millis) that driver was last considered healthy
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_healthy_ms
+    uint32_t _last_debug_ms;        // system time (in millis) that debug was last output
 
     // message parsing members
     ParseState _parse_state;        // current state of parsing

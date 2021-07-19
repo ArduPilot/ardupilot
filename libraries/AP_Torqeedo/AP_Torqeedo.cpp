@@ -20,10 +20,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define TORQEEDO_SERIAL_BAUD        19200   // communication is always at 19200
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
 #define TORQEEDO_PACKET_FOOTER      0xAD    // communication packer footer
+#define TORQEEDO_LOG_INTERVAL       5       // log debug info at this interval in seconds
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,6 +56,13 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("DE_PIN", 3, AP_Torqeedo, _pin_de, -1),
+
+    // @Param: DEBUG
+    // @DisplayName: Torqeedo Debug Level
+    // @Description: Debug level
+    // @Values: 0:None, 1:Logging only, 2:Logging and GCS
+    // @User: Advanced
+    AP_GROUPINFO("DEBUG", 4, AP_Torqeedo, _debug_level, (int8_t)DebugLevel::LOGGING_ONLY),
 
     AP_GROUPEND
 };
@@ -148,6 +158,9 @@ void AP_Torqeedo::thread_main()
         if (motor_speed_request_received) {
             send_motor_speed_cmd();
         }
+
+        // logging and debug output
+        log_and_debug();
     }
 }
 
@@ -328,6 +341,48 @@ void AP_Torqeedo::send_motor_speed_cmd()
         _last_healthy_ms = AP_HAL::millis();
     }
 
+}
+
+// output logging and debug messages (if required)
+void AP_Torqeedo::log_and_debug()
+{
+    // exit immediately if debugging is disabled
+    if (_debug_level == DebugLevel::NONE) {
+        return;
+    }
+
+    // return if not enough time has passed since last output
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_debug_ms < (1000 * TORQEEDO_LOG_INTERVAL)) {
+        return;
+    }
+
+    const bool health = healthy();
+    const int16_t mot_speed = health ? _motor_speed : 0;
+
+    // @LoggerMessage: TRQD
+    // @Description: Torqeedo Status
+    // @Field: TimeUS: Time since system startup
+    // @Field: Health: Health
+    // @Field: MotSpeed: Motor Speed (-1000 to 1000)
+    // @Field: SuccCnt: Success Count
+    // @Field: ErrCnt: Error Count
+    AP::logger().Write("TRQD", "TimeUS,Health,MotSpeed,SuccCnt,ErrCnt", "QbhII",
+                       AP_HAL::micros64(),
+                       (int)health,
+                       (int)mot_speed,
+                       (unsigned long)_parse_success_count,
+                       (unsigned long)_parse_error_count);
+
+    if (_debug_level == DebugLevel::LOGGING_AND_GCS) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Trqd h:%u spd:%d succ:%ld err:%ld",
+                (unsigned)health,
+                (int)mot_speed,
+                (unsigned long)_parse_success_count,
+                (unsigned long)_parse_error_count);
+    }
+
+    _last_debug_ms = now_ms;
 }
 
 // get the AP_Torqeedo singleton
