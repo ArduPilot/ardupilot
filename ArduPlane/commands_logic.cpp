@@ -199,7 +199,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_ENGINE_CONTROL:
         plane.g2.ice_control.engine_control(cmd.content.do_engine_control.start_control,
                                             cmd.content.do_engine_control.cold_start,
-                                            cmd.content.do_engine_control.height_delay_cm*0.01f);
+                                            cmd.content.do_engine_control.height_delay_cm*0.01f,
+                                            cmd.content.do_engine_control.allow_disarmed_start);
         break;
 #endif
 

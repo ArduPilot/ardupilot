@@ -104,7 +104,7 @@ void ModeQLoiter::run()
 #if AP_ICENGINE_ENABLED
             // cut IC engine if enabled
             if (quadplane.land_icengine_cut != 0) {
-                plane.g2.ice_control.engine_control(0, 0, 0);
+                plane.g2.ice_control.engine_control(0, 0, 0, false);
             }
 #endif  // AP_ICENGINE_ENABLED
         }
