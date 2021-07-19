@@ -2458,15 +2458,13 @@ bool AP_AHRS_NavEKF::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vec
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // use EKF to get innovations
-        EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
-        return true;
+        return EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // use EKF to get innovations
-        EKF3.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
-        return true;
+        return EKF3.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -2503,8 +2501,7 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     case EKFType::TWO: {
         // use EKF to get variance
         Vector2f offset;
-        EKF2.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
-        return true;
+        return EKF2.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
     }
 #endif
 
@@ -2512,8 +2509,7 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     case EKFType::THREE: {
         // use EKF to get variance
         Vector2f offset;
-        EKF3.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
-        return true;
+        return EKF3.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
     }
 #endif
 
