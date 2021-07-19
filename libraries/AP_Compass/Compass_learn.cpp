@@ -164,7 +164,11 @@ void CompassLearn::update(void)
             sample_available = false;
             num_samples = 0;
             have_earth_field = false;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+            // this is use on vector3f, therefore the memset is the fastest option
             memset(predicted_offsets, 0, sizeof(predicted_offsets));
+#pragma pop
             worst_error = 0;
             best_error = 0;
             best_yaw_deg = 0;
