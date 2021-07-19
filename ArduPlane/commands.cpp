@@ -135,7 +135,9 @@ void Plane::update_home()
         }
     }
     barometer.update_calibration();
-    ahrs.resetHeightDatum();
+    if (!ahrs.resetHeightDatum()) {
+        // ignore this error
+    }
 }
 
 bool Plane::set_home_persistently(const Location &loc)

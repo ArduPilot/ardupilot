@@ -91,7 +91,9 @@ struct PACKED log_Control_Tuning {
 void Plane::Log_Write_Control_Tuning()
 {
     float est_airspeed = 0;
-    ahrs.airspeed_estimate(est_airspeed);
+    if (!ahrs.airspeed_estimate(est_airspeed)) {
+        // est_airspeed may no longer be zero if we are dead-reckoning
+    }
 
     float synthetic_airspeed;
     if (!ahrs.synthetic_airspeed(synthetic_airspeed)) {
