@@ -4452,6 +4452,11 @@ class AutoTest(ABC):
         #
         # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
+    def bearing_to(self, loc):
+        '''return bearing from here to location'''
+        here = self.mav.location()
+        return self.get_bearing(here, loc)
+
     @staticmethod
     def get_bearing(loc1, loc2):
         """Get bearing from loc1 to loc2."""
