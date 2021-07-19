@@ -52,7 +52,7 @@ public:
     ICE_State get_state(void) const { return !enable?ICE_DISABLED:state; }
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
-    bool engine_control(float start_control, float cold_start, float height_delay);
+    bool engine_control(float start_control, float cold_start, float height_delay, uint32_t flags);
 
     // update min throttle for idle governor
     void update_idle_governor(int8_t &min_throttle);
@@ -137,6 +137,8 @@ private:
 
     // we are waiting for valid height data
     bool height_pending:1;
+
+    bool allow_single_start_while_disarmed;
 
     // idle governor
     float idle_governor_integrator;
