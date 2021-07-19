@@ -1189,21 +1189,26 @@ void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
 }
 
 // return the innovations for the specified instance
-void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    if (core == nullptr) {
+        return false;
     }
+
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    if (core == nullptr) {
+        return false;
     }
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
 // should we use the compass? This is public so it can be used for
