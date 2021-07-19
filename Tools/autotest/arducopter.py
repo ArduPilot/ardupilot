@@ -3986,6 +3986,14 @@ class AutoTestCopter(AutoTest):
             0, # yaw rate
             0.5) # thrust, 0 to 1, translated to a climb/descent rate
 
+    def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
+        '''configure a rpy servo mount; caller responsible for required rebooting'''
+        self.progress("Setting up servo mount")
+        self.set_parameter("MNT_TYPE", 1)
+        self.set_parameter("SERVO%u_FUNCTION" % roll_servo, 8) # roll
+        self.set_parameter("SERVO%u_FUNCTION" % pitch_servo, 7) # pitch
+        self.set_parameter("SERVO%u_FUNCTION" % yaw_servo, 6) # yaw
+
     def test_mount(self):
         ex = None
         self.context_push()
@@ -3998,14 +4006,7 @@ class AutoTestCopter(AutoTest):
             too long.  This is probably a function of --speedup'''
             self.set_parameter("FS_GCS_ENABLE", 0)
 
-            self.progress("Setting up servo mount")
-            roll_servo = 5
-            pitch_servo = 6
-            yaw_servo = 7
-            self.set_parameter("MNT_TYPE", 1)
-            self.set_parameter("SERVO%u_FUNCTION" % roll_servo, 8) # roll
-            self.set_parameter("SERVO%u_FUNCTION" % pitch_servo, 7) # pitch
-            self.set_parameter("SERVO%u_FUNCTION" % yaw_servo, 6) # yaw
+            self.setup_servo_mount()
             self.reboot_sitl() # to handle MNT_TYPE changing
 
             # make sure we're getting mount status and gimbal reports
@@ -4366,53 +4367,109 @@ class AutoTestCopter(AutoTest):
                          )
             self.test_mount_pitch(0, 0.1)
 
-            self.progress("checking ArduCopter yaw-aircraft-for-roi")
-            try:
-                self.context_push()
-
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-                self.progress("current heading %u" % m.heading)
-                self.set_parameter("SERVO%u_FUNCTION" % yaw_servo, 0) # yaw
-                self.progress("Waiting for check_servo_map to do its job")
-                self.delay_sim_time(5)
-                start = self.mav.location()
-                self.progress("Moving to guided/position controller")
-                # the following numbers are 1-degree-latitude and
-                # 0-degrees longitude - just so that we start to
-                # really move a lot.
-                self.fly_guided_move_global_relative_alt(1, 0, 0)
-                self.guided_achieve_heading(0)
-                (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
-                                                         start.lng,
-                                                         -100,
-                                                         -200)
-                roi_alt = 0
-                self.progress("Using MAV_CMD_DO_SET_ROI")
-                self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI,
-                             0,
-                             0,
-                             0,
-                             0,
-                             roi_lat,
-                             roi_lon,
-                             roi_alt,
-                             )
-
-                self.wait_heading(110, timeout=600)
-
-                self.context_pop()
-            except Exception:
-                self.context_pop()
-                raise
-
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
+
         self.context_pop()
 
         self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
         self.reboot_sitl() # to handle MNT_TYPE changing
+
+        if ex is not None:
+            raise ex
+
+    def MountYawVehicleForMountROI(self):
+        self.context_push()
+
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        yaw_servo = 7
+        self.setup_servo_mount(yaw_servo=yaw_servo)
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        self.progress("checking ArduCopter yaw-aircraft-for-roi")
+        ex = None
+        try:
+            self.takeoff(20, mode='GUIDED')
+
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            self.progress("current heading %u" % m.heading)
+            self.set_parameter("SERVO%u_FUNCTION" % yaw_servo, 0) # yaw
+            self.progress("Waiting for check_servo_map to do its job")
+            self.delay_sim_time(5)
+            self.progress("Pointing North")
+            self.guided_achieve_heading(0)
+            self.delay_sim_time(5)
+            start = self.mav.location()
+            (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
+                                                     start.lng,
+                                                     -100,
+                                                     -100)
+            roi_alt = 0
+            self.progress("Using MAV_CMD_DO_SET_ROI")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+                         0,
+                         0,
+                         0,
+                         0,
+                         roi_lat,
+                         roi_lon,
+                         roi_alt,
+                         )
+
+            self.progress("Waiting for vehicle to point towards ROI")
+            self.wait_heading(225, timeout=600, minimum_duration=2)
+
+            # the following numbers are 1-degree-latitude and
+            # 0-degrees longitude - just so that we start to
+            # really move a lot.
+            there = mavutil.location(1, 0, 0, 0)
+
+            self.progress("Starting to move")
+            self.mav.mav.set_position_target_global_int_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                there.lat, # lat
+                there.lng, # lon
+                there.alt, # alt
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yawrate
+            )
+
+            self.progress("Starting to move changes the target")
+            bearing = self.bearing_to(there)
+            self.wait_heading(bearing, timeout=600, minimum_duration=2)
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+                         0,
+                         0,
+                         0,
+                         0,
+                         roi_lat,
+                         roi_lon,
+                         roi_alt,
+                         )
+
+            self.progress("Wait for vehicle to point sssse due to moving")
+            self.wait_heading(170, timeout=600, minimum_duration=1)
+
+            self.do_RTL()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
 
         if ex is not None:
             raise ex
@@ -7375,6 +7432,10 @@ class AutoTestCopter(AutoTest):
             ("Mount",
              "Test Camera/Antenna Mount",
              self.test_mount),  # 74s
+
+            ("MountYawVehicleForMountROI",
+             "Test Camera/Antenna Mount vehicle yawing for ROI",
+             self.MountYawVehicleForMountROI),
 
             ("Button",
              "Test Buttons",
