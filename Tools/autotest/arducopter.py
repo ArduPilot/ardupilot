@@ -920,6 +920,8 @@ class AutoTestCopter(AutoTest):
             'BATT_FS_LOW_ACT': 0,
             'BATT_FS_CRT_ACT': 0,
             'FS_OPTIONS': 0,
+            'BATT_TEMP_MIN': -200,
+            'BATT_TEMP_MAX': -200,
         })
         self.reboot_sitl()
 
@@ -936,6 +938,7 @@ class AutoTestCopter(AutoTest):
             'BATT_FS_CRT_ACT': 0,
             'FS_OPTIONS': 0,
             'SIM_BATT_VOLTAGE': 12.5,
+            'SIM_BATT_TEMP' : 20.0,
         })
 
         # Trigger low battery condition with failsafe disabled. Verify
@@ -1062,7 +1065,104 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
         self.wait_disarmed()
+        self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
+        self.reboot_sitl()
         self.end_subtest("Completed terminate failsafe test")
+
+        # Test Battery temperature failsafes
+        self.set_parameters({
+            "BATT_MONITOR": 16, # Maxell Battery Monitor
+        })
+
+        # Must reboot before setting I2C params due to dynamic param groups
+        self.reboot_sitl()
+
+        self.set_parameters({
+            "BATT_I2C_ADDR" : 11,
+            "BATT_I2C_BUS": 2,      # specified in SIM_I2C.cpp
+        })
+
+        # Trigger minimum temperature condition with failsafe action disabled. Verify no action taken.
+        self.start_subtest("Batt minimum temperature failsafe action disabled test")
+        self.set_parameter('BATT_TEMP_MIN', 5)  # Enable 5 deg C minimum temperature failsafe
+        self.takeoffAndMoveAway()
+
+        self.context_collect("STATUSTEXT")
+        self.wait_statustext(
+            text="Battery 1 is unhealthy",
+            timeout=30,
+            the_function=self.set_parameter('SIM_BATT_TEMP', -20),
+            check_context=True)
+        self.context_clear_collection("STATUSTEXT")
+
+        self.delay_sim_time(5)
+        self.wait_mode("ALT_HOLD")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
+
+        # set state back to default and reboot
+        self.set_parameter('SIM_BATT_TEMP', 20)
+        self.reboot_sitl()
+        self.end_subtest("Completed Batt low temperature failsafe action disabled test")
+
+        # Trigger maximum temperature condition with failsafe action disabled. Verify no action taken.
+        self.start_subtest("Batt maximum temperature failsafe action disabled test")
+        self.set_parameter('BATT_TEMP_MAX', 70)  # Enable 5 deg C minimum temperature failsafe
+        self.takeoffAndMoveAway()
+
+        self.delay_sim_time(3)
+        self.context_collect("STATUSTEXT")
+        self.wait_statustext(
+            text="Battery 1 is unhealthy",
+            timeout=30,
+            the_function=self.set_parameter('SIM_BATT_TEMP', 80),
+            check_context=True)
+        self.context_clear_collection("STATUSTEXT")
+
+        self.delay_sim_time(5)
+        self.wait_mode("ALT_HOLD")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
+
+        # set state back to default and reboot
+        self.set_parameter('SIM_BATT_TEMP', 20)
+        self.reboot_sitl()
+        self.end_subtest("Completed Batt maximum temperature failsafe action disabled test")
+
+        # TWO STAGE BATTERY FAILSAFE: Trigger unhealthy battery condition,
+        # # then critical battery condition. Verify RTL and Land actions
+        self.start_subtest("Batt two stage batt unhealthy failsafe action then critical action")
+        self.takeoffAndMoveAway()
+
+        self.delay_sim_time(3)
+        self.set_parameters({
+            'BATT_TEMP_MIN': 5,     # Enable 5 deg C minimum temperature failsafe
+            'BATT_FS_UNH_ACT': 2,
+            'BATT_CRT_VOLT': 10.1,
+            'BATT_FS_CRT_ACT': 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.wait_statustext(
+            text="Battery 1 is unhealthy",
+            timeout=30,
+            the_function=self.set_parameter('SIM_BATT_TEMP', -20),
+            check_context=True)
+        self.context_clear_collection("STATUSTEXT")
+
+        self.delay_sim_time(5)
+        self.wait_mode("RTL")
+        self.delay_sim_time(10)
+        self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
+        self.wait_statustext("Battery 1 is critical", timeout=60)
+        self.delay_sim_time(5)
+        self.wait_mode("LAND")
+        self.wait_landed_and_disarmed()
+
+        # set state back to default and reboot
+        self.set_parameter('SIM_BATT_VOLTAGE', 12.6)
+        self.set_parameter('SIM_BATT_TEMP', 20)
+        self.reboot_sitl()
+        self.end_subtest("Completed two stage batt unhealthy failsafe action then critical action")
 
         self.progress("All Battery failsafe tests complete")
 
