@@ -209,13 +209,13 @@ public:
     void getQuaternion(Quaternion &quat) const;
 
     // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
-    void getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the synthetic air data drag and sideslip innovations
     void getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const;
 
    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-    void getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // get a particular source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
