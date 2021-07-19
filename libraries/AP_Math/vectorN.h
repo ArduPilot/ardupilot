@@ -36,7 +36,11 @@ class VectorN
 public:
     // trivial ctor
     inline VectorN<T,N>() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+        // this is use on vector or complex class, therefore the memset is the fastest option
         memset(_v, 0, sizeof(T)*N);
+#pragma pop
     }
 
     // vector ctor
