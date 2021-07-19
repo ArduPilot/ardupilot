@@ -1,5 +1,9 @@
 #include "AP_Logger.h"
 
+AP_Logger *AP_Logger::_singleton;
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
@@ -10,8 +14,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-
-AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
 
@@ -1382,6 +1384,71 @@ bool AP_Logger::log_while_disarmed(void) const
 
     return false;
 }
+
+#else
+
+// HAL_LOGGING_ENABLED is false; provide a minimal implementation:
+
+AP_Logger::AP_Logger(const AP_Int32 &log_bitmask) :
+    _log_bitmask(log_bitmask)
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Logger must be singleton");
+    }
+
+    _singleton = this;
+}
+
+void AP_Logger::Init(const struct LogStructure *structure, uint8_t num_types) {}
+void AP_Logger::PrepForArming() {}
+bool AP_Logger::allow_start_ekf() const { return true; }
+bool AP_Logger::CardInserted(void) { return false; }
+void AP_Logger::set_vehicle_armed(bool armed_state) {}
+void AP_Logger::periodic_tasks() {}
+void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer) {}
+
+bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) { return false; }
+void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
+                                  const AP_Mission::Mission_Command &cmd) {}
+void AP_Logger::Write_Parameter(const char *name, float value) {}
+void AP_Logger::Write_EntireMission() {}
+void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {}
+bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) { return false; }
+
+void AP_Logger::Write_RallyPoint(uint8_t total,
+                                 uint8_t sequence,
+                                 const RallyLocation &rally_point) {}
+void AP_Logger::Write_Rally() {}
+void AP_Logger::Write_Message(const char *message) {}
+void AP_Logger::Write_Event(LogEvent id) {}
+void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {}
+void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason) {}
+void AP_Logger::Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...) {}
+bool AP_Logger::logging_started(void) { return false; }
+void AP_Logger::Write(char const*, char const*, char const*, ...) {}
+void AP_Logger::Write_MessageF(const char *fmt, ...) {}
+void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
+                            LogErrorCode error_code) {}
+
+bool AP_Logger::should_log(uint32_t mask) const { return false; }
+
+struct AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp) { return nullptr; }
+int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const { return 0; }
+void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f) {}
+
+int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) { return 0; }
+void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) { size = 0; time_utc = 0;}
+
+bool AP_Logger::logging_present() const { return false; }
+bool AP_Logger::logging_enabled() const { return false;}
+bool AP_Logger::logging_failed() const { return false; }
+
+void AP_Logger::handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg) {}
+
+const AP_Param::GroupInfo AP_Logger::var_info[] = {
+};
+
+#endif  // HAL_LOGGING_ENABLED
 
 namespace AP {
 
