@@ -1181,14 +1181,14 @@ struct PACKED log_PSCZ {
 // @LoggerMessage: PSC
 // @Description: Position Control data
 // @Field: TimeUS: Time since system startup
-// @Field: TPX: Target position relative to origin, X-axis
-// @Field: TPY: Target position relative to origin, Y-axis
-// @Field: PX: Position relative to origin, X-axis
-// @Field: PY: Position relative to origin, Y-axis
-// @Field: TVX: Target velocity, X-axis
-// @Field: TVY: Target velocity, Y-axis
-// @Field: VX: Velocity, X-axis
-// @Field: VY: Velocity, Y-axis
+// @Field: TPX: Target position relative to origin, North
+// @Field: TPY: Target position relative to origin, East
+// @Field: PX: Position relative to origin, North
+// @Field: PY: Position relative to origin, East
+// @Field: TVX: Target velocity, North
+// @Field: TVY: Target velocity, East
+// @Field: VX: Velocity, North
+// @Field: VY: Velocity, East
 // @Field: TAX: Target acceleration, X-axis
 // @Field: TAY: Target acceleration, Y-axis
 // @Field: AX: Acceleration, X-axis
