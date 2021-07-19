@@ -93,11 +93,11 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const override;
+    bool airspeed_estimate(float &airspeed_ret) const override WARN_IF_UNUSED;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
-    bool airspeed_vector_true(Vector3f &vec) const override;
+    bool airspeed_vector_true(Vector3f &vec) const override WARN_IF_UNUSED;
 
     // true if compass is being used
     bool use_compass() override;
@@ -125,13 +125,13 @@ public:
     bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
     // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers) const override;
+    bool get_secondary_attitude(Vector3f &eulers) const override WARN_IF_UNUSED;
 
     // return secondary attitude solution if available, as quaternion
-    bool get_secondary_quaternion(Quaternion &quat) const override;
+    bool get_secondary_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc) const override;
+    bool get_secondary_position(struct Location &loc) const override WARN_IF_UNUSED;
 
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector() override;
@@ -155,26 +155,26 @@ public:
 
     bool have_inertial_nav() const override;
 
-    bool get_velocity_NED(Vector3f &vec) const override;
+    bool get_velocity_NED(Vector3f &vec) const override WARN_IF_UNUSED;
 
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NED_home(Vector3f &vec) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
+    bool get_relative_position_NED_home(Vector3f &vec) const override WARN_IF_UNUSED;
+    bool get_relative_position_NED_origin(Vector3f &vec) const override WARN_IF_UNUSED;
 
     // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
+    bool get_relative_position_NE_home(Vector2f &posNE) const override WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const override WARN_IF_UNUSED;
 
     // return the relative position down to either home or origin
     // baro will be used for the _home relative one if the EKF isn't
     void get_relative_position_D_home(float &posD) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
+    bool get_relative_position_D_origin(float &posD) const override WARN_IF_UNUSED;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate(float &velocity) const;
+    bool get_vert_pos_rate(float &velocity) const WARN_IF_UNUSED;
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
@@ -199,43 +199,43 @@ public:
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
-    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override WARN_IF_UNUSED;
 
     // true if the AHRS has completed initialisation
-    bool initialised() const override;
+    bool initialised() const override WARN_IF_UNUSED;
 
     // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const;
+    bool get_filter_status(nav_filter_status &status) const WARN_IF_UNUSED;
 
     // get compass offset estimates
     // true if offsets are valid
-    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const WARN_IF_UNUSED;
 
     // check all cores providing consistent attitudes for prearm checks
-    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
+    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override WARN_IF_UNUSED;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) override;
+    uint32_t getLastYawResetAngle(float &yawAng) override WARN_IF_UNUSED;
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) override;
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) override WARN_IF_UNUSED;
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override;
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override WARN_IF_UNUSED;
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) override;
+    uint32_t getLastPosDownReset(float &posDelta) override WARN_IF_UNUSED;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum() override;
+    bool resetHeightDatum() override WARN_IF_UNUSED;
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan) const;
@@ -243,7 +243,7 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const override;
+    bool get_hgt_ctrl_limit(float &limit) const override WARN_IF_UNUSED;
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following
@@ -253,29 +253,29 @@ public:
     // calculated location including absolute altitude
     // returns true on success (i.e. the EKF knows it's latest
     // position), false on failure
-    bool get_location(struct Location &loc) const;
+    bool get_location(struct Location &loc) const WARN_IF_UNUSED;
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
+    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override WARN_IF_UNUSED;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override WARN_IF_UNUSED;
 
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const override WARN_IF_UNUSED;
 
     // returns the expected NED magnetic field
-    bool get_mag_field_NED(Vector3f& ret) const;
+    bool get_mag_field_NED(Vector3f& ret) const WARN_IF_UNUSED;
 
     // returns the estimated magnetic field offsets in body frame
-    bool get_mag_field_correction(Vector3f &ret) const override;
+    bool get_mag_field_correction(Vector3f &ret) const override WARN_IF_UNUSED;
 
-    bool getGpsGlitchStatus() const;
+    bool getGpsGlitchStatus() const WARN_IF_UNUSED;
 
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
@@ -343,7 +343,7 @@ private:
 
     // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
     // returns false if no secondary (i.e. only using DCM)
-    bool get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
+    bool get_secondary_EKF_type(EKFType &secondary_ekf_type) const WARN_IF_UNUSED;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;

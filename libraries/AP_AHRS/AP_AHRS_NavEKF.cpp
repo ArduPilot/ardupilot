@@ -1556,12 +1556,18 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (ret == EKFType::SITL) {
-            get_filter_status(filt_state);
+            if (!get_filter_status(filt_state)) {
+                // use random stack values
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            }
         }
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
         if (ret == EKFType::EXTERNAL) {
-            get_filter_status(filt_state);
+            if (!get_filter_status(filt_state)) {
+                // use random stack values
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            }
             should_use_gps = true;
         }
 #endif
