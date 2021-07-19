@@ -69,7 +69,7 @@ void Plane::init_ardupilot()
     osd.init();
 #endif
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     log_init();
 #endif
 
@@ -175,7 +175,7 @@ void Plane::startup_ground(void)
     mission.init();
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
         );
@@ -392,7 +392,7 @@ void Plane::notify_mode(const Mode& mode)
  */
 bool Plane::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     return logger.should_log(mask);
 #else
     return false;

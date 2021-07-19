@@ -929,9 +929,11 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
+#if HAL_LOGGING_ENABLED
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
     GOBJECT(logger,           "LOG",  AP_Logger),
+#endif
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp

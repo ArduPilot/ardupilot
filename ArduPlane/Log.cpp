@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
@@ -470,9 +470,7 @@ const struct LogStructure Plane::log_structure[] = {
       "CMDA", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
     { LOG_CMDH_MSG, sizeof(log_CMDI),     
       "CMDH", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-
 };
-
 
 // Write a COMMAND INT packet.
 void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &mav_cmd)
@@ -531,7 +529,7 @@ void Plane::log_init(void)
     logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
-#else // LOGGING_ENABLED
+#else // HAL_LOGGING_ENABLED
 
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
@@ -547,4 +545,4 @@ void Plane::Log_Write_Vehicle_Startup_Messages() {}
 
 void Plane::log_init(void) {}
 
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED
