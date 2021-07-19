@@ -238,6 +238,11 @@ void AP_ICEngine::update(void)
         should_run = true;
     } else if (start_chan_last_value <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
         should_run = false;
+
+        // clear the single start flag now that we will be stopping the engine
+        if (state != ICE_OFF) {
+            allow_single_start_while_disarmed = false;
+        }
     } else if (state != ICE_OFF) {
         should_run = true;
     }
@@ -247,9 +252,16 @@ void AP_ICEngine::update(void)
         should_run = false;
     }
 
-    if (option_set(Options::NO_RUNNING_WHILE_DISARMED) && !hal.util->get_soft_armed()) {
-        // disable the engine if disarmed
-        should_run = false;
+    if (option_set(Options::NO_RUNNING_WHILE_DISARMED)) {
+        if (hal.util->get_soft_armed()) {
+            // clear the disarmed start flag, as we are now armed, if we disarm again we expect the engine to stop
+            allow_single_start_while_disarmed = false;
+        } else {
+            // check if we are blocking disarmed starts
+            if (!allow_single_start_while_disarmed) {
+                should_run = false;
+            }
+        }
     }
 
 #if HAL_PARACHUTE_ENABLED
@@ -464,15 +476,18 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
     return false;
 }
 
-
 /*
   handle DO_ENGINE_CONTROL messages via MAVLink or mission
 */
-bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay)
+bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay, uint32_t flags)
 {
     if (!enable) {
         return false;
     }
+
+    // always update the start while disarmed flag
+    allow_single_start_while_disarmed = (flags & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
+
     if (start_control <= 0) {
         state = ICE_OFF;
         return true;
@@ -575,7 +590,6 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     min_throttle = roundf(idle_governor_integrator);
 #endif // AP_RPM_ENABLED
 }
-
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;
