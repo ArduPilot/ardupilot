@@ -44,7 +44,7 @@ SIM *SIM::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SIM::var_info[] = {
-    
+    AP_SUBGROUPEXTENSION("",       1, SIM,  var_info4),
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
@@ -297,6 +297,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
+
+    AP_GROUPEND
+};
+
+// fourth table of user settable parameters for SITL.
+const AP_Param::GroupInfo SIM::var_info4[] = {
+    AP_GROUPINFO("BATT_TEMP",      1, SIM, batt_temperature, 20.0),
 
     AP_GROUPEND
 };

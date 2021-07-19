@@ -17,7 +17,6 @@ SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
     add_block("Device Name", SMBusBattDevReg::DEVICE_NAME, SITL::I2CRegisters::RegMode::RDONLY);
     add_register("Manufacture Data", SMBusBattDevReg::MANUFACTURE_DATA, SITL::I2CRegisters::RegMode::RDONLY);
 
-    set_register(SMBusBattDevReg::TEMP, (int16_t)((15 + C_TO_KELVIN)*10));
      // see update for voltage
      // see update for current
      // TODO: remaining capacity
@@ -62,6 +61,12 @@ void SITL::SIM_BattMonitor_SMBus::update(const class Aircraft &aircraft)
         // FIXME: is this REALLY what the hardware will do?
         const int16_t current = constrain_int32(AP::sitl()->state.battery_current*-1000, -32768, 32767);
         set_register(SMBusBattDevReg::CURRENT, current);
+
+        // Update internal battery temperature measurement stored in centi-degC
+        const float sim_temperature = (AP::sitl()->batt_temperature + C_TO_KELVIN) * 10;
+        set_register(SMBusBattDevReg::TEMP, int16_t(sim_temperature));
+
+
         last_update_ms = now;
     }
 }
