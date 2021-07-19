@@ -399,7 +399,7 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 }
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
-void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     velInnov.x = innovVelPos[0];
     velInnov.y = innovVelPos[1];
@@ -412,12 +412,14 @@ void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
     magInnov.z = 1e3f*innovMag[2]; // Convert back to sensor units
     tasInnov   = innovVtas;
     yawInnov   = innovYaw;
+
+    return true;
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 // this indicates the amount of margin available when tuning the various error traps
 // also return the delta in position due to the last position reset
-void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     velVar   = sqrtF(velTestRatio);
     posVar   = sqrtF(posTestRatio);
@@ -428,6 +430,8 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     magVar.z = sqrtF(MAX(magTestRatio.z,yawTestRatio));
     tasVar   = sqrtF(tasTestRatio);
     offset   = posResetNE.tofloat();
+
+    return true;
 }
 
 
@@ -532,7 +536,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     }
 
     // get variances
-    float velVar, posVar, hgtVar, tasVar;
+    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
     Vector3f magVar;
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
