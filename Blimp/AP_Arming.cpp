@@ -369,11 +369,14 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
+        if (!ahrs.resetHeightDatum()) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        } else {
+            AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
 
-        // we have reset height, so arming height is zero
-        blimp.arming_altitude_m = 0;
+            // we have reset height, so arming height is zero
+            blimp.arming_altitude_m = 0;
+        }
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!blimp.set_home_to_current_location(false)) {
