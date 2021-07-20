@@ -35,10 +35,9 @@ void Plane::Log_Write_Attitude(void)
     logger.Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
     logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     AP::ahrs_navekf().Log_Write();
     ahrs.Write_AHRS2();
-#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif

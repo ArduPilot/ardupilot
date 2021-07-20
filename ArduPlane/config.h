@@ -38,11 +38,7 @@
 //
 
 #ifndef OPTFLOW
-#if AP_AHRS_NAVEKF_AVAILABLE
  # define OPTFLOW ENABLED
-#else
- # define OPTFLOW DISABLED
-#endif
 #endif
 
 
