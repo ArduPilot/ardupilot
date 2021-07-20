@@ -984,45 +984,26 @@ void AP_GPS::update_primary(void)
 
     uint32_t now = AP_HAL::millis();
 
-    // special handling of RTK moving baseline pair. If a rover has a
-    // RTK fixed lock and yaw available then always select it as
-    // primary. This ensures that the yaw data and position/velocity
-    // data is time aligned whenever we provide yaw to the EKF
+    // special handling of RTK moving baseline pair. Always use the
+    // base as the rover position is derived from the base, which
+    // means the rover always has worse position and velocity than the
+    // base. This overrides the normal logic which would select the
+    // rover as it typically is in fix type 6 (RTK) whereas base is
+    // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER &&
-            state[i].status == GPS_OK_FIX_3D_RTK_FIXED &&
-            state[i].have_gps_yaw) {
-            if (primary_instance != i) {
-                _last_instance_swap_ms = now;
-                primary_instance = i;
-            }
-            return;
-        }
-        /*
-          if this is a BASE and the other GPS is a MB rover, then we
-          should force the use of the BASE GPS if the rover doesn't
-          have a yaw lock. This is important as when the rover doesn't
-          have a lock it will often report a higher status than the
-          base (eg. status=4), but the velocity and position data can
-          be very bad. As the rover is getting it's base position from
-          the base GPS then the position and velocity are expected to
-          be worse than the base GPS unless it has a full moving
-          baseline lock
-         */
-        const uint8_t i2 = i^1; // the other GPS in the pair
         if (_type[i] == GPS_TYPE_UBLOX_RTK_BASE &&
-            state[i].status >= GPS_OK_FIX_3D &&
-            _type[i2] == GPS_TYPE_UBLOX_RTK_ROVER &&
-            (state[i2].status != GPS_OK_FIX_3D_RTK_FIXED ||
-             !state[i2].have_gps_yaw)) {
+            _type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER &&
+            ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
                 primary_instance = i;
             }
+            // don't do any more switching logic. We don't want the
+            // RTK status of the rover to cause a switch
             return;
         }
     }
-    
+
     // handling switching away from blended GPS
     if (primary_instance == GPS_BLENDED_INSTANCE) {
         primary_instance = 0;
@@ -1195,7 +1176,8 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
         return 0;
     }
     float yaw_deg, accuracy_deg;
-    if (!gps_yaw_deg(instance, yaw_deg, accuracy_deg)) {
+    uint32_t time_ms;
+    if (!gps_yaw_deg(instance, yaw_deg, accuracy_deg, time_ms)) {
         return 65535;
     }
     int yaw_cd = wrap_360_cd(yaw_deg * 100);
@@ -1944,7 +1926,8 @@ void AP_GPS::Write_GPS(uint8_t i)
     const struct Location &loc = location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
-    gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
+    uint32_t yaw_time_ms;
+    gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg, yaw_time_ms);
 
     const struct log_GPS pkt {
         LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
@@ -1985,6 +1968,41 @@ void AP_GPS::Write_GPS(uint8_t i)
         delta_ms      : last_message_delta_time_ms(i)
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+}
+
+/*
+  get GPS based yaw
+ */
+bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
+{
+#if GPS_MAX_RECEIVERS > 1
+    if (instance < GPS_MAX_RECEIVERS &&
+        _type[instance] == GPS_TYPE_UBLOX_RTK_BASE &&
+        _type[instance^1] == GPS_TYPE_UBLOX_RTK_ROVER) {
+        // return the yaw from the rover
+        instance ^= 1;
+    }
+#endif
+    if (!have_gps_yaw(instance)) {
+        return false;
+    }
+    yaw_deg = state[instance].gps_yaw;
+
+    // get lagged timestamp
+    time_ms = state[instance].gps_yaw_time_ms;
+    float lag_s;
+    if (get_lag(instance, lag_s)) {
+        uint32_t lag_ms = lag_s * 1000;
+        time_ms -= lag_ms;
+    }
+
+    if (state[instance].have_gps_yaw_accuracy) {
+        accuracy_deg = state[instance].gps_yaw_accuracy;
+    } else {
+        // fall back to 10 degrees as a generic default
+        accuracy_deg = 10;
+    }
+    return true;
 }
 
 namespace AP {
