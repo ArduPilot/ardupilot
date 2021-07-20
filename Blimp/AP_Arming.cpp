@@ -244,7 +244,7 @@ bool AP_Arming_Blimp::pre_arm_ekf_attitude_check()
 bool AP_Arming_Blimp::mandatory_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
-    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    const auto &ahrs = AP::ahrs();
     char failure_msg[50] = {};
     if (!ahrs.pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
@@ -363,7 +363,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
 
     gcs().send_text(MAV_SEVERITY_INFO, "Arming motors"); //MIR kept in - usually only in SITL
 
-    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    auto &ahrs = AP::ahrs();
 
     blimp.initial_armed_bearing = ahrs.yaw_sensor;
 
@@ -425,7 +425,7 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
     gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors"); //MIR keeping in - usually only in SITL
 
 
-    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    auto &ahrs = AP::ahrs();
 
     // save compass offsets learned by the EKF if enabled
     Compass &compass = AP::compass();
