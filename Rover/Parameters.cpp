@@ -697,7 +697,7 @@ ParametersG2::ParametersG2(void)
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents, wheel_rate_control),
     wheel_rate_control(wheel_encoder),
-    attitude_control(rover.ahrs),
+    attitude_control(),
     smart_rtl(),
 #if HAL_PROXIMITY_ENABLED
     proximity(),
