@@ -67,6 +67,13 @@ private:
         WAITING_FOR_FOOTER,
     };
 
+    // TYPE parameter values
+    enum class ConnectionType {
+        TYPE_DISABLED = 0,
+        TYPE_TILLER = 1,
+        TYPE_MOTOR = 2
+    };
+
     enum class DebugLevel {
         NONE = 0,
         LOGGING_ONLY = 1,
@@ -77,9 +84,15 @@ private:
     // returns true on success
     bool init_internals();
 
+    // returns true if the driver is enabled
+    bool enabled() const;
+
     // process a single byte received on serial port
     // return true if a this driver should send a set-motor-speed message
     bool parse_byte(uint8_t b);
+
+    // returns true if it is safe to send a message
+    bool safe_to_send() const { return (_send_delay_us == 0); }
 
     // set pin to enable sending commands to motor
     void send_start();
@@ -98,7 +111,7 @@ private:
     void log_and_debug();
 
     // parameters
-    AP_Int8 _enable;        // 1 if torqeedo feature is enabled
+    AP_Enum<ConnectionType> _type;      // connector type used (0:disabled, 1:tiller connector, 2: motor connector)
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
     AP_Enum<DebugLevel> _debug_level;  // debug level
@@ -106,6 +119,7 @@ private:
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
     bool _initialised;              // true once driver has been initialised
+    bool _send_motor_speed;         // true if motor speed should be sent at next opportunity
     int16_t _motor_speed;           // desired motor speed (set from within update method)
     uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent
     uint32_t _send_delay_us;        // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
