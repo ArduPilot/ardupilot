@@ -83,5 +83,3 @@ public:
      */
     virtual float       get_velocity_z() const = 0;
 };
-
-#include "AP_InertialNav_NavEKF.h"
