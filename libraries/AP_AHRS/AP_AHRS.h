@@ -732,10 +732,6 @@ private:
 
 namespace AP {
     AP_AHRS &ahrs();
-
-    // use ahrs_navekf() only where the AHRS interface doesn't expose the
-    // functionality you require:
-#if AP_AHRS_NAVEKF_AVAILABLE
+    // ahrs_navekf only exists to avoid code churn
     AP_AHRS_NavEKF &ahrs_navekf();
-#endif
 };

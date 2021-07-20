@@ -127,14 +127,12 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // 13 was the old EKF_USE
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
     // @Description: This controls which NavEKF Kalman filter version is used for attitude and position estimation
     // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3,11:ExternalAHRS
     // @User: Advanced
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, HAL_AHRS_EKF_TYPE_DEFAULT),
-#endif
 
     // @Param: CUSTOM_ROLL
     // @DisplayName: Board orientation roll offset
@@ -171,7 +169,7 @@ void AP_AHRS::init()
 {
     update_orientation();
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
     _nmea_out = AP_NMEA_Output::probe();
 #endif
 }
@@ -476,12 +474,10 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     if (logger == nullptr) {
         return;
     }
-#if AP_AHRS_NAVEKF_AVAILABLE
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
         Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
-#endif
 
     if (home_is_set()) {
         Write_Origin(LogOriginType::ahrs_home, _home);
@@ -495,7 +491,7 @@ float AP_AHRS::get_EAS2TAS(void) const {
 
 void AP_AHRS::update_nmea_out()
 {
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
     if (_nmea_out != nullptr) {
         _nmea_out->update();
     }

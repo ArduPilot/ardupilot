@@ -31,8 +31,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
 
@@ -173,7 +171,7 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         _view->update(skip_ins_update);
     }
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
     // update NMEA output
     update_nmea_out();
 #endif
@@ -2806,5 +2804,3 @@ void AP_AHRS_NavEKF::set_alt_measurement_noise(float noise)
     EKF3.set_baro_alt_noise(noise);
 #endif
 }
-
-#endif // AP_AHRS_NAVEKF_AVAILABLE

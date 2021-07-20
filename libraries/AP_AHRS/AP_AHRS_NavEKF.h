@@ -32,7 +32,6 @@
 #define HAL_NAVEKF3_AVAILABLE 1
 #endif
 
-#define AP_AHRS_NAVEKF_AVAILABLE 1
 #include "AP_AHRS.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
