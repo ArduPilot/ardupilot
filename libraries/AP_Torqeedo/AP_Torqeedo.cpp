@@ -27,19 +27,20 @@
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
 #define TORQEEDO_PACKET_FOOTER      0xAD    // communication packer footer
 #define TORQEEDO_LOG_INTERVAL       5       // log debug info at this interval in seconds
+#define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US   300000  // motor speed sent every 0.3sec if connected to motor
 
 extern const AP_HAL::HAL& hal;
 
 // parameters
 const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
 
-    // @Param: ENABLE
-    // @DisplayName: Torqeedo enable
-    // @Description: Torqeedo enable
-    // @Values: 0:Disabled, 1:Enabled
+    // @Param: TYPE
+    // @DisplayName: Torqeedo connection type
+    // @Description: Torqeedo connection type
+    // @Values: 0:Disabled, 1:Tiller, 2:Motor
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Torqeedo, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_Torqeedo, _type, (int8_t)ConnectionType::TYPE_DISABLED, AP_PARAM_FLAG_ENABLE),
 
     // @Param: ONOFF_PIN
     // @DisplayName: Torqeedo ON/Off pin
@@ -76,6 +77,11 @@ AP_Torqeedo::AP_Torqeedo()
 // initialise driver
 void AP_Torqeedo::init()
 {
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
     // only init once
     if (_initialised) {
         return;
@@ -100,17 +106,19 @@ bool AP_Torqeedo::init_internals()
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_unbuffered_writes(true);
 
-    if (_pin_onoff > -1) {
-        // initialise on/off pin and set for 0.5 sec to turn on motor
-        hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_pin_onoff, 1);
-        hal.scheduler->delay(500);
-        hal.gpio->write(_pin_onoff, 0);
-    } else {
-        // user serial port's RTS pin to turn on motor
-        _uart->set_RTS_pin(true);
-        hal.scheduler->delay(500);
-        _uart->set_RTS_pin(false);
+    // if using tiller connection set on/off pin for 0.5 sec to turn on battery
+    if (_type == ConnectionType::TYPE_TILLER) {
+        if (_pin_onoff > -1) {
+            hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
+            hal.gpio->write(_pin_onoff, 1);
+            hal.scheduler->delay(500);
+            hal.gpio->write(_pin_onoff, 0);
+        } else {
+            // use serial port's RTS pin to turn on battery
+            _uart->set_RTS_pin(true);
+            hal.scheduler->delay(500);
+            _uart->set_RTS_pin(false);
+        }
     }
 
     // initialise RS485 DE pin (when high, allows send to motor)
@@ -122,6 +130,15 @@ bool AP_Torqeedo::init_internals()
     }
 
     return true;
+}
+
+// returns true if the driver is enabled
+bool AP_Torqeedo::enabled() const
+{
+    if (_type == ConnectionType::TYPE_TILLER || _type == ConnectionType::TYPE_MOTOR) {
+        return true;
+    }
+    return false;
 }
 
 // consume incoming messages from motor, reply with latest motor speed
@@ -143,20 +160,31 @@ void AP_Torqeedo::thread_main()
 
         // parse incoming characters
         uint32_t nbytes = MIN(_uart->available(), 1024U);
-        bool motor_speed_request_received = false;
         while (nbytes-- > 0) {
             int16_t b = _uart->read();
             if (b >= 0 ) {
                 if (parse_byte((uint8_t)b)) {
                     // request received to send updated motor speed
-                    motor_speed_request_received = true;
+                    if (_type == ConnectionType::TYPE_TILLER) {
+                        _send_motor_speed = true;
+                    }
                 }
             }
         }
 
         // send motor speed
-        if (motor_speed_request_received) {
-            send_motor_speed_cmd();
+        if (safe_to_send()) {
+            // if connected to motor send motor speed every 0.5sec
+            if (_type == ConnectionType::TYPE_MOTOR &&
+                (AP_HAL::micros() - _last_send_motor_us > TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US)) {\
+                _send_motor_speed = true;
+            }
+
+            // send motor speed
+            if (_send_motor_speed) {
+                send_motor_speed_cmd();
+                _send_motor_speed = false;
+            }
         }
 
         // logging and debug output
@@ -179,6 +207,11 @@ bool AP_Torqeedo::healthy()
 // run pre-arm check.  returns false on failure and fills in failure_msg
 bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return true;
+    }
+
     const char *failure_prefix = "Torqeedo:";
     if (!_initialised) {
         hal.util->snprintf(failure_msg, failure_msg_len, "%s not initialised", failure_prefix);
@@ -322,8 +355,17 @@ void AP_Torqeedo::send_motor_speed_cmd()
     // set send pin
     send_start();
 
+    // by default use tiller connection command
     uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, 0x0, 0x0, 0x5, 0x0, HIGHBYTE(_motor_speed), LOWBYTE(_motor_speed), 0x0, TORQEEDO_PACKET_FOOTER};
     uint8_t buff_size = ARRAY_SIZE(mot_speed_cmd_buff);
+
+    // update message if using motor connection
+    if (_type == ConnectionType::TYPE_MOTOR) {
+        mot_speed_cmd_buff[1] = 0x30;
+        mot_speed_cmd_buff[2] = 0x82;
+        mot_speed_cmd_buff[3] = _motor_speed == 0 ? 0 : 0x1;    // enable motor
+        mot_speed_cmd_buff[4] = _motor_speed == 0 ? 0 : 0x64;   // motor power from 0 to 100
+    }
 
     // calculate crc and add to buffer
     const uint8_t crc = crc8_maxim(&mot_speed_cmd_buff[1], buff_size-3);
