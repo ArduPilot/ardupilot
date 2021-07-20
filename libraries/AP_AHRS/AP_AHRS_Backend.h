@@ -54,10 +54,6 @@ public:
         _cos_pitch(1.0f),
         _cos_yaw(1.0f)
     {
-        // base the ki values by the sensors maximum drift
-        // rate.
-        _gyro_drift_limit = AP::ins().get_gyro_drift_rate();
-
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
 
@@ -664,10 +660,6 @@ protected:
     Vector3f _last_trim;
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
-
-    // the limit of the gyro drift claimed by the sensors, in
-    // radians/s/s
-    float _gyro_drift_limit;
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
