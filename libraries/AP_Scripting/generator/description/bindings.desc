@@ -399,3 +399,7 @@ userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOT
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
+
+include AP_InertialSensor/AP_InertialSensor.h
+singleton AP_InertialSensor alias ins
+singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
