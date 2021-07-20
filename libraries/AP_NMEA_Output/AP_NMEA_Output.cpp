@@ -19,7 +19,7 @@
 
 #include "AP_NMEA_Output.h"
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
 
 #include <AP_Math/definitions.h>
 #include <AP_RTC/AP_RTC.h>
@@ -187,4 +187,4 @@ void AP_NMEA_Output::update()
     }
 }
 
-#endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#endif  // !HAL_MINIMIZE_FEATURES
