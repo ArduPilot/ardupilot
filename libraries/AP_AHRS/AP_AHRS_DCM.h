@@ -27,17 +27,8 @@ class AP_AHRS_DCM : public AP_AHRS_Backend {
 public:
     AP_AHRS_DCM()
         : AP_AHRS_Backend()
-        , _error_rp(1.0f)
-        , _error_yaw(1.0f)
-        , _mag_earth(1, 0)
-        , _imu1_weight(0.5f)
     {
         _dcm_matrix.identity();
-
-        // these are experimentally derived from the simulator
-        // with large drift levels
-        _ki = 0.0087f;
-        _ki_yaw = 0.01f;
     }
 
     /* Do not allow copies */
@@ -124,8 +115,11 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
 private:
-    float _ki;
-    float _ki_yaw;
+
+    // these are experimentally derived from the simulator
+    // with large drift levels
+    static constexpr float _ki = 0.0087f;
+    static constexpr float _ki_yaw = 0.01f;
 
     // Methods
     void            matrix_update(float _G_Dt);
@@ -167,8 +161,8 @@ private:
     // state to support status reporting
     float _renorm_val_sum;
     uint16_t _renorm_val_count;
-    float _error_rp;
-    float _error_yaw;
+    float _error_rp{1.0f};
+    float _error_yaw{1.0f};
 
     // time in millis when we last got a GPS heading
     uint32_t _gps_last_update;
@@ -181,7 +175,7 @@ private:
 
     // the earths magnetic field
     float _last_declination;
-    Vector2f _mag_earth;
+    Vector2f _mag_earth{1, 0};
 
     // whether we have GPS lock
     bool _have_gps_lock;
@@ -207,7 +201,7 @@ private:
     // estimated wind in m/s
     Vector3f _wind;
 
-    float _imu1_weight;
+    float _imu1_weight{0.5f};
 
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;
