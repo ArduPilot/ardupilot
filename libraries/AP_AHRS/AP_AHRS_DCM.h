@@ -21,10 +21,12 @@
  *
  */
 
-class AP_AHRS_DCM : public AP_AHRS {
+#include "AP_AHRS.h"
+
+class AP_AHRS_DCM : public AP_AHRS_Backend {
 public:
     AP_AHRS_DCM()
-        : AP_AHRS()
+        : AP_AHRS_Backend()
         , _error_rp(1.0f)
         , _error_yaw(1.0f)
         , _mag_earth(1, 0)
