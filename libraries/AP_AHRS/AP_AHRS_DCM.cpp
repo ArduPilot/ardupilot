@@ -930,7 +930,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // reported maximum gyro drift rate. This ensures that
         // short term errors don't cause a buildup of omega_I
         // beyond the physical limits of the device
-        const float change_limit = _gyro_drift_limit * _omega_I_sum_time;
+        const float change_limit = AP::ins().get_gyro_drift_rate() * _omega_I_sum_time;
         _omega_I_sum.x = constrain_float(_omega_I_sum.x, -change_limit, change_limit);
         _omega_I_sum.y = constrain_float(_omega_I_sum.y, -change_limit, change_limit);
         _omega_I_sum.z = constrain_float(_omega_I_sum.z, -change_limit, change_limit);
