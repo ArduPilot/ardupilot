@@ -92,13 +92,10 @@ public:
         return speed_accuracy(primary_sensor(), sacc);
     }
 
-    bool gps_yaw_deg(float &yaw_deg, float &accuracy_deg) const {
-        return gps_yaw_deg(_RGPH.primary_sensor, yaw_deg, accuracy_deg);
-    }
-
-    bool gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg) const {
+    bool gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const {
         yaw_deg = _RGPJ[instance].yaw_deg;
         accuracy_deg = _RGPJ[instance].yaw_accuracy_deg;
+        time_ms = _RGPJ[instance].yaw_deg_time_ms;
         return _RGPI[instance].gps_yaw_deg_returncode;
     }
 
