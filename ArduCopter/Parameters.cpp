@@ -1079,16 +1079,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
 #endif
 
-#if AP_TERRAIN_AVAILABLE
-    // @Param: TERRAIN_MARGIN
-    // @DisplayName: Terrain following altitude margin
-    // @Description: Terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)
-    // @Units: m
-    // @Range: 0.1 100
-    // @User: Advanced
-    AP_GROUPINFO("TERRAIN_MARGIN", 47, ParametersG2, terrain_margin, 10.0),
-#endif
-
     AP_GROUPEND
 };
 
