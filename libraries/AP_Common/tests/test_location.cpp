@@ -7,10 +7,10 @@
 int hal = 0;
 
 
-class DummyAHRS: AP_AHRS_NavEKF {
+class DummyAHRS: AP_AHRS {
 public:
     DummyAHRS(uint8_t flags = 0) :
-    AP_AHRS_NavEKF(flags) {};
+    AP_AHRS(flags) {};
     void unset_home() { _home_is_set = false; };
     bool set_home(const Location &loc) override WARN_IF_UNUSED {
         // check location is valid
@@ -58,7 +58,7 @@ public:
     bool start_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
     bool verify_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
     void mission_complete() { };
-    DummyAHRS ahrs{AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    DummyAHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
 
     AP_Mission mission{
         FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
