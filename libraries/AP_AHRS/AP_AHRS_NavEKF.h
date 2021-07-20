@@ -102,25 +102,6 @@ public:
     // true if compass is being used
     bool use_compass() override;
 
-    // we will need to remove these to fully hide which EKF we are using
-#if HAL_NAVEKF2_AVAILABLE
-    NavEKF2 &get_NavEKF2(void) {
-        return EKF2;
-    }
-    const NavEKF2 &get_NavEKF2_const(void) const {
-        return EKF2;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    NavEKF3 &get_NavEKF3(void) {
-        return EKF3;
-    }
-    const NavEKF3 &get_NavEKF3_const(void) const {
-        return EKF3;
-    }
-#endif
-
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
