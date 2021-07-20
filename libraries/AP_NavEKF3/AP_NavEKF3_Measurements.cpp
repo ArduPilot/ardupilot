@@ -563,156 +563,156 @@ void NavEKF3_core::readGpsData()
         return;
     }
 
-            // report GPS fix status
-            gpsCheckStatus.bad_fix = false;
+    // report GPS fix status
+    gpsCheckStatus.bad_fix = false;
 
-            // store fix time from previous read
-            const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+    // store fix time from previous read
+    const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
-            // get current fix time
-            lastTimeGpsReceived_ms = gps.last_message_time_ms(selected_gps);
+    // get current fix time
+    lastTimeGpsReceived_ms = gps.last_message_time_ms(selected_gps);
 
-            // estimate when the GPS fix was valid, allowing for GPS processing and other delays
-            // ideally we should be using a timing signal from the GPS receiver to set this time
-            // Use the driver specified delay
-            float gps_delay_sec = 0;
-            gps.get_lag(selected_gps, gps_delay_sec);
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
+    // estimate when the GPS fix was valid, allowing for GPS processing and other delays
+    // ideally we should be using a timing signal from the GPS receiver to set this time
+    // Use the driver specified delay
+    float gps_delay_sec = 0;
+    gps.get_lag(selected_gps, gps_delay_sec);
+    gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(gps_delay_sec * 1000.0f);
 
-            // Correct for the average intersampling delay due to the filter updaterate
-            gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
+    // Correct for the average intersampling delay due to the filter updaterate
+    gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
 
-            // Prevent the time stamp falling outside the oldest and newest IMU data in the buffer
-            gpsDataNew.time_ms = MIN(MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms),imuDataDownSampledNew.time_ms);
+    // Prevent the time stamp falling outside the oldest and newest IMU data in the buffer
+    gpsDataNew.time_ms = MIN(MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms),imuDataDownSampledNew.time_ms);
 
-            // Get which GPS we are using for position information
-            gpsDataNew.sensor_idx = selected_gps;
+    // Get which GPS we are using for position information
+    gpsDataNew.sensor_idx = selected_gps;
 
-            // read the NED velocity from the GPS
-            gpsDataNew.vel = gps.velocity(selected_gps).toftype();
-            gpsDataNew.have_vz = gps.have_vertical_velocity(selected_gps);
+    // read the NED velocity from the GPS
+    gpsDataNew.vel = gps.velocity(selected_gps).toftype();
+    gpsDataNew.have_vz = gps.have_vertical_velocity(selected_gps);
 
-            // position and velocity are not yet corrected for sensor position
-            gpsDataNew.corrected = false;
+    // position and velocity are not yet corrected for sensor position
+    gpsDataNew.corrected = false;
 
-            // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
-            // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
-            ftype alpha = constrain_ftype(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
-            gpsSpdAccuracy *= (1.0f - alpha);
-            float gpsSpdAccRaw;
-            if (!gps.speed_accuracy(selected_gps, gpsSpdAccRaw)) {
-                gpsSpdAccuracy = 0.0f;
-            } else {
-                gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
-                gpsSpdAccuracy = MIN(gpsSpdAccuracy,50.0f);
-                gpsSpdAccuracy = MAX(gpsSpdAccuracy,frontend->_gpsHorizVelNoise);
+    // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
+    // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
+    ftype alpha = constrain_ftype(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
+    gpsSpdAccuracy *= (1.0f - alpha);
+    float gpsSpdAccRaw;
+    if (!gps.speed_accuracy(selected_gps, gpsSpdAccRaw)) {
+        gpsSpdAccuracy = 0.0f;
+    } else {
+        gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
+        gpsSpdAccuracy = MIN(gpsSpdAccuracy,50.0f);
+        gpsSpdAccuracy = MAX(gpsSpdAccuracy,frontend->_gpsHorizVelNoise);
+    }
+    gpsPosAccuracy *= (1.0f - alpha);
+    float gpsPosAccRaw;
+    if (!gps.horizontal_accuracy(selected_gps, gpsPosAccRaw)) {
+        gpsPosAccuracy = 0.0f;
+    } else {
+        gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
+        gpsPosAccuracy = MIN(gpsPosAccuracy,100.0f);
+        gpsPosAccuracy = MAX(gpsPosAccuracy, frontend->_gpsHorizPosNoise);
+    }
+    gpsHgtAccuracy *= (1.0f - alpha);
+    float gpsHgtAccRaw;
+    if (!gps.vertical_accuracy(selected_gps, gpsHgtAccRaw)) {
+        gpsHgtAccuracy = 0.0f;
+    } else {
+        gpsHgtAccuracy = MAX(gpsHgtAccuracy,gpsHgtAccRaw);
+        gpsHgtAccuracy = MIN(gpsHgtAccuracy,100.0f);
+        gpsHgtAccuracy = MAX(gpsHgtAccuracy, 1.5f * frontend->_gpsHorizPosNoise);
+    }
+
+    // check if we have enough GPS satellites and increase the gps noise scaler if we don't
+    if (gps.num_sats(selected_gps) >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
+        gpsNoiseScaler = 1.0f;
+    } else if (gps.num_sats(selected_gps) == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
+        gpsNoiseScaler = 1.4f;
+    } else { // <= 4 satellites or in constant position mode
+        gpsNoiseScaler = 2.0f;
+    }
+
+    // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
+    if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
+        useGpsVertVel = true;
+    } else {
+        useGpsVertVel = false;
+    }
+
+    // Monitor quality of the GPS velocity data before and after alignment
+    calcGpsGoodToAlign();
+
+    // Post-alignment checks
+    calcGpsGoodForFlight();
+
+    // Read the GPS location in WGS-84 lat,long,height coordinates
+    const struct Location &gpsloc = gps.location(selected_gps);
+
+    // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
+    if (gpsGoodToAlign && !validOrigin) {
+        Location gpsloc_fieldelevation = gpsloc; 
+        // if flying, correct for height change from takeoff so that the origin is at field elevation
+        if (inFlight) {
+            gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+        }
+
+        if (!setOrigin(gpsloc_fieldelevation)) {
+            // set an error as an attempt was made to set the origin more than once
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return;
+        }
+
+        // set the NE earth magnetic field states using the published declination
+        // and set the corresponding variances and covariances
+        alignMagStateDeclination();
+
+        // Set the height of the NED origin
+        ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
+
+        // Set the uncertainty of the GPS origin height
+        ekfOriginHgtVar = sq(gpsHgtAccuracy);
+
+    }
+
+    if (gpsGoodToAlign && !have_table_earth_field) {
+        const auto *compass = dal.get_compass();
+        if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
+            getEarthFieldTable(gpsloc);
+            if (frontend->_mag_ef_limit > 0) {
+                // initialise earth field from tables
+                stateStruct.earth_magfield = table_earth_field_ga;
             }
-            gpsPosAccuracy *= (1.0f - alpha);
-            float gpsPosAccRaw;
-            if (!gps.horizontal_accuracy(selected_gps, gpsPosAccRaw)) {
-                gpsPosAccuracy = 0.0f;
-            } else {
-                gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
-                gpsPosAccuracy = MIN(gpsPosAccuracy,100.0f);
-                gpsPosAccuracy = MAX(gpsPosAccuracy, frontend->_gpsHorizPosNoise);
-            }
-            gpsHgtAccuracy *= (1.0f - alpha);
-            float gpsHgtAccRaw;
-            if (!gps.vertical_accuracy(selected_gps, gpsHgtAccRaw)) {
-                gpsHgtAccuracy = 0.0f;
-            } else {
-                gpsHgtAccuracy = MAX(gpsHgtAccuracy,gpsHgtAccRaw);
-                gpsHgtAccuracy = MIN(gpsHgtAccuracy,100.0f);
-                gpsHgtAccuracy = MAX(gpsHgtAccuracy, 1.5f * frontend->_gpsHorizPosNoise);
-            }
+        }
+    }
 
-            // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-            if (gps.num_sats(selected_gps) >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
-                gpsNoiseScaler = 1.0f;
-            } else if (gps.num_sats(selected_gps) == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
-                gpsNoiseScaler = 1.4f;
-            } else { // <= 4 satellites or in constant position mode
-                gpsNoiseScaler = 2.0f;
-            }
+    // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
+    if (validOrigin) {
+        gpsDataNew.lat = gpsloc.lat;
+        gpsDataNew.lng = gpsloc.lng;
+        if ((frontend->_originHgtMode & (1<<2)) == 0) {
+            gpsDataNew.hgt = (ftype)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
+        } else {
+            gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
+        }
+        storedGPS.push(gpsDataNew);
+        // declare GPS available for use
+        gpsNotAvailable = false;
+    }
 
-            // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-            if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
-                useGpsVertVel = true;
-            } else {
-                useGpsVertVel = false;
-            }
-
-            // Monitor quality of the GPS velocity data before and after alignment
-            calcGpsGoodToAlign();
-
-            // Post-alignment checks
-            calcGpsGoodForFlight();
-
-            // Read the GPS location in WGS-84 lat,long,height coordinates
-            const struct Location &gpsloc = gps.location(selected_gps);
-
-            // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
-            if (gpsGoodToAlign && !validOrigin) {
-                Location gpsloc_fieldelevation = gpsloc; 
-                // if flying, correct for height change from takeoff so that the origin is at field elevation
-                if (inFlight) {
-                    gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
-                }
-
-                if (!setOrigin(gpsloc_fieldelevation)) {
-                    // set an error as an attempt was made to set the origin more than once
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    return;
-                }
-
-                // set the NE earth magnetic field states using the published declination
-                // and set the corresponding variances and covariances
-                alignMagStateDeclination();
-
-                // Set the height of the NED origin
-                ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
-
-                // Set the uncertainty of the GPS origin height
-                ekfOriginHgtVar = sq(gpsHgtAccuracy);
-
-            }
-
-            if (gpsGoodToAlign && !have_table_earth_field) {
-                const auto *compass = dal.get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
-                    getEarthFieldTable(gpsloc);
-                    if (frontend->_mag_ef_limit > 0) {
-                        // initialise earth field from tables
-                        stateStruct.earth_magfield = table_earth_field_ga;
-                    }
-                }
-            }
-
-            // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
-            if (validOrigin) {
-                gpsDataNew.lat = gpsloc.lat;
-                gpsDataNew.lng = gpsloc.lng;
-                if ((frontend->_originHgtMode & (1<<2)) == 0) {
-                    gpsDataNew.hgt = (ftype)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
-                } else {
-                    gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
-                }
-                storedGPS.push(gpsDataNew);
-                // declare GPS available for use
-                gpsNotAvailable = false;
-            }
-
-            // if the GPS has yaw data then input that as well
-            float yaw_deg, yaw_accuracy_deg;
-            if (dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg)) {
-                // GPS modules are rather too optimistic about their
-                // accuracy. Set to min of 5 degrees here to prevent
-                // the user constantly receiving warnings about high
-                // normalised yaw innovations
-                const ftype min_yaw_accuracy_deg = 5.0f;
-                yaw_accuracy_deg = MAX(yaw_accuracy_deg, min_yaw_accuracy_deg);
-                writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), gpsDataNew.time_ms, 2);
-            }
+    // if the GPS has yaw data then input that as well
+    float yaw_deg, yaw_accuracy_deg;
+    if (dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg)) {
+        // GPS modules are rather too optimistic about their
+        // accuracy. Set to min of 5 degrees here to prevent
+        // the user constantly receiving warnings about high
+        // normalised yaw innovations
+        const ftype min_yaw_accuracy_deg = 5.0f;
+        yaw_accuracy_deg = MAX(yaw_accuracy_deg, min_yaw_accuracy_deg);
+        writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), gpsDataNew.time_ms, 2);
+    }
 }
 
 // read the delta angle and corresponding time interval from the IMU
