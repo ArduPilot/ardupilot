@@ -49,6 +49,9 @@ public:
     // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
     bool get_terrain_offset(float& offset_cm);
 
+    // return terrain following altitude margin.  vehicle will stop if distance from target altitude is larger than this margin
+    float get_terrain_margin() const { return MAX(_terrain_margin, 0.1); }
+
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
     bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
@@ -236,6 +239,7 @@ protected:
     AP_Float    _wp_accel_cmss;         // horizontal acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;       // vertical acceleration in cm/s/s during missions
     AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
+    AP_Float    _terrain_margin;        // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
 
     // scurve
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
