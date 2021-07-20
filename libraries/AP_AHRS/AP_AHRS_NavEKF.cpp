@@ -2759,10 +2759,10 @@ void AP_AHRS_NavEKF::set_posvelyaw_source_set(uint8_t source_set_idx)
 void AP_AHRS_NavEKF::Log_Write()
 {
 #if HAL_NAVEKF2_AVAILABLE
-    get_NavEKF2().Log_Write();
+    EKF2.Log_Write();
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    get_NavEKF3().Log_Write();
+    EKF3.Log_Write();
 #endif
 }
 
