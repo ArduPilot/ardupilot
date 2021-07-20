@@ -96,6 +96,9 @@ public:
 
     static AP_RPM *get_singleton() { return _singleton; }
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+
 private:
     static AP_RPM *_singleton;
 

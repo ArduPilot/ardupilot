@@ -223,6 +223,27 @@ bool AP_RPM::get_rpm(uint8_t instance, float &rpm_value) const
     return true;
 }
 
+// check settings are valid
+bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
+{
+    for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
+        switch (_type[i]) {
+        case RPM_TYPE_PWM:
+        case RPM_TYPE_PIN:
+            if (_pin[i] == -1) {
+                hal.util->snprintf(buffer, buflen, "RPM[%u] no pin set", i + 1);
+                return false;
+            }
+            if (!hal.gpio->valid_pin(_pin[i])) {
+                hal.util->snprintf(buffer, buflen, "RPM[%u] pin %d invalid", i + 1, _pin[i]);
+                return false;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
 // singleton instance
 AP_RPM *AP_RPM::_singleton;
 
