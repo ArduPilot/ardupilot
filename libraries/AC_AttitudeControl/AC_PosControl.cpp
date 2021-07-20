@@ -614,7 +614,7 @@ void AC_PosControl::update_xy_controller()
     _last_update_xy_us = AP_HAL::micros64();
 
     float ekfGndSpdLimit, ekfNavVelGainScaler;
-    AP::ahrs_navekf().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    AP::ahrs().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // Position Controller
 
