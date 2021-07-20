@@ -440,6 +440,12 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
     return msg == MSG_OK;
 }
 
+// check if a pin number is valid
+bool GPIO::valid_pin(uint8_t pin) const
+{
+    return gpio_by_pin_num(pin) != nullptr;
+}
+
 #ifndef IOMCU_FW
 /*
   timer to setup interrupt quotas for a 100ms period from
