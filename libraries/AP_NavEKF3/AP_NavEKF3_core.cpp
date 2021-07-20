@@ -499,6 +499,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     readIMUData();
     readMagData();
     readGpsData();
+    readGpsYawData();
     readBaroData();
 
     if (statesInitialised) {
