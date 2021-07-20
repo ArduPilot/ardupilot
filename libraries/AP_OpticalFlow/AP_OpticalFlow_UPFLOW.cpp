@@ -100,7 +100,7 @@ void AP_OpticalFlow_UPFLOW::update(void)
         gyro_sum.zero();
         gyro_sum_count = 0;
     }
-    const Vector3f& gyro = AP::ahrs_navekf().get_gyro();
+    const Vector3f& gyro = AP::ahrs().get_gyro();
     gyro_sum.x += gyro.x;
     gyro_sum.y += gyro.y;
     gyro_sum_count++;
