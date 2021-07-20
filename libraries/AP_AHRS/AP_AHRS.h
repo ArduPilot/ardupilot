@@ -471,11 +471,6 @@ public:
         return false;
     }
 
-    // return the active accelerometer instance
-    uint8_t get_active_accel_instance(void) const {
-        return _active_accel_instance;
-    }
-
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
