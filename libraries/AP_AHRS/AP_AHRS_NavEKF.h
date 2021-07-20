@@ -44,24 +44,34 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
+#include "AP_AHRS_DCM.h"
+
+// forward declare view class
+class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-class AP_AHRS_NavEKF : public AP_AHRS_DCM {
+class AP_AHRS : public AP_AHRS_DCM {
+    friend class AP_AHRS_View;
 public:
+
     enum Flags {
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
     // Constructor
-    AP_AHRS_NavEKF(uint8_t flags = 0);
+    AP_AHRS(uint8_t flags = 0);
 
     // initialise
     void init(void) override;
 
     /* Do not allow copies */
-    AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
-    AP_AHRS_NavEKF &operator=(const AP_AHRS_NavEKF&) = delete;
+    CLASS_NO_COPY(AP_AHRS);
+
+    // get singleton instance
+    static AP_AHRS *get_singleton() {
+        return _singleton;
+    }
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -303,7 +313,19 @@ public:
     NavEKF3 EKF3;
 #endif
 
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
+    // create a view
+    AP_AHRS_View *create_view(enum Rotation rotation, float pitch_trim_deg=0);
+
+protected:
+    // optional view class
+    AP_AHRS_View *_view;
+
 private:
+    static AP_AHRS *_singleton;
+
     enum class EKFType {
         NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
@@ -376,4 +398,8 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
 #endif    
+};
+
+namespace AP {
+    AP_AHRS &ahrs();
 };

@@ -43,26 +43,17 @@ enum AHRS_VehicleClass : uint8_t {
 };
 
 
-// forward declare view class
-class AP_AHRS_View;
-
-class AP_AHRS
+class AP_AHRS_Backend
 {
 public:
-    friend class AP_AHRS_View;
 
     // Constructor
-    AP_AHRS() :
+    AP_AHRS_Backend() :
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f)
     {
-        _singleton = this;
-
-        // load default values from var_info table
-        AP_Param::setup_object_defaults(this, var_info);
-
         // base the ki values by the sensors maximum drift
         // rate.
         _gyro_drift_limit = AP::ins().get_gyro_drift_rate();
@@ -76,12 +67,7 @@ public:
     }
 
     // empty virtual destructor
-    virtual ~AP_AHRS() {}
-
-    // get singleton instance
-    static AP_AHRS *get_singleton() {
-        return _singleton;
-    }
+    virtual ~AP_AHRS_Backend() {}
 
     // init sets up INS board orientation
     virtual void init();
@@ -543,9 +529,6 @@ public:
         AP::ins().get_delta_velocity(ret, dt);
     }
 
-    // create a view
-    AP_AHRS_View *create_view(enum Rotation rotation, float pitch_trim_deg=0);
-
     // return calculated AOA
     float getAOA(void);
 
@@ -600,9 +583,6 @@ public:
 
     // active AHRS type for logging
     virtual uint8_t get_active_AHRS_type(void) const { return 0; }
-
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
 
     // Logging to disk functions
     void Write_AHRS2(void) const;
@@ -711,15 +691,11 @@ protected:
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
 
-    // optional view class
-    AP_AHRS_View *_view;
-
     // AOA and SSA
     float _AOA, _SSA;
     uint32_t _last_AOA_update_ms;
 
 private:
-    static AP_AHRS *_singleton;
 
     AP_NMEA_Output* _nmea_out;
 
@@ -727,11 +703,4 @@ private:
     uint32_t touchdown_expected_start_ms;
 };
 
-#include "AP_AHRS_DCM.h"
 #include "AP_AHRS_NavEKF.h"
-
-namespace AP {
-    AP_AHRS &ahrs();
-    // ahrs_navekf only exists to avoid code churn
-    AP_AHRS_NavEKF &ahrs_navekf();
-};
