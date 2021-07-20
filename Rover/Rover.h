@@ -162,9 +162,7 @@ private:
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow;
-#endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
