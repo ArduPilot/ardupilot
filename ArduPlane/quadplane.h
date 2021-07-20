@@ -3,7 +3,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
-#include <AP_InertialNav/AP_InertialNav.h>
+#include <AP_InertialNav/AP_InertialNav_NavEKF.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
 #include <AC_WPNav/AC_Loiter.h>
@@ -41,7 +41,7 @@ public:
     friend class ModeQAutotune;
     friend class ModeQAcro;
     
-    QuadPlane(AP_AHRS_NavEKF &_ahrs);
+    QuadPlane(AP_AHRS &_ahrs);
 
     static QuadPlane *get_singleton() {
         return _singleton;
@@ -186,7 +186,7 @@ public:
     void set_q_assist_state(Q_ASSIST_STATE_ENUM state) {q_assist_state = state;};
 
 private:
-    AP_AHRS_NavEKF &ahrs;
+    AP_AHRS &ahrs;
     AP_Vehicle::MultiCopter aparm;
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};

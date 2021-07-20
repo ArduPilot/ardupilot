@@ -632,7 +632,7 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
 };
 
 
-QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
+QuadPlane::QuadPlane(AP_AHRS &_ahrs) :
     ahrs(_ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
