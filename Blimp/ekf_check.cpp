@@ -185,14 +185,12 @@ void Blimp::check_ekf_reset()
         AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
 
-#if AP_AHRS_NAVEKF_AVAILABLE && (HAL_NAVEKF2_AVAILABLE || HAL_NAVEKF3_AVAILABLE)
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         ekf_primary_core = ahrs.get_primary_core_index();
         AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
-#endif
 }
 
 // check for high vibrations affecting altitude control
