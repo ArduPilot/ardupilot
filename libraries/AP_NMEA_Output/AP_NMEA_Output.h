@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
 
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -50,4 +50,4 @@ private:
     uint32_t _last_run_ms;
 };
 
-#endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#endif  // !HAL_MINIMIZE_FEATURES
