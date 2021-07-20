@@ -298,11 +298,7 @@ protected:
     AP_Notify notify;
 
     // Inertial Navigation EKF
-#if AP_AHRS_NAVEKF_AVAILABLE
     AP_AHRS_NavEKF ahrs;
-#else
-    AP_AHRS_DCM ahrs;
-#endif
 
 #if HAL_HOTT_TELEM_ENABLED
     AP_Hott_Telem hott_telem;
