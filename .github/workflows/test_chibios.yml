@@ -23,7 +23,8 @@ jobs:
             periph-build,
             iofirmware,
             CubeOrange-bootloader,
-            revo-bootloader
+            revo-bootloader,
+            stm32h7-debug
         ]
         toolchain: [
             chibios,  # GCC-6
