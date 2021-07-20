@@ -2,8 +2,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include "AP_InertialNav.h"
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
   filter if available, and falls back to the AP_InertialNav filter
@@ -106,5 +104,3 @@ float AP_InertialNav_NavEKF::get_velocity_z() const
 {
     return _velocity_cm.z;
 }
-
-#endif // AP_AHRS_NAVEKF_AVAILABLE
