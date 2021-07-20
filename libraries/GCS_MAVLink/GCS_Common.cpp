@@ -431,7 +431,6 @@ void GCS_MAVLINK::send_proximity()
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2()
 {
-#if AP_AHRS_NAVEKF_AVAILABLE
     const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc {};
@@ -446,7 +445,6 @@ void GCS_MAVLINK::send_ahrs2()
                                loc.lat,
                                loc.lng);
     }
-#endif
 }
 
 MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const
@@ -2289,7 +2287,6 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
  */
 void GCS_MAVLINK::send_opticalflow()
 {
-#if AP_AHRS_NAVEKF_AVAILABLE
     const OpticalFlow *optflow = AP::opticalflow();
 
     // exit immediately if no optical flow sensor or not healthy
@@ -2320,7 +2317,6 @@ void GCS_MAVLINK::send_opticalflow()
         hagl,  // ground distance (in meters) set to zero
         flowRate.x,
         flowRate.y);
-#endif
 }
 
 /*
@@ -4884,10 +4880,8 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         AP::ahrs_navekf().send_ekf_status_report(chan);
-#endif
         break;
 
     case MSG_MEMINFO:
