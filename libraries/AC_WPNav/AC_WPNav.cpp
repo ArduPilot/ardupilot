@@ -75,6 +75,14 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("JERK",   11, AC_WPNav, _wp_jerk, 1.0f),
 
+    // @Param: TER_MARGIN
+    // @DisplayName: Waypoint Terrain following altitude margin
+    // @Description: Waypoint Terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)
+    // @Units: m
+    // @Range: 0.1 100
+    // @User: Advanced
+    AP_GROUPINFO("TER_MARGIN",  12, AC_WPNav, _terrain_margin, 10.0),
+
     AP_GROUPEND
 };
 
