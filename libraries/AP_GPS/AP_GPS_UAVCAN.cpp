@@ -525,6 +525,9 @@ void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
 
     interim_state.have_gps_yaw = cb.msg->heading_valid;
     interim_state.gps_yaw = degrees(cb.msg->heading_rad);
+    if (interim_state.have_gps_yaw) {
+        interim_state.gps_yaw_time_ms = AP_HAL::millis();
+    }
 
     interim_state.have_gps_yaw_accuracy = cb.msg->heading_accuracy_valid;
     interim_state.gps_yaw_accuracy = degrees(cb.msg->heading_accuracy_rad);
