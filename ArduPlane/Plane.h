@@ -204,10 +204,10 @@ private:
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
-    AP_RollController rollController{ahrs, aparm};
-    AP_PitchController pitchController{ahrs, aparm};
-    AP_YawController yawController{ahrs, aparm};
-    AP_SteerController steerController{ahrs};
+    AP_RollController rollController{aparm};
+    AP_PitchController pitchController{aparm};
+    AP_YawController yawController{aparm};
+    AP_SteerController steerController{};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
