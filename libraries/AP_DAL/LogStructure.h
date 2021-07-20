@@ -208,6 +208,7 @@ struct log_RGPJ {
     float sacc;
     float yaw_deg;
     float yaw_accuracy_deg;
+    uint32_t yaw_deg_time_ms;
     int32_t lat;
     int32_t lng;
     int32_t alt;
@@ -399,7 +400,7 @@ struct log_RBOH {
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
-      "RGPJ", "IffffffiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,Lat,Lon,Alt,HA,VA,HD,I", "-------------#", "--------------" }, \
+      "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
       "RMGH", "BBfBBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C,FUsable", "-------", "-------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
