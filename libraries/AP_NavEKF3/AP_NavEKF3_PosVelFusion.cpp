@@ -445,6 +445,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // Read GPS data from the sensor
     readGpsData();
+    readGpsYawData();
 
     // get data that has now fallen behind the fusion time horizon
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
