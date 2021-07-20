@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_AutoTune.h"
@@ -10,7 +9,7 @@
 
 class AP_PitchController {
 public:
-    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
+    AP_PitchController(const AP_Vehicle::FixedWing &parms);
 
     /* Do not allow copies */
     AP_PitchController(const AP_PitchController &other) = delete;
@@ -60,6 +59,4 @@ private:
 
     int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
-
-    AP_AHRS &_ahrs;
 };
