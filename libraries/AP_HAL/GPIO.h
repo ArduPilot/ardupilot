@@ -53,6 +53,7 @@ public:
     virtual uint8_t read(uint8_t pin) = 0;
     virtual void    write(uint8_t pin, uint8_t value) = 0;
     virtual void    toggle(uint8_t pin) = 0;
+    virtual bool    valid_pin(uint8_t pin) const { return true; }
 
     /* Alternative interface: */
     virtual AP_HAL::DigitalSource* channel(uint16_t n) = 0;
