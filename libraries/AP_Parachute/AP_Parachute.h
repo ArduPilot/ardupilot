@@ -86,6 +86,9 @@ public:
     // trigger parachute release if sink_rate is below critical_sink_rate for 1sec
     void check_sink_rate();
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+    
     static const struct AP_Param::GroupInfo        var_info[];
 
     // get singleton instance
