@@ -187,6 +187,23 @@ void AP_Parachute::check_sink_rate()
     }
 }
 
+// check settings are valid
+bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
+{
+    if (_enabled > 0) {
+        if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_parachute_release)) {
+                hal.util->snprintf(buffer, buflen, "Chute has no channel");
+                return false;
+            }
+        } else if (!_relay.enabled(_release_type)) {
+            hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", _release_type);
+            return false;
+        }
+    }
+    return true;
+}
+
 // singleton instance
 AP_Parachute *AP_Parachute::_singleton;
 
