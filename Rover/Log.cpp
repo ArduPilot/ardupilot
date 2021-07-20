@@ -12,10 +12,9 @@ void Rover::Log_Write_Attitude()
 
     ahrs.Write_Attitude(targets);
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     AP::ahrs_navekf().Log_Write();
     ahrs.Write_AHRS2();
-#endif
+
     ahrs.Write_POS();
 
     // log steering rate controller
