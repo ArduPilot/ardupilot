@@ -699,6 +699,100 @@ void Mode::land_run_horizontal_control()
     }
 }
 
+#if PRECISION_LANDING == ENABLED
+// Go towards a position commanded by prec land state machine in order to retry landing
+// The passed in location is expected to be NED and in m
+void Mode::land_retry_position(const Vector3f &retry_loc)
+{
+    if (!copter.failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+                set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+            }
+        }
+
+        // allow user to take control during repositioning. Note: copied from land_run_horizontal_control()
+        // To-Do: this code exists at several different places in slightly diffrent forms and that should be fixed
+        if (g.land_repositioning) {
+            float target_roll = 0.0f;
+            float target_pitch = 0.0f;
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
+            // record if pilot has overridden roll or pitch
+            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!copter.ap.land_repo_active) {
+                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                }
+                // this flag will be checked by prec land state machine later and any further landing retires will be cancelled
+                copter.ap.land_repo_active = true;
+            }
+        }
+    }
+
+    Vector3p retry_loc_NEU{retry_loc.x, retry_loc.y, retry_loc.z * -1.0f};
+    //pos contoller expects input in NEU cm's
+    retry_loc_NEU = retry_loc_NEU * 100.0f;
+    pos_control->input_pos_xyz(retry_loc_NEU, 0.0f, 1000.0f);
+
+    // run position controllers
+    pos_control->update_xy_controller();
+    pos_control->update_z_controller();
+
+    const Vector3f thrust_vector{pos_control->get_thrust_vector()};
+
+    // roll, pitch from position controller, yaw heading from auto_heading()
+    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
+}
+
+// Run precland statemachine. This function should be called from any mode that wants to do precision landing.
+// This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
+void Mode::run_precland()
+{
+    // if user is taking control, we will not run the statemachine, and simply land (may or may not be on target)
+    if (!copter.ap.land_repo_active) {
+        // This will get updated later to a retry pos if needed
+        Vector3f retry_pos;
+
+        switch (copter.precland_statemachine.update(retry_pos)) {
+        case AC_PrecLand_StateMachine::Status::RETRYING:
+            // we want to retry landing by going to another position
+            land_retry_position(retry_pos);
+            break;
+
+        case AC_PrecLand_StateMachine::Status::FAILSAFE: {
+            // we have hit a failsafe. Failsafe can only mean two things, we either want to stop permanently till user takes over or land
+            switch (copter.precland_statemachine.get_failsafe_actions()) {
+            case AC_PrecLand_StateMachine::FailSafeAction::DESCEND:
+                // descend normally, prec land target is definitely not in sight
+                run_land_controllers();
+                break;
+            case AC_PrecLand_StateMachine::FailSafeAction::HOLD_POS:
+                // sending "true" in this argument will stop the descend
+                run_land_controllers(true);
+                break;
+            }
+            break;
+        }
+        case AC_PrecLand_StateMachine::Status::ERROR:
+            // should never happen, is certainly a bug. Report then descend
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            FALLTHROUGH;
+        case AC_PrecLand_StateMachine::Status::DESCEND:
+            // run land controller. This will descend towards the target if prec land target is in sight
+            // else it will just descend vertically
+            run_land_controllers();
+            break;
+        }
+    } else {
+        // just land, since user has taken over controls, it does not make sense to run any retries or failsafe measures
+        run_land_controllers();
+    }
+}
+#endif
+
 float Mode::throttle_hover() const
 {
     return motors->get_throttle_hover();

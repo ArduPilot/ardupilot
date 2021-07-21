@@ -24,6 +24,12 @@ bool ModeRTL::init(bool ignore_checks)
     terrain_following_allowed = !copter.failsafe.terrain;
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precland state machine
+    copter.precland_statemachine.init();
+#endif
+
     return true;
 }
 
@@ -407,8 +413,12 @@ void ModeRTL::land_run(bool disarm_on_land)
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    land_run_horizontal_control();
-    land_run_vertical_control();
+#if PRECISION_LANDING == ENABLED
+        // the state machine takes care of the entire landing procedure
+        run_precland();
+#else
+        run_land_controllers();
+#endif
 }
 
 void ModeRTL::build_path()
