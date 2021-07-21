@@ -1172,6 +1172,22 @@ void AC_PosControl::write_log()
     }
 }
 
+/// crosstrack_error - returns horizontal error to the closest point to the current track
+float AC_PosControl::crosstrack_error() const
+{
+    const Vector3f& curr_pos = _inav.get_position();
+    const Vector2f pos_error = curr_pos.xy() - (_pos_target.xy()).tofloat();
+    if (is_zero(_vel_desired.xy().length_squared())) {
+        // crosstrack is the horizontal distance to target when stationary
+        return pos_error.length();
+    } else {
+        // crosstrack is the horizontal distance to the closest point to the current track
+        const Vector2f vel_unit = _vel_desired.xy().normalized();
+        const float dot_error = pos_error * vel_unit;
+        return safe_sqrt(pos_error.length_squared() - sq(dot_error));
+    }
+}
+
 ///
 /// private methods
 ///
