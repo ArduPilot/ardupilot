@@ -32,7 +32,6 @@
 #define AC_FENCE_ALT_MIN_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further down
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
-#define AC_FENCE_ALT_FRAME_DEFAULT                  1       // default altitude frame is rel; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
@@ -58,9 +57,6 @@ public:
 
     void init() {
         _poly_loader.init();
-        AP_Param::set_and_save_by_name("FENCE_ALT_MAX", AC_FENCE_ALT_MAX_DEFAULT);
-        AP_Param::set_and_save_by_name("FENCE_ALT_FRAME", AC_FENCE_ALT_FRAME_DEFAULT);
-        AP_Param::set_and_save_by_name("FENCE_ALT_MIN", AC_FENCE_ALT_MIN_DEFAULT);
     }
 
     // get singleton instance
@@ -151,7 +147,7 @@ public:
     void manual_recovery_start();
 
     // method for setting alt frames
-    bool conv_alt_frame();
+    bool conv_alt_frame(Location::AltFrame desired_frame, float &alt_max_in_frame, float &alt_min_in_frame);
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
@@ -201,8 +197,6 @@ private:
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
-    AP_Int8         _alt_frame;             // frame that alt_max and alt_min are currently in
-    AP_Int8         _alt_frame_ext;         // front facing alt frame
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
@@ -227,7 +221,6 @@ private:
     uint32_t _last_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
-
 
     AC_PolyFence_loader _poly_loader{_total}; // polygon fence
     Location        fenceloc;

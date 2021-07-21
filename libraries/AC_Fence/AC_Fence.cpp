@@ -109,13 +109,6 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE),
 
-    // @Param: ALT_FRAME
-    // @DisplayName: Fence Altitude Frame
-    // @Description: Frame for min and max altitude, default is 1
-    // @Values: 0:MSL,1:REL/HOME
-    // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_FRAME", 11, AC_Fence, _alt_frame_ext, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
-
     AP_GROUPEND
 };
 
@@ -129,8 +122,6 @@ AC_Fence::AC_Fence()
 #endif
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
-
-    _alt_frame = _alt_frame_ext;
 }
 
 /// enable the Fence code generally; a master switch for all fences
@@ -447,29 +438,28 @@ bool AC_Fence::check_fence_alt_min()
 }
 
 // returns true if alt-frame is converted successfully
-bool AC_Fence::conv_alt_frame()
+bool AC_Fence::conv_alt_frame(Location::AltFrame desired_frame, float &alt_max_in_frame, float &alt_min_in_frame)
 {
-    if (_alt_frame != _alt_frame_ext) {
-        int32_t _new_max_alt_cm, _new_min_alt_cm;
-        if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame((int)_alt_frame_ext), _alt_max * 100.0f, _new_max_alt_cm)) {
-            _alt_max = (int) _new_max_alt_cm / 100.0f;
-            AP_Param::set_and_save_by_name("FENCE_ALT_MAX", _alt_max);
-        } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change not accepted, current frame is..."); // Finish, return false
-            return false;
-        }
-    
-        if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame((int)_alt_frame_ext), _alt_min * 100.0f, _new_min_alt_cm)) {
-            _alt_min = (int) _new_min_alt_cm / 100.0f;
-            AP_Param::set_and_save_by_name("FENCE_ALT_MIN", _alt_min);
-        } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Min alt frame change not accepted, current frame is..."); // Finish, return false
-            return false;
-        }
-        _alt_frame = _alt_frame_ext;
-        return true;
+    int32_t new_max_alt_cm, new_min_alt_cm;
+    if (fenceloc.get_spec_alt_cm(Location::AltFrame::ABOVE_HOME, desired_frame, _alt_max * 100.0f, new_max_alt_cm)) {
+        alt_max_in_frame = new_max_alt_cm * 0.01;
+    } else {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change not accepted, current frame is..."); // Finish, return false
+        return false;
     }
-    return false;
+    
+    if (fenceloc.get_spec_alt_cm(Location::AltFrame::ABOVE_HOME, desired_frame, _alt_min * 100.0f, new_min_alt_cm)) {
+        alt_min_in_frame = new_min_alt_cm * 0.01;
+    } else {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Min alt frame change not accepted, current frame is..."); // Finish, return false
+        return false;
+    }
+    return true;
+}
+
+    if (conv_alt_frame(Location::AltFrame::ABSOLUTE, test_alt_max, test_alt_min)) {
+        ::fprintf(stderr, "[ABSOLUTE] test_alt_max: %f test_alt_min: %f\n", test_alt_max, test_alt_min);
+    }
 }
 
 // check_fence_polygon - returns true if the poly fence is freshly
