@@ -4032,6 +4032,7 @@ class AutoTest(ABC):
         autopilot_values = {}
         for i in range(attempts):
             self.drain_mav(quiet=True)
+            self.drain_all_pexpects()
             received = set()
             for (name, value) in want.items():
                 if verbose:
