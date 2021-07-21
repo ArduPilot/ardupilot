@@ -48,12 +48,7 @@ class AP_AHRS_Backend
 public:
 
     // Constructor
-    AP_AHRS_Backend() :
-        _vehicle_class(AHRS_VEHICLE_UNKNOWN),
-        _cos_roll(1.0f),
-        _cos_pitch(1.0f),
-        _cos_yaw(1.0f)
-    {
+    AP_AHRS_Backend() {
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
 
@@ -588,7 +583,7 @@ protected:
     // multi-thread access support
     HAL_Semaphore _rsem;
 
-    AHRS_VehicleClass _vehicle_class;
+    AHRS_VehicleClass _vehicle_class{AHRS_VEHICLE_UNKNOWN};
 
     // settable parameters
     // these are public for ArduCopter
@@ -672,8 +667,12 @@ protected:
     bool _home_locked :1;
 
     // helper trig variables
-    float _cos_roll, _cos_pitch, _cos_yaw;
-    float _sin_roll, _sin_pitch, _sin_yaw;
+    float _cos_roll{1.0f};
+    float _cos_pitch{1.0f};
+    float _cos_yaw{1.0f};
+    float _sin_roll;
+    float _sin_pitch;
+    float _sin_yaw;
 
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
