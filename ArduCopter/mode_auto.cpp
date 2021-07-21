@@ -50,6 +50,11 @@ bool ModeAuto::init(bool ignore_checks)
         // clear guided limits
         copter.mode_guided.limit_clear();
 
+#if PRECISION_LANDING == ENABLED
+        // initialise precland state machine
+        copter.precland_statemachine.init();
+#endif
+
         return true;
     } else {
         return false;
@@ -883,9 +888,13 @@ void ModeAuto::land_run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    
-    land_run_horizontal_control();
-    land_run_vertical_control();
+
+#if PRECISION_LANDING == ENABLED
+        // the state machine takes care of the entire landing procedure
+        run_precland();
+#else
+        run_land_controllers();
+#endif
 }
 
 // auto_rtl_run - rtl in AUTO flight mode
