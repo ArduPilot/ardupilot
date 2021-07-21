@@ -113,10 +113,6 @@ public:
         return ahrs.get_velocity_NED(vec);
     }
 
-    bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
-        return ahrs.get_expected_mag_field_NED(ret);
-    }
-
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NED_home(vec);
     }
