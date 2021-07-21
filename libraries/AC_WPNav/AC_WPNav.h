@@ -205,7 +205,7 @@ public:
     void update_track_with_speed_accel_limits();
 
     /// return the crosstrack_error - horizontal error of the actual position vs the desired position
-    float crosstrack_error() const { return _track_error_xy;}
+    float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
     static const struct AP_Param::GroupInfo var_info[];
 
