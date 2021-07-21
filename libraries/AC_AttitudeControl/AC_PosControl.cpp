@@ -1184,7 +1184,9 @@ float AC_PosControl::crosstrack_error() const
         // crosstrack is the horizontal distance to the closest point to the current track
         const Vector2f vel_unit = _vel_desired.xy().normalized();
         const float dot_error = pos_error * vel_unit;
-        return safe_sqrt(pos_error.length_squared() - sq(dot_error));
+
+        // todo: remove MAX of zero when safe_sqrt fixed
+        return safe_sqrt(MAX(pos_error.length_squared() - sq(dot_error), 0.0));
     }
 }
 
