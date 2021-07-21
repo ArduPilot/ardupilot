@@ -702,5 +702,3 @@ private:
     uint32_t takeoff_expected_start_ms;
     uint32_t touchdown_expected_start_ms;
 };
-
-#include "AP_AHRS_NavEKF.h"

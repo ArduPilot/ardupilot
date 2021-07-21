@@ -21,7 +21,7 @@
  *
  */
 
-#include "AP_AHRS.h"
+#include "AP_AHRS_Backend.h"
 
 class AP_AHRS_DCM : public AP_AHRS_Backend {
 public:
