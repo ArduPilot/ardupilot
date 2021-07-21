@@ -292,11 +292,6 @@ public:
         return false;
     }
 
-    // returns the expected NED magnetic field
-    virtual bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
         return false;
