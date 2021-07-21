@@ -1986,7 +1986,7 @@ void AP_AHRS::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 #endif
     }
     if (imu_idx == -1) {
-        AP_AHRS::getCorrectedDeltaVelocityNED(ret, dt);
+        AP_AHRS_DCM::getCorrectedDeltaVelocityNED(ret, dt);
         return;
     }
     ret.zero();
