@@ -257,7 +257,6 @@ protected:
     float       _wp_desired_speed_xy_cms;   // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
-    float       _track_error_xy;        // horizontal error of the actual position vs the desired position
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
 
     // terrain following variables
