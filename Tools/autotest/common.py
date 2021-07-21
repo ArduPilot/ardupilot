@@ -5862,6 +5862,10 @@ Also, ignores heartbeats not from our target system'''
         except Exception:
             # process is dead
             self.progress("Not alive after test", send_statustext=False)
+            if self.sitl.isalive():
+                self.progress("pexpect says it is alive")
+            else:
+                self.progress("pexpect says it is dead")
             passed = False
             reset_needed = True
 
