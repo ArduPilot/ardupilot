@@ -115,6 +115,10 @@ protected:
     // in modes that support landing
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
+    void run_land_controllers(bool pause_descent = false) {
+        land_run_horizontal_control();
+        land_run_vertical_control(pause_descent);
+    }
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
@@ -240,6 +244,17 @@ public:
     };
     static AutoYaw auto_yaw;
 
+#if PRECISION_LANDING == ENABLED
+    // Go towards a position commanded by prec land state machine in order to retry landing
+    // The passed in location is expected to be NED and in meters
+    void land_retry_position(const Vector3f &retry_loc);
+
+    // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
+    // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
+    void run_precland();
+
+#endif
+
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
@@ -251,7 +266,6 @@ public:
     GCS_Copter &gcs();
     void set_throttle_takeoff(void);
     uint16_t get_pilot_speed_dn(void);
-
     // end pass-through functions
 };
 
