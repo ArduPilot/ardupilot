@@ -15,6 +15,7 @@ bool ModeLand::init(bool ignore_checks)
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
     pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -38,6 +39,11 @@ bool ModeLand::init(bool ignore_checks)
 #if AC_FENCE == ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
+#endif
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precland state machine
+    copter.precland_statemachine.init();
 #endif
 
     return true;
@@ -77,9 +83,17 @@ void ModeLand::gps_run()
         if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
         }
-
-        land_run_horizontal_control();
-        land_run_vertical_control(land_pause);
+#if PRECISION_LANDING == ENABLED
+        // the state machine takes care of the entire landing procedure except for land_pause.
+        if (land_pause) {
+            // we don't want to start descending immediately
+            run_land_controllers(true);
+        } else {
+            run_precland();
+        }
+#else
+        run_land_controllers(land_pause);
+#endif
     }
 }
 

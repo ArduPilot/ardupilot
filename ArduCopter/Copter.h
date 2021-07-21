@@ -113,6 +113,7 @@
 #endif
 #if PRECISION_LANDING == ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
+ # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
@@ -523,6 +524,7 @@ private:
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
     AC_PrecLand precland;
+    AC_PrecLand_StateMachine precland_statemachine;
 #endif
 
     // Pilot Input Management Library
