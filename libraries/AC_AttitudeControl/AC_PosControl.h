@@ -350,6 +350,9 @@ public:
     /// get_vel_z_error_ratio - returns the proportion of error relative to the maximum request
     float get_vel_z_control_ratio() const { return constrain_float(_vel_z_control_ratio, 0.0f, 1.0f); }
 
+    /// crosstrack_error - returns horizontal error to the closest point to the current track
+    float crosstrack_error() const;
+
     /// standby_xyz_reset - resets I terms and removes position error
     ///     This function will let Loiter and Alt Hold continue to operate
     ///     in the event that the flight controller is in control of the
