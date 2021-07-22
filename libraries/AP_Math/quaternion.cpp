@@ -71,33 +71,6 @@ void QuaternionT<T>::rotation_matrix(Matrix3f &m) const
     m.c.z = 1.0f-2.0f*(q2q2 + q3q3);
 }
 
-// return the rotation matrix equivalent for this quaternion after normalization
-template <typename T>
-void QuaternionT<T>::rotation_matrix_norm(Matrix3<T> &m) const
-{
-    const T q1q1 = q1 * q1;
-    const T q1q2 = q1 * q2;
-    const T q1q3 = q1 * q3;
-    const T q1q4 = q1 * q4;
-    const T q2q2 = q2 * q2;
-    const T q2q3 = q2 * q3;
-    const T q2q4 = q2 * q4;
-    const T q3q3 = q3 * q3;
-    const T q3q4 = q3 * q4;
-    const T q4q4 = q4 * q4;
-    const T invs = 1.0f / (q1q1 + q2q2 + q3q3 + q4q4);
-
-    m.a.x = ( q2q2 - q3q3 - q4q4 + q1q1)*invs;
-    m.a.y = 2.0f*(q2q3 - q1q4)*invs;
-    m.a.z = 2.0f*(q2q4 + q1q3)*invs;
-    m.b.x = 2.0f*(q2q3 + q1q4)*invs;
-    m.b.y = (-q2q2 + q3q3 - q4q4 + q1q1)*invs;
-    m.b.z = 2.0f*(q3q4 - q1q2)*invs;
-    m.c.x = 2.0f*(q2q4 - q1q3)*invs;
-    m.c.y = 2.0f*(q3q4 + q1q2)*invs;
-    m.c.z = (-q2q2 - q3q3 + q4q4 + q1q1)*invs;
-}
-
 // return the rotation matrix equivalent for this quaternion
 // Thanks to Martin John Baker
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
@@ -481,9 +454,9 @@ void QuaternionT<T>::from_axis_angle(const Vector3<T> &axis, T theta)
         q2=q3=q4=0.0f;
         return;
     }
-    const T st2 = sinF(theta/2.0f);
+    const T st2 = sinF(0.5*theta);
 
-    q1 = cosF(theta/2.0f);
+    q1 = cosF(0.5*theta);
     q2 = axis.x * st2;
     q3 = axis.y * st2;
     q4 = axis.z * st2;
@@ -507,7 +480,7 @@ void QuaternionT<T>::to_axis_angle(Vector3<T> &v) const
     v = Vector3<T>(q2,q3,q4);
     if (!is_zero(l)) {
         v /= l;
-        v *= wrap_PI(2.0f * atan2f(l,q1));
+        v *= wrap_PI(2.0f * atan2F(l,q1));
     }
 }
 
@@ -531,11 +504,11 @@ void QuaternionT<T>::from_axis_angle_fast(Vector3<T> v)
 template <typename T>
 void QuaternionT<T>::from_axis_angle_fast(const Vector3<T> &axis, T theta)
 {
-    const T t2 = theta/2.0f;
+    const T t2 = 0.5*theta;
     const T sqt2 = sq(t2);
     const T st2 = t2-sqt2*t2/6.0f;
 
-    q1 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
+    q1 = 1.0f-(0.5*sqt2)+sq(sqt2)/24.0f;
     q2 = axis.x * st2;
     q3 = axis.y * st2;
     q4 = axis.z * st2;
@@ -550,13 +523,13 @@ void QuaternionT<T>::rotate_fast(const Vector3<T> &v)
     if (is_zero(theta)) {
         return;
     }
-    const T t2 = theta/2.0f;
+    const T t2 = 0.5*theta;
     const T sqt2 = sq(t2);
     T st2 = t2-sqt2*t2/6.0f;
     st2 /= theta;
 
     //"rotation quaternion"
-    const T w2 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
+    const T w2 = 1.0f-(0.5*sqt2)+sq(sqt2)/24.0f;
     const T x2 = v.x * st2;
     const T y2 = v.y * st2;
     const T z2 = v.z * st2;
@@ -578,7 +551,7 @@ void QuaternionT<T>::rotate_fast(const Vector3<T> &v)
 template <typename T>
 T QuaternionT<T>::get_euler_roll() const
 {
-    return (atan2f(2.0f*(q1*q2 + q3*q4), 1.0f - 2.0f*(q2*q2 + q3*q3)));
+    return (atan2F(2.0f*(q1*q2 + q3*q4), 1.0f - 2.0f*(q2*q2 + q3*q3)));
 }
 
 // get euler pitch angle
@@ -592,7 +565,7 @@ T QuaternionT<T>::get_euler_pitch() const
 template <typename T>
 T QuaternionT<T>::get_euler_yaw() const
 {
-    return atan2f(2.0f*(q1*q4 + q2*q3), 1.0f - 2.0f*(q3*q3 + q4*q4));
+    return atan2F(2.0f*(q1*q4 + q2*q3), 1.0f - 2.0f*(q3*q3 + q4*q4));
 }
 
 // create eulers from a quaternion
@@ -772,7 +745,7 @@ T QuaternionT<T>::roll_pitch_difference(const QuaternionT<T> &v) const
     const T vec_len_div2 = constrain_float(vec_diff.length() * 0.5, 0.0, 1.0);
 
     // calculate and return angular difference
-    return (2.0 * asinf(vec_len_div2));
+    return (2.0 * asinF(vec_len_div2));
 }
 
 // define for float and double
