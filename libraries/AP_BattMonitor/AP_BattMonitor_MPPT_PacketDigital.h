@@ -20,8 +20,10 @@ public:
     // construct the CAN Sensor
     AP_BattMonitor_MPPT_PacketDigital(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
         AP_BattMonitor_Backend(mon, mon_state, params),
-        CANSensor("MPPT", AP_CANManager::Driver_Type_MPPT_PacketDigital)
-    { };
+        CANSensor("MPPT")
+    {
+        register_driver(AP_CANManager::Driver_Type_MPPT_PacketDigital);
+    }
 
     /// Read the battery voltage and current.  Should be called at 10hz
     void read() override;
