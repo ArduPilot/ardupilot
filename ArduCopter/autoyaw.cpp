@@ -198,7 +198,7 @@ float Mode::AutoYaw::yaw()
         // keep heading pointing in the direction held in fixed_yaw
         // with no pilot input allowed
         const uint32_t now_ms = millis();
-        float dt = now_ms - _last_update_ms;
+        float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         float yaw_angle_step = constrain_float(_fixed_yaw_offset_cd, - dt * _fixed_yaw_slewrate_cds, dt * _fixed_yaw_slewrate_cds);
         _fixed_yaw_offset_cd -= yaw_angle_step;
@@ -225,7 +225,7 @@ float Mode::AutoYaw::yaw()
 
     case AUTO_YAW_ANGLE_RATE:{
         const uint32_t now_ms = millis();
-        float dt = now_ms - _last_update_ms;
+        float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         _yaw_angle_cd += _yaw_rate_cds * dt;
         return _yaw_angle_cd;
