@@ -22,10 +22,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.0E-02f
-#define ACC_P_NSE_DEFAULT       2.5E-01f
-#define GBIAS_P_NSE_DEFAULT     3.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -39,7 +39,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.5
+#define WIND_P_NSE_DEFAULT      0.2
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
@@ -48,10 +48,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.0E-02f
-#define ACC_P_NSE_DEFAULT       2.5E-01f
-#define GBIAS_P_NSE_DEFAULT     3.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -65,7 +65,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.25
+#define WIND_P_NSE_DEFAULT      0.1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -74,10 +74,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       3.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.0E-02f
-#define ACC_P_NSE_DEFAULT       2.5E-01f
-#define GBIAS_P_NSE_DEFAULT     3.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -91,7 +91,7 @@
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
-#define WIND_P_NSE_DEFAULT      0.25
+#define WIND_P_NSE_DEFAULT      0.1
 
 #else
 // build type not specified, use copter defaults
@@ -100,10 +100,10 @@
 #define POSNE_M_NSE_DEFAULT     0.5f
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
-#define GYRO_P_NSE_DEFAULT      1.0E-02f
-#define ACC_P_NSE_DEFAULT       2.5E-01f
-#define GBIAS_P_NSE_DEFAULT     3.0E-04f
-#define ABIAS_P_NSE_DEFAULT     1.0E-03f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -117,7 +117,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
-#define WIND_P_NSE_DEFAULT      0.5
+#define WIND_P_NSE_DEFAULT      0.1
 
 #endif // APM_BUILD_DIRECTORY
 
