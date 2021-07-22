@@ -286,6 +286,10 @@ configuration in order to save typing.
 	    default=None,
 	    help='Extra hwdef.dat file for custom build.')
 
+    g.add_option('--assert-cc-version',
+                 default=None,
+                 help='fail configure if not using the specified gcc version')
+    
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
