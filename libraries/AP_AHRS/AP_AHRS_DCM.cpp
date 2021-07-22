@@ -112,9 +112,6 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     // update trig values including _cos_roll, cos_pitch
     update_trig();
 
-    // update AOA and SSA
-    update_AOA_SSA();
-
     backup_attitude();
 
     // update takeoff/touchdown flags

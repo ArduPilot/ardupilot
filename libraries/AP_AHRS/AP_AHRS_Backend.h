@@ -514,12 +514,6 @@ public:
         AP::ins().get_delta_velocity(ret, dt);
     }
 
-    // return calculated AOA
-    float getAOA(void);
-
-    // return calculated SSA
-    float getSSA(void);
-
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
@@ -537,8 +531,6 @@ public:
     Vector3f earth_to_body(const Vector3f &v) const {
         return get_rotation_body_to_ned().mul_transpose(v);
     }
-    
-    virtual void update_AOA_SSA(void);
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return
@@ -571,7 +563,6 @@ public:
 
     // Logging to disk functions
     void Write_AHRS2(void) const;
-    void Write_AOA_SSA(void);  // should be const? but it calls update functions
     void Write_Attitude(const Vector3f &targets) const;
     void Write_Origin(uint8_t origin_type, const Location &loc) const; 
     void Write_POS(void) const;

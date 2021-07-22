@@ -320,6 +320,9 @@ void AP_AHRS::update(bool skip_ins_update)
         _view->update(skip_ins_update);
     }
 
+    // update AOA and SSA
+    update_AOA_SSA();
+
 #if HAL_NMEA_OUTPUT_ENABLED
     // update NMEA output
     if (_nmea_out != nullptr) {
