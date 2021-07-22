@@ -26,9 +26,10 @@
 extern const AP_HAL::HAL& hal;
 
 AP_EFI_NWPMU::AP_EFI_NWPMU(AP_EFI &_frontend) :
-    CANSensor("NWPMU", AP_CANManager::Driver_Type_EFI_NWPMU),
+    CANSensor("NWPMU"),
     AP_EFI_Backend(_frontend)
 {
+    register_driver(AP_CANManager::Driver_Type_EFI_NWPMU);
 }
 
 void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
