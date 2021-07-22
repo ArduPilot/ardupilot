@@ -324,6 +324,18 @@ public:
     // create a view
     AP_AHRS_View *create_view(enum Rotation rotation, float pitch_trim_deg=0);
 
+    // write AOA and SSA information to dataflash logs:
+    void Write_AOA_SSA(void) const;
+
+    // update AOA and SSA values
+    virtual void update_AOA_SSA(void);
+
+    // return AOA
+    float getAOA(void) const { return _AOA; }
+
+    // return SSA
+    float getSSA(void) const { return _SSA; }
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
