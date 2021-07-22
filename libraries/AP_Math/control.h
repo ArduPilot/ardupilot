@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "vector2.h"
+#include "vector3.h"
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
 #define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
@@ -52,6 +54,9 @@ void shape_accel(const float accel_input, float& accel,
                  const float tc, const float dt);
 void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
                     const float accel_max, const float tc, const float dt);
+
+void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
+    float accel_max, float tc, float dt);
 
 /* shape_vel calculates a jerk limited path from the current velocity and acceleration to an input velocity.
  The function takes the current velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
