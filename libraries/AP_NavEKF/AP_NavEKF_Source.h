@@ -60,6 +60,7 @@ public:
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void setPosVelYawSourceSet(uint8_t source_set_idx);
+    uint8_t getPosVelYawSourceSet() const { return active_source_set; }
 
     // get/set velocity source
     SourceXY getVelXYSource() const { return _source_set[active_source_set].velxy; }

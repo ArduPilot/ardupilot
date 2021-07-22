@@ -19,6 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RollController.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -117,9 +118,8 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 };
 
 // constructor
-AP_RollController::AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
+AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
         : aparm(parms)
-        , _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
@@ -131,6 +131,8 @@ AP_RollController::AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing 
 */
 int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
     bool limit_I = fabsf(_last_out) >= 45;

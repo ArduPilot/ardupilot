@@ -869,7 +869,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca, 15:Scripting Matrix, 16:6DoF Scripting
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca, 15:Scripting Matrix, 16:6DoF Scripting, 17:Dynamic Scripting Matrix
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),
@@ -1077,16 +1077,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0.1 5
     // @User: Advanced
     AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
-#endif
-
-#if AP_TERRAIN_AVAILABLE
-    // @Param: TERRAIN_MARGIN
-    // @DisplayName: Terrain following altitude margin
-    // @Description: Terrain following altitude margin.  Vehicle will stop if distance from target altitude is larger than this margin (in meters)
-    // @Units: m
-    // @Range: 0.1 100
-    // @User: Advanced
-    AP_GROUPINFO("TERRAIN_MARGIN", 47, ParametersG2, terrain_margin, 10.0),
 #endif
 
     AP_GROUPEND

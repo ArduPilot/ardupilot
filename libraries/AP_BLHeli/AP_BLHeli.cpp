@@ -28,7 +28,7 @@
 #include <AP_Math/crc.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_Motors/AP_MotorsUGV.h>
+#include <AR_Motors/AP_MotorsUGV.h>
 #else
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
@@ -1495,7 +1495,7 @@ void AP_BLHeli::log_bidir_telemetry(void)
     // ask the next ESC for telemetry
     uint8_t idx_pos = last_telem_esc;
     uint8_t idx = (idx_pos + 1) % num_motors;
-    for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+    for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
         if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
             break;
         }
@@ -1564,7 +1564,7 @@ void AP_BLHeli::update_telemetry(void)
         // ask the next ESC for telemetry
         uint8_t idx_pos = last_telem_esc;
         uint8_t idx = (idx_pos + 1) % num_motors;
-        for (; idx != idx_pos; idx = (idx_pos + 1) % num_motors) {
+        for (; idx != idx_pos; idx = (idx + 1) % num_motors) {
             if (SRV_Channels::have_digital_outputs(1U << motor_map[idx])) {
                 break;
             }

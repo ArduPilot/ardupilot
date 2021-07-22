@@ -98,7 +98,7 @@ void Blimp::Log_Write_Attitude()
 // Write an EKF and POS packet
 void Blimp::Log_Write_EKF_POS()
 {
-    AP::ahrs_navekf().Log_Write();
+    AP::ahrs().Log_Write();
     ahrs.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();

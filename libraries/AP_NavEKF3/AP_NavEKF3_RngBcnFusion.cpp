@@ -148,7 +148,7 @@ void NavEKF3_core::FuseRngBcn()
             zero_range(&Kfusion[0], 10, 12);
         }
 
-        if (!inhibitDelVelBiasStates) {
+        if (!inhibitDelVelBiasStates && !badIMUdata) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {

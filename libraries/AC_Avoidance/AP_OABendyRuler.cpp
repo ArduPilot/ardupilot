@@ -79,10 +79,14 @@ AP_OABendyRuler::AP_OABendyRuler()
 
 // run background task to find best path and update avoidance_results
 // returns true and updates origin_new and destination_new if a best path has been found
-bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, bool proximity_only)
-{   
+// bendy_type is set to the type of BendyRuler used
+bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only)
+{
     // bendy ruler always sets origin to current_loc
     origin_new = current_loc;
+
+    // init bendy_type returned
+    bendy_type = OABendyType::OA_BENDY_DISABLED;
 
     // calculate bearing and distance to final destination
     const float bearing_to_dest = current_loc.get_bearing_to(destination) * 0.01f;
@@ -109,20 +113,22 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     } else {
         ground_course_deg = degrees(ground_speed_vec.angle());
     }
-    
+
     bool ret;
     switch (get_type()) {
         case OABendyType::OA_BENDY_VERTICAL:
         #if VERTICAL_ENABLED 
             ret = search_vertical_path(current_loc, destination, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            bendy_type = OABendyType::OA_BENDY_VERTICAL;
             break;
         #endif
 
         case OABendyType::OA_BENDY_HORIZONTAL:
         default:
             ret = search_xy_path(current_loc, destination, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            bendy_type = OABendyType::OA_BENDY_HORIZONTAL;
     }
-   
+
     return ret;
 }
 
@@ -135,6 +141,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
     // search in OA_BENDYRULER_BEARING_INC degree increments around the vehicle alternating left
     // and right. For each direction check if vehicle would avoid all obstacles
     float best_bearing = bearing_to_dest;
+    float best_bearing_margin = -FLT_MAX;
     bool have_best_bearing = false;
     float best_margin = -FLT_MAX;
     float best_margin_bearing = best_bearing;
@@ -167,11 +174,13 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
                 // now check in there is a clear path in three directions towards the destination
                 if (!have_best_bearing) {
                     best_bearing = bearing_test;
+                    best_bearing_margin = margin;
                     have_best_bearing = true;
                 } else if (fabsf(wrap_180(ground_course_deg - bearing_test)) <
                            fabsf(wrap_180(ground_course_deg - best_bearing))) {
                     // replace bearing with one that is closer to our current ground course
                     best_bearing = bearing_test;
+                    best_bearing_margin = margin;
                 }
 
                 // perform second stage test in three directions looking for obstacles
@@ -196,7 +205,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
 
                         // all good, now project in the chosen direction by the full distance
                         destination_new = current_loc;
-                        destination_new.offset_bearing(final_bearing, distance_to_dest);
+                        destination_new.offset_bearing(final_bearing, MIN(distance_to_dest, lookahead_step1_dist));
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
                         Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_HORIZONTAL, active, bearing_to_dest, 0.0f, ignore_bearing_change, final_margin, destination, destination_new);
                         return active;
@@ -207,21 +216,24 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
     }
 
     float chosen_bearing;
+    float chosen_distance;
     if (have_best_bearing) {
         // none of the directions tested were OK for 2-step checks. Choose the direction
         // that was best for the first step
         chosen_bearing = best_bearing;
+        chosen_distance = MAX(lookahead_step1_dist + MIN(best_bearing_margin, 0), 0);
         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.05f);
     } else {
         // none of the possible paths had a positive margin. Choose
         // the one with the highest margin
         chosen_bearing = best_margin_bearing;
+        chosen_distance = MAX(lookahead_step1_dist + MIN(best_margin, 0), 0);
         _current_lookahead = MAX(_lookahead * 0.5f, _current_lookahead * 0.9f);
     }
 
     // calculate new target based on best effort
     destination_new = current_loc;
-    destination_new.offset_bearing(chosen_bearing, distance_to_dest);
+    destination_new.offset_bearing(chosen_bearing, chosen_distance);
 
     // log results
     Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_HORIZONTAL, true, chosen_bearing, 0.0f, false, best_margin, destination, destination_new);
@@ -230,7 +242,7 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
 }
 
 // Search for path in the vertical directions
-bool AP_OABendyRuler::search_vertical_path(const Location& current_loc, const Location& destination,Location &destination_new, const float &lookahead_step1_dist, const float &lookahead_step2_dist, const float &bearing_to_dest, const float &distance_to_dest, bool proximity_only) 
+bool AP_OABendyRuler::search_vertical_path(const Location &current_loc, const Location &destination, Location &destination_new, float lookahead_step1_dist, float lookahead_step2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only)
 {
     // check OA_BEARING_INC_VERTICAL definition allows checking in all directions
     static_assert(360 % OA_BENDYRULER_BEARING_INC_VERTICAL == 0, "check 360 is a multiple of OA_BEARING_INC_VERTICAL");
@@ -279,7 +291,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location& current_loc, const Lo
                 for (uint8_t j = 0; j < ARRAY_SIZE(test_pitch_step2); j++) {
                     float bearing_test2 = wrap_180(test_pitch_step2[j]);
                     Location test_loc2 = test_loc;
-                    test_loc2.offset_bearing_and_pitch(bearing_to_dest2, bearing_test2 ,distance2);
+                    test_loc2.offset_bearing_and_pitch(bearing_to_dest2, bearing_test2, distance2);
 
                     // calculate minimum margin to fence and obstacles for this scenario
                     float margin2 = calc_avoidance_margin(test_loc, test_loc2, proximity_only);
@@ -303,7 +315,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location& current_loc, const Lo
                         }
                         // project in the chosen direction by the full distance
                         destination_new = current_loc;
-                        destination_new.offset_bearing_and_pitch(bearing_to_dest,pitch_delta, distance_to_dest);
+                        destination_new.offset_bearing_and_pitch(bearing_to_dest, pitch_delta, distance_to_dest);
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
                     
                         Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_VERTICAL, active, bearing_to_dest, pitch_delta, false, margin, destination, destination_new);

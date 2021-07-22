@@ -30,6 +30,7 @@ char keyword_attr_enum[]    = "'enum";
 char keyword_attr_literal[] = "'literal";
 char keyword_attr_null[]    = "'Null";
 char keyword_attr_reference[]  = "'Ref";
+char keyword_attr_array[]      = "'array";
 
 // type keywords
 char keyword_boolean[]  = "boolean";
@@ -344,6 +345,7 @@ struct userdata_field {
   struct type type; // field type, points to a string
   int line; // line declared on
   unsigned int access_flags;
+  char * array_len; // literal array length
 };
 
 enum userdata_flags {
@@ -639,17 +641,26 @@ void handle_userdata_field(struct userdata *data) {
   trace(TRACE_USERDATA, "Adding a userdata field");
 
   // find the field name
-  char * field_name = next_token();
-  if (field_name == NULL) {
+  char * token = next_token();
+  if (token == NULL) {
     error(ERROR_USERDATA, "Missing a field name for userdata %s", data->name);
   }
-  
+
+  size_t split = strcspn(token, "\'");
+  char * field_name;
+  if (split == strlen(token)) {
+    string_copy(&field_name, token);
+  } else {
+    field_name = (char *)allocate(split+1);
+    memcpy(field_name, token, split);
+  }
+
   struct userdata_field * field = data->fields;
   while (field != NULL && strcmp(field->name, field_name)) {
     field = field-> next;
   }
   if (field != NULL) {
-    error(ERROR_USERDATA, "Field %s already exsists in userdata %s (declared on %d)", field_name, data->name, field->line);
+    error(ERROR_USERDATA, "Field %s already exists in userdata %s (declared on %d)", field_name, data->name, field->line);
   }
 
   trace(TRACE_USERDATA, "Adding field %s", field_name);
@@ -658,6 +669,16 @@ void handle_userdata_field(struct userdata *data) {
   data->fields = field;
   field->line = state.line_num;
   string_copy(&(field->name), field_name);
+
+  char *attribute = strchr(token, '\'');
+  if (attribute != NULL) {
+    if (strcmp(attribute, keyword_attr_array) != 0) {
+      error(ERROR_USERDATA, "Unknown feild attribute %s for userdata %s feild %s", attribute, data->name, field_name);
+    }
+    char * token = next_token();
+    string_copy(&(field->array_len), token);
+    trace(TRACE_USERDATA, "userdata %s feild %s array length %s", data->name, field->name, field->array_len);
+  }
 
   parse_type(&(field->type), TYPE_RESTRICTION_NOT_NULLABLE, RANGE_CHECK_NONE);
   field->access_flags = parse_access_flags(&(field->type));
@@ -818,7 +839,17 @@ void handle_userdata(void) {
     }
     node->alias = (char *)allocate(strlen(alias) + 1);
     strcpy(node->alias, alias);
-  
+
+  } else if (strcmp(type, keyword_depends) == 0) {
+      if (node->dependency != NULL) {
+        error(ERROR_SINGLETON, "Userdata only support a single depends");
+      }
+      char *depends = strtok(NULL, "");
+      if (depends == NULL) {
+        error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
+      }
+      string_copy(&(node->dependency), depends);
+
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -1309,16 +1340,31 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
 void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
   fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
-  fprintf(source, "    switch(lua_gettop(L)) {\n");
+
+  char *index_string = "";
+  int write_arg_number = 2;
+  if (field->array_len != NULL) {
+    index_string = "[index]";
+    write_arg_number = 3;
+
+    fprintf(source, "\n    const lua_Integer raw_index = luaL_checkinteger(L, 2);\n");
+    fprintf(source, "    luaL_argcheck(L, ((raw_index >= 0) && (raw_index < MIN(%s, UINT8_MAX))), 2, \"index out of range\");\n",field->array_len);
+    fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
+
+    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
+
+  } else {
+    fprintf(source, "    switch(lua_gettop(L)) {\n");
+  }
 
   if (field->access_flags & ACCESS_FLAG_READ) {
     fprintf(source, "        case 1:\n");
     switch (field->type.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, ud->%s);\n", field->name);
+        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, ud->%s);\n", field->name);
+        fprintf(source, "            lua_pushnumber(L, ud->%s%s);\n", field->name, index_string);
         break;
       case TYPE_INT8_T:
       case TYPE_INT16_T:
@@ -1326,11 +1372,11 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
       case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, ud->%s);\n", field->name);
+        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
         break;
       case TYPE_UINT32_T:
         fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s;\n", field->name);
+        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s%s;\n", field->name, index_string);
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
@@ -1339,13 +1385,13 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         error(ERROR_INTERNAL, "Can't access a literal field");
         break;
       case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, ud->%s);\n", field->name);
+        fprintf(source, "            lua_pushstring(L, ud->%s%s);\n", field->name, index_string);
         break;
       case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support accss to userdata field's");
+        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
         break;
       case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
-        error(ERROR_USERDATA, "AP_Object does not currently support accss to userdata field's");
+        error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
         break;
     }
     fprintf(source, "            return 1;\n");
@@ -1353,8 +1399,8 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
     fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, 2, 0, "            ", field->name);
-    fprintf(source, "            ud->%s = data_2;\n", field->name);
+    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
+    fprintf(source, "            ud->%s%s = data_%i;\n", field->name, index_string, write_arg_number);
     fprintf(source, "            return 0;\n");
     fprintf(source, "         }\n");
   }

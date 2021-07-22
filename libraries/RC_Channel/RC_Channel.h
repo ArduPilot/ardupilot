@@ -196,6 +196,7 @@ public:
         FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
         WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
+        TRAINING            = 98, // mode training
 
         // entries from 100 onwards are expected to be developer
         // options used for testing

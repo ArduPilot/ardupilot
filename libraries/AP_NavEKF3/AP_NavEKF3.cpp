@@ -371,7 +371,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
     // @Description: This state process noise controls the growth of wind state error estimates. Increasing it makes wind estimation faster and noisier.
-    // @Range: 0.01 1.0
+    // @Range: 0.01 2.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
@@ -380,10 +380,10 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind process noise scaler
     // @Description: This controls how much the process noise on the wind states is increased when gaining or losing altitude to take into account changes in wind speed and direction with altitude. Increasing this parameter increases how rapidly the wind states adapt when changing altitude, but does make wind velocity estimation noiser.
-    // @Range: 0.0 1.0
+    // @Range: 0.0 2.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 0.5f),
+    AP_GROUPINFO("WIND_PSCALE", 31, NavEKF3, _wndVarHgtRateScale, 1.0f),
 
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
@@ -1422,21 +1422,25 @@ void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
 }
 
 // return the innovations for the specified instance
-void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    if (core == nullptr) {
+        return false;
     }
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    if (core == nullptr) {
+        return false;
     }
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
 // get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
@@ -1985,4 +1989,16 @@ bool NavEKF3::yawAlignmentComplete(void) const
         return false;
     }
     return core[primary].have_aligned_yaw();
+}
+
+// returns true when the state estimates for the selected core are significantly degraded by vibration
+bool NavEKF3::isVibrationAffected(int8_t instance) const
+{
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+    if (core) {
+        return core[instance].isVibrationAffected();
+    }
+    return false;
 }

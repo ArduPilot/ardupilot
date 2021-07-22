@@ -19,9 +19,13 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
 #include <AP_InternalError/AP_InternalError.h>
+#ifndef HAL_BOOTLOADER_BUILD
+#include <SRV_Channel/SRV_Channel.h>
+#endif
 #ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
 #endif
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 using namespace ChibiOS;
 
@@ -65,14 +69,21 @@ GPIO::GPIO()
 
 void GPIO::init()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !defined(HAL_BOOTLOADER_BUILD)
+    uint8_t chan_offset = 0;
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        chan_offset = 8;
+    }
+#endif
     // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
-    uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
-            g->enabled = g->pwm_num > pwm_count;
+            g->enabled = SRV_Channels::is_GPIO(g->pwm_num+chan_offset);
         }
     }
+#endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
 #endif
@@ -427,6 +438,12 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
     osalSysUnlock();
 
     return msg == MSG_OK;
+}
+
+// check if a pin number is valid
+bool GPIO::valid_pin(uint8_t pin) const
+{
+    return gpio_by_pin_num(pin) != nullptr;
 }
 
 #ifndef IOMCU_FW

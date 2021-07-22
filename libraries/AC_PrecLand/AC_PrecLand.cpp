@@ -193,7 +193,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 
     // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
-    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+    const auto &_ahrs = AP::ahrs();
     _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     Vector3f curr_vel;

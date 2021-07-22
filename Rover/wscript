@@ -25,7 +25,7 @@ def build(bld):
             'AP_Follow',
             'AP_OSD',
             'AP_WindVane',
-            'AP_Motors',
+            'AR_Motors',
             'AP_Torqeedo',
         ],
     )

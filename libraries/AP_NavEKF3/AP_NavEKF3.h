@@ -174,11 +174,11 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
     // returns true on success and results are placed in innovations and variances arguments
@@ -350,6 +350,10 @@ public:
 
     // returns true when the yaw angle has been aligned
     bool yawAlignmentComplete(void) const;
+
+    // returns true when the state estimates for the selected core are significantly degraded by vibration
+    // if instance < 0, the primary instance will be used
+    bool isVibrationAffected(int8_t instance) const;
 
 private:
     uint8_t num_cores; // number of allocated cores

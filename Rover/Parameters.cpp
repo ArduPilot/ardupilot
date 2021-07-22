@@ -70,7 +70,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: AUTO_TRIGGER_PIN
     // @DisplayName: Auto mode trigger pin
     // @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
-    // @Values: -1:Disabled,0:APM TriggerPin0,1:APM TriggerPin1,2:APM TriggerPin2,3:APM TriggerPin3,4:APM TriggerPin4,5:APM TriggerPin5,6:APM TriggerPin6,7:APM TriggerPin7,8:APM TriggerPin8,50:Pixhawk TriggerPin50,51:Pixhawk TriggerPin51,52:Pixhawk TriggerPin52,53:Pixhawk TriggerPin53,54:Pixhawk TriggerPin54,55:Pixhawk TriggerPin55
+    // @Values: -1:Disabled,0:APM TriggerPin0,1:APM TriggerPin1,2:APM TriggerPin2,3:APM TriggerPin3,4:APM TriggerPin4,5:APM TriggerPin5,6:APM TriggerPin6,7:APM TriggerPin7,8:APM TriggerPin8,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
@@ -343,7 +343,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
 
-#if AP_AHRS_NAVEKF_AVAILABLE
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -354,7 +353,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
-#endif
 #endif
 
     // @Group: RPM
@@ -431,7 +429,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // 7 was used by AP_VisualOdometry
 
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsUGV.cpp
+    // @Path: ../libraries/AR_Motors/AP_MotorsUGV.cpp
     AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
 
     // @Group: WENC
@@ -697,7 +695,7 @@ ParametersG2::ParametersG2(void)
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents, wheel_rate_control),
     wheel_rate_control(wheel_encoder),
-    attitude_control(rover.ahrs),
+    attitude_control(),
     smart_rtl(),
 #if HAL_PROXIMITY_ENABLED
     proximity(),

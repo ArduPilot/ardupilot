@@ -336,6 +336,9 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 ///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
 void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float pos_offset_z_buffer)
 {
+    // Terrain following velocity scalar must be calculated before we remove the position offset
+    const float offset_z_scaler = pos_offset_z_scaler(pos_offset_z, pos_offset_z_buffer);
+
     // remove terrain offsets for flat earth assumption
     _pos_target.z -= _pos_offset_z;
     _vel_desired.z -= _vel_offset_z;
@@ -369,7 +372,7 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float
     }
 
     // reduce speed if we are reaching the edge of our vertical buffer
-    vel_max_xy_cms *= pos_offset_z_scaler(pos_offset_z, pos_offset_z_buffer);
+    vel_max_xy_cms *= offset_z_scaler;
 
     Vector2f vel;
     Vector2f accel;
@@ -394,13 +397,13 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float
 
 
 /// pos_offset_z_scaler - calculates a multiplier used to reduce the horizontal velocity to allow the z position controller to stay within the provided buffer range
-float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer)
+float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer) const
 {
     if (is_zero(pos_offset_z_buffer)) {
         return 1.0;
     }
     const Vector3f curr_pos = _inav.get_position();
-    float pos_offset_error_z = curr_pos.z - (_pos_target.z + pos_offset_z);
+    float pos_offset_error_z = curr_pos.z - (_pos_target.z - _pos_offset_z + pos_offset_z);
     return constrain_float((1.0 - (fabsf(pos_offset_error_z) - 0.5 * pos_offset_z_buffer) / (0.5 * pos_offset_z_buffer)), 0.01, 1.0);
 }
 
@@ -611,7 +614,7 @@ void AC_PosControl::update_xy_controller()
     _last_update_xy_us = AP_HAL::micros64();
 
     float ekfGndSpdLimit, ekfNavVelGainScaler;
-    AP::ahrs_navekf().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    AP::ahrs().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // Position Controller
 
@@ -906,9 +909,9 @@ void AC_PosControl::set_alt_target_with_slew(const float& pos)
 void AC_PosControl::update_pos_offset_z(float pos_offset_z)
 {
 
-    postype_t posp_z = _pos_offset_z;
-    update_pos_vel_accel(posp_z, _vel_offset_z, _accel_offset_z, _dt, MIN(_limit_vector.z, 0.0f));
-    _pos_offset_z = posp_z;
+    postype_t p_offset_z = _pos_offset_z;
+    update_pos_vel_accel(p_offset_z, _vel_offset_z, _accel_offset_z, _dt, MIN(_limit_vector.z, 0.0f));
+    _pos_offset_z = p_offset_z;
 
     // input shape the terrain offset
     shape_pos_vel_accel(pos_offset_z, 0.0f, 0.0f,
@@ -1169,6 +1172,24 @@ void AC_PosControl::write_log()
         AP::logger().Write_PSCZ(get_pos_target_cm().z, _inav.get_position().z,
                                 get_vel_desired_cms().z, get_vel_target_cms().z, _inav.get_velocity().z,
                                 _accel_desired.z, get_accel_target_cmss().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
+    }
+}
+
+/// crosstrack_error - returns horizontal error to the closest point to the current track
+float AC_PosControl::crosstrack_error() const
+{
+    const Vector3f& curr_pos = _inav.get_position();
+    const Vector2f pos_error = curr_pos.xy() - (_pos_target.xy()).tofloat();
+    if (is_zero(_vel_desired.xy().length_squared())) {
+        // crosstrack is the horizontal distance to target when stationary
+        return pos_error.length();
+    } else {
+        // crosstrack is the horizontal distance to the closest point to the current track
+        const Vector2f vel_unit = _vel_desired.xy().normalized();
+        const float dot_error = pos_error * vel_unit;
+
+        // todo: remove MAX of zero when safe_sqrt fixed
+        return safe_sqrt(MAX(pos_error.length_squared() - sq(dot_error), 0.0));
     }
 }
 

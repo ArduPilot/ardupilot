@@ -445,6 +445,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // Read GPS data from the sensor
     readGpsData();
+    readGpsYawData();
 
     // get data that has now fallen behind the fusion time horizon
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
@@ -687,10 +688,16 @@ void NavEKF3_core::FuseVelPosNED()
             const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
             const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
             // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * (P[9][9] + R_OBS_DATA_CHECKS[5])) && (sq(velDErr) > 9.0f * (P[6][6] + R_OBS_DATA_CHECKS[2]))) {
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * R_OBS[5]) && (sq(velDErr) > 9.0f * R_OBS[2])) {
+                badIMUdata_ms = imuSampleTime_ms;
+            } else {
+                goodIMUdata_ms = imuSampleTime_ms;
+            }
+            if (imuSampleTime_ms - badIMUdata_ms < BAD_IMU_DATA_HOLD_MS) {
                 badIMUdata = true;
             } else {
                 badIMUdata = false;
+
             }
         }
 
@@ -924,7 +931,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                if (!horizInhibit && !inhibitDelVelBiasStates) {
+                if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
                         if (!dvelBiasAxisInhibit[i-13]) {
                             Kfusion[i] = P[i][stateIndex]*SK;
@@ -1216,7 +1223,8 @@ void NavEKF3_core::selectHeightForFusion()
     // If we haven't fused height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
     hgtRetryTime_ms = ((useGpsVertVel || useExtNavVel) && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
-    if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms) {
+    if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms ||
+        (badIMUdata && (imuSampleTime_ms - goodIMUdata_ms < BAD_IMU_DATA_TIMEOUT_MS))) {
         hgtTimeout = true;
     } else {
         hgtTimeout = false;
@@ -1403,7 +1411,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1580,7 +1588,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1758,7 +1766,7 @@ void NavEKF3_core::FuseBodyVel()
 
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {

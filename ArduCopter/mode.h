@@ -1028,6 +1028,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
 #if PRECISION_LANDING == ENABLED
     bool do_precision_loiter();

@@ -19,7 +19,7 @@
 
 #include "AP_NMEA_Output.h"
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
 
 #include <AP_Math/definitions.h>
 #include <AP_RTC/AP_RTC.h>
@@ -93,7 +93,7 @@ void AP_NMEA_Output::update()
     char dstring[7];
     snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
-    AP_AHRS_NavEKF& ahrs = AP::ahrs_navekf();
+    auto &ahrs = AP::ahrs();
 
     // get location (note: get_position from AHRS always returns true after having GPS position once)
     Location loc;
@@ -187,4 +187,4 @@ void AP_NMEA_Output::update()
     }
 }
 
-#endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#endif  // !HAL_MINIMIZE_FEATURES

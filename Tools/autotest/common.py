@@ -4032,6 +4032,7 @@ class AutoTest(ABC):
         autopilot_values = {}
         for i in range(attempts):
             self.drain_mav(quiet=True)
+            self.drain_all_pexpects()
             received = set()
             for (name, value) in want.items():
                 if verbose:
@@ -4478,6 +4479,11 @@ class AutoTest(ABC):
         # dlong /= 10000000.0
         #
         # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+    def bearing_to(self, loc):
+        '''return bearing from here to location'''
+        here = self.mav.location()
+        return self.get_bearing(here, loc)
 
     @staticmethod
     def get_bearing(loc1, loc2):
@@ -5857,6 +5863,10 @@ Also, ignores heartbeats not from our target system'''
         except Exception:
             # process is dead
             self.progress("Not alive after test", send_statustext=False)
+            if self.sitl.isalive():
+                self.progress("pexpect says it is alive")
+            else:
+                self.progress("pexpect says it is dead")
             passed = False
             reset_needed = True
 
