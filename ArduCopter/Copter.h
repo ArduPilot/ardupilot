@@ -884,7 +884,6 @@ private:
     // terrain.cpp
     void terrain_update();
     void terrain_logging();
-    float get_terrain_margin() const;
 
     // tuning.cpp
     void tuning();
