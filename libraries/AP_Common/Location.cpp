@@ -47,7 +47,23 @@ Location::Location(const Vector3f &ekf_offset_neu, AltFrame frame)
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x / 100.0f, ekf_offset_neu.y / 100.0f);
+        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
+    }
+}
+
+Location::Location(const Vector3d &ekf_offset_neu, AltFrame frame)
+{
+    zero();
+
+    // store alt and alt frame
+    set_alt_cm(ekf_offset_neu.z, frame);
+
+    // calculate lat, lon
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        lat = ekf_origin.lat;
+        lng = ekf_origin.lng;
+        offset(ekf_offset_neu.x * 0.01, ekf_offset_neu.y * 0.01);
     }
 }
 
@@ -266,7 +282,7 @@ Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east
-void Location::offset(float ofs_north, float ofs_east)
+void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east)
 {
     const int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
     const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
@@ -275,12 +291,10 @@ void Location::offset(float ofs_north, float ofs_east)
     lng = wrap_longitude(dlng+lng);
 }
 
-void Location::offset_double(double ofs_north, double ofs_east)
+// extrapolate latitude/longitude given distances (in meters) north and east
+void Location::offset(ftype ofs_north, ftype ofs_east)
 {
-    const int64_t dlat = ofs_north * double(LOCATION_SCALING_FACTOR_INV);
-    const int64_t dlng = (ofs_east * double(LOCATION_SCALING_FACTOR_INV)) / longitude_scale();
-    lat = limit_lattitude(int64_t(lat)+dlat);
-    lng = wrap_longitude(int64_t(lng)+dlng);
+    offset_latlng(lat, lng, ofs_north, ofs_east);
 }
 
 /*
@@ -308,10 +322,10 @@ void Location::offset_bearing_and_pitch(float bearing_deg, float pitch_deg, floa
 }
 
 
-float Location::longitude_scale() const
+ftype Location::longitude_scale(int32_t lat)
 {
-    float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
-    return MAX(scale, 0.01f);
+    ftype scale = cosF(lat * (1.0e-7 * DEG_TO_RAD));
+    return MAX(scale, 0.01);
 }
 
 /*
