@@ -155,6 +155,17 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
     }
 }
 
+void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
+    float accel_max, float tc, float dt)
+{
+    const Vector2f accel_input_2f {accel_input.x, accel_input.y};
+    Vector2f accel_2f {accel.x, accel.y};
+
+    shape_accel_xy(accel_input_2f, accel_2f, accel_max, tc, dt);
+    accel.x = accel_2f.x;
+    accel.y = accel_2f.y;
+}
+
 
 /* shape_vel_accel and shape_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
