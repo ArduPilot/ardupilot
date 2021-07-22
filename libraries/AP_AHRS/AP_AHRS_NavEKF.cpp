@@ -2488,7 +2488,7 @@ bool AP_AHRS_NavEKF::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vec
 }
 
 // returns true when the state estimates are significantly degraded by vibration
-bool AP_AHRS::is_vibration_affected() const
+bool AP_AHRS_NavEKF::is_vibration_affected() const
 {
     switch (ekf_type()) {
 #if HAL_NAVEKF3_AVAILABLE
