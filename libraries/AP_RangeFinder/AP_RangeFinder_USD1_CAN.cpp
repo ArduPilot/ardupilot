@@ -7,9 +7,10 @@
   constructor
  */
 AP_RangeFinder_USD1_CAN::AP_RangeFinder_USD1_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    CANSensor("USD1", AP_CANManager::Driver_Type_USD1),
+    CANSensor("USD1"),
     AP_RangeFinder_Backend(_state, _params)
 {
+    register_driver(AP_CANManager::Driver_Type_USD1);
 }
 
 // update state
