@@ -210,7 +210,7 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
         return false;
     }
     vec_ne.x = (lat-ekf_origin.lat) * LATLON_TO_CM;
-    vec_ne.y = diff_longitude(lng,ekf_origin.lng) * LATLON_TO_CM * ekf_origin.longitude_scale();
+    vec_ne.y = diff_longitude(lng,ekf_origin.lng) * LATLON_TO_CM * longitude_scale((lat+ekf_origin.lat)/2);
     return true;
 }
 
@@ -235,10 +235,10 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 }
 
 // return distance in meters between two locations
-float Location::get_distance(const struct Location &loc2) const
+ftype Location::get_distance(const struct Location &loc2) const
 {
-    float dlat = (float)(loc2.lat - lat);
-    float dlng = ((float)diff_longitude(loc2.lng,lng)) * loc2.longitude_scale();
+    ftype dlat = (ftype)(loc2.lat - lat);
+    ftype dlng = ((ftype)diff_longitude(loc2.lng,lng)) * longitude_scale((lat+loc2.lat)/2);
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
@@ -250,14 +250,14 @@ float Location::get_distance(const struct Location &loc2) const
 Vector2f Location::get_distance_NE(const Location &loc2) const
 {
     return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale());
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
 // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
                     (alt - loc2.alt) * 0.01);
 }
 
@@ -265,27 +265,27 @@ Vector3f Location::get_distance_NED(const Location &loc2) const
 Vector3d Location::get_distance_NED_double(const Location &loc2) const
 {
     return Vector3d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
-                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
                     (alt - loc2.alt) * 0.01);
 }
 
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
 {
     return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
-                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale());
+                    diff_longitude(loc2.lng,lng) * double(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 
 Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
 {
     return Vector2F((loc2.lat - lat) * ftype(LOCATION_SCALING_FACTOR),
-                    diff_longitude(loc2.lng,lng) * ftype(LOCATION_SCALING_FACTOR) * longitude_scale());
+                    diff_longitude(loc2.lng,lng) * ftype(LOCATION_SCALING_FACTOR) * longitude_scale((lat+loc2.lat)/2));
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east)
 {
     const int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
+    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(lat+dlat/2);
     lat += dlat;
     lat = limit_lattitude(lat);
     lng = wrap_longitude(dlng+lng);
@@ -304,18 +304,18 @@ void Location::offset(ftype ofs_north, ftype ofs_east)
  * positions, so it keeps the accuracy even when dealing with small
  * distances and floating point numbers
  */
-void Location::offset_bearing(float bearing_deg, float distance)
+void Location::offset_bearing(ftype bearing_deg, ftype distance)
 {
-    const float ofs_north = cosf(radians(bearing_deg)) * distance;
-    const float ofs_east  = sinf(radians(bearing_deg)) * distance;
+    const ftype ofs_north = cosF(radians(bearing_deg)) * distance;
+    const ftype ofs_east  = sinF(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
 }
 
 // extrapolate latitude/longitude given bearing, pitch and distance
-void Location::offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance)
+void Location::offset_bearing_and_pitch(ftype bearing_deg, ftype pitch_deg, ftype distance)
 {
-    const float ofs_north =  cosf(radians(pitch_deg)) * cosf(radians(bearing_deg)) * distance;
-    const float ofs_east  =  cosf(radians(pitch_deg)) * sinf(radians(bearing_deg)) * distance;
+    const ftype ofs_north =  cosF(radians(pitch_deg)) * cosF(radians(bearing_deg)) * distance;
+    const ftype ofs_east  =  cosF(radians(pitch_deg)) * sinF(radians(bearing_deg)) * distance;
     offset(ofs_north, ofs_east);
     const int32_t dalt =  sinf(radians(pitch_deg)) * distance *100.0f;
     alt += dalt; 
@@ -366,7 +366,7 @@ assert_storage_size<Location, 16> _assert_storage_size_Location;
 int32_t Location::get_bearing_to(const struct Location &loc2) const
 {
     const int32_t off_x = diff_longitude(loc2.lng,lng);
-    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale();
+    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
@@ -408,7 +408,7 @@ float Location::line_path_proportion(const Location &point1, const Location &poi
 {
     const Vector2f vec1 = point1.get_distance_NE(point2);
     const Vector2f vec2 = point1.get_distance_NE(*this);
-    const float dsquared = sq(vec1.x) + sq(vec1.y);
+    const ftype dsquared = sq(vec1.x) + sq(vec1.y);
     if (dsquared < 0.001f) {
         // the two points are very close together
         return 1.0f;

@@ -33,6 +33,7 @@ public:
     Location();
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu, AltFrame frame);
+    Location(const Vector3d &ekf_offset_neu, AltFrame frame);
 
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
@@ -60,7 +61,7 @@ public:
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
     // return distance in meters between two locations
-    float get_distance(const struct Location &loc2) const;
+    ftype get_distance(const struct Location &loc2) const;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     Vector3f get_distance_NED(const Location &loc2) const;
@@ -76,10 +77,10 @@ public:
     void offset(ftype ofs_north, ftype ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
-    void offset_bearing(float bearing_deg, float distance);
+    void offset_bearing(ftype bearing_deg, ftype distance);
     
     // extrapolate latitude/longitude given bearing, pitch and distance
-    void offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance);
+    void offset_bearing_and_pitch(ftype bearing_deg, ftype pitch_deg, ftype distance);
 
     // longitude_scale - returns the scaler to compensate for
     // shrinking longitude as you move north or south from the equator
@@ -94,7 +95,7 @@ public:
     // return bearing in centi-degrees from location to loc2
     int32_t get_bearing_to(const struct Location &loc2) const;
     // return the bearing in radians
-    float get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01f); } ;
+    ftype get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01); } ;
 
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
