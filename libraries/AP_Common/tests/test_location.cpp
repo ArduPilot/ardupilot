@@ -146,8 +146,8 @@ TEST(Location, LocOffsetDouble)
         Location home{test.home_lat, test.home_lng, 0, Location::AltFrame::ABOVE_HOME};
         Location loc1 = home;
         Location loc2 = home;
-        loc1.offset_double(test.delta_metres_ne1.x, test.delta_metres_ne1.y);
-        loc2.offset_double(test.delta_metres_ne2.x, test.delta_metres_ne2.y);
+        loc1.offset(test.delta_metres_ne1.x, test.delta_metres_ne1.y);
+        loc2.offset(test.delta_metres_ne2.x, test.delta_metres_ne2.y);
         Vector2d diff = loc1.get_distance_NE_double(loc2);
         EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
         EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
