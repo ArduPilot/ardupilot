@@ -67,9 +67,6 @@ public:
     void        rotation_matrix(Matrix3f &m) const;
     void        rotation_matrix(Matrix3d &m) const;
 
-    // return the rotation matrix equivalent for this quaternion after normalization
-    void        rotation_matrix_norm(Matrix3<T> &m) const;
-
     // return the rotation matrix equivalent for this quaternion
     void		from_rotation_matrix(const Matrix3<T> &m);
 
