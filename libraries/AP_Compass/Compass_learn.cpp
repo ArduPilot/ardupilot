@@ -164,7 +164,9 @@ void CompassLearn::update(void)
             sample_available = false;
             num_samples = 0;
             have_earth_field = false;
-            memset(predicted_offsets, 0, sizeof(predicted_offsets));
+            for (auto &v : predicted_offsets) {
+                v.zero();
+            }
             worst_error = 0;
             best_error = 0;
             best_yaw_deg = 0;
