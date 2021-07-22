@@ -231,7 +231,7 @@ void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
         AHRS[mdl_idx].gyro_bias -= tilt_error_gyro_correction * (EKFGSF_gyroBiasGain * angle_dt);
 
         for (uint8_t i = 0; i < 3; i++) {
-            AHRS[mdl_idx].gyro_bias[i] = constrain_float(AHRS[mdl_idx].gyro_bias[i], -gyro_bias_limit, gyro_bias_limit);
+            AHRS[mdl_idx].gyro_bias[i] = constrain_ftype(AHRS[mdl_idx].gyro_bias[i], -gyro_bias_limit, gyro_bias_limit);
         }
     }
 
@@ -543,13 +543,13 @@ void EKFGSF_yaw::resetEKFGSF()
     run_ekf_gsf = false;
 
     memset(&EKF, 0, sizeof(EKF));
-    const ftype yaw_increment = M_2PI / (float)N_MODELS_EKFGSF;
+    const ftype yaw_increment = M_2PI / (ftype)N_MODELS_EKFGSF;
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         // evenly space initial yaw estimates in the region between +-Pi
-        EKF[mdl_idx].X[2] = -M_PI + (0.5f * yaw_increment) + ((float)mdl_idx * yaw_increment);
+        EKF[mdl_idx].X[2] = -M_PI + (0.5f * yaw_increment) + ((ftype)mdl_idx * yaw_increment);
 
         // All filter models start with the same weight
-        GSF.weights[mdl_idx] = 1.0f / (float)N_MODELS_EKFGSF;
+        GSF.weights[mdl_idx] = 1.0f / (ftype)N_MODELS_EKFGSF;
 
         // Use half yaw interval for yaw uncertainty as that is the maximum that the best model can be away from truth
         GSF.yaw_variance = sq(0.5f * yaw_increment);

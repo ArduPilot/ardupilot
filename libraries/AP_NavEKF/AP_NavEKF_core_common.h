@@ -50,7 +50,7 @@ protected:
     // fill all the common scratch variables with NaN on SITL
     void fill_scratch_variables(void);
 
-    // zero part of an array
+    // zero part of an array for index range [n1,n2]
     static void zero_range(ftype *v, uint8_t n1, uint8_t n2) {
         memset(&v[n1], 0, sizeof(ftype)*(1+(n2-n1)));
     }
@@ -58,6 +58,10 @@ protected:
 
 #if HAL_WITH_EKF_DOUBLE
 // stack frames are larger with double EKF
-#pragma GCC diagnostic error "-Wframe-larger-than=2100"
+#if MATH_CHECK_INDEXES
+#pragma GCC diagnostic error "-Wframe-larger-than=4000"
+#else
+#pragma GCC diagnostic error "-Wframe-larger-than=2500"
+#endif
 #endif
 
