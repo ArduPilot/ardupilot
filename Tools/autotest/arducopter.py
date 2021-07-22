@@ -6906,6 +6906,60 @@ class AutoTestCopter(AutoTest):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def ThrowDoubleDrop(self):
+        # test boomerang mode:
+        self.progress("Getting a lift to altitude")
+        self.set_parameters({
+            "SIM_SHOVE_Z": -11,
+            "THROW_TYPE": 1,   # drop
+            "MOT_SPOOL_TIME": 2,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 30000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(100, 1000, timeout=100, relative=True)
+        self.context_collect('STATUSTEXT')
+        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
+        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
+        self.wait_statustext("uprighted - controlling height", check_context=True)
+        self.wait_statustext("height achieved - controlling position", check_context=True)
+        self.progress("Waiting for still")
+        self.wait_speed_vector(Vector3(0, 0, 0))
+        self.change_mode('ALT_HOLD')
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=90)
+        self.zero_throttle()
+
+        self.progress("second flight")
+        self.upload_square_mission_items_around_location(self.poll_home_position())
+
+        self.set_parameters({
+            "THROW_NEXTMODE": 3,  # auto
+        })
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 30000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(100, 1000, timeout=100, relative=True)
+        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
+        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
+        self.wait_statustext("uprighted - controlling height", check_context=True)
+        self.wait_statustext("height achieved - controlling position", check_context=True)
+        self.wait_mode('AUTO')
+        self.wait_disarmed(timeout=240)
+
     def GroundEffectCompensation_takeOffExpected(self):
         self.change_mode('ALT_HOLD')
         self.set_parameter("LOG_FILE_DSRMROT", 1)
@@ -7094,6 +7148,10 @@ class AutoTestCopter(AutoTest):
             ("SetpointGlobalPos",
              "Test setpoint global position",
              self.test_set_position_global_int),
+
+            ("ThrowDoubleDrop",
+             "Test a more complicated drop-mode scenario",
+             self.ThrowDoubleDrop),
 
             ("SetpointGlobalVel",
              "Test setpoint global velocity",
