@@ -248,7 +248,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
  * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
  * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
  */
-void AP_AHRS_Backend::update_AOA_SSA(void)
+void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     const uint32_t now = AP_HAL::millis();
@@ -292,20 +292,6 @@ void AP_AHRS_Backend::update_AOA_SSA(void)
 
     _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
 #endif
-}
-
-// return current AOA
-float AP_AHRS_Backend::getAOA(void)
-{
-    update_AOA_SSA();
-    return _AOA;
-}
-
-// return calculated SSA
-float AP_AHRS_Backend::getSSA(void)
-{
-    update_AOA_SSA();
-    return _SSA;
 }
 
 // rotate a 2D vector from earth frame to body frame

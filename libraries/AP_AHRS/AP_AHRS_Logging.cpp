@@ -32,7 +32,7 @@ void AP_AHRS_Backend::Write_AHRS2() const
 }
 
 // Write AOA and SSA
-void AP_AHRS_Backend::Write_AOA_SSA(void)
+void AP_AHRS::Write_AOA_SSA(void) const
 {
     const struct log_AOA_SSA aoa_ssa{
         LOG_PACKET_HEADER_INIT(LOG_AOA_SSA_MSG),
