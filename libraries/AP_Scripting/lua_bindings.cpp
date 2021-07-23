@@ -318,13 +318,13 @@ static int lua_get_i2c_device(lua_State *L) {
 
     AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] = new AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
     if (AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");;
+        return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
     *AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
 
     if (AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] == nullptr || AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices]->get() == nullptr) {
-        return luaL_argerror(L, 1, "i2c device nullptr");;
+        return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
     new_AP_HAL__I2CDevice(L);
@@ -340,6 +340,34 @@ const luaL_Reg i2c_functions[] = {
     {NULL, NULL}
 };
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+static int lua_get_CAN_device(lua_State *L) {
+
+    check_arguments(L, 1, "CAN:get_device");
+
+    const uint32_t raw_buffer_len = coerce_to_uint32_t(L, 1);
+    luaL_argcheck(L, ((raw_buffer_len >= 1U) && (raw_buffer_len <= 25U)), 1, "argument out of range");
+    const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
+
+    if (AP::scripting()->_CAN_dev == nullptr) {
+        AP::scripting()->_CAN_dev = new ScriptingCANSensor();
+        if (AP::scripting()->_CAN_dev == nullptr) {
+            return luaL_argerror(L, 1, "CAN device nullptr");
+        }
+    }
+
+    new_ScriptingCANBuffer(L);
+    *check_ScriptingCANBuffer(L, -1) = AP::scripting()->_CAN_dev->add_buffer(buffer_len);
+
+    return 1;
+}
+
+const luaL_Reg CAN_functions[] = {
+    {"get_device", lua_get_CAN_device},
+    {NULL, NULL}
+};
+#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+
 void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "logger");
     luaL_newlib(L, AP_Logger_functions);
@@ -348,6 +376,12 @@ void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "i2c");
     luaL_newlib(L, i2c_functions);
     lua_settable(L, -3);
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    lua_pushstring(L, "CAN");
+    luaL_newlib(L, CAN_functions);
+    lua_settable(L, -3);
+#endif
 
     luaL_setfuncs(L, global_functions, 0);
 }
