@@ -31,7 +31,7 @@ static AP_BoardConfig board_config;
 
 class DummyVehicle {
 public:
-    AP_AHRS_DCM ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
+    AP_AHRS ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
     AP_Baro baro; // Compass tries to set magnetic model based on location.
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS eAHRS;
