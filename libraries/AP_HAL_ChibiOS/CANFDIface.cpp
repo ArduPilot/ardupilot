@@ -1031,7 +1031,7 @@ bool CANIface::select(bool &read, bool &write,
     return false;
 }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
 void CANIface::get_stats(ExpandingString &str)
 {
     CriticalSectionLocker lock;

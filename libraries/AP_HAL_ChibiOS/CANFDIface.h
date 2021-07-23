@@ -221,7 +221,7 @@ public:
     bool set_event_handle(AP_HAL::EventHandle* handle) override;
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
     void get_stats(ExpandingString &str) override;
