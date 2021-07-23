@@ -417,6 +417,11 @@ void QuaternionT<T>::from_euler(T roll, T pitch, T yaw)
     q3 = cr2*sp2*cy2 + sr2*cp2*sy2;
     q4 = cr2*cp2*sy2 - sr2*sp2*cy2;
 }
+template <typename T>
+void QuaternionT<T>::from_euler(const Vector3<T> &v)
+{
+    from_euler(v[0], v[1], v[2]);
+}
 
 // create a quaternion from Euler angles applied in yaw, roll, pitch order
 // instead of the normal yaw, pitch, roll order
