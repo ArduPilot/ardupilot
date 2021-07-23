@@ -1,5 +1,31 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta6 23-Jul-2021
+Changes from 4.1.0-beta5
+1) Enhancements
+    a) ACRO_Y_EXPO supports negative numbers (-0.5 to +1)
+    b) GPS-for-yaw enhancements including using position and yaw from different GPSs
+    c) Guided mode acceleration control
+    d) Long distance travel supported (thousands of km) including double precision EKF and moving origin
+2) Bug Fixes
+    a) Auto and Guided mode terrain following fixed (could impact terrain if terrain was very steep. see WPNAV_TER_MARGIN)
+    b) BendyRuler avoidance fixed (was slow and jerky)
+    c) BLHeli fix that could cause failure to boot
+    d) Crosstrack reporting fixed
+    e) CRSF message spamming and firmware string length fixed
+    f) Display re-enabled on 1MB boards
+    g) DShot always sends 0 when disarmed (protects against motors spin while disarmed due to misconfiguration)
+    h) DShot fix that could cause main loop jitter
+    i) DShot buzzer tone disabled during motor test to remove bad interation
+    j) Guided mode accepts position targets at high rate
+    k) Longitude wrap fix (allows autonomous flights as longitude wraps between -180 and 180 deg)
+    l) Log created on forced arm
+    m) MatekF405-bdshot NeoPixel LEDs re-enabled on PWM5
+    n) Precision landing init fix (if pilot took control, subsequent landings might not trying to land on target)
+    o) Serial port performance improvements using FIFO on H7 boards
+    p) TradHeli ground check of yaw fixed (yaw servo was not moving when landed)
+    q) Throw mode waits for throttle up to improve reliability
+------------------------------------------------------------------
 Copter 4.1.0-beta5 30-Jun-2021
 Changes from 4.1.0-beta4
 1) Enhancements
