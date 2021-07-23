@@ -79,8 +79,6 @@ enum Rotation : uint8_t {
     ROTATION_CUSTOM              = 100,
 };
 
-// maximum rotation that will be used for auto-detection
-#define ROTATION_MAX_AUTO_ROTATION ROTATION_ROLL_90_PITCH_315
 
 // definitions used by quaterion and vector3f
 #define HALF_SQRT_2 0.70710678118654757f
