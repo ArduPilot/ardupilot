@@ -85,7 +85,11 @@ bool AP_Baro_KellerLD::_init()
     // Read out pressure measurement range
     cal_read_ok &= _dev->transfer(&CMD_PRANGE_MIN_MSB, 1, nullptr, 0);
     hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
+
+    if(!_dev->transfer(nullptr, 0, &data[0], 3)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     hal.scheduler->delay(1);
 
     ms_word = (data[1] << 8) | data[2];
@@ -93,7 +97,11 @@ bool AP_Baro_KellerLD::_init()
 
     cal_read_ok &= _dev->transfer(&CMD_PRANGE_MIN_LSB, 1, nullptr, 0);
     hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
+
+    if(!_dev->transfer(nullptr, 0, &data[0], 3)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     hal.scheduler->delay(1);
 
     ls_word = (data[1] << 8) | data[2];
@@ -105,7 +113,11 @@ bool AP_Baro_KellerLD::_init()
 
     cal_read_ok &= _dev->transfer(&CMD_PRANGE_MAX_MSB, 1, nullptr, 0);
     hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
+
+    if(!_dev->transfer(nullptr, 0, &data[0], 3)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     hal.scheduler->delay(1);
 
     ms_word = (data[1] << 8) | data[2];
@@ -113,7 +125,11 @@ bool AP_Baro_KellerLD::_init()
 
     cal_read_ok &= _dev->transfer(&CMD_PRANGE_MAX_LSB, 1, nullptr, 0);
     hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
+
+    if(!_dev->transfer(nullptr, 0, &data[0], 3)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
     hal.scheduler->delay(1);
 
     ls_word = (data[1] << 8) | data[2];
