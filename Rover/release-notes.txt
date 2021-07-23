@@ -1,4 +1,22 @@
 Rover Release Notes:
+------------------------------------------------------------------
+Rover 4.1.0-beta6 23-Jul-2021
+Changes from 4.1.0-beta5
+1) Enhancements
+    a) GPS-for-yaw enhancements including using position and yaw from different GPSs 
+    b) Long distance travel supported (thousands of km) including double precision EKF and moving origin
+2) Bug Fixes
+    a) BendyRuler avoidance fixed (was slow and jerky)
+    b) BLHeli fix that could cause failure to boot
+    c) CRSF message spamming and firmware string length fixed
+    d) Display re-enabled on 1MB boards
+    e) DShot always sends 0 when disarmed (protects against motors spin while disarmed due to misconfiguration)
+    f) DShot fix that could cause main loop jitter
+    g) DShot buzzer tone disabled during motor test to remove bad interation
+    h) Longitude wrap fix (allows autonomous flights as longitude wraps between -180 and 180 deg)
+    i) Log created on forced arm
+    j) MatekF405-bdshot NeoPixel LEDs re-enabled on PWM5
+    k) Serial port performance improvements using FIFO on H7 boards
 --------------------------------
 Rover 4.1.0-beta5 30-Jun-2021
 Changes from 4.1.0-beta4
