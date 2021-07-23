@@ -1223,25 +1223,6 @@ static bool can_do_dna(instance_t &ins)
     }
 
     const uint32_t now = AP_HAL::native_millis();
-    const uint32_t led_pattern = 0xAAAA;
-    const uint32_t led_change_period = 50;
-    static uint8_t led_idx = 0;
-    static uint32_t last_led_change;
-
-    if ((now - last_led_change > led_change_period) && AP_Periph_FW::no_iface_finished_dna) {
-        // blink LED in recognisable pattern while waiting for DNA
-#ifdef HAL_GPIO_PIN_LED
-        palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
-#elif defined(HAL_GPIO_PIN_SAFE_LED)
-        // or use safety LED if defined
-        palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
-#else
-        (void)led_pattern;
-        (void)led_idx;
-#endif
-        led_idx = (led_idx+1) % 32;
-        last_led_change = now;
-    }
 
     uint8_t node_id_allocation_transfer_id = 0;
 
@@ -1430,6 +1411,27 @@ void AP_Periph_FW::hwesc_telem_update()
 
 void AP_Periph_FW::can_update()
 {
+    const uint32_t now = AP_HAL::native_millis();
+    const uint32_t led_pattern = 0xAAAA;
+    const uint32_t led_change_period = 50;
+    static uint8_t led_idx = 0;
+    static uint32_t last_led_change;
+
+    if ((now - last_led_change > led_change_period) && no_iface_finished_dna) {
+        // blink LED in recognisable pattern while waiting for DNA
+#ifdef HAL_GPIO_PIN_LED
+        palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#elif defined(HAL_GPIO_PIN_SAFE_LED)
+        // or use safety LED if defined
+        palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U<<led_idx))?1:0);
+#else
+        (void)led_pattern;
+        (void)led_idx;
+#endif
+        led_idx = (led_idx+1) % 32;
+        last_led_change = now;
+    }
+
     for (auto &ins : instances) {
         if (AP_HAL::millis() > ins.send_next_node_id_allocation_request_at_ms) {
             can_do_dna(ins);
@@ -1437,7 +1439,6 @@ void AP_Periph_FW::can_update()
     }
     
     static uint32_t last_1Hz_ms;
-    uint32_t now = AP_HAL::native_millis();
     if (now - last_1Hz_ms >= 1000) {
         last_1Hz_ms = now;
         process1HzTasks(AP_HAL::native_micros64());
