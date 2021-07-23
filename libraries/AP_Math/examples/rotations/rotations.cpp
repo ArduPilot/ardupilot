@@ -239,6 +239,8 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
     test_euler(ROTATION_ROLL_90_PITCH_68_YAW_293,90,68.8,293.3);
+    test_euler(ROTATION_ROLL_45,45,0,0);
+    test_euler(ROTATION_ROLL_315,315,0,0);
     test_euler(ROTATION_PITCH_7, 0, 7, 0);
 }
 
