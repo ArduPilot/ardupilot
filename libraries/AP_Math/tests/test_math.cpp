@@ -19,12 +19,20 @@ TEST(VectorTest, Rotations)
 #define TEST_ROTATION(rotation, _x, _y, _z) { \
     const float accuracy = 1.0e-6; \
     Vector3f v(1, 1, 1); \
+    Vector3f v2 = v; \
     v.rotate(rotation); \
     Vector3f expected(_x, _y, _z); \
     EXPECT_NEAR(expected.length(), v.length(), accuracy); \
     EXPECT_FLOAT_EQ(expected.x, v.x); \
     EXPECT_FLOAT_EQ(expected.y, v.y); \
     EXPECT_FLOAT_EQ(expected.z, v.z); \
+    Quaternion quat; \
+    quat.from_rotation(rotation); \
+    quat.earth_to_body(v2); \
+    EXPECT_NEAR(expected.length(), v.length(), accuracy); \
+    EXPECT_NEAR(expected.x, v2.x, accuracy); \
+    EXPECT_NEAR(expected.y, v2.y, accuracy); \
+    EXPECT_NEAR(expected.z, v2.z, accuracy); \
     rotation_count++; \
 }
 
