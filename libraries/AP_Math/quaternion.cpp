@@ -368,6 +368,18 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
         q3 = 0.06104854f;
         return;
 
+    case ROTATION_ROLL_45:
+        q1 = 0.9238795325112867;
+        q2 = 0.3826834323650898;
+        q3 = q4 = 0.0;
+        return;
+
+    case ROTATION_ROLL_315:
+        q1 = 0.9238795325112867;
+        q2 = -0.3826834323650898;
+        q3 = q4 = 0.0;
+        return;
+
     case ROTATION_CUSTOM:
         // Error; custom rotations not supported
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
