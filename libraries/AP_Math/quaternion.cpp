@@ -189,6 +189,7 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
         return;
 
     case ROTATION_ROLL_180_YAW_90:
+    case ROTATION_PITCH_180_YAW_270:
         q1 = q4 = 0;
         q2 = q3 = HALF_SQRT_2;
         return;
@@ -211,6 +212,7 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
         return;
 
     case ROTATION_ROLL_180_YAW_270:
+    case ROTATION_PITCH_180_YAW_90:
         q1 = q4 = 0;
         q2 = -HALF_SQRT_2;
         q3 = HALF_SQRT_2;
@@ -277,17 +279,6 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
         q1 = HALF_SQRT_2;
         q2 = q4 = 0;
         q3 = -HALF_SQRT_2;
-        return;
-
-    case ROTATION_PITCH_180_YAW_90:
-        q1 = q4 = 0;
-        q2 = -HALF_SQRT_2;
-        q3 = HALF_SQRT_2;
-        return;
-
-    case ROTATION_PITCH_180_YAW_270:
-        q1 = q4 = 0;
-        q2 = q3 = HALF_SQRT_2;
         return;
 
     case ROTATION_ROLL_90_PITCH_90:
