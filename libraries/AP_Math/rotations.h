@@ -63,7 +63,7 @@ enum Rotation : uint8_t {
     ROTATION_ROLL_270_PITCH_270  = 35,
     ROTATION_ROLL_90_PITCH_180_YAW_90 = 36,
     ROTATION_ROLL_90_YAW_270     = 37,
-    ROTATION_ROLL_90_PITCH_68_YAW_293 = 38,
+    ROTATION_ROLL_90_PITCH_68_YAW_293 = 38, // this is actually, roll 90, pitch 68.8, yaw 293.3
     ROTATION_PITCH_315           = 39,
     ROTATION_ROLL_90_PITCH_315   = 40,
     ROTATION_PITCH_7             = 41,
@@ -81,7 +81,7 @@ enum Rotation : uint8_t {
 
 
 // definitions used by quaterion and vector3f
-#define HALF_SQRT_2 0.70710678118654757f
+#define HALF_SQRT_2 0.70710678118654752440084436210485
 
 /*
 Here are the same values in a form suitable for a @Values attribute in
