@@ -5879,10 +5879,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Accelerometer Calibration testing",
              self.accelcal),
 
-            ("AHRSTrim",
-             "Accelerometer trim testing",
-             self.ahrstrim),
-
             ("AP_Proximity_MAV",
              "Test MAV proximity backend",
              self.ap_proximity_mav),

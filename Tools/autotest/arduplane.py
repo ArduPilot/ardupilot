@@ -3186,6 +3186,10 @@ class AutoTestPlane(AutoTest):
              "Test AHRS_ORIENTATION parameter",
              self.AHRS_ORIENTATION),
 
+            ("AHRSTrim",
+             "AHRS trim testing",
+             self.ahrstrim),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
