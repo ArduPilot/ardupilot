@@ -3783,6 +3783,25 @@ class AutoTest(ABC):
                               (delta, timeout))
                 return True
 
+    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10):
+        '''wait for an attitude (degrees)'''
+        if desroll is None and despitch is None:
+            raise ValueError("despitch or desroll must be supplied")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 2:
+                raise AutoTestTimeoutException("Failed to achieve attitude")
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            roll_deg = math.degrees(m.roll)
+            pitch_deg = math.degrees(m.pitch)
+            self.progress("wait_att: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (roll_deg, desroll, pitch_deg, despitch))
+            if desroll is not None and abs(roll_deg - desroll) > tolerance:
+                continue
+            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
+                continue
+            return
+
     def CPUFailsafe(self):
         '''Most vehicles just disarm on failsafe'''
         # customising the SITL commandline ensures the process will
