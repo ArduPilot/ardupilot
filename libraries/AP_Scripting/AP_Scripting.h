@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
+#include "AP_Scripting_CANSensor.h"
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
   #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
@@ -66,6 +67,11 @@ public:
     // the number of and storage for i2c devices
     uint8_t num_i2c_devices;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    // Scripting CAN sensor
+    ScriptingCANSensor *_CAN_dev;
+#endif
 
     // mission item buffer
     static const int mission_cmd_queue_size = 5;
