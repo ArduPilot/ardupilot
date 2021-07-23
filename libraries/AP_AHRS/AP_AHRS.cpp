@@ -900,36 +900,50 @@ bool AP_AHRS::use_compass(void)
 // return the quaternion defining the rotation from NED to XYZ (body) axes
 bool AP_AHRS::get_quaternion(Quaternion &quat) const
 {
+    // backends always return in autopilot XYZ frame; rotate result
+    // according to trim
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return AP_AHRS_DCM::get_quaternion(quat);
+        if (!AP_AHRS_DCM::get_quaternion(quat)) {
+            return false;
+        }
+        break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
+        if (!_ekf2_started) {
+            return false;
+        }
         EKF2.getQuaternion(-1, quat);
-        return _ekf2_started;
+        break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getQuaternion(-1, quat);
-        return _ekf3_started;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        if (_sitl) {
-            const struct SITL::sitl_fdm &fdm = _sitl->state;
-            quat = fdm.quaternion;
-            return true;
-        } else {
+        if (!_ekf3_started) {
             return false;
         }
+        EKF3.getQuaternion(-1, quat);
+        break;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL: {
+        if (!_sitl) {
+            return false;
+        }
+        const struct SITL::sitl_fdm &fdm = _sitl->state;
+        quat = fdm.quaternion;
+        break;
+    }
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
+        // we assume the external AHRS isn't trimmed with the autopilot!
         return AP::externalAHRS().get_quaternion(quat);
 #endif
     }
-    // since there is no default case above, this is unreachable
-    return false;
+
+    quat.rotate(-_trim.get());
+
+    return true;
 }
 
 // return secondary attitude solution if available, as eulers in radians
@@ -997,21 +1011,29 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 
     case EKFType::NONE:
         // DCM is secondary
-        quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
-        return true;
+        if (!AP_AHRS_DCM::get_quaternion(quat)) {
+            return false;
+        }
+        break;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // EKF2 is secondary
+        if (!_ekf2_started) {
+            return false;
+        }
         EKF2.getQuaternion(-1, quat);
-        return _ekf2_started;
+        break;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // EKF3 is secondary
+        if (!_ekf3_started) {
+            return false;
+        }
         EKF3.getQuaternion(-1, quat);
-        return _ekf3_started;
+        break;
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1027,8 +1049,9 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 #endif
     }
 
-    // since there is no default case above, this is unreachable
-    return false;
+    quat.rotate(-_trim.get());
+
+    return true;
 }
 
 // return secondary position solution if available
