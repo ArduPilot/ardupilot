@@ -75,7 +75,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp; z = -z;
         return;
     }
-    case ROTATION_ROLL_180_YAW_90: {
+    case ROTATION_ROLL_180_YAW_90:
+    case ROTATION_PITCH_180_YAW_270: {
         tmp = x; x = y; y = tmp; z = -z;
         return;
     }
@@ -95,7 +96,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp; z = -z;
         return;
     }
-    case ROTATION_ROLL_180_YAW_270: {
+    case ROTATION_ROLL_180_YAW_270: 
+    case ROTATION_PITCH_180_YAW_90: {
         tmp = x; x = -y; y = -tmp; z = -z;
         return;
     }
@@ -157,16 +159,6 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_PITCH_270: {
         tmp = z; z = x; x = -tmp;
-        return;
-    }
-    case ROTATION_PITCH_180_YAW_90: {
-        z = -z;
-        tmp = -x; x = -y; y = tmp;
-        return;
-    }
-    case ROTATION_PITCH_180_YAW_270: {
-        x = -x; z = -z;
-        tmp = x; x = y; y = -tmp;
         return;
     }
     case ROTATION_ROLL_90_PITCH_90: {
