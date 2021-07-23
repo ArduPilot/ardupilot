@@ -32,10 +32,11 @@ struct GCS_MAVLINK::ftp_state GCS_MAVLINK::ftp;
 bool GCS_MAVLINK::ftp_init(void) {
 
     // check if ftp is disabled for memory savings
+#if !defined(HAL_BUILD_AP_PERIPH)
     if (AP_BoardConfig::ftp_disabled()) {
         goto failed;
     }
-
+#endif
     // we can simply check if we allocated everything we need
 
     if (ftp.requests != nullptr) {
