@@ -4648,7 +4648,7 @@ void GCS_MAVLINK::send_attitude_quaternion() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
     Quaternion quat;
-    if (!ahrs.get_secondary_quaternion(quat)) {
+    if (!ahrs.get_quaternion(quat)) {
         return;
     }
     const Vector3f omega = ahrs.get_gyro();
