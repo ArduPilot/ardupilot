@@ -395,7 +395,7 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
-    hal.scheduler->delay(1);
+
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();
 #endif
