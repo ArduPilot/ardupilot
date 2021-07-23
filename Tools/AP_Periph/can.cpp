@@ -83,7 +83,7 @@ extern AP_Periph_FW periph;
 #endif
 
 #define DEBUG_PRINTS 0
-
+#define DEBUG_PKTS 0
 #if DEBUG_PRINTS
  # define Debug(fmt, args ...)  do {can_printf(fmt "\n", ## args);} while(0)
 #else
@@ -94,7 +94,11 @@ static struct instance_t {
     uint8_t index;
     CanardInstance canard;
     uint32_t canard_memory_pool[HAL_CAN_POOL_SIZE/sizeof(uint32_t)];
-    uint8_t transfer_id;
+    struct tid_map {
+        uint32_t transfer_desc;
+        uint8_t tid;
+        tid_map *next;
+    } *tid_map_head;
     /*
     * Variables used for dynamic node ID allocation.
     * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
@@ -1096,6 +1100,44 @@ static void cleanup_stale_transactions(uint64_t &timestamp_usec)
     }
 }
 
+#define MAKE_TRANSFER_DESCRIPTOR(data_type_id, transfer_type, src_node_id, dst_node_id)             \
+    (((uint32_t)(data_type_id)) | (((uint32_t)(transfer_type)) << 16U) |                            \
+    (((uint32_t)(src_node_id)) << 18U) | (((uint32_t)(dst_node_id)) << 25U))
+
+static uint8_t* get_tid_ptr(instance_t *ins, uint32_t transfer_desc)
+{
+    // check head
+    if (!ins->tid_map_head) {
+        ins->tid_map_head = (instance_t::tid_map*)calloc(1, sizeof(instance_t::tid_map));
+        if (ins->tid_map_head == nullptr) {
+            return nullptr;
+        }
+        ins->tid_map_head->transfer_desc = transfer_desc;
+        ins->tid_map_head->next = nullptr;
+        return &ins->tid_map_head->tid;
+    } else if (ins->tid_map_head->transfer_desc == transfer_desc) {
+        return &ins->tid_map_head->tid;
+    }
+
+    // search through the list for an existing entry
+    instance_t::tid_map *tid_map_ptr = ins->tid_map_head;
+    while(tid_map_ptr->next) {
+        tid_map_ptr = tid_map_ptr->next;
+        if (tid_map_ptr->transfer_desc == transfer_desc) {
+            return &tid_map_ptr->tid;
+        }
+    }
+
+    // create a new entry, if not found
+    tid_map_ptr->next = (instance_t::tid_map*)calloc(1, sizeof(instance_t::tid_map));
+    if (tid_map_ptr->next == nullptr) {
+        return nullptr;
+    }
+    tid_map_ptr->next->transfer_desc = transfer_desc;
+    tid_map_ptr->next->next = nullptr;
+    return &tid_map_ptr->next->tid;
+}
+
 static void canard_broadcast(uint64_t data_type_signature,
                                 uint16_t data_type_id,
                                 uint8_t priority,
@@ -1110,13 +1152,25 @@ static void canard_broadcast(uint64_t data_type_signature,
         if (ins.index != periph.gps_mb_can_port) 
 #endif
         {
+            uint8_t *tid_ptr = get_tid_ptr(&ins, MAKE_TRANSFER_DESCRIPTOR(data_type_signature, data_type_id, 0, CANARD_BROADCAST_NODE_ID));
+            if (tid_ptr == nullptr) {
+                return;
+            }
+#if DEBUG_PKTS
+            const int16_t res = 
+#endif
             canardBroadcast(&ins.canard,
                             data_type_signature,
                             data_type_id,
-                            &ins.transfer_id,
+                            tid_ptr,
                             priority,
                             payload,
                             payload_len);
+#if DEBUG_PKTS
+            if (res < 0) {
+                printf("Tx error %d, IF%d %lx\n", res, ins.index);
+            }
+#endif
         }
     }
 }
@@ -1184,7 +1238,22 @@ static void processRx(void)
             memcpy(rx_frame.data, rxmsg.data, 8);
             rx_frame.data_len = rxmsg.dlc;
             rx_frame.id = rxmsg.id;
+#if DEBUG_PKTS
+            const int16_t res = 
+#endif
             canardHandleRxFrame(&ins.canard, &rx_frame, timestamp);
+#if DEBUG_PKTS
+            if (res < 0 &&
+                res != -CANARD_ERROR_RX_NOT_WANTED &&
+                res != -CANARD_ERROR_RX_WRONG_ADDRESS &&
+                res != -CANARD_ERROR_RX_MISSED_START) {
+                printf("Rx error %d, IF%d %lx: ", res, ins.index, rx_frame.id);
+                for (uint8_t i = 0; i < rx_frame.data_len; i++) {
+                    printf("%02x", rx_frame.data[i]);
+                }
+                printf("\n");
+            }
+#endif
         }
     }
 }
@@ -1922,10 +1991,11 @@ void AP_Periph_FW::send_moving_baseline_msg()
 
 #if HAL_NUM_CAN_IFACES >= 2
     if (gps_mb_can_port != -1 && (gps_mb_can_port < HAL_NUM_CAN_IFACES)) {
+        uint8_t *tid_ptr = get_tid_ptr(&instances[gps_mb_can_port], MAKE_TRANSFER_DESCRIPTOR(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE, ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID, 0, CANARD_BROADCAST_NODE_ID));
         canardBroadcast(&instances[gps_mb_can_port].canard,
                         ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
                         ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                        &instances[gps_mb_can_port].transfer_id,
+                        tid_ptr,
                         CANARD_TRANSFER_PRIORITY_LOW,
                         &buffer[0],
                         total_size);
