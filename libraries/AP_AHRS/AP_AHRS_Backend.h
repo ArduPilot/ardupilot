@@ -386,41 +386,6 @@ public:
         return false;
     }
 
-    // get the home location. This is const to prevent any changes to
-    // home without telling AHRS about the change
-    const struct Location &get_home(void) const {
-        return _home;
-    }
-
-    // functions to handle locking of home.  Some vehicles use this to
-    // allow GCS to lock in a home location.
-    void lock_home() {
-        _home_locked = true;
-    }
-    bool home_is_locked() const {
-        return _home_locked;
-    }
-
-    // returns true if home is set
-    bool home_is_set(void) const {
-        return _home_is_set;
-    }
-
-    // set the home location in 10e7 degrees. This should be called
-    // when the vehicle is at this position. It is assumed that the
-    // current barometer and GPS altitudes correspond to this altitude
-    virtual bool set_home(const Location &loc) WARN_IF_UNUSED = 0;
-
-    // set the EKF's origin location in 10e7 degrees.  This should only
-    // be called when the EKF has no absolute position reference (i.e. GPS)
-    // from which to decide the origin on its own
-    virtual bool set_origin(const Location &loc) WARN_IF_UNUSED { return false; }
-
-    // returns the inertial navigation origin in lat/lon/alt
-    virtual bool get_origin(Location &ret) const  WARN_IF_UNUSED { return false; }
-
-    void Log_Write_Home_And_Origin();
-
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
     virtual bool have_inertial_nav(void) const {
@@ -628,11 +593,6 @@ protected:
     Vector2f _lp; // ground vector low-pass filter
     Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input
-
-    // reference position for NED positions
-    struct Location _home;
-    bool _home_is_set :1;
-    bool _home_locked :1;
 
     // helper trig variables
     float _cos_roll{1.0f};

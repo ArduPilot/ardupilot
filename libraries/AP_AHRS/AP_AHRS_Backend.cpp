@@ -304,7 +304,7 @@ Vector2f AP_AHRS_Backend::body_to_earth2D(const Vector2f &bf) const
 }
 
 // log ahrs home and EKF origin
-void AP_AHRS_Backend::Log_Write_Home_And_Origin()
+void AP_AHRS::Log_Write_Home_And_Origin()
 {
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
