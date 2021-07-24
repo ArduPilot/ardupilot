@@ -20,7 +20,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,10 +27,6 @@ extern const AP_HAL::HAL& hal;
 void AP_AHRS_Backend::init()
 {
     update_orientation();
-
-#if !HAL_MINIMIZE_FEATURES
-    _nmea_out = AP_NMEA_Output::probe();
-#endif
 }
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
@@ -347,15 +342,6 @@ void AP_AHRS_Backend::Log_Write_Home_And_Origin()
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) const {
     return AP::baro().get_EAS2TAS();
-}
-
-void AP_AHRS_Backend::update_nmea_out()
-{
-#if !HAL_MINIMIZE_FEATURES
-    if (_nmea_out != nullptr) {
-        _nmea_out->update();
-    }
-#endif
 }
 
 // return current vibration vector for primary IMU

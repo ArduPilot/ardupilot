@@ -51,6 +51,8 @@ class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
+
 class AP_AHRS : public AP_AHRS_DCM {
     friend class AP_AHRS_View;
 public:
@@ -401,6 +403,10 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
 #endif    
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    class AP_NMEA_Output* _nmea_out;
+#endif
 };
 
 namespace AP {

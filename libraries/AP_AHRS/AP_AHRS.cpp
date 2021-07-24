@@ -216,6 +216,10 @@ void AP_AHRS::init()
 
     // init parent class
     AP_AHRS_DCM::init();
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    _nmea_out = AP_NMEA_Output::probe();
+#endif
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -316,9 +320,11 @@ void AP_AHRS::update(bool skip_ins_update)
         _view->update(skip_ins_update);
     }
 
-#if !HAL_MINIMIZE_FEATURES
+#if HAL_NMEA_OUTPUT_ENABLED
     // update NMEA output
-    update_nmea_out();
+    if (_nmea_out != nullptr) {
+        _nmea_out->update();
+    }
 #endif
 
     EKFType active = active_EKF_type();
