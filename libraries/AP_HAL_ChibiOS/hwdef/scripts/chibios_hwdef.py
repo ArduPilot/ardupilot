@@ -1343,13 +1343,13 @@ def write_UART_config(f):
 
         if dev.startswith('OTG2'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 2}\n'
                 % dev)
             OTG2_index = uart_list.index(dev)
             dual_USB_enabled = True
         elif dev.startswith('OTG'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0}\n'
                 % dev)
         else:
             need_uart_driver = True
@@ -1366,7 +1366,7 @@ def write_UART_config(f):
             f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
             f.write("%s, " % get_extra_bylabel(dev + "_RXINV", "POL", "0"))
             f.write("%d, " % get_gpio_bylabel(dev + "_TXINV"))
-            f.write("%s}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
+            f.write("%s, 0}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
     if have_rts_cts:
         f.write('#define AP_FEATURE_RTSCTS 1\n')
     if OTG2_index is not None:

@@ -35,10 +35,9 @@ void Plane::Log_Write_Attitude(void)
     logger.Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
     logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-    AP::ahrs_navekf().Log_Write();
+    AP::ahrs().Log_Write();
     ahrs.Write_AHRS2();
-#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
@@ -336,8 +335,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Axis: tuning axis
 // @Field: State: tuning state
 // @Field: Sur: control surface deflection
-// @Field: Tar: target rate
-// @Field: Act: actual rate
+// @Field: PSlew: P slew rate
+// @Field: DSlew: D slew rate
 // @Field: FF0: FF value single sample
 // @Field: FF: FF value
 // @Field: P: P value
@@ -347,7 +346,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: RMAX: Rate maximum
 // @Field: TAU: time constant
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
-      "ATRP", "QBBffffffffBff", "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,I,D,Action,RMAX,TAU", "s#-dkk------ks", "F--00000000-00" },
+      "ATRP", "QBBffffffffBff", "TimeUS,Axis,State,Sur,PSlew,DSlew,FF0,FF,P,I,D,Action,RMAX,TAU", "s#-dkk------ks", "F--00000000-00" },
 
 // @LoggerMessage: STAT
 // @Description: Current status of the aircraft

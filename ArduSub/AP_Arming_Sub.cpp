@@ -167,7 +167,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
-    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    auto &ahrs = AP::ahrs();
 
     // save compass offsets learned by the EKF if enabled
     if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LEARN_EKF) {

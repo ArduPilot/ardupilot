@@ -6,7 +6,7 @@
 
 
 // Write an AHRS2 packet
-void AP_AHRS::Write_AHRS2() const
+void AP_AHRS_Backend::Write_AHRS2() const
 {
     Vector3f euler;
     struct Location loc;
@@ -32,7 +32,7 @@ void AP_AHRS::Write_AHRS2() const
 }
 
 // Write AOA and SSA
-void AP_AHRS::Write_AOA_SSA(void)
+void AP_AHRS_Backend::Write_AOA_SSA(void)
 {
     const struct log_AOA_SSA aoa_ssa{
         LOG_PACKET_HEADER_INIT(LOG_AOA_SSA_MSG),
@@ -45,7 +45,7 @@ void AP_AHRS::Write_AOA_SSA(void)
 }
 
 // Write an attitude packet
-void AP_AHRS::Write_Attitude(const Vector3f &targets) const
+void AP_AHRS_Backend::Write_Attitude(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
@@ -63,7 +63,7 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_AHRS::Write_Origin(uint8_t origin_type, const Location &loc) const
+void AP_AHRS_Backend::Write_Origin(uint8_t origin_type, const Location &loc) const
 {
     const struct log_ORGN pkt{
         LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
@@ -77,7 +77,7 @@ void AP_AHRS::Write_Origin(uint8_t origin_type, const Location &loc) const
 }
 
 // Write a POS packet
-void AP_AHRS::Write_POS() const
+void AP_AHRS_Backend::Write_POS() const
 {
     Location loc;
     if (!get_position(loc)) {

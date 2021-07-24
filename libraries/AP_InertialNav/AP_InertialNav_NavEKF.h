@@ -6,12 +6,13 @@
 #pragma once
 
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+#include "AP_InertialNav.h"
 
 class AP_InertialNav_NavEKF : public AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(AP_AHRS_NavEKF &ahrs) :
+    AP_InertialNav_NavEKF(AP_AHRS &ahrs) :
         AP_InertialNav(),
         _ahrs_ekf(ahrs)
         {}
@@ -70,5 +71,5 @@ public:
 private:
     Vector3f _relpos_cm;   // NEU
     Vector3f _velocity_cm; // NEU
-    AP_AHRS_NavEKF &_ahrs_ekf;
+    AP_AHRS &_ahrs_ekf;
 };

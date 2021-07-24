@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
@@ -49,7 +48,7 @@ class AR_AttitudeControl {
 public:
 
     // constructor
-    AR_AttitudeControl(AP_AHRS &ahrs);
+    AR_AttitudeControl();
 
     //
     // steering controller
@@ -156,9 +155,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
-    // external references
-    const AP_AHRS &_ahrs;
 
     // parameters
     AC_P     _steer_angle_p;        // steering angle controller

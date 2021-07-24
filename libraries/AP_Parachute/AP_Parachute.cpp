@@ -73,8 +73,14 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("CRT_SINK", 6, AP_Parachute, _critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
-    
-    
+
+    // @Param: OPTIONS
+    // @DisplayName: Parachute options
+    // @Description: Optional behaviour for parachute
+    // @Bitmask: 0:hold open forever after release
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -123,6 +129,8 @@ void AP_Parachute::update()
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
 
+    bool hold_forever = (_options.get() & uint32_t(Options::HoldOpen)) != 0;
+
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= delay_ms) {
@@ -136,7 +144,8 @@ void AP_Parachute::update()
             _release_in_progress = true;
             _released = true;
         }
-    } else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    } else if ((_release_time == 0) ||
+               (!hold_forever && time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS)) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
@@ -185,6 +194,23 @@ void AP_Parachute::check_sink_rate()
     if ((_sink_time_ms > 0) && ((AP_HAL::millis() - _sink_time_ms) > 1000)) {
         release();
     }
+}
+
+// check settings are valid
+bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
+{
+    if (_enabled > 0) {
+        if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_parachute_release)) {
+                hal.util->snprintf(buffer, buflen, "Chute has no channel");
+                return false;
+            }
+        } else if (!_relay.enabled(_release_type)) {
+            hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", _release_type);
+            return false;
+        }
+    }
+    return true;
 }
 
 // singleton instance

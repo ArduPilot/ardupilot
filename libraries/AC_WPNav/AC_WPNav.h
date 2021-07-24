@@ -49,6 +49,9 @@ public:
     // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
     bool get_terrain_offset(float& offset_cm);
 
+    // return terrain following altitude margin.  vehicle will stop if distance from target altitude is larger than this margin
+    float get_terrain_margin() const { return MAX(_terrain_margin, 0.1); }
+
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
     bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
@@ -205,7 +208,7 @@ public:
     void update_track_with_speed_accel_limits();
 
     /// return the crosstrack_error - horizontal error of the actual position vs the desired position
-    float crosstrack_error() const { return _track_error_xy;}
+    float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -236,6 +239,7 @@ protected:
     AP_Float    _wp_accel_cmss;         // horizontal acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;       // vertical acceleration in cm/s/s during missions
     AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
+    AP_Float    _terrain_margin;        // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
 
     // scurve
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
@@ -257,8 +261,9 @@ protected:
     float       _wp_desired_speed_xy_cms;   // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
-    float       _track_error_xy;        // horizontal error of the actual position vs the desired position
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
+    float       _terain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terain
+    float       _terain_accel;          // acceleration value used to change _terain_vel
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
@@ -266,10 +271,4 @@ protected:
     AP_Int8     _rangefinder_use;       // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;   // true if rangefinder distance is healthy (i.e. between min and maximum)
     float       _rangefinder_alt_cm;    // latest distance from the rangefinder
-
-    // position, velocity and acceleration targets passed to position controller
-    postype_t   _pos_terrain_offset;
-    float       _vel_terrain_offset;
-    float       _accel_terrain_offset;
-
 };

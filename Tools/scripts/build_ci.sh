@@ -247,6 +247,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "stm32h7-debug" ]; then
+        echo "Building Durandal"
+        $waf configure --board Durandal --debug
+        $waf clean
+        $waf copter
+        continue
+    fi
+
     if [ "$t" == "fmuv2-plane" ]; then
         echo "Building fmuv2 plane"
         $waf configure --board fmuv2

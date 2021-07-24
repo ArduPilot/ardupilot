@@ -461,3 +461,13 @@ int32_t Location::limit_lattitude(int32_t lat)
     }
     return lat;
 }
+
+// update altitude and alt-frame base on this location's horizontal position between point1 and point2
+// this location's lat,lon is used to calculate the alt of the closest point on the line between point1 and point2
+// origin and destination's altitude frames must be the same
+// this alt-frame will be updated to match the destination alt frame
+void Location::linearly_interpolate_alt(const Location &point1, const Location &point2)
+{
+    // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
+    set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
+}

@@ -384,6 +384,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg,
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
             state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             state.have_gps_yaw = true;
+            state.gps_yaw_time_ms = AP_HAL::millis();
         }
     }
 

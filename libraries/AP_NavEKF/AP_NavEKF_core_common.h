@@ -61,7 +61,7 @@ protected:
 #if MATH_CHECK_INDEXES
 #pragma GCC diagnostic error "-Wframe-larger-than=4000"
 #else
-#pragma GCC diagnostic error "-Wframe-larger-than=2100"
+#pragma GCC diagnostic error "-Wframe-larger-than=2500"
 #endif
 #endif
 
