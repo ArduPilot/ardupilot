@@ -594,7 +594,8 @@ private:
         Failsafe_Action_RTL            = 2,
         Failsafe_Action_SmartRTL       = 3,
         Failsafe_Action_SmartRTL_Land  = 4,
-        Failsafe_Action_Terminate      = 5
+        Failsafe_Action_Terminate      = 5,
+        Failsafe_Action_Auto_DO_LAND_START = 6,
     };
 
     enum class FailsafeOption {
@@ -738,6 +739,7 @@ private:
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
+    void set_mode_auto_do_land_start_or_RTL(ModeReason reason);
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
 
