@@ -50,7 +50,7 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 
 
 /* if this was a watchdog reset then get home from backup registers */
-void AP_AHRS_DCM::load_watchdog_home()
+void AP_AHRS::load_watchdog_home()
 {
     const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
@@ -69,11 +69,6 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-
-    if (_last_startup_ms == 0) {
-        _last_startup_ms = AP_HAL::millis();
-        load_watchdog_home();
-    }
 
     AP_InertialSensor &_ins = AP::ins();
 
@@ -230,9 +225,6 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
     }
 
-    if (_last_startup_ms == 0) {
-        load_watchdog_home();
-    }
     _last_startup_ms = AP_HAL::millis();
 }
 
@@ -1038,7 +1030,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         loc.alt = gps.location().alt;
     } else {
-        loc.alt = baro.get_altitude() * 100 + _home.alt;
+        loc.alt = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
     }
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
@@ -1094,7 +1086,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
     return true;
 }
 
-bool AP_AHRS_DCM::set_home(const Location &loc)
+bool AP_AHRS::set_home(const Location &loc)
 {
     WITH_SEMAPHORE(_rsem);
     // check location is valid
@@ -1135,7 +1127,7 @@ void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
     const auto &gps = AP::gps();
     if (_gps_use == GPSUse::EnableWithHeight &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        posD = (_home.alt - gps.location().alt) * 0.01;
+        posD = (AP::ahrs().get_home().alt - gps.location().alt) * 0.01;
     } else {
         posD = -AP::baro().get_altitude();
     }
