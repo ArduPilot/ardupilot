@@ -54,6 +54,12 @@ public:
     // perform any cleanups required:
     void exit();
 
+    // run controllers specific to this mode
+    virtual void run() {};
+
+    // init function, used only be quadplane modes, to be factored in to _enter() in the future
+    virtual void init() {};
+
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
 
@@ -446,6 +452,10 @@ public:
     // used as a base class for all Q modes
     bool _enter() override;
 
+    void run() override;
+
+    void init() override;
+
 protected:
 private:
 
@@ -468,6 +478,10 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void run() override;
+
+    void init() override;
+
 protected:
 
     bool _enter() override;
@@ -475,6 +489,8 @@ protected:
 
 class ModeQLoiter : public Mode
 {
+friend class QuadPlane;
+friend class ModeQLand;
 public:
 
     Number mode_number() const override { return Number::QLOITER; }
@@ -486,6 +502,10 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+    void init() override;
 
 protected:
 
@@ -504,6 +524,10 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+    void init() override;
 
     bool allows_arming() const override { return false; }
 
@@ -524,6 +548,10 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+    void init() override;
 
     bool allows_arming() const override { return false; }
 
@@ -551,6 +579,10 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void run() override;
+
+    void init() override;
+
 protected:
 
     bool _enter() override;
@@ -566,6 +598,8 @@ public:
 
     bool is_vtol_mode() const override { return true; }
     virtual bool is_vtol_man_mode() const override { return true; }
+
+    void run() override;
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
