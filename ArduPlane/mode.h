@@ -7,7 +7,11 @@
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
+#include "quadplane.h"
 
+class AC_PosControl;
+class AC_AttitudeControl_Multi;
+class AC_Loiter;
 class Mode
 {
 public:
@@ -117,6 +121,14 @@ protected:
 
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
+
+    // References for convenience, used by QModes
+    QuadPlane& quadplane;
+    AC_PosControl*& pos_control;
+    AC_AttitudeControl_Multi*& attitude_control;
+    AC_Loiter*& loiter_nav;
+    QuadPlane::PosControlState &poscontrol;
+
 };
 
 
