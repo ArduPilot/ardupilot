@@ -41,6 +41,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_Button/AP_Button.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -872,6 +873,11 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+        const auto &button = AP::button();
+        if (!button.arming_checks(sizeof(buffer), buffer)) {
+            check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
+            return false;
+        }
     }
 
     return true;
