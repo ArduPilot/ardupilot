@@ -288,7 +288,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 {
     // get acceleration limited target speed
     target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
-
+    float target_speed_org = target_speed;
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
         g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
@@ -297,6 +297,12 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             if (rover.control_mode != &rover.mode_acro) {
                 rover.control_mode->handle_tack_request();
             }
+        }
+
+        // allow going backward fast than desired speed if user wants so.
+        if ((target_speed_org<0) && (target_speed_org < target_speed))
+        {
+            target_speed = target_speed_org;
         }
     }
 
