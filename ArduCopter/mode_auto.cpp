@@ -22,6 +22,7 @@
 // auto_init - initialise auto controller
 bool ModeAuto::init(bool ignore_checks)
 {
+    auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
         _mode = SubMode::LOITER;
 
@@ -64,6 +65,8 @@ void ModeAuto::exit()
 #if HAL_MOUNT_ENABLED
     copter.camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
+
+    auto_RTL = false;
 }
 
 // auto_run - runs the auto controller
@@ -141,12 +144,34 @@ void ModeAuto::run()
         payload_place_run();
         break;
     }
+
+    // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
+    if (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE)) {
+        auto_RTL = false;
+    }
 }
 
 bool ModeAuto::allows_arming(AP_Arming::Method method) const
 {
-    return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
+    return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
 };
+
+// Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
+bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
+{
+    if (mission.jump_to_landing_sequence()) {
+        mission.set_force_resume(true);
+        if (set_mode(Mode::Number::AUTO, reason)) {
+            auto_RTL = true;
+            return true;
+        }
+        // mode change failed, revert force resume flag
+        mission.set_force_resume(false);
+        return false;
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "No landing sequence found");
+    return false;
+}
 
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
@@ -528,6 +553,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_DO_LAND_START:
+        break;
+
     default:
         // unable to use the command, allow the vehicle to try the next command
         return false;
@@ -766,6 +794,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
+    case MAV_CMD_DO_LAND_START:
         cmd_complete = true;
         break;
 
