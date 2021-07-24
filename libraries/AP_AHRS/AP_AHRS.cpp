@@ -270,7 +270,13 @@ void AP_AHRS::update(bool skip_ins_update)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
+    // see if we have to restore home after a watchdog reset:
+    if (!_checked_watchdog_home) {
+        load_watchdog_home();
+        _checked_watchdog_home = true;
+    }
+
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
@@ -654,9 +660,10 @@ void AP_AHRS::reset(bool recover_eulers)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
     AP_AHRS_DCM::reset(recover_eulers);
     _dcm_attitude = {roll, pitch, yaw};
+
 #if HAL_NAVEKF2_AVAILABLE
     if (_ekf2_started) {
         _ekf2_started = EKF2.InitialiseFilter();
