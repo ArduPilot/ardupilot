@@ -1127,6 +1127,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     const uint8_t obstacle_num = _proximity.get_obstacle_count();
     if (obstacle_num == 0) {
         // no obstacles
+        _vector_to_obstacle_inaction.zero();
         return;
     }
  
@@ -1178,11 +1179,13 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
                 const float z_back_dist = margin_vector.z;
                 calc_backup_velocity_3D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, xy_back_dist, vector_to_obstacle, kP_z, accel_cmss_z, z_back_dist, min_back_vel_z, max_back_vel_z, dt);
             }
+            _vector_to_obstacle_inaction =   vector_to_obstacle;      
         }
 
         if (desired_vel_cms.is_zero()) {
             // cannot limit velocity if there is nothing to limit
             // backing up (if needed) has already been done
+            _vector_to_obstacle_inaction =   vector_to_obstacle;
             continue;
         }
 

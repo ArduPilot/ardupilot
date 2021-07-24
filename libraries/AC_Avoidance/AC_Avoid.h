@@ -84,6 +84,8 @@ public:
     bool proximity_avoidance_enabled() const { return _proximity_enabled; }
     void proximity_alt_avoidance_enable(bool on_off) { _proximity_alt_enabled = on_off; }
 
+    Vector3f get_vector_to_obstacle_inaction () { return _vector_to_obstacle_inaction; }
+
     // helper functions
 
     // Limits the component of desired_vel_cms in the direction of the unit vector
@@ -222,7 +224,7 @@ private:
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
     Vector3f _prev_avoid_vel;       // copy of avoidance adjusted velocity
-
+    Vector3f _vector_to_obstacle_inaction; //current obstacle we try to avoid.
     static AC_Avoid *_singleton;
 };
 

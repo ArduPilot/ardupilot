@@ -299,10 +299,20 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             }
         }
 
-        // allow going backward fast than desired speed if user wants so.
-        if ((target_speed_org<0) && (target_speed_org < target_speed))
+        // give user control in the backup direction if user wants fast response.
+        const Vector3f obstacle_inaction = g2.avoid.get_vector_to_obstacle_inaction();
+        if (!obstacle_inaction.is_zero())
         {
-            target_speed = target_speed_org;
+            if ((obstacle_inaction.x>0.0f) && (target_speed_org<0) && (target_speed_org < target_speed))
+            { // allow going backward faster than desired speed 
+                printf("backward faster %f, %f\r\n",target_speed, target_speed_org);     
+                target_speed = target_speed_org;
+            }else
+            if ((obstacle_inaction.x<0.0f) && (target_speed_org>0) && (target_speed_org > target_speed))
+            { // allow going forward faster than desired speed 
+                printf("forward faster %f, %f\r\n",target_speed, target_speed_org);
+                target_speed = target_speed_org;
+            }
         }
     }
 
