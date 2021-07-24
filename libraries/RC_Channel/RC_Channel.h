@@ -197,6 +197,7 @@ public:
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
         WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
         TRAINING            = 98, // mode training
+        AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
