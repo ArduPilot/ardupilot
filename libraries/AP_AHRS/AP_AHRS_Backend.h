@@ -28,7 +28,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 
-class AP_NMEA_Output;
 class OpticalFlow;
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -578,7 +577,6 @@ public:
     void Write_POS(void) const;
 
 protected:
-    void update_nmea_out();
 
     // multi-thread access support
     HAL_Semaphore _rsem;
@@ -682,8 +680,6 @@ protected:
     uint32_t _last_AOA_update_ms;
 
 private:
-
-    AP_NMEA_Output* _nmea_out;
 
     uint32_t takeoff_expected_start_ms;
     uint32_t touchdown_expected_start_ms;
