@@ -223,24 +223,50 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         // this has to be done for x,y,z seperately. For eg, user is doing fine in "x" direction but might need backing up in "y".
         if (!is_zero(desired_backup_vel.x)) {
             if (is_positive(desired_backup_vel.x)) {
-                desired_vel_cms.x = MAX(desired_vel_cms.x, desired_backup_vel.x);
+                desired_vel_cms.x = MAX(desired_vel_cms_original.x, desired_backup_vel.x);
             } else {
-                desired_vel_cms.x = MIN(desired_vel_cms.x, desired_backup_vel.x);
+                desired_vel_cms.x = MIN(desired_vel_cms_original.x, desired_backup_vel.x);
             }
         }
         if (!is_zero(desired_backup_vel.y)) {
             if (is_positive(desired_backup_vel.y)) {
-                desired_vel_cms.y = MAX(desired_vel_cms.y, desired_backup_vel.y);
+                desired_vel_cms.y = MAX(desired_vel_cms_original.y, desired_backup_vel.y);
             } else {
-                desired_vel_cms.y = MIN(desired_vel_cms.y, desired_backup_vel.y);
+                desired_vel_cms.y = MIN(desired_vel_cms_original.y, desired_backup_vel.y);
             }
         }
         if (!is_zero(desired_backup_vel.z)) {
-            if (is_positive(desired_backup_vel.z)) {
-                desired_vel_cms.z = MAX(desired_vel_cms.z, desired_backup_vel.z);
+            if (is_positive(desired_vel_cms_original.z)) {
+                desired_vel_cms.z = MAX(desired_vel_cms_original.z, desired_backup_vel.z);
             } else {
-                desired_vel_cms.z = MIN(desired_vel_cms.z, desired_backup_vel.z);
+                desired_vel_cms.z = MIN(desired_vel_cms_original.z, desired_backup_vel.z);
             }
+        }
+    }else
+    if (!_vector_to_obstacle_inaction.is_zero() && desired_backup_vel.is_zero())
+    {
+        bool sign_desired_vel_cms_original_x = desired_vel_cms_original.x>=0.0f;
+        bool sign__vector_to_obstacle_inaction_x = _vector_to_obstacle_inaction.x >=0.0f;
+        
+        bool sign_desired_vel_cms_original_y = desired_vel_cms_original.y>=0.0f;
+        bool sign__vector_to_obstacle_inaction_y = _vector_to_obstacle_inaction.y >=0.0f;
+        
+        bool sign_desired_vel_cms_original_z = desired_vel_cms_original.z>=0.0f;
+        bool sign__vector_to_obstacle_inaction_z = _vector_to_obstacle_inaction.z >=0.0f;
+        
+        if (sign_desired_vel_cms_original_x != sign__vector_to_obstacle_inaction_x)
+        {
+            desired_vel_cms.x = desired_vel_cms_original.x;   
+        }
+
+        if (sign_desired_vel_cms_original_y != sign__vector_to_obstacle_inaction_y)
+        {
+            desired_vel_cms.x = desired_vel_cms_original.x;   
+        }
+
+        if (sign_desired_vel_cms_original_z != sign__vector_to_obstacle_inaction_z)
+        {
+            desired_vel_cms.x = desired_vel_cms_original.x;   
         }
     }
     // limit acceleration
