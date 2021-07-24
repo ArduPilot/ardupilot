@@ -45,6 +45,9 @@ public:
     // used by scripting
     bool get_button_state(uint8_t number);
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+    
 private:
 
     static AP_Button *_singleton;
