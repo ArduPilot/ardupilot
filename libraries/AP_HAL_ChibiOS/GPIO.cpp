@@ -80,7 +80,7 @@ void GPIO::init()
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
-            g->enabled = SRV_Channels::is_GPIO(g->pwm_num+chan_offset);
+            g->enabled = SRV_Channels::is_GPIO((g->pwm_num-1)+chan_offset);
         }
     }
 #endif // HAL_BOOTLOADER_BUILD
