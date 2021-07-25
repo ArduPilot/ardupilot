@@ -31,11 +31,11 @@ PC5 VBUS INPUT OPENDRAIN
 
 # USART1 is wired to SBUS and PPM input
 # RC input defaults to timer capture
-PB6 TIM4_CH1 TIM4 RCININT PULLDOWN
-PB7 USART1_RX USART1 NODMA
+PB7 TIM4_CH2 TIM4 RCININT PULLDOWN
+PB6 USART1_TX USART1 NODMA
 
 # Alt config to allow RCIN on UART
-PB6 USART1_TX USART1 NODMA ALT(1)
+PB7 USART1_RX USART1 NODMA ALT(1)
 
 # SBUS inversion control pin, active low
 PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
@@ -53,8 +53,6 @@ PA0 UART4_TX UART4
 PA1 UART4_RX UART4
 
 # UART5
-# These are labeled in betaflight F405US_I2C target but aren't on the board?
-# I'm assuming there are more boards that use this target
 PC12 UART5_TX UART5
 PD2 UART5_RX UART5
 
@@ -140,8 +138,8 @@ define STORAGE_FLASH_PAGE 1
 
 # flash size
 FLASH_SIZE_KB 1024
-# reserve 32k for bootloader and 32k for flash storage
-FLASH_RESERVE_START_KB 64
+# reserve 16k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 48
 
 # define default battery setup
 define HAL_BATT_VOLT_PIN 11
@@ -155,5 +153,8 @@ define BOARD_RSSI_ANA_PIN 1
 # Setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
+
+# Font for OSD
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 4
