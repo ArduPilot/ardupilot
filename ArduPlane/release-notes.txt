@@ -1,3 +1,27 @@
+Release 4.1.0beta4 25th July 2021
+---------------------------------
+
+This is a large beta update, with significant changes over beta3.
+
+Changes are:
+
+ - major fixed wing autotune update over previous 4.1 beta releases
+ - added MAN_EXPO_* parameters for input expos in MANUAL, TRAINING and ACRO modes
+ - added ONESHOT_MASK for oneshot output on control surfaces
+ - GPS-for-yaw enhancements including using position and yaw from different GPSs
+ - Long distance flight supported (thousands of km) including double precision EKF and moving origin
+ - major improvements to EKF3 stability
+ - BLHeli fix that could cause failure to boot
+ - CRSF message spamming and firmware string length fixed
+ - Display re-enabled on 1MB boards
+ - DShot always sends 0 when disarmed (protects against motors spin while disarmed due to misconfiguration)
+ - DShot fix that could cause main loop jitter
+ - DShot buzzer tone disabled during motor test to remove bad interation
+ - MatekF405-bdshot NeoPixel LEDs re-enabled on PWM5
+ - Serial port performance improvements using FIFO on H7 boards
+
+Please report all test results and happy flying!
+
 Release 4.1.0beta3 5th July 2021
 --------------------------------
 
