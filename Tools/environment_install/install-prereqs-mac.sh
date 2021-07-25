@@ -62,7 +62,7 @@ fi
 function install_arm_none_eabi_toolchain() {
     # GNU Tools for ARM Embedded Processors
     # (see https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
-    ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
+    ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
     ARM_TARBALL="$ARM_ROOT-mac.tar.bz2"
     ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
     if [ ! -d $OPT/$ARM_ROOT ]; then
