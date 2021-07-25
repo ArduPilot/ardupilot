@@ -50,6 +50,10 @@ bool ModeAuto::init(bool ignore_checks)
         // clear guided limits
         copter.mode_guided.limit_clear();
 
+        if (auto_RTL) {
+            mission.set_in_landing_sequence_flag(true);
+        }
+
         return true;
     } else {
         return false;
@@ -161,7 +165,11 @@ bool ModeAuto::allows_arming(AP_Arming::Method method) const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
-    if (mission.jump_to_landing_sequence()) {
+    if ( ((g2.auto_rtl_type == 3) && mission.jump_to_shortest_landing_sequence()) ||
+         ((g2.auto_rtl_type == 4) && mission.jump_to_closest_mission_leg()) ||
+         ((g2.auto_rtl_type == 5) && mission.jump_to_shortest_mission_leg()) || 
+            mission.jump_to_landing_sequence()) {
+
         mission.set_force_resume(true);
         // if not already in auto switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {

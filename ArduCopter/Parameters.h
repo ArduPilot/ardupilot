@@ -648,6 +648,10 @@ public:
 #if MODE_GUIDED_ENABLED == ENABLED
     AP_Float guided_timeout;
 #endif
+
+#if MODE_AUTO_ENABLED == ENABLED
+    AP_Int8 auto_rtl_type;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
