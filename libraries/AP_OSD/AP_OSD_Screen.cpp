@@ -43,6 +43,9 @@
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#include <../ArduPlane/Plane.h>
+#endif
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <ctype.h>
@@ -1458,6 +1461,21 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     float roll = ahrs.roll;
     float pitch = -ahrs.pitch;
 
+    //correct horizon for TRIM_PITCH_CD if Plane and in fixed wing mode
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    float value = 0;
+    bool in_vtol_mode = FALSE;
+    AP_Param* param=AP_Param::get_singleton();
+    QuadPlane* quadplane=QuadPlane::get_singleton();
+    if (quadplane != nullptr) {
+       in_vtol_mode = quadplane->in_vtol_mode();
+    }
+    if (param != nullptr && !in_vtol_mode) {
+        param->get("TRIM_PITCH_CD",value);
+        pitch += DEG_TO_RAD * 0.01 * value;
+    }
+#endif
+
     //inverted roll AH
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
         roll = -roll;
@@ -1492,6 +1510,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         }
     }
     backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
+
 }
 
 void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
