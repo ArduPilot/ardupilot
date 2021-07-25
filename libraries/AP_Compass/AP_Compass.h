@@ -459,9 +459,6 @@ private:
     // enable automatic declination code
     AP_Int8     _auto_declination;
 
-    // first-time-around flag used by offset nulling
-    bool        _null_init_done;
-
     // stores which bit is used to indicate we should log compass readings
     uint32_t _log_bit = -1;
 
