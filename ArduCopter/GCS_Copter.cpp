@@ -58,6 +58,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
 
     switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
