@@ -558,8 +558,14 @@ void Mode::land_run_vertical_control(bool pause_descent)
             const float precland_min_descent_speed = 10.0f;
 
             float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy_cm()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+
+            Vector2f target_pos;
+            if (copter.precland.get_target_position_cm(target_pos)) {
+                const Vector2f current_pos = inertial_nav.get_position().xy();
+                const float target_error_cm = (target_pos - current_pos).length();
+                const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed/precland_acceptable_error));
+                cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+            }
         }
 #endif
     }
@@ -574,11 +580,6 @@ void Mode::land_run_horizontal_control()
     float target_roll = 0.0f;
     float target_pitch = 0.0f;
     float target_yaw_rate = 0;
-
-    // relax loiter target if we might be landed
-    if (copter.ap.land_complete_maybe) {
-        loiter_nav->soften_for_landing();
-    }
 
     // process pilot inputs
     if (!copter.failsafe.radio) {
@@ -613,31 +614,49 @@ void Mode::land_run_horizontal_control()
         }
     }
 
+    // this variable will be updated if prec land target is in sight and pilot isn't trying to reposition the vehicle
+    bool doing_precision_landing = false;
+
 #if PRECISION_LANDING == ENABLED
-    bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired();
+    doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (doing_precision_landing) {
-        Vector2f target_pos, target_vel_rel;
+        Vector2f target_pos, target_vel;
         if (!copter.precland.get_target_position_cm(target_pos)) {
             target_pos.x = inertial_nav.get_position().x;
             target_pos.y = inertial_nav.get_position().y;
         }
-        if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
-            target_vel_rel.x = -inertial_nav.get_velocity().x;
-            target_vel_rel.y = -inertial_nav.get_velocity().y;
-        }
-        pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
-        pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+
+        // get the velocity of the target
+        copter.precland.get_target_velocity_cms(inertial_nav.get_velocity().xy(), target_vel);
+
+        Vector2f zero;
+        Vector2p landing_pos = target_pos.topostype();
+        // target vel will remain zero if landing target is stationary
+        pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
     }
 #endif
 
-    // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
+    if (!doing_precision_landing) {
+        // not doing prec landing, use velocity control to either keep the vehicle stationary or move it as per stick command
+        // limit correction speed to accel with stopping time constant of 0.5s
+        const float speed_max_cms = wp_nav->get_wp_acceleration() * 0.5;
+        // figure out the target vel and feed it to pos controller
+        Vector3f target_vel_cms = Vector3f{-target_pitch, target_roll, 0} * speed_max_cms;
+        target_vel_cms.rotate_xy(copter.ahrs_view->yaw);
+        Vector2f zero;
+        pos_control->input_vel_accel_xy(target_vel_cms.xy(), zero);
+    }
 
-    // run loiter controller
-    loiter_nav->update();
+    // relax target if we might have landed
+    if (copter.ap.land_complete_maybe) {
+        pos_control->relax_velocity_controller_xy();
+    }
 
-    Vector3f thrust_vector = loiter_nav->get_thrust_vector();
+    // run pos controller
+    pos_control->update_xy_controller();
+
+    Vector3f thrust_vector = pos_control->get_thrust_vector();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation

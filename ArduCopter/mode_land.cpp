@@ -7,9 +7,7 @@ bool ModeLand::init(bool ignore_checks)
     control_position = copter.position_ok();
     if (control_position) {
         // set target to stopping point
-        Vector2f stopping_point;
-        loiter_nav->get_stopping_point_xy(stopping_point);
-        loiter_nav->init_target(stopping_point);
+        pos_control->init_xy_controller_stopping_point();
     }
 
     // set vertical speed and acceleration limits
