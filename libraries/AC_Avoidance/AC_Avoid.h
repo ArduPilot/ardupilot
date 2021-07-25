@@ -51,6 +51,13 @@ public:
         adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
     }
 
+    // this overload can be used with situations that only work with 2-D scenarios and need 2-D avoidance only
+    void adjust_velocity(Vector2f &desired_vel_cms_2d, float kP, float accel_cmss, float dt) {
+        Vector3f desired_vel_cms{desired_vel_cms_2d.x, desired_vel_cms_2d.y, 0.0f};
+        adjust_velocity(desired_vel_cms, kP, accel_cmss, 0, 0, dt);
+        desired_vel_cms_2d = desired_vel_cms.xy();
+    }
+
     // This method limits velocity and calculates backaway velocity from various supported fences
     // Also limits vertical velocity using adjust_velocity_z method
     void adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt);
@@ -109,6 +116,9 @@ public:
 
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
+
+    // simple avoidance enabled in auto modes
+    bool simple_avoidance_in_auto() const {return _enable_autonomous_mode; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -216,6 +226,7 @@ private:
     AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
     AP_Float _accel_max;        // maximum accelration while simple avoidance is active
     AP_Float _backup_deadzone;  // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
+    AP_Int8  _enable_autonomous_mode; // avoidance enable/disable in autonomous modes
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
