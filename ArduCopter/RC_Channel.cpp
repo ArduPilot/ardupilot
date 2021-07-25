@@ -212,7 +212,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (copter.flightmode->mode_number() == Mode::Number::AUTO || !copter.motors->armed()) {
+                if (copter.flightmode->mode_number() == Mode::Number::AUTO || copter.flightmode->mode_number() == Mode::Number::AUTO_RTL || !copter.motors->armed()) {
                     break;
                 }
 
