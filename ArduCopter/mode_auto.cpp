@@ -22,7 +22,6 @@
 // auto_init - initialise auto controller
 bool ModeAuto::init(bool ignore_checks)
 {
-    auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
         _mode = SubMode::LOITER;
 
