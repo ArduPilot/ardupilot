@@ -63,6 +63,9 @@ public:
     // returns target velocity relative to vehicle
     bool get_target_velocity_relative_cms(Vector2f& ret);
 
+    // get the absolute velocity of the vehicle
+    void get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms);
+
     // returns true when the landing target has been detected
     bool target_acquired();
 
@@ -116,6 +119,7 @@ private:
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
+    AP_Int8                     _moving;            // True if the landing target is moving (non-stationary)
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized
