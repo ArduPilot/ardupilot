@@ -347,7 +347,7 @@ is bob we will attempt to checkout bob-AVR'''
                 pass
 
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
-                      binaryname, px4_binaryname, frames=[None]):
+                      binaryname, frames=[None]):
         '''build vehicle binaries'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
@@ -439,7 +439,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                extensions = [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]
+                extensions = [".apj", ".abin", "_with_bl.hex", ".hex"]
                 if vehicle == 'AP_Periph':
                     # need bin file for uavcan-gui-tool and MissionPlanner
                     extensions.append('.bin')
@@ -465,97 +465,6 @@ is bob we will attempt to checkout bob-AVR'''
                 # record some history about this build
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
-        if not self.checkout(vehicle, tag, "PX4", None):
-            self.checkout(vehicle, "latest")
-            return
-
-        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
-        board_list = board_list.split(' ')
-        self.checkout(vehicle, "latest")
-        if 'px4-v2' not in board_list:
-            print("Skipping px4 builds")
-            return
-
-        # PX4-building
-        board = "px4"
-        for frame in frames:
-            self.progress("Building frame %s for board %s" % (frame, board))
-            if frame is None:
-                framesuffix = ""
-            else:
-                framesuffix = "-%s" % frame
-
-            if not self.checkout(vehicle, tag, "PX4", frame):
-                msg = ("Failed checkout of %s %s %s %s" %
-                       (vehicle, "PX4", tag, frame))
-                self.progress(msg)
-                self.error_strings.append(msg)
-                self.checkout(vehicle, "latest")
-                continue
-
-            try:
-                deadwood = "../Build.%s" % vehicle
-                if os.path.exists(deadwood):
-                    self.progress("#### Removing (%s)" % deadwood)
-                    shutil.rmtree(os.path.join(deadwood))
-            except Exception as e:
-                self.progress("FIXME: narrow exception (%s)" % repr(e))
-
-            self.progress("Building %s %s PX4%s binaries" %
-                          (vehicle, tag, framesuffix))
-            ddir = os.path.join(self.binaries,
-                                vehicle_binaries_subdir,
-                                self.hdate_ym,
-                                self.hdate_ymdhm,
-                                "".join(["PX4", framesuffix]))
-            if self.skip_build(tag, ddir):
-                continue
-
-            for v in ["v1", "v2", "v3", "v4", "v4pro"]:
-                px4_v = "%s-%s" % (board, v)
-
-                if self.skip_board_waf(px4_v):
-                    continue
-
-                if os.path.exists(self.buildroot):
-                    shutil.rmtree(self.buildroot)
-
-                self.progress("Configuring for %s in %s" %
-                              (px4_v, self.buildroot))
-                try:
-                    self.run_waf(["configure", "--board", px4_v,
-                                  "--out", self.buildroot, "clean"])
-                except subprocess.CalledProcessError:
-                    self.progress("waf configure failed")
-                    continue
-                try:
-                    self.run_waf([
-                        "build",
-                        "--targets",
-                        os.path.join("bin",
-                                     "".join([binaryname, framesuffix]))])
-                except subprocess.CalledProcessError:
-                    msg = ("Failed build of %s %s%s %s for %s" %
-                           (vehicle, board, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-
-                oldfile = os.path.join(self.buildroot, px4_v, "bin",
-                                       "%s%s.px4" % (binaryname, framesuffix))
-                newfile = "%s-%s.px4" % (px4_binaryname, v)
-                self.progress("Copying (%s) to (%s)" % (oldfile, newfile,))
-                try:
-                    shutil.copyfile(oldfile, newfile)
-                except Exception as e:
-                    self.progress("FIXME: narrow exception (%s)" % repr(e))
-                    msg = ("Failed build copy of %s PX4%s %s for %s" %
-                           (vehicle, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-                # FIXME: why the two stage copy?!
-                self.copyit(newfile, ddir, tag, vehicle)
         self.checkout(vehicle, "latest")
 
     def common_boards(self):
@@ -685,7 +594,6 @@ is bob we will attempt to checkout bob-AVR'''
                            boards,
                            "Copter",
                            "arducopter",
-                           "ArduCopter",
                            frames=[None, "heli"])
 
     def build_arduplane(self, tag):
@@ -696,8 +604,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "ArduPlane",
                            boards,
                            "Plane",
-                           "arduplane",
-                           "ArduPlane")
+                           "arduplane")
 
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
@@ -706,8 +613,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "AntennaTracker",
                            boards,
                            "AntennaTracker",
-                           "antennatracker",
-                           "AntennaTracker",)
+                           "antennatracker")
 
     def build_rover(self, tag):
         '''build Rover binaries'''
@@ -716,8 +622,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "Rover",
                            boards,
                            "Rover",
-                           "ardurover",
-                           "Rover")
+                           "ardurover")
 
     def build_ardusub(self, tag):
         '''build Sub binaries'''
@@ -725,8 +630,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "ArduSub",
                            self.common_boards(),
                            "Sub",
-                           "ardusub",
-                           "ArduSub")
+                           "ardusub")
 
     def build_AP_Periph(self, tag):
         '''build AP_Periph binaries'''
@@ -734,7 +638,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.build_vehicle(tag,
                            "AP_Periph",
                            boards,
-                           "AP_Periph",
                            "AP_Periph",
                            "AP_Periph")
 
