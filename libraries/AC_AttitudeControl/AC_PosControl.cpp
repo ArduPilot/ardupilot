@@ -641,16 +641,7 @@ void AC_PosControl::update_xy_controller()
     _vel_target.y += _vel_desired.y;
 
     // Velocity Controller
-
-    // check if vehicle velocity is being overridden
-    // todo: remove this and use input shaping
-    if (_flags.vehicle_horiz_vel_override) {
-        _flags.vehicle_horiz_vel_override = false;
-    } else {
-        _vehicle_horiz_vel.x = _inav.get_velocity().x;
-        _vehicle_horiz_vel.y = _inav.get_velocity().y;
-    }
-    Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, Vector2f(_limit_vector.x, _limit_vector.y));
+    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), _inav.get_velocity().xy(), _limit_vector.xy());
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ekfNavVelGainScaler;
 
