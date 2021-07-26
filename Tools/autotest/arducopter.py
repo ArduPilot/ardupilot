@@ -24,6 +24,7 @@ from pysim import vehicleinfo
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
 from common import Test
+from common import MAV_POS_TARGET_TYPE_MASK
 
 from pymavlink.rotmat import Vector3
 
@@ -3515,7 +3516,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_BODY_NED,
-            0b1111111111111000, # mask specifying use-only-x-y-z
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             0, # x
             0, # y
             0, # z
@@ -3546,7 +3547,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # mask specifying use-only-lat-lon-alt
             lat, # lat
             lon, # lon
             alt, # alt
@@ -3584,7 +3585,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            0b1111111111111000, # mask specifying use-only-x-y-z
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             x, # x
             y, # y
             -z_up,# z
@@ -3609,13 +3610,17 @@ class AutoTestCopter(AutoTest):
         self.progress("Setting local target in NED: (%f, %f, %f)" % (x, y, -z_up))
         self.progress("Setting rate to 1 Hz")
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 1)
+
+        # mask specifying use only xyz
+        target_typemask = MAV_POS_TARGET_TYPE_MASK.POS_ONLY
+
         # set position target
         self.mav.mav.set_position_target_local_ned_send(
             0, # timestamp
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            0b1111111111111000, # mask specifying use only xyz
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
             x, # x
             y, # y
             -z_up, # z
@@ -3631,8 +3636,9 @@ class AutoTestCopter(AutoTest):
         m = self.mav.recv_match(type='POSITION_TARGET_LOCAL_NED', blocking=True, timeout=2)
         self.progress("Received local target: %s" % str(m))
 
-        if not (m.type_mask == 0xFFF8 or m.type_mask == 0x0FF8):
-            raise NotAchievedException("Did not receive proper mask: expected=65528 or 4088, got=%u" % m.type_mask)
+        if not (m.type_mask == (target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == target_typemask):
+            raise NotAchievedException("Did not receive proper mask: expected=%u or %u, got=%u" %
+                  ((target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), target_typemask, m.type_mask))
 
         if x - m.x > 0.1:
             raise NotAchievedException("Did not receive proper target position x: wanted=%f got=%f" % (x, m.x))
@@ -3649,6 +3655,11 @@ class AutoTestCopter(AutoTest):
         self.progress("Setting POSITION_TARGET_LOCAL_NED message rate to 10Hz")
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
 
+        # mask specifying use only vx,vy,vz & accel. Even though we don't test acceltargets below currently
+        #  a velocity only mask returns a velocity & accel mask
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+
         # Drain old messages and ignore the ramp-up to the required target velocity
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
@@ -3658,7 +3669,7 @@ class AutoTestCopter(AutoTest):
                 1, # target system_id
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-                0b1111111111000111, # mask specifying use only vx,vy,vz
+                target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
                 0, # x
                 0, # y
                 0, # z
@@ -3679,8 +3690,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Received local target: %s" % str(m))
 
         # Check the last received message
-        if not (m.type_mask == 0xFE07 or m.type_mask == 0x0E07):
-            raise NotAchievedException("Did not receive proper mask: expected=65031 or 3591, got=%u" % m.type_mask)
+        if not (m.type_mask == (target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == target_typemask):
+            raise NotAchievedException("Did not receive proper mask: expected=%u or %u, got=%u" %
+                  ((target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), target_typemask, m.type_mask))
 
         if vx - m.vx > 0.1:
             raise NotAchievedException("Did not receive proper target velocity vx: wanted=%f got=%f" % (vx, m.vx))
@@ -4413,7 +4425,7 @@ class AutoTestCopter(AutoTest):
                 1, # target system_id
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-lat-lon-alt
                 there.lat, # lat
                 there.lng, # lon
                 there.alt, # alt
@@ -5016,7 +5028,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-lat-lon-alt
             int(destination.lat * 1e7), # lat
             int(destination.lng * 1e7), # lon
             destination.alt, # alt
