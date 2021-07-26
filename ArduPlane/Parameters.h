@@ -346,17 +346,17 @@ public:
 
         // 254,255: reserved
 
-        k_param_hm_target_angle = 256,
-        k_param_hm_alt_diff,
-        k_param_hm_deg_eps,
-        k_param_hm_min_alt,
-        k_param_hm_attack_angle
-
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param_gcs4,          // stream rates
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
+
+        k_param_hm_target_angle = 286,
+        k_param_hm_alt_diff,
+        k_param_hm_deg_eps,
+        k_param_hm_min_alt,
+        k_param_hm_attack_angle
     };
 
     AP_Int32 hm_target_angle;
