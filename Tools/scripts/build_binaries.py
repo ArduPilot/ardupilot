@@ -654,6 +654,7 @@ is bob we will attempt to checkout bob-AVR'''
     def AP_Periph_boards(self):
         '''returns list of boards for AP_Periph'''
         return ["f103-GPS",
+                "f103-QiotekPeriph",
                 "f103-ADSB",
                 "f103-RangeFinder",
                 "f303-GPS",
