@@ -376,7 +376,7 @@ void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float t
  */
 void AP_InertialSensor::TCal::Learn::reset(float temperature)
 {
-    memset(state, 0, sizeof(state));
+    memset((void*)&state[0], 0, sizeof(state));
     start_tmax = tcal.temp_max;
     accel_start.zero();
     for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
