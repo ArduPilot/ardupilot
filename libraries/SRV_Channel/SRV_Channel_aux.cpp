@@ -25,6 +25,11 @@
 #pragma GCC diagnostic ignored "-Wtype-limits"
 #endif
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+  #include <AP_CANManager/AP_CANManager.h>
+  #include <AP_UAVCAN/AP_UAVCAN.h>
+#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+
 extern const AP_HAL::HAL& hal;
 
 /// map a function to a servo channel and output it
@@ -630,6 +635,40 @@ void SRV_Channels::adjust_trim(SRV_Channel::Aux_servo_function_t function, float
         if (function != (SRV_Channel::Aux_servo_function_t)(c.function.get())) {
             continue;
         }
+
+
+        // do not try and trim any CAN output that uses a normalized command, as it won't work
+#if HAL_CANMANAGER_ENABLED
+        bool output_is_can = false;
+        const uint8_t can_num_drivers = AP::can().get_num_drivers();
+        for (uint8_t can_index = 0; can_index < can_num_drivers; can_index++) {
+            switch (AP::can().get_driver_type(can_index)) {
+                case AP_CANManager::Driver_Type_UAVCAN: {
+                    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(can_index);
+                    if (ap_uavcan == nullptr) {
+                        continue;
+                    }
+                    if ((ap_uavcan->get_servo_output_bitmask() & (1 << i)) != 0) {
+                        output_is_can = true;
+                    }
+                    break;
+                }
+                case AP_CANManager::Driver_Type_None:
+                case AP_CANManager::Driver_Type_PiccoloCAN:
+                case AP_CANManager::Driver_Type_ToshibaCAN:
+                case AP_CANManager::Driver_Type_KDECAN:
+                case AP_CANManager::Driver_Type_CANTester:
+                case AP_CANManager::Driver_Type_EFI_NWPMU:
+                case AP_CANManager::Driver_Type_USD1:
+                case AP_CANManager::Driver_Type_MPPT_PacketDigital:
+                     break;
+          }
+        }
+        if (output_is_can) {
+            continue;
+        }
+#endif // HAL_CANMANAGER_ENABLED
+
         float change = c.reversed?-v:v;
         uint16_t new_trim = c.servo_trim;
         if (c.servo_max <= c.servo_min) {
