@@ -43,7 +43,6 @@ public:
         QAUTOTUNE     = 22,
         QACRO         = 23,
         THERMAL       = 24,
-        HITTARGET     = 25,
     };
 
     // Constructor
@@ -188,11 +187,6 @@ public:
     void update() override;
 
     void navigate() override;
-    bool stopRoll;
-    bool stopPitch;
-
-    int32_t currentBearing;
-    float targetAlt;
 
     virtual bool is_guided_mode() const override { return true; }
 
@@ -657,15 +651,3 @@ protected:
 };
 
 #endif
-
-class ModeHitTarget : public Mode
-{
-public:
-
-    Number mode_number() const override { return Number::HITTARGET; }
-    const char *name() const override { return "HITTARGET"; }
-    const char *name4() const override { return "HTT"; }
-
-    // methods that affect movement of the vehicle in this mode
-    void update() override;
-};
