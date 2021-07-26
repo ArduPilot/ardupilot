@@ -53,17 +53,20 @@ void Copter::failsafe_radio_on_event()
         // Allow landing to continue when FS_OPTIONS is set to continue landing
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
         desired_action = Failsafe_Action_Land;
+        failsafe.radio_suppresed = true;
 
     } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Auto Mode");       
         desired_action = Failsafe_Action_None;
+        failsafe.radio_suppresed = true;
 
     } else if ((flightmode->in_guided_mode()) &&
       (failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) && (g.failsafe_gcs != FS_GCS_DISABLED)) {
         // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode.  Only if the GCS failsafe is enabled.
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Guided Mode");
         desired_action = Failsafe_Action_None;
+        failsafe.radio_suppresed = true;
 
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe");

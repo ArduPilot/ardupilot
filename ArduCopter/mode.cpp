@@ -299,6 +299,12 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // update notify object
     notify_flight_mode();
 
+    // Check if we need to trigger any failsafe action, it is possible that it was valid to take no action in the previous mode, but maynot be in the new mode.
+    // dont check GCS failsafe, mode change has come from the pilot via RC (in the majority of cases)
+    if (failsafe.radio != 0 && failsafe.radio_suppresed != 0) {
+        failsafe_radio_on_event();
+    }
+
     // return success
     return true;
 }
