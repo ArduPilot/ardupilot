@@ -75,6 +75,10 @@ public:
         return _singleton;
     }
 
+    // allow for runtime change of orientation
+    // this makes initial config easier
+    void update_orientation();
+
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
     const Matrix3f &get_rotation_body_to_ned(void) const override;
