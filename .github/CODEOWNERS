@@ -1,0 +1,4 @@
+/libraries/AP_CANManager @bugobliterator
+/libraries/*/*CAN* @bugobliterator
+/Tools/AP_Periph @tridge @bugobliterator
+/libraries/AP_HAL_ChibiOS @Ardupilot/chibios-maintainers
