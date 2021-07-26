@@ -346,7 +346,7 @@ AP_AHRS_DCM::normalize(void)
 // produce a yaw error value. The returned value is proportional
 // to sin() of the current heading error in earth frame
 float
-AP_AHRS_DCM::yaw_error_compass(void)
+AP_AHRS_DCM::yaw_error_compass(Compass *_compass)
 {
     const Vector3f &mag = _compass->get_field();
     // get the mag vector in the earth frame
@@ -434,6 +434,9 @@ bool AP_AHRS_DCM::use_fast_gains(void) const
 // return true if we should use the compass for yaw correction
 bool AP_AHRS_DCM::use_compass(void)
 {
+    Compass &compass = AP::compass();
+    Compass *_compass = &compass;
+
     if (!_compass || !_compass->use_for_yaw()) {
         // no compass available
         return false;
@@ -485,6 +488,9 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     const AP_GPS &_gps = AP::gps();
 
+    Compass &compass = AP::compass();
+    Compass *_compass = &compass;
+
     if (_compass && _compass->is_calibrating()) {
         // don't do any yaw correction while calibrating
         return;
@@ -507,7 +513,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
                 _flags.have_initial_yaw = true;
             }
             new_value = true;
-            yaw_error = yaw_error_compass();
+            yaw_error = yaw_error_compass(_compass);
 
             // also update the _gps_last_update, so if we later
             // disable the compass due to significant yaw error we

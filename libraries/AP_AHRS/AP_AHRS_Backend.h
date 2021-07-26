@@ -95,19 +95,6 @@ public:
         _flags.wind_estimation = b;
     }
 
-    void set_compass(Compass *compass) {
-        _compass = compass;
-        update_orientation();
-    }
-
-    const Compass* get_compass() const {
-        return _compass;
-    }
-
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    void update_orientation();
-
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
@@ -332,9 +319,7 @@ public:
     }
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) {
-        return _compass && _compass->use_for_yaw();
-    }
+    virtual bool use_compass(void) = 0;
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
@@ -624,13 +609,7 @@ protected:
     // update takeoff/touchdown flags
     void update_flags();
 
-    // pointer to compass object, if available
-    Compass         * _compass;
-
     // pointer to airspeed object, if available
-
-    // time in microseconds of last compass update
-    uint32_t _compass_last_update;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
