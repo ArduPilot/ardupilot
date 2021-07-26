@@ -78,10 +78,7 @@ void setup(void)
     vehicle.ahrs.init();
 
     AP::compass().init();
-    if(AP::compass().read()) {
-        hal.console->printf("Enabling compass\n");
-        vehicle.ahrs.set_compass(&AP::compass());
-    } else {
+    if(!AP::compass().read()) {
         hal.console->printf("No compass detected\n");
     }
     AP::gps().init(serial_manager);
