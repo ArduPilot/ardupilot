@@ -448,4 +448,7 @@ protected:
     float _sin_roll;
     float _sin_pitch;
     float _sin_yaw;
+
+    // EAS to TAS calculated on each loop
+    float _EAS2TAS{1};
 };
