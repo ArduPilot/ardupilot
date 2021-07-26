@@ -88,6 +88,7 @@ public:
         UBX_MBUseUart2    = (1U << 0U),
         SBF_UseBaseForYaw = (1U << 1U),
         UBX_Use115200     = (1U << 2U),
+        UAVCAN_MBUseDedicatedBus  = (1 << 3U),
     };
 
 protected:
