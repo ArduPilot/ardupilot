@@ -228,12 +228,12 @@ void NavEKF2_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (!dal.get_compass()) {
+    const auto &compass = dal.compass();
+
+    if (!compass.available()) {
         allMagSensorsFailed = true;
         return;        
     }
-
-    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -627,8 +627,9 @@ void NavEKF2_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                const auto *compass = dal.get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
+                const auto &compass = dal.compass();
+                if (compass.have_scale_factor(magSelectIndex) &&
+                    compass.auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc).toftype();
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
@@ -984,7 +985,7 @@ ftype NavEKF2_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return dal.get_compass()->get_declination();
+    return dal.compass().get_declination();
 }
 
 /*

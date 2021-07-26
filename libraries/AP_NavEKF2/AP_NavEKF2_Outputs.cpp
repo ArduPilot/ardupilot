@@ -377,7 +377,8 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    if (!dal.get_compass()) {
+    const auto &compass = dal.compass();
+    if (!compass.available()) {
         return false;
     }
 
@@ -388,12 +389,12 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     if ((mag_idx == magSelectIndex) &&
             finalInflightMagInit &&
             !inhibitMagStates &&
-            dal.get_compass()->healthy(magSelectIndex) &&
+            compass.healthy(magSelectIndex) &&
             variancesConverged) {
-        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - (stateStruct.body_magfield*1000.0).tofloat();
+        magOffsets = compass.get_offsets(magSelectIndex) - (stateStruct.body_magfield*1000.0).tofloat();
         return true;
     } else {
-        magOffsets = dal.get_compass()->get_offsets(magSelectIndex);
+        magOffsets = compass.get_offsets(magSelectIndex);
         return false;
     }
 }
