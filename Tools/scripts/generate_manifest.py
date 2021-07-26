@@ -47,6 +47,7 @@ brand_map = {
     'MatekF405-bdshot' : ('Matek F405', 'Matek'),
     'MatekF405-STD' : ('Matek F405 STD', 'Matek'),
     'MatekF405-Wing' : ('Matek F405 Wing', 'Matek'),
+    'MatekF765-SE' : ('Matek F765 SE', 'Matek'),
     'MatekH743' : ('Matek H743', 'Matek'),
     'MatekH743-bdshot' : ('Matek H743', 'Matek'),
     'mini-pix' : ('MiniPix', 'Radiolink'),
@@ -72,6 +73,7 @@ brand_map = {
     'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
     'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
     'BeastF7' : ('Beast F7 45A AIO', 'iFlight'),
+    'MambaF405US-I2C' : ('Diatone Mamba Basic F405 MK3/MK3.5', 'Diatone'),
 }
 
 class Firmware():

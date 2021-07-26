@@ -30,8 +30,10 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 };
 
 static const ap_message STREAM_POSITION_msgs[] = {
+#if defined(HAL_PERIPH_ENABLE_AHRS)
     MSG_LOCATION,
     MSG_LOCAL_POSITION
+#endif
 };
 
 static const ap_message STREAM_PARAMS_msgs[] = {
@@ -54,4 +56,22 @@ uint8_t GCS_MAVLINK_Periph::sysid_my_gcs() const
 {
     return periph.g.sysid_this_mav;
 }
+
+uint8_t GCS_Periph::sysid_this_mav() const
+{
+    return periph.g.sysid_this_mav;
+}
+
+MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet)
+{
+    printf("RestartNode\n");
+    hal.scheduler->delay(10);
+    periph.prepare_reboot();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    NVIC_SystemReset();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    HAL_SITL::actually_reboot();
+#endif
+}
+
 #endif // #ifndef HAL_NO_GCS

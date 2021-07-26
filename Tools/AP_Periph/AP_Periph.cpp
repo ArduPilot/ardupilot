@@ -92,7 +92,9 @@ void AP_Periph_FW::init()
 
     stm32_watchdog_pat();
 
+#ifdef HAL_NO_GCS
     hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
+#endif
     hal.serial(3)->begin(115200, 128, 256);
 
     load_parameters();
@@ -101,7 +103,16 @@ void AP_Periph_FW::init()
 
     can_start();
 
+#ifndef HAL_NO_GCS
+    stm32_watchdog_pat();
+    gcs().init();
+#endif
     serial_manager.init();
+
+#ifndef HAL_NO_GCS
+    gcs().setup_console();
+    gcs().send_text(MAV_SEVERITY_INFO, "AP_Periph GCS Initialised!");
+#endif
 
     stm32_watchdog_pat();
 
@@ -337,6 +348,11 @@ void AP_Periph_FW::update()
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
         rcout_init_1Hz();
 #endif
+
+#ifndef HAL_NO_GCS
+        gcs().send_message(MSG_HEARTBEAT);
+        gcs().send_message(MSG_SYS_STATUS);
+#endif    
     }
 
     static uint32_t last_error_ms;
@@ -363,14 +379,18 @@ void AP_Periph_FW::update()
     }
 #endif
 
+    static uint32_t fiftyhz_last_update_ms;
+    if (now - fiftyhz_last_update_ms >= 20) {
+        // update at 50Hz
+        fiftyhz_last_update_ms = now;
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
-    static uint32_t notify_last_update_ms;
-    if (now - notify_last_update_ms >= 20) {
-        // update notify at 50Hz
-        notify_last_update_ms = now;
         notify.update();
-    }
 #endif
+#ifndef HAL_NO_GCS
+        gcs().update_receive();
+        gcs().update_send();
+#endif
+    }
 
 #if HAL_LOGGING_ENABLED
     logger.periodic_tasks();

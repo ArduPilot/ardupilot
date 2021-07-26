@@ -581,6 +581,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "MatekF405-STD",
                 "MatekF405-Wing",
                 "MatekF765-Wing",
+                "MatekF765-SE",
                 "MatekF405-CAN",
                 "MatekH743",
                 "MatekH743-bdshot",
@@ -645,6 +646,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "BeastF7",
                 "FlywooF745",
                 "luminousbee5",
+                "MambaF405US-I2C",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -653,6 +655,7 @@ is bob we will attempt to checkout bob-AVR'''
     def AP_Periph_boards(self):
         '''returns list of boards for AP_Periph'''
         return ["f103-GPS",
+                "f103-QiotekPeriph",
                 "f103-ADSB",
                 "f103-RangeFinder",
                 "f303-GPS",

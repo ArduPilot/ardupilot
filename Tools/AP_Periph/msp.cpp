@@ -101,7 +101,8 @@ void AP_Periph_FW::send_msp_GPS(void)
     p.ned_vel_down = vel.z*100;
     p.ground_course = wrap_360_cd(gps.ground_course(0)*100);
     float yaw_deg=0, acc;
-    if (gps.gps_yaw_deg(0, yaw_deg, acc)) {
+    uint32_t time_ms;
+    if (gps.gps_yaw_deg(0, yaw_deg, acc, time_ms)) {
         p.true_yaw = wrap_360_cd(yaw_deg*100);
     } else {
         p.true_yaw = 65535; // unknown
