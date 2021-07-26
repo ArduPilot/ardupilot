@@ -128,7 +128,7 @@ private:
     bool            renorm(Vector3f const &a, Vector3f &result);
     void            drift_correction(float deltat);
     void            drift_correction_yaw(void);
-    float           yaw_error_compass();
+    float           yaw_error_compass(Compass *_compass);
     void            euler_angles(void);
     bool            have_gps(void) const;
     bool            use_fast_gains(void) const;
@@ -163,6 +163,9 @@ private:
     uint16_t _renorm_val_count;
     float _error_rp{1.0f};
     float _error_yaw{1.0f};
+
+    // time in microseconds of last compass update
+    uint32_t _compass_last_update;
 
     // time in millis when we last got a GPS heading
     uint32_t _gps_last_update;

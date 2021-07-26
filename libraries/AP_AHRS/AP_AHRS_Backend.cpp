@@ -26,7 +26,6 @@ extern const AP_HAL::HAL& hal;
 // init sets up INS board orientation
 void AP_AHRS_Backend::init()
 {
-    update_orientation();
 }
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
@@ -64,20 +63,16 @@ void AP_AHRS_Backend::add_trim(float roll_in_radians, float pitch_in_radians, bo
 }
 
 // Set the board mounting orientation, may be called while disarmed
-void AP_AHRS_Backend::update_orientation()
+void AP_AHRS::update_orientation()
 {
     const enum Rotation orientation = (enum Rotation)_board_orientation.get();
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation);
-        }
+        AP::compass().set_board_orientation(orientation);
     } else {
         _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
         AP::ins().set_board_orientation(orientation, &_custom_rotation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation, &_custom_rotation);
-        }
+        AP::compass().set_board_orientation(orientation, &_custom_rotation);
     }
 }
 
