@@ -785,7 +785,8 @@ void Compass::init()
     }
 
 #ifndef HAL_BUILD_AP_PERIPH
-    AP::ahrs().set_compass(this);
+    // updating the AHRS orientation updates our own orientation:
+    AP::ahrs().update_orientation();
 #endif
 
     init_done = true;
