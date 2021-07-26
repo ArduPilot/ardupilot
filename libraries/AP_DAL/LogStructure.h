@@ -62,7 +62,7 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t get_compass_is_null:1;
+    uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
