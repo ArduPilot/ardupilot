@@ -581,6 +581,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "MatekF405-STD",
                 "MatekF405-Wing",
                 "MatekF765-Wing",
+                "MatekF765-SE",
                 "MatekF405-CAN",
                 "MatekH743",
                 "MatekH743-bdshot",
