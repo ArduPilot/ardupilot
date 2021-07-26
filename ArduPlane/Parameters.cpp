@@ -12,37 +12,37 @@
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&plane.v, {group_info : class::var_info} }
 
 const AP_Param::Info Plane::var_info[] = {
-        // @Param: HM_TARGET_ANGLE
-        // @DisplayName: Hit Mode Target Angle
-        // @Description: Target angle to use in Hit Target Mode
-        // @User: Advanced
-        GSCALAR(hm_target_angle,         "HM_TARGET_ANGLE", HM_TARGET_ANGLE_DEFAULT),
+    // @Param: HM_TARGET_ANGLE
+    // @DisplayName: Hit Mode Target Angle
+    // @Description: Target angle to use in Hit Target Mode
+    // @User: Advanced
+    GSCALAR(hm_target_angle,         "HM_TARGET_ANGLE", HM_TARGET_ANGLE_DEFAULT),
 
-        // @Param: HM_ATTACK_ANGLE
-        // @DisplayName: Hit Mode attack angle
-        // @Description: Attack angle to use in Hit Target Mode
-        // @User: Advanced
-        GSCALAR(hm_attack_angle,         "HM_ATTACK_ANGLE", HM_ATTACK_ANGLE_DEFAULT),
+    // @Param: HM_ATTACK_ANGLE
+    // @DisplayName: Hit Mode attack angle
+    // @Description: Attack angle to use in Hit Target Mode
+    // @User: Advanced
+    GSCALAR(hm_attack_angle,         "HM_ATTACK_ANGLE", HM_ATTACK_ANGLE_DEFAULT),
 
-        // @Param: HM_MIN_ALT
-        // @DisplayName: Hit Mode Minimum altitude
-        // @Description: Minimum altitude to recover its way
-        // @User: Advanced
-        GSCALAR(hm_min_alt,         "HM_MIN_ALT", HM_MIN_ALT_DEFAULT),
+    // @Param: HM_MIN_ALT
+    // @DisplayName: Hit Mode Minimum altitude
+    // @Description: Minimum altitude to recover its way
+    // @User: Advanced
+    GSCALAR(hm_min_alt,         "HM_MIN_ALT", HM_MIN_ALT_DEFAULT),
 
-        // @Param: HM_ALT_DIFF
-        // @DisplayName: Hit Mode Altitude Difference
-        // @Description: Altitude difference after which vehicle should restore
-        // @User: Advanced
-        GSCALAR(hm_alt_diff,         "HM_ALT_DIFF", HM_ALT_DIFF_DEFAULT),
+    // @Param: HM_ALT_DIFF
+    // @DisplayName: Hit Mode Altitude Difference
+    // @Description: Altitude difference after which vehicle should restore
+    // @User: Advanced
+    GSCALAR(hm_alt_diff,         "HM_ALT_DIFF", HM_ALT_DIFF_DEFAULT),
 
-        // @Param: HM_DEG_EPS
-        // @DisplayName: Hit Mode Angle degree epsilon
-        // @Description: Hit mode angle degree epsilon to compare with
-        // @User: Advanced
-        GSCALAR(hm_deg_eps,         "HM_DEG_EPS", HM_DEG_EPS_DEFAULT),
+    // @Param: HM_DEG_EPS
+    // @DisplayName: Hit Mode Angle degree epsilon
+    // @Description: Hit mode angle degree epsilon to compare with
+    // @User: Advanced
+    GSCALAR(hm_deg_eps,         "HM_DEG_EPS", HM_DEG_EPS_DEFAULT),
 
-        // @Param: FORMAT_VERSION
+    // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
     // @User: Advanced
