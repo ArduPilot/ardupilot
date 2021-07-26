@@ -283,12 +283,12 @@ void NavEKF3_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF3_core::readMagData()
 {
-    if (!dal.get_compass()) {
+    const auto &compass = dal.compass();
+
+    if (!compass.available()) {
         allMagSensorsFailed = true;
         return;        
     }
-
-    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -678,8 +678,9 @@ void NavEKF3_core::readGpsData()
     }
 
     if (gpsGoodToAlign && !have_table_earth_field) {
-        const auto *compass = dal.get_compass();
-        if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
+        const auto &compass = dal.compass();
+        if (compass.have_scale_factor(magSelectIndex) &&
+            compass.auto_declination_enabled()) {
             getEarthFieldTable(gpsloc);
             if (frontend->_mag_ef_limit > 0) {
                 // initialise earth field from tables
@@ -1139,15 +1140,12 @@ void NavEKF3_core::update_gps_selection(void)
  */
 void NavEKF3_core::update_mag_selection(void)
 {
-    const auto *compass = dal.get_compass();
-    if (compass == nullptr) {
-        return;
-    }
+    const auto &compass = dal.compass();
 
     if (frontend->_affinity & EKF_AFFINITY_MAG) {
-        if (core_index < compass->get_count() &&
-            compass->healthy(core_index) &&
-            compass->use_for_yaw(core_index)) {
+        if (core_index < compass.get_count() &&
+            compass.healthy(core_index) &&
+            compass.use_for_yaw(core_index)) {
             // use core_index compass if it is healthy
             magSelectIndex = core_index;
         }
@@ -1322,7 +1320,7 @@ ftype NavEKF3_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return dal.get_compass()->get_declination();
+    return dal.compass().get_declination();
 }
 
 /*
