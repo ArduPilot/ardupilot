@@ -47,6 +47,7 @@ brand_map = {
     'MatekF405-bdshot' : ('Matek F405', 'Matek'),
     'MatekF405-STD' : ('Matek F405 STD', 'Matek'),
     'MatekF405-Wing' : ('Matek F405 Wing', 'Matek'),
+    'MatekF765-SE' : ('Matek F765 SE', 'Matek'),
     'MatekH743' : ('Matek H743', 'Matek'),
     'MatekH743-bdshot' : ('Matek H743', 'Matek'),
     'mini-pix' : ('MiniPix', 'Radiolink'),
