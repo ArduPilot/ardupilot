@@ -102,6 +102,8 @@ public:
     uint8_t get_driver_index() const { return _driver_index; }
 
 
+    uint32_t get_servo_output_bitmask () const { return (uint32_t)_servo_bm; }
+
     ///// SRV output /////
     void SRV_push_servos(void);
 
