@@ -700,9 +700,9 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
    pitch = ahrs.pitch;
    roll = ahrs.roll;
-   if (!quadplane.show_vtol_view()) {  // correct for TRIM_PITCH_CD
+   if (!quadplane.show_vtol_view() && !(g2.flight_options & FlightOptions::OSD_REMOVE_TRIM_PITCH_CD)) {  // correct for TRIM_PITCH_CD
       pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
-   } else {
+   } else if (!quadplane.show_vtol_view()) {
       pitch = quadplane.ahrs_view->pitch;
       roll = quadplane.ahrs_view->roll;
    }

@@ -161,6 +161,8 @@ enum FlightOptions {
     ACRO_YAW_DAMPER = (1 << 5),
     SURPRESS_TKOFF_SCALING = (1<<6),
     ENABLE_DEFAULT_AIRSPEED = (1<<7),
+    GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
+    OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
 };
 
 enum CrowFlapOptions {
