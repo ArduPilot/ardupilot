@@ -143,6 +143,7 @@ struct LogStructure {
     const char *labels;
     const char *units;
     const char *multipliers;
+    bool streaming; // can be rate limited
 };
 
 // maximum lengths of fields in LogStructure, including trailing nulls
@@ -1225,68 +1226,68 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
-      "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------" }, \
+      "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
     { LOG_RCIN2_MSG, sizeof(log_RCIN2), \
-      "RCI2",  "QHHH",     "TimeUS,C15,C16,OMask", "sYY-", "F---" }, \
+      "RCI2",  "QHHH",     "TimeUS,C15,C16,OMask", "sYY-", "F---", true }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
-      "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------"  }, \
+      "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
-      "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--"  }, \
+      "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--", true  }, \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---" },  \
+      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
       "MAVC", "QBBBHBBffffiifBB","TimeUS,TS,TC,Fr,Cmd,Cur,AC,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
-      "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------" }, \
+      "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
-    { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBfB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hfp,Pri", "s#nPOPP----", "F-00B00----" }, \
+    { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBfB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hfp,Pri", "s#nPOPP----", "F-00B00----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
-      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F" }, \
+      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--" }, \
+      "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
-      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000" }, \
+      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000", true }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
-      "PRX", "QBBfffffffffff", "TimeUS,Layer,He,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s#-mmmmmmmmmhm", "F--00000000000" }, \
+      "PRX", "QBBfffffffffff", "TimeUS,Layer,He,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s#-mmmmmmmmmhm", "F--00000000000", true }, \
     { LOG_RAW_PROXIMITY_MSG, sizeof(log_Proximity_raw), \
-      "PRXR", "QBffffffff", "TimeUS,Layer,D0,D45,D90,D135,D180,D225,D270,D315", "s#mmmmmmmm", "F-00000000" }, \
+      "PRXR", "QBffffffff", "TimeUS,Layer,D0,D45,D90,D135,D180,D225,D270,D315", "s#mmmmmmmm", "F-00000000", true }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
       "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
 LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
-      "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
+      "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????", true }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
-      "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
+      "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
-      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
+      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000", true }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
-      "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
-      "PIDP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
-      "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
-      "PIDS", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDS", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDN_MSG, sizeof(log_PID), \
-      "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDE_MSG, sizeof(log_PID), \
-      "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+      "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
-      "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
+      "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" , true }, \
 LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
 LOG_STRUCTURE_FROM_NAVEKF2 \
@@ -1296,16 +1297,16 @@ LOG_STRUCTURE_FROM_AHRS \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
-      "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" }, \
+      "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" , true }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
-      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }, \
+      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
       "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
     { LOG_EVENT_MSG, sizeof(log_Event), \
@@ -1317,9 +1318,9 @@ LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
     { LOG_PSC_MSG, sizeof(log_PSC), \
-      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }, \
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000", true }, \
     { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
-      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002" }
+      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002", true }
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -1341,11 +1342,11 @@ LOG_STRUCTURE_FROM_VISUALODOM \
 
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
-      "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" }, \
+      "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" , true }, \
     { LOG_MSG_SBPRAWH, sizeof(log_SbpRAWH), \
-      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" }, \
+      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" , true }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
-      "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" }, \
+      "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" , true }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
 
