@@ -5865,6 +5865,11 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Not alive after test", send_statustext=False)
             if self.sitl.isalive():
                 self.progress("pexpect says it is alive")
+                for tool in "dumpstack.sh", "dumpcore.sh":
+                    tool_filepath = os.path.join(self.rootdir(), 'Tools', 'scripts', tool)
+                    if util.run_cmd([tool_filepath, str(self.sitl.pid)]) != 0:
+                        self.progress("Failed %s" % (tool,))
+                        return False
             else:
                 self.progress("pexpect says it is dead")
             passed = False
