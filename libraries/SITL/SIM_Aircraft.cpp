@@ -476,11 +476,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 // @Field: VD: Velocity down
         Vector3d pos = get_position_relhome();
         Vector3f vel = get_velocity_ef();
-        AP::logger().Write("SIM2", "TimeUS,PN,PE,PD,VN,VE,VD",
-                           "Qdddfff",
-                           AP_HAL::micros64(),
-                           pos.x, pos.y, pos.z,
-                           vel.x, vel.y, vel.z);
+        AP::logger().WriteStreaming("SIM2", "TimeUS,PN,PE,PD,VN,VE,VD",
+                                    "Qdddfff",
+                                    AP_HAL::micros64(),
+                                    pos.x, pos.y, pos.z,
+                                    vel.x, vel.y, vel.z);
     }
 }
 
