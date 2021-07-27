@@ -1512,6 +1512,10 @@ void
 Compass::_detect_runtime(void)
 {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
+    if (!available()) {
+        return;
+    }
+
     //Don't try to add device while armed
     if (hal.util->get_soft_armed()) {
         return;
@@ -1537,6 +1541,10 @@ Compass::_detect_runtime(void)
 bool
 Compass::read(void)
 {
+    if (!available()) {
+        return false;
+    }
+
 #ifndef HAL_BUILD_AP_PERIPH
     if (!_initial_location_set) {
         try_set_initial_location();
@@ -1726,6 +1734,9 @@ Compass::use_for_yaw(void) const
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
+    if (!available()) {
+        return false;
+    }
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
@@ -1938,6 +1949,9 @@ bool Compass::consistent() const
  */
 bool Compass::have_scale_factor(uint8_t i) const
 {
+    if (!available()) {
+        return false;
+    }
     StateIndex id = _get_state_id(Priority(i));
     if (id >= COMPASS_MAX_INSTANCES ||
         _state[id].scale_factor < COMPASS_MIN_SCALE_FACTOR ||
