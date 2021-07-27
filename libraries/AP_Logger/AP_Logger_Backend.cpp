@@ -208,7 +208,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
     return true;
 }
 
-bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
+bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_critical, bool is_streaming)
 {
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
@@ -230,6 +230,14 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
     if (bufferspace_available() < msg_len) {
         return false;
     }
+
+    // see if it should be rate limited
+    if (rate_limiter &&
+        !is_critical &&
+        !rate_limiter->should_log_streaming(msg_type)) {
+        return false;
+    }
+
     uint8_t buffer[msg_len];
     uint8_t offset = 0;
     buffer[offset++] = HEAD_BYTE1;
@@ -411,6 +419,14 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     if (!WritesOK()) {
         return false;
     }
+
+    if (!is_critical && rate_limiter != nullptr) {
+        const uint8_t *msgbuf = (const uint8_t *)pBuffer;
+        if (!rate_limiter->should_log(msgbuf[2])) {
+            return false;
+        }
+    }
+
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
@@ -605,4 +621,56 @@ void AP_Logger_Backend::df_stats_clear() {
 void AP_Logger_Backend::df_stats_log() {
     Write_AP_Logger_Stats_File(stats);
     df_stats_clear();
+}
+
+
+// class to handle rate limiting of log messages
+AP_Logger_RateLimiter::AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz)
+    : front(_front), rate_limit_hz(_limit_hz)
+{
+}
+
+/*
+  return false if a streaming message should not be sent yet
+ */
+bool AP_Logger_RateLimiter::should_log_streaming(uint8_t msgid)
+{
+    if (rate_limit_hz <= 0) {
+        // no limiting (user changed the parameter)
+        return true;
+    }
+    const uint16_t now = AP_HAL::millis16();
+    uint16_t delta_ms = now - last_send_ms[msgid];
+    if (delta_ms < 1000.0 / rate_limit_hz.get()) {
+        // too soon
+        return false;
+    }
+    last_send_ms[msgid] = now;
+    return true;
+}
+
+/*
+  return true if the message is not a streaming message or the gap
+  from the last message is more than the message rate
+ */
+bool AP_Logger_RateLimiter::should_log(uint8_t msgid)
+{
+    if (rate_limit_hz <= 0) {
+        // no limiting (user changed the parameter)
+        return true;
+    }
+    if (last_send_ms[msgid] == 0) {
+        // might be non streaming. check the not_streaming bitmask
+        // cache
+        if (not_streaming.get(msgid)) {
+            return true;
+        }
+        const auto *mtype = front.structure_for_msg_type(msgid);
+        if (mtype == nullptr ||
+            mtype->streaming == false) {
+            not_streaming.set(msgid);
+            return true;
+        }
+    }
+    return should_log_streaming(msgid);
 }

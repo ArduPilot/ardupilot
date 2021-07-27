@@ -115,6 +115,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
 
+    // @Param: _FILE_RATEMAX
+    // @DisplayName: Maximum logging rate
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the file backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_FILE_RATEMAX",  8, AP_Logger, _params.file_ratemax, 0),
+    
     AP_GROUPEND
 };
 
@@ -931,6 +939,24 @@ void AP_Logger::Write(const char *name, const char *labels, const char *units, c
     va_end(arg_list);
 }
 
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, units, mults, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
 void AP_Logger::WriteCritical(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
@@ -949,7 +975,8 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
     va_end(arg_list);
 }
 
-void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list,
+                       bool is_critical, bool is_streaming)
 {
     // WriteV is not safe in replay as we can re-use IDs
     const bool direct_comp = APM_BUILD_TYPE(APM_BUILD_Replay);
@@ -972,7 +999,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy, is_critical);
+        backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
         va_end(arg_copy);
     }
 }

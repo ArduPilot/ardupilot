@@ -167,6 +167,11 @@ void AP_Logger_File::periodic_1Hz()
         _write_fd = -1;
         _initialised = false;
     }
+
+    if (rate_limiter == nullptr && _front._params.file_ratemax > 0) {
+        // setup rate limiting
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.file_ratemax);
+    }
 }
 
 void AP_Logger_File::periodic_fullrate()
