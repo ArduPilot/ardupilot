@@ -36,12 +36,16 @@
 
 #define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
 
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+
 class AP_ADSB_Backend;
 
 class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
     friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
 
     // constructor
@@ -61,11 +65,19 @@ public:
         None                = 0,
         uAvionix_MAVLink    = 1,
         Sagetech            = 2,
+        uAvionix_UCP        = 3,
     };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
+    };
+
+    // enum for adsb optional features
+    enum class AdsbOption {
+        Ping200X_Send_GPS               = (1<<0),
+        Squawk_7400_FS_RC               = (1<<1),
+        Squawk_7400_FS_GCS              = (1<<2),
     };
 
     // for holding parameters
@@ -138,6 +150,21 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    // Mode-S IDENT is active. While true, we are currently a large "HEY LOOK AT ME" symbol on the Air Traffic Controllers' radar screen.
+    bool ident_is_active() const {
+        return out_state.ident_is_active;
+    }
+
+    // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
+    // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+    bool ident_start() {
+        if (ident_is_active() || !healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
+            return false;
+        }
+        out_state.ident_pending = true;
+        return true;
+    }
+
     AP_ADSB::Type get_type(uint8_t instance) const;
 
 private:
@@ -209,6 +236,11 @@ private:
         bool        is_flying;
         bool        is_in_auto_mode;
 
+        // Mode 3/A transponder IDENT. This triggers, or shows status of, an active IDENT status should only be done when requested to do so by an Air Traffic Controller.
+        // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
+        bool        ident_pending;
+        bool        ident_is_active;
+
         // ADSB-OUT configuration
         struct {
             int32_t     ICAO_id;
@@ -234,6 +266,8 @@ private:
 
     // special ICAO of interest that ignored filters when != 0
     AP_Int32 _special_ICAO_target;
+
+    AP_Int32 _options;
 
     static const uint8_t _max_samples = 30;
     ObjectBuffer<adsb_vehicle_t> _samples{_max_samples};

@@ -24,6 +24,7 @@
 
 #if HAL_ADSB_ENABLED
 #include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
@@ -54,7 +55,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
@@ -80,7 +81,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: ICAO_ID
     // @DisplayName: ICAO_ID vehicle identification number
-    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is an integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
     // @Range: -1 16777215
     // @User: Advanced
     AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
@@ -155,6 +156,12 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Values: 0:no logging,1:log only special ID,2:log all
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
+
+    // @Param: OPTIONS
+    // @DisplayName: ADS-B Options
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
     AP_GROUPEND
 };
@@ -250,17 +257,30 @@ void AP_ADSB::detect_instance(uint8_t instance)
         return;
 
     case Type::uAvionix_MAVLink:
+#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
             _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
             return;
         }
+#endif
+        break;
+
+    case Type::uAvionix_UCP:
+#if HAL_ADSB_UCP_ENABLED
+        if (AP_ADSB_uAvionix_UCP::detect()) {
+            _backend[instance] = new AP_ADSB_uAvionix_UCP(*this, instance);
+            return;
+        }
+#endif
         break;
 
     case Type::Sagetech:
+#if HAL_ADSB_SAGETECH_ENABLED
         if (AP_ADSB_Sagetech::detect()) {
             _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
             return;
         }
+#endif
         break;
     }
 }
