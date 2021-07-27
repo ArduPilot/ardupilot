@@ -114,8 +114,12 @@ void GCS_MAVLINK_Plane::send_attitude() const
     const AP_AHRS &ahrs = AP::ahrs();
 
     float r = ahrs.roll;
-    float p = ahrs.pitch - radians(plane.g.pitch_trim_cd*0.01f);
+    float p = ahrs.pitch;
     float y = ahrs.yaw;
+
+    if (!(plane.g2.flight_options & FlightOptions::GCS_REMOVE_TRIM_PITCH_CD)) {
+        p -= radians(plane.g.pitch_trim_cd * 0.01f);
+    }
     
     if (plane.quadplane.show_vtol_view()) {
         r = plane.quadplane.ahrs_view->roll;
