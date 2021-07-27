@@ -6,6 +6,27 @@ class LoggerMessageWriter_DFLogStart;
 
 #define MAX_LOG_FILES 500
 
+// class to handle rate limiting of log messages
+class AP_Logger_RateLimiter
+{
+public:
+    AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz);
+
+    // return true if message passes the rate limit test
+    bool should_log(uint8_t msgid);
+    bool should_log_streaming(uint8_t msgid);
+
+private:
+    const AP_Logger &front;
+    const AP_Float &rate_limit_hz;
+
+    // time in ms we last sent this message
+    uint16_t last_send_ms[256];
+
+    // mask of message types that are not streaming
+    Bitmask<256> not_streaming;
+};
+
 class AP_Logger_Backend
 {
 
@@ -114,7 +135,7 @@ public:
 
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
-    bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
+    bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const;
@@ -199,6 +220,8 @@ protected:
     void df_stats_gather(uint16_t bytes_written, uint32_t space_remaining);
     void df_stats_log();
     void df_stats_clear();
+
+    AP_Logger_RateLimiter *rate_limiter;
 
 private:
     // statistics support
