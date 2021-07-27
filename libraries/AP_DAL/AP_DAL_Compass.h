@@ -38,6 +38,10 @@ public:
         return _RMGH.declination;
     }
 
+    bool available() const {
+        return _RMGH.available;
+    }
+
     // return the number of enabled sensors
     uint8_t get_num_enabled(void) const { return _RMGH.num_enabled; }
 
