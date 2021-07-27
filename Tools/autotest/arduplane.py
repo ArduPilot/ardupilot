@@ -3182,6 +3182,10 @@ class AutoTestPlane(AutoTest):
              "Test RC DisableAirspeedUse option",
              self.RCDisableAirspeedUse),
 
+            ("AHRS_ORIENTATION",
+             "Test AHRS_ORIENTATION parameter",
+             self.AHRS_ORIENTATION),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
