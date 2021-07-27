@@ -37,6 +37,7 @@ public:
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
+        TURTLE =       28,  // Flip over after crash
     };
 
     // constructor
@@ -1494,6 +1495,30 @@ private:
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_velz;     // vertical velocity when free fall was detected
 };
+
+#if MODE_TURTLE_ENABLED == ENABLED
+class ModeTurtle : public Mode {
+
+public:
+    // inherit constructors
+    using Mode::Mode;
+    Number mode_number() const override { return Number::TURTLE; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+    void exit() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override;
+    bool is_autopilot() const override { return false; }
+    void change_motor_direction(bool reverse);
+
+protected:
+    const char *name() const override { return "TURTLE"; }
+    const char *name4() const override { return "TRTL"; }
+};
+#endif
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 
