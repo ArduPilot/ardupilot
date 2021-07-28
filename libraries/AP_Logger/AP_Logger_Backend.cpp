@@ -3,6 +3,7 @@
 #include "LoggerMessageWriter.h"
 
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -672,5 +673,20 @@ bool AP_Logger_RateLimiter::should_log(uint8_t msgid)
             return true;
         }
     }
-    return should_log_streaming(msgid);
+
+    // if we've already decided on sending this msgid in this tick then use the
+    // same decision again
+    const uint16_t sched_ticks = AP::scheduler().ticks();
+    if (sched_ticks == last_sched_count[msgid]) {
+        return last_return.get(msgid);
+    }
+    last_sched_count[msgid] = sched_ticks;
+
+    bool ret = should_log_streaming(msgid);
+    if (ret) {
+        last_return.set(msgid);
+    } else {
+        last_return.clear(msgid);
+    }
+    return ret;
 }
