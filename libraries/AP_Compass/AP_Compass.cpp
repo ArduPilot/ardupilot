@@ -681,7 +681,7 @@ Compass::Compass(void)
 //
 void Compass::init()
 {
-    if (!AP::compass().enabled()) {
+    if (!_enabled) {
         return;
     }
 
