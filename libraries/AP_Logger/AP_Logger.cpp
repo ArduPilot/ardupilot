@@ -116,12 +116,32 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
 
     // @Param: _FILE_RATEMAX
-    // @DisplayName: Maximum logging rate
+    // @DisplayName: Maximum logging rate for file backend
     // @Description: This sets the maximum rate that streaming log messages will be logged to the file backend. A value of zero means
     // @Units: Hz
     // @Range: 0 1000
     // @User: Standard
     AP_GROUPINFO("_FILE_RATEMAX",  8, AP_Logger, _params.file_ratemax, 0),
+
+#if HAL_LOGGING_MAVLINK_ENABLED
+    // @Param: _MAV_RATEMAX
+    // @DisplayName: Maximum logging rate for mavlink backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+#endif
+
+#if HAL_LOGGING_BLOCK_ENABLED
+    // @Param: _BLK_RATEMAX
+    // @DisplayName: Maximum logging rate for block backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_BLK_RATEMAX", 10, AP_Logger, _params.blk_ratemax, 0),
+#endif
     
     AP_GROUPEND
 };
