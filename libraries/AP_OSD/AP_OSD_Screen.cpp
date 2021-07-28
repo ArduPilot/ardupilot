@@ -1265,7 +1265,7 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
     osd->max_battery_voltage = MAX(osd->max_battery_voltage,v);
     if (osd->cell_count > 0) {
-        v = v / osd->cell_count;  
+        v = v / osd->cell_count;
         backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYM_BATT_FULL + p, v, SYM_VOLT);
     } else if (osd->cell_count < 0) { // user must decide on autodetect cell count or manually entered to display this panel since default is -1
         backend->write(x,y, false, "%c---%c", SYM_BATT_FULL + p, SYM_VOLT);
@@ -1495,7 +1495,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             }
         }
     }
-    backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
+
+    if (!check_option(AP_OSD::OPTION_DISABLE_CROSSHAIR)) {
+        backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
+    }
+
 }
 
 void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
