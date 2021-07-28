@@ -524,6 +524,11 @@ void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
 }
 void AP_Logger_MAVLink::periodic_1Hz()
 {
+    if (rate_limiter == nullptr && _front._params.mav_ratemax > 0) {
+        // setup rate limiting
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax);
+    }
+
     if (_sending_to_client &&
         _last_response_time + 10000 < _last_send_time) {
         // other end appears to have timed out!
