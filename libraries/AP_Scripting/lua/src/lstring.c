@@ -139,7 +139,12 @@ static TString *createstrobj (lua_State *L, size_t l, int tag, unsigned int h) {
   ts = gco2ts(o);
   ts->hash = h;
   ts->extra = 0;
+#pragma GCC diagnostic push
+#if defined(__GNUC__) &&  __GNUC__ >= 10
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
   getstr(ts)[l] = '\0';  /* ending 0 */
+#pragma GCC diagnostic pop
   return ts;
 }
 
