@@ -135,7 +135,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_ESC_Telem/LogStructure.h>
 
 // structure used to define logging format
-struct LogStructure {
+struct PACKED LogStructure {
     uint8_t msg_type;
     uint8_t msg_len;
     const char *name;
