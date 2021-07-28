@@ -10,7 +10,7 @@ void Rover::update_compass(void)
 
 // Save compass offsets
 void Rover::compass_save() {
-    if (AP::compass().enabled() &&
+    if (AP::compass().available() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !arming.is_armed()) {
         compass.save_offsets();
