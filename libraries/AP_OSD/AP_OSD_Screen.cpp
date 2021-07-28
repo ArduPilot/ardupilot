@@ -40,6 +40,7 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -1455,8 +1456,10 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    float roll = ahrs.roll;
-    float pitch = -ahrs.pitch;
+    float roll;
+    float pitch;
+    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
+    pitch *= -1;
 
     //inverted roll AH
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
