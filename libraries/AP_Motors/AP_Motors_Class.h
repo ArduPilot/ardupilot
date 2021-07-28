@@ -224,6 +224,9 @@ public:
                     PWM_TYPE_PWM_RANGE  = 8 };
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
 
+    // return true if a PWM type is a DShot varient
+    static bool is_dshot(enum pwm_type ptype) { return ptype >= PWM_TYPE_DSHOT150 && ptype <= PWM_TYPE_DSHOT1200; }
+
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
 protected:
