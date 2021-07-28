@@ -1351,7 +1351,7 @@ void AP_BLHeli::init(void)
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
-    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+    if (mask && AP_Motors::is_dshot(otype)) {
         digital_mask = mask;
     }
 
@@ -1367,7 +1367,7 @@ void AP_BLHeli::init(void)
     if (motors) {
         uint16_t motormask = motors->get_motor_mask();
         // set the rest of the digital channels
-        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+        if (AP_Motors::is_dshot(motors->get_pwm_type())) {
             digital_mask |= motormask;
         }
         mask |= motormask;
