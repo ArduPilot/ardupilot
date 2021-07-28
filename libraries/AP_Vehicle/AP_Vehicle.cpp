@@ -403,6 +403,13 @@ void AP_Vehicle::publish_osd_info()
     nav_info.wp_number = mission->get_current_nav_index();
     osd->set_nav_info(nav_info);
 }
+
+void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+{
+    roll = ahrs.roll;
+    pitch = ahrs.pitch;
+}
+
 #endif
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
