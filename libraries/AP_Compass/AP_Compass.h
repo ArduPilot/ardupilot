@@ -102,8 +102,6 @@ public:
     ///
     bool read();
 
-    bool enabled() const { return _enabled; }
-
     // available returns true if the compass is both enabled and has
     // been initialised
     bool available() const { return _enabled && init_done; }
