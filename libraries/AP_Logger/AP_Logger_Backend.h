@@ -23,8 +23,17 @@ private:
     // time in ms we last sent this message
     uint16_t last_send_ms[256];
 
-    // mask of message types that are not streaming
+    // the last scheduler counter when we sent a msg.  this allows us
+    // to detect when we are sending a multi-instance message
+    uint16_t last_sched_count[256];
+
+    // mask of message types that are not streaming. This is a cache
+    // to avoid costly calls to structure_for_msg_type
     Bitmask<256> not_streaming;
+
+    // result of last decision for a message. Used for multi-instance
+    // handling
+    Bitmask<256> last_return;
 };
 
 class AP_Logger_Backend
