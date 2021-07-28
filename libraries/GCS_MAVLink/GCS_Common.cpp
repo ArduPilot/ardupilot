@@ -1615,9 +1615,9 @@ void GCS_MAVLINK::send_system_time()
 void GCS_MAVLINK::send_rc_channels() const
 {
     AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = 0;
+    uint8_t receiver_rssi = UINT8_MAX;
     if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_uint8();
+        receiver_rssi = rssi->read_receiver_rssi_mavlink();
     }
 
     uint16_t values[18] = {};
@@ -1666,9 +1666,9 @@ void GCS_MAVLINK::send_rc_channels_raw() const
         return;
     }
     AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = 0;
+    uint8_t receiver_rssi = UINT8_MAX;
     if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_uint8();
+        receiver_rssi = rssi->read_receiver_rssi_mavlink();
     }
     uint16_t values[8] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
