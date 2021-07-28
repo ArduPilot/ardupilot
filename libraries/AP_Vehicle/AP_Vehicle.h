@@ -252,6 +252,11 @@ public:
      */
     virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
 
+#if OSD_ENABLED
+   // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing TRIM_PITCH_CD
+    virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
+#endif
+
 protected:
 
     virtual void init_ardupilot() = 0;
