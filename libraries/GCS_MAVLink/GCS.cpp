@@ -155,11 +155,11 @@ void GCS::update_sensor_status_flags()
 
 #if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_MAG)
     const Compass &compass = AP::compass();
-    if (AP::compass().enabled()) {
+    if (AP::compass().available()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (compass.enabled() && compass.healthy()) {
+    if (compass.available() && compass.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
 #endif
