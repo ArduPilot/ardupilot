@@ -380,7 +380,7 @@ void Copter::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if(AP::compass().enabled()) {
+    if(AP::compass().available()) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
         compass.set_voltage(battery.voltage());
