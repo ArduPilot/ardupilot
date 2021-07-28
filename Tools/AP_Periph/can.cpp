@@ -1480,7 +1480,7 @@ void AP_Periph_FW::can_update()
 void AP_Periph_FW::can_mag_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_MAG
-    if (!compass.enabled()) {
+    if (!compass.available()) {
         return;
     }
     compass.read();
