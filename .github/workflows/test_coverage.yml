@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     container:
       image: ardupilot/ardupilot-dev-coverage:latest
       options: --privileged
