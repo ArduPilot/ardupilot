@@ -1149,16 +1149,14 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
 
     bool command_sent = false;
     // queue up a command if there is one
-    if (!hal.util->get_soft_armed()
-        && _dshot_current_command.cycle == 0
+    if (_dshot_current_command.cycle == 0
         && _dshot_command_queue.pop(_dshot_current_command)) {
         // got a new command
     }
 
     for (auto &group : pwm_group_list) {
         // send a dshot command
-        if (!hal.util->get_soft_armed()
-            && is_dshot_protocol(group.current_mode)
+        if (is_dshot_protocol(group.current_mode)
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
@@ -1383,9 +1381,10 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
                     value = 0;
                 }
             }
+
+            // dshot values are from 48 to 2047. 48 means off.
             if (value != 0) {
-                // dshot values are from 48 to 2047. Zero means off.
-                value += 47;
+                value += DSHOT_ZERO_THROTTLE;
             }
 
             if (!armed) {
