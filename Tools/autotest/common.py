@@ -2973,6 +2973,8 @@ class AutoTest(ABC):
         self.stop_mavproxy(mavproxy)
 
     def log_upload(self):
+        self.progress("Log upload disabled as CI artifacts are good")
+        return
         if len(self.fail_list) > 0 and os.getenv("AUTOTEST_UPLOAD"):
             # optionally upload logs to server so we can see travis failure logs
             import datetime
