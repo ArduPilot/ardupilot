@@ -602,7 +602,7 @@ void ModeGuided::accel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
             auto_yaw.set_rate(0.0f);
         }
         pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy());
@@ -665,7 +665,7 @@ void ModeGuided::velaccel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
             auto_yaw.set_rate(0.0f);
         }
     }
@@ -740,7 +740,7 @@ void ModeGuided::posvelaccel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
             auto_yaw.set_rate(0.0f);
         }
     }
