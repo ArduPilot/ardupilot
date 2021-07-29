@@ -1874,15 +1874,21 @@ bool AP_GPS::prepare_for_arming(void) {
 }
 
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
         if (_type[i] == GPS_TYPE_UAVCAN) {
             if (!AP_GPS_UAVCAN::backends_healthy(failure_msg, failure_msg_len)) {
                 return false;
             }
         }
-    }
 #endif
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
+                return false;
+            }
+        }
+    }
     return true;
 }
 
