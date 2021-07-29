@@ -1,9 +1,6 @@
 name: Macos Build
 
 on: [push, pull_request, workflow_dispatch]
-concurrency:
-  group: ci-${{github.workflow}}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:

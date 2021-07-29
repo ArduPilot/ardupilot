@@ -7,9 +7,6 @@ on:
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
-concurrency:
-  group: ci-${{github.workflow}}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
