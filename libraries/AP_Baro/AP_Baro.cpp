@@ -624,7 +624,7 @@ void AP_Baro::init(void)
         break;
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
