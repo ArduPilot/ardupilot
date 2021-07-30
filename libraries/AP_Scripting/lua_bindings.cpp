@@ -10,6 +10,8 @@
 
 #include <AP_Scripting/AP_Scripting.h>
 
+#include "AP_Scripting_MAVLink_buffer.h"
+
 extern const AP_HAL::HAL& hal;
 
 int check_arguments(lua_State *L, int expected_arguments, const char *fn_name);
@@ -368,6 +370,52 @@ const luaL_Reg CAN_functions[] = {
 };
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
 
+static int register_cmd(lua_State *L, uint32_t msgid) {
+
+    const int command_in = luaL_checkinteger(L, 1);
+    luaL_argcheck(L, ((command_in >= 0) && (command_in < INT16_MAX)), 1, "command out of range");
+    const int16_t command = static_cast<int16_t>(command_in);
+
+    const int buffer_size_in = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((buffer_size_in > 0) && (buffer_size_in < 25)), 2, "buffer size out of range");
+    const uint8_t buffer_size = static_cast<uint8_t>(buffer_size_in);
+
+    command_buffer* new_buffer = new command_buffer(buffer_size,command, msgid);
+    if (new_buffer  == nullptr) {
+        return luaL_error(L, "Unable to allocate Command buffer");
+    }
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+    WITH_SEMAPHORE(data.sem);
+
+    if (data.cmd_buffer == nullptr) {
+        data.cmd_buffer = new_buffer;
+    } else {
+        data.cmd_buffer->add_buffer(new_buffer);
+    }
+    new_command_buffer(L);
+    *check_command_buffer(L, -1) = new_buffer;
+    return 1;
+}
+
+static int lua_mavlink_register_command_long(lua_State *L) {
+    check_arguments(L, 2, "register_command_long");
+    return register_cmd(L, MAVLINK_MSG_ID_COMMAND_LONG);
+}
+
+static int lua_mavlink_register_command_int(lua_State *L) {
+    check_arguments(L, 2, "register_command_int");
+    return register_cmd(L, MAVLINK_MSG_ID_COMMAND_INT);
+}
+
+static const luaL_Reg mavlink_functions[] =
+{
+    {"register_command_long", lua_mavlink_register_command_long},
+    {"register_command_int", lua_mavlink_register_command_int},
+
+    {NULL, NULL}
+};
+
 void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "logger");
     luaL_newlib(L, AP_Logger_functions);
@@ -382,6 +430,10 @@ void load_lua_bindings(lua_State *L) {
     luaL_newlib(L, CAN_functions);
     lua_settable(L, -3);
 #endif
+
+    lua_pushstring(L, "mavlink");
+    luaL_newlib(L, mavlink_functions);
+    lua_settable(L, -3);
 
     luaL_setfuncs(L, global_functions, 0);
 }
