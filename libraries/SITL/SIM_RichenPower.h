@@ -73,7 +73,7 @@ private:
 // So we set batt fs high 46s
 // Gennie keeps batts charged to 49v + typically
 
-    class SITL *_sitl;
+    class SIM *_sitl;
 
     uint32_t last_sent_ms;
 
