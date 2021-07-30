@@ -153,7 +153,7 @@ public:
     float get_battery_voltage() const { return battery_voltage; }
 
 protected:
-    SITL *sitl;
+    SIM *sitl;
     // origin of position vector
     Location origin;
     // home location

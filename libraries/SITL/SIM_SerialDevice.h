@@ -38,7 +38,7 @@ public:
 
 protected:
 
-    class SITL *_sitl;
+    class SIM *_sitl;
 
     int fd_their_end;
     int fd_my_end;

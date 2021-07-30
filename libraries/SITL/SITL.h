@@ -88,10 +88,10 @@ struct sitl_fdm {
 // number of rc output channels
 #define SITL_NUM_CHANNELS 16
 
-class SITL {
+class SIM {
 public:
 
-    SITL() {
+    SIM() {
         // set a default compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
@@ -115,11 +115,11 @@ public:
     }
 
     /* Do not allow copies */
-    SITL(const SITL &other) = delete;
-    SITL &operator=(const SITL&) = delete;
+    SIM(const SIM &other) = delete;
+    SIM &operator=(const SIM&) = delete;
 
-    static SITL *_singleton;
-    static SITL *get_singleton() { return _singleton; }
+    static SIM *_singleton;
+    static SIM *get_singleton() { return _singleton; }
 
     enum SITL_RCFail {
         SITL_RCFail_None = 0,
@@ -484,7 +484,7 @@ public:
 
 
 namespace AP {
-    SITL::SITL *sitl();
+    SITL::SIM *sitl();
 };
 
 #endif // CONFIG_HAL_BOARD
