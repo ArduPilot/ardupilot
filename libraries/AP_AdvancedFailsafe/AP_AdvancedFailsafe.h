@@ -22,9 +22,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Mission/AP_Mission.h>
 #include <inttypes.h>
-
+#include <AP_Common/Location.h>
 
 class AP_AdvancedFailsafe
 {
@@ -52,8 +51,7 @@ public:
     AP_AdvancedFailsafe &operator=(const AP_AdvancedFailsafe&) = delete;
 
     // Constructor
-    AP_AdvancedFailsafe(AP_Mission &_mission) :
-        mission(_mission)
+    AP_AdvancedFailsafe()
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_singleton != nullptr) {
@@ -105,8 +103,6 @@ protected:
     virtual enum control_mode afs_mode(void) = 0;
 
     enum state _state;
-
-    AP_Mission &mission;
 
     AP_Int8 _enable;
     // digital output pins for communicating with the failsafe board
