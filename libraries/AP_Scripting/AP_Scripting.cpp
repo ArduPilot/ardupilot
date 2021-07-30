@@ -234,6 +234,26 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
     mission_data->push(cmd);
 }
 
+bool AP_Scripting::handle_command_long(const mavlink_command_long_t& cmd, const mavlink_channel_t chan)
+{
+    if (!_enable || mavlink_data.cmd_buffer == nullptr) {
+        // not enabled or buffer not created
+        return false;
+    }
+    WITH_SEMAPHORE(mavlink_data.sem);
+    return mavlink_data.cmd_buffer->write(cmd, AP_HAL::millis(), chan);
+}
+
+bool AP_Scripting::handle_command_int(const mavlink_command_int_t& cmd, const mavlink_channel_t chan)
+{
+    if (!_enable || mavlink_data.cmd_buffer == nullptr) {
+        // not enabled or buffer not created
+        return false;
+    }
+    WITH_SEMAPHORE(mavlink_data.sem);
+    return mavlink_data.cmd_buffer->write(cmd, AP_HAL::millis(), chan);
+}
+
 AP_Scripting *AP_Scripting::_singleton = nullptr;
 
 namespace AP {
