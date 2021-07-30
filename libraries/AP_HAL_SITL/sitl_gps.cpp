@@ -421,7 +421,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SITL::GPS_HEADING_NONE) {
+    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
         const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
         const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
         Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
@@ -450,7 +450,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
     _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SITL::GPS_HEADING_NONE) {
+    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
         _gps_send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned), instance);
     }
 
@@ -744,10 +744,10 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      heading,
                      dstring);
 
-    if (_sitl->gps_hdg_enabled[instance] == SITL::SITL::GPS_HEADING_HDT) {
+    if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
         _gps_nmea_printf(instance, "$GPHDT,%.2f,T", d->yaw);
     }
-    else if (_sitl->gps_hdg_enabled[instance] == SITL::SITL::GPS_HEADING_THS) {
+    else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_THS) {
         _gps_nmea_printf(instance, "$GPTHS,%.2f,%c,T", d->yaw, d->have_lock ? 'A' : 'V');
     }
 }
@@ -1342,50 +1342,50 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         d.altitude += glitch_offsets.z;
 
         if (gps_state[idx].gps_fd != 0) {
-            _update_gps_instance((SITL::SITL::GPSType)_sitl->gps_type[idx].get(), &d, idx);
+            _update_gps_instance((SITL::SIM::GPSType)_sitl->gps_type[idx].get(), &d, idx);
         }
     }
 }
 
-void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *data, uint8_t instance) {
+void SITL_State::_update_gps_instance(SITL::SIM::GPSType gps_type, const struct gps_data *data, uint8_t instance) {
     switch (gps_type) {
-        case SITL::SITL::GPS_TYPE_NONE:
+        case SITL::SIM::GPS_TYPE_NONE:
             // no GPS attached
             break;
 
-        case SITL::SITL::GPS_TYPE_UBLOX:
+        case SITL::SIM::GPS_TYPE_UBLOX:
             _update_gps_ubx(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_MTK:
+        case SITL::SIM::GPS_TYPE_MTK:
             _update_gps_mtk(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_MTK16:
+        case SITL::SIM::GPS_TYPE_MTK16:
             _update_gps_mtk16(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_MTK19:
+        case SITL::SIM::GPS_TYPE_MTK19:
             _update_gps_mtk19(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_NMEA:
+        case SITL::SIM::GPS_TYPE_NMEA:
             _update_gps_nmea(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_SBP:
+        case SITL::SIM::GPS_TYPE_SBP:
             _update_gps_sbp(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_SBP2:
+        case SITL::SIM::GPS_TYPE_SBP2:
             _update_gps_sbp2(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_NOVA:
+        case SITL::SIM::GPS_TYPE_NOVA:
             _update_gps_nova(data, instance);
             break;
 
-        case SITL::SITL::GPS_TYPE_FILE:
+        case SITL::SIM::GPS_TYPE_FILE:
             _update_gps_file(instance);
             break;
     }
