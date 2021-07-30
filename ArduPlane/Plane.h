@@ -644,7 +644,7 @@ private:
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
-    AP_AdvancedFailsafe_Plane afs {mission};
+    AP_AdvancedFailsafe_Plane afs;
 #endif
 
     /*
