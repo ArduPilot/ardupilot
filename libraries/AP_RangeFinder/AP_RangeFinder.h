@@ -88,7 +88,7 @@ public:
         GYUS42v2 = 31,
         MSP = 32,
         USD1_CAN = 33,
-        SITL = 100,
+        SIM = 100,
     };
 
     enum class Function {
