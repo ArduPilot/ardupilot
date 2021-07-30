@@ -925,7 +925,15 @@ void AP_GPS::update(void)
         }
     }
 
+#if HAL_LOGGING_ENABLED
+    const uint8_t old_primary = primary_instance;
+#endif
     update_primary();
+#if HAL_LOGGING_ENABLED
+    if (primary_instance != old_primary) {
+        AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
+    }
+#endif
 
 #ifndef HAL_BUILD_AP_PERIPH
     // update notify with gps status. We always base this on the primary_instance
