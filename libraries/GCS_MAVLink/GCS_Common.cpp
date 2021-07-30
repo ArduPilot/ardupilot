@@ -4298,6 +4298,14 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_command_long_t packet;
     mavlink_msg_command_long_decode(&msg, &packet);
 
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting != nullptr && scripting->handle_command_long(packet, chan)) {
+        // Scripting is listening for this command don't process
+        return;
+    }
+#endif
+
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
     const MAV_RESULT result = handle_command_long_packet(packet);
@@ -4484,6 +4492,14 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     // decode packet
     mavlink_command_int_t packet;
     mavlink_msg_command_int_decode(&msg, &packet);
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting != nullptr && scripting->handle_command_int(packet, chan)) {
+        // Scripting is listening command don't process
+        return;
+    }
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
