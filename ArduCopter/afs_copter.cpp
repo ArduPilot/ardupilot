@@ -6,12 +6,6 @@
 
 #if ADVANCED_FAILSAFE == ENABLED
 
-// Constructor
-AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission) :
-    AP_AdvancedFailsafe(_mission)
-{}
-
-
 /*
   setup radio_out values for all channels to termination values
  */

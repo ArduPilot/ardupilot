@@ -1094,7 +1094,7 @@ ParametersG2::ParametersG2(void)
     , proximity()
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    ,afs(copter.mode_auto.mission)
+    ,afs()
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl()
