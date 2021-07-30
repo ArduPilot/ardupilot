@@ -35,7 +35,7 @@ protected:
     }
 
 private:
-    SITL::SITL *sitl;
+    SITL::SIM *sitl;
 
     uint8_t _instance;
 
