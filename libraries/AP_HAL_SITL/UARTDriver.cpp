@@ -683,7 +683,7 @@ void UARTDriver::_timer_tick(void)
     ssize_t nwritten;
     uint32_t max_bytes = 10000;
 #if !defined(HAL_BUILD_AP_PERIPH)
-    SITL::SITL *_sitl = AP::sitl();
+    SITL::SIM *_sitl = AP::sitl();
     if (_sitl && _sitl->telem_baudlimit_enable) {
         // limit byte rate to configured baudrate
         uint32_t now = AP_HAL::micros();
