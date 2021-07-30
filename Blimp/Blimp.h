@@ -123,7 +123,7 @@ private:
     const uint8_t num_flight_modes = 6;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SIM sitl;
 #endif
 
     // Arming/Disarming management class
