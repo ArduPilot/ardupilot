@@ -45,6 +45,11 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
         const float margin_cm = copter.avoid.enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
         target_dist_cm = MAX(target_dist_cm, margin_cm);
     }
+    // limit maximum target distance when attaching downward lidar for terrain following and upward lidar for proximity avoidance
+    if (surface == Surface::GROUND && copter.avoid.proximity_avoidance_enabled() && copter.rangefinder_up_ok()) {
+        const float limit_target_dist_cm = rf_state.alt_cm + current_alt_error + copter.rangefinder_up_state.alt_cm - copter.avoid.get_margin() * 100.0f;
+        target_dist_cm = MIN(target_dist_cm, limit_target_dist_cm);
+    }
 #endif
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
