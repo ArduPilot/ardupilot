@@ -315,7 +315,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
     return true;
 }
 
-bool Compass::is_calibrating()
+bool Compass::is_calibrating() const
 {
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i] == nullptr) {
