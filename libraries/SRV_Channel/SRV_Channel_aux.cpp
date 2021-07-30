@@ -594,12 +594,31 @@ void SRV_Channels::set_trim_to_min_for(SRV_Channel::Aux_servo_function_t functio
     }
 }
 
-// set the trim for a function channel to min output
-void SRV_Channels::set_trim_to_min2_for(SRV_Channel::Aux_servo_function_t function)
+// set servo trim to a Limit
+// when ignore_reversed is true the flipping of Min/Max values, that usually is done when reversed flag ist set, is not applied
+void SRV_Channels::set_trim_to_limit_for(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit, bool ignore_reversed)
 {
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
-            channels[i].servo_trim.set(channels[i].servo_min);
+            if (ignore_reversed) {
+                switch (limit) {
+                case SRV_Channel::Limit::TRIM:
+                    channels[i].servo_trim.set(channels[i].get_limit_pwm(limit));
+                    break;
+                case SRV_Channel::Limit::MIN:
+                    channels[i].servo_trim.set(channels[i].servo_min);
+                    break;
+                case SRV_Channel::Limit::MAX:
+                    channels[i].servo_trim.set(channels[i].servo_max);
+                    break;
+                case SRV_Channel::Limit::ZERO_PWM:
+                    channels[i].servo_trim.set(channels[i].get_limit_pwm(limit));
+                    break;
+                }
+            }
+            else {
+                channels[i].servo_trim.set(channels[i].get_limit_pwm(limit));
+            }
         }
     }
 }

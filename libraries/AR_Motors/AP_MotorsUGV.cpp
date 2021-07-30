@@ -147,9 +147,10 @@ void AP_MotorsUGV::setup_safety_output()
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         // do not use function SRV_Channels::set_trim_to_min_for because this will set trim to MAX
         // when reversed is set, causing the rover motor to run full speed at minimum throttle
-        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttle);
-        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_trim_to_min2_for(SRV_Channel::k_throttleRight);
+        // instead use new function set_trim_to_limit_for
+        SRV_Channels::set_trim_to_limit_for(SRV_Channel::k_throttle, SRV_Channel::Limit::MIN, true);
+        SRV_Channels::set_trim_to_limit_for(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::MIN, true);
+        SRV_Channels::set_trim_to_limit_for(SRV_Channel::k_throttleRight, SRV_Channel::Limit::MIN, true);
     }
 
     if (_disarm_disable_pwm) {
