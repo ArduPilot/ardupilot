@@ -314,6 +314,35 @@ userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
 userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
 -- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
 
+userdata mavlink_command_long_t field param1 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param2 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param3 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param5 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param6 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field param7 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_long_t field command uint16_t read write 0 UINT16_MAX
+userdata mavlink_command_long_t field target_system uint8_t read write 0 UINT8_MAX
+userdata mavlink_command_long_t field target_component uint8_t read write 0 UINT8_MAX
+userdata mavlink_command_long_t alias command_long
+
+userdata mavlink_command_int_t field param1 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_int_t field param2 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_int_t field param3 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_int_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_int_t field x int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_command_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_command_int_t field z float read write -FLT_MAX FLT_MAX
+userdata mavlink_command_int_t field command uint16_t read write 0 UINT16_MAX
+userdata mavlink_command_int_t field target_system uint8_t read write 0 UINT8_MAX
+userdata mavlink_command_int_t field target_component uint8_t read write 0 UINT8_MAX
+userdata mavlink_command_int_t field frame uint8_t read write  0 UINT8_MAX
+userdata mavlink_command_int_t alias command_int
+
+include AP_Scripting/AP_Scripting_MAVLink_buffer.h
+ap_object command_buffer method receive uint8_t mavlink_command_long_t'Null mavlink_command_int_t'Null uint32_t'Null uint8_t'Null
+ap_object command_buffer method send_ack void MAV_RESULT'enum 0 MAV_RESULT_ENUM_END-1
+ap_object command_buffer method send_chan_ack void MAV_RESULT'enum 0 MAV_RESULT_ENUM_END-1 mavlink_channel_t'enum 0  mavlink_channel_t::MAVLINK_COMM_3
 
 include AP_RPM/AP_RPM.h
 singleton AP_RPM alias RPM
