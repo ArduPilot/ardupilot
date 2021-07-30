@@ -353,7 +353,7 @@ private:
         ,TWO = 2
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ,SITL = 10
+        ,SIM = 10
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
         ,EXTERNAL = 11
