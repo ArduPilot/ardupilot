@@ -556,7 +556,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
 
-    case Type::SITL:
+    case Type::SIM:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         _add_backend(new AP_RangeFinder_SITL(state[instance], params[instance], instance), instance);
 #endif
