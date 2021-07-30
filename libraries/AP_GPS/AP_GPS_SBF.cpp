@@ -450,13 +450,13 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
         }
-        
+
         if ((temp.Mode & 64) > 0) { // gps is in base mode
             state.status = AP_GPS::NO_FIX;
         } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
         }
-                    
+
         return true;
     }
     case DOP:
@@ -483,7 +483,6 @@ AP_GPS_SBF::process_message(void)
     case VelCovGeodetic:
     {
         const msg5908 &temp = sbf_msg.data.msg5908u;
-
         check_new_itow(temp.TOW, sbf_msg.length);
         // select the maximum variance, as the EKF will apply it to all the columns in it's estimate
         // FIXME: Support returning the covariance matrix to the EKF
@@ -495,6 +494,29 @@ AP_GPS_SBF::process_message(void)
             state.have_speed_accuracy = false;
         }
         break;
+    }
+    case AttEuler:
+    {
+        const msg5938 &temp = sbf_msg.data.msg5938u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EA1 %d,EA2,%d,M %d,H %f", temp.Aux1Error, temp.Aux2Error, temp.Mode, temp.Heading);
+        if (temp.Aux1Error || temp.Aux2Error) {
+        // Not enough measurements
+            state.have_gps_yaw = false;
+            state.gps_yaw_configured = false;
+        break;
+        } else if (temp.Mode && (temp.Heading > -200000)) {
+            state.have_gps_yaw = true;
+            state.gps_yaw_configured = true;
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw_accuracy = true;
+            break;
+        } else {
+            state.have_gps_yaw = false;
+            state.gps_yaw_configured = false;
+            state.have_gps_yaw_accuracy = false;
+            break;
+        }
     }
     case BaseVectorGeod:
     {
