@@ -30,7 +30,7 @@ public:
     void update(void) override;
 
 private:
-    SITL::SITL *_sitl; // pointer to SITL singleton
+    SITL::SIM *_sitl; // pointer to SITL singleton
 
     int32_t  _distance_count; // distance count as number of encoder ticks
     uint32_t _total_count; // total number of encoder ticks
