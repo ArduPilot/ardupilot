@@ -723,8 +723,8 @@ void handle_method(char *parent_name, struct method **methods) {
     if (arg_type.type == TYPE_NONE) {
       error(ERROR_USERDATA, "Can't pass an empty argument to a method");
     }
-    if ((method->return_type.type != TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_NULLABLE)) {
-      error(ERROR_USERDATA, "Nullable arguments are only available on a boolean method");
+    if (((method->return_type.type != TYPE_BOOLEAN) && (method->return_type.type != TYPE_UINT8_T)) && (arg_type.flags & TYPE_FLAGS_NULLABLE)) {
+      error(ERROR_USERDATA, "Nullable arguments are only available on a boolean or uint8_t method");
     }
     if ((method->return_type.type == TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_REFERNCE)) {
       error(ERROR_USERDATA, "Use Nullable arguments on a boolean method, not 'Ref");
@@ -1437,13 +1437,7 @@ void emit_userdata_fields() {
   }
 }
 
-// emit refences functions for a call, return the number of arduments added
-int emit_references(const struct argument *arg, const char * tab) {
-  int arg_index = NULLABLE_ARG_COUNT_BASE + 2;
-  int return_count = 0;
-  while (arg != NULL) {
-    if (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
-      return_count++;
+void emit_refence_type(const struct argument *arg, const char * tab, int arg_index) {
       switch (arg->type.type) {
         case TYPE_BOOLEAN:
           fprintf(source, "%slua_pushboolean(L, data_%d);\n", tab, arg_index);
@@ -1481,11 +1475,39 @@ int emit_references(const struct argument *arg, const char * tab) {
           error(ERROR_INTERNAL, "Attempted to make a nullable or reference ap_object");
           break;
       }
+}
+
+// emit refences functions for a call, return the number of arduments added
+int emit_references(const struct argument *arg, const char * tab) {
+  int arg_index = NULLABLE_ARG_COUNT_BASE + 2;
+  int return_count = 0;
+  while (arg != NULL) {
+    if (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+      return_count++;
+      emit_refence_type(arg, tab, arg_index);
     }
     arg_index++;
     arg = arg->next;
   }
   return return_count;
+}
+
+// emit refences functions for a call, return the number of arduments added, apply return mask
+void emit_references_mask(const struct argument *arg, const char * tab) {
+  int arg_index = NULLABLE_ARG_COUNT_BASE + 2;
+  int count = 0;
+  char *tabtab = (char *)allocate(strlen(tab) + 4);
+  sprintf(tabtab, "%s    ", tab);
+  while (arg != NULL) {
+    if (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
+      fprintf(source, "%sif (data & (1U << %i)) {\n", tab, count);
+      emit_refence_type(arg, tabtab, arg_index);
+      fprintf(source, "%s}\n", tab);
+      count++;
+    }
+    arg_index++;
+    arg = arg->next;
+  }
 }
 
 void emit_userdata_method(const struct userdata *data, const struct method *method) {
@@ -1696,6 +1718,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     return_count += emit_references(arg,"    ");
   }
 
+  int add_return = TRUE;
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
       if (method->flags & TYPE_FLAGS_NULLABLE) {
@@ -1707,8 +1730,19 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         fprintf(source, "    } else {\n");
         fprintf(source, "        return 0;\n");
         fprintf(source, "    }\n");
+        add_return = FALSE;
       } else {
         fprintf(source, "    lua_pushboolean(L, data);\n");
+      }
+      break;
+    case TYPE_UINT8_T:
+      if (method->flags & TYPE_FLAGS_NULLABLE) {
+        arg = method->arguments;
+        emit_references_mask(arg,"    ");
+        fprintf(source, "    return __builtin_popcountll(data);\n");
+        add_return = FALSE;
+      } else {
+        fprintf(source, "    lua_pushinteger(L, data);\n");
       }
       break;
     case TYPE_FLOAT:
@@ -1717,7 +1751,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_INT8_T:
     case TYPE_INT16_T:
     case TYPE_INT32_T:
-    case TYPE_UINT8_T:
     case TYPE_UINT16_T:
     case TYPE_ENUM:
       fprintf(source, "    lua_pushinteger(L, data);\n");
@@ -1748,7 +1781,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       break;
   }
 
-  if ((method->return_type.type != TYPE_BOOLEAN) || ((method->flags & TYPE_FLAGS_NULLABLE) == 0)) {
+  if (add_return) {
       fprintf(source, "    return %d;\n", return_count);
   }
 
