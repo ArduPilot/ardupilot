@@ -265,12 +265,6 @@ void Copter::Log_Sensor_Health()
         sensor_health.compass = compass.healthy();
         AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
     }
-
-    // check primary GPS
-    if (sensor_health.primary_gps != gps.primary_sensor()) {
-        sensor_health.primary_gps = gps.primary_sensor();
-        AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
-    }
 }
 
 struct PACKED log_SysIdD {
