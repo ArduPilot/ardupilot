@@ -10494,6 +10494,7 @@ switch value'''
         if delta_y_g + 1 > 0.1:
             raise NotAchievedException("Magic AHRS_ORIENTATION update did not work (delta_y_g=%f)" % (delta_y_g,))
         self.context_pop()
+        self.reboot_sitl()
         self.delay_sim_time(2)  # we update orientation on a timer
 
     def tests(self):
