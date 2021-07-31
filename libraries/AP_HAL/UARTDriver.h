@@ -130,6 +130,11 @@ public:
      */
     virtual bool is_dma_enabled() const { return false; }
 
+    /*
+      return the UART instance number
+     */
+    virtual uint8_t get_instance() const { return 0; }
+
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str) {}
 
