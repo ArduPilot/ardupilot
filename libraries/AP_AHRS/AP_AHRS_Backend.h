@@ -645,10 +645,6 @@ protected:
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
 
-    // AOA and SSA
-    float _AOA, _SSA;
-    uint32_t _last_AOA_update_ms;
-
 private:
 
     uint32_t takeoff_expected_start_ms;
