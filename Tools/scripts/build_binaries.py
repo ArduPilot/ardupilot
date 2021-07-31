@@ -34,8 +34,14 @@ else:
 
 def is_chibios_build(board):
     '''see if a board is using HAL_ChibiOS'''
+    # cope with both running from Tools/scripts or running from cwd
     hwdef_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
-    return os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat"))
+    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
+        return True
+    hwdef_dir = os.path.join("libraries", "AP_HAL_ChibiOS", "hwdef")
+    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
+        return True
+    return False
 
 
 def get_required_compiler(tag, board):
