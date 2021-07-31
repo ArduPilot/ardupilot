@@ -982,7 +982,8 @@ void QuadPlane::hold_stabilize(float throttle_in)
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
-    if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
+    if ((throttle_in <= 0) && (air_mode == AirMode::OFF) &&
+        q_assist_state != Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         relax_attitude_control();
