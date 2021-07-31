@@ -145,6 +145,10 @@ public:
       return true if this UART has DMA enabled on both RX and TX
      */
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
+    /*
+      return the UART instance number
+     */
+    uint8_t get_instance() const override { return sdef.instance; }
 
 private:
     const SerialDef &sdef;
