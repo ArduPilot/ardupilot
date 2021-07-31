@@ -33,6 +33,11 @@ public:
         _state(state),
         _instance(instance)
     {}
+    
+       
+    // Added Up&Above gimbal    
+    // control - control the mount
+    virtual void configure(enum MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_pitch, uint8_t stab_yaw, enum AP_Mount::ControlMode roll_mode, enum AP_Mount::ControlMode pitch_mode, enum AP_Mount::ControlMode yaw_mode);
 
     // Virtual destructor
     virtual ~AP_Mount_Backend(void) {}

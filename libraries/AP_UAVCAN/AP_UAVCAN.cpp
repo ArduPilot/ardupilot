@@ -44,6 +44,10 @@
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
 
+// Added Up&Above Gimbal
+#include <uavcan/equipment/camera_gimbal/AngularCommand.hpp>
+#include <uavcan/equipment/camera_gimbal/GEOPOICommand.hpp>
+
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
@@ -56,6 +60,10 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
+
+// Added Up&Above retract
+// to send to retract equipment 0 or 1. This function could send up to 256
+#include <uavcan/equipment/hardpoint/Command.hpp>
 
 #define LED_DELAY_US 50000
 
@@ -114,6 +122,13 @@ static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// Added Up&Above Retract
+// Don't use [HAL_MAX_CAN_PROTOCOL_DRIVERS] it gives error with static function
+static uavcan::Publisher<uavcan::equipment::hardpoint::Command>* gimbal_retract;
+// Added Up&Above Gimbal
+static uavcan::Publisher<uavcan::equipment::camera_gimbal::AngularCommand>* mount_angular[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::camera_gimbal::GEOPOICommand>* mount_geopoi[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // subscribers
 
@@ -323,6 +338,23 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     if (enable_filters) {
         configureCanAcceptanceFilters(*_node);
     }
+    
+    // Added Up&Above retract
+    //Don't use [driver_index it gives error with static function, depends on previos declaration removing [HAL_MAX_CAN_PROTOCOL_DRIVERS]
+    gimbal_retract = new uavcan::Publisher<uavcan::equipment::hardpoint::Command>(*_node);
+    gimbal_retract->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    gimbal_retract->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+    
+    // Added Up&Above gimbal
+    mount_angular[driver_index] = new uavcan::Publisher<uavcan::equipment::camera_gimbal::AngularCommand>(*_node);
+    mount_angular[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    mount_angular[driver_index]->setPriority(uavcan::TransferPriority::MiddleLower);
+
+    mount_geopoi[driver_index] = new uavcan::Publisher<uavcan::equipment::camera_gimbal::GEOPOICommand>(*_node);
+    mount_geopoi[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    mount_geopoi[driver_index]->setPriority(uavcan::TransferPriority::MiddleLower);
+    _mount_conf.new_data = false;
+    _mount_conf.broadcast_enabled = false;
 
     /*
      * Informing other nodes that we're ready to work.
@@ -389,6 +421,10 @@ void AP_UAVCAN::loop(void)
         }
 
         led_out_send();
+        
+        // Added Up&Above Gimbal
+        mount_out_send();
+        
         buzzer_send();
         rtcm_stream_send();
         safety_state_send();
@@ -833,6 +869,73 @@ void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugC
         AP::logger().Write_MessageF("CAN[%u] %s", node_id, msg.text.c_str());
     }
 #endif
+}
+
+// Added Up&Above retract
+void AP_UAVCAN::do_gimbal_retract(bool retract) {
+    uavcan::equipment::hardpoint::Command msg;
+    msg.hardpoint_id = 220; // checking variable
+    msg.command = retract; //false or true
+    gimbal_retract->broadcast(msg); // depends on previos declaration on driver_index
+}
+
+// Added Up&Above gimbal
+void AP_UAVCAN::mount_out_send()
+{
+    if(_mount_conf.broadcast_enabled && _mount_conf.new_data)
+    {
+        WITH_SEMAPHORE(_mount_out_sem);
+        if(_mount_conf.geo_poi_mode) {
+            uavcan::equipment::camera_gimbal::GEOPOICommand geopoi_cmd;
+            geopoi_cmd.longitude_deg_1e7 = _mount_conf.poi.lng;
+            geopoi_cmd.latitude_deg_1e7 = _mount_conf.poi.lat;
+            geopoi_cmd.height_cm = _mount_conf.poi.alt;
+            geopoi_cmd.height_reference = uavcan::equipment::camera_gimbal::GEOPOICommand::HEIGHT_REFERENCE_MEAN_SEA_LEVEL;
+            geopoi_cmd.mode.command_mode = uavcan::equipment::camera_gimbal::Mode::COMMAND_MODE_GEO_POI;
+            mount_geopoi[_driver_index]->broadcast(geopoi_cmd);
+        } else {
+            uavcan::equipment::camera_gimbal::AngularCommand ang_cmd;
+            Quaternion q;
+            q.from_euler(_mount_conf.target_angles.x, _mount_conf.target_angles.y, _mount_conf.target_angles.z);
+            ang_cmd.quaternion_xyzw[0] = q.q2;
+            ang_cmd.quaternion_xyzw[1] = q.q3;
+            ang_cmd.quaternion_xyzw[2] = q.q4;
+            ang_cmd.quaternion_xyzw[3] = q.q1;
+            switch(_mount_conf.control_mode) {
+                case AP_Mount::Control_Angle_Body_Frame:
+                    ang_cmd.mode.command_mode = uavcan::equipment::camera_gimbal::Mode::COMMAND_MODE_ORIENTATION_BODY_FRAME;
+                break;
+
+                case AP_Mount::Control_Angular_Rate:
+                    ang_cmd.mode.command_mode = uavcan::equipment::camera_gimbal::Mode::COMMAND_MODE_ANGULAR_VELOCITY;
+                break;
+
+                case AP_Mount::Control_Angle_Absolute_Frame:
+                    ang_cmd.mode.command_mode = uavcan::equipment::camera_gimbal::Mode::COMMAND_MODE_ORIENTATION_FIXED_FRAME;
+                break;
+
+                default:
+                    ang_cmd.mode.command_mode = uavcan::equipment::camera_gimbal::Mode::COMMAND_MODE_ORIENTATION_FIXED_FRAME;
+                break;
+            }
+            mount_angular[_driver_index]->broadcast(ang_cmd);
+        }
+        _mount_conf.new_data = false;
+    }
+}
+
+// Added Up&Above gimbal
+void AP_UAVCAN::mount_write(bool geo_poi_mode, Vector3f angles, Location poi, enum AP_Mount::ControlMode mode)
+{
+        WITH_SEMAPHORE(_mount_out_sem);
+
+        _mount_conf.geo_poi_mode = geo_poi_mode;
+        _mount_conf.target_angles = angles;
+        _mount_conf.poi = poi;
+        _mount_conf.control_mode = mode;
+        _mount_conf.broadcast_enabled = true;
+        _mount_conf.new_data = true;
+
 }
 
 #endif // HAL_NUM_CAN_IFACES
