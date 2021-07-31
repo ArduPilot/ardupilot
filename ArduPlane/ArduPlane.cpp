@@ -391,7 +391,7 @@ void Plane::update_GPS_10Hz(void)
             if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
-            } else {
+            } else if (!hal.util->was_watchdog_reset()) {
                 if (!set_home_persistently(gps.location())) {
                     // silently ignore failure...
                 }
