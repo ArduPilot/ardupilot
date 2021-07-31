@@ -191,6 +191,11 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
 #endif
     _dcm_matrix.identity();
+
+    // initialise the controller-to-autopilot-body trim state:
+    _last_trim = _trim.get();
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+    _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
 // init sets up INS board orientation
@@ -220,6 +225,20 @@ void AP_AHRS::init()
 #if HAL_NMEA_OUTPUT_ENABLED
     _nmea_out = AP_NMEA_Output::probe();
 #endif
+}
+
+// updates matrices responsible for rotating vectors from vehicle body
+// frame to autopilot body frame from _trim variables
+void AP_AHRS::update_trim_rotation_matrices()
+{
+    if (_last_trim == _trim.get()) {
+        // nothing to do
+        return;
+    }
+
+    _last_trim = _trim.get();
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+    _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -280,6 +299,9 @@ void AP_AHRS::update(bool skip_ins_update)
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
+
+    // update autopilot-body-to-vehicle-body from _trim parameters:
+    update_trim_rotation_matrices();
 
     update_DCM(skip_ins_update);
 
