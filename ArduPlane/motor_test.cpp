@@ -77,6 +77,10 @@ void QuadPlane::motor_test_output()
 MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                             uint16_t throttle_value, float timeout_sec, uint8_t motor_count)
 {
+    if (!available() || motors == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+
     if (motors->armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
         return MAV_RESULT_FAILED;
