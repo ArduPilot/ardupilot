@@ -167,13 +167,23 @@ void AP_CRSF_Telem::process_rf_mode_changes()
     if (uart == nullptr) {
         return;
     }
-    // warn the user if their setup is sub-optimal
-    if (_telem_last_report_ms == 0 && !uart->is_dma_enabled()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "CRSF: running on non-DMA serial port");
-    }
-    // report a change in RF mode or a chnage of more than 10Hz if we haven't done so in the last 5s
+    // report a change in RF mode or a change of more than 10Hz if we haven't done so in the last 5s
     if ((now - _telem_last_report_ms > 5000) &&
         (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
+        // warn the user if their setup is sub-optimal
+#if !defined(STM32H7)
+        if (_telem_last_report_ms == 0 && !uart->is_dma_enabled()) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "CRSF: running on non-DMA serial port");
+            // find an alternative port with full DMA
+            for (uint8_t i = 0; i < SERIALMANAGER_NUM_PORTS; i++) {
+                auto *u = hal.serial(i);
+                if (u && u->is_dma_enabled()) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "CRSF: please try SERIAL%u / UART%u",
+                        i, u->get_instance());
+                }
+            }
+        }
+#endif
         if (!rc().suppress_crsf_message()) {
             gcs().send_text(MAV_SEVERITY_INFO, "CRSFv%d: RF mode %d, rate is %dHz", uint8_t(2 + AP::crsf()->is_crsf_v3_active()),
                 (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
