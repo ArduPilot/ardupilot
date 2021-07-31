@@ -347,6 +347,17 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
+        # add files from ROMFS_custom
+        custom_dir = 'ROMFS_custom'
+        if os.path.exists(custom_dir):
+            for root, subdirs, files in os.walk(custom_dir):
+                for f in files:
+                    if fnmatch.fnmatch(f,"*~"):
+                        # exclude emacs tmp files
+                        continue
+                    fname = root[len(custom_dir)+1:]+"/"+f
+                    env.ROMFS_FILES += [(fname,root+"/"+f)]
+
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
         if bld.env.ROMFS_FILES:
