@@ -50,10 +50,6 @@ public:
     AP_AHRS_Backend() {
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
-
-        _last_trim = _trim.get();
-        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
-        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
     }
 
     // empty virtual destructor
@@ -199,9 +195,6 @@ public:
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
 
-    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
-    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
-
     // get rotation matrix specifically from DCM backend (used for compass calibrator)
     virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
 
@@ -336,17 +329,6 @@ public:
     bool get_correct_centrifugal(void) const {
         return _flags.correct_centrifugal;
     }
-
-    // get trim
-    const Vector3f &get_trim() const {
-        return _trim.get();
-    }
-
-    // set trim
-    void set_trim(const Vector3f &new_trim);
-
-    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // helper trig value accessors
     float cos_roll() const  {
@@ -573,16 +555,6 @@ protected:
 
     // update takeoff/touchdown flags
     void update_flags();
-
-    // pointer to airspeed object, if available
-
-    // a vector to capture the difference between the controller and body frames
-    AP_Vector3f         _trim;
-
-    // cached trim rotations
-    Vector3f _last_trim;
-    Matrix3f _rotation_autopilot_body_to_vehicle_body;
-    Matrix3f _rotation_vehicle_body_to_autopilot_body;
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];

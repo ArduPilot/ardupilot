@@ -338,6 +338,23 @@ public:
     float getSSA(void) const { return _SSA; }
 
     /*
+     * trim-related functions
+     */
+
+    // get trim
+    const Vector3f &get_trim() const { return _trim.get(); }
+
+    // set trim
+    void set_trim(const Vector3f &new_trim);
+
+    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
+    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
+
+    // trim rotation matrices:
+    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
+    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
+
+    /*
      * home-related functionality
      */
 
@@ -463,6 +480,23 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
 #endif    
+
+    /*
+     * trim-related state and private methods:
+     */
+
+    // a vector to capture the difference between the controller and body frames
+    AP_Vector3f         _trim;
+
+    // cached trim rotations
+    Vector3f _last_trim;
+
+    Matrix3f _rotation_autopilot_body_to_vehicle_body;
+    Matrix3f _rotation_vehicle_body_to_autopilot_body;
+
+    // updates matrices responsible for rotating vectors from vehicle body
+    // frame to autopilot body frame from _trim variables
+    void update_trim_rotation_matrices();
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;
