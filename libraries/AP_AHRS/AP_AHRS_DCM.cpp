@@ -1012,7 +1012,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 void
 AP_AHRS_DCM::euler_angles(void)
 {
-    _body_dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
+    _body_dcm_matrix = _dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     update_cd_values();
