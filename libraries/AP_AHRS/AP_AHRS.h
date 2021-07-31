@@ -331,9 +331,6 @@ public:
     // write AOA and SSA information to dataflash logs:
     void Write_AOA_SSA(void) const;
 
-    // update AOA and SSA values
-    virtual void update_AOA_SSA(void);
-
     // return AOA
     float getAOA(void) const { return _AOA; }
 
@@ -407,6 +404,13 @@ private:
     };
 
     TriState terrainHgtStableState = TriState::UNKNOWN;
+
+    /*
+     * private AOA and SSA-related state and methods
+     */
+    float _AOA, _SSA;
+    uint32_t _last_AOA_update_ms;
+    void update_AOA_SSA(void);
 
     EKFType last_active_ekf_type;
 
