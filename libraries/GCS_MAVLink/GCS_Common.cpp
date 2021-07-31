@@ -4021,7 +4021,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
 {
-    if (!AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
+    if (AP::ins().get_acal() == nullptr ||
+        !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
