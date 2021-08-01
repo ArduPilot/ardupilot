@@ -819,6 +819,16 @@ void QuadPlane::setup_defaults(void)
     AP_Param::set_default_by_name("EK2_CHECK_SCALE",100);
     AP_Param::set_default_by_name("EK3_CHECK_SCALE",100);
 
+    if (tailsitter.enabled() && ((options & OPTION_Q_ASSIST_FORCE_ENABLE) != 0) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_elevator) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_aileron) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_rudder) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_elevon_left)) {
+        // tailsitters setup for control surface less flying should never go to 0 throttle in forward flight
+        // as that stops stabalisation, alternatly airmode can be enabled, but that affects both forward and VOTL flight
+        plane.aparm.throttle_min.set_default(1);
+    }
+
 }
 
 // run ESC calibration
