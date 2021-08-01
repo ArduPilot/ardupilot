@@ -94,6 +94,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
+    // check if passthru already assigned
+    const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough,0); 
+    if (frsky_port != -1) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "CRSF: passthrough telemetry conflict on SERIAL%d",frsky_port);
+       _custom_telem.init_done = true;
+       return;
+    }
+
     // we need crossfire firmware version
     if (_crsf_version.pending) {
         return;
