@@ -181,10 +181,7 @@ private:
     AirMode air_mode;
 
     // check for quadplane assistance needed
-    bool assistance_needed(float aspeed, bool have_airspeed);
-
-    // check if it is safe to provide assistance
-    bool assistance_safe();
+    bool should_assist(float aspeed, bool have_airspeed);
 
     // update transition handling
     void update_transition(void);
