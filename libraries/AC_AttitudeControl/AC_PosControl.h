@@ -73,7 +73,9 @@ public:
     ///     This function only needs to be called if using the kinimatic shaping.
     ///     This can be done at any time as changes in these parameters are handled smoothly
     ///     by the kinimatic shaping.
-    void set_max_speed_accel_xy(float speed_cms, float accel_cmss);
+    ///     speed_correction_cms is the maximum velocity used to follow position input
+    void set_max_speed_accel_xy(float speed_cms, float accel_cmss, float speed_correction_cms);
+    void set_max_speed_accel_xy(float speed_cms, float accel_cmss) {set_max_speed_accel_xy(speed_cms, accel_cmss, speed_cms);}
 
     /// set_max_speed_accel_xy - set the position controller correction velocity and acceleration limit
     ///     This should be done only during initialisation to avoid discontinuities
@@ -144,7 +146,9 @@ public:
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
     ///     This can be done at any time as changes in these parameters are handled smoothly
     ///     by the kinimatic shaping.
-    void set_max_speed_accel_z(float speed_down, float speed_up, float accel_cmss);
+    ///     speed_correction_cms is the maximum velocity used to follow position input
+    void set_max_speed_accel_z(float speed_down_cms, float speed_up_cms, float accel_cmss, float speed_correction_cms);
+    void set_max_speed_accel_z(float speed_down_cms, float speed_up_cms, float accel_cmss) {set_max_speed_accel_z(speed_down_cms, speed_up_cms, accel_cmss, 0.0);}
 
     /// set_correction_speed_accel_z - set the position controller correction velocity and acceleration limit
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
@@ -433,16 +437,18 @@ protected:
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
-    float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
-    uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
-    float       _tc_xy_s;               // time constant of the xy kinimatic path generation in seconds used to determine how quickly the aircraft varies the acceleration target
-    float       _tc_z_s;                // time constant of the z kinimatic path generation in seconds used to determine how quickly the aircraft varies the acceleration target
-    float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
-    float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
-    float       _vel_max_down_cms;      // max descent rate in cm/s used for kinematic shaping
-    float       _accel_max_xy_cmss;     // max horizontal acceleration in cm/s/s used for kinematic shaping
-    float       _accel_max_z_cmss;      // max vertical acceleration in cm/s/s used for kinematic shaping
+    float       _dt;                            // time difference (in seconds) between calls from the main program
+    uint64_t    _last_update_xy_us;             // system time (in microseconds) since last update_xy_controller call
+    uint64_t    _last_update_z_us;              // system time (in microseconds) since last update_z_controller call
+    float       _tc_xy_s;                       // time constant of the xy kinimatic path generation in seconds used to determine how quickly the aircraft varies the acceleration target
+    float       _tc_z_s;                        // time constant of the z kinimatic path generation in seconds used to determine how quickly the aircraft varies the acceleration target
+    float       _vel_max_xy_cms;                // max horizontal speed in cm/s used for kinematic shaping
+    float       _vel_max_xy_correction_cms;     // max horizontal speed in cm/s used for position corrections during  kinematic shaping
+    float       _vel_max_up_cms;                // max climb rate in cm/s used for kinematic shaping
+    float       _vel_max_down_cms;              // max descent rate in cm/s used for kinematic shaping
+    float       _vel_max_z_correction_cms;      // max horizontal speed in cm/s used for position corrections during kinematic shaping
+    float       _accel_max_xy_cmss;             // max horizontal acceleration in cm/s/s used for kinematic shaping
+    float       _accel_max_z_cmss;              // max vertical acceleration in cm/s/s used for kinematic shaping
     float       _vel_z_control_ratio = 2.0f;    // confidence that we have control in the vertical axis
 
     // output from controller

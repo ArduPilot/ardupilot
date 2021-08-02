@@ -307,9 +307,11 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _p_pos_xy(POSCONTROL_POS_XY_P, dt),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, 0.0f, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, dt),
     _dt(dt),
+    _vel_max_xy_cms(POSCONTROL_SPEED),
+    _vel_max_xy_correction_cms(POSCONTROL_SPEED),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
-    _vel_max_xy_cms(POSCONTROL_SPEED),
+    _vel_max_z_correction_cms(MIN(-POSCONTROL_SPEED_DOWN,POSCONTROL_SPEED_UP)),
     _accel_max_z_cmss(POSCONTROL_ACCEL_Z),
     _accel_max_xy_cmss(POSCONTROL_ACCEL_XY),
     _tc_xy_s(POSCONTROL_DEFAULT_SHAPER_TC),
@@ -415,13 +417,15 @@ float AC_PosControl::pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_
 ///     This function only needs to be called if using the kinimatic shaping.
 ///     This can be done at any time as changes in these parameters are handled smoothly
 ///     by the kinimatic shaping.
-void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss)
+///     speed_correction_cms is the maximum velocity used to follow position input
+void AC_PosControl::set_max_speed_accel_xy(float speed_cms, float accel_cmss, float speed_correction_cms)
 {
     // return immediately if no change
-    if ((is_equal(_vel_max_xy_cms, speed_cms) && is_equal(_accel_max_xy_cmss, accel_cmss))) {
+    if (is_equal(_vel_max_xy_cms, speed_cms) && is_equal(_accel_max_xy_cmss, accel_cmss) && is_equal(_vel_max_xy_correction_cms, speed_correction_cms)) {
         return;
     }
     _vel_max_xy_cms = speed_cms;
+    _vel_max_xy_correction_cms = speed_correction_cms;
     _accel_max_xy_cmss = accel_cmss;
 
     // ensure the horizontal time constant is not less than the vehicle is capable of
@@ -502,7 +506,6 @@ void AC_PosControl::init_xy()
     _vel_target.x = curr_vel.x;
     _vel_target.y = curr_vel.y;
 
-
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
     _accel_desired.x = curr_accel.x;
     _accel_desired.y = curr_accel.y;
@@ -557,7 +560,7 @@ void AC_PosControl::input_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const V
     update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy());
 
     shape_pos_vel_accel_xy(pos, vel, accel, _pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(),
-                           _vel_max_xy_cms, _vel_max_xy_cms, _accel_max_xy_cmss, _tc_xy_s, _dt);
+        _vel_max_xy_correction_cms, _vel_max_xy_cms, _accel_max_xy_cmss, _tc_xy_s, _dt);
 
     update_pos_vel_accel_xy(pos, vel, accel, _dt, Vector2f());
 }
@@ -677,22 +680,26 @@ void AC_PosControl::update_xy_controller()
 ///     This function only needs to be called if using the kinimatic shaping.
 ///     This can be done at any time as changes in these parameters are handled smoothly
 ///     by the kinimatic shaping.
-void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, float accel_cmss)
+///     speed_correction_cms is the maximum velocity used to follow position input
+void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, float accel_cmss, float speed_correction_cms)
 {
     // ensure speed_down is always negative
     speed_down = -fabsf(speed_down);
 
     // exit immediately if no change in speed up or down
-    if (is_equal(_vel_max_down_cms, speed_down) && is_equal(_vel_max_up_cms, speed_up) && is_equal(_accel_max_z_cmss, accel_cmss)) {
+    if (is_equal(_vel_max_down_cms, speed_down) && is_equal(_vel_max_up_cms, speed_up) && is_equal(_accel_max_z_cmss, accel_cmss) && is_equal(_vel_max_z_correction_cms, speed_correction_cms)) {
         return;
     }
 
     // sanity check and update
-    if (is_negative(speed_down)) {
+    if (!is_positive(speed_down)) {
         _vel_max_down_cms = speed_down;
     }
-    if (is_positive(speed_up)) {
+    if (!is_negative(speed_up)) {
         _vel_max_up_cms = speed_up;
+    }
+    if (is_positive(speed_correction_cms)) {
+        _vel_max_z_correction_cms = speed_correction_cms;
     }
     if (is_positive(accel_cmss)) {
         _accel_max_z_cmss = accel_cmss;
@@ -887,7 +894,7 @@ void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float ac
 
     shape_pos_vel_accel(pos, vel, accel,
                         _pos_target.z, _vel_desired.z, _accel_desired.z,
-                        0.0f, _vel_max_down_cms, _vel_max_up_cms,
+                        _vel_max_z_correction_cms, _vel_max_down_cms, _vel_max_up_cms,
                         -constrain_float(accel_z_cmss, 0.0f, 750.0f), accel_z_cmss,
                         _tc_z_s, _dt);
 
@@ -916,7 +923,7 @@ void AC_PosControl::update_pos_offset_z(float pos_offset_z)
     // input shape the terrain offset
     shape_pos_vel_accel(pos_offset_z, 0.0f, 0.0f,
         _pos_offset_z, _vel_offset_z, _accel_offset_z,
-        0.0f, get_max_speed_down_cms(), get_max_speed_up_cms(),
+        _vel_max_z_correction_cms, _vel_max_down_cms, _vel_max_up_cms,
         -get_max_accel_z_cmss(), get_max_accel_z_cmss(), _tc_z_s, _dt);
 }
 
@@ -990,7 +997,12 @@ void AC_PosControl::update_z_controller()
     // Check for vertical controller health
 
     // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
+    float error_ratio;
+    if(!is_zero(_vel_max_down_cms)) {
+        error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
+    } else {
+        error_ratio = _pid_vel_z.get_error() / POSCONTROL_SPEED_DOWN;
+    }
     _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
     _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 
@@ -1242,7 +1254,11 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
     }
 
     // update the target yaw if velocity is greater than 5% _vel_max_xy_cms
-    if (vel_desired_xy_len > _vel_max_xy_cms * 0.05f) {
+    float min_vel = _vel_max_xy_cms * 0.05f;
+    if (is_zero(min_vel)) {
+        min_vel = POSCONTROL_SPEED * 0.05f;
+    }
+    if (vel_desired_xy_len > min_vel) {
         _yaw_target = degrees(vel_desired_xy.angle()) * 100.0f;
         _yaw_rate_target = turn_rate*degrees(100.0f);
         return true;
