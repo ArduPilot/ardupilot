@@ -400,7 +400,7 @@ float stopping_distance(float velocity, float p, float accel_max)
 // based on horizontal and vertical limits.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg)
 {
-    if (is_zero(direction.length_squared())) {
+    if (is_zero(direction.length_squared()) || is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
         return 0.0f;
     }
 
