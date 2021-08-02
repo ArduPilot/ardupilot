@@ -65,11 +65,11 @@ void ModeFollow::run()
 
         // scale desired velocity to stay within horizontal speed limit
         float desired_speed_xy = safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y));
-        if (!is_zero(desired_speed_xy) && (desired_speed_xy > pos_control->get_max_speed_xy_cms())) {
-            const float scalar_xy = pos_control->get_max_speed_xy_cms() / desired_speed_xy;
+        if (!is_zero(desired_speed_xy) && (desired_speed_xy > wp_nav->get_default_speed_xy())) {
+            const float scalar_xy = wp_nav->get_default_speed_xy() / desired_speed_xy;
             desired_velocity_neu_cms.x *= scalar_xy;
             desired_velocity_neu_cms.y *= scalar_xy;
-            desired_speed_xy = pos_control->get_max_speed_xy_cms();
+            desired_speed_xy = wp_nav->get_default_speed_xy();
         }
 
         // limit desired velocity to be between maximum climb and descent rates
