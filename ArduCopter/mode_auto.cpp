@@ -24,6 +24,7 @@ bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
+        // directly set sub mode because no cleanup of prev mode necessary
         _mode = SubMode::LOITER;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
@@ -173,6 +174,17 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
     return false;
 }
 
+// set the submode.  calls previous submode's exit if necessary
+void ModeAuto::set_submode(SubMode submode)
+{
+    // cleanup if previous mode was takeoff
+    if (_mode == SubMode::TAKEOFF) {
+        takeoff_end();
+    }
+
+    _mode = submode;
+}
+
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
 bool ModeAuto::loiter_start()
@@ -181,7 +193,7 @@ bool ModeAuto::loiter_start()
     if (!copter.position_ok()) {
         return false;
     }
-    _mode = SubMode::LOITER;
+    set_submode(SubMode::LOITER);
 
     // calculate stopping point
     Vector3f stopping_point;
@@ -199,7 +211,7 @@ bool ModeAuto::loiter_start()
 // auto_rtl_start - initialises RTL in AUTO flight mode
 void ModeAuto::rtl_start()
 {
-    _mode = SubMode::RTL;
+    set_submode(SubMode::RTL);
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
     copter.mode_rtl.init(true);
@@ -208,7 +220,7 @@ void ModeAuto::rtl_start()
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
 {
-    _mode = SubMode::TAKEOFF;
+    set_submode(SubMode::TAKEOFF);
 
     Location dest(dest_loc);
 
@@ -247,6 +259,13 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         return;
     }
 
+    // set wp_nav's speed to takeoff speed
+    takeoff_speed_used_cms = 0;
+    if (copter.g2.takeoff_speed_cms > 0) {
+        takeoff_speed_used_cms = copter.g2.takeoff_speed_cms;
+        wp_nav->set_speed_up(takeoff_speed_used_cms);
+    }
+
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
@@ -255,6 +274,20 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 
     // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
+}
+
+void ModeAuto::takeoff_end()
+{
+    // exit immediately if no special takeoff speed was used
+    if (!is_positive(takeoff_speed_used_cms)) {
+        return;
+    }
+
+    // restore wpnav speed up
+    if (is_equal(wp_nav->get_speed_up(), takeoff_speed_used_cms)) {
+        wp_nav->set_speed_up(wp_nav->get_default_speed_up());
+    }
+    takeoff_speed_used_cms = 0;
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -267,7 +300,7 @@ void ModeAuto::wp_start(const Location& dest_loc)
         return;
     }
 
-    _mode = SubMode::WP;
+    set_submode(SubMode::WP);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -290,7 +323,7 @@ void ModeAuto::land_start()
 // auto_land_start - initialises controller to implement a landing
 void ModeAuto::land_start(const Vector2f& destination)
 {
-    _mode = SubMode::LAND;
+    set_submode(SubMode::LAND);
 
     // initialise loiter target destination
     loiter_nav->init_target(destination);
@@ -334,7 +367,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
         // set the state to move to the edge of the circle
-        _mode = SubMode::CIRCLE_MOVE_TO_EDGE;
+        set_submode(SubMode::CIRCLE_MOVE_TO_EDGE);
 
         // convert circle_edge_neu to Location
         Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
@@ -371,7 +404,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 //   assumes that circle_nav object has already been initialised with circle center and radius
 void ModeAuto::circle_start()
 {
-    _mode = SubMode::CIRCLE;
+    set_submode(SubMode::CIRCLE);
 
     // initialise circle controller
     copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
@@ -385,7 +418,7 @@ void ModeAuto::circle_start()
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::nav_guided_start()
 {
-    _mode = SubMode::NAVGUIDED;
+    set_submode(SubMode::NAVGUIDED);
 
     // call regular guided flight mode initialisation
     copter.mode_guided.init(true);
@@ -985,7 +1018,7 @@ void ModeAuto::loiter_to_alt_run()
     if (!loiter_to_alt.loiter_start_done) {
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        _mode = SubMode::LOITER_TO_ALT;
+        set_submode(SubMode::LOITER_TO_ALT);
         loiter_to_alt.loiter_start_done = true;
     }
     const float alt_error_cm = copter.current_loc.alt - loiter_to_alt.alt;
@@ -1019,7 +1052,7 @@ void ModeAuto::loiter_to_alt_run()
 // auto_payload_place_start - initialises controller to implement placement of a load
 void ModeAuto::payload_place_start(const Vector2f& destination)
 {
-    _mode = SubMode::NAV_PAYLOAD_PLACE;
+    set_submode(SubMode::NAV_PAYLOAD_PLACE);
     nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
     // initialise loiter target destination
@@ -1180,7 +1213,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         return;
     }
 
-    _mode = SubMode::WP;
+    set_submode(SubMode::WP);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1336,7 +1369,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     // re-use loiter unlimited
     do_loiter_unlimited(cmd);
-    _mode = SubMode::LOITER_TO_ALT;
+    set_submode(SubMode::LOITER_TO_ALT);
 
     // if we aren't navigating to a location then we have to adjust
     // altitude for current location
@@ -1383,7 +1416,7 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         return;
     }
 
-    _mode = SubMode::WP;
+    set_submode(SubMode::WP);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
