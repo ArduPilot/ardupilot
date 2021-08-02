@@ -299,7 +299,7 @@ void AP_NavEKF_Source::mark_configured_in_storage()
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-// requires_position should be true if horizontal position configuration should be checked
+// requires_position should be true if vertical or horizontal position configuration should be checked
 bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     auto &dal = AP::dal();
