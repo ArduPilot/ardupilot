@@ -103,6 +103,15 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
     guided_mode = SubMode::TakeOff;
 
+    // initialise position controller
+    // initialise horizontal speed, acceleration
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialize vertical speeds and acceleration
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
     Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
@@ -139,12 +148,12 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 // initialise position controller
 void ModeGuided::pva_control_start()
 {
-    // initialise horizontal speed, acceleration
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    // initialise horizontal speed, acceleration without commanded velocity limits
+    pos_control->set_max_speed_accel_xy(0.0, wp_nav->get_wp_acceleration(), wp_nav->get_default_speed_xy());
     pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
-    // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    // initialize vertical speeds and acceleration without commanded velocity limits
+    pos_control->set_max_speed_accel_z(0.0, 0.0, wp_nav->get_accel_z(), MIN(fabsf(wp_nav->get_default_speed_down()), wp_nav->get_default_speed_up()));
     pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
     // initialise velocity controller
@@ -162,7 +171,20 @@ void ModeGuided::pos_control_start()
     guided_mode = SubMode::WP;
 
     // initialise position controller
-    pva_control_start();
+    // initialise horizontal speed, acceleration
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialize vertical speeds and acceleration
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+
+    // initialise velocity controller
+    pos_control->init_z_controller();
+    pos_control->init_xy_controller();
+
+    // initialise yaw
+    auto_yaw.set_mode_to_default(false);
 }
 
 // initialise guided mode's velocity controller
@@ -574,7 +596,7 @@ void ModeGuided::pos_control_run()
     }
 }
 
-// velaccel_control_run - runs the guided velocity controller
+// accel_control_run - runs the guided velocity controller
 // called from guided_run
 void ModeGuided::accel_control_run()
 {
