@@ -1218,7 +1218,8 @@ class AutoTest(ABC):
                  logs_dir=None,
                  force_ahrs_type=None,
                  replay=False,
-                 sup_binaries=[]):
+                 sup_binaries=[],
+                 reset_after_every_test=False):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1241,6 +1242,7 @@ class AutoTest(ABC):
         if self.speedup is None:
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
+        self.reset_after_every_test = reset_after_every_test
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -6040,6 +6042,9 @@ Also, ignores heartbeats not from our target system'''
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
+
+        if self.reset_after_every_test:
+            reset_needed = True
 
         if reset_needed:
             self.reset_SITL_commandline()
