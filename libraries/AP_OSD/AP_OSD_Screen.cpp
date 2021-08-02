@@ -1116,6 +1116,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FENCE_ENABLED 0xF5
 #define SYM_FENCE_DISABLED 0xF6
 #define SYM_RNGFD     0xF7
+#define SYM_LQ        0xF8
 
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
@@ -1300,9 +1301,9 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
     if (ap_rssi) {
         const int16_t lqv = ap_rssi->read_receiver_link_quality();
         if (lqv < 0){
-            backend->write(x, y, false, "%c--", SYM_RSSI);
+            backend->write(x, y, false, "%c--", SYM_LQ);
         } else {
-            backend->write(x, y, false, "%c%2d", SYM_RSSI, lqv);
+            backend->write(x, y, false, "%c%2d", SYM_LQ, lqv);
         }
     }
 }
