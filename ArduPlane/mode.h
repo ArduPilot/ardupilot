@@ -201,7 +201,7 @@ protected:
     bool stopPitch;
 
     int32_t currentBearing;
-    float targetAlt;
+    float minAlt;
     bool _enter() override;
 };
 

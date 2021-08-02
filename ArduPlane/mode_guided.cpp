@@ -22,10 +22,11 @@ bool ModeGuided::_enter()
     const int32_t targetAngle = plane.g.hm_target_angle;
 
     currentBearing = plane.ahrs.yaw_sensor + targetAngle * 100;
-    targetAlt = plane.relative_altitude - plane.g.hm_alt_diff;
+    minAlt = plane.relative_altitude - plane.g.hm_alt_diff;
+    minAlt = constrain_float(minAlt, plane.g.hm_min_alt, plane.relative_altitude);
 
-    printf("current heading: %d ; target heading %d\n", plane.ahrs.yaw_sensor, currentBearing);
-    printf("current altitude: %f \n", plane.relative_altitude);
+    hal.console->printf("Hd: %d ; Tgt_Hd %d\n", plane.ahrs.yaw_sensor, currentBearing);
+    hal.console->printf("min altitude: %f \n", minAlt);
 
     stopRoll = false;
     stopPitch = false;
@@ -43,14 +44,17 @@ void ModeGuided::update()
         int32_t diffAbs = abs(diff);
 
         if (diffAbs > plane.g.hm_deg_eps && !stopRoll) {
+            hal.console->printf("Tgt_Hd: %d \n", diff);
+            plane.guided_state.forced_rpy_cd.y = 1;
+            plane.guided_state.last_forced_rpy_ms.y = now;
 
             plane.guided_state.forced_rpy_cd.x = diff;
             plane.guided_state.last_forced_rpy_ms.x = now;
 
             plane.calc_nav_roll();
+            plane.calc_nav_pitch();
         }
-        else if(plane.relative_altitude > targetAlt && plane.relative_altitude > 150) {
-            printf("current altitude: %f \n", plane.relative_altitude);
+        else if(plane.relative_altitude > minAlt) {
             stopRoll = true;
             plane.guided_state.forced_rpy_cd.y = plane.g.hm_attack_angle * 100;
             plane.guided_state.last_forced_rpy_ms.y = now;
@@ -58,10 +62,11 @@ void ModeGuided::update()
             plane.guided_state.forced_rpy_cd.x = 1;
             plane.guided_state.last_forced_rpy_ms.x = now;
 
+            plane.calc_nav_roll();
             plane.calc_nav_pitch();
         }
         else {
-            plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
+            plane.set_mode(plane.mode_cruise, ModeReason::MISSION_END);
         }
 
         plane.calc_throttle();
