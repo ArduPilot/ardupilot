@@ -112,7 +112,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: ORIENTATION
     // @DisplayName: Board Orientation
     // @Description: Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. This option takes affect on next boot. After changing you will need to re-level your vehicle.
-    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,100:Custom
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
 
@@ -216,6 +216,10 @@ void AP_AHRS::init()
 
     // init parent class
     AP_AHRS_DCM::init();
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    _nmea_out = AP_NMEA_Output::probe();
+#endif
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -316,9 +320,14 @@ void AP_AHRS::update(bool skip_ins_update)
         _view->update(skip_ins_update);
     }
 
-#if !HAL_MINIMIZE_FEATURES
+    // update AOA and SSA
+    update_AOA_SSA();
+
+#if HAL_NMEA_OUTPUT_ENABLED
     // update NMEA output
-    update_nmea_out();
+    if (_nmea_out != nullptr) {
+        _nmea_out->update();
+    }
 #endif
 
     EKFType active = active_EKF_type();
@@ -894,36 +903,50 @@ bool AP_AHRS::use_compass(void)
 // return the quaternion defining the rotation from NED to XYZ (body) axes
 bool AP_AHRS::get_quaternion(Quaternion &quat) const
 {
+    // backends always return in autopilot XYZ frame; rotate result
+    // according to trim
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return AP_AHRS_DCM::get_quaternion(quat);
+        if (!AP_AHRS_DCM::get_quaternion(quat)) {
+            return false;
+        }
+        break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
+        if (!_ekf2_started) {
+            return false;
+        }
         EKF2.getQuaternion(-1, quat);
-        return _ekf2_started;
+        break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getQuaternion(-1, quat);
-        return _ekf3_started;
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        if (_sitl) {
-            const struct SITL::sitl_fdm &fdm = _sitl->state;
-            quat = fdm.quaternion;
-            return true;
-        } else {
+        if (!_ekf3_started) {
             return false;
         }
+        EKF3.getQuaternion(-1, quat);
+        break;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL: {
+        if (!_sitl) {
+            return false;
+        }
+        const struct SITL::sitl_fdm &fdm = _sitl->state;
+        quat = fdm.quaternion;
+        break;
+    }
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
+        // we assume the external AHRS isn't trimmed with the autopilot!
         return AP::externalAHRS().get_quaternion(quat);
 #endif
     }
-    // since there is no default case above, this is unreachable
-    return false;
+
+    quat.rotate(-_trim.get());
+
+    return true;
 }
 
 // return secondary attitude solution if available, as eulers in radians
@@ -991,21 +1014,29 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 
     case EKFType::NONE:
         // DCM is secondary
-        quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
-        return true;
+        if (!AP_AHRS_DCM::get_quaternion(quat)) {
+            return false;
+        }
+        break;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // EKF2 is secondary
+        if (!_ekf2_started) {
+            return false;
+        }
         EKF2.getQuaternion(-1, quat);
-        return _ekf2_started;
+        break;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // EKF3 is secondary
+        if (!_ekf3_started) {
+            return false;
+        }
         EKF3.getQuaternion(-1, quat);
-        return _ekf3_started;
+        break;
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1021,8 +1052,9 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 #endif
     }
 
-    // since there is no default case above, this is unreachable
-    return false;
+    quat.rotate(-_trim.get());
+
+    return true;
 }
 
 // return secondary position solution if available
@@ -1730,7 +1762,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
         }
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
-            if ((!_compass || !_compass->use_for_yaw()) &&
+            if ((!AP::compass().use_for_yaw()) &&
                 AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
                 AP::gps().ground_speed() < 2) {
                 /*
@@ -2143,7 +2175,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
     Quaternion primary_quat;
     get_quat_body_to_ned(primary_quat);
     // only check yaw if compasses are being used
-    bool check_yaw = _compass && _compass->use_for_yaw();
+    const bool check_yaw = AP::compass().use_for_yaw();
     uint8_t total_ekf_cores = 0;
 
 #if HAL_NAVEKF2_AVAILABLE

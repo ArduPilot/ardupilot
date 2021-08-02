@@ -138,6 +138,7 @@ public:
     friend class GCS_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
+    friend class Tailsitter;
 
     friend class Mode;
     friend class ModeCircle;
@@ -866,7 +867,6 @@ private:
     void Log_Write_Status();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
-    void Log_Write_AOA_SSA();
     void Log_Write_AETR();
     void Log_Write_MavCmdI(const mavlink_command_int_t &packet);
     void log_init();
@@ -1147,8 +1147,11 @@ private:
 
 public:
     void failsafe_check(void);
+#ifdef ENABLE_SCRIPTING
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern Plane plane;

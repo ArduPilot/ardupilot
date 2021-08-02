@@ -81,6 +81,7 @@ public:
 
     // create a quaternion from Euler angles
     void        from_euler(T roll, T pitch, T yaw);
+    void        from_euler(const Vector3<T> &v);
 
     // create a quaternion from Euler angles applied in yaw, roll, pitch order
     // instead of the normal yaw, pitch, roll order

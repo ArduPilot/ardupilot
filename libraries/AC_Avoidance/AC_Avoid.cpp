@@ -194,7 +194,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     float back_vel_down = 0.0f;
     
     // Avoidance in response to proximity sensor
-    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled && _proximity_alt_enabled) {
+    if (proximity_avoidance_enabled() && _proximity_alt_enabled) {
         // Store velocity needed to back away from physical obstacles
         Vector3f backup_vel_proximity;
         adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, backup_vel_proximity, kP_z,accel_cmss_z, dt);
@@ -390,7 +390,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     // get distance from proximity sensor
     float proximity_alt_diff;
     AP_Proximity *proximity = AP::proximity();
-    if (proximity && proximity->get_upward_distance(proximity_alt_diff)) {
+    if (proximity && proximity_avoidance_enabled() && proximity->get_upward_distance(proximity_alt_diff)) {
         proximity_alt_diff -= _margin;
         if (!limit_alt || proximity_alt_diff < alt_diff) {
             alt_diff = proximity_alt_diff;
@@ -421,7 +421,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 {
     // exit immediately if proximity based avoidance is disabled
-    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) == 0 || !_proximity_enabled) {
+    if (!proximity_avoidance_enabled()) {
         return;
     }
 

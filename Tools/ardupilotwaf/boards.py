@@ -156,6 +156,13 @@ class Board:
 
         cfg.msg("CXX Compiler", "%s %s"  % (cfg.env.COMPILER_CXX, ".".join(cfg.env.CC_VERSION)))
 
+        if cfg.options.assert_cc_version:
+            cfg.msg("Checking compiler", "%s %s"  % (cfg.options.assert_cc_version, ".".join(cfg.env.CC_VERSION)))
+            have_version = cfg.env.COMPILER_CXX+"-"+'.'.join(list(cfg.env.CC_VERSION))
+            want_version = cfg.options.assert_cc_version
+            if have_version != want_version:
+                cfg.fatal("cc version mismatch: %s should be %s" % (have_version, want_version))
+        
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
@@ -762,6 +769,7 @@ class chibios(Board):
             ('6','3','1'),
             ('9','2','1'),
             ('9','3','1'),
+            ('10','2','1'),
         ]
 
         if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:

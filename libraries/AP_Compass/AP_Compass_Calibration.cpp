@@ -82,7 +82,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     if (_rotate_auto) {
         enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
         if (r != ROTATION_CUSTOM) {
-            _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2);
+            _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2, _rotate_auto>=3);
         }
     }
     _cal_saved[prio] = false;
@@ -315,7 +315,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
     return true;
 }
 
-bool Compass::is_calibrating()
+bool Compass::is_calibrating() const
 {
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i] == nullptr) {

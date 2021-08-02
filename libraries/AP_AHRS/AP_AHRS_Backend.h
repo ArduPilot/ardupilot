@@ -28,7 +28,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 
-class AP_NMEA_Output;
 class OpticalFlow;
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -95,19 +94,6 @@ public:
     void set_wind_estimation(bool b) {
         _flags.wind_estimation = b;
     }
-
-    void set_compass(Compass *compass) {
-        _compass = compass;
-        update_orientation();
-    }
-
-    const Compass* get_compass() const {
-        return _compass;
-    }
-
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    void update_orientation();
 
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
@@ -333,9 +319,7 @@ public:
     }
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) {
-        return _compass && _compass->use_for_yaw();
-    }
+    virtual bool use_compass(void) = 0;
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
@@ -515,12 +499,6 @@ public:
         AP::ins().get_delta_velocity(ret, dt);
     }
 
-    // return calculated AOA
-    float getAOA(void);
-
-    // return calculated SSA
-    float getSSA(void);
-
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
@@ -538,8 +516,6 @@ public:
     Vector3f earth_to_body(const Vector3f &v) const {
         return get_rotation_body_to_ned().mul_transpose(v);
     }
-    
-    virtual void update_AOA_SSA(void);
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return
@@ -572,13 +548,11 @@ public:
 
     // Logging to disk functions
     void Write_AHRS2(void) const;
-    void Write_AOA_SSA(void);  // should be const? but it calls update functions
     void Write_Attitude(const Vector3f &targets) const;
     void Write_Origin(uint8_t origin_type, const Location &loc) const; 
     void Write_POS(void) const;
 
 protected:
-    void update_nmea_out();
 
     // multi-thread access support
     HAL_Semaphore _rsem;
@@ -635,13 +609,7 @@ protected:
     // update takeoff/touchdown flags
     void update_flags();
 
-    // pointer to compass object, if available
-    Compass         * _compass;
-
     // pointer to airspeed object, if available
-
-    // time in microseconds of last compass update
-    uint32_t _compass_last_update;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
@@ -682,8 +650,6 @@ protected:
     uint32_t _last_AOA_update_ms;
 
 private:
-
-    AP_NMEA_Output* _nmea_out;
 
     uint32_t takeoff_expected_start_ms;
     uint32_t touchdown_expected_start_ms;

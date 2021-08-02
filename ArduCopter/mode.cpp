@@ -197,6 +197,13 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return true;
     }
 
+#if MODE_AUTO_ENABLED == ENABLED
+    if (mode == Mode::Number::AUTO_RTL) {
+        // Special case for AUTO RTL, not a true mode, just AUTO in disguise
+        return mode_auto.jump_to_landing_sequence_auto_RTL(reason);
+    }
+#endif
+
     Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");

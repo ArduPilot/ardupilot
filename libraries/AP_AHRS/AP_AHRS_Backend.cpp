@@ -20,18 +20,12 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 extern const AP_HAL::HAL& hal;
 
 // init sets up INS board orientation
 void AP_AHRS_Backend::init()
 {
-    update_orientation();
-
-#if !HAL_MINIMIZE_FEATURES
-    _nmea_out = AP_NMEA_Output::probe();
-#endif
 }
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
@@ -69,20 +63,16 @@ void AP_AHRS_Backend::add_trim(float roll_in_radians, float pitch_in_radians, bo
 }
 
 // Set the board mounting orientation, may be called while disarmed
-void AP_AHRS_Backend::update_orientation()
+void AP_AHRS::update_orientation()
 {
     const enum Rotation orientation = (enum Rotation)_board_orientation.get();
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation);
-        }
+        AP::compass().set_board_orientation(orientation);
     } else {
         _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
         AP::ins().set_board_orientation(orientation, &_custom_rotation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation, &_custom_rotation);
-        }
+        AP::compass().set_board_orientation(orientation, &_custom_rotation);
     }
 }
 
@@ -253,7 +243,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
  * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
  * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
  */
-void AP_AHRS_Backend::update_AOA_SSA(void)
+void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     const uint32_t now = AP_HAL::millis();
@@ -299,20 +289,6 @@ void AP_AHRS_Backend::update_AOA_SSA(void)
 #endif
 }
 
-// return current AOA
-float AP_AHRS_Backend::getAOA(void)
-{
-    update_AOA_SSA();
-    return _AOA;
-}
-
-// return calculated SSA
-float AP_AHRS_Backend::getSSA(void)
-{
-    update_AOA_SSA();
-    return _SSA;
-}
-
 // rotate a 2D vector from earth frame to body frame
 Vector2f AP_AHRS_Backend::earth_to_body2D(const Vector2f &ef) const
 {
@@ -347,15 +323,6 @@ void AP_AHRS_Backend::Log_Write_Home_And_Origin()
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) const {
     return AP::baro().get_EAS2TAS();
-}
-
-void AP_AHRS_Backend::update_nmea_out()
-{
-#if !HAL_MINIMIZE_FEATURES
-    if (_nmea_out != nullptr) {
-        _nmea_out->update();
-    }
-#endif
 }
 
 // return current vibration vector for primary IMU

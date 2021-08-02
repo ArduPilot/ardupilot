@@ -143,7 +143,7 @@ void Plane::ahrs_update()
     roll_limit_cd = aparm.roll_limit_cd;
     pitch_limit_min_cd = aparm.pitch_limit_min_cd;
 
-    if (!quadplane.tailsitter_active()) {
+    if (!quadplane.tailsitter.active()) {
         roll_limit_cd *= ahrs.cos_pitch();
         pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
     }
@@ -185,9 +185,7 @@ void Plane::update_speed_height(void)
  */
 void Plane::update_compass(void)
 {
-    if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
-    }
+    compass.read();
 }
 
 /*
@@ -314,7 +312,7 @@ void Plane::three_hz_loop()
 
 void Plane::compass_save()
 {
-    if (AP::compass().enabled() &&
+    if (AP::compass().available() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !hal.util->get_soft_armed()) {
         /*
@@ -651,7 +649,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-
+#ifdef ENABLE_SCRIPTING
 // set target location (for use by scripting)
 bool Plane::set_target_location(const Location& target_loc)
 {
@@ -689,5 +687,6 @@ bool Plane::get_target_location(Location& target_loc)
     }
     return false;
 }
+#endif // ENABLE_SCRIPTING
 
 AP_HAL_MAIN_CALLBACKS(&plane);

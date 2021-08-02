@@ -102,7 +102,9 @@ public:
     ///
     bool read();
 
-    bool enabled() const { return _enabled; }
+    // available returns true if the compass is both enabled and has
+    // been initialised
+    bool available() const { return _enabled && init_done; }
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -177,7 +179,7 @@ public:
     void cancel_calibration_all();
 
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
-    bool is_calibrating();
+    bool is_calibrating() const;
 
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
@@ -458,9 +460,6 @@ private:
 
     // enable automatic declination code
     AP_Int8     _auto_declination;
-
-    // first-time-around flag used by offset nulling
-    bool        _null_init_done;
 
     // stores which bit is used to indicate we should log compass readings
     uint32_t _log_bit = -1;

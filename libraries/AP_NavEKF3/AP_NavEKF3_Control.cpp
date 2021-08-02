@@ -567,9 +567,8 @@ bool NavEKF3_core::use_compass(void) const
         return false;
     }
 
-    const auto *compass = dal.get_compass();
-    return compass &&
-           compass->use_for_yaw(magSelectIndex) &&
+    const auto &compass = dal.compass();
+    return compass.use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
 }
 

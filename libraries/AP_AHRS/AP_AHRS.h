@@ -51,6 +51,8 @@ class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
+
 class AP_AHRS : public AP_AHRS_DCM {
     friend class AP_AHRS_View;
 public:
@@ -72,6 +74,10 @@ public:
     static AP_AHRS *get_singleton() {
         return _singleton;
     }
+
+    // allow for runtime change of orientation
+    // this makes initial config easier
+    void update_orientation();
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -322,6 +328,18 @@ public:
     // create a view
     AP_AHRS_View *create_view(enum Rotation rotation, float pitch_trim_deg=0);
 
+    // write AOA and SSA information to dataflash logs:
+    void Write_AOA_SSA(void) const;
+
+    // update AOA and SSA values
+    virtual void update_AOA_SSA(void);
+
+    // return AOA
+    float getAOA(void) const { return _AOA; }
+
+    // return SSA
+    float getSSA(void) const { return _SSA; }
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
@@ -401,6 +419,10 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
 #endif    
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    class AP_NMEA_Output* _nmea_out;
+#endif
 };
 
 namespace AP {

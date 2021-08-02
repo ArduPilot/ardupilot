@@ -17,6 +17,7 @@ userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
 userdata Location method get_distance_NE Vector2f Location
+userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 
 include AP_AHRS/AP_AHRS.h
 
@@ -403,3 +404,20 @@ userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP
 include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor alias ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
+
+
+include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVERS
+include AP_HAL/AP_HAL.h
+
+userdata AP_HAL::CANFrame depends HAL_MAX_CAN_PROTOCOL_DRIVERS
+userdata AP_HAL::CANFrame alias CANFrame
+userdata AP_HAL::CANFrame field id uint32_t read write 0U UINT32_MAX
+userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
+userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
+userdata AP_HAL::CANFrame method isExtended boolean
+userdata AP_HAL::CANFrame method isRemoteTransmissionRequest boolean
+userdata AP_HAL::CANFrame method isErrorFrame boolean
+
+ap_object ScriptingCANBuffer depends HAL_MAX_CAN_PROTOCOL_DRIVERS
+ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t 0U UINT32_MAX
+ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null

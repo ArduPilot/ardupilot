@@ -81,7 +81,7 @@ public:
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
-    bool proximity_avoidance_enabled() const { return _proximity_enabled; }
+    bool proximity_avoidance_enabled() const { return (_proximity_enabled && (_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0); }
     void proximity_alt_avoidance_enable(bool on_off) { _proximity_alt_enabled = on_off; }
 
     // helper functions

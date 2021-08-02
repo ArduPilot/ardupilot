@@ -12,6 +12,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include "qautotune.h"
 #include "defines.h"
+#include "tailsitter.h"
 
 /*
   QuadPlane specific functionality
@@ -27,6 +28,7 @@ public:
     friend class AP_Arming_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channel;
+    friend class Tailsitter;
 
     friend class Mode;
     friend class ModeAuto;
@@ -85,11 +87,6 @@ public:
     */
     bool in_transition(void) const;
 
-    /*
-      return true if we are a tailsitter transitioning to VTOL flight
-    */
-    bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
-
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
@@ -116,36 +113,6 @@ public:
 
     // see if we are flying from vtol point of view
     bool is_flying_vtol(void) const;
-
-    // return true when tailsitter frame configured
-    bool is_tailsitter(void) const;
-
-    // return true when flying a control surface only tailsitter
-    bool is_control_surface_tailsitter(void) const;
-
-    // true when flying a tilt-vectored tailsitter
-    bool _is_vectored;
-
-    // return true when flying a tailsitter in VTOL
-    bool tailsitter_active(void);
-    
-    // create outputs for tailsitters
-    void tailsitter_output(void);
-
-    // handle different tailsitter input types
-    void tailsitter_check_input(void);
-    
-    // check if we have completed transition to fixed wing
-    bool tailsitter_transition_fw_complete(void);
-
-    // return true if we are a tailsitter in FW flight
-    bool is_tailsitter_in_fw_flight(void) const;
-
-    // check if we have completed transition to vtol
-    bool tailsitter_transition_vtol_complete(void) const;
-
-    // account for control surface speed scaling in VTOL modes
-    void tailsitter_speed_scaling(void);
 
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
@@ -193,10 +160,11 @@ private:
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
     AP_Enum<AP_Motors::motor_frame_type> frame_type;
-    
-    AP_MotorsMulticopter *motors;
+
+    // Initialise motors to allow passing it to tailsitter in its constructor
+    AP_MotorsMulticopter *motors = nullptr;
     const struct AP_Param::GroupInfo *motors_var_info;
-    
+
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -532,56 +500,9 @@ private:
         bool is_vectored;
     } tilt;
 
-    // bit 0 enables plane mode and bit 1 enables body-frame roll mode
-    enum tailsitter_input {
-        TAILSITTER_INPUT_PLANE   = (1U<<0),
-        TAILSITTER_INPUT_BF_ROLL = (1U<<1)
-    };
 
-    enum tailsitter_mask {
-        TAILSITTER_MASK_AILERON  = (1U<<0),
-        TAILSITTER_MASK_ELEVATOR = (1U<<1),
-        TAILSITTER_MASK_THROTTLE = (1U<<2),
-        TAILSITTER_MASK_RUDDER   = (1U<<3),
-    };
-
-    enum tailsitter_gscl_mask {
-        TAILSITTER_GSCL_THROTTLE = (1U<<0),
-        TAILSITTER_GSCL_ATT_THR = (1U<<1),
-        TAILSITTER_GSCL_DISK_THEORY = (1U<<2),
-        TAILSITTER_GSCL_ALTITUDE = (1U<<3),
-    };
-
-    // tailsitter control variables
-    struct {
-        // transition from VTOL to forward
-        AP_Int8 transition_angle_fw;
-        AP_Float transition_rate_fw;
-        // transition from forward to VTOL
-        AP_Int8 transition_angle_vtol;
-        AP_Float transition_rate_vtol;
-        AP_Int8 input_type;
-        AP_Int8 input_mask;
-        AP_Int8 input_mask_chan;
-        AP_Float vectored_forward_gain;
-        AP_Float vectored_hover_gain;
-        AP_Float vectored_hover_power;
-        AP_Float throttle_scale_max;
-        AP_Float gain_scaling_min;
-        AP_Float max_roll_angle;
-        AP_Int16 motor_mask;
-        AP_Float scaling_speed_min;
-        AP_Float scaling_speed_max;
-        AP_Int16 gain_scaling_mask;
-        AP_Float disk_loading;
-    } tailsitter;
-
-    // return the transition_angle_vtol value
-    int8_t get_tailsitter_transition_angle_vtol(void) const;
-
-    // tailsitter speed scaler
-    float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
-    float log_spd_scaler; // for QTUN log
+    // tailsitter control
+    Tailsitter tailsitter{*this, motors};
 
     // the attitude view of the VTOL attitude controller
     AP_AHRS_View *ahrs_view;
