@@ -200,6 +200,12 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     }
 }
 
+/// get current target climb rate in cm/s
+float AC_WPNav::get_speed_up() const
+{
+    return _pos_control.get_max_speed_up_cms();
+}
+
 /// set current target climb rate during wp navigation
 void AC_WPNav::set_speed_up(float speed_up_cms)
 {
