@@ -264,22 +264,6 @@ void Copter::check_vibration()
     const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance > 1.0f)) || is_vibration_affected;
     const bool do_bad_vibe_actions = (g2.fs_vibe_enabled == 1) && bad_vibe_detected && motors->armed();
 
-    // static uint32_t frame_count=0;
-    // frame_count++;
-    // if (frame_count > 10) {
-    //     frame_count=0;
-    //     AP::logger().Write(
-    //         "CEVC",
-    //         "TimeUS,icv,ivpp,vv,iva,dbva",
-    //         "Qbbfbb",
-    //         AP_HAL::micros64(),
-    //         innovation_checks_valid,
-    //         innov_velD_posD_positive,
-    //         vel_variance,
-    //         is_vibration_affected,
-    //         do_bad_vibe_actions);
-    // }
-
     if (!vibration_check.high_vibes) {
         // initialise timers
         if (!do_bad_vibe_actions) {
