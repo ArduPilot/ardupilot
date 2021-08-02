@@ -132,12 +132,11 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
 void AC_WPNav::wp_and_spline_init(float speed_cms)
 {
-    
     // sanity check parameters
     // check _wp_accel_cmss is reasonable
     const float wp_accel_cmss = MIN(_wp_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
     _wp_accel_cmss.set_and_save_ifchanged((_wp_accel_cmss <= 0) ? WPNAV_ACCELERATION : wp_accel_cmss);
-    
+
     // check _wp_radius_cm is reasonable
     _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN));
 
