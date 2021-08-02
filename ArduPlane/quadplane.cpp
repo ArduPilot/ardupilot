@@ -1636,10 +1636,11 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
-    if (!( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
+    if (!tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || plane.get_throttle_input()>0 
                                                                       || plane.is_flying() ) ) {
         // not in a flight mode and condition where it would be safe to turn on vertial lift motors
+        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return false;
