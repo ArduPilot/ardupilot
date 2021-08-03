@@ -125,7 +125,7 @@ public:
 
     bool check_drift(Vector2f prev_wp, Vector2f next_wp);
 
-    void update_active_state();
+    void update_active_state(bool override_disable);
 
     bool is_active() const {return _last_update_status>=SoaringController::ActiveStatus::MANUAL_MODE_CHANGE;};
 
@@ -143,7 +143,7 @@ private:
 
     ActiveStatus _pilot_desired_state = ActiveStatus::AUTO_MODE_CHANGE;
 
-    ActiveStatus active_state() const;
+    ActiveStatus active_state(bool override_disable) const;
 
     bool _exit_commanded;
 };
