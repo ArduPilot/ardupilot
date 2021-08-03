@@ -1200,6 +1200,7 @@ private:
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
+    bool relyingOnFlowData;             // true when relying entirely on optical flow to constrain horizontal drift
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
