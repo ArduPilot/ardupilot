@@ -46,6 +46,9 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
+#ifdef HAL_DIGITAL_SKY_RFM
+#include <AP_Security/AP_DigitalSky.h>
+#endif
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -336,6 +339,10 @@ protected:
 
 #if OSD_ENABLED
     void publish_osd_info();
+#endif
+
+#ifdef HAL_DIGITAL_SKY_RFM
+    AP_DSNPNT dsnpnt;
 #endif
 
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
