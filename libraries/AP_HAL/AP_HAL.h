@@ -2,8 +2,11 @@
 
 #include <stdint.h>
 
-#include "AP_HAL_Namespace.h"
+
 #include "AP_HAL_Boards.h"
+
+#ifdef __cplusplus
+#include "AP_HAL_Namespace.h"
 #include "AP_HAL_Macros.h"
 #include "AP_HAL_Main.h"
 
@@ -30,3 +33,4 @@
 #include "HAL.h"
 
 #include "system.h"
+#endif // __cplusplus

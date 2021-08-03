@@ -57,11 +57,13 @@
 #define HAL_HAVE_SAFETY_SWITCH 0
 
 // allow for static semaphores
+#ifdef __cplusplus
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
