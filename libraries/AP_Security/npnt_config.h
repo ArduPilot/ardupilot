@@ -27,4 +27,8 @@ typedef wc_Sha256 npnt_sha_t;
 #define PERMART_SKIP_ALT
 #define PERMART_SKIP_FPARAMS
 
-#define MXML_REALLOC(p,n) mxml_realloc( (p) , (n) )
+#if defined(CHIBIOS_BOARD_NAME)
+#define MXML_REALLOC(p,n) wolfssl_realloc( (p) , (n) )
+#else
+#define MXML_REALLOC(p,n) realloc( (p) , (n) )
+#endif

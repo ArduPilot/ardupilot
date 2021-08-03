@@ -22,8 +22,8 @@
 #ifdef HAL_DIGITAL_SKY_RFM
 
 #include <stdint.h>
-#include <npnt.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 
 #ifndef AP_NPNT_PERMART_FILE
@@ -41,14 +41,16 @@ public:
         return _singleton;
     }
     bool load_permission();
-    bool update_permission();
-
+    bool update_permission(bool do_log, Vector2f &curr_loc, time_t &t_now, float &alt);
+    void verify_permission();
+    void handle_set_dsnpnt_params(const mavlink_message_t &msg);
+    void handle_get_dsnpnt_params(mavlink_channel_t chan, const mavlink_message_t &msg);
 private:
     bool _check_npnt_permission();
     static AP_DSNPNT *_singleton;
     bool permission_granted;
-    npnt_s npnt_handle;
-
+    bool verify_permission_reg;
+    uint32_t last_verify_time_ms;
     Vector2f *fence_verts;
 };
 

@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#if defined(SECURE) && SECURE==1 && defined(KEY_FLASH_PAGE) && !defined(HAL_BOOTLOADER_BUILD)
+#ifdef HAL_DIGITAL_SKY_RFM
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha256.h>
@@ -46,23 +46,9 @@ public:
     void final_sha256(wc_Sha256* sha_handle, uint8_t* hash);
     void load_server_pubkey();
     int verify_hash_with_server_pkey(const char* hashed_data, uint16_t hashed_data_len, const uint8_t* signature, uint16_t signature_len);
-    bool sign_data_with_ap_key(uint8_t* data, uint32_t data_len, uint8_t* signature);
-    void change_pin(uint32_t old_pin, uint32_t new_pin);
-    bool is_secure();
-    bool set_input_pin(uint32_t pin);
 
 private:
-    void _generate_private_key(void);
-    void _secure_thread(void);
-    void _save_public_key(void);
-    bool _check_and_initialise_private_key(void);
-    bool _flash_read(uint32_t addr, void *data, uint32_t length);
-
-    HAL_EventHandle event_handle;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    static ChibiOS::EventSource evt_src;
-#endif
+    HAL_Semaphore _keygen_sem;
 
     struct secure_block_t {
         uint32_t dersize;
@@ -86,4 +72,4 @@ namespace AP {
     KeyManager &keymgr();
 };
 
-#endif
+#endif //#ifdef HAL_DIGITAL_SKY_RFM
