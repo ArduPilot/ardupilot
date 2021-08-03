@@ -77,8 +77,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageFence,    9772,   256},
     { StorageMission,  10028,  5204},
     { StorageCANDNA,   15232,  1024},
-    { StorageDSNPNT,   16256,   32},
-    // 96 byte gap at end of first 16k
+    { StorageDSNPNT,   16256,   128},
 #endif
 #if STORAGE_NUM_AREAS >= 20
     { StorageParam,    16384, 1280},
@@ -121,8 +120,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageFence,    9772,   256},
     { StorageMission,  10028,  5204},
     { StorageCANDNA,   15232,  1024},
-    { StorageDSNPNT,   16256,   32},
-    // 96 byte gap at end of first 16k
+    { StorageDSNPNT,   16256,   128},
 #endif
 #if STORAGE_NUM_AREAS >= 20
     { StorageParam,    16384, 1280},
