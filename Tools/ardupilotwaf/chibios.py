@@ -35,18 +35,14 @@ def _load_dynamic_env_data(bld):
             idirs2.append(d)
     _dynamic_env_data['include_dirs'] = idirs2
 
-@feature('ch_ap_library', 'ch_ap_program')
-@before_method('process_source')
 def ch_dynamic_env(self):
     # The generated files from configuration possibly don't exist if it's just
     # a list command (TODO: figure out a better way to address that).
-    if self.bld.cmd == 'list':
-        return
-
+    bld = self.generator.bld
     if not _dynamic_env_data:
-        _load_dynamic_env_data(self.bld)
-    self.use += ' ch'
-    self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
+        _load_dynamic_env_data(bld)
+    bld.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
+    bld.env.HAL_INCLUDE_CFLAGS = '-I' + ' -I'.join(_dynamic_env_data['include_dirs'])
 
 
 class upload_fw(Task.Task):
@@ -323,8 +319,8 @@ def configure(cfg):
         return bldnode.make_node(path).abspath()
     env.AP_PROGRAM_FEATURES += ['ch_ap_program']
 
-    kw = env.AP_LIBRARIES_OBJECTS_KW
-    kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
+    # kw = env.AP_LIBRARIES_OBJECTS_KW
+    # kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
     env.CH_ROOT = srcpath('modules/ChibiOS')
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
@@ -433,6 +429,13 @@ def build(bld):
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
+    )
+
+    bld(
+        source=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs'),
+        always=True,
+        rule=ch_dynamic_env,
+        group='dynamic_sources',
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
