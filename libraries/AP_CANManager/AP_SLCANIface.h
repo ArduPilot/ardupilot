@@ -53,7 +53,7 @@ class CANIface: public AP_HAL::CANIface
     bool handle_FrameDataExt(const char* cmd);
 
     // Parsing bytes received on the serial port
-    inline void addByte(const uint8_t byte);
+    inline void addByte(const uint8_t data);
 
     // track changes to slcan serial port
     void update_slcan_port();

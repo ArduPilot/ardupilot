@@ -522,7 +522,7 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
     // @Group: BARO

@@ -353,7 +353,7 @@ private:
         ,TWO = 2
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ,SITL = 10
+        ,SIM = 10
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
         ,EXTERNAL = 11
@@ -415,7 +415,7 @@ private:
     EKFType last_active_ekf_type;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *_sitl;
+    SITL::SIM *_sitl;
     uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
 #endif    

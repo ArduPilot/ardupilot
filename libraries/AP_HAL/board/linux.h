@@ -351,10 +351,12 @@
     #define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 0xFFFF
 #endif
 
+#ifdef __cplusplus
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 #ifndef HAL_HAVE_HARDWARE_DOUBLE
 #define HAL_HAVE_HARDWARE_DOUBLE 1

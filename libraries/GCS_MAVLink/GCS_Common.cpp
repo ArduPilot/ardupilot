@@ -47,7 +47,6 @@
 #include <AP_Winch/AP_Winch.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
-
 #include <stdio.h>
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -75,6 +74,10 @@
 
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
+
+#ifdef HAL_DIGITAL_SKY_RFM
+#include <AP_Security/AP_DigitalSky.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -3539,6 +3542,26 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
         break;
+
+#ifdef HAL_DIGITAL_SKY_RFM
+    case MAVLINK_MSG_ID_DSNPNT_PARAMS:
+        {
+            AP_DSNPNT *dsnpnt = AP_DSNPNT::get_singleton();
+            if (dsnpnt != nullptr) {
+                dsnpnt->handle_set_dsnpnt_params(msg);
+            }
+        }
+        break;
+    
+    case MAVLINK_MSG_ID_GET_DSNPNT_PARAMS:
+        {
+            AP_DSNPNT *dsnpnt = AP_DSNPNT::get_singleton();
+            if (dsnpnt != nullptr) {
+                dsnpnt->handle_get_dsnpnt_params(chan, msg);
+            }
+        }
+        break;
+#endif
     }
 
 }
@@ -3648,7 +3671,7 @@ void GCS_MAVLINK::send_banner()
 void GCS_MAVLINK::send_simstate() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
     }
@@ -3659,7 +3682,7 @@ void GCS_MAVLINK::send_simstate() const
 void GCS_MAVLINK::send_sim_state() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
     }

@@ -114,6 +114,7 @@ public:
         PRIORITY_UART,
         PRIORITY_STORAGE,
         PRIORITY_SCRIPTING,
+        PRIORITY_KEYMGR,
     };
     
     /*

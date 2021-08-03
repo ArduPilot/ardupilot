@@ -61,11 +61,13 @@
 #endif
 
 // allow for static semaphores
+#ifdef __cplusplus
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"

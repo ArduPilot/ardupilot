@@ -307,9 +307,9 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     * Data
     */
     for (unsigned i = 0; i < frame.dlc; i++) {
-        const uint8_t byte = frame.data[i];
-        *p++ = nibble2hex(byte >> 4);
-        *p++ = nibble2hex(byte);
+        const uint8_t data = frame.data[i];
+        *p++ = nibble2hex(data >> 4);
+        *p++ = nibble2hex(data);
     }
 
     /*
@@ -421,19 +421,19 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
 }
 
 // add bytes to parse the received SLCAN Data stream
-inline void SLCAN::CANIface::addByte(const uint8_t byte)
+inline void SLCAN::CANIface::addByte(const uint8_t data)
 {
     if (_port == nullptr) {
         return;
     }
-    if ((byte >= 32 && byte <= 126)) {  // Normal printable ASCII character
+    if ((data >= 32 && data <= 126)) {  // Normal printable ASCII character
         if (pos_ < SLCAN_BUFFER_SIZE) {
-            buf_[pos_] = char(byte);
+            buf_[pos_] = char(data);
             pos_ += 1;
         } else {
             pos_ = 0;   // Buffer overrun; silently drop the data
         }
-    } else if (byte == '\r') {  // End of command (SLCAN)
+    } else if (data == '\r') {  // End of command (SLCAN)
 
         // Processing the command
         buf_[pos_] = '\0';
@@ -446,7 +446,7 @@ inline void SLCAN::CANIface::addByte(const uint8_t byte)
             _port->write_locked(reinterpret_cast<const uint8_t*>(response),
                                 strlen(response), _serial_lock_key);
         }
-    } else if (byte == 8 || byte == 127) {  // DEL or BS (backspace)
+    } else if (data == 8 || data == 127) {  // DEL or BS (backspace)
         if (pos_ > 0) {
             pos_ -= 1;
         }

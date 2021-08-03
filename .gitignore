@@ -47,6 +47,7 @@
 .pydevproject
 .depend
 .directory
+.history/
 .metadata/
 .project
 .settings/

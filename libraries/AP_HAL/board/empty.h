@@ -13,5 +13,6 @@
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 0
 #define HAL_HAVE_SAFETY_SWITCH 1
-
+#ifdef __cplusplus
 #define HAL_Semaphore Empty::Semaphore
+#endif

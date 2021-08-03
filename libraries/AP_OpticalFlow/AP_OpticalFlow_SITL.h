@@ -17,7 +17,7 @@ public:
     void update(void) override;
 
 private:
-    SITL::SITL *_sitl;
+    SITL::SIM *_sitl;
     uint32_t last_flow_ms;
 
     uint8_t next_optflow_index;

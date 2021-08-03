@@ -64,6 +64,35 @@ class Board:
         else:
             cfg.options.disable_scripting = True
 
+        if cfg.options.ds_publickey is not None:
+            cfg.msg("DigitalSky Support:", 'enabled')
+            env.DEFINES.update(
+                WOLFSSL_USER_SETTINGS=1,
+                SKIP_WOLFSSL_BINDINGS=1)
+            env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
+            env.GIT_SUBMODULES += ['wolfssl']
+            env.BUILD_WOLFSSL = True
+            cfg.load('wolfssl')
+            env.INCLUDES += [cfg.env.WOLFSSL_USER_HEADERS]
+
+            env.AP_LIBRARIES += [
+                'modules/libnpnt/jsmn/*.c',
+                'modules/libnpnt/src/*.c',
+                'modules/libnpnt/mxml/mxml*.c',
+                'AP_Security'
+                ]
+            env.INCLUDES += [
+                cfg.srcnode.find_dir('modules/libnpnt/').abspath(),
+                cfg.srcnode.find_dir('modules/libnpnt/inc').abspath(),
+                cfg.srcnode.find_dir('libraries/AP_Security/').abspath()
+            ]
+            env.GIT_SUBMODULES += ['libnpnt']
+            env.ROMFS_FILES += [ ('server_pubkey.der', cfg.options.ds_publickey) ]
+            env.CXXFLAGS += ['-DHAL_DIGITAL_SKY_RFM']
+            env.CFLAGS += ['-DHAL_DIGITAL_SKY_RFM']
+        else:
+            cfg.msg("DigitalSky Support:", 'disabled', color='YELLOW')
+
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_NO_GCS=1']
@@ -584,6 +613,11 @@ class sitl(Board):
             return cfg.srcnode.make_node(path).abspath()
         env.SRCROOT = srcpath('')
 
+    def build(self, bld):
+        super(sitl, self).build(bld)
+        if bld.env.BUILD_WOLFSSL:
+            bld.load('wolfssl')
+
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
@@ -802,6 +836,8 @@ class chibios(Board):
         super(chibios, self).build(bld)
         bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
+        if bld.env.BUILD_WOLFSSL:
+            bld.load('wolfssl')
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
