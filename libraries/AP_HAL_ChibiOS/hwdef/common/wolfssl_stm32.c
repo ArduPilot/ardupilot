@@ -20,7 +20,7 @@
  */
 
 /* Generic STM32 Hashing Function */
-#if defined(SECURE) && SECURE==1
+#ifdef HAL_DIGITAL_SKY_RFM
 
 #include <wolfssl/options.h>
 
@@ -771,4 +771,4 @@ int stm32_ecc_sign_hash_ex(const byte* hash, word32 hashlen, WC_RNG* rng,
 
 #endif /* HAVE_ECC */
 #endif /* WOLFSSL_STM32_PKA */
-#endif //#if defined(SECURE) && SECURE==1
+#endif // HAL_DIGITAL_SKY_RFM
