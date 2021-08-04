@@ -131,9 +131,11 @@ SPIDEV dataflash SPI1 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 SPIDEV osd SPI2 DEVID2 AT7456E_CS MODE0 10*MHZ 10*MHZ
 SPIDEV mpu6000 SPI4 DEVID4 MPU6000_CS MODE3  1*MHZ  4*MHZ
 
-# no built-in compass and no external I2C so no compass
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
 # one IMU
