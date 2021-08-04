@@ -291,7 +291,7 @@ void AP_Periph_FW::update_rainbow()
 void AP_Periph_FW::show_stack_free()
 {
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
-    can_printf("ISR %u/%u", stack_free(&__main_stack_base__), isr_stack_size);
+    can_printf("ISR %u/%u", unsigned(stack_free(&__main_stack_base__)), unsigned(isr_stack_size));
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         uint32_t total_stack;
@@ -303,7 +303,7 @@ void AP_Periph_FW::show_stack_free()
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
-        can_printf("%s STACK=%u/%u\n", tp->name, stack_free(tp->wabase), total_stack);
+        can_printf("%s STACK=%u/%u\n", tp->name, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
     }
 }
 #endif
@@ -360,7 +360,7 @@ void AP_Periph_FW::update()
     if (now - last_error_ms > 5000 && ierr.errors()) {
         // display internal errors as DEBUG every 5s
         last_error_ms = now;
-        can_printf("IERR 0x%x %u", ierr.errors(), ierr.last_error_line());
+        can_printf("IERR 0x%x %u", unsigned(ierr.errors()), unsigned(ierr.last_error_line()));
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
