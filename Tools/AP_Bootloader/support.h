@@ -46,7 +46,7 @@ void led_toggle(unsigned led);
 
 // printf to debug uart (or USB)
 extern "C" {
-void uprintf(const char *fmt, ...);
+void uprintf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
 
 // generate a LED sequence forever
