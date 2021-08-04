@@ -121,12 +121,12 @@ private:
     bool _initialised;              // true once driver has been initialised
     bool _send_motor_speed;         // true if motor speed should be sent at next opportunity
     int16_t _motor_speed;           // desired motor speed (set from within update method)
-    uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent
+    uint32_t _last_send_motor_ms;   // system time (in millis) last motor speed command was sent (used for health reporting)
+    uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;        // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
 
     // health reporting
-    uint32_t _last_healthy_ms;      // system time (in millis) that driver was last considered healthy
-    HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_healthy_ms
+    HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_ms
     uint32_t _last_debug_ms;        // system time (in millis) that debug was last output
 
     // message parsing members
@@ -135,6 +135,7 @@ private:
     uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
     uint8_t _received_buff[TORQEEDO_MESSAGE_LEN_MAX];   // characters received
     uint8_t _received_buff_len;     // number of characters received
+    uint32_t _last_received_ms;     // system time (in millis) that a message was successfully parsed (for health reporting)
 
     static AP_Torqeedo *_singleton;
 };
