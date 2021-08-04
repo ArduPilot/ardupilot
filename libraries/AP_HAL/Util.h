@@ -8,7 +8,7 @@ class ExpandingString;
 class AP_HAL::Util {
 public:
     int snprintf(char* str, size_t size,
-                 const char *format, ...);
+                 const char *format, ...) FMT_PRINTF(4, 5);
 
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
