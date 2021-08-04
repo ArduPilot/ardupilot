@@ -399,6 +399,11 @@ public:
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
+    // helper used by scripting to convert the above function from 0 to 1 indexeing
+    // range is checked correctly by the underlying channel function
+    RC_Channel *lua_rc_channel(const uint8_t chan) {
+        return channel(chan -1);
+    }
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
                                                                        // returns the number of valid channels
