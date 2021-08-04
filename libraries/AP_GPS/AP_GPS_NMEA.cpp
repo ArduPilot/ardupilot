@@ -246,8 +246,8 @@ bool AP_GPS_NMEA::_have_new_message()
     if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
         get_type() == AP_GPS::GPS_TYPE_ALLYSTAR) {
         nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
-                    1000U/gps._rate_ms[state.instance],
-                    gps._rate_ms[state.instance]);
+                    unsigned(1000U/gps._rate_ms[state.instance]),
+                    unsigned(gps._rate_ms[state.instance]));
     }
 
     _last_fix_ms = now;
