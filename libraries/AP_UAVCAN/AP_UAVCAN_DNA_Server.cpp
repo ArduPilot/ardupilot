@@ -633,9 +633,13 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
     }
 
     if (rcvd_unique_id_offset) {
-        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n", uavcan::SystemClock::instance().getMonotonic().toUSec()/1000, (now - last_alloc_msg_ms));
+        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
+                     long(uavcan::SystemClock::instance().getMonotonic().toUSec()/1000),
+                     unsigned((now - last_alloc_msg_ms)));
     } else {
-        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n", uavcan::SystemClock::instance().getMonotonic().toUSec()/1000, (now - last_alloc_msg_ms));
+        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
+                     long(uavcan::SystemClock::instance().getMonotonic().toUSec()/1000),
+                     unsigned((now - last_alloc_msg_ms)));
     }
 
     last_alloc_msg_ms = now;
