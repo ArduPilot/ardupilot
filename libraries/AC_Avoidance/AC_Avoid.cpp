@@ -368,7 +368,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
         // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
+        alt_diff = fence->get_safe_alt_max(Location::AltFrame::ABOVE_HOME) + veh_alt;
         limit_alt = true;
     }
 
