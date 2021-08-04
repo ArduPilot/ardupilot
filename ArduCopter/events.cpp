@@ -15,29 +15,29 @@ void Copter::failsafe_radio_on_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
     // set desired action based on FS_THR_ENABLE parameter
-    Failsafe_Action desired_action;
+    FailsafeAction desired_action;
     switch (g.failsafe_throttle) {
         case FS_THR_DISABLED:
-            desired_action = Failsafe_Action_None;
+            desired_action = FailsafeAction::NONE;
             break;
         case FS_THR_ENABLED_ALWAYS_RTL:
         case FS_THR_ENABLED_CONTINUE_MISSION:
-            desired_action = Failsafe_Action_RTL;
+            desired_action = FailsafeAction::RTL;
             break;
         case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
-            desired_action = Failsafe_Action_SmartRTL;
+            desired_action = FailsafeAction::SMARTRTL;
             break;
         case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
-            desired_action = Failsafe_Action_SmartRTL_Land;
+            desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
         case FS_THR_ENABLED_ALWAYS_LAND:
-            desired_action = Failsafe_Action_Land;
+            desired_action = FailsafeAction::LAND;
             break;
         case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
-            desired_action = Failsafe_Action_Auto_DO_LAND_START;
+            desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
         default:
-            desired_action = Failsafe_Action_Land;
+            desired_action = FailsafeAction::LAND;
     }
 
     // Conditions to deviate from FS_THR_ENABLE selection and send specific GCS warning
@@ -45,28 +45,28 @@ void Copter::failsafe_radio_on_event()
         // should immediately disarm when we're on the ground
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Disarming");
         arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
 
     } else if (flightmode->is_landing() && ((battery.has_failsafed() && battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY))) {
         // Allow landing to continue when battery failsafe requires it (not a user option)
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio + Battery Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = FailsafeAction::LAND;
 
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
         // Allow landing to continue when FS_OPTIONS is set to continue landing
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = FailsafeAction::LAND;
 
     } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Auto Mode");       
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
 
     } else if ((flightmode->in_guided_mode()) &&
       (failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) && (g.failsafe_gcs != FS_GCS_DISABLED)) {
         // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode.  Only if the GCS failsafe is enabled.
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Guided Mode");
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
 
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe");
@@ -89,18 +89,18 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
 
-    Failsafe_Action desired_action = (Failsafe_Action)action;
+    FailsafeAction desired_action = (FailsafeAction)action;
 
     // Conditions to deviate from BATT_FS_XXX_ACT parameter setting
     if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
         arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Disarming");
 
-    } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING) && desired_action != Failsafe_Action_None) {
+    } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING) && desired_action != FailsafeAction::NONE) {
         // Allow landing to continue when FS_OPTIONS is set to continue when landing
-        desired_action = Failsafe_Action_Land;
+        desired_action = FailsafeAction::LAND;
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Continuing Landing");
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe");
@@ -154,62 +154,62 @@ void Copter::failsafe_gcs_on_event(void)
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
     RC_Channels::clear_overrides();
 
-    // convert the desired failsafe response to the Failsafe_Action enum
-    Failsafe_Action desired_action;
+    // convert the desired failsafe response to the FailsafeAction enum
+    FailsafeAction desired_action;
     switch (g.failsafe_gcs) {
         case FS_GCS_DISABLED:
-            desired_action = Failsafe_Action_None;
+            desired_action = FailsafeAction::NONE;
             break;
         case FS_GCS_ENABLED_ALWAYS_RTL:
         case FS_GCS_ENABLED_CONTINUE_MISSION:
-            desired_action = Failsafe_Action_RTL;
+            desired_action = FailsafeAction::RTL;
             break;
         case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
-            desired_action = Failsafe_Action_SmartRTL;
+            desired_action = FailsafeAction::SMARTRTL;
             break;
         case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
-            desired_action = Failsafe_Action_SmartRTL_Land;
+            desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
         case FS_GCS_ENABLED_ALWAYS_LAND:
-            desired_action = Failsafe_Action_Land;
+            desired_action = FailsafeAction::LAND;
             break;
         case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
-            desired_action = Failsafe_Action_Auto_DO_LAND_START;
+            desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
         default: // if an invalid parameter value is set, the fallback is RTL
-            desired_action = Failsafe_Action_RTL;
+            desired_action = FailsafeAction::RTL;
     }
 
     // Conditions to deviate from FS_GCS_ENABLE parameter setting
     if (!motors->armed()) {
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe");
 
     } else if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
         arming.disarm(AP_Arming::Method::GCSFAILSAFE);
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Disarming");
 
     } else if (flightmode->is_landing() && ((battery.has_failsafed() && battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY))) {
         // Allow landing to continue when battery failsafe requires it (not a user option)
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS + Battery Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = FailsafeAction::LAND;
 
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
         // Allow landing to continue when FS_OPTIONS is set to continue landing
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = FailsafeAction::LAND;
 
     } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::GCS_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Auto Mode");
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
 
     } else if (failsafe_option(FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL) && !flightmode->is_autopilot()) {
         // should continue when in a pilot controlled mode because FS_OPTIONS is set to continue in pilot controlled modes
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Pilot Control");
-        desired_action = Failsafe_Action_None;
+        desired_action = FailsafeAction::NONE;
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe");
     }
@@ -379,25 +379,25 @@ bool Copter::should_disarm_on_failsafe() {
 }
 
 
-void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
+void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
 
     // Execute the specified desired_action
     switch (action) {
-        case Failsafe_Action_None:
+        case FailsafeAction::NONE:
             return;
-        case Failsafe_Action_Land:
+        case FailsafeAction::LAND:
             set_mode_land_with_pause(reason);
             break;
-        case Failsafe_Action_RTL:
+        case FailsafeAction::RTL:
             set_mode_RTL_or_land_with_pause(reason);
             break;
-        case Failsafe_Action_SmartRTL:
+        case FailsafeAction::SMARTRTL:
             set_mode_SmartRTL_or_RTL(reason);
             break;
-        case Failsafe_Action_SmartRTL_Land:
+        case FailsafeAction::SMARTRTL_LAND:
             set_mode_SmartRTL_or_land_with_pause(reason);
             break;
-        case Failsafe_Action_Terminate: {
+        case FailsafeAction::TERMINATE: {
 #if ADVANCED_FAILSAFE == ENABLED
             g2.afs.gcs_terminate(true, "Failsafe");
 #else
@@ -405,7 +405,7 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
 #endif
             break;
         }
-        case Failsafe_Action_Auto_DO_LAND_START:
+        case FailsafeAction::AUTO_DO_LAND_START:
             set_mode_auto_do_land_start_or_RTL(reason);
             break;
     }
