@@ -141,7 +141,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
                  "GPS %d: detected as %s at %d baud",
                  instance + 1,
                  name(),
-                 gps._baudrates[dstate.current_baud]);
+                 int(gps._baudrates[dstate.current_baud]));
     } else {
         hal.util->snprintf(buffer, buflen,
                  "GPS %d: specified as %s",
