@@ -22,17 +22,7 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 
     if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
-        // alert user to mode change failure
-        if (copter.ap.initialised) {
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
         return;
-    }
-
-    // play a tone
-    // alert user to mode change (except if autopilot is just starting up)
-    if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change = 1;
     }
 
     if (!rc().find_channel_for_option(AUX_FUNC::SIMPLE_MODE) &&
@@ -131,14 +121,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = copter.set_mode(mode, ModeReason::RC_COMMAND);
-        if (copter.ap.initialised) {
-            if (success) {
-                AP_Notify::events.user_mode_change = 1;
-            } else {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
+        copter.set_mode(mode, ModeReason::RC_COMMAND);
         break;
     }
     default:

@@ -182,6 +182,10 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+    // make sad noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
@@ -190,10 +194,17 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
+    // update last reason
+    const ModeReason last_reason = _last_reason;
+    _last_reason = reason;
 
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
+        // make happy noise
+        if (copter.ap.initialised && (reason != last_reason)) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         return true;
     }
 
@@ -305,6 +316,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // update notify object
     notify_flight_mode();
+
+    // make happy noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change = 1;
+    }
 
     // return success
     return true;
