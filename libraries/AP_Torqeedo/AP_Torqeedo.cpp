@@ -199,8 +199,10 @@ bool AP_Torqeedo::healthy()
         return false;
     }
     {
+        // healthy if both receive and send have occurred in the last 3 seconds
         WITH_SEMAPHORE(_last_healthy_sem);
-        return ((AP_HAL::millis() - _last_healthy_ms) < 3000);
+        uint32_t now_ms = AP_HAL::millis();
+        return ((now_ms - _last_received_ms < 3000) && (now_ms - _last_send_motor_ms < 3000));
     }
 }
 
@@ -254,6 +256,11 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
                 break;
             }
             _parse_success_count++;
+            {
+                // record time of successful receive for health reporting
+                WITH_SEMAPHORE(_last_healthy_sem);
+                _last_received_ms = AP_HAL::millis();
+            }
 
             // check message id
             MsgId msg_id = (MsgId)_received_buff[0];
@@ -377,10 +384,10 @@ void AP_Torqeedo::send_motor_speed_cmd()
     _last_send_motor_us = AP_HAL::micros();
     _send_delay_us = calc_send_delay_us(buff_size);
 
-    // consider driver healthy
     {
+        // record time of send for health reporting
         WITH_SEMAPHORE(_last_healthy_sem);
-        _last_healthy_ms = AP_HAL::millis();
+        _last_send_motor_ms = AP_HAL::millis();
     }
 
 }
