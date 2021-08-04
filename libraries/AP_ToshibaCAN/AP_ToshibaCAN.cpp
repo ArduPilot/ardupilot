@@ -32,7 +32,7 @@
 extern const AP_HAL::HAL& hal;
 
 #if HAL_CANMANAGER_ENABLED
-#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "ToshibaCAN",  fmt, #args); } while (0)
+#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "ToshibaCAN",  fmt, ##args); } while (0)
 #else
 #define debug_can(level_debug, fmt, args...)
 #endif
