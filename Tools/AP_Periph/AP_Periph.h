@@ -243,6 +243,6 @@ namespace AP
 extern AP_Periph_FW periph;
 
 extern "C" {
-void can_printf(const char *fmt, ...);
+void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
 
