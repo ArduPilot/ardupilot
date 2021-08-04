@@ -231,6 +231,14 @@ bool AP_GPS_NMEA::_have_new_message()
         return false;
     }
 
+    // also wait for PLSV if we've seen it
+    if (_last_PLSV_ms != 0 &&
+        now - _last_PLSV_ms > 150 &&
+        now - _last_PLSV_ms < 1000) {
+        // waiting on PLSV
+        return false;
+    }
+    
     // prevent these messages being used again
     if (_last_VTG_ms != 0) {
         _last_VTG_ms = 1;
@@ -255,6 +263,26 @@ bool AP_GPS_NMEA::_have_new_message()
     _last_GGA_ms = 1;
     _last_RMC_ms = 1;
     return true;
+}
+
+/*
+  fill in 3d velocity if we're not expecting it from a custom message
+ */
+void AP_GPS_NMEA::_check_3d_velocity(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (_last_PHD_12_ms != 0 &&
+        now - _last_PHD_12_ms <= 1000) {
+        // we're expecting PHD_12 to give us velocity
+        return;
+    }
+    if (_last_PLSV_ms != 0 &&
+        now - _last_PLSV_ms <= 1000) {
+        // we're expecting PLSV to give us velocity
+        return;
+    }
+    // nothing else is available, fill in with zero vertical velocity
+    fill_3d_velocity();
 }
 
 // Processes a just-completed term
@@ -285,10 +313,7 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     set_uart_timestamp(_sentence_length);
                     state.last_gps_time_ms = now;
-                    if (_last_PHD_12_ms == 0 ||
-                        now - _last_PHD_12_ms > 1000) {
-                        fill_3d_velocity();
-                    }
+                    _check_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
@@ -328,10 +353,7 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_VTG_ms = now;
                     state.ground_speed  = _new_speed*0.01f;
                     state.ground_course = wrap_360(_new_course*0.01f);
-                    if (_last_PHD_12_ms == 0 ||
-                        now - _last_PHD_12_ms > 1000) {
-                        fill_3d_velocity();
-                    }
+                    _check_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
                 case _GPS_SENTENCE_HDT:
@@ -362,6 +384,16 @@ bool AP_GPS_NMEA::_term_complete()
                         state.have_speed_accuracy = true;
                         _last_PHD_26_ms = now;
                     }
+                    break;
+                case _GPS_SENTENCE_PLSV:
+                    state.velocity.x = _plsv.velocity_cms.x * 0.01;
+                    state.velocity.y = _plsv.velocity_cms.y * 0.01;
+                    state.velocity.z = _plsv.velocity_cms.z * -0.01;
+                    state.have_vertical_velocity = true;
+                    state.speed_accuracy = MAX(_plsv.velocity_accuracy_cms[0],_plsv.velocity_accuracy_cms[1]) * 0.01;
+                    state.have_speed_accuracy = true;
+                    _last_PLSV_ms = now;
+                    break;
                 }
             } else {
                 switch (_sentence_type) {
@@ -386,10 +418,14 @@ bool AP_GPS_NMEA::_term_complete()
     // the first term determines the sentence type
     if (_term_number == 0) {
         /*
-          special case for $PHD message
+          special case for vendor specific messages
          */
         if (strcmp(_term, "PHD") == 0) {
             _sentence_type = _GPS_SENTENCE_PHD;
+            return false;
+        }
+        if (strcmp(_term, "PLSV") == 0) {
+            _sentence_type = _GPS_SENTENCE_PLSV;
             return false;
         }
         /*
@@ -515,6 +551,13 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
             _phd.fields[_term_number-6] = atol(_term);
+            break;
+        case _GPS_SENTENCE_PLSV + 1 ... _GPS_SENTENCE_PLSV + 3: // PLSV message, velocity
+            _plsv.velocity_cms[_term_number-1] = atol(_term);
+            break;
+        case _GPS_SENTENCE_PLSV + 4 ... _GPS_SENTENCE_PLSV + 6: // PLSV message, velocity accuracy
+            _plsv.velocity_accuracy_cms[_term_number-4] = atol(_term);
+            _gps_data_good = true;
             break;
         }
     }

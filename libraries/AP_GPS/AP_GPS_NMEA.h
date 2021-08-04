@@ -74,6 +74,7 @@ private:
         _GPS_SENTENCE_HDT = 128,
         _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
+        _GPS_SENTENCE_PLSV = 170, // Locosys velocity data
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -113,6 +114,9 @@ private:
     ///					an update to the GPS state.
     bool                        _term_complete();
 
+    /// check if we should fill in 3d velocity
+    void _check_3d_velocity(void);
+
     /// return true if we have a new set of NMEA messages
     bool _have_new_message(void);
 
@@ -147,6 +151,7 @@ private:
     uint32_t _last_HDT_THS_ms;
     uint32_t _last_PHD_12_ms;
     uint32_t _last_PHD_26_ms;
+    uint32_t _last_PLSV_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
@@ -179,6 +184,17 @@ private:
         uint32_t itow;
         int32_t fields[8];
     } _phd;
+
+    /*
+      the $PLSV message is an extension from Locosys NMEA GPS for 3D velocity
+
+      example:
+        $PLSV,00000,00000,00000,10,12,06*2D
+     */
+    struct {
+        Vector3l velocity_cms;
+        Vector3l velocity_accuracy_cms;
+    } _plsv;
 };
 
 #define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
