@@ -124,10 +124,10 @@ public:
     uint8_t get_action() const { return _action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    float get_safe_alt_max() const { return _alt_max - _margin; }
+    float get_safe_alt_max(Location::AltFrame desired_frame) const { return get_alt_max(desired_frame) - _margin; }
 
     /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
-    float get_safe_alt_min() const { return _alt_min + _margin; }
+    float get_safe_alt_min(Location::AltFrame desired_frame) const { return get_alt_min(desired_frame) + _margin; }
 
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
@@ -182,6 +182,15 @@ private:
     bool pre_arm_check_circle(const char* &fail_msg) const;
     bool pre_arm_check_alt(const char* &fail_msg) const;
 
+    // get altitude min/max in the desired altitude frame
+    float get_alt_min(Location::AltFrame desired_frame) const;
+    float get_alt_max(Location::AltFrame desired_frame) const;
+
+    /*
+      return an altitude in desired frame
+    */
+    float get_alt_frame(Location::AltFrame desired_frame, float alt) const;
+    
     // parameters
     AP_Int8         _enabled;               // fence enable/disable control
     AP_Int8         _auto_enabled;          // top level flag for auto enabling fence
@@ -194,6 +203,7 @@ private:
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
+    AP_Int8         _alt_frame;             // altitude frame
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
