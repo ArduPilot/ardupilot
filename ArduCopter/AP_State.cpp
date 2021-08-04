@@ -56,6 +56,7 @@ void Copter::set_failsafe_radio(bool b)
         if (failsafe.radio == false) {
             // We've regained radio contact
             // ----------------------------
+            failsafe.radio_suppresed = false;
             failsafe_radio_off_event();
         }else{
             // We've lost radio contact

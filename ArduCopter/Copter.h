@@ -391,6 +391,7 @@ private:
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
         uint8_t radio               : 1; // A status flag for the radio failsafe
+        uint8_t radio_suppresed     : 1; // In radio failsafe but action suppresed in current mode
         uint8_t gcs                 : 1; // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
