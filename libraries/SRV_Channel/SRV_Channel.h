@@ -534,9 +534,7 @@ public:
     static void init();
 
     // return true if a channel is set to type GPIO
-    static bool is_GPIO(uint8_t channel) {
-        return channel_function(channel) == SRV_Channel::k_GPIO;
-    }
+    static bool is_GPIO(uint8_t channel);
 
 private:
 
@@ -602,6 +600,7 @@ private:
     AP_Int16 default_rate;
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
+    AP_Int32 gpio_mask;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
