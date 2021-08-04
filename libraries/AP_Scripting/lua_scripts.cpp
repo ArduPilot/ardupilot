@@ -429,7 +429,7 @@ void lua_scripts::run(void) {
     succeeded_initial_load = true;
 #endif // __clang_analyzer__
 
-    while (AP_Scripting::get_singleton()->enabled()) {
+    while (AP_Scripting::get_singleton()->should_run()) {
         // handle terminal data if we have any
         if (terminal.session) {
             doREPL(L);

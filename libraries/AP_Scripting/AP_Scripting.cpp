@@ -154,6 +154,14 @@ MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &
         case SCRIPTING_CMD_REPL_STOP:
             repl_stop();
             return MAV_RESULT_ACCEPTED;
+        case SCRIPTING_CMD_STOP:
+            _restart = false;
+            _stop = true;
+            return MAV_RESULT_ACCEPTED;
+        case SCRIPTING_CMD_STOP_AND_RESTART:
+            _restart = true;
+            _stop = true;
+            return MAV_RESULT_ACCEPTED;
         case SCRIPTING_CMD_ENUM_END: // cope with MAVLink generator appending to our enum
             break;
     }
@@ -197,17 +205,43 @@ void AP_Scripting::repl_stop(void) {
 }
 
 void AP_Scripting::thread(void) {
-    lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
-    if (lua == nullptr || !lua->heap_allocated()) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
-        delete lua;
-        _init_failed = true;
-        return;
-    }
-    lua->run();
+    while (true) {
+        // reset flags
+        _stop = false;
+        _restart = false;
 
-    // only reachable if the lua backend has died for any reason
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting has stopped");
+        lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
+        if (lua == nullptr || !lua->heap_allocated()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
+            _init_failed = true;
+        } else {
+            // run won't return while scripting is still active
+            lua->run();
+
+            // only reachable if the lua backend has died for any reason
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting has stopped");
+        }
+        delete lua;
+
+        bool cleared = false;
+        while(true) {
+            // 1hz check if we should restart
+            hal.scheduler->delay(1000);
+            if (!enabled()) {
+                // enable must be put to 0 and back to 1 to restart from params
+                cleared = true;
+                continue;
+            }
+            // must be enabled to get this far
+            if (cleared || _restart) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restated");
+                break;
+            }
+            if (_debug_level > 0) {
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: scripting stopped");
+            }
+        }
+    }
 }
 
 void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd_in)
