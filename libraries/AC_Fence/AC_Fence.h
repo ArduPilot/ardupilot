@@ -124,11 +124,15 @@ public:
     uint8_t get_action() const { return _action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    float get_safe_alt_max(Location::AltFrame desired_frame) const { return get_alt_max(desired_frame) - _margin; }
+    bool get_safe_alt_max(Location::AltFrame desired_frame, float &alt_max) const;
 
     /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
-    float get_safe_alt_min(Location::AltFrame desired_frame) const { return get_alt_min(desired_frame) + _margin; }
+    bool get_safe_alt_min(Location::AltFrame desired_frame, float &alt_min) const;
 
+    /// get_safe_alt for a specified location
+    bool get_safe_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_max) const;
+    bool get_safe_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_min) const;
+    
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
 
@@ -182,15 +186,23 @@ private:
     bool pre_arm_check_circle(const char* &fail_msg) const;
     bool pre_arm_check_alt(const char* &fail_msg) const;
 
-    // get altitude min/max in the desired altitude frame
-    float get_alt_min(Location::AltFrame desired_frame) const;
-    float get_alt_max(Location::AltFrame desired_frame) const;
+    // get altitude min/max in the desired altitude frame, assuming current location
+    bool get_alt_min(Location::AltFrame desired_frame, float &alt) const;
+    bool get_alt_max(Location::AltFrame desired_frame, float &alt) const;
 
-    /*
-      return an altitude in desired frame
-    */
-    float get_alt_frame(Location::AltFrame desired_frame, float alt) const;
+    // get altitude min/max in the desired altitude frame for a given location
+    bool get_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const;
+    bool get_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const;
     
+    /*
+      return an altitude in desired frame, converting from FENCE_ALT_FRAME
+      The varient
+    */
+    bool get_alt_frame_loc(const Location &loc, Location::AltFrame desired_frame, float alt, float &retalt) const;
+
+    // version of get_alt_frame_loc that assumes the current location
+    bool get_alt_frame(Location::AltFrame desired_frame, float alt, float &retalt) const;
+
     // parameters
     AP_Int8         _enabled;               // fence enable/disable control
     AP_Int8         _auto_enabled;          // top level flag for auto enabling fence

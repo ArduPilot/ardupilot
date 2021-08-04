@@ -3,6 +3,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -110,8 +111,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param: ALT_FRAME
     // @DisplayName: Fence Altitude Frame
-    // @Description: Frame for min and max altitude, default is 1
-    // @Values: 0:MSL,1:REL/HOME
+    // @Description: Frame for min and max altitude
+    // @Values: 0:AboveSeaLevel, 1:AboveHome, 3:AboveTerrain
     // @User: Standard
     AP_GROUPINFO_FRAME("ALT_FRAME", 11, AC_Fence, _alt_frame, uint8_t(Location::AltFrame::ABOVE_HOME), AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_PLANE),
 
@@ -269,12 +270,15 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 // additional checks for the alt fence:
 bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 {
-    if (get_alt_max(Location::AltFrame::ABOVE_HOME) < 0.0f) {
+    float alt;
+    if (!get_alt_max(Location::AltFrame::ABOVE_HOME, alt) ||
+        alt < 0.0f) {
         fail_msg = "Invalid FENCE_ALT_MAX value";
         return false;
     }
 
-    if (get_alt_min(Location::AltFrame::ABOVE_HOME) < -100.0f) {
+    if (!get_alt_min(Location::AltFrame::ABOVE_HOME, alt) ||
+        alt < -100.0f) {
         fail_msg = "Invalid FENCE_ALT_MIN value";
         return false;
     }
@@ -333,12 +337,31 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
-    if (get_alt_max(Location::AltFrame::ABOVE_HOME) < get_alt_min(Location::AltFrame::ABOVE_HOME)) {
+    const auto *terrain = AP::terrain();
+    if (Location::AltFrame(_alt_frame.get()) == Location::AltFrame::ABOVE_TERRAIN &&
+        (terrain == nullptr || !terrain->enabled())) {
+        fail_msg = "no terrain data for fence";
+        return false;
+    }
+
+    if (!Location::valid_alt_frame(_alt_frame.get())) {
+        fail_msg = "invalid FENCE_ALT_FRAME";
+        return false;
+    }
+
+    float alt_max, alt_min;
+    if (!get_alt_max(Location::AltFrame::ABOVE_HOME, alt_max) ||
+        !get_alt_min(Location::AltFrame::ABOVE_HOME, alt_min)) {
+        fail_msg =  "invalid FENCE altitudes";
+        return false;
+    }
+
+    if (alt_max < alt_min) {
         fail_msg =  "FENCE_ALT_MAX < FENCE_ALT_MIN";
         return false;
     }
 
-    if (get_alt_max(Location::AltFrame::ABOVE_HOME) - get_alt_min(Location::AltFrame::ABOVE_HOME) <= 2.0f * _margin) {
+    if (alt_max - alt_min <= 2.0f * _margin) {
         fail_msg =  "FENCE_MARGIN too big";
         return false;
     }
@@ -362,10 +385,17 @@ bool AC_Fence::check_fence_alt_max()
     _curr_alt = -_curr_alt; // translate Down to Up
 
     // check if we are over the altitude fence
-    if (_curr_alt >= get_alt_max(Location::AltFrame::ABOVE_HOME)) {
+    float alt_max;
+    if (!get_alt_max(Location::AltFrame::ABOVE_HOME, alt_max)) {
+        // treat as a breach by setting alt_max to _curr_alt-1, which triggers
+        // normal breach code below
+        alt_max = _curr_alt-1;
+    }
+
+    if (_curr_alt >= alt_max) {
 
         // record distance above breach
-        _alt_max_breach_distance = _curr_alt - get_alt_max(Location::AltFrame::ABOVE_HOME);
+        _alt_max_breach_distance = _curr_alt - alt_max;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MAX) ||
@@ -409,11 +439,19 @@ bool AC_Fence::check_fence_alt_min()
     AP::ahrs().get_relative_position_D_home(_curr_alt);
     _curr_alt = -_curr_alt; // translate Down to Up
 
+    // check if we are over the altitude fence
+    float alt_min;
+    if (!get_alt_min(Location::AltFrame::ABOVE_HOME, alt_min)) {
+        // treat as a breach by setting alt_max to _curr_alt+1, which triggers
+        // normal breach code below
+        alt_min = _curr_alt+1;
+    }
+    
     // check if we are under the altitude fence
-    if (_curr_alt <= get_alt_min(Location::AltFrame::ABOVE_HOME)) {
+    if (_curr_alt <= alt_min) {
 
         // record distance below breach
-        _alt_min_breach_distance = get_alt_min(Location::AltFrame::ABOVE_HOME) - _curr_alt;
+        _alt_min_breach_distance = alt_min - _curr_alt;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
@@ -566,8 +604,12 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check - Fence Ceiling
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         int32_t alt_above_home_cm;
+        float alt_max;
+        if (!get_alt_max_loc(loc, Location::AltFrame::ABOVE_HOME, alt_max)) {
+            return false;
+        }
         if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
-            if ((alt_above_home_cm * 0.01f) > get_alt_max(Location::AltFrame::ABOVE_HOME)) {
+            if ((alt_above_home_cm * 0.01f) > alt_max) {
                 return false;
             }
         }
@@ -576,8 +618,12 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check - Fence Floor
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)) {
         int32_t alt_above_home_cm;
+        float alt_min;
+        if (!get_alt_min_loc(loc, Location::AltFrame::ABOVE_HOME, alt_min)) {
+            return false;
+        }
         if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
-            if ((alt_above_home_cm * 0.01f) < get_alt_min(Location::AltFrame::ABOVE_HOME)) {
+            if ((alt_above_home_cm * 0.01f) < alt_min) {
                 return false;
             }
         }
@@ -694,48 +740,125 @@ bool AC_Fence::sys_status_failed() const
 /*
   return altitude max in desired frame
  */
-float AC_Fence::get_alt_frame(Location::AltFrame desired_frame, float alt) const
+bool AC_Fence::get_alt_frame_loc(const Location &loc, Location::AltFrame desired_frame, float alt, float &retalt) const
 {
     // we need a location if we are handling terrain. For how the fence altitudes are used
     // the best to use is our current location
-    Location loc;
     Location::AltFrame alt_frame = (Location::AltFrame)_alt_frame.get();
-    bool have_position = AP::ahrs().get_position(loc);
+    if (alt_frame == desired_frame) {
+        retalt = alt;
+        return true;
+    }
 
-    // treat terrain alt frame as above home when we don't have a
-    // position. Not having a position happens on startup before the
-    // EKF has initialised, this assumes we are on the ground at that
-    // point.  We can also lose position while flying, but if that
-    // happens then it really doesn't matter if we use above home
-    if (desired_frame == Location::AltFrame::ABOVE_TERRAIN && !have_position) {
-        desired_frame = Location::AltFrame::ABOVE_HOME;
+    Location loc2 = loc;
+    loc2.set_alt_cm(alt*100, alt_frame);
+
+    int32_t alt_cm;
+    if (!loc2.get_alt_cm(desired_frame, alt_cm)) {
+        return false;
     }
-    if (alt_frame == Location::AltFrame::ABOVE_TERRAIN && !have_position) {
-        alt_frame = Location::AltFrame::ABOVE_HOME;
+    retalt = alt_cm * 0.01;
+    return true;
+}
+
+/*
+  return altitude max in desired frame at current location
+ */
+bool AC_Fence::get_alt_frame(Location::AltFrame desired_frame, float alt, float &retalt) const
+{
+    Location::AltFrame alt_frame = (Location::AltFrame)_alt_frame.get();
+    if (alt_frame == desired_frame) {
+        retalt = alt;
+        return true;
     }
+
+    // we need a location if we are handling terrain. For how the fence altitudes are used
+    // the best to use is our current location
+    Location loc;
+    if (!AP::ahrs().get_position(loc) &&
+        (desired_frame == Location::AltFrame::ABOVE_TERRAIN ||
+         alt_frame == Location::AltFrame::ABOVE_TERRAIN)) {
+        return false;
+    }
+
     loc.set_alt_cm(alt*100, alt_frame);
     int32_t alt_cm;
     if (!loc.get_alt_cm(desired_frame, alt_cm)) {
-        // best we can do is return 0;
-        return 0;
+        return false;
     }
-    return alt_cm * 0.01;
+    retalt = alt_cm * 0.01;
+    return true;
 }
 
 /*
   return altitude max in desired frame
  */
-float AC_Fence::get_alt_max(Location::AltFrame desired_frame) const
+bool AC_Fence::get_alt_max(Location::AltFrame desired_frame, float &alt) const
 {
-    return get_alt_frame(desired_frame, _alt_max);
+    return get_alt_frame(desired_frame, _alt_max, alt);
 }
 
 /*
   return altitude max in desired frame
  */
-float AC_Fence::get_alt_min(Location::AltFrame desired_frame) const
+bool AC_Fence::get_alt_min(Location::AltFrame desired_frame, float &alt) const
 {
-    return get_alt_frame(desired_frame, _alt_min);
+    return get_alt_frame(desired_frame, _alt_min, alt);
+}
+
+/*
+  return altitude max in desired frame
+ */
+bool AC_Fence::get_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const
+{
+    return get_alt_frame_loc(loc, desired_frame, _alt_max, alt);
+}
+
+/*
+  return altitude min in desired frame
+ */
+bool AC_Fence::get_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const
+{
+    return get_alt_frame_loc(loc, desired_frame, _alt_min, alt);
+}
+
+bool AC_Fence::get_safe_alt_max(Location::AltFrame desired_frame, float &alt_max) const
+{
+    if (!get_alt_max(desired_frame, alt_max)) {
+        return false;
+    }
+    alt_max -= _margin;
+    return true;
+}
+
+/// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
+bool AC_Fence::get_safe_alt_min(Location::AltFrame desired_frame, float &alt_min) const
+{
+    if (!get_alt_max(desired_frame, alt_min)) {
+        return false;
+    }
+    alt_min += _margin;
+    return true;
+}
+
+/// get_safe_alt_max for a specified location
+bool AC_Fence::get_safe_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_max) const
+{
+    if (!get_alt_max_loc(loc, desired_frame, alt_max)) {
+        return false;
+    }
+    alt_max -= _margin;
+    return true;
+}
+
+/// get_safe_alt_min for a specified location
+bool AC_Fence::get_safe_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_min) const
+{
+    if (!get_alt_min_loc(loc, desired_frame, alt_min)) {
+        return false;
+    }
+    alt_min += _margin;
+    return true;
 }
 
 AC_PolyFence_loader &AC_Fence::polyfence()
