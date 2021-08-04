@@ -26,7 +26,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
-#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "TestKDECAN",  fmt, #args); } while (0)
+#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "TestKDECAN",  fmt, ##args); } while (0)
 extern const AP_HAL::HAL& hal;
 
 void AP_CANTester_KDECAN::count_msg(uint32_t frame_id)
