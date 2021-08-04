@@ -91,7 +91,7 @@ public:
     }
     
     // Method to log status and debug information for review while debugging
-    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...);
+    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...) FMT_PRINTF(4,5);
 
     void log_retrieve(ExpandingString &str) const;
 
