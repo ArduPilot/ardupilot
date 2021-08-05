@@ -1704,9 +1704,8 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         arg = method->arguments;
         return_count = emit_references(arg,"        ");
         fprintf(source, "        return %d;\n", return_count);
-        fprintf(source, "    } else {\n");
-        fprintf(source, "        return 0;\n");
         fprintf(source, "    }\n");
+        fprintf(source, "    return 0;\n");
       } else {
         fprintf(source, "    lua_pushboolean(L, data);\n");
       }
