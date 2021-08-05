@@ -31,6 +31,7 @@ char keyword_attr_literal[] = "'literal";
 char keyword_attr_null[]    = "'Null";
 char keyword_attr_reference[]  = "'Ref";
 char keyword_attr_array[]      = "'array";
+char keyword_attr_no_range_check[] = "'skip_check";
 
 // type keywords
 char keyword_boolean[]  = "boolean";
@@ -145,6 +146,7 @@ enum type_flags {
   TYPE_FLAGS_NULLABLE = (1U << 1),
   TYPE_FLAGS_ENUM     = (1U << 2),
   TYPE_FLAGS_REFERNCE = (1U << 3),
+  TYPE_FLAGS_NO_RANGE_CHECK = (1U << 4),
 };
 
 struct type {
@@ -517,6 +519,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       type->flags |= TYPE_FLAGS_NULLABLE;
     } else if (strcmp(attribute, keyword_attr_reference) == 0) {
       type->flags |= TYPE_FLAGS_REFERNCE;
+    } else if (strcmp(attribute, keyword_attr_no_range_check) == 0) {
+      type->flags |= TYPE_FLAGS_NO_RANGE_CHECK;
     } else {
       error(ERROR_USERDATA, "Unknown attribute: %s", attribute);
     }
@@ -599,7 +603,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   }
 
   // add range checks, unless disabled or a nullable type
-  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
+  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE | TYPE_FLAGS_NO_RANGE_CHECK))) {
     switch (type->type) {
       case TYPE_FLOAT:
       case TYPE_INT8_T:
