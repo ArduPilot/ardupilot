@@ -951,8 +951,9 @@ private:
     void resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationOrder order);
 
     // attempt to reset the yaw to the EKF-GSF value
+    // emergency_reset should be true if this reset is triggered by the loss of the yaw estimate
     // returns false if unsuccessful
-    bool EKFGSF_resetMainFilterYaw();
+    bool EKFGSF_resetMainFilterYaw(bool emergency_reset);
 
     // returns true on success and populates yaw (in radians) and yawVariance (rad^2)
     bool EKFGSF_getYaw(ftype &yaw, ftype &yawVariance) const;
