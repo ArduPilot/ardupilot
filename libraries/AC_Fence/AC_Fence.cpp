@@ -337,6 +337,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
+#if AP_TERRAIN_AVAILABLE
     const auto *terrain = AP::terrain();
     if (Location::AltFrame(_alt_frame.get()) == Location::AltFrame::ABOVE_TERRAIN &&
         (terrain == nullptr || !terrain->enabled())) {
@@ -348,6 +349,12 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         fail_msg = "invalid FENCE_ALT_FRAME";
         return false;
     }
+#else
+    if (Location::AltFrame(_alt_frame.get()) == Location::AltFrame::ABOVE_TERRAIN) {
+        fail_msg = "no terrain data for fence";
+        return false;
+    }
+#endif // AP_TERRAIN_AVAILABLE
 
     float alt_max, alt_min;
     if (!get_alt_max(Location::AltFrame::ABOVE_HOME, alt_max) ||
