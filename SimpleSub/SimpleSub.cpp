@@ -148,9 +148,12 @@ void setup(void)
 {
     BoardConfig.init();
 
-    hal.uartA->begin(SERIAL_BAUD_RATE);
+    //UART A
+    AP_HAL::UARTDriver *uart = hal.serial(0);
 
-    gcs_ptr = new SimpleGCS(hal.uartA);
+    uart->begin(SERIAL_BAUD_RATE);
+    gcs_ptr = new SimpleGCS(uart);
+
     sub_ptr = new SimpleSub(gcs_ptr, hal.rcout);
     time_info_ptr = new TimeInfo();
 

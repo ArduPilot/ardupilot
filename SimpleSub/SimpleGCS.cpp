@@ -6,16 +6,10 @@ bool SimpleGCS::update_receive()
     {
         char received_byte = mavlink_uart->read();
 
-#ifdef SIMPLE_SUB_DEBUG
-        //send_text(MAV_SEVERITY_INFO, "Got byte %c", received_byte);
-#endif
-
         bool message_parsed = mavlink_parse_char(MAVLINK_COMM_0, received_byte, &received_message, &mavlink_status);
 
         if (message_parsed)
         {
-#ifdef SIMPLE_SUB_DEBUG
-#endif
             return true;
         }
 
