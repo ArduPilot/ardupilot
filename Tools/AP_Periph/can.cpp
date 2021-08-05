@@ -492,13 +492,17 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
 
 
 /*
-  fix value of a float for canard float16 format
+  fix value of a float for canard float16 format. This is only needed
+  for array attributes. Scalars are handled by the compiler
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-static void fix_float16(float &f)
+static void fix_float16_array(float *f, uint8_t len)
 {
-    *(uint16_t *)&f = canardConvertNativeFloatToFloat16(f);
+    while (len--) {
+        *(uint16_t *)f = canardConvertNativeFloatToFloat16(*f);
+        f++;
+    }
 }
 #pragma GCC diagnostic pop
 
@@ -521,8 +525,6 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
         hal.rcout->init();
         hal.util->toneAlarm_init(AP_Notify::Notify_Buzz_Builtin);
     }
-    fix_float16(req.frequency);
-    fix_float16(req.duration);
     buzzer_start_ms = AP_HAL::native_millis();
     buzzer_len_ms = req.duration*1000;
 #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
@@ -1394,10 +1396,6 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.power_rating_pct = t.phase_current;
     pkt.error_count = t.error_count;
 
-    fix_float16(pkt.voltage);
-    fix_float16(pkt.current);
-    fix_float16(pkt.temperature);
-
     uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
     uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer);
     canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
@@ -1509,8 +1507,8 @@ void AP_Periph_FW::can_mag_update(void)
     // the canard dsdl compiler doesn't understand float16
     for (uint8_t i=0; i<3; i++) {
         pkt.magnetic_field_ga[i] = field[i] * 0.001;
-        fix_float16(pkt.magnetic_field_ga[i]);
     }
+    fix_float16_array(pkt.magnetic_field_ga, 3);
 
     uint8_t buffer[UAVCAN_EQUIPMENT_AHRS_MAGNETICFIELDSTRENGTH_MAX_SIZE] {};
     uint16_t total_size = uavcan_equipment_ahrs_MagneticFieldStrength_encode(&pkt, buffer);
@@ -1559,10 +1557,6 @@ void AP_Periph_FW::can_battery_update(void)
             // Convert Celsius to Kelvin for tranmission on CAN.
             pkt.temperature = temperature + C_TO_KELVIN;
         }
-
-        fix_float16(pkt.voltage);
-        fix_float16(pkt.current);
-        fix_float16(pkt.temperature);
 
         pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
         pkt.state_of_charge_pct = battery.lib.capacity_remaining_pct(i);
@@ -1625,8 +1619,8 @@ void AP_Periph_FW::can_gps_update(void)
         for (uint8_t i=0; i<3; i++) {
             // the canard dsdl compiler doesn't understand float16
             pkt.ned_velocity[i] = vel[i];
-            fix_float16(pkt.ned_velocity[i]);
         }
+        fix_float16_array(pkt.ned_velocity, 3);
         pkt.sats_used = gps.num_sats();
         switch (gps.status()) {
         case AP_GPS::GPS_Status::NO_GPS:
@@ -1651,16 +1645,14 @@ void AP_Periph_FW::can_gps_update(void)
         float vacc;
         if (gps.vertical_accuracy(vacc)) {
             pos_cov[8] = sq(vacc);
-            fix_float16(pos_cov[8]);
         }
 
         float hacc;
         if (gps.horizontal_accuracy(hacc)) {
             pos_cov[0] = pos_cov[4] = sq(hacc);
-            fix_float16(pos_cov[0]);
-            fix_float16(pos_cov[4]);
         }
-    
+        fix_float16_array(pos_cov, 9);
+
         float vel_cov[9] {};
         pkt.velocity_covariance.data = &pos_cov[0];
         pkt.velocity_covariance.len = 9;
@@ -1669,10 +1661,8 @@ void AP_Periph_FW::can_gps_update(void)
         if (gps.speed_accuracy(sacc)) {
             float vc3 = sq(sacc);
             vel_cov[0] = vel_cov[4] = vel_cov[8] = vc3;
-            fix_float16(vel_cov[0]);
-            fix_float16(vel_cov[4]);
-            fix_float16(vel_cov[8]);
         }
+        fix_float16_array(vel_cov, 9);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_FIX_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_gnss_Fix_encode(&pkt, buffer);
@@ -1760,10 +1750,7 @@ void AP_Periph_FW::can_gps_update(void)
             float vc3 = sq(sacc);
             cov[3] = cov[4] = cov[5] = vc3;
         }
-
-        for (uint8_t i=0; i<6; i++) {
-            fix_float16(cov[i]);
-        }
+        fix_float16_array(cov, 6);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_FIX2_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_gnss_Fix2_encode(&pkt, buffer);
@@ -1782,8 +1769,6 @@ void AP_Periph_FW::can_gps_update(void)
         uavcan_equipment_gnss_Auxiliary aux {};
         aux.hdop = gps.get_hdop() * 0.01;
         aux.vdop = gps.get_vdop() * 0.01;
-        fix_float16(aux.hdop);
-        fix_float16(aux.vdop);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_AUXILIARY_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_gnss_Auxiliary_encode(&aux, buffer);
@@ -1850,7 +1835,6 @@ void AP_Periph_FW::can_baro_update(void)
         uavcan_equipment_air_data_StaticPressure pkt {};
         pkt.static_pressure = press;
         pkt.static_pressure_variance = 0; // should we make this a parameter?
-        fix_float16(pkt.static_pressure_variance);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICPRESSURE_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_air_data_StaticPressure_encode(&pkt, buffer);
@@ -1866,9 +1850,6 @@ void AP_Periph_FW::can_baro_update(void)
         uavcan_equipment_air_data_StaticTemperature pkt {};
         pkt.static_temperature = temp + C_TO_KELVIN;
         pkt.static_temperature_variance = 0; // should we make this a parameter?
-
-        fix_float16(pkt.static_temperature);
-        fix_float16(pkt.static_temperature_variance);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_STATICTEMPERATURE_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_air_data_StaticTemperature_encode(&pkt, buffer);
@@ -1924,8 +1905,6 @@ void AP_Periph_FW::can_airspeed_update(void)
     uavcan_equipment_air_data_RawAirData pkt {};
     pkt.differential_pressure = press;
     pkt.static_air_temperature = temp;
-    fix_float16(pkt.differential_pressure);
-    fix_float16(pkt.static_air_temperature);
 
     // unfilled elements are NaN
     pkt.static_pressure = nanf("");
@@ -2010,7 +1989,6 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
 
     pkt.range = dist_cm * 0.01;
-    fix_float16(pkt.range);
 
     uint8_t buffer[UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_MAX_SIZE] {};
     uint16_t total_size = uavcan_equipment_range_sensor_Measurement_encode(&pkt, buffer);
@@ -2039,14 +2017,11 @@ void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
     pkt.alt_m = msg.altitude * 1e-3;
 
     pkt.heading = radians(msg.heading * 1e-2);
-    fix_float16(pkt.heading);
 
     pkt.velocity[0] = cosf(pkt.heading) * msg.hor_velocity * 1e-2;
     pkt.velocity[1] = sinf(pkt.heading) * msg.hor_velocity * 1e-2;
     pkt.velocity[2] = -msg.ver_velocity * 1e-2;
-    fix_float16(pkt.velocity[0]);
-    fix_float16(pkt.velocity[1]);
-    fix_float16(pkt.velocity[2]);
+    fix_float16_array(pkt.velocity, 3);
 
     pkt.squawk = msg.squawk;
     memcpy(pkt.callsign, msg.callsign, MIN(sizeof(msg.callsign),sizeof(pkt.callsign)));
