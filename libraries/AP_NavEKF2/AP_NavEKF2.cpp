@@ -584,15 +584,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_USE_MASK", 55, NavEKF2, _gsfUseMask, 3),
 
-    // @Param: GSF_DELAY
-    // @DisplayName: Delay from loss of navigation to yaw reset
-    // @Description: If the inertial navigation calculation stops following the GPS and other positioning sensors for longer than EK2_GSF_DELAY milli-seconds, then the EKF2 code will generate a reset request internally and reset the yaw to the estimate from the EKF-GSF filter and reset the horizontal velocity and position to the GPS. This reset will not be performed unless the use of the EKF-GSF yaw estimate is enabled via the EK2_GSF_USE parameter.
-    // @Range: 500 5000
-    // @Increment: 100
-    // @Units: ms
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("GSF_DELAY", 56, NavEKF2, _gsfResetDelay, 1000),
+    // 56 was GSF_DELAY which was never released in a stable version
 
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed
