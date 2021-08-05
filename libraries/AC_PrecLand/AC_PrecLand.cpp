@@ -114,6 +114,14 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag, 0.02f), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
 
+    // @Param: XY_DIST_MAX
+    // @DisplayName: Precision Landing maximum distance to target before descending
+    // @Description: The vehicle will not start descending if the landing target is detected and it is further than this many meters away. Set 0 to always descend.
+    // @Range: 0 10
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("XY_DIST_MAX", 10, AC_PrecLand, _xy_max_dist_desc, 2.5f),
+
     AP_GROUPEND
 };
 
