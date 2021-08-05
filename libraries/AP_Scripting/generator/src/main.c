@@ -2151,6 +2151,7 @@ int main(int argc, char **argv) {
 
   sanity_check_userdata();
 
+  fprintf(source, "#pragma GCC optimize(\"Os\")\n");
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
   fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
 
