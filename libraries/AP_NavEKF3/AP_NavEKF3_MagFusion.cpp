@@ -150,7 +150,7 @@ void NavEKF3_core::realignYawGPS()
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
             // attempt to use EKF-GSF estimate if available as it is more robust to GPS glitches
-            if (EKFGSF_resetMainFilterYaw()) {
+            if (EKFGSF_resetMainFilterYaw(true)) {
                 return;
             }
 
@@ -229,7 +229,8 @@ void NavEKF3_core::SelectMagFusion()
 
         // because this type of reset event is not as time critical, require a continuous history of valid estimates
         if ((!yawAlignComplete || yaw_source_reset) && EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD) {
-            yawAlignComplete = EKFGSF_resetMainFilterYaw();
+            const bool emergency_reset = (yaw_source != AP_NavEKF_Source::SourceYaw::GSF);
+            yawAlignComplete = EKFGSF_resetMainFilterYaw(emergency_reset);
             yaw_source_reset = false;
         }
 
@@ -1531,14 +1532,18 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
 }
 
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
-bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
+bool NavEKF3_core::EKFGSF_resetMainFilterYaw(bool emergency_reset)
 {
     // Don't do a reset unless permitted by the EK3_GSF_USE and EK3_GSF_RUN parameter masks
     if ((yawEstimator == nullptr)
-        || !(frontend->_gsfUseMask & (1U<<core_index))
-        || EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount) {
+        || !(frontend->_gsfUseMask & (1U<<core_index))) {
         return false;
     };
+
+    // limit the number of emergency resets
+    if (emergency_reset && (EKFGSF_yaw_reset_count >= frontend->_gsfResetMaxCount)) {
+        return false;
+    }
 
     ftype yawEKFGSF, yawVarianceEKFGSF;
     if (EKFGSF_getYaw(yawEKFGSF, yawVarianceEKFGSF)) {
@@ -1560,7 +1565,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         }
 
         // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value
-        allMagSensorsFailed = true;
+        if (emergency_reset) {
+            allMagSensorsFailed = true;
+        }
 
         // record the yaw reset event
         recordYawReset();
