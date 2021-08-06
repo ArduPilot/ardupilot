@@ -358,6 +358,25 @@ void AP_MSP_Telem_Backend::process_incoming_data()
 }
 
 /*
+  send an MSP packet
+ */
+void AP_MSP_Telem_Backend::msp_send_packet(uint16_t cmd, MSP::msp_version_e msp_version, const void *p, uint16_t size, bool is_request)
+{
+    uint8_t out_buf[MSP_PORT_OUTBUF_SIZE];
+
+    msp_packet_t pkt = {
+        .buf = { .ptr = out_buf, .end = MSP_ARRAYEND(out_buf), },
+        .cmd = (int16_t)cmd,
+        .flags = 0,
+        .result = 0,
+    };
+
+    sbuf_write_data(&pkt.buf, p, size);
+    sbuf_switch_to_reader(&pkt.buf, &out_buf[0]);
+    msp_serial_encode(&_msp_port, &pkt, msp_version, is_request);
+}
+
+/*
   ported from betaflight/src/main/msp/msp_serial.c
  */
 void AP_MSP_Telem_Backend::msp_process_received_command()
@@ -1059,4 +1078,67 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
     }
 }
 
+#if HAL_WITH_MSP_DISPLAYPORT
+// ported from betaflight/src/main/io/displayport_msp.c
+void AP_MSP_Telem_Backend::msp_displayport_heartbeat()
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_HEARTBEAT };
+
+    // heartbeat is used to:
+    // a) ensure display is not released by remote OSD software
+    // b) prevent OSD Slave boards from displaying a 'disconnected' status.
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_grab()
+{
+    msp_displayport_heartbeat();
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_release()
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_RELEASE };
+
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_clear_screen()
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_CLEAR_SCREEN };
+
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_draw_screen()
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_DRAW_SCREEN };
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string)
+{
+    int len = strlen(string);
+    if (len >= OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH) {
+        len = OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH;
+    }
+
+    struct PACKED {
+        uint8_t sub_cmd;
+        uint8_t row;
+        uint8_t col;
+        uint8_t attr;
+        uint8_t text[OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH];
+    } packet {};
+
+    packet.sub_cmd = msp_displayport_subcmd_e::MSP_DISPLAYPORT_WRITE_STRING;
+    packet.row = row;
+    packet.col = col;
+    if (blink) {
+        packet.attr |= DISPLAYPORT_MSP_ATTR_BLINK;
+    }
+    memcpy(packet.text, string, len);
+
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, &packet, 4 + len, false);
+}
+#endif //HAL_WITH_MSP_DISPLAYPORT
 #endif //HAL_MSP_ENABLED
