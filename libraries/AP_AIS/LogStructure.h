@@ -5,6 +5,7 @@
 #define LOG_IDS_FROM_AIS \
     LOG_AIS_RAW_MSG,\
     LOG_AIS_MSG1, \
+    LOG_AIS_MSG4, \
     LOG_AIS_MSG5
 
 struct PACKED log_AIS_raw {
@@ -32,6 +33,25 @@ struct PACKED log_AIS_msg1 {
     uint16_t head;
     uint8_t sec_utc;
     uint8_t maneuver;
+    uint8_t raim;
+    uint32_t radio;
+};
+
+struct PACKED log_AIS_msg4 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t repeat;
+    uint32_t mmsi;
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint8_t fix;
+    int32_t lon;
+    int32_t lat;
+    uint8_t epfd;
     uint8_t raim;
     uint32_t radio;
 };
@@ -83,6 +103,24 @@ struct PACKED log_AIS_msg5 {
 // @Field: raim: RAIM flag
 // @Field: rad: Radio status
 
+// @LoggerMessage: AIS4
+// @Description: Contents of 'Base Station Report' AIS message, see: https://gpsd.gitlab.io/gpsd/AIVDM.html#_type_4_base_station_report
+// @Field: US: Time since system startup
+// @Field: rep: Repeat Indicator
+// @Field: mmsi: MMSI
+// @Field: year: Year (UTC)
+// @Field: mth: Month (UTC)
+// @Field: day: Day (UTC)
+// @Field: h: Hour (UTC)
+// @Field: m: Minute (UTC)
+// @Field: s: Second (UTC)
+// @Field: fix: Fix quality
+// @Field: lon: Longitude
+// @Field: lat: Latitude
+// @Field: epfd: Type of EPFD
+// @Field: raim: RAIM flag
+// @Field: rad: Radio status
+
 // @LoggerMessage: AIS5
 // @Description: Contents of 'static and voyage related data' AIS message, see: https://gpsd.gitlab.io/gpsd/AIVDM.html#_type_5_static_and_voyage_related_data
 // @Field: US: Time since system startup
@@ -107,5 +145,7 @@ struct PACKED log_AIS_msg5 {
       "AISR",  "QBBBZ", "TimeUS,num,total,ID,payload", "s----", "F0000" }, \
     { LOG_AIS_MSG1, sizeof(log_AIS_msg1), \
       "AIS1",  "QBBIBbHbLLHHBBbI", "US,typ,rep,mmsi,nav,rot,sog,pos,lon,lat,cog,hed,sec,man,raim,rad", "s---------------", "F000000000000000" }, \
+    { LOG_AIS_MSG4, sizeof(log_AIS_msg4), \
+      "AIS4",  "QBIHBBBBBBLLBBI", "US,rep,mmsi,year,mth,day,h,m,s,fix,lon,lat,epfd,raim,rad", "s--------------", "F00000000000000" }, \
     { LOG_AIS_MSG5, sizeof(log_AIS_msg5), \
       "AIS5",  "QBIBINZBHHBBBBZB", "US,rep,mmsi,ver,imo,cal,nam,typ,bow,stn,prt,str,fix,dght,dst,dte", "s-------mmmm-m--", "F------------A--" }
