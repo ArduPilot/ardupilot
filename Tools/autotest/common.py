@@ -4761,7 +4761,17 @@ class AutoTest(ABC):
         self.progress("Close to startup location: %s" % data)
 
     def assert_simstate_location_is_at_startup_location(self, dist_max=1):
-        simstate_loc = self.sim_location()
+        simstate_loc = None
+        for i in range(0, 3):
+            try:
+                simstate_loc = self.sim_location()
+                time.sleep(1)
+            except Exception as ex:
+                self.print_exception_caught(ex)
+                continue
+            break
+        if simstate_loc is None:
+            raise NotAchievedException("Could not get simstate_loc")
         start_loc = self.sitl_start_location()
         dist = self.get_distance(simstate_loc, start_loc)
         data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
