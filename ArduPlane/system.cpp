@@ -246,15 +246,8 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         // we failed entering new mode, roll back to old
         previous_mode = &old_previous_mode;
         control_mode = &old_mode;
-
         control_mode_reason = previous_mode_reason;
 
-        // currently, only Q modes can fail enter(). This will likely change in the future and all modes
-        // should be changed to check dependencies and fail early before depending on changes in Mode::set_mode()
-        if (control_mode->is_vtol_mode()) {
-            // ignore result because if we fail we risk looping at the qautotune check above
-            control_mode->enter();
-        }
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
             AP_Notify::events.user_mode_change_failed = 1;
