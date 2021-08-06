@@ -19,6 +19,7 @@
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_Generic.h"
 #include "AP_MSP_Telem_DJI.h"
+#include "AP_MSP_Telem_DisplayPort.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -44,7 +45,7 @@ const AP_Param::GroupInfo AP_MSP::var_info[] = {
     // @Description: A bitmask to set some MSP specific options
     // @Bitmask: 0:EnableTelemetryMode, 1: DJIWorkarounds
     // @User: Standard
-    AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, OPTION_TELEMETRY_DJI_WORKAROUNDS),
+    AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, (uint8_t)MspOption::OPTION_TELEMETRY_DJI_WORKAROUNDS),
 
     AP_GROUPEND
 };
@@ -63,6 +64,10 @@ bool AP_MSP::init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_Seri
         _backends[backend_idx] = new AP_MSP_Telem_Generic(uart);
     } else if (protocol == AP_SerialManager::SerialProtocol_DJI_FPV) {
         _backends[backend_idx] = new AP_MSP_Telem_DJI(uart);
+#if HAL_WITH_MSP_DISPLAYPORT
+    } else if (protocol == AP_SerialManager::SerialProtocol_MSP_DisplayPort) {
+        _backends[backend_idx] = new AP_MSP_Telem_DisplayPort(uart);
+#endif
     } else {
         return false;
     }
@@ -80,7 +85,7 @@ void AP_MSP::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
     AP_HAL::UARTDriver *uart = nullptr;
-
+    uint8_t backends_using_msp_thread = 0;
     // DJI FPV backends
     for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES; protocol_instance++) {
         uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJI_FPV, protocol_instance);
@@ -92,6 +97,9 @@ void AP_MSP::init()
             if (!_msp_status.osd_initialized) {
                 init_osd();
             }
+            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
+                backends_using_msp_thread++;
+            }
             _msp_status.backend_count++;
         }
     }
@@ -102,11 +110,28 @@ void AP_MSP::init()
             if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_MSP)) {
                 break;
             }
+            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
+                backends_using_msp_thread++;
+            }
             _msp_status.backend_count++;
         }
     }
-
-    if (_msp_status.backend_count > 0) {
+#if HAL_WITH_MSP_DISPLAYPORT
+    // MSP DisplayPort backends
+    for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES-_msp_status.backend_count; protocol_instance++) {
+        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MSP_DisplayPort, protocol_instance);
+        if (uart != nullptr) {
+            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_MSP_DisplayPort)) {
+                break;
+            }
+            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
+                backends_using_msp_thread++;
+            }
+            _msp_status.backend_count++;
+        }
+    }
+#endif
+    if (backends_using_msp_thread > 0) {
         // we've found at least 1 msp backend, start protocol handler
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_MSP::loop, void),
                                           "MSP",
@@ -161,7 +186,8 @@ void AP_MSP::loop(void)
 {
     for (uint8_t i=0; i<_msp_status.backend_count; i++) {
         // one time uart init
-        if (_backends[i] != nullptr)  {
+        // note: we do not access a uart for a backend handled by another thread
+        if (_backends[i] != nullptr && _backends[i]->use_msp_thread())  {
             _backends[i]->init_uart();
         }
     }
@@ -185,7 +211,8 @@ void AP_MSP::loop(void)
         }
 
         for (uint8_t i=0; i< _msp_status.backend_count; i++) {
-            if (_backends[i] != nullptr) {
+            // note: we do not access a uart for a backend handled by another thread
+            if (_backends[i] != nullptr && _backends[i]->use_msp_thread()) {
                 // dynamically hide/unhide
                 _backends[i]->hide_osd_items();
                 // process incoming MSP frames (and reply if needed)
@@ -197,9 +224,13 @@ void AP_MSP::loop(void)
     }
 }
 
-bool AP_MSP::check_option(msp_option_e option)
-{
-    return (_options & option) != 0;
+AP_MSP_Telem_Backend* AP_MSP::find_protocol(const AP_SerialManager::SerialProtocol protocol) const {
+    for (uint8_t i=0; i< _msp_status.backend_count; i++) {
+        if (_backends[i] != nullptr && _backends[i]->get_serial_protocol() == protocol) {
+            return _backends[i];
+        }
+    }
+    return nullptr;
 }
 
 namespace AP

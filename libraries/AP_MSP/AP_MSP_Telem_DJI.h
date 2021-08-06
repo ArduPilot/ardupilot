@@ -51,7 +51,8 @@ class AP_MSP_Telem_DJI : public AP_MSP_Telem_Backend
 public:
     bool init_uart() override;
     // implementation specific helpers
-    bool is_scheduler_enabled() override;
+    bool is_scheduler_enabled() const override;
+    AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_DJI_FPV; };
     uint32_t get_osd_flight_mode_bitmask(void) override;
     void hide_osd_items(void) override;
     MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
