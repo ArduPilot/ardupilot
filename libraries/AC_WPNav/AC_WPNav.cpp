@@ -466,8 +466,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         update_vel_accel(_terain_vel, _terain_accel, dt, false);
         shape_vel_accel( _wp_desired_speed_xy_cms * offset_z_scaler, 0.0,
             _terain_vel, _terain_accel,
-            0.0, _wp_desired_speed_xy_cms,
-            -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_tc_xy_s(), dt);
+            -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
         vel_time_scalar = _terain_vel / _wp_desired_speed_xy_cms;
     }
 
