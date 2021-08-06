@@ -343,6 +343,8 @@ bool AP_AIS::payload_decode(const char *payload)
         case 2: // Position Report Class A (Assigned schedule)
         case 3: // Position Report Class A (Response to interrogation)
             return decode_position_report(payload, type);
+        case 4: // Base Station Report
+            return decode_base_station_report(payload);
         case 5: // Static and Voyage Related Data
             return decode_static_and_voyage_data(payload);
 
@@ -435,6 +437,63 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     _list[index].info.flags = flags; // uint16_t Bitmask to indicate various statuses including valid data fields
     _list[index].info.turn_rate = rot; // int8_t [cdeg/s] Turn rate
     _list[index].info.navigational_status = nav; // uint8_t Navigational status
+    _list[index].last_update_ms = AP_HAL::millis();
+
+    return true;
+}
+
+bool AP_AIS::decode_base_station_report(const char *payload)
+{
+    if (strlen(payload) != 28) {
+        return false;
+    }
+
+    uint8_t repeat     = get_bits(payload, 6, 7);
+    uint32_t mmsi      = get_bits(payload, 8, 37);
+    uint16_t year      = get_bits(payload, 38, 51);
+    uint8_t month      = get_bits(payload, 52, 55);
+    uint8_t day        = get_bits(payload, 56, 60);
+    uint8_t hour       = get_bits(payload, 61, 65);
+    uint8_t minute     = get_bits(payload, 66, 71);
+    uint8_t second     = get_bits(payload, 72, 77);
+    bool fix           = get_bits(payload, 78, 78);
+    int32_t lon = get_bits_signed(payload, 79, 106)  * ((1.0f / 600000.0f)*1e7);
+    int32_t lat = get_bits_signed(payload, 107, 133) * ((1.0f / 600000.0f)*1e7);
+    uint8_t epfd       = get_bits(payload, 134, 137);
+    // 138 - 147: spare
+    bool raim          = get_bits(payload, 148, 148);
+    uint32_t radio     = get_bits(payload, 149, 167);
+
+    // log the raw infomation
+    if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
+        struct log_AIS_msg4 pkt {
+            LOG_PACKET_HEADER_INIT(LOG_AIS_MSG4),
+            time_us     : AP_HAL::micros64(),
+            repeat      : repeat,
+            mmsi        : mmsi,
+            year        : year,
+            month       : month,
+            day         : day,
+            hour        : hour,
+            minute      : minute,
+            second      : second,
+            fix         : fix,
+            lon         : lon,
+            lat         : lat,
+            epfd        : epfd,
+            raim        : raim,
+            radio       : radio
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    uint16_t index;
+    if (!get_vessel_index(mmsi, index)) {
+        return true;
+    }
+
+    _list[index].info.lat = lat; // int32_t [degE7] Latitude
+    _list[index].info.lon = lon; // int32_t [degE7] Longitude
     _list[index].last_update_ms = AP_HAL::millis();
 
     return true;
