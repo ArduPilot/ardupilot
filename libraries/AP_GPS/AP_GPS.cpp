@@ -985,6 +985,7 @@ void AP_GPS::update(void)
         }
     }
 
+#if GPS_MAX_RECEIVERS > 1
 #if HAL_LOGGING_ENABLED
     const uint8_t old_primary = primary_instance;
 #endif
@@ -993,7 +994,8 @@ void AP_GPS::update(void)
     if (primary_instance != old_primary) {
         AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
-#endif
+#endif  // HAL_LOGING_ENABLED
+#endif  // GPS_MAX_RECEIVERS > 1
 
 #ifndef HAL_BUILD_AP_PERIPH
     // update notify with gps status. We always base this on the primary_instance
@@ -1005,6 +1007,7 @@ void AP_GPS::update(void)
 /*
   update primary GPS instance
  */
+#if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
 #if defined(GPS_BLENDED_INSTANCE)
@@ -1033,6 +1036,7 @@ void AP_GPS::update_primary(void)
         primary_instance = GPS_BLENDED_INSTANCE;
         return;
     }
+#endif // defined (GPS_BLENDED_INSTANCE)
 
     // check the primary param is set to possible GPS
     int8_t primary_param = _primary.get();
@@ -1072,6 +1076,7 @@ void AP_GPS::update_primary(void)
         }
     }
 
+#if defined(GPS_BLENDED_INSTANCE)
     // handling switching away from blended GPS
     if (primary_instance == GPS_BLENDED_INSTANCE) {
         primary_instance = 0;
@@ -1085,7 +1090,7 @@ void AP_GPS::update_primary(void)
         }
         return;
     }
-
+#endif  // defined(GPS_BLENDED_INSTANCE)
 
     // Use primary if 3D fix or better
     if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
@@ -1127,8 +1132,8 @@ void AP_GPS::update_primary(void)
             }
         }
     }
-#endif // GPS_BLENDED_INSTANCE
 }
+#endif  // GPS_MAX_RECEIVERS > 1
 
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
