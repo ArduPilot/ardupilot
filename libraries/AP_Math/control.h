@@ -49,14 +49,14 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
  The time constant must be positive.
  The function alters the variable accel to follow a jerk limited kinematic path to accel_input
 */
-void shape_accel(const float accel_input, float& accel,
-                 const float accel_min, const float accel_max,
-                 const float tc, const float dt);
+void shape_accel(float accel_input, float& accel,
+                 float jerk_max, float dt);
+
 void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
-                    const float accel_max, const float tc, const float dt);
+                    float jerk_max, float dt);
 
 void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
-    float accel_max, float tc, float dt);
+                    float jerk_max, float dt);
 
 /* shape_vel calculates a jerk limited path from the current velocity and acceleration to an input velocity.
  The function takes the current velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -69,14 +69,14 @@ void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
  The time constant must be positive.
  The function alters the variable accel to follow a jerk limited kinematic path to vel_input and accel_input
 */
-void shape_vel_accel(const float vel_input, const float accel_input,
-                     const float vel, float& accel,
-                     const float vel_min, const float vel_max,
-                     const float accel_min, const float accel_max,
-                     const float tc, const float dt);
-void shape_vel_accel_xy(const Vector2f &vel_input, const Vector2f& accel_input,
+void shape_vel_accel(float vel_input, float accel_input,
+                     float vel, float& accel,
+                     float accel_min, float accel_max,
+                     float jerk_max, float dt, bool limit_total_accel);
+
+void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
                         const Vector2f& vel, Vector2f& accel,
-                        const float vel_max, const float accel_max, const float tc, const float dt);
+                        float accel_max, float jerk_max, float dt, bool limit_total_accel);
 
 /* shape_pos_vel calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -89,13 +89,16 @@ void shape_vel_accel_xy(const Vector2f &vel_input, const Vector2f& accel_input,
  The time constant must be positive.
  The function alters the variable accel to follow a jerk limited kinematic path to pos_input, vel_input and accel_input
 */
-void shape_pos_vel_accel(const postype_t pos_input, const float vel_input, const float accel_input,
-                         const postype_t pos, const float vel, float& accel,
-                         const float vel_correction_max, const float vel_min, const float vel_max,
-                         const float accel_min, const float accel_max, const float tc, const float dt);
+void shape_pos_vel_accel(const postype_t pos_input, float vel_input, float accel_input,
+                         const postype_t pos, float vel, float& accel,
+                         float vel_min, float vel_max,
+                         float accel_min, float accel_max,
+                         float jerk_max, float dt, bool limit_total_accel);
+
 void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
-                            const float vel_correction_max, const float vel_max, const float accel_max, const float tc, const float dt);
+                            float vel_max, float accel_max,
+                            float jerk_max, float dt, bool limit_total_accel);
 
 // proportional controller with piecewise sqrt sections to constrain second derivative
 float sqrt_controller(float error, float p, float second_ord_lim, float dt);
