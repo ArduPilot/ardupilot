@@ -36,7 +36,10 @@ class AP_MSP
     friend class AP_MSP_Telem_Generic;
     friend class AP_MSP_Telem_DJI;
     friend class AP_MSP_Telem_Backend;
-
+#if HAL_WITH_MSP_DISPLAYPORT
+    friend class AP_MSP_Telem_DisplayPort;
+    friend class AP_OSD_MSP_DisplayPort;
+#endif
 public:
     AP_MSP();
 
@@ -50,17 +53,20 @@ public:
     // init - perform required initialisation
     void init();
 
+    enum class MspOption : uint8_t {
+        OPTION_TELEMETRY_MODE = 1U<<0,
+        OPTION_TELEMETRY_DJI_WORKAROUNDS = 1U<<1,
+        OPTION_DISPLAYPORT_BTFL_SYMBOLS = 1U<<2,
+    };
+
+    bool check_option(const MspOption option) const { return (_options & (uint8_t)option) != 0; };
+
     static AP_MSP *get_singleton(void)
     {
         return _singleton;
     }
 
 private:
-
-    enum msp_option_e : uint8_t {
-        OPTION_TELEMETRY_MODE = 1U<<0,
-        OPTION_TELEMETRY_DJI_WORKAROUNDS = 1U<<1
-    };
 
     AP_MSP_Telem_Backend *_backends[MSP_MAX_INSTANCES];
 
@@ -83,7 +89,7 @@ private:
     bool init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_SerialManager::SerialProtocol protocol);
     void init_osd();
     void loop(void);
-    bool check_option(const msp_option_e option);
+    AP_MSP_Telem_Backend* find_protocol(const AP_SerialManager::SerialProtocol protocol) const;
 
     static AP_MSP *_singleton;
 };
