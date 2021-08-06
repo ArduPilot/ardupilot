@@ -307,7 +307,7 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& t
     const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
     const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
 
-    return mode_guided.set_destination_posvel(pos_neu_cm, vel_neu_cms);
+    return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, Vector3f());
 }
 
 bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
