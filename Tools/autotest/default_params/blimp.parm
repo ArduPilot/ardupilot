@@ -12,43 +12,46 @@ COMPASS_OFS3_X   5
 COMPASS_OFS3_Y   13
 COMPASS_OFS3_Z   -18
 FRAME_CLASS     1
-RC1_MAX         2000.000000
-RC1_MIN         1000.000000
-RC1_TRIM        1500.000000
-RC2_MAX         2000.000000
-RC2_MIN         1000.000000
-RC2_TRIM        1500.000000
-RC3_MAX         2000.000000
-RC3_MIN         1000.000000
-RC3_TRIM        1500.000000
-RC4_MAX         2000.000000
-RC4_MIN         1000.000000
-RC4_TRIM        1500.000000
-RC5_MAX         2000.000000
-RC5_MIN         1000.000000
-RC5_TRIM        1500.000000
-RC6_MAX         2000.000000
-RC6_MIN         1000.000000
-RC6_TRIM        1500.000000
-RC7_MAX         2000.000000
-RC7_MIN         1000.000000
-RC7_TRIM        1500.000000
-RC8_MAX         2000.000000
-RC8_MIN         1000.000000
-RC8_TRIM        1500.000000
+RC1_MAX         2000
+RC1_MIN         1000
+RC1_TRIM        1500
+RC2_MAX         2000
+RC2_MIN         1000
+RC2_TRIM        1500
+RC3_MAX         2000
+RC3_MIN         1000
+RC3_TRIM        1500
+RC4_MAX         2000
+RC4_MIN         1000
+RC4_TRIM        1500
+RC5_MAX         2000
+RC5_MIN         1000
+RC5_TRIM        1500
+RC6_MAX         2000
+RC6_MIN         1000
+RC6_TRIM        1500
+RC7_MAX         2000
+RC7_MIN         1000
+RC7_TRIM        1500
+RC8_MAX         2000
+RC8_MIN         1000
+RC8_TRIM        1500
+
 # setting servo functions for the four fins
 SERVO1_FUNCTION 33
-SERVO1_FUNCTION 34
-SERVO1_FUNCTION 35
-SERVO1_FUNCTION 36
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
 
-FLTMODE1        7
-FLTMODE2        9
-FLTMODE3        6
-FLTMODE4        3
-FLTMODE5        5
-FLTMODE6		0
+FLTMODE1         0
+FLTMODE2         1
+FLTMODE3         2
+FLTMODE4         3
+FLTMODE5         1
+FLTMODE6         1
+
 SIM_BARO_RND    0
+
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001
@@ -68,20 +71,6 @@ INS_ACC3OFFS_Z   0.000
 INS_ACC3SCAL_X   1.000
 INS_ACC3SCAL_Y   1.000
 INS_ACC3SCAL_Z   1.000
-# flightmodes
-# switch 1 Circle
-# switch 2 LAND
-# switch 3 RTL
-# switch 4 Auto
-# switch 5 Loiter
-# switch 6 Stab
-# STABILIZE 	0 !
-# ACRO 			1
-# ALT_HOLD 		2
-# AUTO 			3 !
-# GUIDED 		4
-# LOITER 		5 !
-# RTL 			6 !
-# CIRCLE 		7 !
-# POSITION 		8
-# LAND 			9 !
+
+ARMING_RUDDER 0
+GCS_PID_MASK 255
