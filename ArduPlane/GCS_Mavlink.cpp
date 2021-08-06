@@ -245,14 +245,6 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
     return AP::baro().get_climb_rate();
 }
 
-// report simulator state
-void GCS_MAVLINK_Plane::send_simstate() const
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    GCS_MAVLINK::send_simstate();
-#endif
-}
-
 void GCS_MAVLINK_Plane::send_wind() const
 {
     const Vector3f wind = AP::ahrs().wind_estimate();
