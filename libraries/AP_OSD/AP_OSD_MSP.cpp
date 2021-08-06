@@ -164,7 +164,7 @@ bool AP_OSD_MSP::init(void)
 }
 
 // override built in positions with defaults for MSP OSD
-void AP_OSD_MSP::setup_defaults(void) 
+void AP_OSD_MSP::setup_defaults(void)
 {
     AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
 }
@@ -180,9 +180,4 @@ AP_OSD_Backend *AP_OSD_MSP::probe(AP_OSD &osd)
         return nullptr;
     }
     return backend;
-}
-
-AP_OSD_MSP::AP_OSD_MSP(AP_OSD &osd):
-    AP_OSD_Backend(osd)
-{
 }

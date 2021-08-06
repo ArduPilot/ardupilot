@@ -52,6 +52,7 @@ class AP_MSP;
 #define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
+#define AP_OSD_NUM_SYMBOLS 79
 /*
   class to hold one setting
  */
@@ -72,6 +73,7 @@ class AP_OSD;
 
 class AP_OSD_AbstractScreen
 {
+    friend class AP_OSD;
 public:
     // constructor
     AP_OSD_AbstractScreen() {}
@@ -101,6 +103,8 @@ protected:
 
     AP_OSD_Backend *backend;
     AP_OSD *osd;
+
+    static uint8_t symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 };
 
 #if OSD_ENABLED
@@ -115,7 +119,7 @@ public:
 
     // skip the drawing if we are not using a font based backend. This saves a lot of flash space when
     // using the MSP OSD system on boards that don't have a MAX7456
-#if HAL_WITH_OSD_BITMAP
+#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
     void draw(void) override;
 #endif
 
@@ -363,7 +367,7 @@ public:
     static const uint8_t NUM_PARAMS = 9;
     static const uint8_t SAVE_PARAM = NUM_PARAMS + 1;
 
-#if HAL_WITH_OSD_BITMAP
+#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
     void draw(void) override;
 #endif
     void handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link);
@@ -437,7 +441,8 @@ public:
         OSD_MAX7456=1,
         OSD_SITL=2,
         OSD_MSP=3,
-        OSD_TXONLY=4
+        OSD_TXONLY=4,
+        OSD_MSP_DISPLAYPORT=5
     };
     enum switch_method {
         TOGGLE=0,
