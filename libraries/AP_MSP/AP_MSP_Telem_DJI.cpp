@@ -34,18 +34,18 @@ bool AP_MSP_Telem_DJI::init_uart()
     return false;
 }
 
-bool AP_MSP_Telem_DJI::is_scheduler_enabled()
+bool AP_MSP_Telem_DJI::is_scheduler_enabled() const
 {
-    AP_MSP *msp = AP::msp();
+    const AP_MSP *msp = AP::msp();
     if (msp == nullptr) {
         return false;
     }
-    return msp->check_option(AP_MSP::OPTION_TELEMETRY_MODE);
+    return msp->check_option(AP_MSP::MspOption::OPTION_TELEMETRY_MODE);
 }
 
 void AP_MSP_Telem_DJI::hide_osd_items(void)
 {
-    AP_MSP *msp = AP::msp();
+    const AP_MSP *msp = AP::msp();
     if (msp == nullptr) {
         return;
     }
@@ -84,17 +84,33 @@ uint32_t AP_MSP_Telem_DJI::get_osd_flight_mode_bitmask(void)
 
 MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_api_version(sbuf_t *dst)
 {
-    sbuf_write_u8(dst, MSP_PROTOCOL_VERSION);
-    sbuf_write_u8(dst, API_VERSION_MAJOR);
-    sbuf_write_u8(dst, API_VERSION_MINOR);
+    struct {
+        uint8_t proto;
+        uint8_t major;
+        uint8_t minor;
+    } api_version;
+
+    api_version.proto = MSP_PROTOCOL_VERSION;
+    api_version.major = API_VERSION_MAJOR;
+    api_version.minor = API_VERSION_MINOR;
+
+    sbuf_write_data(dst, &api_version, sizeof(api_version));
     return MSP_RESULT_ACK;
 }
 
 MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_fc_version(sbuf_t *dst)
 {
-    sbuf_write_u8(dst, FC_VERSION_MAJOR);
-    sbuf_write_u8(dst, FC_VERSION_MINOR);
-    sbuf_write_u8(dst, FC_VERSION_PATCH_LEVEL);
+    struct {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+    } fc_version;
+
+    fc_version.major = FC_VERSION_MAJOR;
+    fc_version.minor = FC_VERSION_MINOR;
+    fc_version.patch = FC_VERSION_PATCH_LEVEL;
+
+    sbuf_write_data(dst, &fc_version, sizeof(fc_version));
     return MSP_RESULT_ACK;
 }
 

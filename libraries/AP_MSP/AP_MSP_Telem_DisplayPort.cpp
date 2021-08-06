@@ -17,15 +17,15 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_MSP.h"
-#include "AP_MSP_Telem_Generic.h"
+#include "AP_MSP_Telem_DisplayPort.h"
 
-#if HAL_MSP_ENABLED
+#if HAL_WITH_MSP_DISPLAYPORT
 
 extern const AP_HAL::HAL& hal;
 
 using namespace MSP;
 
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_api_version(sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_api_version(sbuf_t *dst)
 {
     struct {
         uint8_t proto;
@@ -41,7 +41,7 @@ MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_api_version(sbuf_t *dst)
     return MSP_RESULT_ACK;
 }
 
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_fc_version(sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_version(sbuf_t *dst)
 {
     struct {
         uint8_t major;
@@ -57,10 +57,20 @@ MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_fc_version(sbuf_t *dst)
     return MSP_RESULT_ACK;
 }
 
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_fc_variant(sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_variant(sbuf_t *dst)
 {
-    sbuf_write_data(dst, "ARDU", FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
+    const AP_MSP *msp = AP::msp();
+    if (msp == nullptr) {
+        return MSP_RESULT_ERROR;
+    }
+    // do we use backend specific symbols table?
+    if (msp->check_option(AP_MSP::MspOption::OPTION_DISPLAYPORT_BTFL_SYMBOLS)) {
+        sbuf_write_data(dst, BETAFLIGHT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
+    } else {
+        sbuf_write_data(dst, ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
+    }
+
     return MSP_RESULT_ACK;
 }
 
-#endif //HAL_MSP_ENABLED
+#endif //HAL_WITH_MSP_DISPLAYPORT

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
-
 #include "msp.h"
 
 #include <time.h>
@@ -33,6 +32,7 @@ class AP_MSP;
 
 class AP_MSP_Telem_Backend : AP_RCTelemetry
 {
+friend AP_MSP;
 public:
     AP_MSP_Telem_Backend(AP_HAL::UARTDriver *uart);
 
@@ -77,6 +77,16 @@ public:
     void process_incoming_data();     // incoming data
     void process_outgoing_data();     // push outgoing data
 
+#if HAL_WITH_MSP_DISPLAYPORT
+    // displayport commands
+    // betaflight/src/main/io/displayport_msp.c
+    virtual void msp_displayport_heartbeat();
+    virtual void msp_displayport_grab();
+    virtual void msp_displayport_release();
+    virtual void msp_displayport_clear_screen();
+    virtual void msp_displayport_draw_screen();
+    virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string);
+#endif
 protected:
     enum msp_packet_type : uint8_t {
         EMPTY_SLOT = 0,
@@ -158,6 +168,9 @@ protected:
     MSP::MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, MSP::sbuf_t *src);
     MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *dst);
 
+    // MSP send
+    void msp_send_packet(uint16_t cmd, MSP::msp_version_e msp_version, const void *p, uint16_t size, bool is_request);
+
     // MSP sensor command processing
     void msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt);
     void msp_handle_rangefinder(const MSP::msp_rangefinder_data_message_t &pkt);
@@ -173,7 +186,9 @@ protected:
         return 0;
     }
 
-    virtual bool is_scheduler_enabled() = 0;                            // only osd backends should allow a push type telemetry
+    virtual bool is_scheduler_enabled() const = 0;                            // only osd backends should allow a push type telemetry
+    virtual bool use_msp_thread() const {return true;};                       // is this backend hanlded by the MSP thread?
+    virtual AP_SerialManager::SerialProtocol get_serial_protocol() const = 0;
 
     // implementation specific MSP out command processing
     virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) = 0;
