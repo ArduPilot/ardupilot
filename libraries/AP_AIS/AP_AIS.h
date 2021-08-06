@@ -104,6 +104,7 @@ private:
 
     // decode specific message types
     bool decode_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
+    bool decode_base_station_report(const char *payload) WARN_IF_UNUSED;
     bool decode_static_and_voyage_data(const char *payload) WARN_IF_UNUSED;
 
     // read the specified bits from the char array each char giving 6 bits
