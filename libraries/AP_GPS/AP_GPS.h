@@ -685,8 +685,10 @@ private:
 
     bool needs_uart(GPS_Type type) const;
 
+#if GPS_MAX_RECEIVERS > 1
     /// Update primary instance
     void update_primary(void);
+#endif
 
     // helper function for mavlink gps yaw
     uint16_t gps_yaw_cdeg(uint8_t instance) const;
