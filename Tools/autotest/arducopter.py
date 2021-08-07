@@ -2520,14 +2520,13 @@ class AutoTestCopter(AutoTest):
             while True:
                 if self.get_sim_time_cached() - tstart > 200:
                     raise NotAchievedException("Did not disarm")
-                # self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                # blocking=True)
+                self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                    blocking=True)
                 # print("gpi=%s" % str(gpi))
-                # self.mav.recv_match(type='SIM_STATE',
-                #                    blocking=True)
+                self.mav.recv_match(type='SIMSTATE',
+                                    blocking=True)
                 # print("ss=%s" % str(ss))
                 # wait for RTL disarm:
-                self.wait_heartbeat()
                 if not self.armed():
                     break
 

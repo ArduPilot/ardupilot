@@ -1461,13 +1461,13 @@ class AutoTestPlane(AutoTest):
 
         # these are ordered to bookend the list with timestamps (which
         # both attitude messages have):
-        get_names = ['ATTITUDE', 'SIM_STATE', 'AHRS2', 'ATTITUDE_QUATERNION']
+        get_names = ['ATTITUDE', 'SIMSTATE', 'AHRS2', 'ATTITUDE_QUATERNION']
         msgs = self.get_messages_frame(get_names)
 
         for get_name in get_names:
             self.progress("%s: %s" % (get_name, msgs[get_name]))
 
-        simstate = msgs['SIM_STATE']
+        simstate = msgs['SIMSTATE']
         attitude = msgs['ATTITUDE']
         ahrs2 = msgs['AHRS2']
         attitude_quaternion = msgs['ATTITUDE_QUATERNION']
@@ -1612,7 +1612,7 @@ class AutoTestPlane(AutoTest):
         def validate_global_position_int_against_simstate(mav, m):
             if m.get_type() == 'GLOBAL_POSITION_INT':
                 self.gpi = m
-            elif m.get_type() == 'SIM_STATE':
+            elif m.get_type() == 'SIMSTATE':
                 self.simstate = m
             if self.gpi is None:
                 return
