@@ -1503,7 +1503,7 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
     char unit_icon = u_icon(DISTANCE);
     float distance_scaled = u_scale(DISTANCE, distance);
     const char *fmt = "%4.0f%c";
-    if (distance_scaled > 9999.0f) {
+    if (distance_scaled > 9999.0f || (osd->units == AP_OSD::UNITS_IMPERIAL && distance_scaled > 5280.0f && (osd->options & AP_OSD::OPTION_IMPERIAL_MILES))) {
         distance_scaled = u_scale(DISTANCE_LONG, distance);
         unit_icon= u_icon(DISTANCE_LONG);
         //try to pack as many useful info as possible
