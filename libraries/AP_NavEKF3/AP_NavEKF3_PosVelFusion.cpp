@@ -327,7 +327,7 @@ void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
     }
     gps_data.corrected = true;
 
-    const Vector3F posOffsetBody = dal.gps().get_antenna_offset(gps_data.sensor_idx).toftype() - accelPosOffset;
+    const Vector3F posOffsetBody = dal.gps().get_antenna_offset(gps_data.sensor_idx).toftype();
     if (posOffsetBody.is_zero()) {
         return;
     }
