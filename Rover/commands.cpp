@@ -78,5 +78,6 @@ void Rover::update_home()
 
     if (!ahrs.set_home(loc)) {
         // silently ignored...
+        return;
     }
 }
