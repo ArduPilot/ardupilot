@@ -53,7 +53,10 @@ public:
     float read_receiver_link_quality();
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
-    uint8_t read_receiver_rssi_uint8();   
+    uint8_t read_receiver_rssi_uint8();
+    // Read the receiver RSSI value as an 8-bit integer with adhering to MAVLink standard
+    // 0 represents weakest signal, 254 represents maximum signal, 255 represents invalid/unknown signal
+    uint8_t read_receiver_rssi_mavlink();
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
