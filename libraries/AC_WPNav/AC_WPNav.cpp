@@ -838,7 +838,7 @@ bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_
 void AC_WPNav::calc_scurve_jerk_and_jerk_time()
 {
     // calculate jerk
-    _scurve_jerk = MIN(_attitude_control.get_ang_vel_roll_max_radss() * GRAVITY_MSS, _attitude_control.get_ang_vel_pitch_max_radss() * GRAVITY_MSS);
+    _scurve_jerk = MIN(_attitude_control.get_ang_vel_roll_max_rads() * GRAVITY_MSS, _attitude_control.get_ang_vel_pitch_max_rads() * GRAVITY_MSS);
     if (is_zero(_scurve_jerk)) {
         _scurve_jerk = _wp_jerk;
     } else {
