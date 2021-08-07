@@ -311,7 +311,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
         // correct range for flow sensor offset body frame position offset
         // the corrected value is the predicted range from the sensor focal point to the
         // centre of the image on the ground assuming flat terrain
-        Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
+        Vector3F posOffsetBody = ofDataDelayed.body_offset;
         if (!posOffsetBody.is_zero()) {
             Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             range -= posOffsetEarth.z / prevTnb.c.z;
