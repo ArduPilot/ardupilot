@@ -71,6 +71,10 @@
 // this is 875
 #define SBUS_SCALE_OFFSET (SBUS_TARGET_MIN - ((SBUS_TARGET_RANGE * SBUS_RANGE_MIN / SBUS_RANGE_RANGE)))
 
+#ifndef HAL_SBUS_FRAME_GAP
+#define HAL_SBUS_FRAME_GAP 2000U
+#endif
+
 // constructor
 AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted) :
     AP_RCProtocol_Backend(_frontend),
@@ -170,7 +174,7 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 // support byte input
 void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
-    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= HAL_SBUS_FRAME_GAP);
     byte_input.last_byte_us = timestamp_us;
 
     if (have_frame_gap) {
