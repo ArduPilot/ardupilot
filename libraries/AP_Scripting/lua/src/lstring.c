@@ -22,7 +22,7 @@
 #include "lstring.h"
 
 
-#define MEMERRMSG       "not enough memory"
+#define MEMERRMSG       "not enough mem,increase scr_heap_size"
 
 
 /*
