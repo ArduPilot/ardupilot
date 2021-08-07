@@ -1258,7 +1258,7 @@ void NavEKF3_core::FuseBodyVel()
         bodyVelPred = (prevTnb * stateStruct.velocity);
 
         // correct sensor offset body frame position offset relative to IMU
-        Vector3F posOffsetBody = bodyOdmDataDelayed.body_offset - accelPosOffset;
+        Vector3F posOffsetBody = bodyOdmDataDelayed.body_offset;
 
         // correct prediction for relative motion due to rotation
         // note - % operator overloaded for cross product
