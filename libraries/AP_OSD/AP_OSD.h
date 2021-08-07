@@ -475,6 +475,7 @@ public:
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
         OPTION_INVERTED_AH_ROLL = 1U<<2,
+        OPTION_IMPERIAL_MILES = 1U<<3,
     };
 
     enum {
