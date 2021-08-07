@@ -360,7 +360,7 @@ void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
     if (visual_odom == nullptr) {
         return;
     }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
+    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype();
     if (posOffsetBody.is_zero()) {
         return;
     }
@@ -385,7 +385,7 @@ void NavEKF3_core::CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav
     if (visual_odom == nullptr) {
         return;
     }
-    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype() - accelPosOffset;
+    const Vector3F posOffsetBody = visual_odom->get_pos_offset().toftype();
     if (posOffsetBody.is_zero()) {
         return;
     }
