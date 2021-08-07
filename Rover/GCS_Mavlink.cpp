@@ -139,7 +139,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        rssi.read_receiver_rssi_uint8());
+        rssi.read_receiver_rssi_mavlink());
 }
 
 int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
