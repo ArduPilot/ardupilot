@@ -1049,7 +1049,7 @@ void NavEKF3_core::selectHeightForFusion()
     if (_rng && rangeDataToFuse) {
         auto *sensor = _rng->get_backend(rangeDataDelayed.sensor_idx);
         if (sensor != nullptr) {
-            Vector3F posOffsetBody = sensor->get_pos_offset().toftype() - accelPosOffset;
+            Vector3F posOffsetBody = sensor->get_pos_offset().toftype();
             if (!posOffsetBody.is_zero()) {
                 Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
                 rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
