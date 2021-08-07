@@ -118,3 +118,6 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+#ifndef BEACON_ENABLED
+ # define BEACON_ENABLED DISABLED
+#endif

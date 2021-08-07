@@ -30,7 +30,6 @@
 #include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
@@ -94,6 +93,10 @@
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #include "RC_Channel.h"                  // RC Channel Library
+
+#if BEACON_ENABLED == ENABLED
+#include <AP_Beacon/AP_Beacon.h>
+#endif
 
 class Rover : public AP_Vehicle {
 public:

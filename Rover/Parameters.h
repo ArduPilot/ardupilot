@@ -299,7 +299,9 @@ public:
     AP_AdvancedFailsafe_Rover afs;
 #endif
 
+#if BEACON_ENABLED == ENABLED
     AP_Beacon beacon;
+#endif
 
     // Motor library
     AP_MotorsUGV motors;
