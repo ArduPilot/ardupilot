@@ -138,12 +138,19 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FLAP_PERCNT", 13, AP_Landing, flap_percent, 0),
 
+    // @Param: OPTIONS
+    // @DisplayName: Landing options bitmask
+    // @Description: Bitmask of options to use with landing.
+    // @Bitmask: 0: honor min throttle during landing flare
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
+
     // @Param: TYPE
     // @DisplayName: Auto-landing type
     // @Description: Specifies the auto-landing type to use
     // @Values: 0:Standard Glide Slope, 1:Deepstall
     // @User: Standard
-    AP_GROUPINFO("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE),
+    AP_GROUPINFO_FLAGS("TYPE",    14, AP_Landing, type, TYPE_STANDARD_GLIDE_SLOPE, AP_PARAM_FLAG_ENABLE),
 
 #if HAL_LANDING_DEEPSTALL_ENABLED
     // @Group: DS_
@@ -151,12 +158,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
 #endif
 
-    // @Param: OPTIONS
-    // @DisplayName: Landing options bitmask
-    // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare
-    // @User: Advanced
-    AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
+    // additional global params should be placed in the list above TYPE to avoid the enable flag hiding the deepstall params
 
     AP_GROUPEND
 };
