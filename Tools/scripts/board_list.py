@@ -90,6 +90,7 @@ AUTOBUILD_BOARDS = ["fmuv2",
                     "FlywooF745",
                     "luminousbee5",
                     "MambaF405US-I2C",
+                    "Swan-K1",
                     # SITL targets
                     "SITL_x86_64_linux_gnu",
                     "SITL_arm_linux_gnueabihf",
