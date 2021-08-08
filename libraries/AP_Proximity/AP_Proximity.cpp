@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
+    AP_GROUPINFO_FLAGS("_TYPE",   1, AP_Proximity, _type[0], 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _ORIENT
     // @DisplayName: Proximity sensor orientation
