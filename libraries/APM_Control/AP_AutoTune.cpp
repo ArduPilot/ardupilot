@@ -360,7 +360,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
             D_limit = D;
             D_set_ms = now;
             action = Action::LOWER_D;
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);            
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);
         }
     } else if (min_Dmod < 1.0) {
         // oscillation, with D_limit set
@@ -372,7 +372,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
                 D_limit = D;
                 D_set_ms = now;
                 action = Action::LOWER_D;
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);
                 done_count = 0;
             } else if (now - P_set_ms > 2000) {
                 P *= 0.35;
@@ -380,12 +380,12 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
                 P_set_ms = now;
                 action = Action::LOWER_P;
                 done_count = 0;
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sP: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", P_limit);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%sP: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", P_limit);
             }
         }
     } else if (ff_count < 4) {
         // we don't have a good FF estimate yet, keep going
-        
+
     } else if (!is_positive(D_limit)) {
         /* we haven't detected D oscillation yet, keep raising D */
         D *= 1.3;
@@ -399,7 +399,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
         // have done 3 cycles without reducing P
         if (done_count < 3) {
             if (++done_count == 3) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s: Finished", type==AUTOTUNE_ROLL?"Roll":"Pitch");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s: Finished", type==AUTOTUNE_ROLL?"Roll":"Pitch");
                 next_save.P = P;
                 next_save.D = D;
                 restore.P = P;
