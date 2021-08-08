@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Description: What type of beacon based position estimation device is connected
     // @Values: 0:None,1:Pozyx,2:Marvelmind,3:Nooploop,10:SITL
     // @User: Advanced
-    AP_GROUPINFO("_TYPE",    0, AP_Beacon, _type, 0),
+    AP_GROUPINFO_FLAGS("_TYPE",    0, AP_Beacon, _type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _LATITUDE
     // @DisplayName: Beacon origin's latitude
