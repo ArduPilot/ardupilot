@@ -1,0 +1,56 @@
+name: Build targets
+
+on: [push, pull_request, workflow_dispatch]
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Install dependencies
+        env:
+          HOME: ${{ runner.workspace }}/ardupilot
+        run: |
+            export DEBIAN_FRONTEND=noninteractive
+
+            apt-get update && apt-get install --no-install-recommends -y \
+                lsb-release \
+                sudo \
+                bash-completion \
+                software-properties-common
+
+            cp Tools/environment_install/install-prereqs-ubuntu.sh /ardupilot/Tools/environment_install/
+            cp Tools/completion /ardupilot/Tools/completion/
+
+            export SKIP_AP_EXT_ENV=1 SKIP_AP_GRAPHIC_ENV=1 SKIP_AP_COV_ENV=1 SKIP_AP_GIT_CHECK=1
+            ./Tools/environment_install/install-prereqs-ubuntu.sh -y
+
+            # add waf alias to ardupilot waf to .bashrc
+            echo "alias waf=\"/ardupilot/waf\"" >> ~/.bashrc
+
+            # Check that local/bin are in PATH for pip --user installed package
+            echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.bashrc
+
+            # Set the buildlogs directory into /tmp as other directory aren't accessible
+            BUILDLOGS=/tmp/buildlogs
+
+      - name: Build SITL
+        env:
+          HOME: ${{ runner.workspace }}/ardupilot
+        run: |
+            ./waf configure --boards=omnibusf4
+            ./waf build
+
+      - name: Archive build
+        uses: actions/upload-artifact@v2
+        with:
+           name: binaries
+           path: artifacts
+           retention-days: 7
