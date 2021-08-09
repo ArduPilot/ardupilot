@@ -88,7 +88,7 @@ void AP_RPM_Pin::update(void)
         float filter_value = signal_quality_filter.get();
 
         state.rate_rpm = signal_quality_filter.apply(rpm);
-        
+
         if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
             if (is_zero(filter_value)){
                 quality = 0;
@@ -102,7 +102,7 @@ void AP_RPM_Pin::update(void)
         }
         state.signal_quality = (0.1 * quality) + (0.9 * state.signal_quality);
     }
-    
+
     // assume we get readings at at least 1Hz, otherwise reset quality to zero
     if (AP_HAL::millis() - state.last_reading_ms > 1000) {
         state.signal_quality = 0;
