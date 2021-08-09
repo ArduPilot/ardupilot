@@ -47,7 +47,15 @@ void Plane::Log_Write_Attitude(void)
 // do fast logging for plane
 void Plane::Log_Write_Fast(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
+    if (!should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
+        uint32_t now = AP_HAL::millis();
+        if (now - last_log_fast_ms < 40) {
+            // default to 25Hz
+            return;
+        }
+        last_log_fast_ms = now;
+    }
+    if (should_log(MASK_LOG_ATTITUDE_FAST | MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
 }
