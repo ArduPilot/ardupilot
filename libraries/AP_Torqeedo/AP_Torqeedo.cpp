@@ -136,9 +136,14 @@ bool AP_Torqeedo::init_internals()
 // returns true if the driver is enabled
 bool AP_Torqeedo::enabled() const
 {
-    if (_type == ConnectionType::TYPE_TILLER || _type == ConnectionType::TYPE_MOTOR) {
+    switch ((ConnectionType)_type) {
+    case ConnectionType::TYPE_DISABLED:
+        return false;
+    case ConnectionType::TYPE_TILLER:
+    case ConnectionType::TYPE_MOTOR:
         return true;
     }
+
     return false;
 }
 
@@ -177,7 +182,7 @@ void AP_Torqeedo::thread_main()
         if (safe_to_send()) {
             // if connected to motor send motor speed every 0.5sec
             if (_type == ConnectionType::TYPE_MOTOR &&
-                (AP_HAL::micros() - _last_send_motor_us > TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US)) {\
+                (AP_HAL::micros() - _last_send_motor_us > TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US)) {
                 _send_motor_speed = true;
             }
 
@@ -202,7 +207,7 @@ bool AP_Torqeedo::healthy()
     {
         // healthy if both receive and send have occurred in the last 3 seconds
         WITH_SEMAPHORE(_last_healthy_sem);
-        uint32_t now_ms = AP_HAL::millis();
+        const uint32_t now_ms = AP_HAL::millis();
         return ((now_ms - _last_received_ms < 3000) && (now_ms - _last_send_motor_ms < 3000));
     }
 }
