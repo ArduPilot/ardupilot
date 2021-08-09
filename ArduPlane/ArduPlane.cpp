@@ -83,7 +83,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
-    SCHED_TASK(Log_Write_Fast,         25,    300),
+    SCHED_TASK(Log_Write_Fast,        400,    300),
     SCHED_TASK(update_logging1,        25,    300),
     SCHED_TASK(update_logging2,        25,    300),
 #if HAL_SOARING_ENABLED
