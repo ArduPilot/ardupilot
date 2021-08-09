@@ -92,8 +92,8 @@ void Plane::fence_check()
                 if (fence.get_return_altitude() > 0) {
                     // fly to the return point using _retalt
                     guided_WP_loc.alt = home.alt + 100.0f * fence.get_return_altitude();
-                } else if (!fence.get_safe_alt_min_loc(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_min) ||
-                           !fence.get_safe_alt_max_loc(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_max) ||
+                } else if (!fence.get_safe_alt_min(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_min) ||
+                           !fence.get_safe_alt_max(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_max) ||
                            fence_alt_min >= fence_alt_max) {
                     // invalid min/max, use RTL_altitude
                     guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
