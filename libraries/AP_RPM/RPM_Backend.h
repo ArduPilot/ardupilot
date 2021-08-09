@@ -35,7 +35,7 @@ public:
         if (state.instance >= RPM_MAX_INSTANCES) {
             return -1;
         }
-        return ap_rpm._pin[state.instance].get();
+        return ap_rpm._params[state.instance].pin.get();
     }
     
 protected:
