@@ -74,10 +74,10 @@ private:
         TYPE_MOTOR = 2
     };
 
-    enum class DebugLevel {
-        NONE = 0,
-        LOGGING_ONLY = 1,
-        LOGGING_AND_GCS = 2
+    // OPTIONS parameter values
+    enum options {
+        LOG             = 1<<0,
+        DEBUG_TO_GCS    = 1<<1,
     };
 
     // initialise serial port and gpio pins (run from background thread)
@@ -114,7 +114,7 @@ private:
     AP_Enum<ConnectionType> _type;      // connector type used (0:disabled, 1:tiller connector, 2: motor connector)
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
-    AP_Enum<DebugLevel> _debug_level;  // debug level
+    AP_Int16 _options;      // options bitmask
 
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
