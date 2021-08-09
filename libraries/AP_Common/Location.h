@@ -28,7 +28,7 @@ public:
     };
 
     // check if an alt frame is valid
-    static bool valid_alt_frame(uint8_t frame) { return frame <= uint8_t(AltFrame::ABOVE_TERRAIN); }
+    static bool valid_alt_frame(AltFrame frame) { return frame <= AltFrame::ABOVE_TERRAIN; }
 
     /// constructors
     Location();
