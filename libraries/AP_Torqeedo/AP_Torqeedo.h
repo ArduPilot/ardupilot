@@ -47,6 +47,7 @@ public:
     bool healthy();
 
     // run pre-arm check.  returns false on failure and fills in failure_msg
+    // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
     static const struct AP_Param::GroupInfo var_info[];

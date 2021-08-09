@@ -208,6 +208,7 @@ bool AP_Torqeedo::healthy()
 }
 
 // run pre-arm check.  returns false on failure and fills in failure_msg
+// any failure_msg returned will not include a prefix
 bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
     // exit immediately if not enabled
@@ -215,13 +216,12 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
         return true;
     }
 
-    const char *failure_prefix = "Torqeedo:";
     if (!_initialised) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "%s not initialised", failure_prefix);
+        strncpy(failure_msg, "not initialised", failure_msg_len);
         return false;
     }
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "%s not healthy", failure_prefix);
+        strncpy(failure_msg, "not healthy", failure_msg_len);
         return false;
     }
     return true;
