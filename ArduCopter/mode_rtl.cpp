@@ -534,7 +534,7 @@ void ModeRTL::compute_return_target()
         // get return target as alt-above-home so it can be compared to fence's alt
         if (rtl_path.return_target.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt)) {
             float fence_alt;
-            if (copter.fence.get_safe_alt_max_loc(rtl_path.return_target, Location::AltFrame::ABOVE_HOME, fence_alt)) {
+            if (copter.fence.get_safe_alt_max(rtl_path.return_target, Location::AltFrame::ABOVE_HOME, fence_alt)) {
                 // convert to cm
                 fence_alt *= 100;
 
