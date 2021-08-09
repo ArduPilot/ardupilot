@@ -961,6 +961,11 @@ void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
  */
 bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const
 {
+    if (!hal.scheduler->is_system_initialized()) {
+        hal.util->snprintf(banner_msg, banner_msg_len, "RCOut: Initialising");
+        return true;
+    }
+
     // create array of each channel's mode
     output_mode ch_mode[chan_offset + NUM_GROUPS * ARRAY_SIZE(pwm_group::chan)] = {};
     bool have_nonzero_modes = false;
