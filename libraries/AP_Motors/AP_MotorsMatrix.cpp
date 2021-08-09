@@ -1043,6 +1043,47 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             }
             break;
 
+        case MOTOR_FRAME_DODECA:
+            _mav_type = MAV_TYPE_DODECAROTOR;
+            _frame_class_string = "DODECA";
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    _frame_type_string = "PLUS";
+                    add_motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
+                    add_motor(AP_MOTORS_MOT_2,    30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
+                    add_motor(AP_MOTORS_MOT_3,    60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
+                    add_motor(AP_MOTORS_MOT_4,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4);
+                    add_motor(AP_MOTORS_MOT_5,   120, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5);
+                    add_motor(AP_MOTORS_MOT_6,   150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6);
+                    add_motor(AP_MOTORS_MOT_7,   180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7);
+                    add_motor(AP_MOTORS_MOT_8,  -150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8);
+                    add_motor(AP_MOTORS_MOT_9,  -120, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9);
+                    add_motor(AP_MOTORS_MOT_10,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10);
+                    add_motor(AP_MOTORS_MOT_11,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 11);
+                    add_motor(AP_MOTORS_MOT_12,  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  12);
+                    break;
+                case MOTOR_FRAME_TYPE_X:
+                    _frame_type_string = "X";
+                    add_motor(AP_MOTORS_MOT_1,    15, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
+                    add_motor(AP_MOTORS_MOT_2,    45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
+                    add_motor(AP_MOTORS_MOT_3,    75, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
+                    add_motor(AP_MOTORS_MOT_4,   105, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4);
+                    add_motor(AP_MOTORS_MOT_5,   135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5);
+                    add_motor(AP_MOTORS_MOT_6,   165, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6);
+                    add_motor(AP_MOTORS_MOT_7,  -165, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7);
+                    add_motor(AP_MOTORS_MOT_8,  -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8);
+                    add_motor(AP_MOTORS_MOT_9,  -105, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9);
+                    add_motor(AP_MOTORS_MOT_10,  -75, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10);
+                    add_motor(AP_MOTORS_MOT_11,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 11);
+                    add_motor(AP_MOTORS_MOT_12,  -15, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  12);
+                    break;
+                default:
+                    // dodeca frame class does not support this frame type
+                    success = false;
+                    break;
+            }
+            break;
+
         default:
             // matrix doesn't support the configured class
             _frame_class_string = "UNSUPPORTED";
