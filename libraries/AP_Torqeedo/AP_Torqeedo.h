@@ -69,7 +69,7 @@ private:
     };
 
     // TYPE parameter values
-    enum class ConnectionType {
+    enum class ConnectionType : uint8_t {
         TYPE_DISABLED = 0,
         TYPE_TILLER = 1,
         TYPE_MOTOR = 2
