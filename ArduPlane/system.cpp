@@ -202,8 +202,16 @@ void Plane::startup_ground(void)
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
+    // update last reason
+    const ModeReason last_reason = _last_reason;
+    _last_reason = reason;
+
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
+        // only make happy noise if using a difent method to switch, this stops beeping for repeated change mode requests from GCS
+        if ((reason != last_reason) && (reason != ModeReason::INITIALISED)) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         return true;
     }
 
@@ -211,6 +219,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
         set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
         return false;
     }
 #endif
@@ -243,6 +255,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
             // ignore result because if we fail we risk looping at the qautotune check above
             control_mode->enter();
         }
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
         return false;
     }
 
@@ -262,6 +278,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     notify_mode(*control_mode);
     gcs().send_message(MSG_HEARTBEAT);
 
+    // make happy noise
+    if (reason != ModeReason::INITIALISED) {
+        AP_Notify::events.user_mode_change = 1;
+    }
     return true;
 }
 
