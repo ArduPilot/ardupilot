@@ -285,7 +285,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                 // The EKF is able to provide a position estimate
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                           outputDataNew.position.y + posOffsetNED.y);
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
@@ -295,7 +296,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                     // Return the EKF estimate but mark it as invalid
                     loc.lat = EKF_origin.lat;
                     loc.lng = EKF_origin.lng;
-                    loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                    loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                               outputDataNew.position.y + posOffsetNED.y);
                     return false;
                 }
             }
@@ -306,7 +308,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
             } else {
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
+                           lastKnownPositionNE.y + posOffsetNED.y);
                 return false;
             }
         }
