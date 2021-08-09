@@ -856,6 +856,8 @@ private:
     void calc_nav_yaw_ground(void);
 
     // Log.cpp
+    uint32_t last_log_fast_ms;
+
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Startup(uint8_t type);
