@@ -124,14 +124,14 @@ public:
     uint8_t get_action() const { return _action.get(); }
 
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
-    bool get_safe_alt_max(Location::AltFrame desired_frame, float &alt_max) const;
+    bool get_safe_alt_max(Location::AltFrame desired_type, float &alt_max) const;
 
     /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
-    bool get_safe_alt_min(Location::AltFrame desired_frame, float &alt_min) const;
+    bool get_safe_alt_min(Location::AltFrame desired_type, float &alt_min) const;
 
     /// get_safe_alt for a specified location
-    bool get_safe_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_max) const;
-    bool get_safe_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt_min) const;
+    bool get_safe_alt_max(const Location &loc, Location::AltFrame desired_type, float &alt_max) const;
+    bool get_safe_alt_min(const Location &loc, Location::AltFrame desired_type, float &alt_min) const;
     
     /// get_radius - returns the fence radius in meters
     float get_radius() const { return _circle_radius.get(); }
@@ -186,22 +186,22 @@ private:
     bool pre_arm_check_circle(const char* &fail_msg) const;
     bool pre_arm_check_alt(const char* &fail_msg) const;
 
-    // get altitude min/max in the desired altitude frame, assuming current location
-    bool get_alt_min(Location::AltFrame desired_frame, float &alt) const;
-    bool get_alt_max(Location::AltFrame desired_frame, float &alt) const;
+    // get altitude min/max in the desired altitude type, assuming current location
+    bool get_alt_min(Location::AltFrame desired_type, float &alt) const;
+    bool get_alt_max(Location::AltFrame desired_type, float &alt) const;
 
-    // get altitude min/max in the desired altitude frame for a given location
-    bool get_alt_min_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const;
-    bool get_alt_max_loc(const Location &loc, Location::AltFrame desired_frame, float &alt) const;
+    // get altitude min/max in the desired altitude type for a given location
+    bool get_alt_min(const Location &loc, Location::AltFrame desired_type, float &alt) const;
+    bool get_alt_max(const Location &loc, Location::AltFrame desired_type, float &alt) const;
     
     /*
-      return an altitude in desired frame, converting from FENCE_ALT_FRAME
-      The varient
+      get an altitude in desired type, converting from FENCE_ALT_TYPE
+      The variant
     */
-    bool get_alt_frame_loc(const Location &loc, Location::AltFrame desired_frame, float alt, float &retalt) const;
+    bool convert_alt_type(const Location &loc, Location::AltFrame desired_type, float alt, float &retalt) const;
 
-    // version of get_alt_frame_loc that assumes the current location
-    bool get_alt_frame(Location::AltFrame desired_frame, float alt, float &retalt) const;
+    // version of convert_alt_type that assumes the current location
+    bool convert_alt_type(Location::AltFrame desired_type, float alt, float &retalt) const;
 
     // parameters
     AP_Int8         _enabled;               // fence enable/disable control
@@ -215,7 +215,7 @@ private:
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
-    AP_Int8         _alt_frame;             // altitude frame
+    AP_Enum<Location::AltFrame> _alt_type;  // altitude type
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
