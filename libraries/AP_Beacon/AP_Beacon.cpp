@@ -214,7 +214,7 @@ bool AP_Beacon::beacon_healthy(uint8_t beacon_instance) const
 // return distance to beacon in meters
 float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
 {
-    if (!beacon_state[beacon_instance].healthy || beacon_instance >= num_beacons) {
+    if ( beacon_instance >= num_beacons || !beacon_state[beacon_instance].healthy) {
         return 0.0f;
     }
     return beacon_state[beacon_instance].distance;
