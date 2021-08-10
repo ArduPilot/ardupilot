@@ -88,7 +88,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
 {
     const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
 
-    if (esc_index > ESC_TELEM_MAX_ESCS || is_zero(rpmdata.update_rate_hz)) {
+    if (esc_index >= ESC_TELEM_MAX_ESCS || is_zero(rpmdata.update_rate_hz)) {
         return false;
     }
 
@@ -269,7 +269,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     // can only get slightly more up-to-date information that perhaps they were expecting or might
     // read data that has just gone stale - both of these are safe and avoid the overhead of locking
 
-    if (esc_index > ESC_TELEM_MAX_ESCS) {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
     }
 
@@ -303,7 +303,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 // this should be called by backends when new telemetry values are available
 void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate)
 {
-    if (esc_index > ESC_TELEM_MAX_ESCS) {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
     }
 
