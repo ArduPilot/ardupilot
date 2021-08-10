@@ -531,7 +531,8 @@ void AP_Baro::init(void)
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+    const int8_t serial_port = AP::externalAHRS().get_port();
+    if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif
