@@ -151,9 +151,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
-    if (compass.available()) {
-        compass.init();
-    }
+    compass.init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
