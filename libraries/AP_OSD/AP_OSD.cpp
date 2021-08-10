@@ -423,8 +423,11 @@ void AP_OSD::update_current_screen()
     case PWM_RANGE:
         for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
             if (get_screen(i).enabled && get_screen(i).channel_min <= channel_value && get_screen(i).channel_max > channel_value) {
+                if (previous_pwm_screen == i) {
+                    break;
+                } else {
                 current_screen = previous_pwm_screen = i;
-                break;
+                }
             }
         }
         break;
