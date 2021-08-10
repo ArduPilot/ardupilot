@@ -80,7 +80,7 @@ static const struct {
     { "INS_ACCSCAL_X",     1.001 },
     { "INS_ACCSCAL_Y",     1.001 },
     { "INS_ACCSCAL_Z",     1.001 },
-    { "RPM_TYPE", 10 },
+    { "RPM1_TYPE", 10 },
 };
 
 
