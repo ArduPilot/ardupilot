@@ -119,20 +119,23 @@ struct PACKED RawData {
 };
 
 AP_InertialSensor_BMI160::AP_InertialSensor_BMI160(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                                   AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                   enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _dev(std::move(dev))
+    , _rotation(rotation)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
+                                AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
+    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -148,12 +151,13 @@ AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
+    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -410,10 +414,8 @@ read_fifo_read_data:
                       (float)(int16_t)le16toh(raw_data[i].gyro.y),
                       (float)(int16_t)le16toh(raw_data[i].gyro.z)};
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-        accel.rotate(ROTATION_ROLL_180);
-        gyro.rotate(ROTATION_ROLL_180);
-#endif
+        accel.rotate(_rotation);
+        gyro.rotate(_rotation);
 
         accel *= _accel_scale;
         gyro *= _gyro_scale;
