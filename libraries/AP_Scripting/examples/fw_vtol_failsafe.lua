@@ -45,7 +45,7 @@ function check_engine()
   end
 
   local rpm = RPM:get_rpm(0)
-  local vibe = ahrs:get_vibration():length()
+  local vibe = ins:get_vibration_levels():length()
 
   -- if either RPM is high or vibe is high then assume engine is running
   if (rpm and (rpm > RPM_LOW_THRESH)) or (vibe > VIBE_LOW_THRESH) then
