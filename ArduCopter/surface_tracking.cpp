@@ -29,7 +29,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
         (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
         target_dist_cm = rf_state.alt_cm + (dir * current_alt_error);
         reset_target = false;
-        last_glitch_cleared_ms = rf_state.glitch_cleared_ms;\
+        last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
     }
     last_update_ms = now;
 
