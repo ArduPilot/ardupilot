@@ -42,7 +42,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 #if AC_AVOID_ENABLED == ENABLED
     // upward facing terrain following never gets closer than avoidance margin
     if (surface == Surface::CEILING) {
-        const float margin_cm = copter.avoid.enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
+        const float margin_cm = copter.avoid.proximity_avoidance_enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
         target_dist_cm = MAX(target_dist_cm, margin_cm);
     }
     // limit maximum target distance when attaching downward lidar for terrain following and upward lidar for proximity avoidance
