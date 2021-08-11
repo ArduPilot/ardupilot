@@ -1750,7 +1750,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
     if (ret != EKFType::NONE &&
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
-        (_flags.fly_forward || !hal.util->get_soft_armed())) {
+        (fly_forward || !hal.util->get_soft_armed())) {
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
