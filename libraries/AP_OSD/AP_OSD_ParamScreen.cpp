@@ -295,19 +295,18 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
     const AP_OSD_ParamSetting& setting = params[number-1];
     AP_Param* p = setting._param;
 
-    if (p->is_read_only()) {
+    if (p == nullptr || p->is_read_only()) {
         return;
     }
 
     _requires_save |= 1 << (number-1);
 
-    float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
-    int32_t incr_int = int32_t(roundf(incr));
-    int32_t max_int = int32_t(roundf(setting._param_max));
-    int32_t min_int = int32_t(roundf(setting._param_min));
+    const float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
+    const int32_t incr_int = int32_t(roundf(incr));
+    const int32_t max_int = int32_t(roundf(setting._param_max));
+    const int32_t min_int = int32_t(roundf(setting._param_min));
 
-    if (p != nullptr) {
-        switch (setting._param_type) {
+    switch (setting._param_type) {
         // there is no way to validate the ranges, so as a rough guess prevent
         // integer types going below -1;
         case AP_PARAM_INT8: {
@@ -334,8 +333,8 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
         case AP_PARAM_NONE:
         case AP_PARAM_GROUP:
             break;
-        }
     }
+
 }
 
 // modify which parameter is configured for the given selection
