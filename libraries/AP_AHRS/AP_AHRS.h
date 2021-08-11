@@ -385,6 +385,22 @@ public:
 
     void Log_Write_Home_And_Origin();
 
+    /*
+     * AHRS is used as a transport for vehicle-takeoff-expected and
+     * vehicle-landing-expected:
+     */
+    void set_takeoff_expected(bool b);
+
+    bool get_takeoff_expected(void) const {
+        return takeoff_expected;
+    }
+
+    void set_touchdown_expected(bool b);
+
+    bool get_touchdown_expected(void) const {
+        return touchdown_expected;
+    }
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
@@ -497,6 +513,17 @@ private:
     // updates matrices responsible for rotating vectors from vehicle body
     // frame to autopilot body frame from _trim variables
     void update_trim_rotation_matrices();
+
+    /*
+     * AHRS is used as a transport for vehicle-takeoff-expected and
+     * vehicle-landing-expected:
+     */
+    // update takeoff/touchdown flags
+    void update_flags();
+    bool takeoff_expected;    // true if the vehicle is in a state that takeoff might be expected.  Ground effect may be in play.
+    uint32_t takeoff_expected_start_ms;
+    bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
+    uint32_t touchdown_expected_start_ms;
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;
