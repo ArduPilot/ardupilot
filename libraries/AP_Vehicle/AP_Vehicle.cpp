@@ -139,7 +139,6 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
-    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     SRV_Channels::init();
@@ -175,7 +174,7 @@ void AP_Vehicle::setup()
 #if GENERATOR_ENABLED
     generator.init();
 #endif
-
+    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 }
 
 void AP_Vehicle::loop()
@@ -193,6 +192,12 @@ void AP_Vehicle::loop()
         */
         done_safety_init = true;
         BoardConfig.init_safety();
+
+        // send RC output mode info if available
+        char banner_msg[50];
+        if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", banner_msg);
+        }
     }
 }
 
