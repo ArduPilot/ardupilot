@@ -198,6 +198,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board HerePro
         $waf clean
         $waf AP_Periph
+        echo "Building CubeOrange-periph peripheral fw"
+        $waf configure --board CubeOrange-periph
+        $waf clean
+        $waf AP_Periph
         echo "Building HerePro bootloader"
         $waf configure --board HerePro --bootloader
         $waf clean
