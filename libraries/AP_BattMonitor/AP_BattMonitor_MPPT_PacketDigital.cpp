@@ -223,7 +223,7 @@ void AP_BattMonitor_MPPT_PacketDigital::send_command(const PacketType type, cons
     const uint8_t index = get_device_index(serialnumber);
     uint8_t sequence = 0;
     if (index < ARRAY_SIZE(MPPT_devices)) {
-        txFrame.data[0] = ++MPPT_devices[index].sequence;
+        sequence = ++MPPT_devices[index].sequence;
     }
 
     txFrame.data[0] = sequence;
