@@ -146,6 +146,27 @@ AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
     return sensor;
 }
 
+AP_InertialSensor_Backend *
+AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
+                                AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
+
+    if (!sensor) {
+        return nullptr;
+    }
+
+    if (!sensor->_init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+}
+
 void AP_InertialSensor_BMI160::start()
 {
     bool r;
