@@ -417,8 +417,7 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 // set_destination_posvel - set guided mode position and velocity target
 bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
-    set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
-    return true;
+    return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 }
 
 // set_destination_posvelaccel - set guided mode position, velocity and acceleration target
