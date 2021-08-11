@@ -479,9 +479,6 @@ public:
     // Write velocity data from an external navigation system
     virtual void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) { }
 
-    // return current vibration vector for primary IMU
-    Vector3f get_vibration(void) const;
-
     // set and save the alt noise parameter value
     virtual void set_alt_measurement_noise(float noise) {};
 

@@ -319,12 +319,6 @@ float AP_AHRS_Backend::get_EAS2TAS(void) const {
     return AP::baro().get_EAS2TAS();
 }
 
-// return current vibration vector for primary IMU
-Vector3f AP_AHRS_Backend::get_vibration(void) const
-{
-    return AP::ins().get_vibration_levels();
-}
-
 void AP_AHRS_Backend::set_takeoff_expected(bool b)
 {
     _flags.takeoff_expected = b;
