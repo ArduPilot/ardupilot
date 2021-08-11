@@ -305,6 +305,9 @@ void AP_AHRS::update(bool skip_ins_update)
 
     update_DCM(skip_ins_update);
 
+    // update takeoff/touchdown flags
+    update_flags();
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     update_SITL();
 #endif
