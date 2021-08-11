@@ -32,6 +32,10 @@
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 #include <ardupilot/gnss/Heading.hpp>
 #include <ardupilot/gnss/Status.hpp>
+#if GPS_MOVING_BASELINE
+#include <ardupilot/gnss/MovingBaselineData.hpp>
+#include <ardupilot/gnss/RelPosHeading.hpp>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -42,13 +46,18 @@ UC_REGISTRY_BINDER(Fix2Cb, uavcan::equipment::gnss::Fix2);
 UC_REGISTRY_BINDER(AuxCb, uavcan::equipment::gnss::Auxiliary);
 UC_REGISTRY_BINDER(HeadingCb, ardupilot::gnss::Heading);
 UC_REGISTRY_BINDER(StatusCb, ardupilot::gnss::Status);
+#if GPS_MOVING_BASELINE
+UC_REGISTRY_BINDER(MovingBaselineDataCb, ardupilot::gnss::MovingBaselineData);
+UC_REGISTRY_BINDER(RelPosHeadingCb, ardupilot::gnss::RelPosHeading);
+#endif
 
 AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 
 // Member Methods
-AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state) :
-    AP_GPS_Backend(_gps, _state, nullptr)
+AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role _role) :
+    AP_GPS_Backend(_gps, _state, nullptr),
+    role(_role)
 {}
 
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
@@ -56,6 +65,10 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
     WITH_SEMAPHORE(_sem_registry);
 
     _detected_modules[_detected_module].driver = nullptr;
+
+#if GPS_MOVING_BASELINE
+    delete rtcm3_parser;
+#endif
 }
 
 void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -105,6 +118,24 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
         return;
     }
+
+#if GPS_MOVING_BASELINE
+    uavcan::Subscriber<ardupilot::gnss::MovingBaselineData, MovingBaselineDataCb> *gnss_moving_baseline;
+    gnss_moving_baseline = new uavcan::Subscriber<ardupilot::gnss::MovingBaselineData, MovingBaselineDataCb>(*node);
+    const int gnss_moving_baseline_start_res = gnss_moving_baseline->start(MovingBaselineDataCb(ap_uavcan, &handle_moving_baseline_msg_trampoline));
+    if (gnss_moving_baseline_start_res < 0) {
+        AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
+        return;
+    }
+
+    uavcan::Subscriber<ardupilot::gnss::RelPosHeading, RelPosHeadingCb> *gnss_relposheading;
+    gnss_relposheading = new uavcan::Subscriber<ardupilot::gnss::RelPosHeading, RelPosHeadingCb>(*node);
+    const int gnss_relposheading_start_res = gnss_relposheading->start(RelPosHeadingCb(ap_uavcan, &handle_relposheading_msg_trampoline));
+    if (gnss_relposheading_start_res < 0) {
+        AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
+        return;
+    }
+#endif
 }
 
 AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
@@ -153,7 +184,22 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     if (found_match == -1) {
         return NULL;
     }
-    backend = new AP_GPS_UAVCAN(_gps, _state);
+    // initialise the backend based on the UAVCAN Moving baseline selection
+    switch (_gps.get_type(found_match)) {
+        case AP_GPS::GPS_TYPE_UAVCAN:
+            backend = new AP_GPS_UAVCAN(_gps, _state, AP_GPS::GPS_ROLE_NORMAL);
+            break;
+#if GPS_MOVING_BASELINE
+        case AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE:
+            backend = new AP_GPS_UAVCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_BASE);
+            break;
+        case AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER:
+            backend = new AP_GPS_UAVCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_ROVER);
+            break;
+#endif
+        default:
+            return NULL;
+    }
     if (backend == nullptr) {
         AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,
@@ -183,7 +229,16 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                 AP::gps()._node_id[i].set_and_notify(tmp);
             }
         }
+#if GPS_MOVING_BASELINE
+        if (_detected_modules[found_match].driver->role == AP_GPS::GPS_ROLE_MB_BASE) {
+            _detected_modules[found_match].driver->rtcm3_parser = new RTCM3_Parser;
+            if (_detected_modules[found_match].driver->rtcm3_parser == nullptr) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UAVCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
+            }
+        }
+#endif // GPS_MOVING_BASELINE
     }
+
     return backend;
 }
 
@@ -550,6 +605,67 @@ void AP_GPS_UAVCAN::handle_status_msg(const StatusCb &cb)
     }
 }
 
+#if GPS_MOVING_BASELINE
+/*
+  handle moving baseline data.
+  */
+void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb)
+{
+    WITH_SEMAPHORE(sem);
+    if ((rtcm3_parser == nullptr) || (role != AP_GPS::GPS_ROLE_MB_BASE)) {
+        return;
+    }
+    for (const auto &c : cb.msg->data) {
+        rtcm3_parser->read(c);
+    }
+}
+
+/*
+    handle relposheading message
+*/
+void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb)
+{
+    if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
+        return;
+    }
+ 
+    WITH_SEMAPHORE(sem);
+
+    interim_state.gps_yaw_configured = true;
+    // push raw heading data to calculate moving baseline heading states
+    if (calculate_moving_base_yaw(interim_state,
+                                cb.msg->reported_heading_deg,
+                                cb.msg->relative_distance_m,
+                                cb.msg->relative_down_pos_m)) {
+        if (cb.msg->reported_heading_acc_available) {
+            interim_state.gps_yaw_accuracy = cb.msg->reported_heading_acc_deg;
+        }
+        interim_state.have_gps_yaw_accuracy = cb.msg->reported_heading_acc_available;
+    }
+}
+
+// support for retrieving RTCMv3 data from a moving baseline base
+bool AP_GPS_UAVCAN::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
+{
+    WITH_SEMAPHORE(sem);
+    if (rtcm3_parser != nullptr) {
+        len = rtcm3_parser->get_len(bytes);
+        return len > 0;
+    }
+    return false;
+}
+
+// clear previous RTCM3 packet
+void AP_GPS_UAVCAN::clear_RTCMV3(void)
+{
+    WITH_SEMAPHORE(sem);
+    if (rtcm3_parser != nullptr) {
+        rtcm3_parser->clear_packet();
+    }
+}
+
+#endif // GPS_MOVING_BASELINE
+
 void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb)
 {
     WITH_SEMAPHORE(_sem_registry);
@@ -599,6 +715,28 @@ void AP_GPS_UAVCAN::handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t n
         driver->handle_status_msg(cb);
     }
 }
+
+#if GPS_MOVING_BASELINE
+// Moving Baseline msg trampoline
+void AP_GPS_UAVCAN::handle_moving_baseline_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MovingBaselineDataCb &cb)
+{
+    WITH_SEMAPHORE(_sem_registry);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_moving_baseline_msg(cb);
+    }
+}
+
+// RelPosHeading msg trampoline
+void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const RelPosHeadingCb &cb)
+{
+    WITH_SEMAPHORE(_sem_registry);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_relposheading_msg(cb);
+    }
+}
+#endif
 
 // Consume new data and mark it received
 bool AP_GPS_UAVCAN::read(void)
