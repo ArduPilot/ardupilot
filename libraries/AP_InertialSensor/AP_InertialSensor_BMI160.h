@@ -17,6 +17,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/SPIDevice.h>
+#include <AP_HAL/I2CDevice.h>
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
@@ -25,6 +27,9 @@ class AP_InertialSensor_BMI160 : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+
+    static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
+                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     /**
      * Configure the sensors and start reading routine.
