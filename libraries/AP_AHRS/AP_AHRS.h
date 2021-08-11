@@ -414,12 +414,36 @@ public:
         return fly_forward;
     }
 
+    /* we modify our behaviour based on what sort of vehicle the
+     * vehicle code tells us we are.  This information is also pulled
+     * from AP_AHRS by other libraries
+     */
+    enum class VehicleClass : uint8_t {
+        UNKNOWN,
+        GROUND,
+        COPTER,
+        FIXED_WING,
+        SUBMARINE,
+    };
+    VehicleClass get_vehicle_class(void) const {
+        return _vehicle_class;
+    }
+    void set_vehicle_class(VehicleClass vclass) {
+        _vehicle_class = vclass;
+    }
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
 
 private:
     static AP_AHRS *_singleton;
+
+    /* we modify our behaviour based on what sort of vehicle the
+     * vehicle code tells us we are.  This information is also pulled
+     * from AP_AHRS by other libraries
+     */
+    VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
 
     enum class EKFType {
         NONE = 0
