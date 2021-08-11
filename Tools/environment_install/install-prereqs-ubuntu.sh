@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
 set -x
@@ -246,10 +246,19 @@ if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
 fi
 echo "Done!"
 
-SHELL_LOGIN=".profile"
-if $IS_DOCKER; then
-    echo "Inside docker, we add the tools path into .bashrc directly"
-    SHELL_LOGIN=".bashrc"
+function get_login_shell() {
+    return $SHELL
+}
+
+LOGIN_SHELL=get_login_shell
+SHELL_PROFILE=".profile"
+if [[ $LOGIN_SHELL -eq "/usr/bin/zsh" ]]; then
+    SHELL_PROFILE=".zprofile"
+else
+    if $IS_DOCKER; then
+        echo "Inside docker, we add the tools path into .bashrc directly"
+        SHELL_PROFILE=".bashrc"
+    fi
 fi
 
 heading "Adding ArduPilot Tools to environment"
@@ -259,9 +268,9 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline" ~/$SHELL_PROFILE 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
-        echo $exportline >> ~/$SHELL_LOGIN
+        echo $exportline >> ~/$SHELL_PROFILE
         eval $exportline
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
@@ -270,9 +279,9 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
 fi
 
 exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
-grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline2" ~/$SHELL_PROFILE 2>/dev/null || {
     if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
-        echo $exportline2 >> ~/$SHELL_LOGIN
+        echo $exportline2 >> ~/$SHELL_PROFILE
         eval $exportline2
     else
         echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
@@ -281,7 +290,7 @@ grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
 
 if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
 exportline3="source $ARDUPILOT_ROOT/Tools/completion/completion.bash";
-grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline3" ~/$SHELL_PROFILE 2>/dev/null || {
     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
         echo $exportline3 >> ~/.bashrc
         eval $exportline3
@@ -292,9 +301,9 @@ grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
 fi
 
 exportline4="export PATH=/usr/lib/ccache:\$PATH";
-grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline4" ~/$SHELL_PROFILE 2>/dev/null || {
     if maybe_prompt_user "Append CCache to your PATH [N/y]?" ; then
-        echo $exportline4 >> ~/$SHELL_LOGIN
+        echo $exportline4 >> ~/$SHELL_PROFILE
         eval $exportline4
     else
         echo "Skipping appending CCache to PATH."
