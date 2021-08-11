@@ -1746,8 +1746,8 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
       wing and rover
      */
     if (ret != EKFType::NONE &&
-        (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-         _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        (_vehicle_class == VehicleClass::FIXED_WING ||
+         _vehicle_class == VehicleClass::GROUND) &&
         (fly_forward || !hal.util->get_soft_armed())) {
         bool should_use_gps = true;
         nav_filter_status filt_state;
@@ -1881,8 +1881,8 @@ bool AP_AHRS::healthy(void) const
         if (!ret) {
             return false;
         }
-        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        if ((_vehicle_class == VehicleClass::FIXED_WING ||
+                _vehicle_class == VehicleClass::GROUND) &&
                 active_EKF_type() != EKFType::TWO) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
@@ -1898,8 +1898,8 @@ bool AP_AHRS::healthy(void) const
         if (!ret) {
             return false;
         }
-        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        if ((_vehicle_class == VehicleClass::FIXED_WING ||
+                _vehicle_class == VehicleClass::GROUND) &&
                 active_EKF_type() != EKFType::THREE) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled

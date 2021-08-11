@@ -33,15 +33,6 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
-enum AHRS_VehicleClass : uint8_t {
-    AHRS_VEHICLE_UNKNOWN,
-    AHRS_VEHICLE_GROUND,
-    AHRS_VEHICLE_COPTER,
-    AHRS_VEHICLE_FIXED_WING,
-    AHRS_VEHICLE_SUBMARINE,
-};
-
-
 class AP_AHRS_Backend
 {
 public:
@@ -57,14 +48,6 @@ public:
 
     // init sets up INS board orientation
     virtual void init();
-
-    AHRS_VehicleClass get_vehicle_class(void) const {
-        return _vehicle_class;
-    }
-
-    void set_vehicle_class(AHRS_VehicleClass vclass) {
-        _vehicle_class = vclass;
-    }
 
     void set_wind_estimation(bool b) {
         _flags.wind_estimation = b;
@@ -482,8 +465,6 @@ protected:
 
     // multi-thread access support
     HAL_Semaphore _rsem;
-
-    AHRS_VehicleClass _vehicle_class{AHRS_VEHICLE_UNKNOWN};
 
     // settable parameters
     // these are public for ArduCopter
