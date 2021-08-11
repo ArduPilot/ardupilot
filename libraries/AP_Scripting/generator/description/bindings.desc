@@ -204,7 +204,10 @@ singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
 singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean boolean
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
+singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
+singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
 singleton AP_Vehicle method get_circle_radius boolean float'Null
