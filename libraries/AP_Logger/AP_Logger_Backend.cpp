@@ -674,6 +674,7 @@ bool AP_Logger_RateLimiter::should_log(uint8_t msgid)
         }
     }
 
+#if !defined(HAL_BUILD_AP_PERIPH)
     // if we've already decided on sending this msgid in this tick then use the
     // same decision again
     const uint16_t sched_ticks = AP::scheduler().ticks();
@@ -681,6 +682,7 @@ bool AP_Logger_RateLimiter::should_log(uint8_t msgid)
         return last_return.get(msgid);
     }
     last_sched_count[msgid] = sched_ticks;
+#endif
 
     bool ret = should_log_streaming(msgid);
     if (ret) {
