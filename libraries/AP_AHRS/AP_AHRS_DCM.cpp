@@ -429,7 +429,7 @@ bool AP_AHRS_DCM::use_compass(void)
         // no compass available
         return false;
     }
-    if (!_flags.fly_forward || !have_gps()) {
+    if (!AP::ahrs().get_fly_forward() || !have_gps()) {
         // we don't have any alterative to the compass
         return true;
     }
@@ -507,7 +507,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             // don't suddenly change yaw with a reset
             _gps_last_update = _gps.last_fix_time_ms();
         }
-    } else if (_flags.fly_forward && have_gps()) {
+    } else if (AP::ahrs().get_fly_forward() && have_gps()) {
         /*
           we are using GPS for yaw
          */
@@ -669,6 +669,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     _ra_deltat += deltat;
 
     const AP_GPS &_gps = AP::gps();
+    const bool fly_forward = AP::ahrs().get_fly_forward();
 
     if (!have_gps() ||
             _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
@@ -761,7 +762,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     bool using_gps_corrections = false;
     float ra_scale = 1.0f/(_ra_deltat*GRAVITY_MSS);
 
-    if (_flags.correct_centrifugal && (_have_gps_lock || _flags.fly_forward)) {
+    if (_flags.correct_centrifugal && (_have_gps_lock || fly_forward)) {
         const float v_scale = gps_gain.get() * ra_scale;
         const Vector3f vdelta = (velocity - _last_velocity) * v_scale;
         GA_e += vdelta;
@@ -899,7 +900,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _omega_P *= 8;
     }
 
-    if (_flags.fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
+    if (fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
             _gps.ground_speed() < GPS_SPEED_MIN &&
             _ins.get_accel().x >= 7 &&
             pitch_sensor > -3000 && pitch_sensor < 3000) {
@@ -1032,7 +1033,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
     loc.offset(_position_offset_north, _position_offset_east);
-    if (_flags.fly_forward && _have_position) {
+    if (AP::ahrs().get_fly_forward() && _have_position) {
         float gps_delay_sec = 0;
         gps.get_lag(gps_delay_sec);
         loc.offset_bearing(gps.ground_course(), gps.ground_speed() * gps_delay_sec);
