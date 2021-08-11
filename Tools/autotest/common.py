@@ -10372,19 +10372,49 @@ switch value'''
         if m is None:
             raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
         gpi_abs_alt = int((m.alt+500) / 1000) # mm -> m
+
+        # grab a battery-remaining percentage
+        self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                     255,  # battery mask
+                     96,  # percentage
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not receive BATTERY_STATUS")
+        want_battery_remaining_pct = m.battery_remaining
+
         tstart = self.get_sim_time_cached()
+        have_alt = False
+        have_battery = False
         while True:
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 10:
                 raise AutoTestTimeoutException("Failed to get frsky D data")
             frsky.update()
+
             alt = frsky.get_data(frsky.dataid_GPS_ALT_BP)
             self.progress("Got alt (%s) mav=%s" % (str(alt), str(gpi_abs_alt)))
             if alt is None:
                 continue
-            self.drain_mav_unparsed()
             if alt == gpi_abs_alt:
+                have_alt = True
+
+            batt = frsky.get_data(frsky.dataid_FUEL)
+            self.progress("Got batt (%s) mav=%s" % (str(batt), str(want_battery_remaining_pct)))
+            if batt is None:
+                continue
+            if batt == want_battery_remaining_pct:
+                have_battery = True
+
+            if have_alt and have_battery:
                 break
+
+            self.drain_mav_unparsed()
 
     def test_ltm_g(self, ltm):
         g = ltm.g()
