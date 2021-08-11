@@ -18,8 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
@@ -115,5 +113,3 @@ private:
 
     AP_HAL::DigitalSource *_int1_pin;
 };
-
-#endif
