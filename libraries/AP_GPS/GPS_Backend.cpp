@@ -302,20 +302,23 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 }
 
 #if GPS_MOVING_BASELINE
-bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D)
-{
+bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const float reported_distance, const float reported_D) {
+    return calculate_moving_base_yaw(state, reported_heading_deg, reported_distance, reported_D);
+}
+
+bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
     constexpr float minimum_antenna_seperation = 0.05; // meters
     constexpr float permitted_error_length_pct = 0.2;  // percentage
 
     bool selectedOffset = false;
     Vector3f offset;
-    switch (MovingBase::Type(gps.mb_params[state.instance].type.get())) {
+    switch (MovingBase::Type(gps.mb_params[interim_state.instance].type.get())) {
         case MovingBase::Type::RelativeToAlternateInstance:
-            offset = gps._antenna_offset[state.instance^1].get() - gps._antenna_offset[state.instance].get();
+            offset = gps._antenna_offset[interim_state.instance^1].get() - gps._antenna_offset[interim_state.instance].get();
             selectedOffset = true;
             break;
         case MovingBase::Type::RelativeToCustomBase:
-            offset = gps.mb_params[state.instance].base_offset.get();
+            offset = gps.mb_params[interim_state.instance].base_offset.get();
             selectedOffset = true;
             break;
     }
@@ -385,13 +388,16 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg,
             state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             state.have_gps_yaw = true;
             state.gps_yaw_time_ms = AP_HAL::millis();
+            interim_state.gps_yaw = state.gps_yaw;
+            interim_state.have_gps_yaw = state.have_gps_yaw;
+            interim_state.gps_yaw_time_ms = AP_HAL::millis();
         }
     }
 
     return true;
 
 bad_yaw:
-    state.have_gps_yaw = false;
+    interim_state.have_gps_yaw = false;
     return false;
 }
 #endif // GPS_MOVING_BASELINE
