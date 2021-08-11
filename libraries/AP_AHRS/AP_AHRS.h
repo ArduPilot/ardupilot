@@ -401,6 +401,19 @@ public:
         return touchdown_expected;
     }
 
+    /*
+     * fly_forward is set by the vehicles to indicate the vehicle
+     * should generally be moving in the direction of its heading.
+     * It is an additional piece of information that the backends can
+     * use to provide additional and/or improved estimates.
+     */
+    void set_fly_forward(bool b) {
+        fly_forward = b;
+    }
+    bool get_fly_forward(void) const {
+        return fly_forward;
+    }
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
@@ -524,6 +537,14 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+
+    /*
+     * fly_forward is set by the vehicles to indicate the vehicle
+     * should generally be moving in the direction of its heading.
+     * It is an additional piece of information that the backends can
+     * use to provide additional and/or improved estimates.
+     */
+    bool fly_forward; // true if we can assume the vehicle will be flying forward on its X axis
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;
