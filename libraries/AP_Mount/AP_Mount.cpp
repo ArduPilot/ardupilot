@@ -11,6 +11,8 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include <AP_Math/location.h>
+#include "AP_Mount_Gimbal_uavcan.h"     // Added Up&Above 
+#include <AP_UAVCAN/AP_UAVCAN.h>        // Added Up&Above 
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -466,7 +468,15 @@ void AP_Mount::init()
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
+        
+        // Added Up&Above retract
+        // check for Up&Above mounts
+        } else if (mount_type == Mount_Type_Gimbal_uavcan) {
+            _backends[instance] = new AP_Mount_Gimbal_uavcan(*this, state[instance], instance);
+            _num_instances++;
         }
+        
+        
 
         // init new instance
         if (_backends[instance] != nullptr) {
@@ -520,7 +530,7 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
 
     // ask backend if it support pan
     return _backends[instance]->has_pan_control();
-}
+}    
 
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
@@ -572,6 +582,9 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_lon
     state[0]._stab_roll = packet.param2;
     state[0]._stab_tilt = packet.param3;
     state[0]._stab_pan = packet.param4;
+    
+    // Added Up&Above gimbal
+    _backends[_primary]->configure((MAV_MOUNT_MODE) packet.param1, (uint8_t) packet.param2, (uint8_t) packet.param3, (uint8_t) packet.param4, (enum ControlMode) packet.param5, (enum ControlMode) packet.param6, (enum ControlMode) packet.param7);
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -582,6 +595,28 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     if (!check_primary()) {
         return MAV_RESULT_FAILED;
     }
+    
+    /**
+    * Added Up&Above retract
+    * For testing. Not nice solution to get mount type, but works only on Mount_Type 6
+    * MountType mount_type;
+    * for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+    *   mount_type = get_mount_type(instance);
+    * }
+    * if ((MAV_MOUNT_MODE) packet.param7 == MAV_MOUNT_MODE_RETRACT && mount_type ==      
+    * Mount_Type_Up&Above)
+    *    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Retract Valuer %f", packet.param7);
+    * else if ((MAV_MOUNT_MODE) packet.param7 == MAV_MOUNT_MODE_NEUTRAL && mount_type == 
+    * Mount_Type_Up&Above)
+    *    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Neutral Value: %f", packet.param7);
+    * Works on all Mount_Type, but created dedicate empty Type with number 6.
+    * Class warning - don't knew how to fix
+    * Static function gives problem
+    **/
+    if ((MAV_MOUNT_MODE) packet.param7 == MAV_MOUNT_MODE_RETRACT)
+        AP_UAVCAN::do_gimbal_retract(false);
+    else if ((MAV_MOUNT_MODE) packet.param7 == MAV_MOUNT_MODE_NEUTRAL)
+        AP_UAVCAN::do_gimbal_retract(true);
 
     // send message to backend
     _backends[_primary]->control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);

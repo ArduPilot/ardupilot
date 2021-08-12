@@ -31,6 +31,8 @@
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
+// Added Up&Above Gimbal
+#include <AP_Mount/AP_Mount.h>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -113,6 +115,15 @@ public:
 
     // send RTCMStream packets
     void send_RTCMStream(const uint8_t *data, uint32_t len);
+    
+     /**
+     * Added Up&Above equipment retract function
+     * Static function gives problems - Needs to be changet to non static, 
+     * but don't knew how to do it without errors
+     **/
+    static void do_gimbal_retract(bool retract);
+    // Added Up&Adbove Gimbal
+    void mount_write(bool geo_poi_mode, Vector3f angles, Location poi, enum AP_Mount::ControlMode mode);
 
     template <typename DataType_>
     class RegistryBinder {
@@ -162,6 +173,9 @@ private:
 
     // send GNSS injection
     void rtcm_stream_send();
+    
+    //Added Up&Above gimbal
+    void mount_out_send();
 
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
@@ -204,6 +218,18 @@ private:
     } _led_conf;
 
     HAL_Semaphore _led_out_sem;
+    
+    // Added Up&Above gimbal
+    struct {
+        Location poi;
+        Vector3f target_angles;
+        bool geo_poi_mode;
+        bool broadcast_enabled;
+        bool new_data;
+        enum AP_Mount::ControlMode control_mode;
+    } _mount_conf;
+
+    HAL_Semaphore _mount_out_sem;
 
     // buzzer
     struct {

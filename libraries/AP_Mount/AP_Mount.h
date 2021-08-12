@@ -47,6 +47,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_Gimbal_uavcan;   //Add Up&Above Gimbal class
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -62,6 +63,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_Gimbal_uavcan;   //Added Up&Above 
 
 public:
     AP_Mount();
@@ -82,7 +84,16 @@ public:
         Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+        Mount_Type_SToRM32_serial = 5,   /// SToRM32 mount using custom serial protocol
+        Mount_Type_Gimbal_uavcan = 6,   /// Added Up&Above Gimbal using UAVCAN
+    };
+    
+    // Added Up&Above Gimbal 
+    // UAVCAN Control mode
+    enum ControlMode {
+        Control_Angle_Body_Frame = 0,
+        Control_Angular_Rate = 1,
+        Control_Angle_Absolute_Frame = 2
     };
 
     // init - detect and initialise all mounts

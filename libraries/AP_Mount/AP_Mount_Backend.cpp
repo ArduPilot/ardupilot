@@ -217,4 +217,11 @@ bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     return true;
 }
 
+// Added Up&Above Gimbal
+void AP_Mount_Backend::configure(enum MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_pitch, uint8_t stab_yaw, enum AP_Mount::ControlMode roll_mode, enum AP_Mount::ControlMode pitch_mode, enum AP_Mount::ControlMode yaw_mode) {
+
+ _frontend.set_mode(_instance, mount_mode);
+}
+
+
 #endif // HAL_MOUNT_ENABLED
