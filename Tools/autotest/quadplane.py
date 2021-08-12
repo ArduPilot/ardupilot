@@ -177,7 +177,8 @@ class AutoTestQuadPlane(AutoTest):
         ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
         self.wait_roll(60, 1)
-        # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE
+        # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE and QLAND and QRTL
+        # QRTL and QLAND aren't tested because we can't arm in that mode
         for mode in (
                 'ACRO',
                 'AUTOTUNE',
@@ -189,9 +190,7 @@ class AutoTestQuadPlane(AutoTest):
                 'GUIDED',
                 'LOITER',
                 'QHOVER',
-                'QLAND',
                 'QLOITER',
-                'QRTL',
                 'RTL',
                 'STABILIZE',
                 'TRAINING',
