@@ -842,8 +842,6 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.g2.smart_rtl.set_home(copter.position_ok());
 #endif
 
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
 #if SPRAYER_ENABLED == ENABLED
@@ -941,8 +939,6 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 
     AP::logger().set_vehicle_armed(false);
 
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     copter.ap.in_arming_delay = false;
