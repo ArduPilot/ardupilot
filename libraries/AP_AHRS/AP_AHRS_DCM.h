@@ -156,6 +156,13 @@ private:
     // P term yaw gain based on rate of change of horiz velocity
     float           _yaw_gain(void) const;
 
+    /* returns true if attitude should be corrected from GPS-derived
+     * velocity-deltas.  We turn this off for Copter and other similar
+     * vehicles while the vehicle is disarmed to avoid the HUD bobbing
+     * around while the vehicle is disarmed.
+     */
+    bool should_correct_centrifugal() const;
+
     // state to support status reporting
     float _renorm_val_sum;
     uint16_t _renorm_val_count;
