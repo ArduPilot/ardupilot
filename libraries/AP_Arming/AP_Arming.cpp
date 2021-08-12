@@ -876,11 +876,13 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+#if HAL_BUTTON_ENABLED
         const auto &button = AP::button();
         if (!button.arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }
+#endif
     }
 
     return true;
