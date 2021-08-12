@@ -185,6 +185,12 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
+
+    // get current rotation
+    enum Rotation get_rotation(void) const {
+        return rotation;
+    }
+
 private:
     const enum Rotation rotation;
     AP_AHRS &ahrs;

@@ -3058,6 +3058,13 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 #endif
 }
 
+/*
+  get the current views rotation, or ROTATION_NONE
+ */
+enum Rotation AP_AHRS::get_view_rotation(void) const
+{
+    return _view?_view->get_rotation():ROTATION_NONE;
+}
 
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
