@@ -384,8 +384,6 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         blimp.arming_altitude_m = blimp.inertial_nav.get_altitude() * 0.01;
     }
 
-    // enable gps velocity based centrifugal force compensation
-    ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
     // finally actually arm the motors
@@ -443,8 +441,6 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
     AP::logger().set_vehicle_armed(false);
 
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     blimp.ap.in_arming_delay = false;
