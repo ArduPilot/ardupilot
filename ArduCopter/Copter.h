@@ -136,7 +136,7 @@
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
 #endif
-#if BUTTON_ENABLED == ENABLED
+#if HAL_BUTTON_ENABLED
  # include <AP_Button/AP_Button.h>
 #endif
 

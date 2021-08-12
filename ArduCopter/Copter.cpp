@@ -199,7 +199,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #ifdef USERHOOK_SUPERSLOWLOOP
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
-#if BUTTON_ENABLED == ENABLED
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,            &copter.button,           update,           5, 100),
 #endif
 #if STATS_ENABLED == ENABLED
