@@ -200,6 +200,11 @@ public:
     // true if the AHRS has completed initialisation
     bool initialised() const override;
 
+    // return true if *DCM* yaw has been initialised
+    bool dcm_yaw_initialised(void) const {
+        return AP_AHRS_DCM::yaw_initialised();
+    }
+
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
 

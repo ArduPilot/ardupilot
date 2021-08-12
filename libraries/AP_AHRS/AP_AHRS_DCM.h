@@ -62,6 +62,11 @@ public:
     void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
+    // return true if yaw has been initialised
+    bool yaw_initialised(void) const {
+        return have_initial_yaw;
+    }
+
     // dead-reckoning support
     virtual bool get_position(struct Location &loc) const override;
 
@@ -145,6 +150,8 @@ private:
     Vector3f _omega_I_sum;
     float _omega_I_sum_time;
     Vector3f _omega;                            // Corrected Gyro_Vector data
+
+    bool have_initial_yaw; // true if the yaw value has been initialised with a reference
 
     // variables to cope with delaying the GA sum to match GPS lag
     Vector3f ra_delayed(uint8_t instance, const Vector3f &ra);
