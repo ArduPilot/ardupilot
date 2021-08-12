@@ -135,7 +135,7 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
     }
 
     // do not align until ahrs yaw initialised
-    if (!AP::ahrs().initialised() || !AP::ahrs().yaw_initialised()) {
+    if (!AP::ahrs().initialised() || !AP::ahrs().dcm_yaw_initialised()) {
         return false;
     }
 
