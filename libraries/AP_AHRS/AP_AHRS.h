@@ -457,6 +457,9 @@ public:
         _vehicle_class = vclass;
     }
 
+    // get the views rotation, or ROTATION_NONE
+    enum Rotation get_view_rotation(void) const;
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
