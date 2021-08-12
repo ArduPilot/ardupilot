@@ -284,7 +284,9 @@ protected:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
+#if HAL_BUTTON_ENABLED
     AP_Button button;
+#endif
     RangeFinder rangefinder;
 
     AP_RSSI rssi;
