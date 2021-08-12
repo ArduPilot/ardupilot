@@ -176,10 +176,6 @@ int16_t RC_Channel::get_control_mid() const
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         int16_t r_in = (radio_min.get() + radio_max.get())/2;
 
-        if (reversed) {
-            r_in = radio_max.get() - (r_in - radio_min.get());
-        }
-
         int16_t radio_trim_low  = radio_min + dead_zone;
 
         return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
