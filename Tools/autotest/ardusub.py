@@ -162,7 +162,7 @@ class AutoTestSub(AutoTest):
 
         # Make sure that the ROV will dive with a small input down even if there is a 10N buoyancy force upwards
         self.set_parameter("SIM_BUOYANCY", 10)
-        self.set_rc(Joystick.Throttle, 1450)
+        self.set_rc(Joystick.Throttle, 1350)
         self.wait_altitude(altitude_min=-6, altitude_max=-5.5)
 
         self.set_rc(Joystick.Throttle, 1500)
