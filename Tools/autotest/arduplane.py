@@ -1258,6 +1258,8 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("NAVL1_LIM_BANK", 60)
             self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
 
+            self.wait_ready_to_arm()  # need an origin to load fence
+
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
 
