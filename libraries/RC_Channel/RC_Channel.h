@@ -208,12 +208,12 @@ public:
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
-        TURTLE =             107, // Turtle mode - flip over after crash
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
         // options 150-199 continue user rc switch options
         CRUISE =             150,  ///CRUISE mode
+        TURTLE =             151,  // Turtle mode - flip over after crash
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
