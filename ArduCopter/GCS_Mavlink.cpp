@@ -787,7 +787,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
                 is_positive(packet.param4));
             return MAV_RESULT_ACCEPTED;
         } else if (packet.param1 <= -1.0f) {
-            copter.flightmode->auto_yaw.set_mode(AUTO_YAW_LOOK_AHEAD);
+            copter.flightmode->auto_yaw.set_mode_to_default(copter.flightmode->mode_number());
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
