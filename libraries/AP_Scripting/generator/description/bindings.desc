@@ -331,6 +331,7 @@ singleton AP_RPM alias RPM
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
 include AP_Button/AP_Button.h
+singleton AP_Button depends HAL_BUTTON_ENABLED == 1
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 
