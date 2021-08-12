@@ -102,7 +102,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(avoidance_adsb_update,  10,    100),
 #endif
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100),
+#endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats, &plane.g2.stats, update, 1, 100),
 #endif
