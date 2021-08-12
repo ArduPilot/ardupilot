@@ -14,6 +14,14 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_BUTTON_ENABLED
+#define HAL_BUTTON_ENABLED 1
+#endif
+
+#if HAL_BUTTON_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -127,3 +135,5 @@ private:
 namespace AP {
     AP_Button &button();
 };
+
+#endif

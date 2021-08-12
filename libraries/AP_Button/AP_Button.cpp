@@ -15,6 +15,9 @@
 
 
 #include "AP_Button.h"
+
+#if HAL_BUTTON_ENABLED
+
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -400,3 +403,5 @@ AP_Button &button()
 }
 
 }
+
+#endif
