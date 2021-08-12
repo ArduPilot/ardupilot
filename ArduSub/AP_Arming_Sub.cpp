@@ -126,8 +126,6 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         }
     }
 
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
     // enable output to motors
@@ -187,8 +185,6 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
 
     AP::logger().set_vehicle_armed(false);
 
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     // clear input holds
