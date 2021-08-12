@@ -609,6 +609,20 @@ Vector3f AP_AHRS_DCM::ra_delayed(uint8_t instance, const Vector3f &ra)
     return ret;
 }
 
+/* returns true if attitude should be corrected from GPS-derived
+ * velocity-deltas.  We turn this off for Copter and other similar
+ * vehicles while the vehicle is disarmed to avoid the HUD bobbing
+ * around while the vehicle is disarmed.
+ */
+bool AP_AHRS_DCM::should_correct_centrifugal() const
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Blimp)
+    return hal.util->get_soft_armed();
+#endif
+
+    return true;
+}
+
 // perform drift correction. This function aims to update _omega_P and
 // _omega_I with our best estimate of the short term and long term
 // gyro error. The _omega_P value is what pulls our attitude solution
@@ -762,7 +776,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     bool using_gps_corrections = false;
     float ra_scale = 1.0f/(_ra_deltat*GRAVITY_MSS);
 
-    if (_flags.correct_centrifugal && (_have_gps_lock || fly_forward)) {
+    if (should_correct_centrifugal() && (_have_gps_lock || fly_forward)) {
         const float v_scale = gps_gain.get() * ra_scale;
         const Vector3f vdelta = (velocity - _last_velocity) * v_scale;
         GA_e += vdelta;
