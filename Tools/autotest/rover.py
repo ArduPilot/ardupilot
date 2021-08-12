@@ -4552,6 +4552,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_motor_test(self):
         '''AKA run-rover-run'''
         magic_throttle_value = 1812
+        self.wait_ready_to_arm()
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
             1, # p1 - motor instance
