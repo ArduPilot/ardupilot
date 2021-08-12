@@ -493,11 +493,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             // we force an additional compass read()
             // here. This has the effect of throwing away
             // the first compass value, which can be bad
-            if (!_flags.have_initial_yaw && compass.read()) {
+            if (!have_initial_yaw && compass.read()) {
                 const float heading = compass.calculate_heading(_dcm_matrix);
                 _dcm_matrix.from_euler(roll, pitch, heading);
                 _omega_yaw_P.zero();
-                _flags.have_initial_yaw = true;
+                have_initial_yaw = true;
             }
             new_value = true;
             yaw_error = yaw_error_compass(compass);
@@ -536,13 +536,13 @@ AP_AHRS_DCM::drift_correction_yaw(void)
                operator pulls back the plane rapidly enough then on
                release the GPS heading changes very rapidly
             */
-            if (!_flags.have_initial_yaw ||
+            if (!have_initial_yaw ||
                     yaw_deltat > 20 ||
                     (_gps.ground_speed() >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
                 // reset DCM matrix based on current yaw
                 _dcm_matrix.from_euler(roll, pitch, gps_course_rad);
                 _omega_yaw_P.zero();
-                _flags.have_initial_yaw = true;
+                have_initial_yaw = true;
                 yaw_error = 0;
             }
         }
