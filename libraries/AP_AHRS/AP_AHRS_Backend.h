@@ -38,10 +38,7 @@ class AP_AHRS_Backend
 public:
 
     // Constructor
-    AP_AHRS_Backend() {
-        // enable centrifugal correction by default
-        _flags.correct_centrifugal = true;
-    }
+    AP_AHRS_Backend() {}
 
     // empty virtual destructor
     virtual ~AP_AHRS_Backend() {}
@@ -281,17 +278,6 @@ public:
         return _flags.have_initial_yaw;
     }
 
-    // set the correct centrifugal flag
-    // allows arducopter to disable corrections when disarmed
-    void set_correct_centrifugal(bool setting) {
-        _flags.correct_centrifugal = setting;
-    }
-
-    // get the correct centrifugal flag
-    bool get_correct_centrifugal(void) const {
-        return _flags.correct_centrifugal;
-    }
-
     // helper trig value accessors
     float cos_roll() const  {
         return _cos_roll;
@@ -494,7 +480,6 @@ protected:
     // flags structure
     struct ahrs_flags {
         uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
     } _flags;
 
