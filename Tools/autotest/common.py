@@ -3992,13 +3992,12 @@ class AutoTest(ABC):
                 self.progress("MOTORS ARMED OK WITH RADIO")
                 self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
-                return True
+                return
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
-        self.progress("Failed to ARM with radio")
         self.set_output_to_trim(self.get_stick_arming_channel())
-        return False
+        raise NotAchievedException("Failed to ARM with radio")
 
     def disarm_motors_with_rc_input(self, timeout=20, watch_for_disabled=False):
         """Disarm motors with radio."""
@@ -4020,11 +4019,10 @@ class AutoTest(ABC):
                 self.progress("Found 'Rudder disarm: disabled' in statustext")
                 break
             self.context_clear_collection('STATUSTEXT')
-        if not ret:
-            self.progress("Failed to DISARM with RC input")
         self.set_output_to_trim(self.get_stick_arming_channel())
         self.context_pop()
-        return ret
+        if not ret:
+            raise NotAchievedException("Failed to DISARM with RC input")
 
     def arm_motors_with_switch(self, switch_chan, timeout=20):
         """Arm motors with switch."""
@@ -4035,9 +4033,8 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
-                return True
-        self.progress("Failed to ARM with switch")
-        return False
+                return
+        raise NotAchievedException("Failed to ARM with switch")
 
     def disarm_motors_with_switch(self, switch_chan, timeout=20):
         """Disarm motors with switch."""
@@ -4048,9 +4045,8 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("MOTORS DISARMED OK WITH SWITCH")
-                return True
-        self.progress("Failed to DISARM with switch")
-        return False
+                return
+        raise NotAchievedException("Failed to DISARM with switch")
 
     def disarm_wait(self, timeout=10):
         tstart = self.get_sim_time()
@@ -7491,15 +7487,13 @@ Also, ignores heartbeats not from our target system'''
 
         if not self.is_sub():
             self.start_subtest("Test arm with rc input")
-            if not self.arm_motors_with_rc_input():
-                raise NotAchievedException("Failed to arm with RC input")
+            self.arm_motors_with_rc_input()
             self.progress("disarm with rc input")
             if self.is_balancebot():
                 self.progress("balancebot can't disarm with RC input")
                 self.disarm_vehicle()
             else:
-                if not self.disarm_motors_with_rc_input():
-                    raise NotAchievedException("Failed to disarm with RC input")
+                self.disarm_motors_with_rc_input()
 
             self.start_subtest("Test arm and disarm with switch")
             arming_switch = 7
@@ -7507,10 +7501,8 @@ Also, ignores heartbeats not from our target system'''
             self.set_rc(arming_switch, 1000)
             # delay so a transition is seen by the RC switch code:
             self.delay_sim_time(0.5)
-            if not self.arm_motors_with_switch(arming_switch):
-                raise NotAchievedException("Failed to arm with switch")
-            if not self.disarm_motors_with_switch(arming_switch):
-                raise NotAchievedException("Failed to disarm with switch")
+            self.arm_motors_with_switch(arming_switch)
+            self.disarm_motors_with_switch(arming_switch)
             self.set_rc(arming_switch, 1000)
 
             if self.is_copter():
@@ -7521,10 +7513,18 @@ Also, ignores heartbeats not from our target system'''
                         raise NotAchievedException("Armed when throttle too high")
                 except ValueError:
                     pass
-                if self.arm_motors_with_rc_input():
+                try:
+                    self.arm_motors_with_rc_input()
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException(
                         "Armed via RC when throttle too high")
-                if self.arm_motors_with_switch(arming_switch):
+                try:
+                    self.arm_motors_with_switch(arming_switch)
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException("Armed via RC when switch too high")
                 self.zero_throttle()
                 self.set_rc(arming_switch, 1000)
@@ -7532,12 +7532,20 @@ Also, ignores heartbeats not from our target system'''
             # Sub doesn't have 'stick commands'
             self.start_subtest("Test arming failure with ARMING_RUDDER=0")
             self.set_parameter("ARMING_RUDDER", 0)
-            if self.arm_motors_with_rc_input():
+            try:
+                self.arm_motors_with_rc_input()
+            except NotAchievedException:
+                pass
+            if self.armed():
                 raise NotAchievedException(
                     "Armed with rudder when ARMING_RUDDER=0")
             self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
             self.arm_vehicle()
-            if self.disarm_motors_with_rc_input(watch_for_disabled=True):
+            try:
+                self.disarm_motors_with_rc_input(watch_for_disabled=True)
+            except NotAchievedException:
+                pass
+            if not self.armed():
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
@@ -7545,7 +7553,11 @@ Also, ignores heartbeats not from our target system'''
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
-            if self.disarm_motors_with_rc_input():
+            try:
+                self.disarm_motors_with_rc_input()
+            except NotAchievedException:
+                pass
+            if not self.armed():
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
@@ -7555,12 +7567,19 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter():
                 self.start_subtest("Test arming failure with interlock enabled")
                 self.set_rc(interlock_channel, 2000)
-                if self.arm_motors_with_rc_input():
+                try:
+                    self.arm_motors_with_rc_input()
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException(
                         "Armed with RC input when interlock enabled")
-                if self.arm_motors_with_switch(arming_switch):
-                    raise NotAchievedException(
-                        "Armed with switch when interlock enabled")
+                try:
+                    self.arm_motors_with_switch(arming_switch)
+                except NotAchievedException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
                 self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
