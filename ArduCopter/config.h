@@ -364,12 +364,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Button - Enable the button connected to AUX1-6
-#ifndef BUTTON_ENABLED
- # define BUTTON_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Landing Gear support
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED ENABLED

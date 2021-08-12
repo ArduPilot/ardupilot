@@ -493,7 +493,9 @@ public:
     AP_Float wp_navalt_min;
 
     // button checking
+#if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
+#endif
 
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
