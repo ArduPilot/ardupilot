@@ -171,7 +171,7 @@ void SITL_State::_fdm_input_step(void)
 
     if (_update_count == 0 && _sitl != nullptr) {
         _update_gps(0, 0, 0, 0, 0, 0, 0, false);
-        _scheduler->timer_event();
+        HALSITL::Scheduler::timer_event();
         _scheduler->sitl_end_atomic();
         return;
     }
@@ -195,7 +195,7 @@ void SITL_State::_fdm_input_step(void)
     }
 
     // trigger all APM timers.
-    _scheduler->timer_event();
+    HALSITL::Scheduler::timer_event();
     _scheduler->sitl_end_atomic();
 }
 
