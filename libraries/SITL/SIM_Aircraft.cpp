@@ -695,15 +695,10 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             dcm.to_euler(&r, &p, &y);
             y = y + yaw_rate * delta_time;
             dcm.from_euler(0.0f, radians(90), y);
-            // no movement
-            if (accel_earth.z > -1.1*GRAVITY_MSS) {
-                velocity_ef.zero();
-            }
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
             velocity_ef.y = gnd_movement.y;
             gyro.zero();
-            use_smoothing = true;
             break;
         }
         }
