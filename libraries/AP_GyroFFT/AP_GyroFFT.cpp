@@ -259,8 +259,8 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
-    uint8_t first_harmonic = 0;
     if (_harmonic_fit > 0) {
+        uint8_t first_harmonic = 0;
         for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
             if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
                 if (first_harmonic == 0) {
