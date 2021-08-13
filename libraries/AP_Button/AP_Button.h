@@ -76,6 +76,8 @@ private:
 
     // current state of PWM pins:
     uint8_t pwm_state;
+    uint8_t tentative_pwm_state;  // for debouncing
+    uint64_t pwm_start_debounce_ms;
 
     // mask indicating which action was most recent taken for pins
     uint8_t state_actioned_mask;

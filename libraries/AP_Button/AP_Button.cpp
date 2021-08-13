@@ -201,9 +201,18 @@ void AP_Button::update(void)
             }
         }
     }
+    const uint64_t now_ms = AP_HAL::millis64();
     if (new_pwm_state != pwm_state) {
-        pwm_state = new_pwm_state;
-        last_debounce_ms = AP_HAL::millis64();
+        if (new_pwm_state != tentative_pwm_state) {
+            tentative_pwm_state = new_pwm_state;
+            pwm_start_debounce_ms = now_ms;
+        } else if (now_ms - pwm_start_debounce_ms > DEBOUNCE_MS) {
+            pwm_state = new_pwm_state;
+            last_debounce_ms = now_ms;
+        }
+    } else {
+        tentative_pwm_state = pwm_state;
+        pwm_start_debounce_ms = now_ms;
     }
 
     if (last_debounce_ms != 0 &&
