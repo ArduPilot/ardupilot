@@ -236,6 +236,25 @@ class BobException(Exception):
 def kill_tasks():
     """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
+
+    if cmd_opts.coverage:
+        import psutil
+        for proc in psutil.process_iter(['pid', 'name', 'environ']):
+            if proc.name() not in ["arducopter", "ardurover", "arduplane", "ardusub", "antennatracker"]:
+                # only kill vehicle that way
+                continue
+            if os.environ['SIM_VEHICLE_SESSION'] not in proc.environ().get('SIM_VEHICLE_SESSION'):
+                # only kill vehicle launched with sim_vehicle.py that way
+                continue
+            proc.terminate()
+            progress("Waiting SITL to exit cleanly and write coverage .gcda")
+            try:
+                proc.wait(timeout=30)
+                progress("Done")
+            except psutil.TimeoutExpired:
+                progress("SITL doesn't want to exit cleaning, killing ...")
+                proc.kill()
+
     try:
         victim_names = {
             'JSBSim',
@@ -302,6 +321,9 @@ def do_build(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+
+    if opts.coverage:
+        cmd_configure.append("--coverage")
 
     if opts.enable_onvif and 'antennatracker' in frame_options["waf_target"]:
         cmd_configure.append("--enable-onvif")
@@ -953,6 +975,10 @@ group_build.add_option("", "--waf-build-arg",
                        type="string",
                        default=[],
                        help="extra arguments to pass to waf in its build step")
+group_build.add_option("", "--coverage",
+                       action='store_true',
+                       default=False,
+                       help="use coverage build")
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
