@@ -1191,7 +1191,7 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
     hal.dsp->fft_start(_state, test_window, 0);
     uint16_t max_bin = hal.dsp->fft_analyse(_state, _config._fft_start_bin, _config._fft_end_bin, _config._attenuation_cutoff);
 
-    if (max_bin <= 0) {
+    if (max_bin == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: self-test failed, failed to find frequency %.1f", frequency);
     }
 
