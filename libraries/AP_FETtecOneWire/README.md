@@ -10,46 +10,74 @@ For purchase, connection and configuration information please see the [Ardupilot
 
 - use ArduPilot's coding guidelines and naming conventions
 - control motor speed
-- copy ESC telemetry data into MAVLink telemetry
-- save ESC telemetry data in dataflash logs
-- use RPM telemetry for dynamic notch filter frequencies
-- sum the current telemetry info from all ESCs and use it as virtual battery current monitor sensor
-- average the voltage telemetry info and use it as virtual battery voltage monitor sensor
-- average the temperature telemetry info and use it as virtual battery temperature monitor sensor
-- report telemetry communication error rate in the dataflash logs
-- warn the user if there is a gap in the bitmask parameter.
+- Use the AP_ESC_Telem base class to:
+  - copy ESC telemetry data into MAVLink telemetry
+  - save ESC telemetry data in dataflash logs
+  - use RPM telemetry for dynamic notch filter frequencies
+  - sum the current telemetry info from all ESCs and use it as virtual battery current monitor sensor
+  - average the voltage telemetry info and use it as virtual battery voltage monitor sensor
+  - average the temperature telemetry info and use it as virtual battery temperature monitor sensor
+- ~~report telemetry communication error rate in the dataflash logs~~
+- Obey the safety switch. Keeps motors from turning
+- Use `SERVO_FWT_MASK` to define which servo output should be routed to FETtec ESCs
+- Use `SERVO_FWT_RVMASK` to define the rotation direction of the motors
+  - `SERVO_FWT_RVMASK` changes only take effect when disarmed
+- Can be compiled when `HAL_WITH_ESC_TELEM` is disabled. No telemetry data will be available but it saves a lot of memory
+- pre-arm checks:
+  - Check that UART is available
+  - check that the desired motor channels parameter (`SERVO_FWT_MASK`) is valid
+  - check that the desired motor poles parameter (`SERVO_FWT_POLES`) is valid
+  - check that the all desired ESCs are found and configured
+  - check that the ESCs are periodically sending telemetry data
 - re-enumerate all ESCs if not armed (motors not spinning) when
-  - there is a gap in their address space IDs
   - communication with one of the ESCs is lost
-  - some of the configured ESCs are not found
-  - some of the configured ESCs are not correctly configured
-- allows the user to configure motor rotation direction per ESC (only gets updated if not armed)
-- adds a serial simulator of FETtec OneWire ESCs
-- adds autotest (using the simulator) to fly a copter over a simulated serial link connection
+- adds a serial simulator (--uartF=sim:fetteconewireesc) of FETtec OneWire ESCs
+- adds autotest (using the simulator) to:
+  - simulate telemetry voltage, current, temperature, RPM data using SITL internal variables
+  - test the safety switch functionality
+  - test ESC power outages
+  - test `SERVO_FWT_MASK` parameter validation
+  - fly a copter over a simulated serial link connection
+
 
 ## Ardupilot to ESC protocol
 
-The FETtec OneWire protocol supports up to 24 ESCs. As most copters only use at most 12 motors, Ardupilot's implementation supports only 12 to save memory.
+The FETtec OneWire protocol supports up to 24 ESCs. As most copters only use at most 12 motors, Ardupilot's implementation supports only 12 (`ESC_TELEM_MAX_ESCS`)to save memory.
 
-On this device driver the `SERVO_FTW_MASK` parameter must contain a single contiguous block of bits set, and bit0 (zero-indexed) must be a part of that set.
-The ESC IDs (one-indexed) set on the ESCs must also be a single contiguous block, but it can start at an ID different from 1. The max ID must be lower than 12.
+There are two types of messages sent to the ESCs configuration and fast-throttle messages:
 
-There are two types of messages sent to the ESCs:
-
-### Configuration message
+### Configuration message frame
 Consists of six frame bytes + payload bytes.
 
 ```
-    Byte 0 is the transfer direction (e.g. 0x01 Master to Slave)
+    Byte 0 is the source type
     Byte 1 is the ID
     Byte 2 is the frame type (Low byte)
     Byte 3 is the frame type (High byte)
     Byte 4 is the frame length
     Byte 5-254 is the payload
     Byte 6-255 is CRC (last Byte after the Payload). It uses the same CRC algorithm as Dshot.
-```	
+```
 
-### Fast Throttle Signal
+#### Check if bootloader or ESC firmware is running
+To check which firmware is running on the FETtec an ESCs `PackedMessage<OK>` is sent to each ESC.
+If the answer frame `frame_source` is FrameSource::BOOTLOADER we are in bootloader and need to send an `PackedMessage<START_FW>` to start the ESC firmware.
+If the answer frame `frame_source` is FrameSource::ESC we are already running the correct firmware and can directly configure the telemetry.
+
+#### Start the ESC firmware
+If the ESC is running on bootloader firmware we need to send an `PackedMessage<START_FW>` to start the ESC firmware.
+The answer must be a `PackedMessage<OK>` with `frame_source` equal to FrameSource::ESC. If not, we need to repeat the command.
+
+#### Configure Full/Alternative Telemetry
+The telemetry can be switched to "per ESC" Mode, where one ESC answers with it's full telemetry as oneWire package including CRC and additionally the CRC Errors counted by the ESC.
+To use this mode, `PackedMessage<SET_TLM_TYPE>` is send to each ESC while initializing.
+If this was successful the ESC responds with `PackedMessage<OK>`.
+
+#### Configure Fast throttle messages
+To configure the fast-throttle frame structure a `PackedMessage<SET_FAST_COM_LENGTH>` is send to each ESC while initializing.
+If this was successful the ESC responds with `PackedMessage<OK>`.
+
+### Fast-throttle message frame
 
 ```
     Byte 0 is the frame header
@@ -73,11 +101,14 @@ See *ESC to Ardupilot Protocol* section below and comments in `FETtecOneWire.cpp
 
 ### Timing
 
-Four ESCs need 90uS for the throttle request and telemetry reception. With four ESCs 11kHz are possible.
-As each additional ESC adds 11 extra fast-throttle command bits, so the rate is lowered by each ESC.
-If you use 8 ESCs, it needs 160uS including telemetry response, so 5.8kHz are possible.
+Four ESCs need 90us for the fast-throttle request and telemetry reception. With four ESCs 11kHz update would be possible.
+Each additional ESC adds 11 extra fast-throttle command bits, so the update rate is lowered by each additional ESC.
+If you use 8 ESCs, it needs 160us including telemetry response, so 5.8kHz update rate would be possible.
+The FETtec Ardupilot device driver limits the message transmit period to `_min_fast_throttle_period_us` according to the number of ESCs used.
+The update() function has an extra invocation period limit so that even at very high loop rates the the ESCs will still operate correctly albeit doing some decimation.
+The current update rate for Copter is 400Hz (~2500us) and for other vehicles is 50Hz (~20000us) so we are bellow device driver limit.
 
-**Note:** You need at least a 4Hz motor signal (max 250ms between messages) before the motors disarm.
+**Note:** The FETtec ESCs firmware requires at least a 4Hz fast-throttle update rate (max. 250ms between messages) otherwise the FETtec ESC disarm (stop) the motors.
 
 ## ESC to Ardupilot protocol
 
@@ -98,26 +129,50 @@ This information is used by Ardupilot to:
 - Optionally measure battery voltage and power consumption
 
 
-## Full/Alternative Telemetry
-The telemetry can be switched to "per ESC" Mode, where one ESC answers with it's full telemetry as oneWire package including CRC and additionally the CRC Errors counted by the ESC.
-To use this mode, `msg_type::SET_TLM_TYPE` is send to each ESC while initializing.
-If this was successful set the ESC response with `msg_type::OK`.
-
-The answer is packed inside a OneWire package, that can be received with the `FETtecOneWire::receive()` function, that also checks the CRC.
-
-As the packages are send in an uInt8_t array the values must be restored like as only temp is one byte long:
-
-```C++
-    Telemetry[0]= telem[0];              // Temperature [°C/10]
-    Telemetry[1]=(telem[1]<<8)|telem[2]; // Voltage [V/10]
-    Telemetry[2]=(telem[3]<<8)|telem[4]; // Current [A/10]
-    Telemetry[3]=(telem[5]<<8)|telem[6]; // ERPM/100 (must be divided by number of motor poles to translate to propeller RPM)
-    Telemetry[4]=(telem[7]<<8)|telem[8]; // Consumption [mA.h]
-    Telemetry[5]=(telem[9]<<8)|telem[10];// CRC error (ArduPilot->ESC) counter
-```
+### Full/Alternative Telemetry
+The answer to a fast-throttle command frame is a `PackedMessage<TLM>` message frame, received and decoded in the `FETtecOneWire::handle_message_telem()` function.
+The data is forwarded to the `AP_ESC_Telem` class that distributes it to other parts of the ArduPilot code.
 
 
+## Function structure
 
+There are two public top level functions `update()` and `pre_arm_check()`. And these two call all other private internal functions:
+
+update()
+  init()
+    init_uart()
+  read_data_from_uart()
+    move_frame_source_in_receive_buffer()
+      consume_bytes()
+    consume_bytes()
+    handle_message()             <-- RX state machine
+      buffer_contains_ok()
+      handle_message_telem()
+  configure_escs()               <-- TX state machine
+    transmit_config_request()
+      transmit()
+  escs_set_values()
+    pack_fast_throttle_command()
+    transmit()
+pre_arm_check()
+
+
+## Device driver parameters
+
+The `SERVO_FTW_MASK` parameter selects which servo outputs, if any, will be routed to FETtec ESCs.
+You need to reboot after changing this parameter.
+When `HAL_WITH_ESC_TELEM` is active (default) only the first 12 (`ESC_TELEM_MAX_ESCS`) can be used.
+The FETtec ESC IDs set inside the FETtec firmware by the FETtec configuration tool are one-indexed.
+These IDs must start at ID 1 and be in a single contiguous block.
+You do not need to change these FETtec IDs if you change the servo output assignments inside ArduPilot the using the `SERVO_FTW_MASK` parameter
+
+The `SERVO_FTW_RVMASK` parameter selects which servo outputs, if any, will reverse their rotation.
+This parameter is only visible if the `SERVO_FTW_MASK` parameter has at least one bit set.
+This parameter effects the outputs immediately when changed and the motors are not armed.
+
+The `SERVO_FTW_POLES` parameter selects Number of motor electrical poles.
+It is used to calculate the motors RPM
+This parameter effects the RPM calculation immediately when changed.
 
 ## Extra features
 
@@ -130,7 +185,7 @@ To control this you must activate the code in the header file:
 #endif
 ```
 Or just set the `HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO` macro in the compiler toolchain.
-After that you will be able to access this information in the `_found_escs[]` datastructure.
+After that you will be able to access this information in the `_escs[]` datastructure.
 
 ### Beep
 To control this you must activate the code in the header file:
