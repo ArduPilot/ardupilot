@@ -7247,7 +7247,7 @@ class AutoTestCopter(AutoTest):
             if self.get_sim_time_cached() - tstart > 20:
                 raise NotAchievedException("Expected mask to be only problem within 20 seconds")
             try:
-                self.assert_prearm_failure("Invalid motor mask; need consecuti")
+                self.assert_prearm_failure("Invalid motor mask")
                 break
             except NotAchievedException:
                 self.delay_sim_time(1)
