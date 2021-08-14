@@ -859,6 +859,12 @@ float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 #endif
 }
 
+// send output to the motors, can be overridden by subclasses
+void Mode::output_to_motors()
+{
+    motors->output();
+}
+
 Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 {
     // Alt Hold State Machine Determination
