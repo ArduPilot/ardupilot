@@ -17,16 +17,16 @@ BUILD_OPTIONS = [
     ]
 for f in features:
     build_option = []
-    feature_enabled = not minimized_feature.match(f) and not board_1mb_feature.match(f)
+    optional_feature = minimized_feature.match(f) or board_1mb_feature.match(f)
     matched = regular_feature.match(f)
-    if matched:
+    if optional_feature:
         define = matched.group(1)
         feature = define.replace('HAL_','').replace('_ENABLED','')
         build_option.append(feature)
         build_option.append(define)
         build_option.append('Enable ' + 
                             feature.replace('_', ' ').lower().capitalize())
-        build_option.append(feature_enabled)
+        build_option.append(False)
         BUILD_OPTIONS.append(build_option)
 
-#print(BUILD_OPTIONS)
+print(BUILD_OPTIONS)
