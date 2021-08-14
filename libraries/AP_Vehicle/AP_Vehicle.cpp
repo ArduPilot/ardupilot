@@ -86,6 +86,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(esc_telem, "ESC_TLM", 12, AP_Vehicle, AP_ESC_Telem),
 #endif
 
+#if AP_AIS_ENABLED
+    // @Group: AIS_
+    // @Path: ../AP_AIS/AP_AIS.cpp
+    AP_SUBGROUPINFO(ais, "AIS_",  13, AP_Vehicle, AP_AIS),
+#endif
+
     AP_GROUPEND
 };
 
@@ -217,6 +223,10 @@ void AP_Vehicle::setup()
     efi.init();
 #endif
 
+#if AP_AIS_ENABLED
+    ais.init();
+#endif
+
     custom_rotations.init();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
@@ -306,6 +316,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,      10,    100, 245),
+#endif
+#if AP_AIS_ENABLED
+    SCHED_TASK_CLASS(AP_AIS,       &vehicle.ais,            update,                    5, 100, 249),
 #endif
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   10, 200, 250),
