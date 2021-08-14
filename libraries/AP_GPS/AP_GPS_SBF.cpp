@@ -510,6 +510,7 @@ AP_GPS_SBF::process_message(void)
             state.have_gps_yaw = true;
             state.gps_yaw_configured = true;
             state.gps_yaw = (float)(temp.Heading);
+            state.gps_yaw_time_ms = AP_HAL::millis();
             state.have_gps_yaw_accuracy = true;
             break;
         } else {
