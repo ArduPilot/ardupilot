@@ -59,7 +59,6 @@ const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] {
     // @DisplayName: Nr. electrical poles
     // @Description: Number of motor electrical poles
     // @Range: 2 50
-    // @RebootRequired: False
     // @User: Standard
     AP_GROUPINFO("POLES", 3, AP_FETtecOneWire, _pole_count_parameter, 14),
 #endif
