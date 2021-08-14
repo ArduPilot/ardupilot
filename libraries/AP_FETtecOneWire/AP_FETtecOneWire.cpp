@@ -395,7 +395,7 @@ void AP_FETtecOneWire::handle_message(ESC &esc, const uint8_t length)
         // we only expect telemetry messages in this state
 #if HAL_WITH_ESC_TELEM
         if (!esc.telem_expected) {
-            // esc.unexpected_telem++;
+            esc.unexpected_telem++;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("unexpected telemetry");
 #endif
@@ -494,6 +494,7 @@ void AP_FETtecOneWire::read_data_from_uart()
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("bad message");
 #endif
+            crc_rec_err_cnt++;
             move_frame_source_in_receive_buffer(1);
             continue;
         }
@@ -501,7 +502,7 @@ void AP_FETtecOneWire::read_data_from_uart()
         // borrow the "OK" message to retrieve the frame_source from the buffer:
         const FrameSource frame_source = (FrameSource)u.packed_ok.frame_source;
         if (frame_source == FrameSource::MASTER) {
-            // this is our own message - we'd best we running in
+            // this is our own message - we'd best be running in
             // half-duplex or we're in trouble!
             consume_bytes(frame_length);
             continue;
@@ -588,9 +589,7 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values)
     if (_esc_ofs_to_request_telem_from >= _esc_count) {
         _esc_ofs_to_request_telem_from = 0;
     }
-    esc_to_req_telem_from.telem_expected = true;
     esc_id_to_request_telem_from = esc_to_req_telem_from.id;
-    _fast_throttle_cmd_count++;
 #endif
 
     uint8_t fast_throttle_command[_fast_throttle_byte_count];
@@ -607,7 +606,13 @@ void AP_FETtecOneWire::escs_set_values(const uint16_t* motor_values)
     _uart->discard_input();
 
     // send throttle commands to all configured ESCs in a single packet transfer
-    transmit(fast_throttle_command, sizeof(fast_throttle_command));
+    if (transmit(fast_throttle_command, sizeof(fast_throttle_command))) {
+#if HAL_WITH_ESC_TELEM
+        esc_to_req_telem_from.telem_expected = true;    // used to make sure that the returned telemetry comes from this ESC and not another
+        esc_to_req_telem_from.telem_requested = true;   // used to check if this ESC is periodically sending telemetry
+        _fast_throttle_cmd_count++;
+#endif
+    }
 }
 
 bool AP_FETtecOneWire::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
@@ -752,7 +757,6 @@ void AP_FETtecOneWire::configure_escs()
 /// periodically called from SRV_Channels::push()
 void AP_FETtecOneWire::update()
 {
-    const uint32_t now = AP_HAL::micros();
     if (!_init_done) {
         init();
         return; // the rest of this function can only run after fully initted
@@ -760,6 +764,30 @@ void AP_FETtecOneWire::update()
 
     // read all data from incoming serial:
     read_data_from_uart();
+
+    const uint32_t now = AP_HAL::micros();
+
+#if HAL_WITH_ESC_TELEM
+    if (!hal.util->get_soft_armed()) {
+
+        _reverse_mask = _reverse_mask_parameter; // update this only when disarmed
+
+        // if we haven't seen an ESC in a while, the user might
+        // have power-cycled them.  Try re-initialising.
+        for (uint8_t i=0; i<_esc_count; i++) {
+            auto &esc = _escs[i];
+            if (!esc.telem_requested || now - esc.last_telem_us < 1000000U ) {
+                // telem OK
+                continue;
+            }
+            _running_mask &= ~(1 << esc.servo_ofs);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc id=%u. Resetting it.", esc.id);
+            //GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "unknown %u, invalid %u, too short %u, unexpected: %u, crc_err %u", _unknown_esc_message, _message_invalid_in_state_count, _period_too_short, esc.unexpected_telem, crc_rec_err_cnt);
+            esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
+            esc.telem_requested = false;
+        }
+    }
+#endif  // HAL_WITH_ESC_TELEM
 
     if (now - _last_transmit_us < 700U) {
         // in case the SRV_Channels::push() is running at very high rates, limit the period
@@ -805,34 +833,6 @@ void AP_FETtecOneWire::update()
 
     // send motor setpoints to ESCs, and request for telemetry data
     escs_set_values(motor_pwm);
-
-#if HAL_WITH_ESC_TELEM
-    if (!hal.util->get_soft_armed()) {
-
-        _reverse_mask = _reverse_mask_parameter; // update this only when disarmed
-
-        // if we haven't seen an ESC in a while, the user might
-        // have power-cycled them.  Try re-initialising.
-        for (uint8_t i=0; i<_esc_count; i++) {
-            auto &esc = _escs[i];
-            if (!esc.telem_expected || now - esc.last_telem_us < 1000000) {
-                // telem OK
-                continue;
-            }
-            _running_mask &= ~(1 << esc.servo_ofs);
-            if (now - esc.last_reset_us < 5000000) {
-                // only attempt reset periodically
-                continue;
-            }
-            if (esc.state == ESCState::UNINITIALISED) {
-                continue;
-            }
-            esc.last_reset_us = now;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc.id=%u; resetting it", esc.id);
-            esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
-        }
-    }
-#endif  // HAL_WITH_ESC_TELEM
 }
 
 #if HAL_AP_FETTEC_ESC_BEEP

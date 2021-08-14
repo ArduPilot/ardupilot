@@ -167,9 +167,10 @@ private:
 
 #if HAL_WITH_ESC_TELEM
         uint32_t last_telem_us;              ///< last time we got telemetry from this ESC
-        uint32_t last_reset_us;
+        uint16_t unexpected_telem;
         uint16_t error_count_at_throttle_count_overflow;            ///< overflow counter for error counter from the ESCs.
         bool telem_expected;                 ///< this ESC is fully configured and is now expected to send us telemetry
+        bool telem_requested;                ///< this ESC is fully configured and at some point was requested to send us telemetry
 #endif
 
         uint8_t id;         ///< FETtec ESC ID
@@ -486,6 +487,7 @@ private:
     uint16_t _unknown_esc_message;
     uint16_t _message_invalid_in_state_count;
     uint16_t _period_too_short;
+    uint16_t crc_rec_err_cnt;
     uint8_t _receive_buf_used;
 
     /// shifts data to start of buffer based on magic header bytes
