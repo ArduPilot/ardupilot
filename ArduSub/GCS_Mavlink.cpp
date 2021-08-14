@@ -161,7 +161,9 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
                                     pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info.D*0.01f,
+                                    pid_info.slew_rate,
+                                    pid_info.Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -174,7 +176,9 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
                                     pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info.D*0.01f,
+                                    pid_info.slew_rate,
+                                    pid_info.Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -187,7 +191,9 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
                                     pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info.D*0.01f,
+                                    pid_info.slew_rate,
+                                    pid_info.Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -200,7 +206,9 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
                                     pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info.D*0.01f,
+                                    pid_info.slew_rate,
+                                    pid_info.Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
