@@ -19,7 +19,7 @@
 
 #include "AP_AIS.h"
 
-#if HAL_AIS_ENABLED
+#if AP_AIS_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -63,6 +63,11 @@ const AP_Param::GroupInfo AP_AIS::var_info[] = {
 // constructor
 AP_AIS::AP_AIS()
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AIS must be singleton");
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -804,4 +809,6 @@ bool AP_AIS::decode_latest_term()
     return false;
 }
 
-#endif  // HAL_AIS_ENABLED
+AP_AIS *AP_AIS::_singleton;
+
+#endif  // AP_AIS_ENABLED
