@@ -42,7 +42,6 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Description: Used to calibrate fuel flow for MS protocol (Slope)
     // @Range: 0 1
     // @User: Advanced
-    // @RebootRequired: False
     AP_GROUPINFO("_COEF1", 2, AP_EFI, coef1, 0),
 
     // @Param: _COEF2
@@ -50,7 +49,6 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Description: Used to calibrate fuel flow for MS protocol (Offset)
     // @Range: 0 10
     // @User: Advanced
-    // @RebootRequired: False
     AP_GROUPINFO("_COEF2", 3, AP_EFI, coef2, 0),
 
     AP_GROUPEND
