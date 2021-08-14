@@ -58,10 +58,6 @@ void Rover::init_ardupilot()
     log_init();
 #endif
 
-#if HAL_AIS_ENABLED
-    g2.ais.init();
-#endif
-
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
