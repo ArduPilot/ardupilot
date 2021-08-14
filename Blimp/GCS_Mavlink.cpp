@@ -160,7 +160,9 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
                                         pid_info->FF,
                                         pid_info->P,
                                         pid_info->I,
-                                        pid_info->D);
+                                        pid_info->D,
+                                        pid_info->slew_rate,
+                                        pid_info->Dmod);
         }
     }
 }
