@@ -429,9 +429,6 @@ public:
         return _rsem;
     }
 
-    // active AHRS type for logging
-    virtual uint8_t get_active_AHRS_type(void) const { return 0; }
-
     // Logging to disk functions
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
