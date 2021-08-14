@@ -845,13 +845,6 @@ void QuadPlane::run_esc_calibration(void)
     }
 }
 
-
-// init quadplane stabilize mode 
-void ModeQStabilize::init()
-{
-    quadplane.throttle_wait = false;
-}
-
 /*
   when doing a forward transition of a tilt-vectored quadplane we use
   euler angle control to maintain good yaw. This updates the yaw
@@ -995,20 +988,6 @@ void QuadPlane::hold_stabilize(float throttle_in)
         }
         attitude_control->set_throttle_out(throttle_in, should_boost, 0);
     }
-}
-
-// quadplane stabilize mode
-void ModeQStabilize::run()
-{
-    // special check for ESC calibration in QSTABILIZE
-    if (quadplane.esc_calibration != 0) {
-        quadplane.run_esc_calibration();
-        return;
-    }
-
-    // normal QSTABILIZE mode
-    float pilot_throttle_scaled = quadplane.get_pilot_throttle();
-    quadplane.hold_stabilize(pilot_throttle_scaled);
 }
 
 // run the multicopter Z controller
