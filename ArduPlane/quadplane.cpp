@@ -450,7 +450,6 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: VTOL manual forward throttle max percent
     // @Description: Maximum value for manual forward throttle; used with RC option FWD_THR (209)
     // @Range: 0 100
-    // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
     // 21: TAILSIT_DSKLD
