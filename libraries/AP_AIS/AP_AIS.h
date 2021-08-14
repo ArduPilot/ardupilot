@@ -14,15 +14,17 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_AIS_ENABLED
+#define AP_AIS_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if AP_AIS_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/AP_ExpandingArray.h>
-
-#ifndef HAL_AIS_ENABLED
-#define HAL_AIS_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#if HAL_AIS_ENABLED
 
 #define AIVDM_BUFFER_SIZE 10
 #define AIVDM_PAYLOAD_SIZE 65
@@ -35,6 +37,11 @@ public:
     /* Do not allow copies */
     AP_AIS(const AP_AIS &other) = delete;
     AP_AIS &operator=(const AP_AIS&) = delete;
+
+    // get singleton instance
+    static AP_AIS *get_singleton() {
+        return _singleton;
+    }
 
     // return true if AIS is enabled
     bool enabled() const { return AISType(_type.get()) != AISType::NONE; }
@@ -131,6 +138,8 @@ private:
     bool _term_is_checksum;         // current term is the checksum
     bool _sentence_valid;           // is current sentence valid so far
     bool _sentence_done;            // true if this sentence has already been decoded
+
+    static AP_AIS *_singleton;
 };
 
-#endif  // HAL_AIS_ENABLED
+#endif  // AP_AIS_ENABLED
