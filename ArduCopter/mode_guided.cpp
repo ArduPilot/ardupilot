@@ -28,7 +28,7 @@ struct {
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
     bool use_yaw_rate;
     bool use_thrust;
-    bool use_body_rate;
+    bool use_roll_pitch_rates;
 } static guided_angle_state;
 
 struct Guided_Limit {
@@ -472,9 +472,9 @@ bool ModeGuided::stabilizing_vel_xy() const
 }
 
 // set guided mode body-frame rates
-void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds, bool use_body_rate)
+void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds, bool use_roll_pitch_rates)
 {
-    guided_angle_state.use_body_rate = use_body_rate;
+    guided_angle_state.use_roll_pitch_rates = use_roll_pitch_rates;
     guided_angle_state.roll_rate_cds = ToDeg(roll_rate_bf_cds) * 100.0f;
     guided_angle_state.pitch_rate_cds = ToDeg(pitch_rate_bf_cds) * 100.0f;
     guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_bf_cds) * 100.0f;
@@ -879,7 +879,7 @@ void ModeGuided::angle_control_run()
     // call attitude controller
     if (guided_angle_state.use_yaw_rate) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in);
-    } else if (guided_angle_state.use_body_rate) {
+    } else if (guided_angle_state.use_roll_pitch_rates) {
         attitude_control->input_rate_bf_roll_pitch_yaw(guided_angle_state.roll_rate_cds, guided_angle_state.pitch_rate_cds, guided_angle_state.yaw_rate_cds);
     } else {
         attitude_control->input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);

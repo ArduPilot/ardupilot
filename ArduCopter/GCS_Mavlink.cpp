@@ -1057,10 +1057,10 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         // only one of these flags is true
-        bool use_body_rate = (packet.type_mask & (1<<7)) == 128;
+        bool use_roll_pitch_rates = (packet.type_mask & (1<<7)) == 128;
         bool use_yaw_rate = (packet.type_mask & ((1<<0) | (1<<1) | (1<<2))) == 3;
         bool use_attitude = (packet.type_mask & ((1<<0) | (1<<1) | (1<<2))) == 7;
-        if (use_body_rate + use_yaw_rate + use_attitude > 1) {
+        if (use_roll_pitch_rates + use_yaw_rate + use_attitude > 1) {
             // Invalid type mask
             break;
         }
@@ -1087,7 +1087,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         copter.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_or_thrust, use_yaw_rate, packet.body_yaw_rate, use_thrust);
-        copter.mode_guided.set_rate_bf_roll_pitch_yaw(packet.body_pitch_rate, packet.body_roll_rate, packet.body_yaw_rate, use_body_rate);
+        copter.mode_guided.set_rate_bf_roll_pitch_yaw(packet.body_pitch_rate, packet.body_roll_rate, packet.body_yaw_rate, use_roll_pitch_rates);
         break;
     }
 
