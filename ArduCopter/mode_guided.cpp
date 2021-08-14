@@ -472,12 +472,12 @@ bool ModeGuided::stabilizing_vel_xy() const
 }
 
 // set guided mode body-frame rates
-void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds, bool use_roll_pitch_rates)
+void ModeGuided::set_rate_bf_roll_pitch_yaw(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads, bool use_roll_pitch_rates)
 {
     guided_angle_state.use_roll_pitch_rates = use_roll_pitch_rates;
-    guided_angle_state.roll_rate_cds = ToDeg(roll_rate_bf_cds) * 100.0f;
-    guided_angle_state.pitch_rate_cds = ToDeg(pitch_rate_bf_cds) * 100.0f;
-    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_bf_cds) * 100.0f;
+    guided_angle_state.roll_rate_cds = ToDeg(roll_rate_bf_rads) * 100.0f;
+    guided_angle_state.pitch_rate_cds = ToDeg(pitch_rate_bf_rads) * 100.0f;
+    guided_angle_state.yaw_rate_cds = ToDeg(yaw_rate_bf_rads) * 100.0f;
 }
 
 // set guided mode angle target and climbrate
