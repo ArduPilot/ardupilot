@@ -103,6 +103,9 @@ public:
         return pos_control->get_vel_desired_cms();
     }
 
+    // send output to the motors, can be overridden by subclasses
+    virtual void output_to_motors();
+
 protected:
 
     // helper functions
@@ -1530,10 +1533,15 @@ public:
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return false; }
     void change_motor_direction(bool reverse);
+    void output_to_motors() override;
 
 protected:
     const char *name() const override { return "TURTLE"; }
     const char *name4() const override { return "TRTL"; }
+
+private:
+    float motors_output;
+    Vector2f motors_input;
 };
 #endif
 
