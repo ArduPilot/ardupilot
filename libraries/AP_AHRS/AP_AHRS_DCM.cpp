@@ -119,6 +119,9 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     // update takeoff/touchdown flags
     update_flags();
+
+    // remember the last origin for fallback support
+    IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 }
 
 /*
@@ -739,6 +742,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // use GPS for positioning with any fix, even a 2D fix
         _last_lat = _gps.location().lat;
         _last_lng = _gps.location().lng;
+        _last_pos_ms = AP_HAL::millis();
         _position_offset_north = 0;
         _position_offset_east = 0;
 
@@ -1036,10 +1040,13 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.terrain_alt = 0;
     loc.offset(_position_offset_north, _position_offset_east);
     const AP_GPS &_gps = AP::gps();
-    if (_flags.fly_forward && _have_position) {
-        float gps_delay_sec = 0;
-        _gps.get_lag(gps_delay_sec);
-        loc.offset_bearing(_gps.ground_course(), _gps.ground_speed() * gps_delay_sec);
+    if (_have_position) {
+        uint32_t now = AP_HAL::millis();
+        float dt = 0;
+        _gps.get_lag(dt);
+        dt += constrain_float((now - _last_pos_ms) * 0.001, 0, 0.5);
+        Vector2f dpos = _last_velocity.xy() * dt;
+        loc.offset(dpos.x, dpos.y);
     }
     return _have_position;
 }
@@ -1158,5 +1165,52 @@ bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8
         hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
         return false;
     }
+    return true;
+}
+
+/*
+  relative-origin functions for fallback in AP_InertialNav
+*/
+bool AP_AHRS_DCM::get_origin_fallback(Location &ret) const
+{
+    ret = last_origin;
+    if (ret.is_zero()) {
+        // use home if we never have had an origin
+        ret = AP::ahrs().get_home();
+    }
+    return !ret.is_zero();
+}
+
+bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
+{
+    Location origin;
+    if (!AP_AHRS_DCM::get_origin_fallback(origin)) {
+        return false;
+    }
+    Location loc;
+    if (!AP_AHRS_DCM::get_position(loc)) {
+        return false;
+    }
+    posNED = origin.get_distance_NED(loc);
+    return true;
+}
+
+bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2f &posNE) const
+{
+    Vector3f posNED;
+    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
+        return false;
+    }
+    posNE = posNED.xy();
+    return true;
+}
+
+bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
+{
+    Vector3f posNED;
+    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
+        return false;
+    }
+    posD = posNED.z;
     return true;
 }
