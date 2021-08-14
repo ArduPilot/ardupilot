@@ -51,6 +51,7 @@
 #include <AP_VideoTX/AP_SmartAudio.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+#include <AP_AIS/AP_AIS.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -381,6 +382,11 @@ protected:
 
 #if AP_AIRSPEED_ENABLED
     AP_Airspeed airspeed;
+#endif
+
+#if AP_AIS_ENABLED
+    // Automatic Identification System - for tracking sea-going vehicles
+    AP_AIS ais;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
