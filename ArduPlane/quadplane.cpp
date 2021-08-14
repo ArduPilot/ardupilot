@@ -2250,13 +2250,6 @@ void ModeQLand::run()
     plane.mode_qloiter.run();
 }
 
-void ModeQAutotune::run()
-{
-#if QAUTOTUNE_ENABLED
-    quadplane.qautotune.run();
-#endif
-}
-
 /*
   enter a quadplane mode
  */
