@@ -36,6 +36,7 @@ public:
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
+        BACKSTEPPING = 27,      //Backstepping control mode
     };
 
     // constructor
@@ -1315,6 +1316,32 @@ protected:
 
     const char *name() const override { return "SPORT"; }
     const char *name4() const override { return "SPRT"; }
+
+private:
+
+};
+
+class ModeBackstepping : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::BACKSTEPPING; }
+
+    virtual void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "BACKSTEPPING"; }
+    const char *name4() const override { return "BACK"; }
 
 private:
 
