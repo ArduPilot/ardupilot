@@ -110,7 +110,8 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
         control_yaw     : (uint16_t)wrap_360_cd(targets.z),
         yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
         error_rp        : (uint16_t)(get_error_rp() * 100),
-        error_yaw       : (uint16_t)(get_error_yaw() * 100)
+        error_yaw       : (uint16_t)(get_error_yaw() * 100),
+        active          : AP::ahrs().get_active_AHRS_type(),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
