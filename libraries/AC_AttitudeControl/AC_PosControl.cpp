@@ -962,6 +962,7 @@ void AC_PosControl::update_z_controller()
     float pos_target_zf = _pos_target.z;
 
     _vel_target.z = _p_pos_z.update_all(pos_target_zf, curr_alt, _limit.pos_down, _limit.pos_up);
+    _vel_target.z *= AP::ahrs_navekf().getEkfControlScaleZ();
 
     _pos_target.z = pos_target_zf;
 
@@ -972,6 +973,7 @@ void AC_PosControl::update_z_controller()
 
     const Vector3f& curr_vel = _inav.get_velocity();
     _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel.z, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target.z *= AP::ahrs_navekf().getEkfControlScaleZ();
 
     // add feed forward component
     _accel_target.z += _accel_desired.z;
