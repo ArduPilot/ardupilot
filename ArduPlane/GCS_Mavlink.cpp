@@ -272,7 +272,9 @@ void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                                  pid_info->FF,
                                  pid_info->P,
                                  pid_info->I,
-                                 pid_info->D);
+                                 pid_info->D,
+                                 pid_info->slew_rate,
+                                 pid_info->Dmod);
 }
 
 /*
