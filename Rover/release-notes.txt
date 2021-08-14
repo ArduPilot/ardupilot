@@ -1,5 +1,22 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.0-beta7 14-Aug-2021
+Changes from 4.1.0-beta6
+1) Enhancements
+    a) Flywoo F745 supports external I2C compasses
+    b) GPS-for-yaw arming check added
+    c) GPS_DRV_OPTIONS allows forcing UBlox GPS to 115200 baud
+    d) Lua scripts can be placed in root of ROMFS (only relevant for developers)
+2) Bug Fixes
+    a) Beacon driver protected from requests for data for non-existant beacons
+    b) CAN threading fix to resolve potential lockup when lua scripts use CAN
+    c) EKF3 GSF can be invoked multiple times with source switching (no longer limited by EK3_GSF_RST_MAX)
+    d) EKF3 IMU offset fix (vehicle's reported position was slightly incorrect if INS_POS_XYZ params set)
+    e) Motor test stops and reports failure if arming fails
+    f) OSD overwrite and nullptr check fix
+    g) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
+    h) RCOut banner displayed at very end of startup procedure to avoid invalid output
+------------------------------------------------------------------
 Rover 4.1.0-beta6 23-Jul-2021
 Changes from 4.1.0-beta5
 1) Enhancements
