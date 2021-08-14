@@ -121,6 +121,12 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
+    // relative-origin functions for fallback in AP_InertialNav
+    bool get_origin_fallback(Location &ret) const;
+    bool get_relative_position_NED_origin(Vector3f &vec) const override;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
+    bool get_relative_position_D_origin(float &posD) const override;
+    
 private:
     float _ki;
     float _ki_yaw;
@@ -187,6 +193,7 @@ private:
     // the lat/lng where we last had GPS lock
     int32_t _last_lat;
     int32_t _last_lng;
+    uint32_t _last_pos_ms;
 
     // position offset from last GPS lock
     float _position_offset_north;
@@ -212,4 +219,6 @@ private:
 
     // time when DCM was last reset
     uint32_t _last_startup_ms;
+
+    Location last_origin;
 };
