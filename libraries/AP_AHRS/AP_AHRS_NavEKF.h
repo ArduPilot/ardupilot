@@ -191,8 +191,9 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
-    // get speed limit
+    // get speed limits and controller scaling
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
+    float getEkfControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
