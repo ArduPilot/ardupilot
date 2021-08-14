@@ -203,7 +203,8 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
     // get speed limit
-    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
+    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
+    float getControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
@@ -330,7 +331,7 @@ public:
     void set_alt_measurement_noise(float noise) override;
 
     // active EKF type for logging
-    uint8_t get_active_AHRS_type(void) const override {
+    uint8_t get_active_AHRS_type(void) const {
         return uint8_t(active_EKF_type());
     }
 
