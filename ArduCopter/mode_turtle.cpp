@@ -112,9 +112,6 @@ void ModeTurtle::run()
         stickDeflectionExpoLength = stickDeflectionYawExpo;
         signRoll = 0;
         signPitch = 0;
-    } else {
-        // If pitch/roll dominant, disable yaw
-        //signYaw = 0;
     }
 
     const float cosPhi = (stickDeflectionLength > 0) ? (stickDeflectionPitchAbs + stickDeflectionRollAbs) / (sqrtf(2.0f) * stickDeflectionLength) : 0;
@@ -138,11 +135,14 @@ void ModeTurtle::run()
 
     // notmalise the roll and pitch input to match the motors
     Vector2f input {signRoll, signPitch};
-    input = input.normalized() * 0.5;
-
+    motors_input = input.normalized() * 0.5;
     // we bypass spin min and friends in the deadzone because we only want spin up when the sticks are moved
-    float motorOutput = !is_zero(flipPower) ? motors->thrust_to_actuator(flipPower) : 0.0f;
+    motors_output = !is_zero(flipPower) ? motors->thrust_to_actuator(flipPower) : 0.0f;
+}
 
+// actually write values to the motors
+void ModeTurtle::output_to_motors()
+{
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (!motors->is_motor_enabled(i)) {
             continue;
@@ -150,13 +150,13 @@ void ModeTurtle::run()
 
         const Vector2f output {motors->get_roll_factor(i), motors->get_pitch_factor(i)};
         // if output aligns with input then use this motor
-        if ((input - output).length() > 0.5) {
+        if ((motors_input - output).length() > 0.5) {
             motors->rc_write(i, motors->get_pwm_output_min());
             continue;
         }
 
         int16_t pwm = motors->get_pwm_output_min()
-            + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * motorOutput;
+            + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * motors_output;
 
         motors->rc_write(i, pwm);
     }
