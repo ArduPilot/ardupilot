@@ -208,8 +208,8 @@ void AC_Loiter::sanity_check_params()
 ///		updated velocity sent directly to position controller
 void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
 {
-    float ekfGndSpdLimit, ekfNavVelGainScaler;
-    AP::ahrs().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    float ekfGndSpdLimit, ahrsControlScaleXY;
+    AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
