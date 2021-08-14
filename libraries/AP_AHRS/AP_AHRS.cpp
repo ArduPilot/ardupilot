@@ -1332,8 +1332,14 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 bool AP_AHRS::get_vert_pos_rate(float &velocity) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
-        return false;
+    case EKFType::NONE: {
+        Vector3f velned;
+        if (!AP_AHRS_DCM::get_velocity_NED(velned)) {
+            return false;
+        }
+        velocity = velned.z;
+        return true;
+    }
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1409,7 +1415,7 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_NED_origin(vec);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1502,7 +1508,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_NE_origin(posNE);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1572,7 +1578,7 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_D_origin(posD);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1738,17 +1744,15 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
     }
 
     /*
-      fixed wing and rover when in fly_forward mode will fall back to
-      DCM if the EKF doesn't have GPS. This is the safest option as
-      DCM is very robust. Note that we also check the filter status
-      when fly_forward is false and we are disarmed. This is to ensure
-      that the arming checks do wait for good GPS position on fixed
-      wing and rover
+      fixed wing and rover will fall back to DCM if the EKF doesn't
+      have GPS. This is the safest option as DCM is very robust. Note
+      that we also check the filter status when fly_forward is false
+      and we are disarmed. This is to ensure that the arming checks do
+      wait for good GPS position on fixed wing and rover
      */
     if (ret != EKFType::NONE &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
-         _vehicle_class == VehicleClass::GROUND) &&
-        (fly_forward || !hal.util->get_soft_armed())) {
+         _vehicle_class == VehicleClass::GROUND)) {
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
@@ -2096,11 +2100,14 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 }
 
-// get speed limit
-void AP_AHRS::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+// get speed limit and XY navigation gain scale factor
+void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
+        // lower gains in VTOL controllers when flying on DCM
+        ekfGndSpdLimit = 50.0;
+        ekfNavVelGainScaler = 0.5;
         break;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2124,10 +2131,25 @@ void AP_AHRS::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        // no limits
+        // no limit on gains, large vel limit
+        ekfGndSpdLimit = 400;
+        ekfNavVelGainScaler = 1;
         break;
 #endif
     }
+}
+
+/*
+  get gain factor for Z controllers
+ */
+float AP_AHRS::getControlScaleZ(void) const
+{
+    if (active_EKF_type() == EKFType::NONE) {
+        // when flying on DCM lower gains by 4x to cope with the high
+        // lag
+        return 0.25;
+    }
+    return 1;
 }
 
 // get compass offset estimates
@@ -2298,7 +2320,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2329,7 +2351,7 @@ uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2360,7 +2382,7 @@ uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2392,7 +2414,7 @@ uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
         return 0;
 
@@ -2523,7 +2545,7 @@ bool AP_AHRS::get_origin(Location &ret) const
 {
     switch (ekf_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_origin_fallback(ret);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -2624,13 +2646,12 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 }
 
 // get_location - updates the provided location with the latest calculated location
-//  returns true on success (i.e. the EKF knows it's latest position), false on failure
+//  returns true on success (i.e. the backend knows it's latest position), false on failure
 bool AP_AHRS::get_location(struct Location &loc) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
-        // We are not using an EKF so no data
-        return false;
+        return get_position(loc);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
