@@ -388,13 +388,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         break;
     }
 
-    case MSG_AIS_VESSEL: {
-#if HAL_AIS_ENABLED
-        rover.g2.ais.send(chan);
-#endif
-        break;
-    }
-
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
