@@ -35,7 +35,10 @@ void AP_BoardConfig::set_imu_temp(float current)
     hal.util->set_imu_temp(current);
 
     if (target == -1) {
-        // nothing to do
+        // nothing to do, make sure heater is left off
+#if defined(HAL_HEATER_GPIO_PIN)
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, false);
+#endif
         return;
     }
 
