@@ -296,12 +296,13 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
     }
 
+    const uint16_t channels = hal.scheduler->is_system_initialized()?4095:0;
     if (!sock) {
         soap_request_start("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <ExchangeData>
 <pControlInputs>
-<m-selectedChannels>4095</m-selectedChannels>
+<m-selectedChannels>%u</m-selectedChannels>
 <m-channelValues-0to1>
 <item>%.4f</item>
 <item>%.4f</item>
@@ -320,18 +321,19 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 </ExchangeData>
 </soap:Body>
 </soap:Envelope>)",
-                               scaled_servos[0],
-                               scaled_servos[1],
-                               scaled_servos[2],
-                               scaled_servos[3],
-                               scaled_servos[4],
-                               scaled_servos[5],
-                               scaled_servos[6],
-                               scaled_servos[7],
-                               scaled_servos[8],
-                               scaled_servos[9],
-                               scaled_servos[10],
-                               scaled_servos[11]);
+                           channels,
+                           scaled_servos[0],
+                           scaled_servos[1],
+                           scaled_servos[2],
+                           scaled_servos[3],
+                           scaled_servos[4],
+                           scaled_servos[5],
+                           scaled_servos[6],
+                           scaled_servos[7],
+                           scaled_servos[8],
+                           scaled_servos[9],
+                           scaled_servos[10],
+                           scaled_servos[11]);
     }
 
     char *reply = nullptr;
