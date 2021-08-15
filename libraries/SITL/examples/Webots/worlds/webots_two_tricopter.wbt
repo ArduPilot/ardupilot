@@ -1,24 +1,16 @@
-#VRML_SIM R2020a utf8
+#VRML_SIM R2021b utf8
 WorldInfo {
-  gravity 0 -9.80665 0
+  gravity 9.80665
   physics "sitl_physics_env"
   basicTimeStep 1
   FPS 25
   optimalThreadCount 4
+  coordinateSystem "NUE"
   randomSeed 52
 }
-DogHouse {
-  name "dog house(1)"
-}
-DogHouse {
-  name "dog house(2)"
-}
-DogHouse {
-  name "dog house(5)"
-}
 Viewpoint {
-  orientation 0.7086803181760043 0.6899712774114916 0.14734939082708026 5.697800962651686
-  position -9.937979108654101 14.58080553998484 26.61082096142779
+  orientation 0.7430204203343388 0.6136940340292428 0.2670211369219613 5.2236735858922065
+  position -13.41495339376872 28.05967141215561 19.477401792573247
 }
 Background {
   skyColor [
@@ -42,8 +34,8 @@ Solid {
   name "solid(1)"
 }
 DEF DEF_VEHICLE Robot {
-  translation -6.12062 0.6576871933499999 0.4069059999999998
-  rotation 0.005134141913449905 0.9999763391777008 0.0045783918111282325 0.26180410065967374
+  translation 0.241399 0.666833 -1.42457
+  rotation 0.00514799893982893 0.9999767940663002 0.004461999081102697 0.261804
   children [
     Receiver {
       name "receiver_main"
@@ -64,7 +56,7 @@ DEF DEF_VEHICLE Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position -9.387964099116676e-12
+            position -9.388038782122357e-12
             axis 0 0 1
           }
           device [
@@ -75,8 +67,8 @@ DEF DEF_VEHICLE Robot {
             }
           ]
           endPoint Solid {
-            translation -4.884981346861648e-15 -4.102163053687445e-12 1.8030021919912542e-13
-            rotation 1.422280360462637e-09 1 -1.7696377693563738e-09 1.5707963071795863
+            translation -4.884985544693083e-15 -4.102262941092767e-12 1.8091922030330322e-13
+            rotation 3.896036368440465e-10 1 -7.369610254815084e-10 1.5707963071795863
             children [
               Propeller {
                 shaftAxis 0 1 0
@@ -97,23 +89,23 @@ DEF DEF_VEHICLE Robot {
                       }
                       geometry Cylinder {
                         height 0.002
-                        radius 0.02
+                        radius 0.1
                       }
                     }
                   ]
                 }
                 slowHelix Solid {
-                  rotation 0 1 0 2.238367478129037
+                  rotation 0 1 0 1.1667874781290464
                   children [
                     Shape {
                       appearance Appearance {
                         material Material {
-                          diffuseColor 0 1 0.09999999999999999
+                          diffuseColor 0.45098 0.823529 0.0862745
                         }
                       }
                       geometry Cylinder {
                         height 0.002
-                        radius 0.02
+                        radius 0.1
                       }
                     }
                   ]
@@ -153,23 +145,23 @@ DEF DEF_VEHICLE Robot {
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
           }
           slowHelix Solid {
-            rotation 0 1 0 0.012993
+            rotation 0 1 0 1.1667874781290464
             children [
               Shape {
                 appearance Appearance {
                   material Material {
-                    diffuseColor 1 0 0.1
+                    diffuseColor 0.960784 0.47451 0
                   }
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
@@ -199,23 +191,23 @@ DEF DEF_VEHICLE Robot {
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
           }
           slowHelix Solid {
-            rotation 0 1 0 0.012993
+            rotation 0 1 0 1.1667874781290464
             children [
               Shape {
                 appearance Appearance {
                   material Material {
-                    diffuseColor 1 0 0.1
+                    diffuseColor 0.960784 0.47451 0
                   }
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
@@ -259,25 +251,27 @@ DEF DEF_VEHICLE Robot {
       }
     }
   ]
-  name "tricopter1"
+  name "tricopter"
   physics Physics {
     mass 0.001
   }
   controller "ardupilot_SITL_TRICOPTER"
-  controllerArgs "-p 5599  -df 0.01 "
+  controllerArgs [
+    "-p"
+    "5599"
+    "-df"
+    "0.01"
+  ]
   customData "1"
-  supervisor TRUE
-  linearVelocity 2.688242491099282e-27 -0.009806650000000002 4.892319843481843e-25
-  angularVelocity -1.555631679291012e-22 -3.6929757828058823e-22 -5.825152319722367e-22
 }
-DEF DEF_VEHICLE2 Robot {
-  translation -4.8145 0.65222219335 5.00811
-  rotation 0.005134141913449905 0.9999763391777008 0.0045783918111282325 0.26180410065967374
+DEF DEF_VEHICLE Robot {
+  translation -1.86439 0.663929 -0.860399
+  rotation 0.00514799893982893 0.9999767940663002 0.004461999081102697 0.261804
   children [
     Receiver {
       name "receiver_main"
       type "serial"
-      channel 2
+      channel 1
       bufferSize 32
     }
     Compass {
@@ -293,7 +287,7 @@ DEF DEF_VEHICLE2 Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position -9.38790858754193e-12
+            position -9.388038782122357e-12
             axis 0 0 1
           }
           device [
@@ -304,8 +298,8 @@ DEF DEF_VEHICLE2 Robot {
             }
           ]
           endPoint Solid {
-            translation -4.440892137013443e-15 -4.102385098292374e-12 1.8118839761882555e-13
-            rotation 1.426974259244834e-09 1 -1.7743316682306419e-09 1.5707963071795863
+            translation -4.884985583205287e-15 -4.102262941092721e-12 1.8091922030330322e-13
+            rotation 3.9429765623510775e-10 1 -7.416550449646442e-10 1.5707963071795863
             children [
               Propeller {
                 shaftAxis 0 1 0
@@ -326,23 +320,23 @@ DEF DEF_VEHICLE2 Robot {
                       }
                       geometry Cylinder {
                         height 0.002
-                        radius 0.02
+                        radius 0.1
                       }
                     }
                   ]
                 }
                 slowHelix Solid {
-                  rotation 0 1 0 2.238367478129037
+                  rotation 0 1 0 1.1667874781290464
                   children [
                     Shape {
                       appearance Appearance {
                         material Material {
-                          diffuseColor 0 1 0.09999999999999999
+                          diffuseColor 0.45098 0.823529 0.0862745
                         }
                       }
                       geometry Cylinder {
                         height 0.002
-                        radius 0.02
+                        radius 0.1
                       }
                     }
                   ]
@@ -382,23 +376,23 @@ DEF DEF_VEHICLE2 Robot {
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
           }
           slowHelix Solid {
-            rotation 0 1 0 0.012993
+            rotation 0 1 0 1.1667874781290464
             children [
               Shape {
                 appearance Appearance {
                   material Material {
-                    diffuseColor 1 0 0.1
+                    diffuseColor 0.960784 0.47451 0
                   }
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
@@ -428,23 +422,23 @@ DEF DEF_VEHICLE2 Robot {
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
           }
           slowHelix Solid {
-            rotation 0 1 0 0.012993
+            rotation 0 1 0 1.1667874781290464
             children [
               Shape {
                 appearance Appearance {
                   material Material {
-                    diffuseColor 1 0 0.1
+                    diffuseColor 0.960784 0.47451 0
                   }
                 }
                 geometry Cylinder {
                   height 0.002
-                  radius 0.02
+                  radius 0.1
                 }
               }
             ]
@@ -488,34 +482,18 @@ DEF DEF_VEHICLE2 Robot {
       }
     }
   ]
-  name "tricopter2"
+  name "tricopter"
   physics Physics {
     mass 0.001
   }
   controller "ardupilot_SITL_TRICOPTER"
-  controllerArgs "-p 5598  -df 0.01 "
-  customData "2"
-  supervisor TRUE
-  linearVelocity 1.891022353254736e-26 -0.009806650000000002 5.497731765059014e-25
-  angularVelocity -1.554888292972712e-22 -5.540057171831428e-22 -5.832083344416216e-22
-}
-Robot {
-  translation -6.43222 1.6878201933499999 0.218095
-  children [
-    Emitter {
-      type "serial"
-      channel 2
-    }
+  controllerArgs [
+    "-p"
+    "5598"
+    "-df"
+    "0.01"
   ]
-  name "supervisor_sync"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-  }
-  controller "ardupilot_SITL_Supervisor"
-  supervisor TRUE
-  linearVelocity 0 -0.00980665 0
+  customData "2"
 }
 DirectionalLight {
   direction 0 -1 0
@@ -530,9 +508,15 @@ HouseWithGarage {
 }
 AdvertisingBoard {
   translation 0 2.35 -5.71
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
 AdvertisingBoard {
   translation 84.03999999999999 2.35 -5.81
   rotation 0 1 0 -1.5707963071795863
   name "advertising board(1)"
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }

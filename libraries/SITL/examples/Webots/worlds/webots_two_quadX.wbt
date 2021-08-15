@@ -1,36 +1,17 @@
-#VRML_SIM R2020a utf8
+#VRML_SIM R2021b utf8
 WorldInfo {
-  gravity 0 -9.80665 0
+  gravity 9.80665
   physics "sitl_physics_env"
-  basicTimeStep 2
+  basicTimeStep 1
   FPS 15
   optimalThreadCount 4
+  coordinateSystem "NUE"
   randomSeed 52
 }
-Robot {
-  translation -1.9499999999999953 0.3722134041213816 0
-  rotation 0 0 1 1.4890101503307464e-14
-  children [
-    Emitter {
-      type "serial"
-      channel 2
-    }
-  ]
-  name "supervisor_sync"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-  }
-  controller "ardupilot_SITL_Supervisor"
-  supervisor TRUE
-  linearVelocity 7.084819282124348e-13 24.393373207754877 0
-  angularVelocity 0 0 2.254085857556385e-12
-}
 Viewpoint {
-  orientation -0.9482622824196637 -0.31233593113705876 -0.05696411028881694 0.3800228985388573
-  position -1.546983649438513 5.685333881651476 12.687075631078367
-  follow "quad_plus_sitl"
+  orientation -0.9809407353203402 -0.18800438009076653 -0.04908795021058695 0.520283069940929
+  position -0.4263057978186248 9.362345229216729 15.402780917057946
+  follow "quad_x_sitl_2"
   followType "Mounted Shot"
 }
 DogHouse {
@@ -67,15 +48,9 @@ Solid {
   name "solid(1)"
 }
 DEF DEF_VEHICLE Robot {
-  translation -0.027601000000000004 0.6940716404 0.005030999999999995
+  translation -0.027601 0.694307 0.005031
   rotation 0 1 0 0.785388
   children [
-    Receiver {
-      name "receiver_main"
-      type "serial"
-      channel 1
-      bufferSize 32
-    }
     Emitter {
       name "emitter_plugin"
       description "commuicates with physics plugin"
@@ -117,21 +92,23 @@ DEF DEF_VEHICLE Robot {
       name "inertial_unit"
     }
     Transform {
-      translation -0.09999999999999999 0 0
+      translation -0.1 0 0
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor3"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -143,7 +120,7 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -154,12 +131,12 @@ DEF DEF_VEHICLE Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -167,7 +144,7 @@ DEF DEF_VEHICLE Robot {
             }
           ]
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -183,21 +160,23 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0 0.09999999999999999
+      translation 0 0.01 0.1
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor2"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -209,7 +188,7 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -220,12 +199,12 @@ DEF DEF_VEHICLE Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -234,7 +213,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(2)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -252,17 +231,19 @@ DEF DEF_VEHICLE Robot {
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor1"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -274,7 +255,7 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -285,12 +266,12 @@ DEF DEF_VEHICLE Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -299,7 +280,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(1)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -317,17 +298,19 @@ DEF DEF_VEHICLE Robot {
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor4"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -339,7 +322,7 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -350,12 +333,12 @@ DEF DEF_VEHICLE Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -364,7 +347,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(3)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -378,33 +361,31 @@ DEF DEF_VEHICLE Robot {
       ]
     }
   ]
-  name "quad_x_sitl_1"
+  name "quad_x_sitl"
   boundingObject Box {
     size 0.1 0.1 0.1
   }
   physics Physics {
     density -1
-    mass 1.5
+    mass 1
     centerOfMass [
       0 0 0
     ]
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5598  -df 0.01"
+  controllerArgs [
+    "-p"
+    "5599"
+    "-df"
+    "0.01"
+  ]
   customData "1"
-  linearVelocity 0 -0.0588399 0
 }
-DEF DEF_VEHICLE2 Robot {
-  translation 1.58556 0.6941503202 1.61821
+DEF DEF_VEHICLE Robot {
+  translation -2.21265 0.694307 2.19001
   rotation 0 1 0 0.785388
   children [
-    Receiver {
-      name "receiver_main"
-      type "serial"
-      channel 2
-      bufferSize 32
-    }
     Emitter {
       name "emitter_plugin"
       description "commuicates with physics plugin"
@@ -446,21 +427,23 @@ DEF DEF_VEHICLE2 Robot {
       name "inertial_unit"
     }
     Transform {
-      translation -0.09999999999999999 0 0
+      translation -0.1 0 0
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor3"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -472,7 +455,7 @@ DEF DEF_VEHICLE2 Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -483,12 +466,12 @@ DEF DEF_VEHICLE2 Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -496,7 +479,7 @@ DEF DEF_VEHICLE2 Robot {
             }
           ]
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -512,21 +495,23 @@ DEF DEF_VEHICLE2 Robot {
       ]
     }
     Transform {
-      translation 0 0 0.09999999999999999
+      translation 0 0.01 0.1
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor2"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -538,7 +523,7 @@ DEF DEF_VEHICLE2 Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -549,12 +534,12 @@ DEF DEF_VEHICLE2 Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -563,7 +548,7 @@ DEF DEF_VEHICLE2 Robot {
           ]
           name "solid(2)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -581,17 +566,19 @@ DEF DEF_VEHICLE2 Robot {
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor1"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -603,7 +590,7 @@ DEF DEF_VEHICLE2 Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -614,12 +601,12 @@ DEF DEF_VEHICLE2 Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -628,7 +615,7 @@ DEF DEF_VEHICLE2 Robot {
           ]
           name "solid(1)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -646,17 +633,19 @@ DEF DEF_VEHICLE2 Robot {
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.00001 0
+              torqueConstants 1.1 0
+              fastHelixThreshold 1
               device RotationalMotor {
                 name "motor4"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 50000
+                maxTorque 90
               }
               fastHelix Solid {
                 children [
@@ -668,7 +657,7 @@ DEF DEF_VEHICLE2 Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -679,12 +668,12 @@ DEF DEF_VEHICLE2 Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -693,7 +682,7 @@ DEF DEF_VEHICLE2 Robot {
           ]
           name "solid(3)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -707,22 +696,26 @@ DEF DEF_VEHICLE2 Robot {
       ]
     }
   ]
-  name "quad_x_sitl_2"
+  name "quad_x_sitl"
   boundingObject Box {
     size 0.1 0.1 0.1
   }
   physics Physics {
     density -1
-    mass 1.5
+    mass 1
     centerOfMass [
       0 0 0
     ]
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5599  -df 0.01"
+  controllerArgs [
+    "-p"
+    "5598"
+    "-df"
+    "0.01"
+  ]
   customData "2"
-  linearVelocity 0 -0.0392266 0
 }
 DirectionalLight {
   direction 0 -1 0
@@ -736,9 +729,15 @@ HouseWithGarage {
 }
 AdvertisingBoard {
   translation 0 2.35 -5.71
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
 AdvertisingBoard {
   translation 84.03999999999999 2.35 -5.81
   rotation 0 1 0 -1.5707963071795863
   name "advertising board(1)"
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
