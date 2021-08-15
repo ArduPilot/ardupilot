@@ -121,25 +121,6 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     return false;
 }
 
-// get an individual ESC's raw rpm if available, returns true on success
-bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
-{
-    if (esc_index >= ESC_TELEM_MAX_ESCS) {
-        return false;
-    }
-
-    const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
-
-    const uint32_t now = AP_HAL::micros();
-
-    if (now < rpmdata.last_update_us || now - rpmdata.last_update_us > ESC_RPM_DATA_TIMEOUT_US) {
-        return false;
-    }
-
-    rpm = rpmdata.rpm;
-    return true;
-}
-
 // get an individual ESC's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {

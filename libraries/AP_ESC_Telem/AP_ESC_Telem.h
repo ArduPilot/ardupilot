@@ -24,9 +24,6 @@ public:
     // get an individual ESC's slewed rpm if available, returns true on success
     bool get_rpm(uint8_t esc_index, float& rpm) const;
 
-    // get an individual ESC's raw rpm if available
-    bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
-
     // return the average motor RPM
     float get_average_motor_rpm(uint32_t servo_channel_mask) const;
 
