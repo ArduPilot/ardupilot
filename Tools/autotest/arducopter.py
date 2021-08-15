@@ -7206,9 +7206,9 @@ class AutoTestCopter(AutoTest):
              "Test setpoint global position",
              self.test_set_position_global_int),
 
-            ("ThrowDoubleDrop",
-             "Test a more complicated drop-mode scenario",
-             self.ThrowDoubleDrop),
+            # ("ThrowDoubleDrop",
+            # "Test a more complicated drop-mode scenario",
+            # self.ThrowDoubleDrop),
 
             ("SetpointGlobalVel",
              "Test setpoint global velocity",
