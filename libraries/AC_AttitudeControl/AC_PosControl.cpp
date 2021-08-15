@@ -749,10 +749,10 @@ void AC_PosControl::init_z_controller_no_descent()
     init_z_controller();
 
     // remove all descent if present
-    _vel_desired.z = MAX(0.0f, _vel_desired.z);
-    _vel_target.z = MAX(0.0f, _vel_target.z);
-    _accel_desired.z = MAX(GRAVITY_MSS * 100.0f, _accel_desired.z);
-    _accel_target.z = MAX(GRAVITY_MSS * 100.0f, _accel_target.z);
+    _vel_desired.z = MAX(0.0, _vel_desired.z);
+    _vel_target.z = MAX(0.0, _vel_target.z);
+    _accel_desired.z = MAX(0.0, _accel_desired.z);
+    _accel_target.z = MAX(0.0, _accel_target.z);
 }
 
 /// init_z_controller_stopping_point - initialise the position controller to the stopping point with zero velocity and acceleration.
@@ -800,7 +800,7 @@ void AC_PosControl::init_z()
     _pid_vel_z.reset_filter();
     _pid_vel_z.set_integrator(0.0f);
 
-    _accel_desired.z = -(curr_accel.z + GRAVITY_MSS) * 100.0f;
+    _accel_desired.z = constrain_float(-(curr_accel.z + GRAVITY_MSS) * 100.0f, -_accel_max_z_cmss, _accel_max_z_cmss);
     _accel_target.z = -(curr_accel.z + GRAVITY_MSS) * 100.0f;
     _pid_accel_z.reset_filter();
 
