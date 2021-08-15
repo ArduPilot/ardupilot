@@ -146,7 +146,7 @@ protected:
 
     virtual bool ins_checks(bool report);
 
-    virtual bool compass_checks(bool report);
+    bool compass_checks(bool report);
 
     virtual bool gps_checks(bool report);
 
