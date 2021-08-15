@@ -215,7 +215,7 @@ void run ()
               break;
         }
          
-        getAllSensors ((char *)send_buf, northDirection, gyro,accelerometer,compass,gps, inertialUnit);
+        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit);
 
         #ifdef DEBUG_SENSORS
         printf("%s\n",send_buf);

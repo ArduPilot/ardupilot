@@ -29,14 +29,14 @@
  * You may need to add include files like <webots/distance_sensor.h> or
  * <webots/differential_wheels.h>, etc.
  */
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <webots/robot.h>
-#include <webots/supervisor.h>
 #include <webots/emitter.h>
-#include <webots/receiver.h>
 #include "ardupilot_SITL_QUAD.h"
 #include "sockets.h"
 #include "sensors.h"
@@ -54,16 +54,18 @@ static WbDeviceTag gps;
 static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
 static WbDeviceTag emitter;
-static WbDeviceTag receiver;
+
 
 static double _linear_velocity[3] = {0.0,0.0,0.0};
-static double northDirection = 1;
 static double v[MOTOR_NUM];
 int port;
 float dragFactor = VEHICLE_DRAG_FACTOR;
 
 static int timestep;
 
+#ifdef DEBUG_SENSORS
+FILE *fptr;
+#endif
 
 #ifdef DEBUG_USE_KB
 /*
@@ -71,6 +73,8 @@ static int timestep;
 // You can start this controller and use telnet instead of SITL to start the simulator.
 Then you can use Keyboard to emulate motor input.
 */
+static float factor = 1.0f;
+static float offset = 0.0f;
 void process_keyboard ()
 {
   switch (wb_keyboard_get_key()) 
@@ -102,32 +106,39 @@ void process_keyboard ()
       v[3] = v[3] + 0.01;
       break;
 
+    case 'E':
+      for (int i=0; i<MOTOR_NUM;++i)
+      {
+        v[i] += 0.00002;
+      }
+      break;
+
     case 'W':
       for (int i=0; i<MOTOR_NUM;++i)
       {
-        v[i] += 0.01;
+        v[i] += 0.0002;
       }
       break;
 
     case 'S':
       for (int i=0; i<MOTOR_NUM;++i)
       {
-        v[i] -= 0.01;
+        v[i] -= 0.0002;
       }
       break;
   
     case 'A':
-      v[1] = v[1] + 0.01;
-      v[3] = v[3] + 0.01;
-      v[0] = v[0] - 0.01;
-      v[2] = v[2] - 0.01;
+      v[1] = v[1] + 0.001;
+      v[3] = v[3] + 0.001;
+      v[0] = v[0] - 0.001;
+      v[2] = v[2] - 0.001;
       break;
 
     case 'D':
-      v[1] = v[1] - 0.01;
-      v[3] = v[3] - 0.01;
-      v[0] = v[0] + 0.01;
-      v[2] = v[2] + 0.01;
+      v[1] = v[1] - 0.001;
+      v[3] = v[3] - 0.001;
+      v[0] = v[0] + 0.001;
+      v[2] = v[2] + 0.001;
       break;
 
     
@@ -135,11 +146,9 @@ void process_keyboard ()
 
   for (int i=0; i< MOTOR_NUM; ++i)
   {
-    if (v[i] <=0) v[i]=0;
-    if (v[i] >=600) v[i]=10;
-
+    
     wb_motor_set_position(motors[i], INFINITY);
-    wb_motor_set_velocity(motors[i], v[i]); 
+    wb_motor_set_velocity(motors[i], factor* v[i] + offset); 
 
     
   }
@@ -150,30 +159,13 @@ void process_keyboard ()
 #endif
 
 
-// Read all messages and empty the Q and keep last value as the valid one.
-static void read_incoming_messages() 
-{
-   // read while queue not empty
-   while (wb_receiver_get_queue_length(receiver) > 0) {
-     // I'm only expecting ascii messages
-     double * data = (double *) wb_receiver_get_data(receiver);
-     _linear_velocity[0] = data[0];
-     _linear_velocity[1] = data[1];
-     _linear_velocity[2] = data[2];
-     northDirection      = data[3];
-     //printf("RAW Data [%f, %f, %f]\n", linear_velocity[0], linear_velocity[2], linear_velocity[1]);
-    
-     wb_receiver_next_packet(receiver);
-   }
- }
-
 /*
 // apply motor thrust.
 */
 void update_controls()
 {
   /*
-      1 N = 101.9716213 grams force
+      1 N = 101.97162129779 grams force
       Thrust = t1 * |omega| * omega - t2 * |omega| * V
       Where t1 and t2 are the constants specified in the thrustConstants field,
       omega is the motor angular velocity 
@@ -184,22 +176,46 @@ void update_controls()
 
     LINEAR_THRUST
       we also want throttle to be linear with thrust so we use sqrt to calculate omega from input.
+      Check this doc: https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
    */
-  static float factor = 1.0f;
-  static float offset = 0.0f;
-  static float v[4];
+#ifndef DEBUG_USE_KB
+  //static float factor = 2.1f;
+  //static float offset = 0.0f;
   
+  
+  //static float factor = 1.0f;
+  static float offset = 0.0f;
+  
+  static float v[4];
+  // pls check https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
+  static float factorDyn[11] = {
+            3.6f, // 0.0
+            3.6f, // 0.1
+            4.6f, // 0.2
+            4.1f, // 0.3
+            4.1f, // 0.4
+            3.9f, // 0.5
+            3.9f, // 0.6
+            3.8f, // 0.7
+            3.7f, // 0.8 
+            3.6f, // 0.9 
+            3.4f  // 1.0
+          };
+  //#define LINEAR_THRUST
+
+
+
 #ifdef LINEAR_THRUST
-  v[0] = sqrt(state.motors.w ) * factor + offset;
-  v[1] = sqrt(state.motors.x ) * factor + offset;
-  v[2] = sqrt(state.motors.y ) * factor + offset;
-  v[3] = sqrt(state.motors.z ) * factor + offset;
+  v[0] = sqrt(state.motors.w) * factor + offset;
+  v[1] = sqrt(state.motors.x) * factor + offset;
+  v[2] = sqrt(state.motors.y) * factor + offset;
+  v[3] = sqrt(state.motors.z) * factor + offset;
 #else  
-  v[0] = (state.motors.w ) * factor + offset;
-  v[1] = (state.motors.x ) * factor + offset;
-  v[2] = (state.motors.y ) * factor + offset;
-  v[3] = (state.motors.z ) * factor + offset;
-#endif
+  v[0] = (state.motors.w ) * factorDyn[(int)(10 * state.motors.w)] + offset;
+  v[1] = (state.motors.x ) * factorDyn[(int)(10 * state.motors.x)]  + offset;
+  v[2] = (state.motors.y ) * factorDyn[(int)(10 * state.motors.y)]  + offset;
+  v[3] = (state.motors.z ) * factorDyn[(int)(10 * state.motors.z)]  + offset;
+#endif //LINEAR_THRUST
 
   for ( int i=0; i<4; ++i)
   {
@@ -209,9 +225,12 @@ void update_controls()
 
   #ifdef DEBUG_MOTORS
   printf ("RAW    F:%f  R:%f  B:%f  L:%f\n", state.motors.w, state.motors.x, state.motors.y, state.motors.z);
+  printf ("Factors    F:%f  \n", factorDyn[(int)(10 * state.motors.w)]);
   printf ("Motors F:%f  R:%f  B:%f  L:%f\n", v[0], v[1], v[2], v[3]);
-  #endif
+  
+  #endif //DEBUG_MOTORS
 
+#endif //DEBUG_USE_KB
 
   #ifdef WIND_SIMULATION
   /*
@@ -223,18 +242,11 @@ void update_controls()
     A is the cross section of our quad in m³ in the direction of movement
     v is the velocity in m/s
   */
-  if (northDirection == 1)
-  {
-    wind_webots_axis.x =  state.wind.x - linear_velocity[0];
-    wind_webots_axis.z = -state.wind.y - linear_velocity[2];   // "-state.wind.y" as angle 90 wind is from EAST.
-    wind_webots_axis.y =  state.wind.z - linear_velocity[1];
-  }
-  else
-  { // as in pyramids and any open map street world.
-    wind_webots_axis.x =  state.wind.y - linear_velocity[0]; // always add "linear_velocity" as there is no axis transformation here.
-    wind_webots_axis.z = -state.wind.x - linear_velocity[2];
-    wind_webots_axis.y =  state.wind.z - linear_velocity[1];
-  }
+  
+  wind_webots_axis.x =  state.wind.x - linear_velocity[0];
+  wind_webots_axis.z = -state.wind.y - linear_velocity[2];   // "-state.wind.y" as angle 90 wind is from EAST.
+  wind_webots_axis.y =  state.wind.z - linear_velocity[1];
+  
 
   wind_webots_axis.x = dragFactor * wind_webots_axis.x * abs(wind_webots_axis.x);
   wind_webots_axis.z = dragFactor * wind_webots_axis.z * abs(wind_webots_axis.z);
@@ -340,14 +352,18 @@ void run ()
         }
          
         
-        read_incoming_messages();
-        
         // trigget ArduPilot to send motor data 
-        getAllSensors ((char *)send_buf, northDirection, gyro,accelerometer,compass,gps, inertialUnit);
+        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit);
 
         #ifdef DEBUG_SENSORS
+        //printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
         printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
+        if (strlen (pBug)> 5)
+        {
+        // fprintf(fptr, "%s\n",pBug);
+        }
         #endif
+         
         
         if (write(fd,send_buf,strlen(send_buf)) <= 0)
         {
@@ -388,7 +404,6 @@ void run ()
                 }
                 if (n > 0)
                 {
-
                   command_buffer[n] = 0;
                   if (parse_controls (command_buffer))
                   {
@@ -412,7 +427,9 @@ bool initialize (int argc, char *argv[])
 {
   
   fd_set rfds;
-  
+  #ifdef DEBUG_SENSORS
+  fptr = fopen ("/tmp/log.txt","w");
+  #endif
   port = 5599;  // default port
   for (int i = 0; i < argc; ++i)
   {
@@ -447,31 +464,9 @@ bool initialize (int argc, char *argv[])
   wb_robot_init();
   
   timestep = (int)wb_robot_get_basic_time_step();
+  timestep_scale = timestep * 1000.0;
+  printf("timestep_scale: %f \n", timestep_scale);
   
-  // init receiver from Supervisor
-  receiver = wb_robot_get_device("receiver_main");
-  if (receiver ==0)
-  {
-    fprintf(stderr,"Receiver not found\n");
-    fprintf(stderr,"EXIT with error\n");
-    return false;
-  }
-
-  // read robot number and set receiver channel accordingly
-  const char * customData = wb_robot_get_custom_data();
-  if (customData != NULL)
-  {
-    int channel = atoi(customData);
-    wb_receiver_set_channel(receiver,channel);
-    wb_receiver_enable(receiver,timestep);
-    printf("Receiver Channel at %d \n", channel);
-  }
-  else
-  {
-    fprintf(stderr, "MISSING Channel NO. in Custom Data");
-    return false;
-  }
-
   
   // keybaard
   #ifdef DEBUG_USE_KB
