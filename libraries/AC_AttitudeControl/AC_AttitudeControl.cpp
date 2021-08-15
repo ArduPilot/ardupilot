@@ -589,8 +589,11 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
 // Command a thrust vector, heading and heading rate
 void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
+    // a zero _angle_vel_yaw_max means that setting is disabled
+    const float ang_vel_yaw_max_rads = is_zero(_ang_vel_yaw_max) ? get_slew_yaw_rads() : MIN(radians(_ang_vel_yaw_max), get_slew_yaw_rads());
+
     // Convert from centidegrees on public interface to radians
-    float heading_rate = constrain_float(radians(heading_rate_cds * 0.01f), -get_slew_yaw_rads(), get_slew_yaw_rads());
+    float heading_rate = constrain_float(radians(heading_rate_cds * 0.01f), -ang_vel_yaw_max_rads, ang_vel_yaw_max_rads);
     float heading_angle = radians(heading_angle_cd * 0.01f);
 
     // calculate the attitude target euler angles
@@ -614,7 +617,7 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
         _ang_vel_target.z = input_shaping_angle(attitude_error.z, _input_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, heading_rate, get_slew_yaw_rads(), _dt);
 
         // Limit the angular velocity
-        ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), MIN(radians(_ang_vel_yaw_max), get_slew_yaw_rads()));
+        ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), ang_vel_yaw_max_rads);
     } else {
         // set persisted quaternion target attitude
         _attitude_target = desired_attitude_quat;
