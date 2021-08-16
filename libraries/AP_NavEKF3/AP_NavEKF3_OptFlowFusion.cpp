@@ -54,12 +54,11 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        if ((frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
-            // Set the flow noise used by the fusion processes
-            R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
-            // Fuse the optical flow X and Y axis data into the main filter sequentially
-            FuseOptFlow(ofDataDelayed);
-        }
+        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
+        // Set the flow noise used by the fusion processes
+        R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
+        // Fuse the optical flow X and Y axis data into the main filter sequentially
+        FuseOptFlow(ofDataDelayed, fuse_optflow);
     }
 }
 
@@ -265,8 +264,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * Requires a valid terrain height estimate.
+ *
+ * really_fuse should be true to actually fuse into the main filter, false to only calculate variances
 */
-void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
+void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
 {
     Vector24 H_LOS;
     Vector3F relVelSensor;
@@ -426,6 +427,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
             varInnovOptFlow[0] = t77;
 
             // calculate innovation for X axis observation
+            // flowInnovTime_ms will be updated when Y-axis innovations are calculated
             innovOptFlow[0] = losPred[0] - ofDataDelayed.flowRadXYcomp.x;
 
             // calculate Kalman gains for X-axis observation
@@ -603,6 +605,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 
             // calculate innovation for Y observation
             innovOptFlow[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
+            flowInnovTime_ms = AP_HAL::millis();
 
             // calculate Kalman gains for the Y-axis observation
             Kfusion[0] = -t78*(t12+P[0][5]*t2*t8-P[0][6]*t2*t10+P[0][1]*t2*t16-P[0][2]*t2*t19+P[0][3]*t2*t22+P[0][4]*t2*t27);
@@ -664,7 +667,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
         flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
+        if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
             // notify first time only
