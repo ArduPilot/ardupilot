@@ -1170,7 +1170,6 @@ private:
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
-    Matrix3F Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
     Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2
     Vector2 innovOptFlow;           // optical flow LOS innovations (rad/sec)
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
