@@ -675,16 +675,16 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
+            for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                for (uint8_t j = 0; j<=6; j++) {
                     KH[i][j] = Kfusion[i] * H_LOS[j];
                 }
-                for (unsigned j = 7; j<=stateIndexLim; j++) {
+                for (uint8_t j = 7; j<=stateIndexLim; j++) {
                     KH[i][j] = 0.0f;
                 }
             }
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (uint8_t j = 0; j<=stateIndexLim; j++) {
+                for (uint8_t i = 0; i<=stateIndexLim; i++) {
                     ftype res = 0;
                     res += KH[i][0] * P[0][j];
                     res += KH[i][1] * P[1][j];
