@@ -704,6 +704,14 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
 
+    // @Param: PRIMARY
+    // @DisplayName: Primary core number
+    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK.
+    // @Range: 0 2
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, 0),
+    
     AP_GROUPEND
 };
 
@@ -810,8 +818,8 @@ bool NavEKF3::InitialiseFilter(void)
     // set relative error scores for all cores to 0
     resetCoreErrors();
 
-    // Set the primary initially to be the lowest index
-    primary = 0;
+    // Set the primary initially to be users selected primary
+    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
 
     // invalidate shared origin
     common_origin_valid = false;
@@ -956,16 +964,17 @@ void NavEKF3::UpdateFilter(void)
         }       
     }
 
-    if (primary != 0 && core[0].healthy() && !armed) {
-        // when on the ground and disarmed force the first lane. This
-        // avoids us ending with with a lottery for which IMU is used
-        // in each flight. Otherwise the alignment of the timing of
-        // the lane updates with the timing of GPS updates can lead to
-        // a lane other than the first one being used as primary for
-        // some flights. As different IMUs may have quite different
-        // noise characteristics this leads to inconsistent
-        // performance
-        primary = 0;
+    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    if (primary != 0 && core[user_primary].healthy() && !armed) {
+        // when on the ground and disarmed force the selected primary
+        // core. This avoids us ending with with a lottery for which
+        // IMU is used in each flight. Otherwise the alignment of the
+        // timing of the core selection updates with the timing of GPS
+        // updates can lead to a core other than the first one being
+        // used as primary for some flights. As different IMUs may
+        // have quite different noise characteristics this leads to
+        // inconsistent performance
+        primary = user_primary;
     }
 
     // align position of inactive sources to ahrs
