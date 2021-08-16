@@ -85,7 +85,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
 // second table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_START",   1, SIM,  temp_start,  25),
-    AP_GROUPINFO("TEMP_FLIGHT",  2, SIM,  temp_flight, 35),
+    AP_GROUPINFO("TEMP_BRD_OFF", 2, SIM,  temp_board_offset, 20),
     AP_GROUPINFO("TEMP_TCONST",  3, SIM,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
