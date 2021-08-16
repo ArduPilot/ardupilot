@@ -482,11 +482,11 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         if (AP_HAL::millis() - flowInnovTime_ms > 500) {
             return false;
         }
-        innovations.x = innovOptFlow[0];
-        innovations.y = innovOptFlow[1];
+        innovations.x = flowInnov[0];
+        innovations.y = flowInnov[1];
         innovations.z = 0;
-        variances.x = varInnovOptFlow[0];
-        variances.y = varInnovOptFlow[1];
+        variances.x = flowVarInnov[0];
+        variances.y = flowVarInnov[1];
         variances.z = 0;
         return true;
     default:

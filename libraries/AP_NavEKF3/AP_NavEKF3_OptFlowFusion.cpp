@@ -424,11 +424,11 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 faultStatus.bad_xflow = true;
                 return;
             }
-            varInnovOptFlow[0] = t77;
+            flowVarInnov[0] = t77;
 
             // calculate innovation for X axis observation
             // flowInnovTime_ms will be updated when Y-axis innovations are calculated
-            innovOptFlow[0] = losPred[0] - ofDataDelayed.flowRadXYcomp.x;
+            flowInnov[0] = losPred[0] - ofDataDelayed.flowRadXYcomp.x;
 
             // calculate Kalman gains for X-axis observation
             Kfusion[0] = t78*(t12-P[0][4]*t2*t7+P[0][1]*t2*t15+P[0][6]*t2*t10+P[0][2]*t2*t19-P[0][3]*t2*t22+P[0][5]*t2*t27);
@@ -601,10 +601,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 faultStatus.bad_yflow = true;
                 return;
             }
-            varInnovOptFlow[1] = t77;
+            flowVarInnov[1] = t77;
 
             // calculate innovation for Y observation
-            innovOptFlow[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
+            flowInnov[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
             flowInnovTime_ms = AP_HAL::millis();
 
             // calculate Kalman gains for the Y-axis observation
@@ -664,7 +664,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(flowInnov[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * flowVarInnov[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
         if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
@@ -722,7 +722,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * innovOptFlow[obsIndex];
+                    statesArray[j] = statesArray[j] - Kfusion[j] * flowInnov[obsIndex];
                 }
                 stateStruct.quat.normalize();
 
