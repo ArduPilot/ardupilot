@@ -611,16 +611,25 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
             }
         }
 
-        // if throttle check is enabled, require zero input
+        // if throttle check is enabled, require zero input, or center input, if centered throttle option for arming,check fwd throttle also
         if (rc().arming_check_throttle()) {
             RC_Channel *c = rc().channel(rcmap->throttle() - 1);
             if (c != nullptr) {
-                if (c->get_control_in() != 0) {
-                    check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
-                    check_passed = false;
+               if (rc().arming_check_centered_throttle() && method != Method::RUDDER ){
+                    uint8_t thr = c->percent_input();
+                    // require channel input within 2% of center
+                    if (thr > 52 || thr < 48 ) {
+                        check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not centered, %d", rcmap->throttle(),thr);
+                        check_passed = false;
+                    }
+                } else {          
+                    if (c->get_control_in() != 0) {
+                        check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not idle", rcmap->throttle());
+                        check_passed = false;
+                    }
                 }
             }
-            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR); //check fwd throttle channel
             if (c != nullptr) {
                 uint8_t fwd_thr = c->percent_input();
                 // require channel input within 2% of minimum
@@ -629,6 +638,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                     check_passed = false;
                 }
             }
+            
         }
     }
     return check_passed;
