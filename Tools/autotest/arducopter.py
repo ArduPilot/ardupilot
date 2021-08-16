@@ -940,6 +940,9 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("ALT_HOLD")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
+            raise NotAchievedException("Execpted state critical")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.change_mode("RTL")
