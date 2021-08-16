@@ -6881,17 +6881,15 @@ class AutoTestCopter(AutoTest):
 
                 messages[off] = m
 
-                # FIXME: make the numbers we use in the i2c simulated
-                # baros closer to the ones from AP_Baro_SITL
                 if None in messages:
                     return
                 first = messages[0]
                 for msg in messages[1:]:
                     delta_press_abs = abs(first.press_abs - msg.press_abs)
-                    if delta_press_abs > 5:
+                    if delta_press_abs > 0.5: # 50 Pa leeway
                         raise NotAchievedException("Press_Abs mismatch (press1=%s press2=%s)" % (first, msg))
                     delta_temperature = abs(first.temperature - msg.temperature)
-                    if delta_temperature > 1000:  # that's 10-degrees leeway
+                    if delta_temperature > 300:  # that's 3-degrees leeway
                         raise NotAchievedException("Temperature mismatch (t1=%s t2=%s)" % (first, msg))
             self.install_message_hook_context(check_pressure)
             self.fly_mission("copter_mission.txt", strict=False)
