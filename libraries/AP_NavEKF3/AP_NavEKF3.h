@@ -427,6 +427,7 @@ private:
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
     AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
+    AP_Int8 _primary_core;          // initial core number
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
