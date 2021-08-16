@@ -476,6 +476,10 @@ public:
         return _options & uint32_t(Option::ARMING_CHECK_THROTTLE);
     }
 
+    bool arming_check_centered_throttle() const {
+        return _options & uint32_t(Option::ARMING_CHECK_CENTERED_THROTTLE);
+    }
+
     bool arming_skip_checks_rpy() const {
         return _options & uint32_t(Option::ARMING_SKIP_CHECK_RPY);
     }
@@ -534,16 +538,17 @@ public:
 protected:
 
     enum class Option {
-        IGNORE_RECEIVER         = (1U << 0), // RC receiver modules
-        IGNORE_OVERRIDES        = (1U << 1), // MAVLink overrides
-        IGNORE_FAILSAFE         = (1U << 2), // ignore RC failsafe bits
-        FPORT_PAD               = (1U << 3), // pad fport telem output
-        LOG_DATA                = (1U << 4), // log rc input bytes
-        ARMING_CHECK_THROTTLE   = (1U << 5), // run an arming check for neutral throttle
-        ARMING_SKIP_CHECK_RPY   = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
-        ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
-        CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
-        SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
+        IGNORE_RECEIVER                  = (1U << 0), // RC receiver modules
+        IGNORE_OVERRIDES                 = (1U << 1), // MAVLink overrides
+        IGNORE_FAILSAFE                  = (1U << 2), // ignore RC failsafe bits
+        FPORT_PAD                        = (1U << 3), // pad fport telem output
+        LOG_DATA                         = (1U << 4), // log rc input bytes
+        ARMING_CHECK_THROTTLE            = (1U << 5), // run an arming check for throttle position, either idle or center
+        ARMING_SKIP_CHECK_RPY            = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
+        ALLOW_SWITCH_REV                 = (1U << 7), // honor the reversed flag on switches
+        CRSF_CUSTOM_TELEMETRY            = (1U << 8), // use passthrough data for crsf telemetry
+        SUPPRESS_CRSF_MESSAGE            = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
+        ARMING_CHECK_CENTERED_THROTTLE   = (1U << 10), // make throttle arm check position be the center
     };
 
     void new_override_received() {
