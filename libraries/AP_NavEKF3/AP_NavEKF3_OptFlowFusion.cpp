@@ -270,7 +270,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 {
     Vector24 H_LOS;
     Vector3F relVelSensor;
-    Vector14 SH_LOS;
     Vector2 losPred;
 
     // Copy required states to local variable names
@@ -285,23 +284,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
-    ftype ptd = pd + heightAboveGndEst;
-
-    // Calculate common expressions for observation jacobians
-    SH_LOS[0] = sq(q0) - sq(q1) - sq(q2) + sq(q3);
-    SH_LOS[1] = vn*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + ve*(2*q0*q3 + 2*q1*q2);
-    SH_LOS[2] = ve*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd*(2*q0*q1 + 2*q2*q3) - vn*(2*q0*q3 - 2*q1*q2);
-    SH_LOS[3] = 1/(pd - ptd);
-    SH_LOS[4] = vd*SH_LOS[0] - ve*(2*q0*q1 - 2*q2*q3) + vn*(2*q0*q2 + 2*q1*q3);
-    SH_LOS[5] = 2.0f*q0*q2 - 2.0f*q1*q3;
-    SH_LOS[6] = 2.0f*q0*q1 + 2.0f*q2*q3;
-    SH_LOS[7] = q0*q0;
-    SH_LOS[8] = q1*q1;
-    SH_LOS[9] = q2*q2;
-    SH_LOS[10] = q3*q3;
-    SH_LOS[11] = q0*q3*2.0f;
-    SH_LOS[12] = pd-ptd;
-    SH_LOS[13] = 1.0f/(SH_LOS[12]*SH_LOS[12]);
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
