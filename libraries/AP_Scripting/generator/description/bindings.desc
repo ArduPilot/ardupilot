@@ -334,6 +334,7 @@ include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
 singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane method in_vtol_mode boolean
+singleton QuadPlane method in_assisted_flight boolean
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
