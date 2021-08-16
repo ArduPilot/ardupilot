@@ -263,6 +263,12 @@ singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 
+include AP_OpticalFlow/OpticalFlow.h
+singleton OpticalFlow alias optical_flow
+singleton OpticalFlow method enabled boolean
+singleton OpticalFlow method healthy boolean
+singleton OpticalFlow method quality uint8_t
+
 include AP_ESC_Telem/AP_ESC_Telem.h
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
 singleton AP_ESC_Telem alias esc_telem
