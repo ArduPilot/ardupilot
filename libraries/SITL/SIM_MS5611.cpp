@@ -112,5 +112,11 @@ void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
     P_Pa = SSL_AIR_PRESSURE * delta;
 
-    Temp_C = (30.0 + C_TO_KELVIN) * theta - C_TO_KELVIN;  // Assume 30 degrees at sea level - converted to degrees Kelvin
+    Temp_C = (SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN) + AP::sitl()->temp_board_offset;
+
+    // TO DO add in temperature adjustment by inheritting from AP_Baro_SITL_Generic?
+    // AP_Baro_SITL::temperature_adjustment(P_Pa, Temp_C);
+
+    // TO DO add in wind correction by inheritting from AP_Baro_SITL_Generic?
+    // P_Pa += AP_Baro_SITL::wind_pressure_correction(instance);
 }
