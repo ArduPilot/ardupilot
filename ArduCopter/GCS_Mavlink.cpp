@@ -749,7 +749,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_DO_LAND_START:
-        if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(ModeReason::GCS_COMMAND)) {
+        copter.set_mode_auto_do_land_start_or_RTL(ModeReason::GCS_COMMAND);
+        if (copter.flightmode->mode_number() == Mode::Number::AUTO_RTL || copter.flightmode->mode_number() == Mode::Number::RTL || copter.flightmode->mode_number() == Mode::Number::LAND) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
