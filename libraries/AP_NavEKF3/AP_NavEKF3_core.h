@@ -1164,7 +1164,6 @@ private:
 
     // variables added for optical flow fusion
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
-    of_elements ofDataNew;          // OF data at the current time horizon
     bool flowDataValid;             // true while optical flow data is still fresh
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
