@@ -196,6 +196,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
+        of_elements ofDataNew {};
         ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
