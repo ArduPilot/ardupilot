@@ -195,7 +195,7 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
 
     // initialise the controller-to-autopilot-body trim state:
     _last_trim = _trim.get();
-    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
@@ -238,7 +238,7 @@ void AP_AHRS::update_trim_rotation_matrices()
     }
 
     _last_trim = _trim.get();
-    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
@@ -3059,7 +3059,7 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 }
 
 /*
-  get the current views rotation, or ROTATION_NONE
+  get the current view's rotation, or ROTATION_NONE
  */
 enum Rotation AP_AHRS::get_view_rotation(void) const
 {
