@@ -232,13 +232,6 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         return false;
     }
 
-    // see if it should be rate limited
-    if (rate_limiter &&
-        !is_critical &&
-        !rate_limiter->should_log_streaming(msg_type)) {
-        return false;
-    }
-
     uint8_t buffer[msg_len];
     uint8_t offset = 0;
     buffer[offset++] = HEAD_BYTE1;
@@ -339,7 +332,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
 
-    return WritePrioritisedBlock(buffer, msg_len, is_critical);
+    return WritePrioritisedBlock(buffer, msg_len, is_critical, is_streaming);
 }
 
 bool AP_Logger_Backend::StartNewLogOK() const
@@ -406,7 +399,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 }
 #endif
 
-bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
     validate_WritePrioritisedBlock(pBuffer, size);
@@ -423,7 +416,7 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
 
     if (!is_critical && rate_limiter != nullptr) {
         const uint8_t *msgbuf = (const uint8_t *)pBuffer;
-        if (!rate_limiter->should_log(msgbuf[2])) {
+        if (!rate_limiter->should_log(msgbuf[2], writev_streaming)) {
             return false;
         }
     }
@@ -654,13 +647,13 @@ bool AP_Logger_RateLimiter::should_log_streaming(uint8_t msgid)
   return true if the message is not a streaming message or the gap
   from the last message is more than the message rate
  */
-bool AP_Logger_RateLimiter::should_log(uint8_t msgid)
+bool AP_Logger_RateLimiter::should_log(uint8_t msgid, bool writev_streaming)
 {
     if (rate_limit_hz <= 0) {
         // no limiting (user changed the parameter)
         return true;
     }
-    if (last_send_ms[msgid] == 0) {
+    if (last_send_ms[msgid] == 0 && !writev_streaming) {
         // might be non streaming. check the not_streaming bitmask
         // cache
         if (not_streaming.get(msgid)) {
