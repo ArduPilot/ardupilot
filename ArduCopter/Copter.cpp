@@ -167,7 +167,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,            40,    200),
 #endif
     SCHED_TASK_CLASS(Compass, &copter.compass, cal_update, 100, 100),
-    SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100),
 #if HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100),
