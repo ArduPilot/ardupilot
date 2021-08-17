@@ -348,7 +348,7 @@ void AirSim::recv_fdm(const sitl_input& input)
 // @Field: GX: Simulated gyroscope, X-axis
 // @Field: GY: Simulated gyroscope, Y-axis
 // @Field: GZ: Simulated gyroscope, Z-axis
-    AP::logger().Write("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
+    AP::logger().WriteStreaming("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
                        "QQffffff",
                        AP_HAL::micros64(),
                        state.timestamp,
@@ -375,7 +375,7 @@ void AirSim::recv_fdm(const sitl_input& input)
 // @Field: PZ: simulation's position, Z-axis
 // @Field: Alt: simulation's gps altitude
 // @Field: SD: simulation's earth-frame speed-down
-    AP::logger().Write("ASM2", "TimeUS,AX,AY,AZ,VX,VY,VZ,PX,PY,PZ,Alt,SD",
+    AP::logger().WriteStreaming("ASM2", "TimeUS,AX,AY,AZ,VX,VY,VZ,PX,PY,PZ,Alt,SD",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
                        accel_body.x,
