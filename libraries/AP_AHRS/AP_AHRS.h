@@ -457,7 +457,7 @@ public:
         _vehicle_class = vclass;
     }
 
-    // get the views rotation, or ROTATION_NONE
+    // get the view's rotation, or ROTATION_NONE
     enum Rotation get_view_rotation(void) const;
 
 protected:
