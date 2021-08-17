@@ -290,7 +290,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
     // @Field: UP: uncertainty in pitch
     // @Field: UY: uncertainty in yaw
 
-    AP::logger().Write("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
+    AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
                        "sdddnnnDUmmnddd", "F000000GG000000",
                        "QffffffLLffffff",
                        AP_HAL::micros64(),
