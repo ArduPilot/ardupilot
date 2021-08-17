@@ -1756,7 +1756,7 @@ void AC_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 // @Field: TimeUS: Time since system startup
 // @Field: Angle: current angle
 // @Field: Rate: current angular rate
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "ATDE",
         "TimeUS,Angle,Rate",
         "sdk",
