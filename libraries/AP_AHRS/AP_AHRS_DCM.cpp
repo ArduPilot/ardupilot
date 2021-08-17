@@ -957,7 +957,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(void)
 {
-    if (!_flags.wind_estimation) {
+    if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
     const Vector3f &velocity = _last_velocity;
@@ -1074,7 +1074,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
 {
     if (airspeed_sensor_enabled(airspeed_index)) {
         airspeed_ret = AP::airspeed()->get_airspeed(airspeed_index);
-    } else if (_flags.wind_estimation && have_gps()) {
+    } else if (AP::ahrs().get_wind_estimation_enabled() && have_gps()) {
         // estimate it via GPS speed and wind
         airspeed_ret = _last_airspeed;
     } else {

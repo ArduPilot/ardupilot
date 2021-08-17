@@ -103,8 +103,23 @@ public:
     float           get_error_rp() const override;
     float           get_error_yaw() const override;
 
+    /*
+     * wind estimation support
+     */
+
+    // enable wind estimation
+    void set_wind_estimation_enabled(bool b) { wind_estimation_enabled = b; }
+
+    // wind_estimation_enabled returns true if wind estimation is enabled
+    bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
+
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate() const override;
+
+
+    /*
+     * airspeed support
+     */
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -566,6 +581,11 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+
+    /*
+     * wind estimation support
+     */
+    bool wind_estimation_enabled;
 
     /*
      * fly_forward is set by the vehicles to indicate the vehicle
