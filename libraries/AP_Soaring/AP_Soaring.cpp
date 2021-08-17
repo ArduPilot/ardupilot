@@ -329,7 +329,7 @@ void SoaringController::update_thermalling()
     // @Field: dx_w: Wind speed north
     // @Field: dy_w: Wind speed east
     // @Field: th: Estimate of achievable climbrate in thermal
-    AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
+    AP::logger().WriteStreaming("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
                                            AP_HAL::micros64(),
                                            (double)_vario.reading,
                                            (double)_ekf.X[0],
