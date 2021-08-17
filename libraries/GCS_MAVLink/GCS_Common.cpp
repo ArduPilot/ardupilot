@@ -807,7 +807,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
         { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
         { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
-        { MAVLINK_MSG_ID_SENSOR_OFFSETS,        MSG_SENSOR_OFFSETS},
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
         { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
         { MAVLINK_MSG_ID_GPS2_RAW,              MSG_GPS2_RAW},
@@ -1820,39 +1819,6 @@ void GCS_MAVLINK::send_scaled_pressure2()
 void GCS_MAVLINK::send_scaled_pressure3()
 {
     send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
-}
-
-void GCS_MAVLINK::send_sensor_offsets()
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const Compass &compass = AP::compass();
-
-    // run this message at a much lower rate - otherwise it
-    // pointlessly wastes quite a lot of bandwidth
-    if (send_sensor_offsets_counter++ < 10) {
-        return;
-    }
-    send_sensor_offsets_counter = 0;
-
-    const Vector3f &mag_offsets = compass.get_offsets(0);
-    const Vector3f &accel_offsets = ins.get_accel_offsets(0);
-    const Vector3f &gyro_offsets = ins.get_gyro_offsets(0);
-
-    const AP_Baro &barometer = AP::baro();
-
-    mavlink_msg_sensor_offsets_send(chan,
-                                    mag_offsets.x,
-                                    mag_offsets.y,
-                                    mag_offsets.z,
-                                    compass.get_declination(),
-                                    barometer.get_pressure(),
-                                    barometer.get_temperature()*100,
-                                    gyro_offsets.x,
-                                    gyro_offsets.y,
-                                    gyro_offsets.z,
-                                    accel_offsets.x,
-                                    accel_offsets.y,
-                                    accel_offsets.z);
 }
 
 void GCS_MAVLINK::send_ahrs()
@@ -5016,11 +4982,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SCALED_PRESSURE3:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure3();
-        break;
-
-    case MSG_SENSOR_OFFSETS:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets();
         break;
 
     case MSG_SERVO_OUTPUT_RAW:
