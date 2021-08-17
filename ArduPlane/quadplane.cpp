@@ -2741,7 +2741,7 @@ void QuadPlane::vtol_position_controller(void)
     if (now_ms - poscontrol.last_log_ms >= 40) {
         // log poscontrol at 25Hz
         poscontrol.last_log_ms = now_ms;
-        AP::logger().Write("QPOS", "TimeUS,State,Dist", "QBf",
+        AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist", "QBf",
                            AP_HAL::micros64(),
                            poscontrol.get_state(),
                            plane.auto_state.wp_distance);
