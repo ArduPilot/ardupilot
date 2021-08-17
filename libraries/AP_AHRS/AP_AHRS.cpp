@@ -808,7 +808,7 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
         return true;
     }
 
-    if (!_flags.wind_estimation) {
+    if (!get_wind_estimation_enabled()) {
         return false;
     }
 
