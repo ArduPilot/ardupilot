@@ -51,7 +51,7 @@ void QuaternionT<T>::rotation_matrix(Matrix3d &m) const
     m.c.z = 1.0f-2.0f*(q2q2 + q3q3);
 }
 
-// return the rotation matrix equivalent for this quaternion
+// populate the supplied rotation matrix equivalent from this quaternion
 template <typename T>
 void QuaternionT<T>::rotation_matrix(Matrix3f &m) const
 {
@@ -76,7 +76,7 @@ void QuaternionT<T>::rotation_matrix(Matrix3f &m) const
     m.c.z = 1.0f-2.0f*(q2q2 + q3q3);
 }
 
-// return the rotation matrix equivalent for this quaternion
+// make this quaternion equivalent to the supplied matrix
 // Thanks to Martin John Baker
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 template <typename T>
