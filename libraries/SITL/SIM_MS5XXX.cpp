@@ -34,6 +34,10 @@ void MS5XXX::convert_D1()
     uint32_t D1;
     uint32_t D2;
     convert(P_Pa, temperature, D1, D2);
+
+    // Check the accuracy of the returned conversion by utilizing a copy of the drivers
+    check_conversion_accuracy(P_Pa, temperature, D1, D2);
+
     convert_out[2] = D1 & 0xff;
     D1 >>= 8;
     convert_out[1] = D1 & 0xff;

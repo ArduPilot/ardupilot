@@ -88,7 +88,10 @@ void MS5611::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
         D1 = ((P_Pa * float(1L << 15) + OFF) * float(1L << 21)) / SENS;
         D2 = dT + (prom[5] << Q5);
     }
+}
 
+void MS5611::check_conversion_accuracy(float P_Pa, float Temp_C, uint32_t D1, uint32_t D2)
+{
     float f_P_Pa;
     float f_Temp_C;
     convert_forward(D1, D2, f_P_Pa, f_Temp_C);
@@ -100,7 +103,6 @@ void MS5611::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
         AP_HAL::panic("Invalid temperature conversion");
     }
 }
-
 
 void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
 {

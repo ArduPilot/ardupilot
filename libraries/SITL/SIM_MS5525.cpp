@@ -44,15 +44,22 @@ void MS5525::convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2)
     D2 = dT + int64_t(prom[5]) * (1L<<Q5);
 }
 
-
+void MS5525::check_conversion_accuracy(float P_Pa, float Temp_C, uint32_t D1, uint32_t D2)
+{
     float f_P_Pa;
     float f_Temp_C;
     convert_forward(D1, D2, f_P_Pa, f_Temp_C);
-    if (fabs(f_P_Pa - P_Pa) > 0.1) {
-        AP_HAL::panic("Invalid pressure conversion");
+
+    const float p_error = fabs(f_P_Pa - P_Pa);
+    const float p_error_max = 0.1;
+    if (p_error > p_error_max) {
+        AP_HAL::panic("Invalid pressure conversion: error %f Pa > %f Pa error max", p_error, p_error_max);
     }
-    if (fabs(f_Temp_C - Temp_C) > 0.01) {
-        AP_HAL::panic("Invalid temperature conversion");
+
+    const float t_error = fabs(f_Temp_C - Temp_C);
+    const float t_error_max = 0.01;
+    if (t_error > t_error_max) {
+        AP_HAL::panic("Invalid temperature conversion: error %f degC > %f degC error max", t_error, t_error_max);
     }
 }
 
