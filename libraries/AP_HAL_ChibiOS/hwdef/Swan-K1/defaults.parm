@@ -26,7 +26,7 @@ RC3_MAX 1950
 RC4_MIN 1050
 RC4_MAX 1950
 
-THR_MIN 20
+THR_MIN 5
 
 ARMING_RUDDER 2
 
@@ -37,6 +37,9 @@ ALT_HOLD_RTL 3000
 ARSPD_FBW_MAX  25
 ARSPD_FBW_MIN  8
 ARSPD_RATIO    1.9
+LIM_ROLL_CD    4000
+LIM_PITCH_MAX  4500
+LIM_PITCH_MIN  -3000
 
 # setup left 3-pos switch for QHOVER, QLOITER and FBWA
 FLTMODE1 18
@@ -67,7 +70,7 @@ LOG_FILE_DSRMROT 1
 LOG_FILE_RATEMAX 50
 
 # tuning
-RLL2SRV_TCONST 0.4
+RLL2SRV_TCONST 0.25
 Q_A_ACCEL_P_MAX    40000
 Q_A_ACCEL_R_MAX    20000
 Q_A_ANG_PIT_P          8
@@ -80,7 +83,8 @@ Q_A_RAT_RLL_D          0.015
 Q_A_RAT_RLL_FLTD      15
 Q_A_RAT_RLL_P          0.35
 Q_A_RAT_RLL_SMAX      15
-Q_A_RAT_YAW_D          0.2
+Q_A_RAT_YAW_FF         0.2
+Q_A_RAT_YAW_D          0.1
 Q_A_RAT_YAW_FLTD      15
 Q_A_RAT_YAW_I          0.07
 Q_A_RAT_YAW_P          0.7
@@ -91,9 +95,16 @@ Q_P_ACCZ_P            0.8
 Q_P_POSZ_P            1.5
 Q_P_VELZ_P            8.0
 Q_M_THST_HOVER        0.45
+Q_M_BAT_VOLT_MAX   16.8
+Q_M_BAT_VOLT_MIN   13.2
+
 Q_WP_ACCEL 250
+Q_WP_ACCEL_Z 300
 Q_WP_JERK  2
 Q_WP_SPEED 900
+Q_A_THR_MIX_MAN  2
+Q_A_THR_MIX_MAX  2
+Q_A_THR_MIX_MIN  0.3
 
 # Q flight options
 Q_RTL_MODE 3
@@ -109,3 +120,6 @@ TECS_LAND_ARSPD 8
 
 # 16 m/s target airspeed in auto modes
 TRIM_ARSPD_CM 1600
+
+# 2nd lane tends to be better
+EK3_PRIMARY 1
