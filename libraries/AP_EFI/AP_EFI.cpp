@@ -125,7 +125,7 @@ void AP_EFI::log_status(void)
 // @Field: CFV: Consumed fueld volume
 // @Field: TPS: Throttle Position
 // @Field: IDX: Index of the publishing ECU
-    AP::logger().Write("EFI",
+    AP::logger().WriteStreaming("EFI",
                        "TimeUS,LP,Rpm,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX",
                        "s%qsPPOOPOP--%-",
                        "F00C--00-0-0000",
@@ -161,7 +161,7 @@ void AP_EFI::log_status(void)
 // @Field: DebS: Debris status
 // @Field: SPU: Spark plug usage
 // @Field: IDX: Index of the publishing ECU
-    AP::logger().Write("EFI2",
+    AP::logger().WriteStreaming("EFI2",
                        "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DebS,SPU,IDX",
                        "s------------",
                        "F------------",
@@ -191,7 +191,7 @@ void AP_EFI::log_status(void)
 // @Field: EGT: Exhaust gas temperature
 // @Field: Lambda: Estimated lambda coefficient (dimensionless ratio)
 // @Field: IDX: Index of the publishing ECU
-        AP::logger().Write("ECYL",
+        AP::logger().WriteStreaming("ECYL",
                            "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,IDX",
                            "s#dsOO--",
                            "F-0C0000",
