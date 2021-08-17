@@ -360,7 +360,7 @@ void AP_IOMCU::read_status()
 // @Field: Nerr: Protocol failures on MCU side
 // @Field: Nerr2: Reported number of failures on IOMCU side
 // @Field: NDel: Number of delayed packets received by MCU
-            AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
+            AP::logger().WriteStreaming("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
                                AP_HAL::micros64(),
                                reg_status.freemem,
                                reg_status.timestamp_ms,
