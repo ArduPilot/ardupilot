@@ -190,7 +190,7 @@ void AP_Generator_IE_2400::log_write()
         return;
     }
 
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "IE24",
         "TimeUS,FUEL,SPMPWR,POUT,ERR",
         "s%WW-",
