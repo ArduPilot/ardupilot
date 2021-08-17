@@ -254,12 +254,12 @@ This list is automatically generated from the latest ardupilot source code, and 
                         (param_min, param_max) = (param.__dict__[field]).split(' ')
                         row.append("%s - %s" % (param_min, param_max,))
                     elif field == 'Units':
-                        abreviated_units = param.__dict__[field]
-                        if abreviated_units != '':
+                        abbreviated_units = param.__dict__[field]
+                        if abbreviated_units != '':
                             # use the known_units dictionary to
-                            # convert the abreviated unit into a full
+                            # convert the abbreviated unit into a full
                             # textual one:
-                            units = known_units[abreviated_units]
+                            units = known_units[abbreviated_units]
                             row.append(cescape(units))
                     else:
                         row.append(cescape(param.__dict__[field]))

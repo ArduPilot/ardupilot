@@ -257,7 +257,7 @@ def process_library(vehicle, library, pathprefix=None):
             fields = prog_param_tagged_fields.findall(field_text)
             # a parameter is considered to be vehicle-specific if
             # there does not exist a Values: or Values{VehicleName}
-            # for that vehicle but @Values{OtherVehcicle} exists.
+            # for that vehicle but @Values{OtherVehicle} exists.
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
@@ -480,7 +480,7 @@ if args.emit_sitl:
     # only generate rst for SITL for now:
     emitters_to_use = ['rst']
 
-# actually invoke each emiiter:
+# actually invoke each emitter:
 for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name](sitl=args.emit_sitl)
 
