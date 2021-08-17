@@ -63,11 +63,11 @@ public:
         return isnan(q1) || isnan(q2) || isnan(q3) || isnan(q4);
     }
 
-    // return the rotation matrix equivalent for this quaternion
+    // populate the supplied rotation matrix equivalent from this quaternion
     void        rotation_matrix(Matrix3f &m) const;
     void        rotation_matrix(Matrix3d &m) const;
 
-    // return the rotation matrix equivalent for this quaternion
+    // make this quaternion equivalent to the supplied matrix
     void		from_rotation_matrix(const Matrix3<T> &m);
 
     // create a quaternion from a given rotation
