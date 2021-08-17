@@ -358,6 +358,9 @@ protected:
     void publish_osd_info();
 #endif
 
+    // update accel calibration
+    void accel_cal_update();
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 private:
