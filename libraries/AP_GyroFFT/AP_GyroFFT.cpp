@@ -784,7 +784,7 @@ void AP_GyroFFT::write_log_messages()
         return;
     }
 
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "FTN1",
         "TimeUS,PkAvg,BwAvg,DnF,SnX,SnY,SnZ,FtX,FtY,FtZ,FH,Tc",
         "szzz---%%%-s",
@@ -843,7 +843,7 @@ void AP_GyroFFT::write_log_messages()
 // write a single log message
 void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch) const
 {
-    AP::logger().Write("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
+    AP::logger().WriteStreaming("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
         AP_HAL::micros64(),
         id,
         get_noise_center_freq_hz(peak).x,
