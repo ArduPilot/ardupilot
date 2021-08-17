@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Description: Voltage offset at zero current on current sensor
     // @Units: V
     // @User: Standard
-    AP_GROUPINFO("AMP_OFFSET", 6, AP_BattMonitor_Params, _curr_amp_offset, 0),
+    AP_GROUPINFO("AMP_OFFSET", 6, AP_BattMonitor_Params, _curr_amp_offset, AP_BATT_CURR_AMP_OFFSET_DEFAULT),
 
     // @Param: CAPACITY
     // @DisplayName: Battery capacity
