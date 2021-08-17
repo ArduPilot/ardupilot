@@ -1032,7 +1032,6 @@ private:
     void read_rangefinder(void);
     void read_airspeed(void);
     void rpm_update(void);
-    void accel_cal_update(void);
 
     // system.cpp
     void init_ardupilot() override;
