@@ -82,7 +82,7 @@ private:
     virtual void convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2) =0;
     virtual void convert_forward(int32_t D1, int32_t D2, float &P_Pa, float &Temp_C) = 0;
     virtual void get_pressure_temperature_readings(float &P_Pa, float &Temp_C) = 0;
-
+    virtual void check_conversion_accuracy(float P_Pa, float Temp_C, uint32_t D1, uint32_t D2) = 0;
 
     void convert_D1();
     void convert_D2();
