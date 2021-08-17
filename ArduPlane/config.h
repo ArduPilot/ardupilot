@@ -286,3 +286,9 @@
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
+
+/////////////////////////////////////////////////////////////////////////////
+//  Landing Throttle Control Trigger Threshold
+#ifndef THR_CTRL_LAND_THRESH
+ #define THR_CTRL_LAND_THRESH 0.7
+#endif

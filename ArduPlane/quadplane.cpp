@@ -1223,7 +1223,7 @@ bool QuadPlane::is_flying_vtol(void) const
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt. 
  */
-float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
+float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
     if (poscontrol.get_state() == QPOS_LAND_FINAL) {
         // when in final use descent rate for final even if alt has climbed again
@@ -1237,19 +1237,24 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
         const float thr_in = get_pilot_land_throttle();
-        const float dz = 0.1;
-        const float thresh1 = 0.5+dz;
-        const float thresh2 = 0.5-dz;
-        const float scaling = 1.0 / (0.5 - dz);
-        if (thr_in > thresh1) {
-            // start climbing
-            ret = -(thr_in - thresh1)*scaling*max_climb_speed;
-        } else if (thr_in > thresh2) {
-            // hold height
-            ret = 0;
-        } else {
-            ret *= (thresh2 - thr_in)*scaling;
+        if (thr_in > THR_CTRL_LAND_THRESH) {
+            thr_ctrl_land = true;
         }
+        if (thr_ctrl_land) {
+            const float dz = 0.1;
+            const float thresh1 = 0.5+dz;
+            const float thresh2 = 0.5-dz;
+            const float scaling = 1.0 / (0.5 - dz);
+            if (thr_in > thresh1) {
+                // start climbing
+                ret = -(thr_in - thresh1)*scaling*max_climb_speed;
+            } else if (thr_in > thresh2) {
+                // hold height
+                ret = 0;
+            } else {
+                ret *= (thresh2 - thr_in)*scaling;
+            }
+        }    
     }
 
     if (poscontrol.pilot_correction_active) {
@@ -2302,6 +2307,9 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         } else if (s == QPOS_AIRBRAKE) {
             // start with zero integrator on vertical throttle
             qp.pos_control->get_accel_z_pid().set_integrator(0);
+        } else if (s == QPOS_LAND_DESCEND) {
+            // reset throttle descent control
+            qp.thr_ctrl_land = false;
         }
     }
     state = s;
