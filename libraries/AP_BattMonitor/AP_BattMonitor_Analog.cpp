@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
     // @Description: Voltage offset at zero current on current sensor
     // @Units: V
     // @User: Standard
-    AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor_Analog, _curr_amp_offset, 0),
+    AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor_Analog, _curr_amp_offset, AP_BATT_CURR_AMP_OFFSET_DEFAULT),
 
     AP_GROUPEND
 };

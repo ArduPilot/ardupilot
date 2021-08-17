@@ -75,6 +75,11 @@
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 #endif
 
+// This is 0 for the majority of the power modules.
+#ifndef AP_BATT_CURR_AMP_OFFSET_DEFAULT
+ #define AP_BATT_CURR_AMP_OFFSET_DEFAULT 0.0f
+#endif
+
 // Other values normally set directly by mission planner
 // # define AP_BATT_VOLTDIVIDER_DEFAULT 15.70   // Volt divider for AttoPilot 50V/90A sensor
 // # define AP_BATT_VOLTDIVIDER_DEFAULT 4.127   // Volt divider for AttoPilot 13.6V/45A sensor
