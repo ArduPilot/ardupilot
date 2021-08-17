@@ -129,7 +129,7 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
 // @Field: U7: eight quartet of bytes
 // @Field: U8: ninth quartet of bytes
 // @Field: U9: tenth quartet of bytes
-        AP::logger().Write("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
+        AP::logger().WriteStreaming("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
                            AP_HAL::micros64(),
                            timestamp,
                            (uint8_t)prot,
