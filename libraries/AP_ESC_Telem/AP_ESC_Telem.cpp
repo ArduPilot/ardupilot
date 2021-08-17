@@ -377,6 +377,8 @@ void AP_ESC_Telem::update()
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
+                float rawrpm = 0.0f;
+                get_raw_rpm(i, rawrpm);
 
                 // Write ESC status messages
                 //   id starts from 0
@@ -392,6 +394,7 @@ void AP_ESC_Telem::update()
                     time_us     : AP_HAL::micros64(),
                     instance    : i,
                     rpm         : (int32_t) rpm * 100,
+                    raw_rpm     : (int32_t) rpm * 100,
                     voltage     : _telem_data[i].voltage,
                     current     : _telem_data[i].current,
                     esc_temp    : _telem_data[i].temperature_cdeg,
