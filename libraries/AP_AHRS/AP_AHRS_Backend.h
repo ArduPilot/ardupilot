@@ -46,10 +46,6 @@ public:
     // init sets up INS board orientation
     virtual void init();
 
-    void set_wind_estimation(bool b) {
-        _flags.wind_estimation = b;
-    }
-
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
@@ -471,11 +467,6 @@ protected:
     AP_Float _custom_yaw;
 
     Matrix3f _custom_rotation;
-
-    // flags structure
-    struct ahrs_flags {
-        uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-    } _flags;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
