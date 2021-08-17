@@ -1002,7 +1002,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
 // @Field: M4: Motor 4 pwm output
 
     if (motor_log_counter++ % 10 == 0) {
-        AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP::logger().WriteStreaming("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,
