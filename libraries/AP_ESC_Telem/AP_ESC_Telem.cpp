@@ -394,7 +394,7 @@ void AP_ESC_Telem::update()
                     time_us     : AP_HAL::micros64(),
                     instance    : i,
                     rpm         : (int32_t) rpm * 100,
-                    raw_rpm     : (int32_t) rpm * 100,
+                    raw_rpm     : (int32_t) rawrpm * 100,
                     voltage     : _telem_data[i].voltage,
                     current     : _telem_data[i].current,
                     esc_temp    : _telem_data[i].temperature_cdeg,
