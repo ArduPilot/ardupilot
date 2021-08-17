@@ -104,6 +104,7 @@ config.mk
 *.apj
 .gdbinit
 /.vscode
+/.history
 Parameters.html
 Parameters.md
 Parameters.rst
