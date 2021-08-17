@@ -182,11 +182,11 @@ void AP_Airspeed_MS5525::calculate(void)
     const uint8_t Q5 = 7;
     const uint8_t Q6 = 21;
 
-    int64_t dT = D2 - int64_t(prom[5]) * (1UL<<Q5);
-    int64_t TEMP = 2000 + (dT*int64_t(prom[6]))/(1UL<<Q6);
-    int64_t OFF =  int64_t(prom[2])*(1UL<<Q2) + (int64_t(prom[4])*dT)/(1UL<<Q4);
-    int64_t SENS = int64_t(prom[1])*(1UL<<Q1) + (int64_t(prom[3])*dT)/(1UL<<Q3);
-    int64_t P = (D1*SENS/(1UL<<21)-OFF)/(1UL<<15);
+    float dT = float(D2) - int64_t(prom[5]) * (1L<<Q5);
+    float TEMP = 2000 + (dT*int64_t(prom[6]))/(1L<<Q6);
+    float OFF  = int64_t(prom[2])*(1L<<Q2) + (int64_t(prom[4])*dT)/(1L<<Q4);
+    float SENS = int64_t(prom[1])*(1L<<Q1) + (int64_t(prom[3])*dT)/(1L<<Q3);
+    float P = (float(D1)*SENS/(1L<<21)-OFF)/(1L<<15);
     const float PSI_to_Pa = 6894.757f;
     float P_Pa = PSI_to_Pa * 1.0e-4 * P;
     float Temp_C = TEMP * 0.01;
