@@ -444,8 +444,6 @@ bool Tailsitter::transition_vtol_complete(void) const
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
-    // still waiting
-    quadplane.attitude_control->reset_rate_controller_I_terms();
     return false;
 }
 
