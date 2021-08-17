@@ -122,6 +122,9 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
+    
+    // is throttle controlled landing descent active?
+    bool thr_ctrl_land;
 
     uint16_t get_pilot_velocity_z_max_dn() const;
     
@@ -239,7 +242,7 @@ private:
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
-    float landing_descent_rate_cms(float height_above_ground) const;
+    float landing_descent_rate_cms(float height_above_ground);
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
@@ -396,7 +399,7 @@ private:
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
-    
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
