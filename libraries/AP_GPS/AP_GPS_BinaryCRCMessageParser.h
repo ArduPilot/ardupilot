@@ -19,7 +19,7 @@
 #include <vector>
 
 /*
-    parser abstract class for parse binary crc gps message
+    parser abstract class for parse binary crc32 gps message
 */
 class AP_GPS_BinaryCRCMessageParser
 {
@@ -37,10 +37,6 @@ protected:
 
 private:
     void reset_parse();
-    uint32_t crc32_value(uint32_t icrc);
-    uint32_t calculate_block_crc32(uint32_t length, uint8_t *buffer, uint32_t crc);
-
-    static constexpr uint32_t CRC32_POLYNOMIAL = 0xEDB88320L;
 
     const std::vector<uint8_t> _preambles;
     uint8_t _min_header_length;

@@ -113,8 +113,8 @@ bool AP_GPS_BinaryCRCMessageParser::parse(uint8_t data)
                 _msg_crc += (uint32_t) (data << 24);
                 reset_parse();
 
-                uint32_t real_crc = calculate_block_crc32((uint32_t)_real_header_length, msg_header_buff, (uint32_t)0);
-                real_crc = calculate_block_crc32((uint32_t)_real_body_length, msg_body_buff, real_crc);
+                uint32_t real_crc = crc_crc32((uint32_t)0, msg_header_buff, (uint32_t)_real_header_length);
+                real_crc = crc_crc32(real_crc, msg_body_buff, (uint32_t)_real_body_length);
 
                 if(real_crc != _msg_crc){
                     Debug("CRC check failed,msg_crc:%lx,real_crc:%lx",_msg_crc,real_crc);
@@ -132,25 +132,4 @@ void AP_GPS_BinaryCRCMessageParser::reset_parse()
     _decode_step = 0;
     _read_size = 0;
     _preamble_step = 0;
-}
-
-uint32_t AP_GPS_BinaryCRCMessageParser::crc32_value(uint32_t icrc)
-{
-    uint32_t crc = icrc;
-    for (int i = 8 ; i > 0; i-- ) {
-        if ( crc & 1 ) {
-            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-        } else {
-            crc >>= 1;
-        }    
-    }
-    return crc;
-}
-
-uint32_t AP_GPS_BinaryCRCMessageParser::calculate_block_crc32(uint32_t length, uint8_t *buffer, uint32_t crc)
-{
-    while ( length-- != 0 ) {
-        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (crc32_value(((uint32_t) crc ^ *buffer++) & 0xff));
-    }
-    return crc;
 }
