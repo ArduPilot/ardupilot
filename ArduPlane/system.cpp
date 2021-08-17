@@ -378,7 +378,7 @@ void Plane::startup_INS_ground(void)
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::FIXED_WING);
-    ahrs.set_wind_estimation(true);
+    ahrs.set_wind_estimation_enabled(true);
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
