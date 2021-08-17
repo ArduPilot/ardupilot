@@ -113,7 +113,9 @@ private:
 
     static constexpr uint8_t FRAME_OVERHEAD = 6;          ///< OneWire message frame overhead (header+tail bytes)
     static constexpr uint8_t MAX_RECEIVE_LENGTH = 12;     ///< OneWire max receive message payload length in bytes
+#if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
     static constexpr uint8_t SERIAL_NUMBER_LENGTH = 12;   ///< ESC serial number length in bytes
+#endif
 
     /**
         initialize the device driver: configure serial port, wake-up and configure ESCs
