@@ -418,9 +418,11 @@ void AP_FETtecOneWire::handle_message_telem(ESC &esc)
 
     // update rpm and error rate
     float error_rate_pct = 0;
-    if (_fast_throttle_cmd_count) {
+    if (_fast_throttle_cmd_count > _esc_count) {
         error_rate_pct = (tlm.tx_err_count-esc.error_count_at_throttle_count_overflow)*(float)100/(float)_fast_throttle_cmd_count;
     } else {
+        // the telemetry is requested in a round-robin, sequential fashion
+        // so the in the first _esc_count times all ESCs get to initialize this
         esc.error_count_at_throttle_count_overflow = tlm.tx_err_count;
     }
     update_rpm(esc.servo_ofs,
