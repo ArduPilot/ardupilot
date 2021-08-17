@@ -3776,12 +3776,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         if (!calibrate_gyros()) {
             return MAV_RESULT_FAILED;
         }
-        float trim_roll, trim_pitch;
-        if (!AP::ins().calibrate_trim(trim_roll, trim_pitch)) {
+        Vector3f trim_rad = AP::ahrs().get_trim();
+        if (!AP::ins().calibrate_trim(trim_rad)) {
             return MAV_RESULT_FAILED;
         }
         // reset ahrs's trim to suggested values from calibration routine
-        AP::ahrs().set_trim(Vector3f(trim_roll, trim_pitch, 0));
+        AP::ahrs().set_trim(trim_rad);
         return MAV_RESULT_ACCEPTED;
     }
 
