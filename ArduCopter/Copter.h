@@ -869,7 +869,7 @@ private:
     bool rangefinder_up_ok() const;
     void rpm_update();
     void update_optical_flow(void);
-    void accel_cal_update(void);
+    void compass_cal_update(void);
     void init_proximity();
     void update_proximity();
 
