@@ -86,12 +86,17 @@ void AP_OpticalFlow_SITL::update(void)
     // correct relative velocity for rotation rates and sensor offset
     relVelSensor += gyro % posRelSensorBF;
 
+    // scaling based on parameters
+    const Vector2f flowScaler = _flowScaler();
+    const float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
+    const float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
+
     // Divide velocity by range and add body rates to get predicted sensed angular
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale
     // factor error. Note - these are instantaneous values. The sensor sums these values across the interval from the last
     // poll to provide a delta angle across the interface
-    state.flowRate.x =  -relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float();
-    state.flowRate.y =   relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float();
+    state.flowRate.x = (-relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float()) * flowScaleFactorX;
+    state.flowRate.y =  (relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float()) * flowScaleFactorY;
 
     // The flow sensors body rates are assumed to be the same as the vehicle body rates (ie no misalignment)
     // Note - these are instantaneous values. The sensor sums these values across the interval from the last
