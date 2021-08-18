@@ -51,7 +51,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!dal.gps().get_lag(selected_gps, gps_delay_sec)) {
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
             const uint32_t now = dal.millis();
             if (now - lastInitFailReport_ms > 10000) {
                 lastInitFailReport_ms = now;
