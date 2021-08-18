@@ -70,7 +70,7 @@ class Board:
 
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
-            env.CXXFLAGS += ['-DHAL_NO_GCS=1']
+            env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
@@ -626,7 +626,7 @@ class sitl_periph_gps(sitl):
             HAL_CAN_DEFAULT_NODE_ID = 0,
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
-            HAL_NO_GCS = 1,
+            HAL_GCS_ENABLED = 0,
             HAL_LOGGING_ENABLED = 0,
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             HAL_MISSION_ENABLED = 0,
