@@ -316,7 +316,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t
                 MANU [S]
                 MANU [SS]
         */
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         const char* simple_mode_str = gcs().simple_input_active() ? " [S]" : (gcs().supersimple_input_active() ? " [SS]" : "");
         snprintf(flight_mode_str, size, "%s%s", notify->get_flight_mode_str(), simple_mode_str);
 #else
