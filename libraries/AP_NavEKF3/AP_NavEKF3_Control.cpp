@@ -572,8 +572,8 @@ bool NavEKF3_core::use_compass(void) const
            !allMagSensorsFailed;
 }
 
-// are we using a yaw source other than the magnetomer?
-bool NavEKF3_core::using_external_yaw(void) const
+// are we using (aka fusing) a non-compass yaw?
+bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
 #if EK3_FEATURE_EXTERNAL_NAV
