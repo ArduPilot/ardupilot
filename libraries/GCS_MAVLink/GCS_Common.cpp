@@ -263,7 +263,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
                                     battery.get_mavlink_charge_state(instance), // battery charge state
-                                    cell_volts_ext); // Cell 11..14 voltages
+                                    cell_volts_ext, // Cell 11..14 voltages
+                                    0, // battery mode
+                                    0); // fault_bitmask
 }
 
 // returns true if all battery instances were reported
@@ -2212,7 +2214,10 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
     // exist, but if it did we'd probably be acking something
     // completely unrelated to setting modes.
     if (HAVE_PAYLOAD_SPACE(chan, COMMAND_ACK)) {
-        mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result);
+        mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result,
+                                     0, 0,
+                                     msg.sysid,
+                                     msg.compid);
     }
 }
 
@@ -2775,7 +2780,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     }
 
     // send ack before we reboot
-    mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
+    mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
+                                 0, 0, 0, 0);
 
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
@@ -4272,7 +4278,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     const MAV_RESULT result = handle_command_long_packet(packet);
 
     // send ACK or NAK
-    mavlink_msg_command_ack_send(chan, packet.command, result);
+    mavlink_msg_command_ack_send(chan, packet.command, result,
+                                 0, 0,
+                                 msg.sysid,
+                                 msg.compid);
 
     // log the packet:
     mavlink_command_int_t packet_int;
@@ -4459,7 +4468,10 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     const MAV_RESULT result = handle_command_int_packet(packet);
 
     // send ACK or NAK
-    mavlink_msg_command_ack_send(chan, packet.command, result);
+    mavlink_msg_command_ack_send(chan, packet.command, result,
+                                 0, 0,
+                                 msg.sysid,
+                                 msg.compid);
 
     AP::logger().Write_Command(packet, result);
 
