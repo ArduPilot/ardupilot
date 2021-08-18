@@ -361,6 +361,7 @@ bool AP_AccelCal::client_active(uint8_t client_num)
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
 }
 
+#if HAL_GCS_ENABLED
 void AP_AccelCal::handleMessage(const mavlink_message_t &msg)
 {
     if (!_waiting_for_mavlink_ack) {
@@ -383,6 +384,7 @@ bool AP_AccelCal::gcs_vehicle_position(float position)
 
     return false;
 }
+#endif
 
 // true if we are in a calibration process
 bool AP_AccelCal::running(void) const
