@@ -3047,6 +3047,31 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
     return false;
 }
 
+// check if external nav is providing yaw
+bool AP_AHRS::using_extnav_for_yaw(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.isExtNavUsedForYaw();
+#endif
+    case EKFType::NONE:
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_extnav_for_yaw();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SIM:
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
+
 // set and save the alt noise parameter value
 void AP_AHRS::set_alt_measurement_noise(float noise)
 {
