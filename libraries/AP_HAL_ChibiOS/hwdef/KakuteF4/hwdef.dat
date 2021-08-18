@@ -74,8 +74,8 @@ SERIAL_ORDER OTG1 USART6 USART1 UART4 UART5 USART3
 PB11 TIM2_CH4 TIM2 RCININT FLOAT LOW
 PB10 USART3_TX USART3
 
-# SBUS inversion control pin, active low
-PB15 SBUS_INVERT OUTPUT LOW
+# SBUS inversion control pin, active high
+PB15 USART3_RXINV OUTPUT LOW GPIO(78) POL(1)
 
 # for FrSky S.PORT. Has builtin inverters and diode to combine
 # RX and TX onto the one pin
