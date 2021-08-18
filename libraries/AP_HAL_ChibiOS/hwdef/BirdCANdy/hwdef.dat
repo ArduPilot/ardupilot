@@ -106,7 +106,7 @@ define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.birdcandy"
 
-define HAL_NO_GCS
+define HAL_GCS_ENABLED 0
 define HAL_NO_LOGGING
 define HAL_NO_MONITOR_THREAD
 
