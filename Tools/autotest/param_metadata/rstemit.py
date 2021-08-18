@@ -241,12 +241,16 @@ This list is automatically generated from the latest ardupilot source code, and 
 
             if d.get('User', None) == 'Advanced':
                 ret += '\n| *Note: This parameter is for advanced users*'
+            if d.get('RebootRequired', None) == 'True':
+                ret += '\n| *Note: Reboot required after change*'
+            elif 'RebootRequired' in d and d.get('RebootRequired') != 'True':
+                raise Exception("Bad RebootRequired metadata tag value for {} in {}".format(d.get('name'),d.get('real_path')))
             ret += "\n\n%s\n" % self.escape(param.Description)
 
             headings = []
             row = []
             for field in sorted(param.__dict__.keys()):
-                if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
+                if field not in ['name', 'DisplayName', 'Description', 'User', 'RebootRequired'] and field in known_param_fields:
                     headings.append(field)
                     if field in field_table_info and Emit.prog_values_field.match(param.__dict__[field]):
                         row.append(self.render_prog_values_field(field_table_info[field], param, field))
