@@ -696,7 +696,7 @@ void AP_BattMonitor::checkPoweringOff(void)
 #endif
 
             // Send a Mavlink broadcast announcing the shutdown
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
             mavlink_command_long_t cmd_msg{};
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
