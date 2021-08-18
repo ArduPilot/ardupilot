@@ -1614,12 +1614,6 @@ void GCS_MAVLINK::send_system_time()
  */
 void GCS_MAVLINK::send_rc_channels() const
 {
-    AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = UINT8_MAX;
-    if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_mavlink();
-    }
-
     uint16_t values[18] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
@@ -1645,7 +1639,7 @@ void GCS_MAVLINK::send_rc_channels() const
         values[15],
         values[16],
         values[17],
-        receiver_rssi);        
+        receiver_rssi());
 }
 
 bool GCS_MAVLINK::sending_mavlink1() const
@@ -1665,11 +1659,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
     if (!sending_mavlink1()) {
         return;
     }
-    AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = UINT8_MAX;
-    if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_mavlink();
-    }
+
     uint16_t values[8] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
@@ -1685,7 +1675,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
         values[5],
         values[6],
         values[7],
-        receiver_rssi);
+        receiver_rssi());
 }
 
 void GCS_MAVLINK::send_raw_imu()
@@ -5451,6 +5441,21 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     }
     c->set_override(override_value, tnow);
+}
+
+uint8_t GCS_MAVLINK::receiver_rssi() const
+{
+    AP_RSSI *aprssi = AP::rssi();
+    if (aprssi == nullptr) {
+        return 255;
+    }
+
+    if (!aprssi->enabled()) {
+        return 255;
+    }
+
+    uint8_t rssi = aprssi->read_receiver_rssi() * 255;
+    return (rssi < 255) ? rssi : 254;
 }
 
 GCS &gcs()
