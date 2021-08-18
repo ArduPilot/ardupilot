@@ -36,7 +36,7 @@ do {                                            \
 #endif
 
 const char* const AP_GPS_FEMTO::_initialisation_blob[] {
-    "\r\n\r\nUNLOGALL\r\n",         /**< cleanup enviroment */
+    "\r\n\r\nUNLOGALL THISPORT\r\n",         /**< cleanup enviroment */
     "LOG UAVGPSB ontime 0.2\r\n",   /**< get uavgps */
     "LOG UAVSTATUSB ontime 0.2\r\n", /**< get uavstatus */
 };
@@ -211,7 +211,7 @@ bool AP_GPS_FEMTO::process_message(void)
 
         state.location.lat = uav_gps.lat;
         state.location.lng = uav_gps.lon;
-        state.location.alt = uav_gps.alt;
+        state.location.alt = uav_gps.alt/10;
 
         state.num_sats = uav_gps.satellites_used;
 
