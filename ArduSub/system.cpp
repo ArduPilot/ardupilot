@@ -49,7 +49,7 @@ void Sub::init_ardupilot()
         AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
         break;
     }
-#else
+#elif CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
 #endif
     celsius.init(barometer.external_bus());
