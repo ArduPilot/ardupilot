@@ -33,6 +33,12 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
+enum class GPSUse : uint8_t {
+    Disable = 0,
+    Enable  = 1,
+    EnableWithHeight = 2,
+};
+
 class AP_AHRS_Backend
 {
 public:
@@ -42,6 +48,20 @@ public:
 
     // empty virtual destructor
     virtual ~AP_AHRS_Backend() {}
+
+    CLASS_NO_COPY(AP_AHRS_Backend);
+
+    // structure to retrieve results from backends:
+    struct Estimates {
+        float roll_rad;
+        float pitch_rad;
+        float yaw_rad;
+        Matrix3f dcm_matrix;
+        Vector3f gyro_estimate;
+        Vector3f gyro_drift;
+        Vector3f accel_ef[INS_MAX_INSTANCES];  // must be INS_MAX_INSTANCES
+        Vector3f accel_ef_blended;
+    };
 
     // init sets up INS board orientation
     virtual void init();
@@ -59,26 +79,10 @@ public:
         return AP::ins().get_primary_gyro();
     }
 
-    // accelerometer values in the earth frame in m/s/s
-    virtual const Vector3f &get_accel_ef(uint8_t i) const {
-        return _accel_ef[i];
-    }
-    virtual const Vector3f &get_accel_ef(void) const {
-        return get_accel_ef(AP::ins().get_primary_accel());
-    }
-
-    // blended accelerometer values in the earth frame in m/s/s
-    virtual const Vector3f &get_accel_ef_blended(void) const {
-        return _accel_ef_blended;
-    }
-
-    // get yaw rate in earth frame in radians/sec
-    float get_yaw_rate_earth(void) const {
-        return get_gyro() * get_rotation_body_to_ned().c;
-    }
-
     // Methods
-    virtual void _update() = 0;
+    virtual void update() = 0;
+
+    virtual void get_results(Estimates &results) = 0;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
@@ -102,59 +106,12 @@ public:
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     virtual void set_posvelyaw_source_set(uint8_t source_set_idx) {}
 
-    // Euler angles (radians)
-    float roll;
-    float pitch;
-    float yaw;
-
-    float get_roll() const { return roll; }
-    float get_pitch() const { return pitch; }
-    float get_yaw() const { return yaw; }
-
-    // integer Euler angles (Degrees * 100)
-    int32_t roll_sensor;
-    int32_t pitch_sensor;
-    int32_t yaw_sensor;
-
-    // return a smoothed and corrected gyro vector in radians/second
-    virtual const Vector3f &get_gyro(void) const = 0;
-
-    // return primary accels, for lua
-    const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel();
-    }
-    
-    // return a smoothed and corrected gyro vector in radians/second using the latest ins data (which may not have been consumed by the EKF yet)
-    Vector3f get_gyro_latest(void) const;
-
-    // return the current estimate of the gyro drift
-    virtual const Vector3f &get_gyro_drift(void) const = 0;
-
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     virtual void reset_gyro_drift(void) = 0;
 
     // reset the current attitude, used on new IMU calibration
-    virtual void reset(bool recover_eulers=false) = 0;
-
-    // return the average size of the roll/pitch error estimate
-    // since last call
-    virtual float get_error_rp(void) const = 0;
-
-    // return the average size of the yaw error estimate
-    // since last call
-    virtual float get_error_yaw(void) const = 0;
-
-    // return a DCM rotation matrix representing our current attitude in NED frame
-    virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
-
-    // return a Quaternion representing our current attitude in NED frame
-    void get_quat_body_to_ned(Quaternion &quat) const {
-        quat.from_rotation_matrix(get_rotation_body_to_ned());
-    }
-
-    // get rotation matrix specifically from DCM backend (used for compass calibrator)
-    virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
+    virtual void reset() = 0;
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
@@ -168,7 +125,8 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED = 0;
+    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
+    virtual bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
@@ -219,10 +177,28 @@ public:
         return false;
     }
 
+    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+    virtual bool get_vert_pos_rate(float &velocity) const = 0;
+
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
         return false;
     }
+
+    virtual bool get_mag_field_NED(Vector3f &vec) const {
+        return false;
+    }
+
+    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return false;
+    }
+
+    //
+    virtual bool set_origin(const Location &loc) {
+        return false;
+    }
+    virtual bool get_origin(Location &ret) const = 0;
 
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
@@ -251,43 +227,8 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
-    // helper trig value accessors
-    float cos_roll() const  {
-        return _cos_roll;
-    }
-    float cos_pitch() const {
-        return _cos_pitch;
-    }
-    float cos_yaw() const   {
-        return _cos_yaw;
-    }
-    float sin_roll() const  {
-        return _sin_roll;
-    }
-    float sin_pitch() const {
-        return _sin_pitch;
-    }
-    float sin_yaw() const   {
-        return _sin_yaw;
-    }
-
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
-
-    // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) const WARN_IF_UNUSED {
-        return false;
-    }
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
@@ -301,6 +242,9 @@ public:
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const {
         return true;
+    };
+    virtual bool started(void) const {
+        return initialised();
     };
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
@@ -342,6 +286,10 @@ public:
         return false;
     }
 
+    virtual bool get_filter_status(nav_filter_status &status) const {
+        return false;
+    }
+
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
@@ -356,28 +304,12 @@ public:
         return false;
     }
 
+    virtual void send_ekf_status_report(mavlink_channel_t chan) const = 0;
+
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
         AP::ins().get_delta_velocity(ret, dt);
-    }
-
-    // rotate a 2D vector from earth frame to body frame
-    // in result, x is forward, y is right
-    Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
-
-    // rotate a 2D vector from earth frame to body frame
-    // in input, x is forward, y is right
-    Vector2f body_to_earth2D(const Vector2f &bf) const;
-
-    // convert a vector from body to earth frame
-    Vector3f body_to_earth(const Vector3f &v) const {
-        return v * get_rotation_body_to_ned();
-    }
-
-    // convert a vector from earth to body frame
-    Vector3f earth_to_body(const Vector3f &v) const {
-        return get_rotation_body_to_ned().mul_transpose(v);
     }
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
@@ -389,63 +321,4 @@ public:
     // this is not related to terrain following
     virtual void set_terrain_hgt_stable(bool stable) {}
 
-    // Write position and quaternion data from an external navigation system
-    virtual void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) { }
-
-    // Write velocity data from an external navigation system
-    virtual void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) { }
-
-    // return current vibration vector for primary IMU
-    Vector3f get_vibration(void) const;
-
-    // set and save the alt noise parameter value
-    virtual void set_alt_measurement_noise(float noise) {};
-
-    // allow threads to lock against AHRS update
-    HAL_Semaphore &get_semaphore(void) {
-        return _rsem;
-    }
-
-    // Logging to disk functions
-    void Write_AHRS2(void) const;
-    void Write_Attitude(const Vector3f &targets) const;
-    void Write_Origin(uint8_t origin_type, const Location &loc) const; 
-    void Write_POS(void) const;
-
-protected:
-
-    enum class GPSUse : uint8_t {
-        Disable = 0,
-        Enable  = 1,
-        EnableWithHeight = 2,
-    };
-
-    AP_Enum<GPSUse> _gps_use;
-
-    // multi-thread access support
-    HAL_Semaphore _rsem;
-
-    // calculate sin/cos of roll/pitch/yaw from rotation
-    void calc_trig(const Matrix3f &rot,
-                   float &cr, float &cp, float &cy,
-                   float &sr, float &sp, float &sy) const;
-
-    // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
-    //      should be called after _dcm_matrix is updated
-    void update_trig(void);
-
-    // update roll_sensor, pitch_sensor and yaw_sensor
-    void update_cd_values(void);
-
-    // accelerometer values in the earth frame in m/s/s
-    Vector3f        _accel_ef[INS_MAX_INSTANCES];
-    Vector3f        _accel_ef_blended;
-
-    // helper trig variables
-    float _cos_roll{1.0f};
-    float _cos_pitch{1.0f};
-    float _cos_yaw{1.0f};
-    float _sin_roll;
-    float _sin_pitch;
-    float _sin_yaw;
 };

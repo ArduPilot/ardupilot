@@ -63,9 +63,10 @@ void AP_AHRS::load_watchdog_home()
     }
 }
 
+
 // run a full DCM update round
 void
-AP_AHRS_DCM::_update()
+AP_AHRS_DCM::update()
 {
     AP_InertialSensor &_ins = AP::ins();
 
@@ -93,16 +94,32 @@ AP_AHRS_DCM::_update()
     // paranoid check for bad values in the DCM matrix
     check_matrix();
 
-    // Calculate pitch, roll, yaw for stabilization and navigation
-    euler_angles();
-
-    // update trig values including _cos_roll, cos_pitch
-    update_trig();
+    // calculate the euler angles and DCM matrix which will be used
+    // for high level navigation control. Apply trim such that a
+    // positive trim value results in a positive vehicle rotation
+    // about that axis (ie a negative offset)
+    _body_dcm_matrix = _dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
+    _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     backup_attitude();
 
     // remember the last origin for fallback support
     IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
+}
+
+void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
+{
+    results.roll_rad = roll;
+    results.pitch_rad = pitch;
+    results.yaw_rad = yaw;
+
+    results.dcm_matrix = _body_dcm_matrix;
+    results.gyro_estimate = _omega;
+    results.gyro_drift = _omega_I;
+
+    const uint8_t to_copy = MIN(sizeof(results.accel_ef), sizeof(_accel_ef));
+    memcpy(results.accel_ef, _accel_ef, to_copy);
+    results.accel_ef_blended = _accel_ef_blended;
 }
 
 /*
@@ -162,9 +179,6 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
 void
 AP_AHRS_DCM::reset(bool recover_eulers)
 {
-    // support locked access functions to AHRS data
-    WITH_SEMAPHORE(_rsem);
-    
     // reset the integration terms
     _omega_I.zero();
     _omega_P.zero();
@@ -437,8 +451,8 @@ bool AP_AHRS_DCM::use_compass(void)
     // degrees and the estimated wind speed is less than 80% of the
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
-    const int32_t error = labs(wrap_180_cd(yaw_sensor - AP::gps().ground_course_cd()));
-    if (error > 4500 && _wind.length() < AP::gps().ground_speed()*0.8f) {
+    const float error = fabsf(wrap_180(degrees(yaw) - AP::gps().ground_course()));
+    if (error > 45 && _wind.length() < AP::gps().ground_speed()*0.8f) {
         if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
@@ -727,8 +741,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         Vector3f airspeed = velocity - _wind;
 
         // rotate vector to body frame
-        const Matrix3f &rot = get_rotation_body_to_ned();
-        airspeed = rot.mul_transpose(airspeed);
+        airspeed = _body_dcm_matrix.mul_transpose(airspeed);
 
         // take positive component in X direction. This mimics a pitot
         // tube
@@ -913,7 +926,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
             _gps.ground_speed() < GPS_SPEED_MIN &&
             _ins.get_accel().x >= 7 &&
-            pitch_sensor > -3000 && pitch_sensor < 3000) {
+        pitch > radians(-30) && pitch < radians(30)) {
         // assume we are in a launch acceleration, and reduce the
         // rp gain by 50% to reduce the impact of GPS lag on
         // takeoff attitude when using a catapult
@@ -1012,19 +1025,6 @@ void AP_AHRS_DCM::estimate_wind(void)
     }
 }
 
-
-
-// calculate the euler angles and DCM matrix which will be used for high level
-// navigation control. Apply trim such that a positive trim value results in a
-// positive vehicle rotation about that axis (ie a negative offset)
-void
-AP_AHRS_DCM::euler_angles(void)
-{
-    _body_dcm_matrix = _dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
-    _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
-
-    update_cd_values();
-}
 
 // return our current position estimate using
 // dead-reckoning or GPS
@@ -1155,6 +1155,18 @@ bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
     return true;
 }
 
+// Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+// This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+bool AP_AHRS_DCM::get_vert_pos_rate(float &velocity) const
+{
+    Vector3f velned;
+    if (!get_velocity_NED(velned)) {
+        return false;
+    }
+    velocity = velned.z;
+    return true;
+}
+
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 // requires_position should be true if horizontal position configuration should be checked (not used)
 bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
@@ -1169,7 +1181,7 @@ bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8
 /*
   relative-origin functions for fallback in AP_InertialNav
 */
-bool AP_AHRS_DCM::get_origin_fallback(Location &ret) const
+bool AP_AHRS_DCM::get_origin(Location &ret) const
 {
     ret = last_origin;
     if (ret.is_zero()) {
@@ -1182,7 +1194,7 @@ bool AP_AHRS_DCM::get_origin_fallback(Location &ret) const
 bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
 {
     Location origin;
-    if (!AP_AHRS_DCM::get_origin_fallback(origin)) {
+    if (!AP_AHRS_DCM::get_origin(origin)) {
         return false;
     }
     Location loc;
@@ -1211,4 +1223,10 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
     }
     posD = posNED.z;
     return true;
+}
+
+void AP_AHRS_DCM::send_ekf_status_report(mavlink_channel_t chan) const
+{
+    // send zero status report
+    mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
 }
