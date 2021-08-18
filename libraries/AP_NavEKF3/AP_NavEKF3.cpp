@@ -1475,6 +1475,15 @@ bool NavEKF3::using_noncompass_for_yaw(void) const
     return core[primary].using_noncompass_for_yaw();
 }
 
+// are we using (aka fusing) external nav for yaw?
+bool NavEKF3::using_extnav_for_yaw() const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].using_extnav_for_yaw();
+}
+
 // check if configured to use GPS for horizontal position estimation
 bool NavEKF3::configuredToUseGPSForPosXY(void) const
 {

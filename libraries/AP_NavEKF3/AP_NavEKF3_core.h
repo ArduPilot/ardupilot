@@ -397,6 +397,9 @@ public:
     // are we using (aka fusing) a non-compass yaw?
     bool using_noncompass_for_yaw(void) const;
 
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
+
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
 

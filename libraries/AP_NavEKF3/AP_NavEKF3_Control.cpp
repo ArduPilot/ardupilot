@@ -588,6 +588,17 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
     return false;
 }
 
+// are we using (aka fusing) external nav for yaw?
+bool NavEKF3_core::using_extnav_for_yaw() const
+{
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+    }
+#endif
+    return false;
+}
+
 /*
   should we assume zero sideslip?
  */
