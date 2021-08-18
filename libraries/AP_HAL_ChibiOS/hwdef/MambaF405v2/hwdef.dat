@@ -41,8 +41,8 @@ PA9 USART1_TX USART1 NODMA
 # Alt config to allow RCIN on UART
 PA10 USART1_RX USART1 NODMA ALT(1)
 
-# SBUS inversion control pin, active low
-PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
+# SBUS inversion control pin, active high
+PC0 USART1_RXINV OUTPUT LOW GPIO(78) POL(1)
 
 # USART3
 PB10 USART3_TX USART3
