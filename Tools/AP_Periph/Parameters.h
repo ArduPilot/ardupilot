@@ -114,7 +114,7 @@ public:
     AP_Int32        log_bitmask;
 #endif
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     AP_Int16 sysid_this_mav;
 #endif
 
