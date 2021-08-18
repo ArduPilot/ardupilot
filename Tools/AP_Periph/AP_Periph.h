@@ -23,7 +23,7 @@
 #include <AP_HAL_SITL/CANSocketIface.h>
 #endif
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
 #endif
 
@@ -219,7 +219,7 @@ public:
     AP_Logger logger;
 #endif
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
     // setup the var_info table
