@@ -329,6 +329,9 @@ public:
     // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
     bool using_noncompass_for_yaw(void) const override;
 
+    // check if external nav is providing yaw
+    bool using_extnav_for_yaw(void) const override;
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise) override;
 
