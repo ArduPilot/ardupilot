@@ -1789,7 +1789,7 @@ void QuadPlane::update(void)
         // output to motors
         motors_output();
 
-        if (now - last_vtol_mode_ms > 1000 && tailsitter.enabled()) {
+        if (tailsitter.enabled() && (now - last_vtol_mode_ms) > 1000) {
             /*
               we are just entering a VTOL mode as a tailsitter, set
               our transition state so the fixed wing controller brings
@@ -1799,7 +1799,8 @@ void QuadPlane::update(void)
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
             transition_initial_pitch = constrain_float(ahrs.pitch_sensor,-8500,8500);
-        } else if (tailsitter.enabled() &&
+        }
+        if (tailsitter.enabled() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             float aspeed;
             bool have_airspeed = ahrs.airspeed_estimate(aspeed);
