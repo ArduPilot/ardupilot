@@ -2314,11 +2314,11 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
         // Check vs DCM yaw if this vehicle could use DCM in flight
         // and if not using an external yaw source (DCM does not support external yaw sources)
-        bool using_external_yaw = false;
+        bool using_noncompass_for_yaw = false;
 #if HAL_NAVEKF3_AVAILABLE
-        using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
+        using_noncompass_for_yaw = (ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
 #endif
-        if (!always_use_EKF() && !using_external_yaw) {
+        if (!always_use_EKF() && !using_noncompass_for_yaw) {
             Vector3f angle_diff;
             primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
@@ -3022,8 +3022,8 @@ void AP_AHRS::Log_Write()
 #endif
 }
 
-// check whether compass can be bypassed for arming check in case when external navigation data is available 
-bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
+// check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+bool AP_AHRS::using_noncompass_for_yaw(void) const
 {
     switch (active_EKF_type()) {
 #if HAL_NAVEKF2_AVAILABLE
@@ -3033,7 +3033,7 @@ bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
     case EKFType::NONE:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.using_external_yaw();
+        return EKF3.using_noncompass_for_yaw();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
