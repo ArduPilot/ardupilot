@@ -170,18 +170,6 @@ uint8_t AP_RSSI::read_receiver_rssi_uint8()
     return read_receiver_rssi() * 255; 
 }
 
-// Read the receiver RSSI value as an 8-bit integer with adhering to MAVLink standard
-// 0 represents weakest signal, 254 represents maximum signal, 255 represents invalid/unknown signal
-// we could rescale to range [0..254], but rather simply avoid 255, as this makes number consistent across telemetries
-uint8_t AP_RSSI::read_receiver_rssi_mavlink()
-{
-    if (!enabled()) {
-        return 255;
-    }
-    uint8_t rssi = read_receiver_rssi() * 255;
-    return (rssi < 255) ? rssi : 254;
-}
-
 // Private
 // -------
 
