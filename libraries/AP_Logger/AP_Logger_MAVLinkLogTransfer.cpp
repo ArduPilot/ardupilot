@@ -22,7 +22,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h> // for LOG_ENTRY
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
