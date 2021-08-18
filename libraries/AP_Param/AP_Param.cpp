@@ -53,10 +53,10 @@ AP_Param *AP_Param::_singleton;
  # define Debug(fmt, args ...)
 #endif
 
-#ifdef HAL_NO_GCS
-#define GCS_SEND_PARAM(name, type, v)
-#else
+#if HAL_GCS_ENABLED
 #define GCS_SEND_PARAM(name, type, v) gcs().send_parameter_value(name, type, v)
+#else
+#define GCS_SEND_PARAM(name, type, v)
 #endif
 
 // Note about AP_Vector3f handling.
@@ -2379,7 +2379,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     // of a set of the first element of a AP_Vector3f. This happens as the ap->save() call can't
     // distinguish between a vector and scalar save. It means that setting first element of a vector
     // via MAVLink results in sending all 3 elements to the GCS
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     const Vector3f &v = ((AP_Vector3f *)this)->get();
     char name2[AP_MAX_NAME_SIZE+1];
     strncpy(name2, name, AP_MAX_NAME_SIZE);
@@ -2392,7 +2392,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.z);
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED
 }
 
 /*
