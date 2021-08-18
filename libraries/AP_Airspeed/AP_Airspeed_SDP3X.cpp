@@ -115,7 +115,7 @@ bool AP_Airspeed_SDP3X::init()
 
         found = true;
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         char c = 'X';
         switch (_scale) {
         case SDP3X_SCALE_PRESSURE_SDP31:
