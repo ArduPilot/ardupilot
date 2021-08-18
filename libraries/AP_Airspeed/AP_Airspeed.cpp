@@ -598,7 +598,7 @@ void AP_Airspeed::update(bool log)
         read(i);
     }
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     // debugging until we get MAVLink support for 2nd airspeed sensor
     if (enabled(1)) {
         gcs().send_named_float("AS2", get_airspeed(1));
