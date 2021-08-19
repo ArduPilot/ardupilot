@@ -144,7 +144,7 @@ def build_examples(**kwargs):
 
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux']:
+    for target in ['linux', 'sitl']:
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -164,20 +164,22 @@ def run_unit_test(test):
 
 def run_unit_tests():
     """Run all unit tests files."""
-    binary_dir = util.reltopdir(os.path.join('build',
-                                             'linux',
-                                             'tests',
-                                             ))
-    tests = glob.glob("%s/*" % binary_dir)
     success = True
     fail_list = []
-    for test in tests:
-        try:
-            run_unit_test(test)
-        except subprocess.CalledProcessError:
-            print("Exception running (%s)" % test)
-            fail_list.append(os.path.basename(test))
-            success = False
+    for target in ['linux', 'sitl']:
+        binary_dir = util.reltopdir(os.path.join('build',
+                                                 target,
+                                                 'tests',
+                                                 ))
+        tests = glob.glob("%s/*" % binary_dir)
+        for test in tests:
+            try:
+                run_unit_test(test)
+            except subprocess.CalledProcessError:
+                print("Exception running (%s)" % test)
+                fail_list.append(target + '/' + os.path.basename(test))
+                success = False
+
     print("Failing tests:")
     for failure in fail_list:
         print("  %s" % failure)
