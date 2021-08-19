@@ -25,6 +25,9 @@ generate_parameters() {
     if [ -e "Parameters.rst" ]; then
 	/bin/cp Parameters.rst "$VEHICLE_PARAMS_DIR/"
     fi
+    if [ -e "ParametersLatex.rst" ]; then
+    /bin/cp ParametersLatex.rst "$VEHICLE_PARAMS_DIR/"
+    fi
 }
 
 generate_sitl_parameters() {
@@ -41,6 +44,9 @@ generate_sitl_parameters() {
     xz -e <"$VEHICLE_PARAMS_DIR"/apm.pdef.xml >"$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz.new && mv "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz.new "$VEHICLE_PARAMS_DIR"/apm.pdef.xml.xz
     if [ -e "Parameters.rst" ]; then
 	/bin/cp Parameters.rst "$VEHICLE_PARAMS_DIR/"
+    fi
+    if [ -e "ParametersLatex.rst" ]; then
+    /bin/cp ParametersLatex.rst "$VEHICLE_PARAMS_DIR/"
     fi
 }
 
