@@ -30,7 +30,7 @@
 using namespace ChibiOS;
 
 // GPIO pin table from hwdef.dat
-static struct gpio_entry {
+struct gpio_entry {
     uint8_t pin_num;
     bool enabled;
     uint8_t pwm_num;
@@ -40,16 +40,18 @@ static struct gpio_entry {
     uint8_t mode;
     thread_reference_t thd_wait;
     uint16_t isr_quota;
-} _gpio_tab[] = HAL_GPIO_PINS;
+};
 
-#define NUM_PINS ARRAY_SIZE(_gpio_tab)
-#define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
+#if HAL_GPIO_NUM_PINS
+static struct gpio_entry _gpio_tab[] = HAL_GPIO_PINS;
+#endif
 
 /*
   map a user pin number to a GPIO table entry
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
+#if HAL_GPIO_NUM_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
             if (check_enabled && !_gpio_tab[i].enabled) {
@@ -58,6 +60,7 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
             return &_gpio_tab[i];
         }
     }
+#endif
     return NULL;
 }
 
@@ -69,6 +72,7 @@ GPIO::GPIO()
 
 void GPIO::init()
 {
+#if HAL_GPIO_NUM_PINS
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !defined(HAL_BOOTLOADER_BUILD)
     uint8_t chan_offset = 0;
 #if HAL_WITH_IO_MCU
@@ -83,6 +87,7 @@ void GPIO::init()
             g->enabled = SRV_Channels::is_GPIO((g->pwm_num-1)+chan_offset);
         }
     }
+#endif // HAL_GPIO_NUM_PINS
 #endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
@@ -453,6 +458,7 @@ bool GPIO::valid_pin(uint8_t pin) const
 */
 void GPIO::timer_tick()
 {
+#if HAL_GPIO_NUM_PINS
     // allow 100k interrupts/second max for GPIO interrupt sources, which is
     // 10k per 100ms call to timer_tick()
     const uint16_t quota = 10000U;
@@ -468,5 +474,6 @@ void GPIO::timer_tick()
         }
         _gpio_tab[i].isr_quota = quota;
     }
+#endif
 }
 #endif // IOMCU_FW

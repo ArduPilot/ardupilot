@@ -1794,6 +1794,7 @@ def write_GPIO_config(f):
                 (gpio, pwm, port, pin, p))
     # and write #defines for use by config code
     f.write('}\n\n')
+    f.write('#define HAL_GPIO_NUM_PINS %u\\\n' % len(gpios))
     f.write('// full pin define list\n')
     last_label = None
     for l in sorted(list(set(bylabel.keys()))):
