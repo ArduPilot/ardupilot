@@ -488,16 +488,35 @@ bool AP_Arming::gps_checks(bool report)
                 return false;
         }
 
-        //GPS OK?
-        if (!AP::ahrs().home_is_set() ||
-            gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-            check_failed(ARMING_CHECK_GPS, report, "Bad GPS Position");
-            return false;
+        for (uint8_t i = 0; i < gps.num_sensors(); i++) {
+#if defined(GPS_BLENDED_INSTANCE)
+            if ((i != GPS_BLENDED_INSTANCE) &&
+#else
+            if (
+#endif
+                    (gps.get_type(i) == AP_GPS::GPS_Type::GPS_TYPE_NONE)) {
+                if (gps.primary_sensor() == i) {
+                    check_failed(ARMING_CHECK_GPS, report, "GPS %i: primary but not configured", i+1);
+                    return false;
+                }
+                continue;
+            }
+
+            //GPS OK?
+            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+                check_failed(ARMING_CHECK_GPS, report, "GPS %i: Bad fix", i+1);
+                return false;
+            }
+
+            //GPS update rate acceptable
+            if (!gps.is_healthy(i)) {
+                check_failed(ARMING_CHECK_GPS, report, "GPS %i: not healthy", i+1);
+                return false;
+            }
         }
 
-        //GPS update rate acceptable
-        if (!gps.is_healthy()) {
-            check_failed(ARMING_CHECK_GPS, report, "GPS is not healthy");
+        if (!AP::ahrs().home_is_set()) {
+            check_failed(ARMING_CHECK_GPS, report, "GPS: waiting for home");
             return false;
         }
 
