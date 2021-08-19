@@ -156,5 +156,3 @@ define HAL_OSD_TYPE_DEFAULT 1
 
 # Font for OSD
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
-
-define BOARD_PWM_COUNT_DEFAULT 4

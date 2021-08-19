@@ -146,7 +146,6 @@ define OSD_PARAM_ENABLED 0
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define BOARD_PWM_COUNT_DEFAULT 6
 define STM32_PWM_USE_ADVANCED TRUE
 
 # disable SMBUS and fuel battery monitors to save flash

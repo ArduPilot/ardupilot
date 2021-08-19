@@ -150,7 +150,6 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define BOARD_PWM_COUNT_DEFAULT 10
 define STM32_PWM_USE_ADVANCED TRUE
 
 # FFT option (disabled by default)

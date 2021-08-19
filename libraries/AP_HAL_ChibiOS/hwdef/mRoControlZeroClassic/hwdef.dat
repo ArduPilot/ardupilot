@@ -237,8 +237,6 @@ PE5  TIM15_CH1 TIM15 PWM(10) GPIO(59)
 PC6  TIM8_CH1  TIM8  PWM(11) GPIO(60)
 PD15 TIM4_CH4  TIM4  PWM(12) GPIO(61)
 
-define BOARD_PWM_COUNT_DEFAULT 12
-
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.
 PG2 MPU_DRDY INPUT

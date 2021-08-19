@@ -148,6 +148,3 @@ define HAL_LOGGING_DATAFLASH
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
-
-# 8 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8

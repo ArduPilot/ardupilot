@@ -147,8 +147,6 @@ define HAL_GPIO_A_LED_PIN 41
 #To have complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 6
-
 define OSD_ENABLED 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin

@@ -146,8 +146,6 @@ define HAL_OSD_TYPE_DEFAULT 1
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
-define BOARD_PWM_COUNT_DEFAULT 4
-
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
