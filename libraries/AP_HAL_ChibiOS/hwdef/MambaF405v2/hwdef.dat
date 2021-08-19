@@ -154,6 +154,3 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # To complementary channels work we define this
 #define STM32_PWM_USE_ADVANCED TRUE
-
-define BOARD_PWM_COUNT_DEFAULT 4
-
