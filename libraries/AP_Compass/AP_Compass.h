@@ -173,8 +173,10 @@ public:
         _per_motor.calibration_end();
     }
 #endif
-    
-    void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+
+    // start_calibration_all will only return false if there are no
+    // compasses to calibrate.
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
     void cancel_calibration_all();
 
