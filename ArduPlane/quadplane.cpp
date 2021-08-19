@@ -1569,6 +1569,7 @@ void QuadPlane::update_transition(void)
         if (transition_state == TRANSITION_ANGLE_WAIT_FW &&
             tailsitter.transition_fw_complete()) {
             transition_state = TRANSITION_DONE;
+            attitude_control->reset_rate_controller_I_terms();
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
         }
@@ -1810,6 +1811,7 @@ void QuadPlane::update(void)
                 */
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
+                attitude_control->reset_rate_controller_I_terms();
             }
         } else {
             /*

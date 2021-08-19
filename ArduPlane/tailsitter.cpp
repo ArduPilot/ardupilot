@@ -413,7 +413,6 @@ bool Tailsitter::transition_vtol_complete(void) const
         return true;
     }
     // still waiting
-    quadplane.attitude_control->reset_rate_controller_I_terms();
     return false;
 }
 
