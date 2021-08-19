@@ -17,6 +17,7 @@ from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
+from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
@@ -34,7 +35,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
 parser.add_argument("--sitl",
                     dest='emit_sitl',
@@ -455,6 +456,7 @@ all_emitters = {
     'xml': XmlEmit,
     'html': HtmlEmit,
     'rst': RSTEmit,
+    'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
     'xml_mp': XmlEmitMP,
 }
