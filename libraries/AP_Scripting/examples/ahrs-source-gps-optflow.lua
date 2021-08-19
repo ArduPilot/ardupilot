@@ -41,10 +41,11 @@ local scr_user3_param = Parameter() -- user3 param (optical flow quality thresho
 local scr_user4_param = Parameter() -- user4 param (optical flow innovation threshold)
 
 -- initialise parameters
-assert(scr_user1_param:init('SCR_USER1'), 'ahrs-source.lua: could not find SCR_USER1 parameter')
-assert(scr_user2_param:init('SCR_USER2'), 'ahrs-source.lua: could not find SCR_USER2 parameter')
-assert(scr_user3_param:init('SCR_USER3'), 'ahrs-source.lua: could not find SCR_USER3 parameter')
-assert(scr_user4_param:init('SCR_USER4'), 'ahrs-source.lua: could not find SCR_USER4 parameter')
+assert(scr_user1_param:init('SCR_USER1'), 'could not find SCR_USER1 parameter')
+assert(scr_user2_param:init('SCR_USER2'), 'could not find SCR_USER2 parameter')
+assert(scr_user3_param:init('SCR_USER3'), 'could not find SCR_USER3 parameter')
+assert(scr_user4_param:init('SCR_USER4'), 'could not find SCR_USER4 parameter')
+assert(optical_flow, 'could not access optical flow')
 
 -- play tune on buzzer to alert user to change in active source set
 function play_source_tune(source)
@@ -67,35 +68,35 @@ function update()
   -- auto source from RCx_FUNCTION = 300 (Scripting1)
   local rc_function_source = rc:find_channel_for_option(90)
   local rc_function_auto = rc:find_channel_for_option(300)
-  if (rc_function_source == nil) or (rc_function_auto == nil) then
+  if not rc_function_source or  not rc_function_auto then
     gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
 
   -- check rangefinder distance threshold has been set
   local rangefinder_thresh_dist = scr_user1_param:get()     -- SCR_USER1 holds rangefinder threshold
-  if (rangefinder_thresh_dist == nil) or (rangefinder_thresh_dist <= 0) then
+  if (rangefinder_thresh_dist <= 0) then
     gcs:send_text(0, "ahrs-source.lua: set SCR_USER1 to rangefinder threshold")
     return update, 1000
   end
 
   -- check GPS speed accuracy threshold has been set
   local gps_speedaccuracy_thresh = scr_user2_param:get()    -- SCR_USER2 holds GPS speed accuracy threshold
-  if (gps_speedaccuracy_thresh == nil) or (gps_speedaccuracy_thresh <= 0) then
+  if (gps_speedaccuracy_thresh <= 0) then
     gcs:send_text(0, "ahrs-source.lua: set SCR_USER2 to GPS speed accuracy threshold")
     return update, 1000
   end
 
   -- check optical flow quality threshold has been set
   local opticalflow_quality_thresh = scr_user3_param:get()  -- SCR_USER3 holds opticalflow quality
-  if (opticalflow_quality_thresh == nil) or (opticalflow_quality_thresh <= 0) then
+  if (opticalflow_quality_thresh <= 0) then
     gcs:send_text(0, "ahrs-source.lua: set SCR_USER3 to OpticalFlow quality threshold")
     return update, 1000
   end
 
   -- check optical flow innovation threshold has been set
   local opticalflow_innov_thresh = scr_user4_param:get()    -- SCR_USER4 holds opticalflow innovation
-  if (opticalflow_innov_thresh == nil) or (opticalflow_innov_thresh <= 0) then
+  if (opticalflow_innov_thresh <= 0) then
     gcs:send_text(0, "ahrs-source.lua: set SCR_USER4 to OpticalFlow innovation threshold")
     return update, 1000
   end
