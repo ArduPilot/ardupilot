@@ -109,6 +109,10 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
         echo "Installing pyenv"
         curl https://pyenv.run | bash
 
+        pushd $HOME/.pyenv
+        git fetch --tags
+        git checkout v2.0.4
+        popd
         exportline="export PYENV_ROOT=\$HOME/.pyenv"
         echo $exportline >> ~/$SHELL_LOGIN
         exportline="export PATH=\$PYENV_ROOT/bin:\$PATH"
