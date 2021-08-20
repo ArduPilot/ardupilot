@@ -125,7 +125,25 @@ public:
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
     bool get_relative_position_D_origin(float &posD) const override;
-    
+
+protected:
+
+    // settable parameters
+    AP_Float _kp_yaw;
+    AP_Float _kp;
+    AP_Float gps_gain;
+
+    AP_Float beta;
+
+    enum class GPSUse : uint8_t {
+        Disable = 0,
+        Enable  = 1,
+        EnableWithHeight = 2,
+    };
+
+    AP_Enum<GPSUse> _gps_use;
+    AP_Int8 _gps_minsats;
+
 private:
 
     // these are experimentally derived from the simulator
