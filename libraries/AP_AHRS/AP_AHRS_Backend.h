@@ -453,7 +453,4 @@ protected:
     float _sin_roll;
     float _sin_pitch;
     float _sin_yaw;
-
-    // which accelerometer instance is active
-    uint8_t _active_accel_instance;
 };
