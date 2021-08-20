@@ -154,6 +154,7 @@ public:
         SerialProtocol_FETtecOneWire = 38,
         SerialProtocol_Torqeedo = 39,
         SerialProtocol_AIS = 40,
+        SerialProtocol_CoDevESC = 41,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
