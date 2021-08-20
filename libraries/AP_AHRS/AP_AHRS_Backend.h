@@ -430,23 +430,6 @@ protected:
     // multi-thread access support
     HAL_Semaphore _rsem;
 
-    // settable parameters
-    // these are public for ArduCopter
-    AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
-
-    AP_Float beta;
-
-    enum class GPSUse : uint8_t {
-        Disable = 0,
-        Enable  = 1,
-        EnableWithHeight = 2,
-    };
-
-    AP_Enum<GPSUse> _gps_use;
-    AP_Int8 _gps_minsats;
-
     Matrix3f _custom_rotation;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
