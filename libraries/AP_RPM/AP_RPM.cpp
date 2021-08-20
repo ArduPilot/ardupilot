@@ -235,7 +235,7 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
                 return false;
             }
             if (!hal.gpio->valid_pin(_pin[i])) {
-                hal.util->snprintf(buffer, buflen, "RPM[%u] pin %d invalid", i + 1, _pin[i]);
+                hal.util->snprintf(buffer, buflen, "RPM[%u] pin %d invalid", unsigned(i + 1), int(_pin[i].get()));
                 return false;
             }
             break;

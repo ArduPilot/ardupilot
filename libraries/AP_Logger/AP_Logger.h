@@ -152,6 +152,12 @@ enum class LogEvent : uint8_t {
     FENCE_FLOOR_ENABLE = 80,
     FENCE_FLOOR_DISABLE = 81,
 
+    // if the EKF's source input set is changed (e.g. via a switch or
+    // a script), we log an event:
+    EK3_SOURCES_SET_TO_PRIMARY = 85,
+    EK3_SOURCES_SET_TO_SECONDARY = 86,
+    EK3_SOURCES_SET_TO_TERTIARY = 87,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
@@ -240,6 +246,7 @@ enum class LogErrorCode : uint8_t {
 class AP_Logger
 {
     friend class AP_Logger_Backend; // for _num_types
+    friend class AP_Logger_RateLimiter;
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
@@ -325,9 +332,11 @@ public:
 
     void Write(const char *name, const char *labels, const char *fmt, ...);
     void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    void WriteStreaming(const char *name, const char *labels, const char *fmt, ...);
+    void WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
-    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false);
+    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -384,6 +393,9 @@ public:
         AP_Int8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
         AP_Int16 min_MB_free;
+        AP_Float file_ratemax;
+        AP_Float mav_ratemax;
+        AP_Float blk_ratemax;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;

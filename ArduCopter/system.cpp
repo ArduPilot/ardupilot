@@ -199,7 +199,6 @@ void Copter::init_ardupilot()
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
         // set mode to STABILIZE will trigger mode change notification to pilot
         set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
-        AP_Notify::events.user_mode_change_failed = 1;
     }
 
     // flag that initialisation has completed
@@ -214,7 +213,7 @@ void Copter::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
-    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::COPTER);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());

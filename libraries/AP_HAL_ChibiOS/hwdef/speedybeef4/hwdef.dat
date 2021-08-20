@@ -142,10 +142,6 @@ SPIDEV dataflash SPI3 DEVID1 FLASH_CS    MODE3 32*MHZ 32*MHZ
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH
 
-
-# 8 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 8
-
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1

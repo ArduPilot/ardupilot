@@ -242,6 +242,9 @@ singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
 singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
+singleton RC_Channels method has_valid_input boolean
+singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
+singleton RC_Channels method lua_rc_channel alias get_channel
 
 include AP_SerialManager/AP_SerialManager.h
 
@@ -331,6 +334,7 @@ include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
 singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane method in_vtol_mode boolean
+singleton QuadPlane method in_assisted_flight boolean
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)

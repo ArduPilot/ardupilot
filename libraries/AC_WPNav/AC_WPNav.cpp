@@ -466,8 +466,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         update_vel_accel(_terain_vel, _terain_accel, dt, false);
         shape_vel_accel( _wp_desired_speed_xy_cms * offset_z_scaler, 0.0,
             _terain_vel, _terain_accel,
-            0.0, _wp_desired_speed_xy_cms,
-            -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_tc_xy_s(), dt);
+            -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
         vel_time_scalar = _terain_vel / _wp_desired_speed_xy_cms;
     }
 
@@ -838,7 +837,7 @@ bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_
 void AC_WPNav::calc_scurve_jerk_and_jerk_time()
 {
     // calculate jerk
-    _scurve_jerk = MIN(_attitude_control.get_ang_vel_roll_max_radss() * GRAVITY_MSS, _attitude_control.get_ang_vel_pitch_max_radss() * GRAVITY_MSS);
+    _scurve_jerk = MIN(_attitude_control.get_ang_vel_roll_max_rads() * GRAVITY_MSS, _attitude_control.get_ang_vel_pitch_max_rads() * GRAVITY_MSS);
     if (is_zero(_scurve_jerk)) {
         _scurve_jerk = _wp_jerk;
     } else {

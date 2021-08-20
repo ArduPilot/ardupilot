@@ -25,6 +25,7 @@ import socket
 import struct
 import random
 import threading
+import enum
 
 from MAVProxy.modules.lib import mp_util
 
@@ -41,18 +42,24 @@ try:
 except ImportError:
     import Queue
 
-MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE)
-MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE)
-MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
-                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE)
-MAVLINK_SET_POS_TYPE_MASK_FORCE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_FORCE_SET
-MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE
-MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
+
+# Enumeration convenience class for mavlink POSITION_TARGET_TYPEMASK
+class MAV_POS_TARGET_TYPE_MASK(enum.IntEnum):
+    POS_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE)
+    VEL_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE)
+    ACC_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                  mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE)
+    FORCE_SET  = mavutil.mavlink.POSITION_TARGET_TYPEMASK_FORCE_SET
+    YAW_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE
+    YAW_RATE_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
+    POS_ONLY   = VEL_IGNORE | ACC_IGNORE | YAW_IGNORE | YAW_RATE_IGNORE
+    LAST_BYTE  = 0xF000
+
 
 MAV_FRAMES_TO_TEST = [
     mavutil.mavlink.MAV_FRAME_GLOBAL,
@@ -1211,7 +1218,8 @@ class AutoTest(ABC):
                  logs_dir=None,
                  force_ahrs_type=None,
                  replay=False,
-                 sup_binaries=[]):
+                 sup_binaries=[],
+                 reset_after_every_test=False):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1234,6 +1242,7 @@ class AutoTest(ABC):
         if self.speedup is None:
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
+        self.reset_after_every_test = reset_after_every_test
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -1946,7 +1955,7 @@ class AutoTest(ABC):
         for message_info in message_infos:
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
-            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*$', message_info)  # noqa
+            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*true)?\s*$', message_info)  # noqa
             if m is None:
                 continue
             (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
@@ -1983,8 +1992,8 @@ class AutoTest(ABC):
                         if type(line) == bytes:
                             line = line.decode("utf-8")
                         if state == state_outside:
-                            if (re.match(r"\s*AP::logger\(\)[.]Write\(", line) or
-                                    re.match(r"\s*logger[.]Write\(", line)):
+                            if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
+                                    re.match(r"\s*logger[.]Write(?:Streaming)?\(", line)):
                                 state = state_inside
                                 line = re.sub("//.*", "", line) # trim comments
                                 log_write_statement = line
@@ -2008,10 +2017,10 @@ class AutoTest(ABC):
                 log_write_statement = re.sub(define, defines[define], log_write_statement)
             # fair warning: order is important here because of the
             # NKT/XKT special case below....
-            my_re = r' logger[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
+            my_re = r' logger[.]Write(?:Streaming)?\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
             m = re.match(my_re, log_write_statement)
             if m is None:
-                my_re = r' AP::logger\(\)[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
+                my_re = r' AP::logger\(\)[.]Write(?:Streaming)?\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
                 m = re.match(my_re, log_write_statement)
             if m is None:
                 raise NotAchievedException("Did not match (%s) with (%s)" % (log_write_statement, str(my_re)))
@@ -2728,6 +2737,55 @@ class AutoTest(ABC):
         self.delay_sim_time(1)
         self.set_rc(ch, 1000)
         self.delay_sim_time(1)
+
+    def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
+        '''takes a list of (type, n, e, alt) items.  Creates a mission in
+        absolute frame using alt as relative-to-home and n and e as
+        offsets in metres from home'''
+
+        # add a dummy waypoint for home
+        items = [(mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0)]
+        items.extend(items_in)
+        seq = 0
+        ret = []
+        for (t, n, e, alt) in items:
+            lat = 0
+            lng = 0
+            if n != 0 or e != 0:
+                loc = self.home_relative_loc_ne(n, e)
+                lat = loc.lat
+                lng = loc.lng
+            p1 = 0
+            frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+            if not self.ardupilot_stores_frame_for_cmd(t):
+                frame = mavutil.mavlink.MAV_FRAME_GLOBAL
+            ret.append(self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                seq, # seq
+                frame,
+                t,
+                0, # current
+                0, # autocontinue
+                p1, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(lat*1e7), # latitude
+                int(lng*1e7), # longitude
+                alt, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+            )
+            seq += 1
+
+        return ret
+
+    def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
+        mission = self.create_simple_relhome_mission(
+            items,
+            target_system=target_system,
+            target_component=target_component)
+        self.check_mission_upload_download(mission)
 
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
@@ -3634,6 +3692,18 @@ class AutoTest(ABC):
         else:
             return None
 
+    def set_safetyswitch_on(self):
+        self.set_safetyswitch(1)
+
+    def set_safetyswitch_off(self):
+        self.set_safetyswitch(0)
+
+    def set_safetyswitch(self, value, target_system=1, target_component=1):
+        self.mav.mav.set_mode_send(
+            target_system,
+            mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
+            value)
+
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
@@ -3934,13 +4004,12 @@ class AutoTest(ABC):
                 self.progress("MOTORS ARMED OK WITH RADIO")
                 self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
-                return True
+                return
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
-        self.progress("Failed to ARM with radio")
         self.set_output_to_trim(self.get_stick_arming_channel())
-        return False
+        raise NotAchievedException("Failed to ARM with radio")
 
     def disarm_motors_with_rc_input(self, timeout=20, watch_for_disabled=False):
         """Disarm motors with radio."""
@@ -3962,11 +4031,10 @@ class AutoTest(ABC):
                 self.progress("Found 'Rudder disarm: disabled' in statustext")
                 break
             self.context_clear_collection('STATUSTEXT')
-        if not ret:
-            self.progress("Failed to DISARM with RC input")
         self.set_output_to_trim(self.get_stick_arming_channel())
         self.context_pop()
-        return ret
+        if not ret:
+            raise NotAchievedException("Failed to DISARM with RC input")
 
     def arm_motors_with_switch(self, switch_chan, timeout=20):
         """Arm motors with switch."""
@@ -3977,9 +4045,8 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
-                return True
-        self.progress("Failed to ARM with switch")
-        return False
+                return
+        raise NotAchievedException("Failed to ARM with switch")
 
     def disarm_motors_with_switch(self, switch_chan, timeout=20):
         """Disarm motors with switch."""
@@ -3990,9 +4057,8 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("MOTORS DISARMED OK WITH SWITCH")
-                return True
-        self.progress("Failed to DISARM with switch")
-        return False
+                return
+        raise NotAchievedException("Failed to DISARM with switch")
 
     def disarm_wait(self, timeout=10):
         tstart = self.get_sim_time()
@@ -4711,7 +4777,7 @@ class AutoTest(ABC):
         data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
 
         if dist > dist_max:
-            raise NotAchievedException("simstate from startup location: %s" % data)
+            raise NotAchievedException("simstate far from startup location: %s" % data)
         self.progress("Simstate Close to startup location: %s" % data)
 
     def reach_distance_manual(self, distance):
@@ -4817,6 +4883,38 @@ class AutoTest(ABC):
         if relative:
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
+
+    def get_esc_rpm(self, esc):
+        if esc > 4:
+            raise ValueError("Only does 1-4")
+        m = self.mav.recv_match(type='ESC_TELEMETRY_1_TO_4', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not get ESC_TELEMETRY_1_TO_4")
+        self.progress("%s" % str(m))
+        return m.rpm[esc-1]
+
+    def find_first_set_bit(self, mask):
+        '''returns offset of first-set-bit (counting from right) in mask.  Returns None if no bits set'''
+        pos = 0
+        while mask != 0:
+            if mask & 0x1:
+                return pos
+            mask = mask >> 1
+            pos += 1
+        return None
+
+    def wait_esc_telem_rpm(self, esc, rpm_min, rpm_max, **kwargs):
+        '''wait for ESC to be between rpm_min and rpm_max'''
+        def validator(value2, target2=None):
+            return rpm_min <= value2 <= rpm_max
+        self.wait_and_maintain(
+            value_name="ESC %u RPM" % esc,
+            target=(rpm_min+rpm_max)/2.0,
+            current_value_getter=lambda: self.get_esc_rpm(esc),
+            accuracy=rpm_max-rpm_min,
+            validator=lambda value2, target2: validator(value2, target2),
+            **kwargs
+        )
 
     def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
         """Wait for a given altitude range."""
@@ -5984,6 +6082,9 @@ Also, ignores heartbeats not from our target system'''
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
+
+        if self.reset_after_every_test:
+            reset_needed = True
 
         if reset_needed:
             self.reset_SITL_commandline()
@@ -7430,15 +7531,13 @@ Also, ignores heartbeats not from our target system'''
 
         if not self.is_sub():
             self.start_subtest("Test arm with rc input")
-            if not self.arm_motors_with_rc_input():
-                raise NotAchievedException("Failed to arm with RC input")
+            self.arm_motors_with_rc_input()
             self.progress("disarm with rc input")
             if self.is_balancebot():
                 self.progress("balancebot can't disarm with RC input")
                 self.disarm_vehicle()
             else:
-                if not self.disarm_motors_with_rc_input():
-                    raise NotAchievedException("Failed to disarm with RC input")
+                self.disarm_motors_with_rc_input()
 
             self.start_subtest("Test arm and disarm with switch")
             arming_switch = 7
@@ -7446,10 +7545,8 @@ Also, ignores heartbeats not from our target system'''
             self.set_rc(arming_switch, 1000)
             # delay so a transition is seen by the RC switch code:
             self.delay_sim_time(0.5)
-            if not self.arm_motors_with_switch(arming_switch):
-                raise NotAchievedException("Failed to arm with switch")
-            if not self.disarm_motors_with_switch(arming_switch):
-                raise NotAchievedException("Failed to disarm with switch")
+            self.arm_motors_with_switch(arming_switch)
+            self.disarm_motors_with_switch(arming_switch)
             self.set_rc(arming_switch, 1000)
 
             if self.is_copter():
@@ -7460,10 +7557,18 @@ Also, ignores heartbeats not from our target system'''
                         raise NotAchievedException("Armed when throttle too high")
                 except ValueError:
                     pass
-                if self.arm_motors_with_rc_input():
+                try:
+                    self.arm_motors_with_rc_input()
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException(
                         "Armed via RC when throttle too high")
-                if self.arm_motors_with_switch(arming_switch):
+                try:
+                    self.arm_motors_with_switch(arming_switch)
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException("Armed via RC when switch too high")
                 self.zero_throttle()
                 self.set_rc(arming_switch, 1000)
@@ -7471,12 +7576,20 @@ Also, ignores heartbeats not from our target system'''
             # Sub doesn't have 'stick commands'
             self.start_subtest("Test arming failure with ARMING_RUDDER=0")
             self.set_parameter("ARMING_RUDDER", 0)
-            if self.arm_motors_with_rc_input():
+            try:
+                self.arm_motors_with_rc_input()
+            except NotAchievedException:
+                pass
+            if self.armed():
                 raise NotAchievedException(
                     "Armed with rudder when ARMING_RUDDER=0")
             self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
             self.arm_vehicle()
-            if self.disarm_motors_with_rc_input(watch_for_disabled=True):
+            try:
+                self.disarm_motors_with_rc_input(watch_for_disabled=True)
+            except NotAchievedException:
+                pass
+            if not self.armed():
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
@@ -7484,7 +7597,11 @@ Also, ignores heartbeats not from our target system'''
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
-            if self.disarm_motors_with_rc_input():
+            try:
+                self.disarm_motors_with_rc_input()
+            except NotAchievedException:
+                pass
+            if not self.armed():
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
@@ -7494,12 +7611,19 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter():
                 self.start_subtest("Test arming failure with interlock enabled")
                 self.set_rc(interlock_channel, 2000)
-                if self.arm_motors_with_rc_input():
+                try:
+                    self.arm_motors_with_rc_input()
+                except NotAchievedException:
+                    pass
+                if self.armed():
                     raise NotAchievedException(
                         "Armed with RC input when interlock enabled")
-                if self.arm_motors_with_switch(arming_switch):
-                    raise NotAchievedException(
-                        "Armed with switch when interlock enabled")
+                try:
+                    self.arm_motors_with_switch(arming_switch)
+                except NotAchievedException:
+                    pass
+                if self.armed():
+                    raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
                 self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
@@ -8116,11 +8240,10 @@ Also, ignores heartbeats not from our target system'''
                 self.sysid_thismav(),  # target system_id
                 1,  # target component id
                 mav_frame,
-                MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                 int(lat * 1.0e7),  # lat
                 int(lng * 1.0e7),  # lon
                 alt,  # alt
@@ -8184,10 +8307,9 @@ Also, ignores heartbeats not from our target system'''
                     self.sysid_thismav(),  # target system_id
                     1,  # target component id
                     frame,
-                    MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
-                    MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                    MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                    MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                    MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                     int(targetpos.lat * 1.0e7),  # lat
                     int(targetpos.lng * 1.0e7),  # lon
                     to_alt_frame(targetpos.alt, frame_name),  # alt
@@ -8214,10 +8336,9 @@ Also, ignores heartbeats not from our target system'''
                     self.sysid_thismav(),  # target system_id
                     1,  # target component id
                     frame,
-                    MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
-                    MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                    MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                    MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                    MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                     int(targetpos.lat * 1.0e7),  # lat
                     int(targetpos.lng * 1.0e7),  # lon
                     to_alt_frame(targetpos.alt, frame_name),  # alt
@@ -8244,10 +8365,9 @@ Also, ignores heartbeats not from our target system'''
                         self.sysid_thismav(),  # target system_id
                         1,  # target component id
                         frame,
-                        MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE,
                         int(targetpos.lat * 1.0e7),  # lat
                         int(targetpos.lng * 1.0e7),  # lon
                         to_alt_frame(targetpos.alt, frame_name),  # alt
@@ -8338,11 +8458,10 @@ Also, ignores heartbeats not from our target system'''
                 self.sysid_thismav(),  # target system_id
                 1,  # target component id
                 mav_frame,
-                MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE |
-                MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                 0,
                 0,
                 0,
@@ -8436,10 +8555,9 @@ Also, ignores heartbeats not from our target system'''
                         self.sysid_thismav(),  # target system_id
                         1,  # target component id
                         mav_frame,
-                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                        MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                        MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                         0,
                         0,
                         0,
@@ -8466,10 +8584,9 @@ Also, ignores heartbeats not from our target system'''
                         self.sysid_thismav(),  # target system_id
                         1,  # target component id
                         mav_frame,
-                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                        MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                        MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                         0,
                         0,
                         0,
@@ -8535,10 +8652,9 @@ Also, ignores heartbeats not from our target system'''
                         self.sysid_thismav(),  # target system_id
                         1,  # target component id
                         mav_frame,
-                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE,
                         0,
                         0,
                         0,
@@ -8565,10 +8681,9 @@ Also, ignores heartbeats not from our target system'''
                         self.sysid_thismav(),  # target system_id
                         1,  # target component id
                         mav_frame,
-                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
-                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
-                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                        MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE,
                         0,
                         0,
                         0,
@@ -10325,19 +10440,49 @@ switch value'''
         if m is None:
             raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
         gpi_abs_alt = int((m.alt+500) / 1000) # mm -> m
+
+        # grab a battery-remaining percentage
+        self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                     255,  # battery mask
+                     96,  # percentage
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not receive BATTERY_STATUS")
+        want_battery_remaining_pct = m.battery_remaining
+
         tstart = self.get_sim_time_cached()
+        have_alt = False
+        have_battery = False
         while True:
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 10:
                 raise AutoTestTimeoutException("Failed to get frsky D data")
             frsky.update()
+
             alt = frsky.get_data(frsky.dataid_GPS_ALT_BP)
             self.progress("Got alt (%s) mav=%s" % (str(alt), str(gpi_abs_alt)))
             if alt is None:
                 continue
-            self.drain_mav_unparsed()
             if alt == gpi_abs_alt:
+                have_alt = True
+
+            batt = frsky.get_data(frsky.dataid_FUEL)
+            self.progress("Got batt (%s) mav=%s" % (str(batt), str(want_battery_remaining_pct)))
+            if batt is None:
+                continue
+            if batt == want_battery_remaining_pct:
+                have_battery = True
+
+            if have_alt and have_battery:
                 break
+
+            self.drain_mav_unparsed()
 
     def test_ltm_g(self, ltm):
         g = ltm.g()

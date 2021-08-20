@@ -40,6 +40,7 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -1115,6 +1116,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FENCE_ENABLED 0xF5
 #define SYM_FENCE_DISABLED 0xF6
 #define SYM_RNGFD     0xF7
+#define SYM_LQ        0xF8
 
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
@@ -1263,7 +1265,7 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
     osd->max_battery_voltage = MAX(osd->max_battery_voltage,v);
     if (osd->cell_count > 0) {
-        v = v / osd->cell_count;  
+        v = v / osd->cell_count;
         backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYM_BATT_FULL + p, v, SYM_VOLT);
     } else if (osd->cell_count < 0) { // user must decide on autodetect cell count or manually entered to display this panel since default is -1
         backend->write(x,y, false, "%c---%c", SYM_BATT_FULL + p, SYM_VOLT);
@@ -1299,9 +1301,9 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
     if (ap_rssi) {
         const int16_t lqv = ap_rssi->read_receiver_link_quality();
         if (lqv < 0){
-            backend->write(x, y, false, "%c--", SYM_RSSI);
+            backend->write(x, y, false, "%c--", SYM_LQ);
         } else {
-            backend->write(x, y, false, "%c%2d", SYM_RSSI, lqv);
+            backend->write(x, y, false, "%c%2d", SYM_LQ, lqv);
         }
     }
 }
@@ -1455,8 +1457,10 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    float roll = ahrs.roll;
-    float pitch = -ahrs.pitch;
+    float roll;
+    float pitch;
+    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
+    pitch *= -1;
 
     //inverted roll AH
     if (check_option(AP_OSD::OPTION_INVERTED_AH_ROLL)) {
@@ -1491,7 +1495,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
             }
         }
     }
-    backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
+
+    if (!check_option(AP_OSD::OPTION_DISABLE_CROSSHAIR)) {
+        backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
+    }
+
 }
 
 void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
@@ -1499,7 +1507,7 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
     char unit_icon = u_icon(DISTANCE);
     float distance_scaled = u_scale(DISTANCE, distance);
     const char *fmt = "%4.0f%c";
-    if (distance_scaled > 9999.0f) {
+    if (distance_scaled > 9999.0f || (osd->units == AP_OSD::UNITS_IMPERIAL && distance_scaled > 5280.0f && (osd->options & AP_OSD::OPTION_IMPERIAL_MILES))) {
         distance_scaled = u_scale(DISTANCE_LONG, distance);
         unit_icon= u_icon(DISTANCE_LONG);
         //try to pack as many useful info as possible

@@ -268,7 +268,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
 // @Field: PitT: pitch target
 
     //Write to data flash log
-    AP::logger().Write("AROT",
+    AP::logger().WriteStreaming("AROT",
                        "TimeUS,P,hserr,ColOut,FFCol,CRPM,SpdF,CmdV,p,ff,AccO,AccT,PitT",
                          "Qffffffffffff",
                         AP_HAL::micros64(),

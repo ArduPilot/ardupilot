@@ -30,7 +30,7 @@ AP_ESC_Telem_SITL::AP_ESC_Telem_SITL()
 
 void AP_ESC_Telem_SITL::update()
 {
-    SITL::SITL* sitl = AP::sitl();
+    SITL::SIM* sitl = AP::sitl();
 
     if (!sitl) {
         return;

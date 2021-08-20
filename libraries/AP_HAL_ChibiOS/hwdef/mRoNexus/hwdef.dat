@@ -119,8 +119,6 @@ PB5 CAN2_RX CAN2
 
 PB7 GPIO_CAN2_SILENT OUTPUT PUSHPULL LOW GPIO(73)
 
-define BOARD_PWM_COUNT_DEFAULT 0
-
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.
 PD8  DRDY_ADIS16470 INPUT GPIO(93)

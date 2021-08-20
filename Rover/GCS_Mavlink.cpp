@@ -78,7 +78,7 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -196,7 +196,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -211,7 +213,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -226,7 +230,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -241,7 +247,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -256,7 +264,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -271,7 +281,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -339,6 +351,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
                 oadb->send_adsb_vehicle(chan, interval_ms);
             }
         }
+        break;
+    }
+
+    case MSG_AIS_VESSEL: {
+#if HAL_AIS_ENABLED
+        rover.g2.ais.send(chan);
+#endif
         break;
     }
 
@@ -459,7 +478,6 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -517,7 +535,8 @@ static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
 static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE
+    MSG_ADSB_VEHICLE,
+    MSG_AIS_VESSEL,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {

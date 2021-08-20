@@ -146,7 +146,7 @@ protected:
 
     virtual bool ins_checks(bool report);
 
-    virtual bool compass_checks(bool report);
+    bool compass_checks(bool report);
 
     virtual bool gps_checks(bool report);
 
@@ -179,6 +179,8 @@ protected:
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
+
+    bool fettec_checks(bool display_failure) const;
 
     virtual bool proximity_checks(bool report) const;
 

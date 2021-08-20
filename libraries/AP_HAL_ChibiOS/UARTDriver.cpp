@@ -627,7 +627,7 @@ void UARTDriver::set_blocking_writes(bool blocking)
     _blocking_writes = blocking;
 }
 
-bool UARTDriver::tx_pending() { return false; }
+bool UARTDriver::tx_pending() { return _writebuf.available() > 0; }
 
 
 /*

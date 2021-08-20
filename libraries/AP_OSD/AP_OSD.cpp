@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll, 3:Convert feet to miles at 5280ft instead of 10000ft, 4:DisableCrosshair
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -433,8 +433,11 @@ void AP_OSD::update_current_screen()
     case PWM_RANGE:
         for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
             if (get_screen(i).enabled && get_screen(i).channel_min <= channel_value && get_screen(i).channel_max > channel_value) {
+                if (previous_pwm_screen == i) {
+                    break;
+                } else {
                 current_screen = previous_pwm_screen = i;
-                break;
+                }
             }
         }
         break;

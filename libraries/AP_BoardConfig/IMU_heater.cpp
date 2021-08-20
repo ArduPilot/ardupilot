@@ -83,7 +83,7 @@ void AP_BoardConfig::set_imu_temp(float current)
 // @Field: P: Proportional portion of response
 // @Field: I: Integral portion of response
 // @Field: Out: Controller output to heating element
-        AP::logger().Write("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
+        AP::logger().WriteStreaming("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
                            AP_HAL::micros64(),
                            avg, target,
                            heater.pi_controller.get_P(),

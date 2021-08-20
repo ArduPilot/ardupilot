@@ -85,6 +85,8 @@ public:
     void can_update();
     void can_mag_update();
     void can_gps_update();
+    void send_moving_baseline_msg();
+    void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
     void can_rangefinder_update();
@@ -107,6 +109,9 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
+#if HAL_NUM_CAN_IFACES >= 2
+    int8_t gps_mb_can_port = -1;
+#endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
@@ -243,6 +248,6 @@ namespace AP
 extern AP_Periph_FW periph;
 
 extern "C" {
-void can_printf(const char *fmt, ...);
+void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
 

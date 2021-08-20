@@ -26,7 +26,7 @@
 
 namespace SITL {
 
-SITL *_sitl;
+SIM *_sitl;
 
 /*
   update a simulated vehicle

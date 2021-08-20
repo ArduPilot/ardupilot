@@ -251,17 +251,17 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
 
+    if (fence == nullptr) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
+        return false;
+    }
+
     // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
     if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
         return false;
     }
 
     _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
-
-    if (fence == nullptr) {
-        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
-        return false;
-    }
 
     // clear all points
     _inclusion_polygon_numpoints = 0;
@@ -342,6 +342,11 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
 
+    if (fence == nullptr) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
+        return false;
+    }
+
     // skip unnecessary retry to build exclusion polygon if previous fence points have not changed 
     if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms()) {
         return false;
@@ -349,10 +354,6 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
 
     _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
 
-    if (fence == nullptr) {
-        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
-        return false;
-    }
 
     // clear all points
     _exclusion_polygon_numpoints = 0;

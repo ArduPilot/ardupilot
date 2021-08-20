@@ -169,6 +169,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_TURTLE_ENABLED == ENABLED
+        case Mode::Number::TURTLE:
+            ret = &mode_turtle;
+            break;
+#endif
+
         default:
             break;
     }
@@ -182,6 +188,10 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+    // make sad noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
@@ -190,10 +200,17 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
+    // update last reason
+    const ModeReason last_reason = _last_reason;
+    _last_reason = reason;
 
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
+        // make happy noise
+        if (copter.ap.initialised && (reason != last_reason)) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         return true;
     }
 
@@ -305,6 +322,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // update notify object
     notify_flight_mode();
+
+    // make happy noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change = 1;
+    }
 
     // return success
     return true;
@@ -530,14 +552,30 @@ void Mode::land_run_vertical_control(bool pause_descent)
         const bool navigating = pos_control->is_active_xy();
         bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
 
-        if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            // compute desired velocity
-            const float precland_acceptable_error = 15.0f;
-            const float precland_min_descent_speed = 10.0f;
-
-            float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy_cm()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+        if (doing_precision_landing) {
+            // prec landing is active
+            Vector2f target_pos;
+            float target_error_cm = 0.0f;
+            if (copter.precland.get_target_position_cm(target_pos)) {
+                const Vector2f current_pos = inertial_nav.get_position().xy();
+                // target is this many cm away from the vehicle
+                target_error_cm = (target_pos - current_pos).length();
+            }
+            // check if we should descend or not
+            const float max_horiz_pos_error_cm = copter.precland.get_max_xy_error_before_descending_cm();
+            if (target_error_cm > max_horiz_pos_error_cm && !is_zero(max_horiz_pos_error_cm)) {
+                // doing precland but too far away from the obstacle
+                // do not descend
+                cmb_rate = 0.0f;
+            } else if (copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
+                // very close to the ground and doing prec land, lets slow down to make sure we land on target
+                // compute desired descent velocity
+                const float precland_acceptable_error_cm = 15.0f;
+                const float precland_min_descent_speed_cms = 10.0f;
+                const float max_descent_speed_cms = abs(g.land_speed)*0.5f;
+                const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed_cms/precland_acceptable_error_cm));
+                cmb_rate = MIN(-precland_min_descent_speed_cms, -max_descent_speed_cms+land_slowdown);
+            }
         }
 #endif
     }

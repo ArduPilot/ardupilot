@@ -1,5 +1,28 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta7 14-Aug-2021
+Changes from 4.1.0-beta6
+1) Enhancements
+    a) Attitude and altitude control changes to support higher lean angles
+    b) Flywoo F745 supports external I2C compasses
+    c) GPS-for-yaw arming check added
+    d) GPS_DRV_OPTIONS allows forcing UBlox GPS to 115200 baud
+    e) Guided mode accepts higher speed and accel targets (no longer limited by WPNAV_ parameters)
+    f) Lua scripts can be placed in root of ROMFS (only relevant for developers)
+    g) PSC_VELXY_FILT renamed to _FLTE, PSC_VELXY_D_FILT renamed to _FLTD
+2) Bug Fixes
+    a) Beacon driver protected from requests for data for non-existant beacons
+    b) CAN threading fix to resolve potential lockup when lua scripts use CAN
+    c) EKF3 GSF can be invoked multiple times with source switching (no longer limited by EK3_GSF_RST_MAX)
+    d) EKF3 IMU offset fix (vehicle's reported position was slightly incorrect if INS_POS_XYZ params set)
+    e) Guided mode terrain following init fix (might fly at incorrect alt on second use)
+    f) Guided mode yaw rate target timeout fix (vehicle could keep spinning even after targets stopped arriving)
+    g) OSD overwrite and nullptr check fix
+    h) Proximity Avoidance auxilary switch also disables avoidance using upward facing lidar
+    i) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
+    j) RCOut banner displayed at very end of startup procedure to avoid invalid output
+    k) Tricopter tail servo alway uses regular PWM (fixes use with BLHeli motors)
+------------------------------------------------------------------
 Copter 4.1.0-beta6 23-Jul-2021
 Changes from 4.1.0-beta5
 1) Enhancements

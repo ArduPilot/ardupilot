@@ -35,7 +35,6 @@ public:
     AP_AHRS_DCM(const AP_AHRS_DCM &other) = delete;
     AP_AHRS_DCM &operator=(const AP_AHRS_DCM&) = delete;
 
-
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro() const override {
         return _omega;
@@ -61,6 +60,11 @@ public:
     // Methods
     void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
+
+    // return true if yaw has been initialised
+    bool yaw_initialised(void) const {
+        return have_initial_yaw;
+    }
 
     // dead-reckoning support
     virtual bool get_position(struct Location &loc) const override;
@@ -102,7 +106,6 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
-    bool set_home(const Location &loc) override WARN_IF_UNUSED;
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
@@ -114,6 +117,12 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
+    // relative-origin functions for fallback in AP_InertialNav
+    bool get_origin_fallback(Location &ret) const;
+    bool get_relative_position_NED_origin(Vector3f &vec) const override;
+    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
+    bool get_relative_position_D_origin(float &posD) const override;
+    
 private:
 
     // these are experimentally derived from the simulator
@@ -132,7 +141,6 @@ private:
     void            euler_angles(void);
     bool            have_gps(void) const;
     bool            use_fast_gains(void) const;
-    void            load_watchdog_home();
     void            backup_attitude(void);
 
     // primary representation of attitude of board used for all inertial calculations
@@ -148,6 +156,8 @@ private:
     float _omega_I_sum_time;
     Vector3f _omega;                            // Corrected Gyro_Vector data
 
+    bool have_initial_yaw; // true if the yaw value has been initialised with a reference
+
     // variables to cope with delaying the GA sum to match GPS lag
     Vector3f ra_delayed(uint8_t instance, const Vector3f &ra);
     Vector3f _ra_delay_buffer[INS_MAX_INSTANCES];
@@ -157,6 +167,13 @@ private:
 
     // P term yaw gain based on rate of change of horiz velocity
     float           _yaw_gain(void) const;
+
+    /* returns true if attitude should be corrected from GPS-derived
+     * velocity-deltas.  We turn this off for Copter and other similar
+     * vehicles while the vehicle is disarmed to avoid the HUD bobbing
+     * around while the vehicle is disarmed.
+     */
+    bool should_correct_centrifugal() const;
 
     // state to support status reporting
     float _renorm_val_sum;
@@ -186,6 +203,7 @@ private:
     // the lat/lng where we last had GPS lock
     int32_t _last_lat;
     int32_t _last_lng;
+    uint32_t _last_pos_ms;
 
     // position offset from last GPS lock
     float _position_offset_north;
@@ -211,4 +229,7 @@ private:
 
     // time when DCM was last reset
     uint32_t _last_startup_ms;
+
+    // last origin we returned, for DCM fallback from EKF
+    Location last_origin;
 };

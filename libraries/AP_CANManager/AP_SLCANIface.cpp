@@ -330,8 +330,7 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     *p++ = '\r';
     const auto frame_size = unsigned(p - &buffer[0]);
 
-    if (_port->txspace() < _pending_frame_size) {
-        _pending_frame_size = frame_size;
+    if (_port->txspace() < frame_size) {
         return 0;
     }
     //Write to Serial

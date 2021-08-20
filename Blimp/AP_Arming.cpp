@@ -78,23 +78,6 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
     return ret;
 }
 
-bool AP_Arming_Blimp::compass_checks(bool display_failure)
-{
-    bool ret = AP_Arming::compass_checks(display_failure);
-
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
-        // check compass offsets have been set.  AP_Arming only checks
-        // this if learning is off; Blimp *always* checks.
-        char failure_msg[50] = {};
-        if (!AP::compass().configured(failure_msg, ARRAY_SIZE(failure_msg))) {
-            check_failed(ARMING_CHECK_COMPASS, display_failure, "%s", failure_msg);
-            ret = false;
-        }
-    }
-
-    return ret;
-}
-
 bool AP_Arming_Blimp::ins_checks(bool display_failure)
 {
     bool ret = AP_Arming::ins_checks(display_failure);
@@ -384,8 +367,6 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         blimp.arming_altitude_m = blimp.inertial_nav.get_altitude() * 0.01;
     }
 
-    // enable gps velocity based centrifugal force compensation
-    ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
     // finally actually arm the motors
@@ -443,8 +424,6 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
     AP::logger().set_vehicle_armed(false);
 
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     blimp.ap.in_arming_delay = false;

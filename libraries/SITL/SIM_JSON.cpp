@@ -124,9 +124,9 @@ void JSON::output_servos(const struct sitl_input &input)
     This parser does not do any syntax checking, and is not at all
     general purpose
 */
-uint16_t JSON::parse_sensors(const char *json)
+uint32_t JSON::parse_sensors(const char *json)
 {
-    uint16_t received_bitmask = 0;
+    uint32_t received_bitmask = 0;
 
     //printf("%s\n", json);
     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
@@ -203,6 +203,11 @@ uint16_t JSON::parse_sensors(const char *json)
                 break;
             }
 
+            case BOOLEAN:
+                *((bool *)key.ptr) = strtoull(p, nullptr, 10) != 0;
+                //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
+                break;
+
         }
     }
 
@@ -246,7 +251,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    const uint16_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint32_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
         // did not receve one of the mandatory fields
         printf("Did not contain all mandatory fields\n");
@@ -285,6 +290,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
     velocity_ef = state.velocity;
     position = state.position;
     position.xy() += origin.get_distance_NE_double(home);
+    use_time_sync = !state.no_time_sync;
 
     // deal with euler or quaternion attitude
     if ((received_bitmask & QUAT_ATT) != 0) {
@@ -342,8 +348,9 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     if (is_positive(deltat) && deltat < 0.1) {
         // time in us to hz
-        adjust_frame_time(1.0 / deltat);
-
+        if (use_time_sync) {
+            adjust_frame_time(1.0 / deltat);
+        }
         // match actual frame rate with desired speedup
         time_advance();
     }
@@ -371,7 +378,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 // @Field: GX: Simulated gyroscope, X-axis (rad/sec)
 // @Field: GY: Simulated gyroscope, Y-axis (rad/sec)
 // @Field: GZ: Simulated gyroscope, Z-axis (rad/sec)
-    AP::logger().Write("JSN1", "TimeUS,TStamp,R,P,Y,GX,GY,GZ",
+    AP::logger().WriteStreaming("JSN1", "TimeUS,TStamp,R,P,Y,GX,GY,GZ",
                        "ssrrrEEE",
                        "F???????",
                        "Qfffffff",
@@ -398,7 +405,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 // @Field: AN: simulation's acceleration, North (m/s^2)
 // @Field: AE: simulation's acceleration, East (m/s^2)
 // @Field: AD: simulation's acceleration, Down (m/s^2)
-    AP::logger().Write("JSN2", "TimeUS,VN,VE,VD,AX,AY,AZ,AN,AE,AD",
+    AP::logger().WriteStreaming("JSN2", "TimeUS,VN,VE,VD,AX,AY,AZ,AN,AE,AD",
                        "snnnoooooo",
                        "F?????????",
                        "Qfffffffff",
@@ -437,7 +444,7 @@ void JSON::update(const struct sitl_input &input)
 #if 0
     // report frame rate
     if (frame_counter % 1000 == 0) {
-        printf("FPS %.2f\n", achieved_rate_hz); // this is instantaneous rather than any clever average
+        printf("FPS %.2f\n", rate_hz); // this is instantaneous rather than any clever average
     }
 #endif
 }

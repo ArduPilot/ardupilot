@@ -33,67 +33,18 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
-enum AHRS_VehicleClass : uint8_t {
-    AHRS_VEHICLE_UNKNOWN,
-    AHRS_VEHICLE_GROUND,
-    AHRS_VEHICLE_COPTER,
-    AHRS_VEHICLE_FIXED_WING,
-    AHRS_VEHICLE_SUBMARINE,
-};
-
-
 class AP_AHRS_Backend
 {
 public:
 
     // Constructor
-    AP_AHRS_Backend() {
-        // enable centrifugal correction by default
-        _flags.correct_centrifugal = true;
-
-        _last_trim = _trim.get();
-        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
-        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
-    }
+    AP_AHRS_Backend() {}
 
     // empty virtual destructor
     virtual ~AP_AHRS_Backend() {}
 
     // init sets up INS board orientation
     virtual void init();
-
-    // Accessors
-    void set_fly_forward(bool b) {
-        _flags.fly_forward = b;
-    }
-
-    bool get_fly_forward(void) const {
-        return _flags.fly_forward;
-    }
-
-    void set_takeoff_expected(bool b);
-
-    bool get_takeoff_expected(void) const {
-        return _flags.takeoff_expected;
-    }
-
-    void set_touchdown_expected(bool b);
-
-    bool get_touchdown_expected(void) const {
-        return _flags.touchdown_expected;
-    }
-
-    AHRS_VehicleClass get_vehicle_class(void) const {
-        return _vehicle_class;
-    }
-
-    void set_vehicle_class(AHRS_VehicleClass vclass) {
-        _vehicle_class = vclass;
-    }
-
-    void set_wind_estimation(bool b) {
-        _flags.wind_estimation = b;
-    }
 
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
@@ -198,9 +149,6 @@ public:
     void get_quat_body_to_ned(Quaternion &quat) const {
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
-
-    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
-    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
     // get rotation matrix specifically from DCM backend (used for compass calibrator)
     virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
@@ -321,33 +269,6 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
-    // return true if yaw has been initialised
-    bool yaw_initialised(void) const {
-        return _flags.have_initial_yaw;
-    }
-
-    // set the correct centrifugal flag
-    // allows arducopter to disable corrections when disarmed
-    void set_correct_centrifugal(bool setting) {
-        _flags.correct_centrifugal = setting;
-    }
-
-    // get the correct centrifugal flag
-    bool get_correct_centrifugal(void) const {
-        return _flags.correct_centrifugal;
-    }
-
-    // get trim
-    const Vector3f &get_trim() const {
-        return _trim.get();
-    }
-
-    // set trim
-    void set_trim(const Vector3f &new_trim);
-
-    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
-
     // helper trig value accessors
     float cos_roll() const  {
         return _cos_roll;
@@ -385,41 +306,6 @@ public:
     virtual bool get_secondary_position(struct Location &loc) const WARN_IF_UNUSED {
         return false;
     }
-
-    // get the home location. This is const to prevent any changes to
-    // home without telling AHRS about the change
-    const struct Location &get_home(void) const {
-        return _home;
-    }
-
-    // functions to handle locking of home.  Some vehicles use this to
-    // allow GCS to lock in a home location.
-    void lock_home() {
-        _home_locked = true;
-    }
-    bool home_is_locked() const {
-        return _home_locked;
-    }
-
-    // returns true if home is set
-    bool home_is_set(void) const {
-        return _home_is_set;
-    }
-
-    // set the home location in 10e7 degrees. This should be called
-    // when the vehicle is at this position. It is assumed that the
-    // current barometer and GPS altitudes correspond to this altitude
-    virtual bool set_home(const Location &loc) WARN_IF_UNUSED = 0;
-
-    // set the EKF's origin location in 10e7 degrees.  This should only
-    // be called when the EKF has no absolute position reference (i.e. GPS)
-    // from which to decide the origin on its own
-    virtual bool set_origin(const Location &loc) WARN_IF_UNUSED { return false; }
-
-    // returns the inertial navigation origin in lat/lon/alt
-    virtual bool get_origin(Location &ret) const  WARN_IF_UNUSED { return false; }
-
-    void Log_Write_Home_And_Origin();
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
@@ -543,9 +429,6 @@ public:
         return _rsem;
     }
 
-    // active AHRS type for logging
-    virtual uint8_t get_active_AHRS_type(void) const { return 0; }
-
     // Logging to disk functions
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
@@ -556,8 +439,6 @@ protected:
 
     // multi-thread access support
     HAL_Semaphore _rsem;
-
-    AHRS_VehicleClass _vehicle_class{AHRS_VEHICLE_UNKNOWN};
 
     // settable parameters
     // these are public for ArduCopter
@@ -584,16 +465,6 @@ protected:
 
     Matrix3f _custom_rotation;
 
-    // flags structure
-    struct ahrs_flags {
-        uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
-        uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
-        uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t takeoff_expected        : 1;    // 1 if the vehicle is in a state that takeoff might be expected.  Ground effect may be in play.
-        uint8_t touchdown_expected      : 1;    // 1 if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
-    } _flags;
-
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
                    float &cr, float &cp, float &cy,
@@ -606,19 +477,6 @@ protected:
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
 
-    // update takeoff/touchdown flags
-    void update_flags();
-
-    // pointer to airspeed object, if available
-
-    // a vector to capture the difference between the controller and body frames
-    AP_Vector3f         _trim;
-
-    // cached trim rotations
-    Vector3f _last_trim;
-    Matrix3f _rotation_autopilot_body_to_vehicle_body;
-    Matrix3f _rotation_vehicle_body_to_autopilot_body;
-
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
@@ -628,11 +486,6 @@ protected:
     Vector2f _lp; // ground vector low-pass filter
     Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input
-
-    // reference position for NED positions
-    struct Location _home;
-    bool _home_is_set :1;
-    bool _home_locked :1;
 
     // helper trig variables
     float _cos_roll{1.0f};
@@ -644,9 +497,4 @@ protected:
 
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
-
-private:
-
-    uint32_t takeoff_expected_start_ms;
-    uint32_t touchdown_expected_start_ms;
 };

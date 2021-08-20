@@ -45,6 +45,9 @@ public:
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
+    // vehicle has to be closer than this many cm's to the target before descending towards target
+    float get_max_xy_error_before_descending_cm() const { return _xy_max_dist_desc * 100.0f; }
+
     // returns ekf outlier count
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
@@ -116,7 +119,7 @@ private:
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
-
+    AP_Float                    _xy_max_dist_desc;  // Vehicle doing prec land will only descent vertically when horizontal error (in m) is below this limit
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized
     bool                        _estimator_initialized; // true if estimator has been initialized after few seconds of the target being detected by sensor

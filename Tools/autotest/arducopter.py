@@ -24,6 +24,7 @@ from pysim import vehicleinfo
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
 from common import Test
+from common import MAV_POS_TARGET_TYPE_MASK
 
 from pymavlink.rotmat import Vector3
 
@@ -933,12 +934,21 @@ class AutoTestCopter(AutoTest):
         # no action taken.
         self.start_subtest("Batt failsafe disabled test")
         self.takeoffAndMoveAway()
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK:
+            raise NotAchievedException("Expected state ok")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_LOW:
+            raise NotAchievedException("Expected state low")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
+            raise NotAchievedException("Expected state critical")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.change_mode("RTL")
@@ -2138,6 +2148,12 @@ class AutoTestCopter(AutoTest):
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 
+        self.fly_loaded_mission(num_wp)
+
+        self.progress("Auto mission completed: passed!")
+
+    def fly_loaded_mission(self, num_wp):
+        '''fly mission loaded on vehicle.  FIXME: get num_wp from vehicle'''
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.set_current_waypoint(1)
 
@@ -2158,8 +2174,6 @@ class AutoTestCopter(AutoTest):
         # wait for disarm
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
-
-        self.progress("Auto mission completed: passed!")
 
     # fly_auto_test using CAN GPS - fly mission which tests normal operation alongside CAN GPS
     def fly_auto_test_using_can_gps(self):
@@ -3515,7 +3529,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_BODY_NED,
-            0b1111111111111000, # mask specifying use-only-x-y-z
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             0, # x
             0, # y
             0, # z
@@ -3546,7 +3560,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # mask specifying use-only-lat-lon-alt
             lat, # lat
             lon, # lon
             alt, # alt
@@ -3584,7 +3598,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            0b1111111111111000, # mask specifying use-only-x-y-z
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             x, # x
             y, # y
             -z_up,# z
@@ -3609,13 +3623,17 @@ class AutoTestCopter(AutoTest):
         self.progress("Setting local target in NED: (%f, %f, %f)" % (x, y, -z_up))
         self.progress("Setting rate to 1 Hz")
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 1)
+
+        # mask specifying use only xyz
+        target_typemask = MAV_POS_TARGET_TYPE_MASK.POS_ONLY
+
         # set position target
         self.mav.mav.set_position_target_local_ned_send(
             0, # timestamp
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            0b1111111111111000, # mask specifying use only xyz
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
             x, # x
             y, # y
             -z_up, # z
@@ -3631,8 +3649,9 @@ class AutoTestCopter(AutoTest):
         m = self.mav.recv_match(type='POSITION_TARGET_LOCAL_NED', blocking=True, timeout=2)
         self.progress("Received local target: %s" % str(m))
 
-        if not (m.type_mask == 0xFFF8 or m.type_mask == 0x0FF8):
-            raise NotAchievedException("Did not receive proper mask: expected=65528 or 4088, got=%u" % m.type_mask)
+        if not (m.type_mask == (target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == target_typemask):
+            raise NotAchievedException("Did not receive proper mask: expected=%u or %u, got=%u" %
+                  ((target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), target_typemask, m.type_mask))
 
         if x - m.x > 0.1:
             raise NotAchievedException("Did not receive proper target position x: wanted=%f got=%f" % (x, m.x))
@@ -3649,6 +3668,11 @@ class AutoTestCopter(AutoTest):
         self.progress("Setting POSITION_TARGET_LOCAL_NED message rate to 10Hz")
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
 
+        # mask specifying use only vx,vy,vz & accel. Even though we don't test acceltargets below currently
+        #  a velocity only mask returns a velocity & accel mask
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+
         # Drain old messages and ignore the ramp-up to the required target velocity
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
@@ -3658,7 +3682,7 @@ class AutoTestCopter(AutoTest):
                 1, # target system_id
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-                0b1111111111000111, # mask specifying use only vx,vy,vz
+                target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
                 0, # x
                 0, # y
                 0, # z
@@ -3679,8 +3703,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Received local target: %s" % str(m))
 
         # Check the last received message
-        if not (m.type_mask == 0xFE07 or m.type_mask == 0x0E07):
-            raise NotAchievedException("Did not receive proper mask: expected=65031 or 3591, got=%u" % m.type_mask)
+        if not (m.type_mask == (target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == target_typemask):
+            raise NotAchievedException("Did not receive proper mask: expected=%u or %u, got=%u" %
+                  ((target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), target_typemask, m.type_mask))
 
         if vx - m.vx > 0.1:
             raise NotAchievedException("Did not receive proper target velocity vx: wanted=%f got=%f" % (vx, m.vx))
@@ -4413,7 +4438,7 @@ class AutoTestCopter(AutoTest):
                 1, # target system_id
                 1, # target component id
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-lat-lon-alt
                 there.lat, # lat
                 there.lng, # lon
                 there.alt, # alt
@@ -5016,7 +5041,7 @@ class AutoTestCopter(AutoTest):
             1, # target system_id
             1, # target component id
             mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-lat-lon-alt
             int(destination.lat * 1e7), # lat
             int(destination.lng * 1e7), # lon
             destination.alt, # alt
@@ -6668,19 +6693,28 @@ class AutoTestCopter(AutoTest):
             # inspect generated log for messages:
             dfreader = self.dfreader_for_current_onboard_log()
             wanted = set([0, 1, 2])
+            seen_primary_change = False
             while True:
-                m = dfreader.recv_match(type="GPS") # disarmed
+                m = dfreader.recv_match(type=["GPS", "EV"]) # disarmed
                 if m is None:
                     break
-                try:
-                    wanted.remove(m.I)
-                except KeyError:
-                    continue
-                if len(wanted) == 0:
+                mtype = m.get_type()
+                if mtype == 'GPS':
+                    try:
+                        wanted.remove(m.I)
+                    except KeyError:
+                        continue
+                elif mtype == 'EV':
+                    if m.Id == 67:  # GPS_PRIMARY_CHANGED
+                        seen_primary_change = True
+                if len(wanted) == 0 and seen_primary_change:
                     break
 
             if len(wanted):
                 raise NotAchievedException("Did not get all three GPS types")
+            if not seen_primary_change:
+                raise NotAchievedException("Did not see primary change")
+
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
@@ -6774,55 +6808,6 @@ class AutoTestCopter(AutoTest):
             self.remove_message_hook(verify_rollpitch)
 
             self.do_RTL()
-
-    def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
-        '''takes a list of (type, n, e, alt) items.  Creates a mission in
-        absolute frame using alt as relative-to-home and n and e as
-        offsets in metres from home'''
-
-        # add a dummy waypoint for home
-        items = [(mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0)]
-        items.extend(items_in)
-        seq = 0
-        ret = []
-        for (t, n, e, alt) in items:
-            lat = 0
-            lng = 0
-            if n != 0 or e != 0:
-                loc = self.home_relative_loc_ne(n, e)
-                lat = loc.lat
-                lng = loc.lng
-            p1 = 0
-            frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
-            if not self.ardupilot_stores_frame_for_cmd(t):
-                frame = mavutil.mavlink.MAV_FRAME_GLOBAL
-            ret.append(self.mav.mav.mission_item_int_encode(
-                target_system,
-                target_component,
-                seq, # seq
-                frame,
-                t,
-                0, # current
-                0, # autocontinue
-                p1, # p1
-                0, # p2
-                0, # p3
-                0, # p4
-                int(lat*1e7), # latitude
-                int(lng*1e7), # longitude
-                alt, # altitude
-                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
-            )
-            seq += 1
-
-        return ret
-
-    def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
-        mission = self.create_simple_relhome_mission(
-            items,
-            target_system=target_system,
-            target_component=target_component)
-        self.check_mission_upload_download(mission)
 
     def test_replay(self):
         '''test replay correctness'''
@@ -7223,6 +7208,126 @@ class AutoTestCopter(AutoTest):
         ret.extend(self.tests1d())
         ret.extend(self.tests1e())
         return ret
+
+    def FETtecESC_flight(self):
+        '''fly with servo outputs from FETtec ESC'''
+        self.start_subtest("FETtec ESC flight")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        self.fly_loaded_mission(num_wp)
+
+    def FETtecESC_esc_power_checks(self):
+        '''Make sure state machine copes with ESCs rebooting'''
+        self.start_subtest("FETtec ESC reboot")
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.progress("Turning off an ESC off ")
+        mask = int(self.get_parameter("SIM_FTOWESC_POW"))
+
+        for mot_id_to_kill in 1, 2:
+            self.progress("Turning ESC=%u off" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+            self.progress("Turning ESC=%u off (again)" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+        self.progress("Turning all ESCs off")
+        self.set_parameter("SIM_FTOWESC_POW", 0)
+        self.assert_prearm_failure("are not sending tel")
+        self.progress("Turning them back on")
+        self.set_parameter("SIM_FTOWESC_POW", mask)
+        self.wait_ready_to_arm()
+
+    def fettec_assert_bad_mask(self, mask):
+        '''assert the mask is bad for fettec driver'''
+        self.start_subsubtest("Checking mask (%s) is bad" % (mask,))
+        self.context_push()
+        self.set_parameter("SERVO_FTW_MASK", mask)
+        self.reboot_sitl()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 20:
+                raise NotAchievedException("Expected mask to be only problem within 20 seconds")
+            try:
+                self.assert_prearm_failure("Invalid motor mask")
+                break
+            except NotAchievedException:
+                self.delay_sim_time(1)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def fettec_assert_good_mask(self, mask):
+        '''assert the mask is bad for fettec driver'''
+        self.start_subsubtest("Checking mask (%s) is good" % (mask,))
+        self.context_push()
+        self.set_parameter("SERVO_FTW_MASK", mask)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def FETtecESC_safety_switch(self):
+        mot = self.find_first_set_bit(int(self.get_parameter("SERVO_FTW_MASK"))) + 1
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        # we have to wait for a while for the arming tone to go out
+        # before the motors will spin:
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=0,   # FIXME: was 17640
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.set_safetyswitch_on()
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.set_safetyswitch_off()
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=0,   # FIXME: was 17640
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.context_pop()
+        self.wait_disarmed()
+
+    def FETtecESC_btw_mask_checks(self):
+        '''ensure prearm checks work as expected'''
+        for bad_mask in [0b1000000000000, 0b10100000000000]:
+            self.fettec_assert_bad_mask(bad_mask)
+        for good_mask in [0b00001, 0b00101, 0b110000000000]:
+            self.fettec_assert_good_mask(good_mask)
+
+    def FETtecESC(self):
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 38,
+            "SERVO_FTW_MASK": 0b11101000,
+            "SIM_FTOWESC_ENA": 1,
+            "SERVO1_FUNCTION": 0,
+            "SERVO2_FUNCTION": 0,
+            "SERVO3_FUNCTION": 0,
+            "SERVO4_FUNCTION": 33,
+            "SERVO5_FUNCTION": 0,
+            "SERVO6_FUNCTION": 34,
+            "SERVO7_FUNCTION": 35,
+            "SERVO8_FUNCTION": 36,
+        })
+        self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
+        self.FETtecESC_safety_switch()
+        self.FETtecESC_esc_power_checks()
+        self.FETtecESC_btw_mask_checks()
+        self.FETtecESC_flight()
 
     def tests1a(self):
         '''return list of all tests'''
@@ -7682,6 +7787,10 @@ class AutoTestCopter(AutoTest):
             Test("Replay",
                  "Test Replay",
                  self.test_replay),
+
+            Test("FETtecESC",
+                 "Test FETtecESC",
+                 self.FETtecESC),
 
             Test("GroundEffectCompensation_touchDownExpected",
                  "Test EKF's handling of touchdown-expected",

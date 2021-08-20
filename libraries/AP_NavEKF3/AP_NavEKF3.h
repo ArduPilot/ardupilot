@@ -417,7 +417,6 @@ private:
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
-    AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
@@ -428,6 +427,7 @@ private:
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
     AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
+    AP_Int8 _primary_core;          // initial core number
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0

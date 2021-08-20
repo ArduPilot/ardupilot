@@ -90,7 +90,7 @@ void Variometer::update(const float thermal_bank, const float polar_K, const flo
 // @Field: exs: expected sink rate relative to air in thermalling turn
 // @Field: dsp: average acceleration along X axis
 // @Field: dspb: detected bias in average acceleration along X axis
-    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb", "Qfffffffffff",
+    AP::logger().WriteStreaming("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb", "Qfffffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
                        (double)_aspd_filt_constrained,

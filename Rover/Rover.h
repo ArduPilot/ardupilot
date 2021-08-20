@@ -70,6 +70,7 @@
 #include <AP_WindVane/AP_WindVane.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
+#include <AP_AIS/AP_AIS.h>
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -169,7 +170,7 @@ private:
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SIM sitl;
 #endif
 
     // GCS handling
