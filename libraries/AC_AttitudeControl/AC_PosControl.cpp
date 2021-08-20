@@ -765,9 +765,6 @@ void AC_PosControl::init_z_controller_stopping_point()
 
     get_stopping_point_z_cm(_pos_target.z);
     _vel_target.z = 0.0f;
-
-    // Set accel PID I term based on the current throttle
-    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
 }
 
 // relax_z_controller - initialise the position controller to the current position and velocity with decaying acceleration.
