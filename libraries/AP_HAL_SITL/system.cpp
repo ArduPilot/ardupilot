@@ -25,7 +25,7 @@ void init()
     gettimeofday(&state.start_time, nullptr);
 }
 
-void panic(const char *errormsg, ...)
+void WEAK panic(const char *errormsg, ...)
 {
     va_list ap;
 
