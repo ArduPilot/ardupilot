@@ -485,6 +485,11 @@ private:
     AP_Float _custom_pitch;
     AP_Float _custom_yaw;
 
+    /*
+     * support for custom AHRS orientation, replacing _board_orientation
+     */
+    Matrix3f _custom_rotation;
+
     enum class EKFType {
         NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
