@@ -116,6 +116,10 @@ public:
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate() const override;
 
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
 
     /*
      * airspeed support
@@ -335,6 +339,11 @@ public:
         return uint8_t(active_EKF_type());
     }
 
+    // get the selected ekf type, for allocation decisions
+    int8_t get_ekf_type(void) const {
+        return _ekf_type;
+    }
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
@@ -465,6 +474,16 @@ private:
      * from AP_AHRS by other libraries
      */
     VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
+
+    /*
+     * Parameters
+     */
+    AP_Int8 _wind_max;
+    AP_Int8 _board_orientation;
+    AP_Int8 _ekf_type;
+    AP_Float _custom_roll;
+    AP_Float _custom_pitch;
+    AP_Float _custom_yaw;
 
     enum class EKFType {
         NONE = 0
