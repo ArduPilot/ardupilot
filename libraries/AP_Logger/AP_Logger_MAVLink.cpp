@@ -274,9 +274,9 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == 0){
+    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
         handle_retry(packet.seqno);
-    } else{
+    } else {
         handle_ack(link, msg, packet.seqno);
     }
     semaphore.give();
