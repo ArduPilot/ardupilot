@@ -214,6 +214,9 @@ private:
     float _ra_deltat;
     uint32_t _ra_sum_start;
 
+    // which accelerometer instance is active
+    uint8_t _active_accel_instance;
+
     // the earths magnetic field
     float _last_declination;
     Vector2f _mag_earth{1, 0};
