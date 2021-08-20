@@ -206,11 +206,6 @@ public:
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
-    // return the parameter AHRS_WIND_MAX in metres per second
-    uint8_t get_max_wind() const {
-        return _wind_max;
-    }
-
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void);
 
@@ -374,11 +369,6 @@ public:
         return false;
     }
 
-    // get the selected ekf type, for allocation decisions
-    int8_t get_ekf_type(void) const {
-        return _ekf_type;
-    }
-
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
@@ -455,13 +445,7 @@ protected:
     };
 
     AP_Enum<GPSUse> _gps_use;
-    AP_Int8 _wind_max;
-    AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
-    AP_Int8 _ekf_type;
-    AP_Float _custom_roll;
-    AP_Float _custom_pitch;
-    AP_Float _custom_yaw;
 
     Matrix3f _custom_rotation;
 
