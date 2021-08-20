@@ -430,8 +430,6 @@ protected:
     // multi-thread access support
     HAL_Semaphore _rsem;
 
-    Matrix3f _custom_rotation;
-
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
                    float &cr, float &cp, float &cy,
