@@ -77,7 +77,7 @@ void AP_AHRS::update_orientation()
 }
 
 // return a ground speed estimate in m/s
-Vector2f AP_AHRS_Backend::groundspeed_vector(void)
+Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 {
     // Generate estimate of ground speed vector using air data system
     Vector2f gndVelADS;

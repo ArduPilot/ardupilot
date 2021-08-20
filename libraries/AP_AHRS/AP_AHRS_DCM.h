@@ -101,6 +101,9 @@ public:
         return true;
     }
 
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector() override;
+
     bool            use_compass() override;
 
     // return the quaternion defining the rotation from NED to XYZ (body) axes
@@ -232,4 +235,10 @@ private:
 
     // last origin we returned, for DCM fallback from EKF
     Location last_origin;
+
+    // Declare filter states for HPF and LPF used by complementary
+    // filter in AP_AHRS::groundspeed_vector
+    Vector2f _lp; // ground vector low-pass filter
+    Vector2f _hp; // ground vector high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input
 };

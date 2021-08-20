@@ -207,7 +207,7 @@ public:
     }
 
     // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void);
+    virtual Vector2f groundspeed_vector(void) = 0;
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
@@ -464,12 +464,6 @@ protected:
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
-
-    // Declare filter states for HPF and LPF used by complementary
-    // filter in AP_AHRS::groundspeed_vector
-    Vector2f _lp; // ground vector low-pass filter
-    Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input
 
     // helper trig variables
     float _cos_roll{1.0f};
