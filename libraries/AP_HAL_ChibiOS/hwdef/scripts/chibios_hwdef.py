@@ -1896,6 +1896,10 @@ def write_hwdef_header(outfilename):
 
     write_peripheral_enable(f)
 
+    if mcu_series.startswith("STM32H7"):
+        # add in ADC3 on H7 to get MCU temperature and reference voltage
+        periph_list.append('ADC3')
+
     dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                                    dma_exclude=get_dma_exclude(periph_list),
                                                    dma_priority=get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),

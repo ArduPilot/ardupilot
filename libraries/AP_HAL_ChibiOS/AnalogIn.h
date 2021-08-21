@@ -62,11 +62,18 @@ public:
     float servorail_voltage(void) override { return _servorail_voltage; }
     uint16_t power_status_flags(void) override { return _power_flags; }
     uint16_t accumulated_power_status_flags(void) const override { return _accumulated_power_flags; }
-    static void adccallback(ADCDriver *adcp);
+
+#if HAL_WITH_MCU_MONITORING
+    float mcu_temperature(void) override { return _mcu_temperature; }
+    float mcu_voltage(void) override { return _mcu_voltage; }
+    float mcu_voltage_max(void) override { return _mcu_voltage_max; }
+    float mcu_voltage_min(void) override { return _mcu_voltage_min; }
+#endif
 
 private:
     void read_adc(uint32_t *val);
     void update_power_flags(void);
+    static void adccallback(ADCDriver *adcp);
 
     ChibiOS::AnalogSource* _channels[ANALOG_MAX_CHANNELS];
 
@@ -88,7 +95,25 @@ private:
     static adcsample_t *samples;
     static uint32_t sample_sum[];
     static uint32_t sample_count;
+
     HAL_Semaphore _semaphore;
+
+#if HAL_WITH_MCU_MONITORING
+    // use ADC3 for MCU temperature and voltage monitoring
+    void setup_adc3();
+    void read_adc3(uint32_t *val, uint16_t *min, uint16_t *max);
+    ADCConversionGroup adc3grpcfg;
+    static void adc3callback(ADCDriver *adcp);
+    static adcsample_t *samples_adc3;
+    static uint32_t sample_adc3_sum[];
+    static uint16_t sample_adc3_max[];
+    static uint16_t sample_adc3_min[];
+    static uint32_t sample_adc3_count;
+    float _mcu_temperature;
+    float _mcu_voltage;
+    float _mcu_voltage_min;
+    float _mcu_voltage_max;
+#endif
 };
 
 #endif // HAL_USE_ADC
