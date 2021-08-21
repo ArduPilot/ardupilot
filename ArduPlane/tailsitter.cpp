@@ -334,9 +334,10 @@ void Tailsitter::output(void)
         quadplane.motors_output(false);
     }
 
-    // In full Q assist it is better to use cotper I and zero plane
+    // In full Q assist it is better to use copter I and zero plane
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
+    plane.yawController.reset_I();
 
     // pull in copter control outputs
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw()+motors->get_yaw_ff())*-SERVO_MAX);
