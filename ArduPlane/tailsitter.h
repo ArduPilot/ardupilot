@@ -87,6 +87,7 @@ public:
     AP_Float transition_rate_fw;
     AP_Int8 transition_angle_vtol;
     AP_Float transition_rate_vtol;
+    AP_Float transition_throttle_vtol;
     AP_Int8 input_type;
     AP_Float vectored_forward_gain;
     AP_Float vectored_hover_gain;
