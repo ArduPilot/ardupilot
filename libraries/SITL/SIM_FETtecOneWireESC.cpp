@@ -374,8 +374,8 @@ void FETtecOneWireESC::consume_bytes(uint8_t count)
         buflen = 0;
         return;
     }
-    memmove(&u.buffer[0], &u.buffer[u.config_message_header.frame_len], buflen - u.config_message_header.frame_len);
-    buflen -= u.config_message_header.frame_len;
+    memmove(&u.buffer[0], &u.buffer[count], buflen - count);
+    buflen -= count;
 }
 
 void FETtecOneWireESC::update_input()
