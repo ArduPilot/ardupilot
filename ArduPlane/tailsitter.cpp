@@ -141,6 +141,14 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Range: 10 500
     AP_GROUPINFO("RAT_VT", 17, Tailsitter, transition_rate_vtol, 50),
 
+    // @Param: THR_VT
+    // @DisplayName: Tailsitter forward flight to VTOL transition throttle
+    // @Description: Throttle used during FW->VTOL transition, -1 uses hover throttle
+    // @Units: %
+    // @Range: 10 100
+    AP_GROUPINFO("THR_VT", 18, Tailsitter, transition_throttle_vtol, -1),
+
+
     AP_GROUPEND
 };
 
@@ -198,13 +206,20 @@ void Tailsitter::output(void)
         if (hal.util->get_soft_armed() && in_vtol_transition() && !quadplane.throttle_wait && quadplane.is_flying()) {
             /*
               during transitions to vtol mode set the throttle to
-              hover thrust, center the rudder and set the altitude controller
+              hover thrust or Q_TAILSIT_THR_VT, center the rudder and set the altitude controller
               integrator to the same throttle level
               convert the hover throttle to the same output that would result if used via AP_Motors
               apply expo, battery scaling and SPIN min/max. 
             */
-            throttle = motors->thrust_to_actuator(motors->get_throttle_hover()) * 100;
-            throttle = MAX(throttle,plane.aparm.throttle_cruise.get());
+            if (!is_negative(transition_throttle_vtol)) { 
+                // Q_TAILSIT_THR_VT is positive use it until transition is complete
+                throttle = MIN(transition_throttle_vtol,100.0);
+            } else {
+                 // convert the hover throttle to the same output that would result if used via AP_Motors
+                 // apply expo, battery scaling and SPIN min/max.
+                 throttle = motors->thrust_to_actuator(motors->get_throttle_hover()) * 100;
+                 throttle = MAX(throttle,plane.aparm.throttle_cruise.get());
+            }
 
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             quadplane.pos_control->get_accel_z_pid().set_integrator(throttle*10);
