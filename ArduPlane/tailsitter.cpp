@@ -134,6 +134,13 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Range: 10 500
     AP_GROUPINFO("RAT_VT", 17, Tailsitter, transition_rate_vtol, 50),
 
+    // @Param: THR_VT
+    // @DisplayName: Tailsitter forward flight to VTOL transition throttle
+    // @Description: Throttle used during FW->VTOL transition, -1 uses hover throttle
+    // @Units: %
+    // @Range: -1 100
+    AP_GROUPINFO("THR_VT", 18, Tailsitter, transition_throttle_vtol, -1),
+
     AP_GROUPEND
 };
 
@@ -256,9 +263,14 @@ void Tailsitter::output(void)
             /*
               during transitions to vtol mode set the throttle to hover thrust, center the rudder
             */
-            throttle = motors->get_throttle_hover();
-            // work out equivelent motors throttle level for cruise
-            throttle = MAX(throttle,motors->actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
+            if (!is_negative(transition_throttle_vtol)) { 
+                // Q_TAILSIT_THR_VT is positive use it until transition is complete
+                throttle = motors->actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
+            } else {
+                throttle = motors->get_throttle_hover();
+                // work out equivelent motors throttle level for cruise
+                throttle = MAX(throttle,motors->actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
+            }
 
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             plane.rudder_dt = 0;
