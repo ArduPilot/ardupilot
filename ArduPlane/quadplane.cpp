@@ -503,23 +503,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 };
 
 /*
-  extra defaults for tailsitters
- */
-static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] = {
-    { "KFF_RDDRMIX",       0.02 },
-    { "Q_A_RAT_PIT_FF",    0.2 },
-    { "Q_A_RAT_YAW_FF",    0.2 },
-    { "Q_A_RAT_YAW_I",     0.18 },
-    { "Q_A_ANGLE_BOOST",   0 },
-    { "LIM_PITCH_MAX",    3000 },
-    { "LIM_PITCH_MIN",    -3000 },
-    { "MIXING_GAIN",      1.0 },
-    { "RUDD_DT_GAIN",      10 },
-    { "Q_TRANSITION_MS",   2000 },
-    { "Q_TRANS_DECEL",    6 },
-};
-
-/*
   conversion table for quadplane parameters
  */
 const AP_Param::ConversionInfo q_conversion_table[] = {
@@ -664,11 +647,6 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
     }
 
-    // Set tailsitter enable flag based on old heuristics
-    if (!tailsitter.enable.configured() && (((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0)) && (tilt.tilt_type != TILT_TYPE_BICOPTER))) {
-        tailsitter.enable.set_and_save(1);
-    }
-
     // Make sure not both a tailsiter and tiltrotor
     if (tailsitter.enabled() && (tilt.tilt_mask != 0)) {
         AP_BoardConfig::config_error("set TAILSIT_ENABLE 0 or TILT_MASK 0");
@@ -746,13 +724,6 @@ bool QuadPlane::setup(void)
     attitude_control->parameter_sanity_check();
     wp_nav->wp_and_spline_init();
 
-    // TODO: update this if servo function assignments change
-    // used by relax_attitude_control() to control special behavior for vectored tailsitters
-    tailsitter._is_vectored = (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
-                   (!is_zero(tailsitter.vectored_hover_gain) &&
-                    (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
-                     SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
-
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
@@ -784,10 +755,7 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
-    // Set tailsitter transition rate to match old caculation
-    if (!tailsitter.transition_rate_fw.configured()) {
-        tailsitter.transition_rate_fw.set_and_save(tailsitter.transition_angle_fw / (transition_time_ms/2000.0f));
-    }
+    tailsitter.setup();
 
     // param count will have changed
     AP_Param::invalidate_count();
@@ -804,10 +772,6 @@ void QuadPlane::setup_defaults(void)
 {
     AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
 
-    if (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
-        AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
-    }
-    
     // reset ESC calibration
     if (esc_calibration != 0) {
         esc_calibration.set_and_save(0);
