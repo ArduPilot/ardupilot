@@ -760,4 +760,19 @@ void GCS::available_modes_changed() {
     }
 }
 
+void GCS::poweroff_initiated(float p1, const char *fmt, ...)
+{
+    // Send a Mavlink broadcast announcing the shutdown
+    mavlink_command_long_t cmd_msg{};
+    cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+    cmd_msg.param1 = p1;
+    GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
+
+    // ... and send a statustext....
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    send_textv(MAV_SEVERITY_WARNING, fmt, arg_list);
+    va_end(arg_list);
+}
+
 #endif  // HAL_GCS_ENABLED
