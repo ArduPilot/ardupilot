@@ -1041,6 +1041,9 @@ class SITLBoard(Board):
         for name in ('autotest_fixtures.txt', 'autotest_fixtures/nested/sub.txt', 'autotest_fixtures/nested/sub/file'):
             env.ROMFS_FILES += [(name, 'Tools/autotest/default_params/copter-X.parm')]
 
+        env.CXXFLAGS += ['-DAP_POWER_CONTROL_GPIO=12']
+        env.CXXFLAGS += ['-DAP_POWER_CONTROL_GPIO_VALUE_OFF=1']
+
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
