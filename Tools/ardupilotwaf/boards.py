@@ -269,6 +269,10 @@ class Board:
             '-Wno-trigraphs',
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
+            '-Wuninitialized',
+            '-Wmaybe-uninitialized',
+            '-Warray-bounds',
+            '-Wduplicated-cond',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
