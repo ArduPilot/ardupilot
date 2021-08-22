@@ -412,7 +412,7 @@ void AP_Scheduler::task_info(ExpandingString &str)
     float total_time = 1.0f;
     for (uint8_t i = 0; i < _num_tasks + 1; i++) {
         const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
-        if (ti->tick_count > 0) {
+        if (ti != nullptr && ti->tick_count > 0) {
             total_time += ti->elapsed_time_us;
         }
     }
@@ -423,7 +423,7 @@ void AP_Scheduler::task_info(ExpandingString &str)
 
         uint16_t avg = 0;
         float pct = 0.0f;
-        if (ti->tick_count > 0) {
+        if (ti != nullptr && ti->tick_count > 0) {
             pct = ti->elapsed_time_us * 100.0f / total_time;
             avg = MIN(uint16_t(ti->elapsed_time_us / ti->tick_count), 999);
         }
