@@ -709,6 +709,13 @@ void Aircraft::update_home()
 
 void Aircraft::update_model(const struct sitl_input &input)
 {
+#ifdef AP_POWER_CONTROL_GPIO
+    if (hal.gpio->read(AP_POWER_CONTROL_GPIO) == AP_POWER_CONTROL_GPIO_VALUE_OFF) {
+        ::printf("Power off pin %u set, exiting\n", unsigned(AP_POWER_CONTROL_GPIO));
+        exit(0);
+    }
+#endif // AP_POWER_CONTROL_GPIO
+
     local_ground_level = 0.0f;
     if (sitl != nullptr) {
         update(input);
