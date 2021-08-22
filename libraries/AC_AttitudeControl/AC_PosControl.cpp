@@ -470,8 +470,8 @@ void AC_PosControl::init_xy_controller_stopping_point()
 {
     init_xy();
 
-    _vel_desired.xy().zero();
     get_stopping_point_xy_cm(_pos_target.xy());
+    _vel_desired.xy().zero();
     _accel_desired.xy().zero();
 
     _pid_vel_xy.set_integrator(_accel_target);
@@ -592,6 +592,7 @@ void AC_PosControl::stop_vel_xy_stabilisation()
     const Vector3f &curr_vel = _inav.get_velocity();
     _vel_desired.x = curr_vel.x;
     _vel_desired.y = curr_vel.y;
+    // with zero position error _vel_target = _vel_desired
     _vel_target.x = curr_vel.x;
     _vel_target.y = curr_vel.y;
 
@@ -764,7 +765,8 @@ void AC_PosControl::init_z_controller_stopping_point()
     init_z_controller();
 
     get_stopping_point_z_cm(_pos_target.z);
-    _vel_target.z = 0.0f;
+    _vel_desired.z = 0.0f;
+    _accel_desired.z = 0.0f;
 }
 
 // relax_z_controller - initialise the position controller to the current position and velocity with decaying acceleration.
@@ -789,6 +791,7 @@ void AC_PosControl::init_z()
 
     const Vector3f &curr_vel = _inav.get_velocity();
     _vel_desired.z = curr_vel.z;
+    // with zero position error _vel_target = _vel_desired
     _vel_target.z = curr_vel.z;
 
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended();
@@ -1026,11 +1029,6 @@ void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
     const float curr_pos_z = _inav.get_position().z;
     float curr_vel_z = _inav.get_velocity().z;
 
-    // if position controller is active remove the desired velocity component
-    if (is_active_z()) {
-        curr_vel_z -= _vel_desired.z;
-    }
-
     // avoid divide by zero by using current position if kP is very low or acceleration is zero
     if (!is_positive(_p_pos_z.kP()) || !is_positive(_accel_max_z_cmss)) {
         stopping_point = curr_pos_z;
@@ -1102,16 +1100,10 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
     stopping_point = curr_pos.xy().topostype();
     float kP = _p_pos_xy.kP();
 
-    Vector3f curr_vel = _inav.get_velocity();
-
-    // if position controller is active remove the desired velocity component
-    if (is_active_xy()) {
-        curr_vel.x -= _vel_desired.x;
-        curr_vel.y -= _vel_desired.y;
-    }
+    Vector2f curr_vel = _inav.get_velocity().xy();
 
     // calculate current velocity
-    float vel_total = norm(curr_vel.x, curr_vel.y);
+    float vel_total = curr_vel.length();
 
     if (!is_positive(vel_total)) {
         return;
