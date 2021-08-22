@@ -135,9 +135,56 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  defaults for tailsitters
+ */
+static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] = {
+    { "KFF_RDDRMIX",       0.02 },
+    { "Q_A_RAT_PIT_FF",    0.2 },
+    { "Q_A_RAT_YAW_FF",    0.2 },
+    { "Q_A_RAT_YAW_I",     0.18 },
+    { "Q_A_ANGLE_BOOST",   0 },
+    { "LIM_PITCH_MAX",    3000 },
+    { "LIM_PITCH_MIN",    -3000 },
+    { "MIXING_GAIN",      1.0 },
+    { "RUDD_DT_GAIN",      10 },
+    { "Q_TRANSITION_MS",   2000 },
+    { "Q_TRANS_DECEL",    6 },
+};
+
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+void Tailsitter::setup()
+{
+    // Set tailsitter enable flag based on old heuristics
+    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tilt.tilt_type != QuadPlane::TILT_TYPE_BICOPTER))) {
+        enable.set_and_save(1);
+    }
+
+    if (!enabled()) {
+        return;
+    }
+
+    // Set tailsitter transition rate to match old calculation
+    if (!transition_rate_fw.configured()) {
+        transition_rate_fw.set_and_save(transition_angle_fw / (quadplane.transition_time_ms/2000.0f));
+    }
+
+    // TODO: update this if servo function assignments change
+    // used by relax_attitude_control() to control special behavior for vectored tailsitters
+    _is_vectored = (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+                   (!is_zero(vectored_hover_gain) &&
+                    (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
+                     SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
+
+    // set defaults for dual/single motor tailsitter
+    if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
+        AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
+    }
+
 }
 
 /*
