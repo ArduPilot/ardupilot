@@ -20,9 +20,11 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PWM,2:AUXPIN,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
+    // @Values: 0:None,1:Not Used,2:AUXPIN,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RPM_Params, type, 0, AP_PARAM_FLAG_ENABLE),
+    // Note, 1 was previously for type = PWM. This has been removed from docs to make setup less confusing for users.
+    // However, 1 is reserved as it does still fallthrough to type = AUXPIN.
 
     // @Param: SCALING
     // @DisplayName: RPM scaling
