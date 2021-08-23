@@ -225,6 +225,9 @@ public:
     void send_meminfo(void);
     void send_fence_status() const;
     void send_power_status(void);
+#if HAL_WITH_MCU_MONITORING
+    void send_mcu_status(void);
+#endif
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
     void send_distance_sensor();
