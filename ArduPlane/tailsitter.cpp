@@ -374,7 +374,7 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
-    bool tilt_lim = (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX);
+    bool tilt_lim = _is_vectored && ((labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX));
     bool roll_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) == SERVO_MAX;
     bool pitch_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) == SERVO_MAX;
     bool yaw_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) == SERVO_MAX;
