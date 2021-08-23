@@ -119,6 +119,8 @@ protected:
         land_run_horizontal_control();
         land_run_vertical_control(pause_descent);
     }
+    // Do normal landing or precision landing if enabled. pause_descent is true if vehicle should not descend
+    void execute_landing(bool pause_descent = false);
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
