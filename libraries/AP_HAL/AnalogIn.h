@@ -3,6 +3,7 @@
 #include <inttypes.h>
 
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 class AP_HAL::AnalogSource {
 public:
@@ -40,6 +41,13 @@ public:
     // bitmask of all _power_flags bits ever set, so transient
     // failures can still be diagnosed
     virtual uint16_t accumulated_power_status_flags(void) const { return 0; }
+
+#if HAL_WITH_MCU_MONITORING
+    virtual float mcu_temperature(void) { return 0; }
+    virtual float mcu_voltage(void) { return 0; }
+    virtual float mcu_voltage_max(void) { return 0; }
+    virtual float mcu_voltage_min(void) { return 0; }
+#endif
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254
