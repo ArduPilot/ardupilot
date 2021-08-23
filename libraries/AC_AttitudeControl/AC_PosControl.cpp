@@ -514,8 +514,8 @@ void AC_PosControl::init_xy()
 
 
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
-    _accel_desired.x = curr_accel.x;
-    _accel_desired.y = curr_accel.y;
+    _accel_desired.xy() = curr_accel.xy();
+    _accel_desired.xy().limit_length(_accel_max_xy_cmss);
 
     lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
 
@@ -801,7 +801,7 @@ void AC_PosControl::init_z()
     _pid_vel_z.set_integrator(0.0f);
 
     _accel_desired.z = constrain_float(-(curr_accel.z + GRAVITY_MSS) * 100.0f, -_accel_max_z_cmss, _accel_max_z_cmss);
-    _accel_target.z = -(curr_accel.z + GRAVITY_MSS) * 100.0f;
+    _accel_target.z = _accel_desired.z;
     _pid_accel_z.reset_filter();
 
     // initialise vertical offsets
