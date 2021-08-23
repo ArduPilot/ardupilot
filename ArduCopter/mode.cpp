@@ -699,6 +699,24 @@ void Mode::land_run_horizontal_control()
     }
 }
 
+// Do normal landing or precision landing if enabled. pause_descent is true if vehicle should not descend
+void Mode::execute_landing(bool pause_descent)
+{
+#if PRECISION_LANDING == ENABLED
+    if (pause_descent || !copter.precland.enabled()) {
+        // we don't want to start descending immediately or prec land is disabled
+        // in both cases just run simple land controllers
+        run_land_controllers(pause_descent);
+    } else {
+        // prec land is enabled and we have not paused descent
+        // the state machine takes care of the entire prec landing procedure
+        run_precland();
+    }
+#else
+    run_land_controllers(pause_descent);
+#endif
+}
+
 #if PRECISION_LANDING == ENABLED
 // Go towards a position commanded by prec land state machine in order to retry landing
 // The passed in location is expected to be NED and in m

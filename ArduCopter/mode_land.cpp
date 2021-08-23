@@ -83,17 +83,9 @@ void ModeLand::gps_run()
         if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
         }
-#if PRECISION_LANDING == ENABLED
-        // the state machine takes care of the entire landing procedure except for land_pause.
-        if (land_pause) {
-            // we don't want to start descending immediately
-            run_land_controllers(true);
-        } else {
-            run_precland();
-        }
-#else
-        run_land_controllers(land_pause);
-#endif
+
+        // run normal landing or precision landing (if enabled)
+        execute_landing(land_pause);
     }
 }
 
