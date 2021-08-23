@@ -551,8 +551,6 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
     { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
     { Parameters::k_param_quadplane, 50,  AP_PARAM_INT8,  "Q_TAILSIT_INPUT" },
-    { Parameters::k_param_quadplane, 51,  AP_PARAM_INT8,  "Q_TAILSIT_MASK" },
-    { Parameters::k_param_quadplane, 52,  AP_PARAM_INT8,  "Q_TAILSIT_MASKCH" },
     { Parameters::k_param_quadplane, 53,  AP_PARAM_FLOAT, "Q_TAILSIT_VFGAIN" },
     { Parameters::k_param_quadplane, 54,  AP_PARAM_FLOAT, "Q_TAILSIT_VHGAIN" },
     { Parameters::k_param_quadplane, 56,  AP_PARAM_FLOAT, "Q_TAILSIT_VHPOW" },

@@ -50,17 +50,8 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Bitmask: 0:PlaneMode,1:BodyFrameRoll
     AP_GROUPINFO("INPUT", 4, Tailsitter, input_type, 0),
 
-    // @Param: MASK
-    // @DisplayName: Tailsitter input mask
-    // @Description: This controls what channels have full manual control when hovering as a tailsitter and the Q_TAILSIT_MASKCH channel in high. This can be used to teach yourself to prop-hang a 3D plane by learning one or more channels at a time.
-    // @Bitmask: 0:Aileron,1:Elevator,2:Throttle,3:Rudder
-    AP_GROUPINFO("MASK", 5, Tailsitter, input_mask, 0),
-
-    // @Param: MASKCH
-    // @DisplayName: Tailsitter input mask channel
-    // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
-    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    AP_GROUPINFO("MASKCH", 6, Tailsitter, input_mask_chan, 0),
+    // 5 was MASK
+    // 6 was MASKCH
 
     // @Param: VFGAIN
     // @DisplayName: Tailsitter vector thrust gain in forward flight
@@ -332,22 +323,6 @@ void Tailsitter::output(void)
         motors->limit.yaw = true;
     }
 
-    if (input_mask_chan > 0 && input_mask > 0 &&
-        RC_Channels::get_radio_in(input_mask_chan-1) > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-        // the user is learning to prop-hang
-        if (input_mask & TAILSITTER_MASK_AILERON) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
-        }
-        if (input_mask & TAILSITTER_MASK_ELEVATOR) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.channel_pitch->get_control_in_zero_dz());
-        }
-        if (input_mask & TAILSITTER_MASK_THROTTLE) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
-        }
-        if (input_mask & TAILSITTER_MASK_RUDDER) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.channel_rudder->get_control_in_zero_dz());
-        }
-    }
 }
 
 
