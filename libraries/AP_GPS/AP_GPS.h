@@ -119,6 +119,7 @@ public:
         GPS_TYPE_MSP = 19,
         GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
         GPS_TYPE_EXTERNAL_AHRS = 21,
+        GPS_TYPE_UM482_NMEA = 22,    //UM482 NMEA
     };
 
     /// GPS status codes
