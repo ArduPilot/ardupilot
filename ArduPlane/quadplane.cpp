@@ -1263,6 +1263,13 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
  */
 float QuadPlane::get_desired_yaw_rate_cds(void)
 {
+    if (tailsitter.enabled()) {
+        // dont allow yaw in tailsitter transisions
+        if (tailsitter.in_vtol_transition() || (in_vtol_mode() && (transition_state != QuadPlane::TRANSITION_DONE))) {
+            return 0;
+        }
+    }
+
     float yaw_cds = 0;
     if (assisted_flight) {
         // use bank angle to get desired yaw rate
