@@ -70,7 +70,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Param: JERK
     // @DisplayName: Waypoint Jerk
     // @Description: Defines the horizontal jerk in m/s/s used during missions
-    // @Units: m/s/s
+    // @Units: m/s/s/s
     // @Range: 1 20
     // @User: Standard
     AP_GROUPINFO("JERK",   11, AC_WPNav, _wp_jerk, 1.0f),
