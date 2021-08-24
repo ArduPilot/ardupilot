@@ -221,22 +221,10 @@ public:
         return false;
     }
 
-    // return a position relative to home in meters, North/East/Down
-    // order. This will only be accurate if have_inertial_nav() is
-    // true
-    virtual bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
     virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-    // return a position relative to home in meters, North/East
-    // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -245,10 +233,6 @@ public:
     virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
-
-    // return a Down position relative to home in meters
-    // if EKF is unavailable will return the baro altitude
-    virtual void get_relative_position_D_home(float &posD) const = 0;
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
@@ -426,6 +410,14 @@ public:
     void Write_POS(void) const;
 
 protected:
+
+    enum class GPSUse : uint8_t {
+        Disable = 0,
+        Enable  = 1,
+        EnableWithHeight = 2,
+    };
+
+    AP_Enum<GPSUse> _gps_use;
 
     // multi-thread access support
     HAL_Semaphore _rsem;

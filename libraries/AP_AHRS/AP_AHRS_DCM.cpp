@@ -1141,18 +1141,6 @@ bool AP_AHRS::set_home(const Location &loc)
     return true;
 }
 
-//  a relative ground position to home in meters, Down
-void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
-{
-    const auto &gps = AP::gps();
-    if (_gps_use == GPSUse::EnableWithHeight &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        posD = (AP::ahrs().get_home().alt - gps.location().alt) * 0.01;
-    } else {
-        posD = -AP::baro().get_altitude();
-    }
-}
-
 /*
   check if the AHRS subsystem is healthy
 */

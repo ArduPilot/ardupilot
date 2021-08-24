@@ -82,8 +82,6 @@ public:
         return _wind;
     }
 
-    void get_relative_position_D_home(float &posD) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;
@@ -135,13 +133,6 @@ protected:
 
     AP_Float beta;
 
-    enum class GPSUse : uint8_t {
-        Disable = 0,
-        Enable  = 1,
-        EnableWithHeight = 2,
-    };
-
-    AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
 
 private:
