@@ -337,6 +337,20 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     mode_guided.set_angle(q, climb_rate_ms*100, use_yaw_rate, radians(yaw_rate_degs), false);
     return true;
 }
+
+// circle mode controls
+bool Copter::get_circle_radius(float &radius_m)
+{
+    radius_m = circle_nav->get_radius() * 0.01f;
+    return true;
+}
+
+bool Copter::set_circle_rate(float rate_dps)
+{
+    circle_nav->set_rate(rate_dps);
+    return true;
+}
+
 #endif // ENABLE_SCRIPTING
 
 
