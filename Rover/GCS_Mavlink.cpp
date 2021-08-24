@@ -117,10 +117,10 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
         control_mode->crosstrack_error());
 }
 
-void Rover::send_servo_out(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_servo_out()
 {
     float motor1, motor3;
-    if (g2.motors.have_skid_steering()) {
+    if (rover.g2.motors.have_skid_steering()) {
         motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
         motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
     } else {
@@ -139,7 +139,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        rssi.read_receiver_rssi_uint8());
+        receiver_rssi());
 }
 
 int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
@@ -329,7 +329,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        rover.send_servo_out(chan);
+        send_servo_out();
         break;
 
     case MSG_WHEEL_DISTANCE:
