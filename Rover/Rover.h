@@ -325,7 +325,6 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_servo_out(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
