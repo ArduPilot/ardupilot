@@ -234,8 +234,8 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_update_resources()
     if (ret != MAV_MISSION_ACCEPTED) {
         delete[] _updated_mask;
         _updated_mask = nullptr;
-        return ret;
+    } else {
+        _new_items_count = _item_count;
     }
-    _new_items_count = _item_count;
-    return MAV_MISSION_ACCEPTED;
+    return ret;
 }
