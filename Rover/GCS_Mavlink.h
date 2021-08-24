@@ -44,6 +44,8 @@ private:
     void handle_set_position_target_global_int(const mavlink_message_t &msg);
     void handle_radio(const mavlink_message_t &msg);
 
+    void send_servo_out();
+
     void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
 
     MAV_MODE base_mode() const override;
