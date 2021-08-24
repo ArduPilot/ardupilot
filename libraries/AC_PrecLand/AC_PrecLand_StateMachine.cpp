@@ -9,6 +9,16 @@ static const float RETRY_OFFSET_ALT_M = 1.5f;  // This gets added to the altitud
 // Initialize the state machine. This is called everytime vehicle switches mode
 void AC_PrecLand_StateMachine::init()
 {
+    AC_PrecLand *_precland = AP::ac_precland();
+    if (_precland == nullptr) {
+        // precland not enabled
+        return;
+    }
+
+    if (!_precland->enabled()) {
+        // precland is not enabled, prec land state machine methods should not be called!
+        return;
+    }
     // init is only called ONCE per mode change. So in a particuar mode we can retry only a finite times.
     // The counter will be reset if the statemachine is called from a different mode
     _retry_count = 0;
@@ -40,6 +50,12 @@ AC_PrecLand_StateMachine::Status AC_PrecLand_StateMachine::update(Vector3f &retr
         // should never happen
         return Status::ERROR;
     }
+
+    if (!_precland->enabled()) {
+        // precland is not enabled, prec land state machine should not be called!
+        return Status::ERROR;
+    }
+
     AC_PrecLand::TargetState precland_target_state =  _precland->get_target_state();
 
     switch (precland_target_state) {
