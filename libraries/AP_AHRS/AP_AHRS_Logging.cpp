@@ -84,7 +84,7 @@ void AP_AHRS_Backend::Write_POS() const
         return;
     }
     float home, origin;
-    get_relative_position_D_home(home);
+    AP::ahrs().get_relative_position_D_home(home);
     const struct log_POS pkt{
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),
