@@ -822,16 +822,11 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
-#if HAL_NAVEKF3_AVAILABLE
-        if (EKF3.getWind(-1,wind_vel)) {
-             ret = true;
-        } else {
-            ret = false;
+        if (!_sitl) {
+            return false;
         }
-#else
-        ret = false;
-#endif
-        break;
+        airspeed_ret = _sitl->state.airspeed;
+        return true;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
