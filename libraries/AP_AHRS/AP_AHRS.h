@@ -174,17 +174,17 @@ public:
 
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NED_home(Vector3f &vec) const override;
+    bool get_relative_position_NED_home(Vector3f &vec) const;
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
 
     // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const override;
+    bool get_relative_position_NE_home(Vector2f &posNE) const;
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
 
     // return the relative position down to either home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const override;
+    void get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const override;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
