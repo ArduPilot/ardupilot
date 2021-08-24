@@ -272,7 +272,9 @@ void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                                  pid_info->FF,
                                  pid_info->P,
                                  pid_info->I,
-                                 pid_info->D);
+                                 pid_info->D,
+                                 pid_info->slew_rate,
+                                 pid_info->Dmod);
 }
 
 /*
@@ -486,7 +488,6 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,

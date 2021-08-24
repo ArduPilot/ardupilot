@@ -46,10 +46,6 @@ public:
     // init sets up INS board orientation
     virtual void init();
 
-    void set_wind_estimation(bool b) {
-        _flags.wind_estimation = b;
-    }
-
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
@@ -210,13 +206,8 @@ public:
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
-    // return the parameter AHRS_WIND_MAX in metres per second
-    uint8_t get_max_wind() const {
-        return _wind_max;
-    }
-
     // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void);
+    virtual Vector2f groundspeed_vector(void) = 0;
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
@@ -272,11 +263,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // return true if yaw has been initialised
-    bool yaw_initialised(void) const {
-        return _flags.have_initial_yaw;
-    }
 
     // helper trig value accessors
     float cos_roll() const  {
@@ -383,11 +369,6 @@ public:
         return false;
     }
 
-    // get the selected ekf type, for allocation decisions
-    int8_t get_ekf_type(void) const {
-        return _ekf_type;
-    }
-
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
@@ -438,9 +419,6 @@ public:
         return _rsem;
     }
 
-    // active AHRS type for logging
-    virtual uint8_t get_active_AHRS_type(void) const { return 0; }
-
     // Logging to disk functions
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
@@ -451,37 +429,6 @@ protected:
 
     // multi-thread access support
     HAL_Semaphore _rsem;
-
-    // settable parameters
-    // these are public for ArduCopter
-    AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
-
-    AP_Float beta;
-
-    enum class GPSUse : uint8_t {
-        Disable = 0,
-        Enable  = 1,
-        EnableWithHeight = 2,
-    };
-
-    AP_Enum<GPSUse> _gps_use;
-    AP_Int8 _wind_max;
-    AP_Int8 _board_orientation;
-    AP_Int8 _gps_minsats;
-    AP_Int8 _ekf_type;
-    AP_Float _custom_roll;
-    AP_Float _custom_pitch;
-    AP_Float _custom_yaw;
-
-    Matrix3f _custom_rotation;
-
-    // flags structure
-    struct ahrs_flags {
-        uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-    } _flags;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
@@ -499,12 +446,6 @@ protected:
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
 
-    // Declare filter states for HPF and LPF used by complementary
-    // filter in AP_AHRS::groundspeed_vector
-    Vector2f _lp; // ground vector low-pass filter
-    Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input
-
     // helper trig variables
     float _cos_roll{1.0f};
     float _cos_pitch{1.0f};
@@ -512,7 +453,4 @@ protected:
     float _sin_roll;
     float _sin_pitch;
     float _sin_yaw;
-
-    // which accelerometer instance is active
-    uint8_t _active_accel_instance;
 };

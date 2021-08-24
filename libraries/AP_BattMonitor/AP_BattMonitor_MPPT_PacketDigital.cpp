@@ -62,7 +62,7 @@ void AP_BattMonitor_MPPT_PacketDigital::perform_logging() const
     // @Field: OutP: Output Power
     
     for (uint8_t i=0; i<device_count; i++) {
-        AP::logger().Write("MPPT", "TimeUS,Inst,SN,F,Temp,InV,InC,InP,OutV,OutC,OutP",
+        AP::logger().WriteStreaming("MPPT", "TimeUS,Inst,SN,F,Temp,InV,InC,InP,OutV,OutC,OutP",
                            "s#--OVAWVAW",
                            "F----------",
                            "QBHBbffffff",

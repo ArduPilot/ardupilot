@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: 1st GPS type
     // @Description: GPS type of 1st GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:UAVCAN-MovingBaseline-Base,23:UAVCAN-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:UAVCAN-MovingBaseline-Base,23:UAVCAN-MovingBaseline-Rover
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("_TYPE2",   1, AP_GPS, _type[1], 0),
@@ -183,7 +183,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _AUTO_CONFIG
     // @DisplayName: Automatic GPS configuration
     // @Description: Controls if the autopilot should automatically configure the GPS based on the parameters and default settings
-    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration
+    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for UAVCAN as well
     // @User: Advanced
     AP_GROUPINFO("_AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
 
@@ -300,7 +300,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
@@ -401,6 +401,8 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_NONE:
     case GPS_TYPE_HIL:
     case GPS_TYPE_UAVCAN:
+    case GPS_TYPE_UAVCAN_RTK_BASE:
+    case GPS_TYPE_UAVCAN_RTK_ROVER:
     case GPS_TYPE_MAV:
     case GPS_TYPE_MSP:
     case GPS_TYPE_EXTERNAL_AHRS:
@@ -573,6 +575,8 @@ void AP_GPS::detect_instance(uint8_t instance)
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
     case GPS_TYPE_UAVCAN:
+    case GPS_TYPE_UAVCAN_RTK_BASE:
+    case GPS_TYPE_UAVCAN_RTK_ROVER:
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = AP_GPS_UAVCAN::probe(*this, state[instance]);
@@ -638,7 +642,7 @@ void AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
-        if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
+        if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY && new_gps == nullptr) {
             if (_type[instance] == GPS_TYPE_HEMI) {
                 send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
             } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
@@ -661,7 +665,7 @@ void AP_GPS::detect_instance(uint8_t instance)
         }
     }
 
-    if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
+    if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY && new_gps == nullptr) {
         send_blob_update(instance);
     }
 
@@ -806,7 +810,7 @@ void AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
+    if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         send_blob_update(instance);
     }
 
@@ -827,7 +831,10 @@ void AP_GPS::update_instance(uint8_t instance)
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
             // do not try to detect again if type is MAV or UAVCAN
-            if (_type[instance] == GPS_TYPE_MAV || _type[instance] == GPS_TYPE_UAVCAN) {
+            if (_type[instance] == GPS_TYPE_MAV ||
+                _type[instance] == GPS_TYPE_UAVCAN ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_BASE ||
+                _type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER) {
                 state[instance].status = NO_FIX;
             } else {
                 // free the driver before we run the next detection, so we
@@ -913,6 +920,55 @@ void AP_GPS::update_instance(uint8_t instance)
     (void)data_should_be_logged;
 #endif
 }
+
+
+#if GPS_MOVING_BASELINE
+void AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading)
+{
+    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] && _type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+           relPosHeading = state[i].relPosHeading;
+           relPosLength = state[i].relPosLength;
+           relPosD = state[i].relPosD;
+           accHeading = state[i].accHeading;
+           timestamp = state[i].relposheading_ts;
+        }
+    }
+}
+
+bool AP_GPS::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
+{
+    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] && _type[i] == GPS_TYPE_UBLOX_RTK_BASE) {
+            return drivers[i]->get_RTCMV3(bytes, len);
+        }
+    }
+    return false;
+}
+
+void AP_GPS::clear_RTCMV3()
+{
+    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] && _type[i] == GPS_TYPE_UBLOX_RTK_BASE) {
+            drivers[i]->clear_RTCMV3();
+        }
+    }
+}
+
+/*
+    inject Moving Baseline Data messages.
+*/
+void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
+{
+    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            // pass the data to the rover
+            inject_data(i, data, length);
+            break;
+        }
+    }
+}
+#endif //#if GPS_MOVING_BASELINE
 
 /*
   update all GPS instances
@@ -1006,8 +1062,8 @@ void AP_GPS::update_primary(void)
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_type[i] == GPS_TYPE_UBLOX_RTK_BASE &&
-            _type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER &&
+        if (((_type[i] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[i] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
+            ((_type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i^1] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
             ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
@@ -1161,7 +1217,7 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            if ((_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i] == GPS_TYPE_UAVCAN_RTK_ROVER)) {
                 // we don't externally inject to moving baseline rover
                 continue;
             }
@@ -1862,7 +1918,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       happens with the RTCMv3 data
      */
     const uint8_t delay_threshold = 2;
-    const float delay_avg_max = _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER?245:215;
+    const float delay_avg_max = ((_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_ROVER))?245:215;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
@@ -1891,13 +1947,16 @@ bool AP_GPS::prepare_for_arming(void) {
 bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-        if (_type[i] == GPS_TYPE_UAVCAN) {
+        if (_type[i] == GPS_TYPE_UAVCAN ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_BASE ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
             if (!AP_GPS_UAVCAN::backends_healthy(failure_msg, failure_msg_len)) {
                 return false;
             }
         }
 #endif
-        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+        if (_type[i] == GPS_TYPE_UBLOX_RTK_ROVER ||
+            _type[i] == GPS_TYPE_UAVCAN_RTK_ROVER) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
                 return false;
@@ -1998,8 +2057,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 {
 #if GPS_MAX_RECEIVERS > 1
     if (instance < GPS_MAX_RECEIVERS &&
-        _type[instance] == GPS_TYPE_UBLOX_RTK_BASE &&
-        _type[instance^1] == GPS_TYPE_UBLOX_RTK_ROVER) {
+        ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[instance] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
+        ((_type[instance^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[instance^1] == GPS_TYPE_UAVCAN_RTK_ROVER))) {
         // return the yaw from the rover
         instance ^= 1;
     }

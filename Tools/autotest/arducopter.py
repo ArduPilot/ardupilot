@@ -934,15 +934,21 @@ class AutoTestCopter(AutoTest):
         # no action taken.
         self.start_subtest("Batt failsafe disabled test")
         self.takeoffAndMoveAway()
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK:
+            raise NotAchievedException("Expected state ok")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_LOW:
+            raise NotAchievedException("Expected state low")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
         m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
         if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
-            raise NotAchievedException("Execpted state critical")
+            raise NotAchievedException("Expected state critical")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.change_mode("RTL")
@@ -6875,17 +6881,15 @@ class AutoTestCopter(AutoTest):
 
                 messages[off] = m
 
-                # FIXME: make the numbers we use in the i2c simulated
-                # baros closer to the ones from AP_Baro_SITL
                 if None in messages:
                     return
                 first = messages[0]
                 for msg in messages[1:]:
                     delta_press_abs = abs(first.press_abs - msg.press_abs)
-                    if delta_press_abs > 5:
+                    if delta_press_abs > 0.5: # 50 Pa leeway
                         raise NotAchievedException("Press_Abs mismatch (press1=%s press2=%s)" % (first, msg))
                     delta_temperature = abs(first.temperature - msg.temperature)
-                    if delta_temperature > 1000:  # that's 10-degrees leeway
+                    if delta_temperature > 300:  # that's 3-degrees leeway
                         raise NotAchievedException("Temperature mismatch (t1=%s t2=%s)" % (first, msg))
             self.install_message_hook_context(check_pressure)
             self.fly_mission("copter_mission.txt", strict=False)

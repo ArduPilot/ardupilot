@@ -56,7 +56,7 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
 // @Field: Instance: battery instance number
 // @Field: V13: thirteenth cell voltage
 // @Field: V14: fourteenth cell voltage
-        AP::logger().Write(
+        AP::logger().WriteStreaming(
             "BCL2",
             "TimeUS,Instance,V13,V14",
             "s#vv",

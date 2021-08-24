@@ -625,8 +625,8 @@ void AC_PosControl::update_xy_controller()
     }
     _last_update_xy_us = AP_HAL::micros64();
 
-    float ekfGndSpdLimit, ekfNavVelGainScaler;
-    AP::ahrs().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    float ahrsGndSpdLimit, ahrsControlScaleXY;
+    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
 
     // Position Controller
 
@@ -634,7 +634,7 @@ void AC_PosControl::update_xy_controller()
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos, _limit.pos_xy);
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
-    vel_target *= ekfNavVelGainScaler;
+    vel_target *= ahrsControlScaleXY;
     _vel_target.x = vel_target.x;
     _vel_target.y = vel_target.y;
     _vel_target.x += _vel_desired.x;
@@ -652,7 +652,7 @@ void AC_PosControl::update_xy_controller()
     }
     Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, Vector2f(_limit_vector.x, _limit_vector.y));
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    accel_target *= ekfNavVelGainScaler;
+    accel_target *= ahrsControlScaleXY;
 
     // pass the correction acceleration to the target acceleration output
     _accel_target.x = accel_target.x;
@@ -765,9 +765,6 @@ void AC_PosControl::init_z_controller_stopping_point()
 
     get_stopping_point_z_cm(_pos_target.z);
     _vel_target.z = 0.0f;
-
-    // Set accel PID I term based on the current throttle
-    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
 }
 
 // relax_z_controller - initialise the position controller to the current position and velocity with decaying acceleration.
@@ -962,6 +959,7 @@ void AC_PosControl::update_z_controller()
     float pos_target_zf = _pos_target.z;
 
     _vel_target.z = _p_pos_z.update_all(pos_target_zf, curr_alt, _limit.pos_down, _limit.pos_up);
+    _vel_target.z *= AP::ahrs().getControlScaleZ();
 
     _pos_target.z = pos_target_zf;
 
@@ -972,6 +970,7 @@ void AC_PosControl::update_z_controller()
 
     const Vector3f& curr_vel = _inav.get_velocity();
     _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel.z, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
     _accel_target.z += _accel_desired.z;

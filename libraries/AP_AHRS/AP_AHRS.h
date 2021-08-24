@@ -103,8 +103,27 @@ public:
     float           get_error_rp() const override;
     float           get_error_yaw() const override;
 
+    /*
+     * wind estimation support
+     */
+
+    // enable wind estimation
+    void set_wind_estimation_enabled(bool b) { wind_estimation_enabled = b; }
+
+    // wind_estimation_enabled returns true if wind estimation is enabled
+    bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
+
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate() const override;
+
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
+
+    /*
+     * airspeed support
+     */
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -188,7 +207,8 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
     // get speed limit
-    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
+    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
+    float getControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
@@ -199,6 +219,11 @@ public:
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
+
+    // return true if *DCM* yaw has been initialised
+    bool dcm_yaw_initialised(void) const {
+        return AP_AHRS_DCM::yaw_initialised();
+    }
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
@@ -310,8 +335,13 @@ public:
     void set_alt_measurement_noise(float noise) override;
 
     // active EKF type for logging
-    uint8_t get_active_AHRS_type(void) const override {
+    uint8_t get_active_AHRS_type(void) const {
         return uint8_t(active_EKF_type());
+    }
+
+    // get the selected ekf type, for allocation decisions
+    int8_t get_ekf_type(void) const {
+        return _ekf_type;
     }
 
     // these are only out here so vehicles can reference them for parameters
@@ -445,6 +475,21 @@ private:
      */
     VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
 
+    /*
+     * Parameters
+     */
+    AP_Int8 _wind_max;
+    AP_Int8 _board_orientation;
+    AP_Int8 _ekf_type;
+    AP_Float _custom_roll;
+    AP_Float _custom_pitch;
+    AP_Float _custom_yaw;
+
+    /*
+     * support for custom AHRS orientation, replacing _board_orientation
+     */
+    Matrix3f _custom_rotation;
+
     enum class EKFType {
         NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
@@ -561,6 +606,11 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+
+    /*
+     * wind estimation support
+     */
+    bool wind_estimation_enabled;
 
     /*
      * fly_forward is set by the vehicles to indicate the vehicle

@@ -90,23 +90,6 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
     return ret;
 }
 
-bool AP_Arming_Copter::compass_checks(bool display_failure)
-{
-    bool ret = AP_Arming::compass_checks(display_failure);
-
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
-        // check compass offsets have been set.  AP_Arming only checks
-        // this if learning is off; Copter *always* checks.
-        char failure_msg[50] = {};
-        if (!AP::compass().configured(failure_msg, ARRAY_SIZE(failure_msg))) {
-            check_failed(ARMING_CHECK_COMPASS, display_failure, "%s", failure_msg);
-            ret = false;
-        }
-    }
-
-    return ret;
-}
-
 bool AP_Arming_Copter::ins_checks(bool display_failure)
 {
     bool ret = AP_Arming::ins_checks(display_failure);
@@ -425,10 +408,10 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     #endif
 
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
+    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
 
     // call parent gps checks
-    if (mode_requires_gps || fence_requires_gps) {
+    if (mode_requires_gps) {
         if (!AP_Arming::gps_checks(display_failure)) {
             AP_Notify::flags.pre_arm_gps_check = false;
             return false;
@@ -442,7 +425,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     }
 
     // return true if GPS is not required
-    if (!mode_requires_gps && !fence_requires_gps) {
+    if (!mode_requires_gps) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }

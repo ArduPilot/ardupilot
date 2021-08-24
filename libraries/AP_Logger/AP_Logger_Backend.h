@@ -13,7 +13,7 @@ public:
     AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz);
 
     // return true if message passes the rate limit test
-    bool should_log(uint8_t msgid);
+    bool should_log(uint8_t msgid, bool writev_streaming);
     bool should_log_streaming(uint8_t msgid);
 
 private:
@@ -61,7 +61,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming=false);
 
     // high level interface, indexed by the position in the list of logs
     virtual uint16_t find_last_log() = 0;

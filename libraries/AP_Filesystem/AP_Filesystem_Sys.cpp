@@ -38,6 +38,8 @@ static const SysFileList sysfs_file_list[] = {
     {"uarts.txt"},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt"},
+#endif
+#if HAL_NUM_CAN_IFACES > 0
     {"can0_stats.txt"},
     {"can1_stats.txt"},
 #endif
@@ -105,10 +107,13 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         hal.util->uart_info(*r.str);
     }
 #if HAL_CANMANAGER_ENABLED
-    int8_t can_stats_num = -1;
     if (strcmp(fname, "can_log.txt") == 0) {
         AP::can().log_retrieve(*r.str);
-    } else if (strcmp(fname, "can0_stats.txt") == 0) {
+    }
+#endif
+#if HAL_NUM_CAN_IFACES > 0
+    int8_t can_stats_num = -1;
+    if (strcmp(fname, "can0_stats.txt") == 0) {
         can_stats_num = 0;
     } else if (strcmp(fname, "can1_stats.txt") == 0) {
         can_stats_num = 1;

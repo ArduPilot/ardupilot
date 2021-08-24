@@ -108,6 +108,9 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     update_trig();
 
     backup_attitude();
+
+    // remember the last origin for fallback support
+    IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 }
 
 /*
@@ -493,11 +496,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             // we force an additional compass read()
             // here. This has the effect of throwing away
             // the first compass value, which can be bad
-            if (!_flags.have_initial_yaw && compass.read()) {
+            if (!have_initial_yaw && compass.read()) {
                 const float heading = compass.calculate_heading(_dcm_matrix);
                 _dcm_matrix.from_euler(roll, pitch, heading);
                 _omega_yaw_P.zero();
-                _flags.have_initial_yaw = true;
+                have_initial_yaw = true;
             }
             new_value = true;
             yaw_error = yaw_error_compass(compass);
@@ -536,13 +539,13 @@ AP_AHRS_DCM::drift_correction_yaw(void)
                operator pulls back the plane rapidly enough then on
                release the GPS heading changes very rapidly
             */
-            if (!_flags.have_initial_yaw ||
+            if (!have_initial_yaw ||
                     yaw_deltat > 20 ||
                     (_gps.ground_speed() >= 3*GPS_SPEED_MIN && fabsf(yaw_error_rad) >= 1.047f)) {
                 // reset DCM matrix based on current yaw
                 _dcm_matrix.from_euler(roll, pitch, gps_course_rad);
                 _omega_yaw_P.zero();
-                _flags.have_initial_yaw = true;
+                have_initial_yaw = true;
                 yaw_error = 0;
             }
         }
@@ -744,6 +747,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // use GPS for positioning with any fix, even a 2D fix
         _last_lat = _gps.location().lat;
         _last_lng = _gps.location().lng;
+        _last_pos_ms = AP_HAL::millis();
         _position_offset_north = 0;
         _position_offset_east = 0;
 
@@ -957,7 +961,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(void)
 {
-    if (!_flags.wind_estimation) {
+    if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
     const Vector3f &velocity = _last_velocity;
@@ -1047,10 +1051,13 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
     loc.offset(_position_offset_north, _position_offset_east);
-    if (AP::ahrs().get_fly_forward() && _have_position) {
-        float gps_delay_sec = 0;
-        gps.get_lag(gps_delay_sec);
-        loc.offset_bearing(gps.ground_course(), gps.ground_speed() * gps_delay_sec);
+    if (_have_position) {
+        const uint32_t now = AP_HAL::millis();
+        float dt = 0;
+        gps.get_lag(dt);
+        dt += constrain_float((now - _last_pos_ms) * 0.001, 0, 0.5);
+        Vector2f dpos = _last_velocity.xy() * dt;
+        loc.offset(dpos.x, dpos.y);
     }
     return _have_position;
 }
@@ -1074,7 +1081,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
 {
     if (airspeed_sensor_enabled(airspeed_index)) {
         airspeed_ret = AP::airspeed()->get_airspeed(airspeed_index);
-    } else if (_flags.wind_estimation && have_gps()) {
+    } else if (AP::ahrs().get_wind_estimation_enabled() && have_gps()) {
         // estimate it via GPS speed and wind
         airspeed_ret = _last_airspeed;
     } else {
@@ -1084,6 +1091,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
         return false;
     }
 
+    const float _wind_max = AP::ahrs().get_max_wind();
     if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
@@ -1175,5 +1183,52 @@ bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8
         hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
         return false;
     }
+    return true;
+}
+
+/*
+  relative-origin functions for fallback in AP_InertialNav
+*/
+bool AP_AHRS_DCM::get_origin_fallback(Location &ret) const
+{
+    ret = last_origin;
+    if (ret.is_zero()) {
+        // use home if we never have had an origin
+        ret = AP::ahrs().get_home();
+    }
+    return !ret.is_zero();
+}
+
+bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3f &posNED) const
+{
+    Location origin;
+    if (!AP_AHRS_DCM::get_origin_fallback(origin)) {
+        return false;
+    }
+    Location loc;
+    if (!AP_AHRS_DCM::get_position(loc)) {
+        return false;
+    }
+    posNED = origin.get_distance_NED(loc);
+    return true;
+}
+
+bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2f &posNE) const
+{
+    Vector3f posNED;
+    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
+        return false;
+    }
+    posNE = posNED.xy();
+    return true;
+}
+
+bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
+{
+    Vector3f posNED;
+    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
+        return false;
+    }
+    posD = posNED.z;
     return true;
 }

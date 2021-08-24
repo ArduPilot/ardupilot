@@ -530,7 +530,7 @@ class AutoTestPlane(AutoTest):
         num_wp = self.load_mission(filename, strict=strict)-1
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode('AUTO')
-        self.wait_waypoint(1, num_wp, max_dist=60)
+        self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         if quadplane:
             self.wait_statustext("Throttle disarmed", timeout=70)
@@ -2970,7 +2970,7 @@ class AutoTestPlane(AutoTest):
                 mission_file = "basic-quadplane.txt"
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.fly_mission(mission_file, strict=False, quadplane=quadplane)
+            self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
             self.wait_disarmed()
 
     def RCDisableAirspeedUse(self):
@@ -3047,6 +3047,26 @@ class AutoTestPlane(AutoTest):
 
         if ex is not None:
             raise ex
+
+    def fly_landing_baro_drift(self):
+
+        self.customise_SITL_commandline([], wipe=True)
+
+        self.set_parameters({
+            "SIM_BARO_DRIFT": -0.02,
+            "SIM_TERRAIN": 0,
+            "RNGFND_LANDING": 1,
+            "RNGFND1_MAX_CM": 4000,
+            "LAND_SLOPE_RCALC": 2,
+            "LAND_ABORT_DEG": 2,
+        })
+
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.fly_mission("ap-circuit.txt", mission_timeout=1200)
 
     def tests(self):
         '''return list of all tests'''
@@ -3256,6 +3276,10 @@ class AutoTestPlane(AutoTest):
             ("AHRSTrim",
              "AHRS trim testing",
              self.ahrstrim),
+
+            ("Landing-Drift",
+             "Circuit with baro drift",
+             self.fly_landing_baro_drift),
 
             ("LogUpload",
              "Log upload",

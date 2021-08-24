@@ -244,7 +244,6 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
-    void send_sensor_offsets();
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
@@ -506,6 +505,7 @@ protected:
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_long_t &packet);
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
@@ -866,12 +866,6 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
-
-    // send_sensor_offsets decimates its send rate using this counter:
-    // FIXME: decimate this instead when initialising the message
-    // intervals from the stream rates.  Consider the implications of
-    // doing so vis-a-vis the fact it will consume a bucket.
-    uint8_t send_sensor_offsets_counter;
 
     // if we've ever sent a DISTANCE_SENSOR message out of an
     // orientation we continue to send it out, even if it is not
