@@ -124,10 +124,7 @@ public:
 
     // get the active main loop rate
     uint16_t get_loop_rate_hz(void) {
-        if (_active_loop_rate_hz == 0) {
-            _active_loop_rate_hz = _loop_rate_hz;
-        }
-        return _active_loop_rate_hz;
+        return _loop_rate_hz;
     }
     // get the time-allowed-per-loop in microseconds
     uint32_t get_loop_period_us() {
@@ -176,9 +173,6 @@ private:
 
     // overall scheduling rate in Hz
     AP_Int16 _loop_rate_hz;
-
-    // loop rate in Hz as set at startup
-    AP_Int16 _active_loop_rate_hz;
 
     // scheduler options
     AP_Int8 _options;
