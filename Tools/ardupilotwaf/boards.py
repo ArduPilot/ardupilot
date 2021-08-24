@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from collections import OrderedDict
+import re
 import sys, os
 import fnmatch
 
@@ -428,10 +429,21 @@ def get_ap_periph_boards():
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
             with open(hwdef, "r") as f:
-                if '-periph' in f.readline():  # try to get -periph include
+                content = f.read()
+                if 'AP_PERIPH' in content:
                     list_ap.append(d)
-                if 'AP_PERIPH' in f.read():
-                    list_ap.append(d)
+                    continue
+                # process any include lines:
+                m = re.match(r"include\s+([^\s]*)", content)
+                if m is None:
+                    continue
+                include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
+                with open(include_path, "r") as g:
+                    content = g.read()
+                    if 'AP_PERIPH' in content:
+                        list_ap.append(d)
+                        continue
+
     list_ap = list(set(list_ap))
     return list_ap
 
