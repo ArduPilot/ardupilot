@@ -231,11 +231,14 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude, stream_ofs):
         else:
             dmamux1_peripherals.append(p)
     map1 = generate_DMAMUX_map_mask(dmamux1_peripherals, 0xFFFF, noshare_list, dma_exclude, stream_ofs)
-    # there are 8 BDMA channels, but an issue has been found where if I2C4 and SPI6
-    # use neighboring channels then we sometimes lose a BDMA completion interrupt. To
-    # avoid this we set the BDMA available mask to 0x54, which forces the channels not to be
-    # adjacent. This issue was found on a CUAV-X7, with H743 RevV.
-    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0x54, noshare_list, dma_exclude, stream_ofs)
+    # there are 8 BDMA streams, but an issue has been found where if I2C4 and
+    # SPI6 use neighboring streams then we sometimes lose a BDMA completion
+    # interrupt. We also found that both ADC3 and SPI6_RX can't use the first
+    # stream. To avoid more complications we now statically allocate the BDMA
+    # streams for the 3 possible peripherals. To keep this code simpler we
+    # still have the mapping code here, but it ends not not being used and the
+    # static allocation is in stm32h7_mcuconf.h
+    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0xff, noshare_list, dma_exclude, stream_ofs)
     # translate entries from map2 to "DMA controller 3", which is used for BDMA
     for p in map2.keys():
         streams = []
@@ -447,10 +450,9 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         else:
             dma_controller = curr_dict[key][0]
             if dma_controller == 3:
-                # for BDMA we use 3 in the resolver
-                f.write("#define %-30s %u%s\n" %
-                    (chibios_dma_define_name(key)+'STREAM',
-                         curr_dict[key][1], shared))
+                # BDMA resources turn out to be very strange on H743. For now
+                # we will skip trying to allocate them automatically and
+                # instead rely on allocation in stm32h7_mcuconf.h.
                 continue
             else:
                 f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
@@ -526,8 +528,13 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             key = 'SPI%u' % u
         else:
             continue
-        f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
-            key, key, dma_name(key), key, dma_name(key)))
+        if dma_name(key) == 'BDMA':
+            # we use SHARED_DMA_NONE for SPI6 on H7 as we don't need to lock the stream
+            # as it is never shared
+            f.write('#define STM32_SPI_%s_DMA_STREAMS SHARED_DMA_NONE, SHARED_DMA_NONE\n' % key)
+        else:
+            f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
+                key, key, dma_name(key), key, dma_name(key)))
     return unassigned, ordered_timers
 
 
