@@ -1023,21 +1023,6 @@ void AC_PosControl::update_z_controller()
 /// Accessors
 ///
 
-/// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
-{
-    const float curr_pos_z = _inav.get_position().z;
-    float curr_vel_z = _inav.get_velocity().z;
-
-    // avoid divide by zero by using current position if kP is very low or acceleration is zero
-    if (!is_positive(_p_pos_z.kP()) || !is_positive(_accel_max_z_cmss)) {
-        stopping_point = curr_pos_z;
-        return;
-    }
-
-    stopping_point = curr_pos_z + constrain_float(stopping_distance(curr_vel_z, _p_pos_z.kP(), _accel_max_z_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
-}
-
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
 float AC_PosControl::get_lean_angle_max_cd() const
 {
@@ -1118,6 +1103,21 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
     const float t = stopping_dist / vel_total;
     stopping_point.x += t * curr_vel.x;
     stopping_point.y += t * curr_vel.y;
+}
+
+/// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
+void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
+{
+    const float curr_pos_z = _inav.get_position().z;
+    float curr_vel_z = _inav.get_velocity().z;
+
+    // avoid divide by zero by using current position if kP is very low or acceleration is zero
+    if (!is_positive(_p_pos_z.kP()) || !is_positive(_accel_max_z_cmss)) {
+        stopping_point = curr_pos_z;
+        return;
+    }
+
+    stopping_point = curr_pos_z + constrain_float(stopping_distance(curr_vel_z, _p_pos_z.kP(), _accel_max_z_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
 }
 
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
