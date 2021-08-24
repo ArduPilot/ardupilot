@@ -674,6 +674,7 @@ class AutoTestQuadPlane(AutoTest):
         '''tailsitter test'''
         self.set_parameter('Q_FRAME_CLASS', 10)
         self.set_parameter('Q_ENABLE', 1)
+        self.set_parameter('Q_TAILSIT_ENABLE', 1)
 
         self.reboot_sitl()
         self.wait_ready_to_arm()
