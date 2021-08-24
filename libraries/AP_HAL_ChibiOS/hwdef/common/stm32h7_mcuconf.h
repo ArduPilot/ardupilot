@@ -582,3 +582,24 @@
 #define STM32_WSPI_QUADSPI1_MDMA_PRIORITY   1
 #define STM32_WSPI_QUADSPI1_PRESCALER_VALUE ((STM32_QSPICLK / HAL_QSPI1_CLK) - 1)
 #endif
+
+/*
+  we use a fixed allocation of BDMA streams. We previously dynamically
+  allocated these, but bugs in the chip make that unreliable. This is
+  a tested set of allocations that is known to work on boards that are
+  using all 3 of ADC3, I2C4 and SPI6. They are the only peripherals
+  that can use BDMA, so fixed allocation is possible as we have 8
+  streams and a maximum of 6 needed.
+
+  The layout is chosen to:
+
+   - avoid stream 0, as this doesn't work on ADC3 or SPI6_RX for no known reason
+   - leave a gap between the peripheral types, as we have previously found that we sometimes
+     lost SPI6 BDMA completion interrupts if SPI6 and I2c4 are neighbours
+ */
+#define STM32_I2C_I2C4_RX_BDMA_STREAM 1
+#define STM32_I2C_I2C4_TX_BDMA_STREAM 2
+#define STM32_SPI_SPI6_RX_BDMA_STREAM 4
+#define STM32_SPI_SPI6_TX_BDMA_STREAM 5
+#define STM32_ADC_ADC3_BDMA_STREAM 7
+
