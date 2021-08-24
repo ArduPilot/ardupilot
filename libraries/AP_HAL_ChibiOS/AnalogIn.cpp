@@ -206,6 +206,8 @@ void AnalogIn::adccallback(ADCDriver *adcp)
  */
 void AnalogIn::init()
 {
+    static_assert(sizeof(uint16_t) == sizeof(adcsample_t), "adcsample_t must be uint16_t");
+
     if (ADC_GRP1_NUM_CHANNELS == 0) {
         return;
     }
@@ -345,6 +347,10 @@ void AnalogIn::adc3callback(ADCDriver *adcp)
 void AnalogIn::setup_adc3(void)
 {
     samples_adc3 = (adcsample_t *)hal.util->malloc_type(sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC3_GRP1_NUM_CHANNELS, AP_HAL::Util::MEM_DMA_SAFE);
+    if (samples_adc3 == nullptr) {
+        // not likely, but can't setup ADC3
+        return;
+    }
 
     adcStart(&ADCD3, NULL);
 
