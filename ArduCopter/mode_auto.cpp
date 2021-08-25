@@ -163,7 +163,8 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
     if (mission.jump_to_landing_sequence()) {
         mission.set_force_resume(true);
-        if (set_mode(Mode::Number::AUTO, reason)) {
+        // if not already in auto switch to auto
+        if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
             auto_RTL = true;
             // log entry into AUTO RTL
             copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
