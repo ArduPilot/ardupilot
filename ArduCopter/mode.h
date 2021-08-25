@@ -111,16 +111,27 @@ protected:
     void zero_throttle_and_hold_attitude();
     void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
-    // functions to control landing
-    // in modes that support landing
+    // functions to control normal landing.  pause_descent is true if vehicle should not descend
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
-    void run_land_controllers(bool pause_descent = false) {
+    void land_run_horiz_and_vert_control(bool pause_descent = false) {
         land_run_horizontal_control();
         land_run_vertical_control(pause_descent);
     }
-    // Do normal landing or precision landing if enabled. pause_descent is true if vehicle should not descend
-    void execute_landing(bool pause_descent = false);
+
+    // run normal or precision landing (if enabled)
+    // pause_descent is true if vehicle should not descend
+    void land_run_normal_or_precland(bool pause_descent = false);
+
+#if PRECISION_LANDING == ENABLED
+    // Go towards a position commanded by prec land state machine in order to retry landing
+    // The passed in location is expected to be NED and in meters
+    void precland_retry_position(const Vector3f &retry_pos);
+
+    // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
+    // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
+    void precland_run();
+#endif
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
@@ -245,17 +256,6 @@ public:
         float _yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
-
-#if PRECISION_LANDING == ENABLED
-    // Go towards a position commanded by prec land state machine in order to retry landing
-    // The passed in location is expected to be NED and in meters
-    void land_retry_position(const Vector3f &retry_loc);
-
-    // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
-    // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
-    void run_precland();
-
-#endif
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base

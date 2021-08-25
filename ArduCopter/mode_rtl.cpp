@@ -414,7 +414,7 @@ void ModeRTL::land_run(bool disarm_on_land)
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run normal landing or precision landing (if enabled)
-    execute_landing();
+    land_run_normal_or_precland();
 }
 
 void ModeRTL::build_path()
