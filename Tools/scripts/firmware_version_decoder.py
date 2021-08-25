@@ -6,6 +6,7 @@ import sys
 import struct
 from argparse import ArgumentParser
 from dataclasses import dataclass
+from elftools.elf.elffile import ELFFile
 from typing import Any
 
 
@@ -137,6 +138,7 @@ class Decoder:
         self.fwversion = FWVersion()
         self.byteorder = ""
         self.pointer_size = 0
+        self.elffile = None
 
     def unpack(self, struct_format: str) -> Any:
         struct_format = f"{self.byteorder}{struct_format}"
@@ -150,6 +152,9 @@ class Decoder:
         # nullptr, return empty string
         if address == 0:
             return ""
+
+        # Calculate address offset for PIE (Position Independent Executables) binaries
+        address = next(self.elffile.address_offsets(address))
 
         current_address = self.bytesio.seek(0, io.SEEK_CUR)
         self.bytesio.seek(address)
@@ -193,8 +198,10 @@ class Decoder:
         self.fwversion.os_hash_string = self.unpack_string_from_pointer()
 
     def process(self, filename) -> None:
-        with open(filename, "rb") as file:
-            data = file.read()
+        # We need the file open for ELFFile
+        file = open(filename, "rb")
+        data = file.read()
+        self.elffile = ELFFile(file)
 
         if not data:
             raise RuntimeError("Failed to find FWVersion.")
