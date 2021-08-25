@@ -64,10 +64,10 @@ public:
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     
-    // process MOUNT_CONFIGURE messages received from GCS:
+    // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
 
-    // process MOUNT_CONTROL messages received from GCS:
+    // process MOUNT_CONTROL messages received from GCS. deprecated.
     void handle_mount_control(const mavlink_mount_control_t &packet);
 
     // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
@@ -81,6 +81,9 @@ public:
 
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(const mavlink_channel_t chan) {}
+
+    // handle a GLOBAL_POSITION_INT message
+    bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
 
 protected:
 
