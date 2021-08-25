@@ -289,7 +289,7 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeRea
 {
     Mode *new_mode = plane.mode_from_mode_num(new_mode_number);
     if (new_mode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Error: invalid mode number: %d", new_mode_number);
+        notify_no_such_mode(new_mode_number);
         return false;
     }
     return set_mode(*new_mode, reason);
