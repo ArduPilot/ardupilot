@@ -5462,8 +5462,8 @@ uint8_t GCS_MAVLINK::receiver_rssi() const
         return 255;
     }
 
-    uint8_t rssi = aprssi->read_receiver_rssi() * 255;
-    return (rssi < 255) ? rssi : 254;
+    // scale across the full valid range
+    return aprssi->read_receiver_rssi() * 254;
 }
 
 GCS &gcs()
