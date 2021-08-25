@@ -21,10 +21,8 @@ void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
         // should not have been called
         return;
     }
-    Mode *new_mode = rover.mode_from_mode_num((Mode::Number)rover.modes[new_pos].get());
-    if (new_mode != nullptr) {
-        rover.set_mode(*new_mode, ModeReason::RC_COMMAND);
-    }
+
+    rover.set_mode((Mode::Number)rover.modes[new_pos].get(), ModeReason::RC_COMMAND);
 }
 
 // init_aux_switch_function - initialize aux functions
