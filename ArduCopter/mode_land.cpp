@@ -85,7 +85,7 @@ void ModeLand::gps_run()
         }
 
         // run normal landing or precision landing (if enabled)
-        execute_landing(land_pause);
+        land_run_normal_or_precland(land_pause);
     }
 }
 
