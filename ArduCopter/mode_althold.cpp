@@ -26,6 +26,7 @@ bool ModeAltHold::init(bool ignore_checks)
 void ModeAltHold::run()
 {
     // set vertical speed and acceleration limits
+    // we call it in run() instead of init(), so that parameter changes take effect without mode change
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
