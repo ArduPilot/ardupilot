@@ -23,12 +23,6 @@
     heavily based on RangeFinder NMEA library
 */
 
-// constructor
-AP_WindVane_NMEA::AP_WindVane_NMEA(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
-
 // init - performs any required initialization for this instance
 void AP_WindVane_NMEA::init(const AP_SerialManager& serial_manager)
 {
