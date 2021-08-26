@@ -15,9 +15,12 @@
 /*
   AP_Periph can support
  */
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_Periph.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 #include <canard.h>
 #include <uavcan/protocol/dynamic_node_id/Allocation.h>
 #include <uavcan/protocol/NodeStatus.h>
@@ -52,6 +55,7 @@
 #include <uavcan/equipment/esc/RawCommand.h>
 #include <uavcan/equipment/actuator/ArrayCommand.h>
 #include <uavcan/equipment/actuator/Command.h>
+#pragma GCC diagnostic pop
 #include <stdio.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
