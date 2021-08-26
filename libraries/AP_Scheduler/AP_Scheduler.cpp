@@ -105,7 +105,14 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     } else if (_loop_rate_hz > 2000) {
         _loop_rate_hz.set(2000);
     }
-    _last_loop_time_s = 1.0 / _loop_rate_hz;
+
+    // take copy of loop rate so it doesn't change after boot time
+    _active_loop_rate_hz = _loop_rate_hz;
+
+    // initialise values derived from the loop rate
+    _loop_period_us = 1000000UL / _active_loop_rate_hz;
+    _loop_period_s = 1.0f / _active_loop_rate_hz;
+    _last_loop_time_s = 1.0 / _active_loop_rate_hz;
 
     AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
@@ -120,7 +127,7 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     _tick_counter = 0;
 
     // setup initial performance counters
-    perf_info.set_loop_rate(get_loop_rate_hz());
+    perf_info.set_loop_rate(_active_loop_rate_hz);
     perf_info.reset();
 
     if (_options & uint8_t(Options::RECORD_TASK_INFO)) {
@@ -162,7 +169,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         const uint16_t dt = _tick_counter - _last_run[i];
         // we allow 0 to mean loop rate
-        uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
+        uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _active_loop_rate_hz / task.rate_hz);
         if (interval_ticks < 1) {
             interval_ticks = 1;
         }
@@ -255,7 +262,7 @@ float AP_Scheduler::load_average()
     if (_spare_ticks == 0) {
         return 0.0f;
     }
-    const uint32_t loop_us = get_loop_period_us();
+    const uint32_t loop_us = _loop_period_us;
     const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
     return used_time / (float)loop_us;
 }
@@ -273,7 +280,7 @@ void AP_Scheduler::loop()
     
     if (_loop_timer_start_us == 0) {
         _loop_timer_start_us = sample_time_us;
-        _last_loop_time_s = get_loop_period_s();
+        _last_loop_time_s = _loop_period_s;
     } else {
         _last_loop_time_s = (sample_time_us - _loop_timer_start_us) * 1.0e-6;
     }
@@ -305,7 +312,7 @@ void AP_Scheduler::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    const uint32_t loop_us = get_loop_period_us();
+    const uint32_t loop_us = _loop_period_us;
     uint32_t now = AP_HAL::micros();
     uint32_t time_available = 0;
     const uint32_t loop_tick_us = now - sample_time_us;
@@ -359,7 +366,7 @@ void AP_Scheduler::update_logging()
         AP::logger().should_log(_log_performance_bit)) {
         Log_Write_Performance();
     }
-    perf_info.set_loop_rate(get_loop_rate_hz());
+    perf_info.set_loop_rate(_active_loop_rate_hz);
     perf_info.reset();
     // dynamically update the per-task perf counter
     if (!(_options & uint8_t(Options::RECORD_TASK_INFO)) && perf_info.has_task_info()) {
