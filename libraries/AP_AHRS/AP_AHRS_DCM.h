@@ -58,7 +58,7 @@ public:
     void reset_gyro_drift() override;
 
     // Methods
-    void            update() override;
+    void            _update() override;
     void            reset(bool recover_eulers = false) override;
 
     // return true if yaw has been initialised
