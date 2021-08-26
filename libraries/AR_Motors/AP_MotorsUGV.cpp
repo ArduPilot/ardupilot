@@ -110,6 +110,13 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
 
+    // @Param: ESC_UNLOCK
+    // @DisplayName: simulate back throttle unlock.
+    // @Description: Simulate press back then release so that ESC backward is unlocked.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("ESC_UNLOCK", 14, AP_MotorsUGV, _esc_backward_unlock, 0),
+
     AP_GROUPEND
 };
 
@@ -215,6 +222,84 @@ void AP_MotorsUGV::set_throttle(float throttle)
 
     // check throttle is between -_throttle_max and  +_throttle_max
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
+    
+    if (_esc_backward_unlock <= 0) {
+        return ;
+    }
+
+    /*
+    ** ((_throttle == 0) && (_esc_backwards_unlock.active)) continue unlocking if user releases throttle but it is zero not forward.
+    ** (_throttle < 0)  backward mode anyway
+    */
+    if ((_throttle < 0.0f) || ((_throttle <= 0.0f) && (_esc_backwards_unlock.active) )) {
+        const uint32_t now = AP_HAL::millis();
+      
+        switch (_esc_backwards_unlock.state) {
+            case UnlockState::UNLOCK_WAITING:
+                _esc_backwards_unlock.simulated_signal=0;
+                _throttle = 0.0f;
+                _esc_backwards_unlock.last_set_throttle_call = now;
+                _esc_backwards_unlock.active = true;
+                _esc_backwards_unlock.state = UnlockState::UNLOCK_STEP_DEC_TO_MAX_NEG;
+                break;
+
+            case UnlockState::UNLOCK_STEP_DEC_TO_MAX_NEG:
+                if ((now - _esc_backwards_unlock.last_set_throttle_call) < 20) {
+                    break;
+                }
+               
+                _esc_backwards_unlock.simulated_signal-=2.0f;
+                _throttle = _esc_backwards_unlock.simulated_signal;
+                _esc_backwards_unlock.last_set_throttle_call = now;
+
+                if (_esc_backwards_unlock.simulated_signal <= - 98.0f) {
+                    _esc_backwards_unlock.simulated_signal = -100.0f;
+                    _esc_backwards_unlock.state = UnlockState::UNLOCK_STEP_STAY_MAX;
+                }
+                break;
+            
+            case UnlockState::UNLOCK_STEP_STAY_MAX:
+                _throttle = -100.0f;
+
+                if ((now - _esc_backwards_unlock.last_set_throttle_call) > 300) {
+                    _esc_backwards_unlock.state = UnlockState::UNLOCK_STEP_INC_TO_ZERO;
+                    _esc_backwards_unlock.last_set_throttle_call = now;
+                }
+                break;
+            
+            case UnlockState::UNLOCK_STEP_INC_TO_ZERO:
+                if ((now - _esc_backwards_unlock.last_set_throttle_call) < 20) {
+                    break;
+                }
+               
+                _esc_backwards_unlock.simulated_signal+=2.0f;
+                _throttle = _esc_backwards_unlock.simulated_signal;
+                _esc_backwards_unlock.last_set_throttle_call = now;
+
+                if (_esc_backwards_unlock.simulated_signal >= -2.0f) {
+                    _esc_backwards_unlock.simulated_signal = 0.0f;
+                    _esc_backwards_unlock.state = UnlockState::UNLOCK_STEP_ZEROS_2;
+                    _esc_backwards_unlock.last_set_throttle_call = now;
+                }
+                break;
+
+
+            case UnlockState::UNLOCK_STEP_ZEROS_2:
+                _throttle = 0.0f;
+
+                if ((now - _esc_backwards_unlock.last_set_throttle_call) > 50) {
+                    _esc_backwards_unlock.state = UnlockState::UNLOCK_FINISHED;
+                    _esc_backwards_unlock.last_set_throttle_call = now;
+                    _esc_backwards_unlock.active = false;
+                }
+                break;
+
+            case UnlockState::UNLOCK_FINISHED:
+               break;
+        }
+    } else if ((_esc_backwards_unlock.state!=UnlockState::UNLOCK_WAITING)  && (_throttle > 0)) {
+            _esc_backwards_unlock.state =UnlockState::UNLOCK_WAITING;
+    }
 }
 
 // set lateral input as a value from -100 to +100

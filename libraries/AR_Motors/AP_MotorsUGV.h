@@ -194,6 +194,7 @@ protected:
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
+    AP_Int8 _esc_backward_unlock; // unlock backward in esc for rover.
     AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
@@ -222,6 +223,23 @@ protected:
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
     uint8_t   _motors_num;
+
+    // state machine status for backward unlock logic.
+    enum UnlockState { 
+        UNLOCK_WAITING = 0,
+        UNLOCK_STEP_DEC_TO_MAX_NEG = 1,
+        UNLOCK_STEP_STAY_MAX = 2,
+        UNLOCK_STEP_INC_TO_ZERO = 3,
+        UNLOCK_STEP_ZEROS_2 = 4,
+        UNLOCK_FINISHED = 5
+    }; 
+    // backward unlock logic variables
+	struct {
+	    uint32_t    last_set_throttle_call;
+	    float    simulated_signal;  // signal sent to esc to simulate backward unlock
+	    bool   active;  // esc unlock process in active     
+	    UnlockState    state;  // state machine status for backward unlock logic.
+	}  _esc_backwards_unlock;
 
     static AP_MotorsUGV *_singleton;
 };
