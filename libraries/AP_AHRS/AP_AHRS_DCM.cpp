@@ -65,17 +65,9 @@ void AP_AHRS::load_watchdog_home()
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update(bool skip_ins_update)
+AP_AHRS_DCM::update()
 {
-    // support locked access functions to AHRS data
-    WITH_SEMAPHORE(_rsem);
-
     AP_InertialSensor &_ins = AP::ins();
-
-    if (!skip_ins_update) {
-        // tell the IMU to grab some data
-        _ins.update();
-    }
 
     // ask the IMU how much time this sensor reading represents
     const float delta_t = _ins.get_delta_time();

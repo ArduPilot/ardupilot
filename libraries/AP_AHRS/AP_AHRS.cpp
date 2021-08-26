@@ -30,6 +30,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -287,6 +288,11 @@ void AP_AHRS::reset_gyro_drift(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
+    if (!skip_ins_update) {
+        // tell the IMU to grab some data
+        AP::ins().update();
+    }
+
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
@@ -303,7 +309,7 @@ void AP_AHRS::update(bool skip_ins_update)
     // update autopilot-body-to-vehicle-body from _trim parameters:
     update_trim_rotation_matrices();
 
-    update_DCM(skip_ins_update);
+    update_DCM();
 
     // update takeoff/touchdown flags
     update_flags();
@@ -348,7 +354,7 @@ void AP_AHRS::update(bool skip_ins_update)
 
     if (_view != nullptr) {
         // update optional alternative attitude view
-        _view->update(skip_ins_update);
+        _view->update();
     }
 
     // update AOA and SSA
@@ -394,7 +400,7 @@ void AP_AHRS::update(bool skip_ins_update)
     }
 }
 
-void AP_AHRS::update_DCM(bool skip_ins_update)
+void AP_AHRS::update_DCM()
 {
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
@@ -404,7 +410,7 @@ void AP_AHRS::update_DCM(bool skip_ins_update)
     yaw = _dcm_attitude.z;
     update_cd_values();
 
-    AP_AHRS_DCM::update(skip_ins_update);
+    AP_AHRS_DCM::update();
 
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude = {roll, pitch, yaw};

@@ -90,7 +90,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
 
-    void            update(bool skip_ins_update=false) override;
+    void            update(bool skip_ins_update=false);
     void            reset(bool recover_eulers = false) override;
 
     // dead-reckoning support
@@ -532,7 +532,7 @@ private:
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
-    void update_DCM(bool skip_ins_update);
+    void update_DCM();
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
