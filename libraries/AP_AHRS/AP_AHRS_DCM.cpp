@@ -65,7 +65,7 @@ void AP_AHRS::load_watchdog_home()
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update()
+AP_AHRS_DCM::_update()
 {
     AP_InertialSensor &_ins = AP::ins();
 

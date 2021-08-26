@@ -410,7 +410,7 @@ void AP_AHRS::update_DCM()
     yaw = _dcm_attitude.z;
     update_cd_values();
 
-    AP_AHRS_DCM::update();
+    AP_AHRS_DCM::_update();
 
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude = {roll, pitch, yaw};
