@@ -84,9 +84,6 @@ public:
     // requires_position should be true if horizontal position configuration should be checked
     virtual bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const = 0;
 
-    // check all cores providing consistent attitudes for prearm checks
-    virtual bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const { return true; }
-
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
@@ -271,21 +268,6 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
-    // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
     virtual bool have_inertial_nav(void) const {
@@ -296,9 +278,7 @@ public:
     virtual bool healthy(void) const = 0;
 
     // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const {
-        return true;
-    };
+    virtual bool initialised(void) const = 0;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred

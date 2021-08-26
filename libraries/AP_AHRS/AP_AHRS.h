@@ -140,13 +140,13 @@ public:
     bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
 
     // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers) const override;
+    bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED;
 
     // return secondary attitude solution if available, as quaternion
-    bool get_secondary_quaternion(Quaternion &quat) const override;
+    bool get_secondary_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc) const override;
+    bool get_secondary_position(struct Location &loc) const WARN_IF_UNUSED;
 
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector() override;
@@ -233,7 +233,7 @@ public:
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // check all cores providing consistent attitudes for prearm checks
-    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
+    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
