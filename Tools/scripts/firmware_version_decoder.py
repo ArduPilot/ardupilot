@@ -233,7 +233,7 @@ if __name__ == "__main__":
         "-f",
         dest="file",
         required=True,
-        help="File that contains a valid ardupilot firmware.",
+        help="File that contains a valid ardupilot firmware in ELF format.",
     )
     args = parser.parse_args()
 
