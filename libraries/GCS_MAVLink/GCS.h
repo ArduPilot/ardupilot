@@ -242,6 +242,7 @@ public:
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
     void send_raw_imu();
+    void send_hygrometer();
 
     void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff));
     void send_scaled_pressure();
@@ -524,6 +525,10 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(const mavlink_message_t &msg);
+
+    virtual int16_t hygrometer_temp() const;
+    virtual uint16_t hygrometer_humi() const;
+    virtual uint8_t hygrometer_id() const;
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
