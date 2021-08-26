@@ -1,0 +1,7 @@
+#
+# support for hygrometer sensors on UAVCAN
+#
+
+float16 temperature
+float16 humidity
+uint8 id
