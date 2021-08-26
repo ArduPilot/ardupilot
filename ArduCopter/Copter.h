@@ -292,6 +292,7 @@ private:
     private:
         Surface surface = Surface::GROUND;
         float target_dist_cm;       // desired distance in cm from ground or ceiling
+        float target_rate_cms;      // climb rate in cm/s relative to the ground or ceiling
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
         bool valid_for_logging;     // true if target_alt_cm is valid for logging

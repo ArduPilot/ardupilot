@@ -13,6 +13,8 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
         return target_rate;
     }
 
+    target_rate_cms += constrain_float(target_rate - target_rate_cms, -copter.G_Dt * copter.g.pilot_accel_z, copter.G_Dt * copter.g.pilot_accel_z);
+
     // calculate current ekf based altitude error
     const float current_alt_error = copter.pos_control->get_pos_target_z_cm() - copter.inertial_nav.get_altitude();
 
@@ -28,14 +30,15 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
         reset_target ||
         (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
         target_dist_cm = rf_state.alt_cm + (dir * current_alt_error);
+        target_rate_cms = target_rate;
         reset_target = false;
-        last_glitch_cleared_ms = rf_state.glitch_cleared_ms;\
+        last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
     }
     last_update_ms = now;
 
     // adjust rangefinder target alt if motors have not hit their limits
-    if ((target_rate<0 && !copter.motors->limit.throttle_lower) || (target_rate>0 && !copter.motors->limit.throttle_upper)) {
-        target_dist_cm += dir * target_rate * copter.G_Dt;
+    if ((target_rate_cms<0 && !copter.motors->limit.throttle_lower) || (target_rate_cms>0 && !copter.motors->limit.throttle_upper)) {
+        target_dist_cm += dir * target_rate_cms * copter.G_Dt;
     }
     valid_for_logging = true;
 
@@ -49,11 +52,11 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
     const float distance_error = (target_dist_cm - rf_state.alt_cm) - (dir * current_alt_error);
-    float velocity_correction = dir * distance_error * copter.g.rangefinder_gain;
+    float velocity_correction = sqrt_controller(dir * distance_error, copter.g.rangefinder_gain, copter.g.pilot_accel_z, copter.G_Dt);
     velocity_correction = constrain_float(velocity_correction, -SURFACE_TRACKING_VELZ_MAX, SURFACE_TRACKING_VELZ_MAX);
 
     // return combined pilot climb rate + rate to correct rangefinder alt error
-    return (target_rate + velocity_correction);
+    return (target_rate_cms + velocity_correction);
 #else
     return target_rate;
 #endif
