@@ -46,6 +46,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_Hygrometer/AP_Hygrometer.h>
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <APM_Control/APM_Control.h>
@@ -402,6 +403,9 @@ private:
 
     // Airspeed Sensors
     AP_Airspeed airspeed;
+
+    // Hygrometer Sensors
+    AP_Hygrometer hygrometer;
 
     // ACRO controller state
     struct {
