@@ -410,6 +410,13 @@ void AP_AHRS::update_DCM(bool skip_ins_update)
     _dcm_attitude = {roll, pitch, yaw};
 }
 
+void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
+{
+    AP_Notify::flags.gps_fusion = status.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+    AP_Notify::flags.gps_glitching = status.flags.gps_glitching;
+    AP_Notify::flags.have_pos_abs = status.flags.horiz_pos_abs;
+}
+
 #if HAL_NAVEKF2_AVAILABLE
 void AP_AHRS::update_EKF2(void)
 {
@@ -482,9 +489,7 @@ void AP_AHRS::update_EKF2(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF2.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
@@ -563,9 +568,7 @@ void AP_AHRS::update_EKF3(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
