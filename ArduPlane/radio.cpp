@@ -166,15 +166,6 @@ void Plane::read_radio()
         failsafe.last_valid_rc_ms = millis();
     }
 
-    if (control_mode == &mode_training) {
-        // in training mode we don't want to use a deadzone, as we
-        // want manual pass through when not exceeding attitude limits
-        channel_roll->recompute_pwm_no_deadzone();
-        channel_pitch->recompute_pwm_no_deadzone();
-        channel_throttle->recompute_pwm_no_deadzone();
-        channel_rudder->recompute_pwm_no_deadzone();
-    }
-
     control_failsafe();
 
 #if AC_FENCE == ENABLED
