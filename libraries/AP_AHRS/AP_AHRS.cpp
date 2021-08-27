@@ -2661,37 +2661,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #endif
 }
 
-// get_location - updates the provided location with the latest calculated location
-//  returns true on success (i.e. the backend knows it's latest position), false on failure
-bool AP_AHRS::get_location(struct Location &loc) const
-{
-    switch (active_EKF_type()) {
-    case EKFType::NONE:
-        return get_position(loc);
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.getLLH(loc);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.getLLH(loc);
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SIM:
-        return get_position(loc);
-#endif
-#if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL:
-        return get_position(loc);
-#endif
-    }
-
-    return false;
-}
-
 // return the innovations for the primariy EKF
 // boolean false is returned if innovations are not available
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
