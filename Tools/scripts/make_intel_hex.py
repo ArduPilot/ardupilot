@@ -30,7 +30,7 @@ blimage = bytes(open(bootloaderfile, "rb").read())
 blimage += bytes(struct.pack('B',255) * (reserve_kb * 1024 - len(blimage)))
 
 if reserve_kb > 0 and len(blimage) != reserve_kb * 1024:
-   print("Bad blimage size %u" % len(blimage))
+   print("Bad blimage size %u (want %u)" % (len(blimage), reserve_kb * 1024))
    sys.exit(1)
 
 appimage = bytes(open(binfile,"rb").read())
