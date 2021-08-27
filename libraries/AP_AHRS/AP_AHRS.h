@@ -618,6 +618,9 @@ private:
      */
     bool fly_forward; // true if we can assume the vehicle will be flying forward on its X axis
 
+    // poke AP_Notify based on values from status
+    void update_notify_from_filter_status(const nav_filter_status &status);
+
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;
 #endif
