@@ -7,20 +7,7 @@
 // backstepping_init - initialises the drone for flight with backstepping control
 bool ModeBackstepping::init(bool ignore_checks)
 {
-    if (!copter.failsafe.radio) {
-        float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
-
-        // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
-
-        // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-    } else {
-        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-        loiter_nav->clear_pilot_desired_acceleration();
-    }
+    
     loiter_nav->init_target();
 
     // initialise the vertical position controller
@@ -39,15 +26,13 @@ bool ModeBackstepping::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeBackstepping::run()
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
 
-    // convert pilot input to lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+    // Set desired attitude as 0
+    float target_roll, target_pitch, target_yaw_rate;
+    target_roll =0;
+    target_pitch=0;
+    target_yaw_rate=0;
 
-    // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     if (!motors->armed()) {
         // Motors should be Stopped
