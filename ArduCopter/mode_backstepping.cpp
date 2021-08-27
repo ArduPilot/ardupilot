@@ -73,8 +73,11 @@ void ModeBackstepping::run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
-    // output pilot's throttle
-    attitude_control->set_throttle_out(get_pilot_desired_throttle(),
-                                       true,
-                                       g.throttle_filt);
+    int i;
+     // convert output to PWM and send to each motor
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+       if (motor_enabled[i]) {
+            rc_write(i, output_to_pwm(0.1));
+        }
+    } 
 }
