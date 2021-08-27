@@ -270,12 +270,6 @@ public:
     // this is not related to terrain following
     void set_terrain_hgt_stable(bool stable) override;
 
-    // get_location - updates the provided location with the latest
-    // calculated location including absolute altitude
-    // returns true on success (i.e. the EKF knows it's latest
-    // position), false on failure
-    bool get_location(struct Location &loc) const;
-
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
