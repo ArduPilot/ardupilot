@@ -299,8 +299,6 @@ public:
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const override;
 
-    bool getGpsGlitchStatus() const;
-
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
     // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
