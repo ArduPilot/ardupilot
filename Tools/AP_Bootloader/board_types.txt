@@ -122,6 +122,12 @@ AP_HW_CUBEORANGE_JOEY                1033
 AP_HW_SIERRAF9PGPS_PERIPH            1034
 AP_HW_HolybroGPS                     1035
 AP_HW_QioTekZealotH743               1036
+AP_HW_HEREPRO                        1037
+AP_HW_MAMBABASICF4                   1038
+AP_HW_ARGOSDYNE_DP1000               1039
+AP_HW_Nucleo491                      1040
+AP_HW_mRoM10095                      1041
+AP_HW_FlywooF745Nano                 1042
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
