@@ -199,6 +199,12 @@ void AP_Vehicle::loop()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", banner_msg);
         }
     }
+    const uint32_t new_internal_errors = AP::internalerror().errors();
+    if(_last_internal_errors != new_internal_errors) {
+        AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors %x", (unsigned)new_internal_errors);
+        _last_internal_errors = new_internal_errors;
+    }
 }
 
 /*

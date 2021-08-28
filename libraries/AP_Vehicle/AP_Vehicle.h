@@ -373,6 +373,8 @@ private:
     static AP_Vehicle *_singleton;
 
     bool done_safety_init;
+
+    uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 };
 
 namespace AP {
