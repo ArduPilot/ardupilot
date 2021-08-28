@@ -180,6 +180,7 @@ enum guided_heading_type_t {
 enum class AirMode {
     OFF,
     ON,
+    ASSISTED_FLIGHT_ONLY,
 };
 
 enum class FenceAutoEnable : uint8_t {
