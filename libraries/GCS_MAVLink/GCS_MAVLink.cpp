@@ -90,7 +90,7 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
  */
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 {
-    if (!valid_channel(chan)) {
+    if (!valid_channel(chan) || mavlink_comm_port[chan] == nullptr) {
         return;
     }
     if (gcs_alternative_active[chan]) {
