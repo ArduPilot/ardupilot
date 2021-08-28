@@ -91,8 +91,8 @@ struct PACKED log_SimpleAvoid {
 
 #define LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
+      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" , true }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
+      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" , true }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
-      "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "sbnnnnnnb", "F--------"},
+      "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "sbnnnnnnb", "F--------", true },

@@ -3,13 +3,17 @@
 
 bool ModeQStabilize::_enter()
 {
-    if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
-        plane.control_mode = plane.previous_mode;
-    } else {
-        plane.auto_state.vtol_mode = true;
+    if (!plane.quadplane.init_mode()) {
+        return false;
     }
-
+    plane.auto_state.vtol_mode = true;
     return true;
+}
+
+// init quadplane stabilize mode 
+void ModeQStabilize::init()
+{
+    quadplane.throttle_wait = false;
 }
 
 void ModeQStabilize::update()
@@ -38,6 +42,20 @@ void ModeQStabilize::update()
         plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
         plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
     }
+}
+
+// quadplane stabilize mode
+void ModeQStabilize::run()
+{
+    // special check for ESC calibration in QSTABILIZE
+    if (quadplane.esc_calibration != 0) {
+        quadplane.run_esc_calibration();
+        return;
+    }
+
+    // normal QSTABILIZE mode
+    float pilot_throttle_scaled = quadplane.get_pilot_throttle();
+    quadplane.hold_stabilize(pilot_throttle_scaled);
 }
 
 // set the desired roll and pitch for a tailsitter

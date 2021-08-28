@@ -157,7 +157,7 @@ bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
         if (_pin[i] != -1 && !hal.gpio->valid_pin(_pin[i])) {
-            hal.util->snprintf(buffer, buflen, "Relay[%u] pin %d invalid", i + 1, _pin[i]);
+            hal.util->snprintf(buffer, buflen, "Relay[%u] pin %d invalid", i + 1, int(_pin[i].get()));
             return false;
         }
     }

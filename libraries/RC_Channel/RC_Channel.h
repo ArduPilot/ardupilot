@@ -178,7 +178,7 @@ public:
         TAKEOFF   =           77, // takeoff
         RUNCAM_CONTROL =      78, // control RunCam device
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
-        VISODOM_CALIBRATE  =  80, // calibrate visual odometry camera's attitude
+        VISODOM_ALIGN =       80, // align visual odometry camera's attitude to AHRS
         DISARM =              81, // disarm vehicle
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch
@@ -199,7 +199,7 @@ public:
         TRAINING            = 98, // mode training
         AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
 
-        // entries from 100 onwards are expected to be developer
+        // entries from 100-150  are expected to be developer
         // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
@@ -210,6 +210,10 @@ public:
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
+
+        // options 150-199 continue user rc switch options
+        CRUISE =             150,  ///CRUISE mode
+        TURTLE =             151,  // Turtle mode - flip over after crash
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -297,7 +301,7 @@ protected:
     void do_aux_function_clear_wp(const AuxSwitchPos ch_flag);
     void do_aux_function_gripper(const AuxSwitchPos ch_flag);
     void do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag);
-    virtual void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
+    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
@@ -395,6 +399,11 @@ public:
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
+    // helper used by scripting to convert the above function from 0 to 1 indexeing
+    // range is checked correctly by the underlying channel function
+    RC_Channel *lua_rc_channel(const uint8_t chan) {
+        return channel(chan -1);
+    }
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
                                                                        // returns the number of valid channels

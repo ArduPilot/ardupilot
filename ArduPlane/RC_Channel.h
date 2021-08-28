@@ -26,8 +26,6 @@ private:
 
     void do_aux_function_flare(AuxSwitchPos ch_flag);
 
-    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag) override;
-
 };
 
 class RC_Channels_Plane : public RC_Channels

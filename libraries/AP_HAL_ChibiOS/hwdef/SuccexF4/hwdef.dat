@@ -123,8 +123,6 @@ define HAL_BATT_CURR_SCALE 18.2
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 
-define BOARD_PWM_COUNT_DEFAULT 4
-
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 

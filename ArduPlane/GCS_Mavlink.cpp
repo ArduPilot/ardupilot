@@ -190,7 +190,7 @@ void GCS_MAVLINK_Plane::send_position_target_global_int()
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -245,14 +245,6 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
     return AP::baro().get_climb_rate();
 }
 
-// report simulator state
-void GCS_MAVLINK_Plane::send_simstate() const
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    GCS_MAVLINK::send_simstate();
-#endif
-}
-
 void GCS_MAVLINK_Plane::send_wind() const
 {
     const Vector3f wind = AP::ahrs().wind_estimate();
@@ -280,7 +272,9 @@ void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                                  pid_info->FF,
                                  pid_info->P,
                                  pid_info->I,
-                                 pid_info->D);
+                                 pid_info->D,
+                                 pid_info->slew_rate,
+                                 pid_info->Dmod);
 }
 
 /*
@@ -494,11 +488,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,

@@ -52,21 +52,29 @@ public:
 
     /*
      * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
-     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     virtual void     set_reversible_mask(uint16_t chanmask) {}
     
     /*
-     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * mark the channels in chanmask as reversed.
+     * The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     virtual void     set_reversed_mask(uint16_t chanmask) {}
+    virtual uint16_t get_reversed_mask() { return 0; }
 
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
      */
     virtual void     update_channel_masks() {}
+
+    /*
+     * Allow channel mask updates to be temporarily suspended
+     */
+    virtual void     disable_channel_mask_updates() {}
+    virtual void     enable_channel_mask_updates() {}
 
     /*
      * Delay subsequent calls to write() going to the underlying hardware in
@@ -224,6 +232,8 @@ public:
       DSHOT_LED2_OFF = 28,
       DSHOT_LED3_OFF = 29,
     };
+
+    const uint8_t DSHOT_ZERO_THROTTLE = 48;
 
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,

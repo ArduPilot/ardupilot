@@ -99,7 +99,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200),
+#endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,            1,    200),
 #endif
@@ -109,6 +111,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
+#if HAL_AIS_ENABLED
+    SCHED_TASK_CLASS(AP_AIS, &rover.g2.ais, update, 5, 100),
+#endif
 };
 
 

@@ -162,7 +162,7 @@ void SITL_State::_fdm_input_step(void)
     }
 
     // simulate RC input at 50Hz
-    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl->rc_fail != SITL::SITL::SITL_RCFail_NoPulses) {
+    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl != nullptr && _sitl->rc_fail != SITL::SIM::SITL_RCFail_NoPulses) {
         last_pwm_input = AP_HAL::millis();
         new_rc_input = true;
     }
@@ -171,7 +171,7 @@ void SITL_State::_fdm_input_step(void)
 
     if (_update_count == 0 && _sitl != nullptr) {
         _update_gps(0, 0, 0, 0, 0, 0, 0, false);
-        _scheduler->timer_event();
+        HALSITL::Scheduler::timer_event();
         _scheduler->sitl_end_atomic();
         return;
     }
@@ -195,7 +195,7 @@ void SITL_State::_fdm_input_step(void)
     }
 
     // trigger all APM timers.
-    _scheduler->timer_event();
+    HALSITL::Scheduler::timer_event();
     _scheduler->sitl_end_atomic();
 }
 
@@ -367,6 +367,9 @@ int SITL_State::sim_fd(const char *name, const char *arg)
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
         return _sitl->richenpower_sim.fd();
+    } else if (streq(name, "fetteconewireesc")) {
+        sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
+        return _sitl->fetteconewireesc_sim.fd();
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return _sitl->ie24_sim.fd();
@@ -382,6 +385,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         vectornav = new SITL::VectorNav();
         return vectornav->fd();
+    } else if (streq(name, "AIS")) {
+        if (ais != nullptr) {
+            AP_HAL::panic("Only one AIS at a time");
+        }
+        ais = new SITL::AIS();
+        return ais->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -490,6 +499,8 @@ int SITL_State::sim_fd_write(const char *name)
         return sf45b->write_fd();
     } else if (streq(name, "richenpower")) {
         return _sitl->richenpower_sim.write_fd();
+    } else if (streq(name, "fetteconewireesc")) {
+        return _sitl->fetteconewireesc_sim.write_fd();
     } else if (streq(name, "ie24")) {
         return _sitl->ie24_sim.write_fd();
     } else if (streq(name, "gyus42v2")) {
@@ -502,6 +513,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No VectorNav created");
         }
         return vectornav->write_fd();
+    } else if (streq(name, "AIS")) {
+        if (ais == nullptr) {
+            AP_HAL::panic("No AIS created");
+        }
+        return ais->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -543,7 +559,7 @@ bool SITL_State::_read_rc_sitl_input()
             }
             uint16_t pwm = pwm_pkt.pwm[i];
             if (pwm != 0) {
-                if (_sitl->rc_fail == SITL::SITL::SITL_RCFail_Throttle950) {
+                if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
                     if (i == 2) {
                         // set throttle (assumed to be on channel 3...)
                         pwm = 950;
@@ -613,6 +629,9 @@ void SITL_State::_fdm_input_local(void)
     // construct servos structure for FDM
     _simulator_servos(input);
 
+    // read servo inputs from ride along flight controllers
+    ride_along.receive(input);
+
     // update the model
     sitl_model->update_model(input);
 
@@ -621,12 +640,15 @@ void SITL_State::_fdm_input_local(void)
         sitl_model->fill_fdm(_sitl->state);
         _sitl->update_rate_hz = sitl_model->get_rate_hz();
 
-        if (_sitl->rc_fail == SITL::SITL::SITL_RCFail_None) {
+        if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
                 pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
             }
         }
     }
+
+    // output JSON state to ride along flight controllers
+    ride_along.send(_sitl->state,sitl_model->get_position_relhome());
 
     if (gimbal != nullptr) {
         gimbal->update();
@@ -717,6 +739,10 @@ void SITL_State::_fdm_input_local(void)
         vectornav->update();
     }
 
+    if (ais != nullptr) {
+        ais->update();
+    }
+
     if (_sitl) {
         _sitl->efi_ms.update();
     }
@@ -782,17 +808,17 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
         switch (_sitl->wind_type) {
-        case SITL::SITL::WIND_TYPE_SQRT:
+        case SITL::SIM::WIND_TYPE_SQRT:
             if (altitude < _sitl->wind_type_alt) {
                 wind_speed *= sqrtf(MAX(altitude / _sitl->wind_type_alt, 0));
             }
             break;
 
-        case SITL::SITL::WIND_TYPE_COEF:
+        case SITL::SIM::WIND_TYPE_COEF:
             wind_speed += (altitude - _sitl->wind_type_alt) * _sitl->wind_type_coef;
             break;
 
-        case SITL::SITL::WIND_TYPE_NO_LIMIT:
+        case SITL::SIM::WIND_TYPE_NO_LIMIT:
         default:
             break;
         }
@@ -811,6 +837,23 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             input.servos[i] = 0;
         } else {
             input.servos[i] = pwm_output[i];
+        }
+    }
+
+    if (_sitl != nullptr) {
+        // FETtec ESC simulation support.  Input signals of 1000-2000
+        // are positive thrust, 0 to 1000 are negative thrust.  Deeper
+        // changes required to support negative thrust - potentially
+        // adding a field to input.
+        if (_sitl != nullptr) {
+            if (_sitl->fetteconewireesc_sim.enabled()) {
+                _sitl->fetteconewireesc_sim.update_sitl_input_pwm(input);
+                for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+                    if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                        AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
+                    }
+                }
+            }
         }
     }
 

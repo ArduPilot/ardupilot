@@ -8,7 +8,12 @@
 
 // define for enabling MSP sensor drivers
 #ifndef HAL_MSP_SENSORS_ENABLED
-#define HAL_MSP_SENSORS_ENABLED defined(HAL_MSP_ENABLED) && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#define HAL_MSP_SENSORS_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#endif
+
+// define for enabling MSP DisplayPort
+#ifndef HAL_WITH_MSP_DISPLAYPORT
+#define HAL_WITH_MSP_DISPLAYPORT  HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
 #endif
 
 #include <AP_HAL/UARTDriver.h>
@@ -35,6 +40,13 @@
 #define MSP_MAX_HEADER_SIZE     9
 // inav/src/main/msp/msp_protocol_v2_sensor.h
 #define MSP2_IS_SENSOR_MESSAGE(x)   ((x) >= 0x1F00U && (x) <= 0x1FFFU)
+// betaflight/src/main/io/displayport_msp.h
+// MSP displayport V2 attribute byte bit functions
+#define DISPLAYPORT_MSP_ATTR_VERSION 1U<<7 // Format indicator; must be zero for V2 (and V1)
+#define DISPLAYPORT_MSP_ATTR_BLINK   1U<<6 // Device local blink
+#define DISPLAYPORT_MSP_ATTR_MASK    (~(DISPLAYPORT_MSP_ATTR_VERSION|DISPLAYPORT_MSP_ATTR_BLINK))
+// betaflight/src/main/io/displayport_msp.c
+#define OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH 30
 
 class AP_MSP_Telem_Backend;
 
@@ -85,6 +97,14 @@ typedef enum {
 
     MSP_COMMAND_RECEIVED
 } msp_state_e;
+
+typedef enum : uint8_t {
+    MSP_DISPLAYPORT_HEARTBEAT = 0,
+    MSP_DISPLAYPORT_RELEASE = 1,
+    MSP_DISPLAYPORT_CLEAR_SCREEN = 2,
+    MSP_DISPLAYPORT_WRITE_STRING = 3,
+    MSP_DISPLAYPORT_DRAW_SCREEN = 4,
+} msp_displayport_subcmd_e;
 
 typedef struct PACKED {
     uint8_t size;

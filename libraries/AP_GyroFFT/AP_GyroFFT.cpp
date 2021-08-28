@@ -259,8 +259,8 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
-    uint8_t first_harmonic = 0;
     if (_harmonic_fit > 0) {
+        uint8_t first_harmonic = 0;
         for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
             if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
                 if (first_harmonic == 0) {
@@ -283,7 +283,7 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
     // per-axis frame time
     _frame_time_ms = _samples_per_frame * 1000 / _fft_sampling_rate_hz;
     // The update rate for the output, defaults are 1Khz / (1 - 0.5) * 32 == 62hz
-    const float output_rate = _fft_sampling_rate_hz / _samples_per_frame;
+    const float output_rate = static_cast<float>(_fft_sampling_rate_hz) / static_cast<float>(_samples_per_frame);
     // establish suitable defaults for the detected values
     for (uint8_t axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         _thread_state._center_freq_hz[axis] = _fft_min_hz;
@@ -655,7 +655,7 @@ float AP_GyroFFT::get_slewed_noise_center_freq_hz(FrequencyPeak peak, uint8_t ax
 {
     uint32_t now = AP_HAL::micros();
     const float slew = MIN(1.0f, (now - _global_state._last_output_us[axis])
-        * (_fft_sampling_rate_hz / _samples_per_frame) / 1e6f);
+        * (static_cast<float>(_fft_sampling_rate_hz) / static_cast<float>(_samples_per_frame)) * 1e-6f);
     return (_global_state._prev_center_freq_hz_filtered[peak][axis]
         + (_global_state._center_freq_hz_filtered[peak][axis] - _global_state._prev_center_freq_hz_filtered[peak][axis]) * slew);
 }
@@ -784,7 +784,7 @@ void AP_GyroFFT::write_log_messages()
         return;
     }
 
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "FTN1",
         "TimeUS,PkAvg,BwAvg,DnF,SnX,SnY,SnZ,FtX,FtY,FtZ,FH,Tc",
         "szzz---%%%-s",
@@ -843,7 +843,7 @@ void AP_GyroFFT::write_log_messages()
 // write a single log message
 void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch) const
 {
-    AP::logger().Write("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
+    AP::logger().WriteStreaming("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
         AP_HAL::micros64(),
         id,
         get_noise_center_freq_hz(peak).x,
@@ -1133,7 +1133,7 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
         }
         if (--_noise_calibration_cycles[_update_axis] == 0) {
             for (uint16_t i = 1; i < _state->_bin_count; i++) {
-                const float cycles = (_window_size / _samples_per_frame) * 2;
+                const float cycles = (static_cast<float>(_window_size) / static_cast<float>(_samples_per_frame)) * 2;
                 // overall random noise is reduced by sqrt(N) when averaging periodigrams so adjust for that
                 _ref_energy[_update_axis][i] = (_ref_energy[_update_axis][i] / cycles) * sqrtf(cycles);
             }
@@ -1191,7 +1191,7 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
     hal.dsp->fft_start(_state, test_window, 0);
     uint16_t max_bin = hal.dsp->fft_analyse(_state, _config._fft_start_bin, _config._fft_end_bin, _config._attenuation_cutoff);
 
-    if (max_bin <= 0) {
+    if (max_bin == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: self-test failed, failed to find frequency %.1f", frequency);
     }
 

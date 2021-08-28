@@ -38,14 +38,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
-        if (plane.control_mode != &plane.mode_initializing) {
-            if (success) {
-                AP_Notify::events.user_mode_change = 1;
-            } else {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
+        plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
         break;
     }
     default:
@@ -135,11 +128,6 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         }    
 }
 
-void RC_Channel_Plane::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
-{
-    plane.mission.start();
-    plane.prev_WP_loc = plane.current_loc;
-}
 
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
@@ -163,6 +151,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::LANDING_FLARE:
     case AUX_FUNC::PARACHUTE_RELEASE:
     case AUX_FUNC::MODE_SWITCH_RESET:
+    case AUX_FUNC::CRUISE:
         break;
 
     case AUX_FUNC::Q_ASSIST:
@@ -327,6 +316,11 @@ case AUX_FUNC::ARSPD_CALIBRATE:
     case AUX_FUNC::MODE_SWITCH_RESET:
         plane.reset_control_switch();
         break;
+
+    case AUX_FUNC::CRUISE:
+        do_aux_function_change_mode(Mode::Number::CRUISE, ch_flag);
+        break;
+
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

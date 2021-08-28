@@ -73,6 +73,8 @@ public:
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
+    // return the pitch factor of any motor
+    float               get_pitch_factor(uint8_t i) override { return _pitch_factor[i]; }
 
     const char*         get_frame_string() const override { return _frame_class_string; }
     const char*         get_type_string() const override { return _frame_type_string; }

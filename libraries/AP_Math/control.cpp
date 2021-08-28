@@ -25,7 +25,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 
 // control default definitions
-#define CONTROL_TIME_CONSTANT_RATIO 4.0f   // time constant to ensure stable kinimatic path generation
+#define CONTROL_TIME_CONSTANT_RATIO 4.0   // time constant to ensure stable kinematic path generation
 
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero
@@ -96,72 +96,36 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
  The time constant must be positive.
  The function alters the variable accel to follow a jerk limited kinematic path to accel_input
 */
-void shape_accel(const float accel_input, float& accel,
-                 const float accel_min, const float accel_max,
-                 const float tc, const float dt)
+void shape_accel(float accel_input, float& accel,
+                 float jerk_max, float dt)
 {
-    // sanity check tc
-    if (!is_positive(tc)) {
-        return;
-    }
-
-    // Calculate time constants and limits to ensure stable operation
-    const float KPa = 1.0 / tc;
-
-    float jerk_max = 0.0;
-    if (is_negative(accel_min) && is_positive(accel_max)){
-        jerk_max = MAX(-accel_min, accel_max) * KPa;
-    }
-
     // jerk limit acceleration change
     float accel_delta = accel_input - accel;
     if (is_positive(jerk_max)) {
         accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
     }
     accel += accel_delta;
-
-    // limit acceleration to accel_max
-    if (is_negative(accel_min) && is_positive(accel_max)){
-        accel = constrain_float(accel, accel_min, accel_max);
-    }
 }
 
 // 2D version
 void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
-                    float accel_max, float tc, float dt)
+                    float jerk_max, float dt)
 {
-    // sanity check tc
-    if (!is_positive(tc)) {
-        return;
-    }
-
-    // Calculate time constants and limits to ensure stable operation
-    const float KPa = 1.0 / tc;
-    const float jerk_max = accel_max * KPa;
-
     // jerk limit acceleration change
     Vector2f accel_delta = accel_input - accel;
     if (is_positive(jerk_max)) {
         accel_delta.limit_length(jerk_max * dt);
     }
     accel = accel + accel_delta;
-
-    // limit acceleration to accel_max
-    if (is_negative(accel_max)) {
-        // we may want to allow this for some applications but call error for now.
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-    } else if (is_positive(accel_max)) {
-        accel.limit_length(accel_max);
-    }
 }
 
 void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
-    float accel_max, float tc, float dt)
+                    float jerk_max, float dt)
 {
     const Vector2f accel_input_2f {accel_input.x, accel_input.y};
     Vector2f accel_2f {accel.x, accel.y};
 
-    shape_accel_xy(accel_input_2f, accel_2f, accel_max, tc, dt);
+    shape_accel_xy(accel_input_2f, accel_2f, jerk_max, dt);
     accel.x = accel_2f.x;
     accel.y = accel_2f.y;
 }
@@ -179,27 +143,19 @@ void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
  The function alters the variable accel to follow a jerk limited kinematic path to vel_input and accel_input
  The accel_max limit can be removed by setting it to zero.
 */
-void shape_vel_accel(const float vel_input1, const float accel_input,
-                     const float vel, float& accel,
-                     const float vel_min, const float vel_max,
-                     const float accel_min, const float accel_max,
-                     const float tc, const float dt)
+void shape_vel_accel(float vel_input, float accel_input,
+                     float vel, float& accel,
+                     float accel_min, float accel_max,
+                     float jerk_max, float dt, bool limit_total_accel)
 {
-    // sanity check tc
-    if (!is_positive(tc)) {
+    // sanity check accel_max
+    if (!(is_negative(accel_min) && is_positive(accel_max))) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
     // Calculate time constants and limits to ensure stable operation
-    const float KPa = 1.0 / tc;
-
-    // we are changing vel_input, but don't want the change in the caller
-    float vel_input = vel_input1;
-
-    // limit velocity to vel_max
-    if (is_negative(vel_min) && is_positive(vel_max)){
-        vel_input = constrain_float(vel_input, vel_min, vel_max);
-    }
+    const float KPa = jerk_max / accel_max;
 
     // velocity error to be corrected
     float vel_error = vel_input - vel;
@@ -207,41 +163,53 @@ void shape_vel_accel(const float vel_input1, const float accel_input,
     // acceleration to correct velocity
     float accel_target = vel_error * KPa;
 
+    // constrain correction acceleration from accel_min to accel_max
+    accel_target = constrain_float(accel_target, accel_min, accel_max);
+
     // velocity correction with input velocity
     accel_target += accel_input;
 
-    shape_accel(accel_target, accel, accel_min, accel_max, tc, dt);
+    // constrain total acceleration from accel_min to accel_max
+    if (limit_total_accel) {
+        accel_target = constrain_float(accel_target, accel_min, accel_max);
+    }
+
+    shape_accel(accel_target, accel, jerk_max, dt);
 }
 
 // 2D version
 void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
                         const Vector2f& vel, Vector2f& accel,
-                        const float vel_max, const float accel_max, const float tc, const float dt)
+                        float accel_max, float jerk_max, float dt, bool limit_total_accel)
 {
-    // sanity check tc
-    if (!is_positive(tc)) {
+    // sanity check accel_max
+    if (!is_positive(accel_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
+
     Vector2f vel_input = vel_input1;
 
-    // limit velocity to vel_max
-    if (is_negative(vel_max)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-    } else if (is_positive(vel_max)) {
-        vel_input.limit_length(vel_max);
-    }
-
     // Calculate time constants and limits to ensure stable operation
-    const float KPa = 1.0 / tc;
+    const float KPa = jerk_max / accel_max;
 
     // velocity error to be corrected
     const Vector2f vel_error = vel_input - vel;
 
     // acceleration to correct velocity
     Vector2f accel_target = vel_error * KPa;
+
+    // limit correction acceleration to accel_max
+    accel_target.limit_length(accel_max);
+
     accel_target += accel_input;
 
-    shape_accel_xy(accel_target, accel, accel_max, tc, dt);
+    // limit total acceleration to accel_max
+    if (limit_total_accel) {
+        accel_target.limit_length(accel_max);
+    }
+
+    shape_accel_xy(accel_target, accel, jerk_max, dt);
 }
 
 /* shape_pos_vel_accel calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
@@ -256,19 +224,21 @@ void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
  The function alters the variable accel to follow a jerk limited kinematic path to pos_input, vel_input and accel_input
  The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
 */
-void shape_pos_vel_accel(const postype_t pos_input, const float vel_input, const float accel_input,
-                         const postype_t pos, const float vel, float& accel,
-                         const float vel_correction_max, const float vel_min, const float vel_max,
-                         const float accel_min, const float accel_max, const float tc, const float dt)
+void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input,
+                         postype_t pos, float vel, float& accel,
+                         float vel_min, float vel_max,
+                         float accel_min, float accel_max,
+                         float jerk_max, float dt, bool limit_total_accel)
 {
-    // sanity check tc
-    if (!is_positive(tc)) {
+    // sanity check accel_max
+    if (!(is_negative(accel_min) && is_positive(accel_max))) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
     // Calculate time constants and limits to ensure stable operation
-    const float KPv = 1.0 / (CONTROL_TIME_CONSTANT_RATIO*tc);
-    const float accel_tc_max = accel_max*(1-1.0f/CONTROL_TIME_CONSTANT_RATIO);
+    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * MAX(-accel_min, accel_max));
+    const float accel_tc_max = MIN(-accel_min, accel_max) * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
 
     // position error to be corrected
     float pos_error = pos_input - pos;
@@ -276,29 +246,32 @@ void shape_pos_vel_accel(const postype_t pos_input, const float vel_input, const
     // velocity to correct position
     float vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
-    // limit velocity correction to vel_correction_max
-    if (is_positive(vel_correction_max)) {
-        vel_target = constrain_float(vel_target, -vel_correction_max, vel_correction_max);
+    // limit velocity to vel_max
+    if (is_negative(vel_min) && is_positive(vel_max)){
+        vel_target = constrain_float(vel_target, vel_min, vel_max);
     }
 
     // velocity correction with input velocity
     vel_target += vel_input;
 
-    shape_vel_accel(vel_target, accel_input, vel, accel, vel_min, vel_max, accel_min, accel_max, tc, dt);
+    shape_vel_accel(vel_target, accel_input, vel, accel, accel_min, accel_max, jerk_max, dt, limit_total_accel);
 }
 
 // 2D version
 void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
-                            const float vel_correction_max, const float vel_max, const float accel_max, const float tc, const float dt)
+                            float vel_max, float accel_max,
+                            float jerk_max, float dt, bool limit_total_accel)
 {
-    if (!is_positive(tc)) {
+    // sanity check accel_max
+    if (!is_positive(accel_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
     // Calculate time constants and limits to ensure stable operation
-    const float KPv = 1.0f / (CONTROL_TIME_CONSTANT_RATIO*tc);
-    const float accel_tc_max = accel_max*(1.0f - 1.0f/CONTROL_TIME_CONSTANT_RATIO);
+    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * accel_max);
+    const float accel_tc_max = accel_max * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
 
     // position error to be corrected
     Vector2f pos_error = (pos_input - pos).tofloat();
@@ -306,15 +279,17 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     // velocity to correct position
     Vector2f vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
-    // limit velocity correction to vel_correction_max
-    if (is_positive(vel_correction_max)) {
-        vel_target.limit_length(vel_correction_max);
+    // limit velocity to vel_max
+    if (is_negative(vel_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+    } else if (is_positive(vel_max)) {
+        vel_target.limit_length(vel_max);
     }
 
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
 
-    shape_vel_accel_xy(vel_target, accel_input, vel, accel, vel_max, accel_max, tc, dt);
+    shape_vel_accel_xy(vel_target, accel_input, vel, accel, accel_max, jerk_max, dt, limit_total_accel);
 }
 
 // proportional controller with piecewise sqrt sections to constrain second derivative
@@ -327,19 +302,19 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
     } else if (is_zero(p)) {
         // P term is zero but we have a second order limit.
         if (is_positive(error)) {
-            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error));
+            correction_rate = safe_sqrt(2.0 * second_ord_lim * (error));
         } else if (is_negative(error)) {
-            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error));
+            correction_rate = -safe_sqrt(2.0 * second_ord_lim * (-error));
         } else {
-            correction_rate = 0.0f;
+            correction_rate = 0.0;
         }
     } else {
         // Both the P and second order limit have been defined.
         const float linear_dist = second_ord_lim / sq(p);
         if (error > linear_dist) {
-            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error - (linear_dist / 2.0f)));
+            correction_rate = safe_sqrt(2.0 * second_ord_lim * (error - (linear_dist / 2.0)));
         } else if (error < -linear_dist) {
-            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error - (linear_dist / 2.0f)));
+            correction_rate = -safe_sqrt(2.0 * second_ord_lim * (-error - (linear_dist / 2.0)));
         } else {
             correction_rate = error * p;
         }
@@ -368,13 +343,13 @@ Vector2f sqrt_controller(const Vector2f& error, float p, float second_ord_lim, f
 float inv_sqrt_controller(float output, float p, float D_max)
 {
     if (is_positive(D_max) && is_zero(p)) {
-        return (output * output) / (2.0f * D_max);
+        return (output * output) / (2.0 * D_max);
     }
     if ((is_negative(D_max) || is_zero(D_max)) && !is_zero(p)) {
         return output / p;
     }
     if ((is_negative(D_max) || is_zero(D_max)) && is_zero(p)) {
-        return 0.0f;
+        return 0.0;
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
@@ -386,7 +361,7 @@ float inv_sqrt_controller(float output, float p, float D_max)
     }
 
     const float linear_dist = D_max / sq(p);
-    const float stopping_dist = (linear_dist * 0.5f) + sq(output) / (2.0f * D_max);
+    const float stopping_dist = (linear_dist * 0.5f) + sq(output) / (2.0 * D_max);
     return is_positive(output) ? stopping_dist : -stopping_dist;
 }
 
@@ -400,8 +375,8 @@ float stopping_distance(float velocity, float p, float accel_max)
 // based on horizontal and vertical limits.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg)
 {
-    if (is_zero(direction.length_squared())) {
-        return 0.0f;
+    if (is_zero(direction.length_squared()) || is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+        return 0.0;
     }
 
     max_xy = fabsf(max_xy);

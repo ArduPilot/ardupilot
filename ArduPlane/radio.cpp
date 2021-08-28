@@ -47,10 +47,6 @@ void Plane::set_control_channels(void)
     // update manual forward throttle channel assignment
     quadplane.rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
 
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
-    }
-
     if (!quadplane.enable) {
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
@@ -90,12 +86,7 @@ void Plane::init_rc_out_main()
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_elevator, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_rudder, SRV_Channel::Limit::TRIM);
-    
-    // setup flight controller to output the min throttle when safety off if arming
-    // is setup for min on disarm
-    if (arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
-    }
+
 }
 
 /*

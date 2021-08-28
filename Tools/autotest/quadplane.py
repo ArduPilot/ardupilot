@@ -159,7 +159,11 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
 
             self.progress("Verify that rudder disarm is disabled")
-            if self.disarm_motors_with_rc_input():
+            try:
+                self.disarm_motors_with_rc_input()
+            except NotAchievedException:
+                pass
+            if not self.armed():
                 raise NotAchievedException("Rudder disarm not disabled")
 
             self.progress("Disarming with switch")
@@ -173,7 +177,8 @@ class AutoTestQuadPlane(AutoTest):
         ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
         self.wait_roll(60, 1)
-        # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE
+        # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE and QLAND and QRTL
+        # QRTL and QLAND aren't tested because we can't arm in that mode
         for mode in (
                 'ACRO',
                 'AUTOTUNE',
@@ -185,9 +190,7 @@ class AutoTestQuadPlane(AutoTest):
                 'GUIDED',
                 'LOITER',
                 'QHOVER',
-                'QLAND',
                 'QLOITER',
-                'QRTL',
                 'RTL',
                 'STABILIZE',
                 'TRAINING',
@@ -671,6 +674,7 @@ class AutoTestQuadPlane(AutoTest):
         '''tailsitter test'''
         self.set_parameter('Q_FRAME_CLASS', 10)
         self.set_parameter('Q_ENABLE', 1)
+        self.set_parameter('Q_TAILSIT_ENABLE', 1)
 
         self.reboot_sitl()
         self.wait_ready_to_arm()

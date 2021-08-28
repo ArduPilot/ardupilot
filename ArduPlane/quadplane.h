@@ -122,6 +122,9 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
+    
+    // is throttle controlled landing descent active?
+    bool thr_ctrl_land;
 
     uint16_t get_pilot_velocity_z_max_dn() const;
     
@@ -181,10 +184,7 @@ private:
     AirMode air_mode;
 
     // check for quadplane assistance needed
-    bool assistance_needed(float aspeed, bool have_airspeed);
-
-    // check if it is safe to provide assistance
-    bool assistance_safe();
+    bool should_assist(float aspeed, bool have_airspeed);
 
     // update transition handling
     void update_transition(void);
@@ -224,30 +224,16 @@ private:
 
     // update yaw target for tiltrotor transition
     void update_yaw_target();
-    
-    // main entry points for VTOL flight modes
-    void init_stabilize(void);
-    void control_stabilize(void);
 
     void check_attitude_relax(void);
-    void init_qacro(void);
     float get_pilot_throttle(void);
-    void control_qacro(void);
-    void init_hover(void);
     void control_hover(void);
     void relax_attitude_control();
 
-
-    void init_loiter(void);
-    void init_qland(void);
-    void control_loiter(void);
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
 
-    void init_qrtl(void);
-    void control_qrtl(void);
-    
     float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
@@ -256,7 +242,7 @@ private:
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
-    float landing_descent_rate_cms(float height_above_ground) const;
+    float landing_descent_rate_cms(float height_above_ground);
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
@@ -413,7 +399,7 @@ private:
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
-    
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
@@ -560,6 +546,7 @@ private:
         OPTION_THR_LANDING_CONTROL=(1<<15),
         OPTION_DISABLE_APPROACH=(1<<16),
         OPTION_REPOSITION_LANDING=(1<<17),
+        OPTION_ONLY_ARM_IN_QMODE_OR_AUTO=(1<<18),
     };
 
     AP_Float takeoff_failure_scalar;

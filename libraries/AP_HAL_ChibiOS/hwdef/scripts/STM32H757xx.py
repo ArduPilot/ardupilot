@@ -63,7 +63,7 @@ AltFunction_map = {
 	"PA0:TIM5_CH1"      	:	2,
 	"PA0:TIM8_ETR"      	:	3,
 	"PA0:UART4_TX"      	:	8,
-	"PA0:USART2_CTS_NSS"	:	7,
+	"PA0:USART2_CTS"    	:	7,
 	"PA1:ETH_MII_RX_CLK"	:	11,
 	"PA1:ETH_RMII_REF_CLK"	:	11,
 	"PA1:EVENT-OUT"     	:	15,

@@ -5,11 +5,6 @@
 #include "Plane.h"
 
 #if ADVANCED_FAILSAFE == ENABLED
-// Constructor
-AP_AdvancedFailsafe_Plane::AP_AdvancedFailsafe_Plane(AP_Mission &_mission) :
-    AP_AdvancedFailsafe(_mission)
-{}
-
 
 /*
   setup radio_out values for all channels to termination values

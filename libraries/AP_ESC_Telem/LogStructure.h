@@ -31,4 +31,4 @@ struct PACKED log_Esc {
 
 #define LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBeffcfcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-B--BCB-" },
+      "ESC",  "QBeffcfcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-B--BCB-" , true },

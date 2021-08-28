@@ -142,7 +142,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
     }
-    chThdSleep(ticks); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*

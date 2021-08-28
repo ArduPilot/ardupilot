@@ -227,7 +227,7 @@ void ModeThrow::run()
 // @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
 // @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
         
-        AP::logger().Write(
+        AP::logger().WriteStreaming(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
             "s-nnoo----",

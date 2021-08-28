@@ -37,6 +37,7 @@ public:
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
+        TURTLE =       28,  // Flip over after crash
     };
 
     // constructor
@@ -108,12 +109,16 @@ protected:
     bool is_disarmed_or_landed() const;
     void zero_throttle_and_relax_ac(bool spool_up = false);
     void zero_throttle_and_hold_attitude();
-    void make_safe_spool_down();
+    void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
     // functions to control landing
     // in modes that support landing
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
+    void run_land_controllers(bool pause_descent = false) {
+        land_run_horizontal_control();
+        land_run_vertical_control(pause_descent);
+    }
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
@@ -239,6 +244,17 @@ public:
     };
     static AutoYaw auto_yaw;
 
+#if PRECISION_LANDING == ENABLED
+    // Go towards a position commanded by prec land state machine in order to retry landing
+    // The passed in location is expected to be NED and in meters
+    void land_retry_position(const Vector3f &retry_loc);
+
+    // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
+    // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
+    void run_precland();
+
+#endif
+
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
@@ -250,7 +266,6 @@ public:
     GCS_Copter &gcs();
     void set_throttle_takeoff(void);
     uint16_t get_pilot_speed_dn(void);
-
     // end pass-through functions
 };
 
@@ -1494,6 +1509,30 @@ private:
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_velz;     // vertical velocity when free fall was detected
 };
+
+#if MODE_TURTLE_ENABLED == ENABLED
+class ModeTurtle : public Mode {
+
+public:
+    // inherit constructors
+    using Mode::Mode;
+    Number mode_number() const override { return Number::TURTLE; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+    void exit() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override;
+    bool is_autopilot() const override { return false; }
+    void change_motor_direction(bool reverse);
+
+protected:
+    const char *name() const override { return "TURTLE"; }
+    const char *name4() const override { return "TRTL"; }
+};
+#endif
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 

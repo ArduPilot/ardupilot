@@ -15,12 +15,6 @@
 
 #include "AP_WindVane_Home.h"
 
-// constructor
-AP_WindVane_Home::AP_WindVane_Home(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
-
 void AP_WindVane_Home::update_direction()
 {
     float direction_apparent_ef = _frontend._home_heading;

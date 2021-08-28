@@ -42,6 +42,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Button/AP_Button.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -436,7 +437,12 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-        if (!_compass.learn_offsets_enabled()) {
+#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter) && !APM_BUILD_TYPE(APM_BUILD_Blimp)
+        // check compass offsets have been set if learning is off
+        // copter and blimp always require configured compasses
+        if (!_compass.learn_offsets_enabled())
+#endif
+        {
             char failure_msg[50] = {};
             if (!_compass.configured(failure_msg, ARRAY_SIZE(failure_msg))) {
                 check_failed(ARMING_CHECK_COMPASS, report, "%s", failure_msg);
@@ -474,15 +480,12 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         // Any failure messages from GPS backends
-        if ((checks_to_perform & ARMING_CHECK_ALL) ||
-            (checks_to_perform & ARMING_CHECK_GPS)) {
             char failure_msg[50] = {};
             if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
                 if (failure_msg[0] != '\0') {
                     check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
                 }
                 return false;
-            }
         }
 
         //GPS OK?
@@ -873,11 +876,13 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+#if HAL_BUTTON_ENABLED
         const auto &button = AP::button();
         if (!button.arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }
+#endif
     }
 
     return true;
@@ -1036,6 +1041,24 @@ bool AP_Arming::osd_checks(bool display_failure) const
             check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
             return false;
         }
+    }
+#endif
+    return true;
+}
+
+bool AP_Arming::fettec_checks(bool display_failure) const
+{
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    const AP_FETtecOneWire *f = AP_FETtecOneWire::get_singleton();
+    if (f == nullptr) {
+        return true;
+    }
+
+    // check camera is ready
+    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+        check_failed(ARMING_CHECK_ALL, display_failure, "FETtec: %s", fail_msg);
+        return false;
     }
 #endif
     return true;
@@ -1202,6 +1225,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  osd_checks(report)
+        &  fettec_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
         &  disarm_switch_checks(report)

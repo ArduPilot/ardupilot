@@ -24,4 +24,4 @@ char *nmea_vaprintf(const char *fmt, va_list ap);
 /*
   formatted print of NMEA message to a uart, with checksum appended
  */
-bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...);
+bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...) FMT_PRINTF(2,3);

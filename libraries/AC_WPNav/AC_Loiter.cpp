@@ -16,8 +16,9 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: ANG_MAX
-    // @DisplayName: Loiter Angle Max
-    // @Description: Loiter maximum lean angle. Set to zero for 2/3 of PSC_ANGLE_MAX or ANGLE_MAX
+    // @DisplayName: Loiter pilot angle max
+    // @Description{Copter, Sub}: Loiter maximum pilot requested lean angle. Set to zero for 2/3 of PSC_ANGLE_MAX/ANGLE_MAX. The maximum vehicle lean angle is still limited by PSC_ANGLE_MAX/ANGLE_MAX
+    // @Description{Plane}: Loiter maximum pilot requested lean angle. Set to zero for 2/3 of Q_P_ANGLE_MAX/Q_ANGLE_MAX. The maximum vehicle lean angle is still limited by Q_P_ANGLE_MAX/Q_ANGLE_MAX
     // @Units: deg
     // @Range: 0 45
     // @Increment: 1
@@ -208,8 +209,8 @@ void AC_Loiter::sanity_check_params()
 ///		updated velocity sent directly to position controller
 void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
 {
-    float ekfGndSpdLimit, ekfNavVelGainScaler;
-    AP::ahrs().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    float ekfGndSpdLimit, ahrsControlScaleXY;
+    AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits

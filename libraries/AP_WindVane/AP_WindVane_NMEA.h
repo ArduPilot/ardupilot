@@ -20,7 +20,7 @@ class AP_WindVane_NMEA : public AP_WindVane_Backend
 {
 public:
     // constructor
-    AP_WindVane_NMEA(AP_WindVane &frontend);
+    using AP_WindVane_Backend::AP_WindVane_Backend;
 
     // initialization
     void init(const AP_SerialManager& serial_manager) override;
