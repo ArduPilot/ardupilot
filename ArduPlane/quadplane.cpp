@@ -1092,6 +1092,7 @@ void QuadPlane::run_z_controller(void)
             // initialise the vertical position controller with no descent
             pos_control->init_z_controller_no_descent();
         }
+        last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
     pos_control->update_z_controller();
