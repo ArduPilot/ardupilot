@@ -80,6 +80,13 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #define HAL_UART_RX_STACK_SIZE 768
 #endif
 
+// threshold for disabling TX DMA due to contention
+#if defined(USART_CR1_FIFOEN)
+#define CONTENTION_BAUD_THRESHOLD 460800
+#else
+#define CONTENTION_BAUD_THRESHOLD 115200
+#endif
+
 UARTDriver::UARTDriver(uint8_t _serial_num) :
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
@@ -306,6 +313,15 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         rx_dma_enabled = rx_bounce_buf[0] != nullptr && rx_bounce_buf[1] != nullptr;
         tx_dma_enabled = tx_bounce_buf != nullptr;
     }
+    if (contention_counter > 1000 && _baudrate <= CONTENTION_BAUD_THRESHOLD) {
+        // we've previously disabled TX DMA due to contention, don't
+        // re-enable on a new begin() unless high baudrate
+        tx_dma_enabled = false;
+    }
+    if (_baudrate <= 115200 && sdef.dma_tx && Shared_DMA::is_shared(sdef.dma_tx_stream_id)) {
+        // avoid DMA on shared low-baudrate links
+        tx_dma_enabled = false;
+    }
 #endif
 
 #if defined(USART_CR1_FIFOEN)
@@ -374,16 +390,19 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
 #endif
                 }
-                if (tx_dma_enabled) {
-                    // we only allow for sharing of the TX DMA channel, not the RX
-                    // DMA channel, as the RX side is active all the time, so
-                    // cannot be shared
-                    dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
-                                                SHARED_DMA_NONE,
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
-                }
                 _device_initialised = true;
+            }
+            if (tx_dma_enabled && dma_handle == nullptr) {
+                // we only allow for sharing of the TX DMA channel, not the RX
+                // DMA channel, as the RX side is active all the time, so
+                // cannot be shared
+                dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
+                                            SHARED_DMA_NONE,
+                                            FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
+                                            FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
+                if (dma_handle == nullptr) {
+                    tx_dma_enabled = false;
+                }
             }
 #endif // HAL_UART_NODMA
             sercfg.speed = _baudrate;
@@ -935,12 +954,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 
         if (dma_handle->has_contention()) {
             // on boards with a hw fifo we can use a higher threshold for disabling DMA
-#if defined(USART_CR1_FIFOEN)
-            const uint32_t baud_threshold = 460800;
-#else
-            const uint32_t baud_threshold = 115200;
-#endif
-            if (_baudrate <= baud_threshold) {
+            if (_baudrate <= CONTENTION_BAUD_THRESHOLD) {
                 contention_counter += 3;
                 if (contention_counter > 1000) {
                     // more than 25% of attempts to use this DMA
