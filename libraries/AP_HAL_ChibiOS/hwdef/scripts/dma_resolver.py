@@ -435,11 +435,15 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     for key in ordered_up_channels:
         ordered_timers.append(key[0:-3])
 
+    shared_set = set()
+
     for key in sorted(curr_dict.keys()):
         stream = curr_dict[key]
         shared = ''
         if len(stream_assign[stream]) > 1:
             shared = ' // shared %s' % ','.join(stream_assign[stream])
+            if stream[0] in [1,2]:
+                shared_set.add("(1U<<STM32_DMA_STREAM_ID(%u,%u))" % (stream[0],stream[1]))
         if curr_dict[key] == "STM32_DMA_STREAM_ID_ANY":
             f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+'STREAM'))
             f.write("#define %-30s %s\n" % (chibios_dma_define_name(key)+'CHAN', dmamux_channel(key)))
@@ -479,6 +483,12 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                                 (chibios_dma_define_name(chkey)+'CHAN', 
                                 chan.replace('_UP', '_CH{}'.format(ch))))
                 break
+
+    f.write("\n// Mask of DMA streams which are shared\n")
+    if len(shared_set) == 0:
+        f.write("#define SHARED_DMA_MASK 0\n")
+    else:
+        f.write("#define SHARED_DMA_MASK (%s)\n" % '|'.join(list(shared_set)))
 
     # now generate UARTDriver.cpp DMA config lines
     f.write("\n\n// generated UART DMA configuration lines\n")
