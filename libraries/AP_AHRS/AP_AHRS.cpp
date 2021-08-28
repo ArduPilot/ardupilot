@@ -2834,15 +2834,6 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
     return false;
 }
 
-bool AP_AHRS::getGpsGlitchStatus() const
-{
-    nav_filter_status ekf_status {};
-    if (!get_filter_status(ekf_status)) {
-        return false;
-    }
-    return ekf_status.flags.gps_glitching;
-}
-
 //get the index of the active airspeed sensor, wrt the primary core
 uint8_t AP_AHRS::get_active_airspeed_index() const
 {
