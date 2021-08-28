@@ -715,24 +715,24 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
-
-#if HAL_MSP_ENABLED
+    
     // @Param: SIDEBARS_EN
     // @DisplayName: SIDEBARS_EN
-    // @Description: Displays artificial horizon side bars (MSP OSD only)
+    // @Description: Displays artificial horizon side bars
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: SIDEBARS_X
     // @DisplayName: SIDEBARS_X
-    // @Description: Horizontal position on screen (MSP OSD only)
+    // @Description: Horizontal position on screen
     // @Range: 0 29
 
     // @Param: SIDEBARS_Y
     // @DisplayName: SIDEBARS_Y
-    // @Description: Vertical position on screen (MSP OSD only)
+    // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
 
+#if HAL_MSP_ENABLED
     // @Param: CRSSHAIR_EN
     // @DisplayName: CRSSHAIR_EN
     // @Description: Displays artificial horizon crosshair (MSP OSD only)
@@ -1115,6 +1115,19 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 #define SYM_RNGFD 77
 #define SYM_LQ 78
 
+#define SYM_SIDEBAR_R_ARROW 79
+#define SYM_SIDEBAR_L_ARROW 80
+#define SYM_SIDEBAR_A 81
+#define SYM_SIDEBAR_B 82
+#define SYM_SIDEBAR_C 83
+#define SYM_SIDEBAR_D 84
+#define SYM_SIDEBAR_E 85
+#define SYM_SIDEBAR_F 86
+#define SYM_SIDEBAR_G 87
+#define SYM_SIDEBAR_H 88
+#define SYM_SIDEBAR_I 89
+#define SYM_SIDEBAR_J 90
+
 #define SYMBOL(n) AP_OSD_AbstractScreen::symbols_lookup_table[n]
 
 // constructor
@@ -1386,6 +1399,7 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 //Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
+    x = 2; //messages get rendered across a whole row. User param x is ignored.
     AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
@@ -1429,6 +1443,9 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 
                 //trim invisible part
                 buffer[end_position] = 0;
+            } else if (len < message_visible_width) {
+                //for short messages, start writing closer to the middle to center the text
+                x += (message_visible_width - len)/2;
             }
 
             backend->write(x, y, buffer + start_position);
@@ -1570,6 +1587,69 @@ void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
+}
+
+void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
+{
+    const int8_t total_sectors = 18;
+    static const uint8_t sidebar_sectors[total_sectors] = {
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
+    };
+
+    // Get altitude and airspeed, scaled to appropriate units
+    float aspd = 0.0f;
+    float alt = 0.0f;
+    AP_AHRS &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    bool have_speed_estimate = ahrs.airspeed_estimate(aspd);
+    if (!have_speed_estimate) { aspd = 0.0f; }
+    ahrs.get_relative_position_D_home(alt);
+    float scaled_aspd = u_scale(SPEED, aspd);
+    float scaled_alt = u_scale(ALTITUDE, -alt);
+    static const int aspd_interval = 10; //units between large tick marks
+    int alt_interval = (osd->units == AP_OSD::UNITS_AVIATION || osd->units == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
+
+    // render airspeed ladder
+    int aspd_symbol_index = fmodf(scaled_aspd, aspd_interval) / aspd_interval * total_sectors;
+    for (int i = 0; i < 7; i++){
+        if (i == 3) {
+            // the middle section of the ladder with the currrent airspeed
+            backend->write(x, y+i, false, "%3d%c%c", (int) scaled_aspd, u_icon(SPEED), SYMBOL(SYM_SIDEBAR_R_ARROW));
+        } else {
+            backend->write(x+4, y+i, false,  "%c", SYMBOL(sidebar_sectors[aspd_symbol_index]));
+        }
+        aspd_symbol_index = (aspd_symbol_index + 12) % 18;
+    }
+
+    // render the altitude ladder
+    // similar formula to above, but accounts for negative altitudes
+    int alt_symbol_index = fmodf(fmodf(scaled_alt, alt_interval) + alt_interval, alt_interval) / alt_interval * total_sectors;
+    for (int i = 0; i < 7; i++){
+        if (i == 3) {
+            // the middle section of the ladder with the currrent altitude
+            backend->write(x+16, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
+        } else {
+            backend->write(x+16, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
+        }
+        alt_symbol_index = (alt_symbol_index + 12) % 18;
+    }
 }
 
 //Thanks to betaflight/inav for simple and clean compass visual design
@@ -2071,6 +2151,7 @@ void AP_OSD_Screen::draw(void)
     //Note: draw order should be optimized.
     //Big and less important items should be drawn first,
     //so they will not overwrite more important ones.
+    DRAW_SETTING(sidebars);
     DRAW_SETTING(message);
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
