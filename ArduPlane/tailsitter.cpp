@@ -24,8 +24,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable Tailsitter
-    // @Description: This enables Tailsitter functionality
-    // @Values: 0:Disable,1:Enable
+    // @Description: This enables Tailsitter functionality, 2: forces Qassist active and always stabilize in forward flight with airmode for stabalisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Tailsitter, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -183,6 +182,16 @@ void Tailsitter::setup()
     // set defaults for dual/single motor tailsitter
     if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
         AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
+    }
+
+    // Setup for control surface less operation
+    if (enable == 2) {
+        quadplane.q_assist_state = QuadPlane::Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
+
+        // Do not allow arming in forward flight modes
+        // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
+        quadplane.options.set(quadplane.options.get() | QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO);
     }
 
 }
