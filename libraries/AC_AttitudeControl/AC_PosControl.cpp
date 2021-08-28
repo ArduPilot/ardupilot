@@ -654,8 +654,21 @@ void AC_PosControl::update_xy_controller()
 
     // limit acceleration using maximum lean angles
     _limit_vector.xy().zero();
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
-    float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
+    const float althold_lean_max = _attitude_control.get_althold_lean_angle_max();
+
+    const float pitch_angle_max = MIN(althold_lean_max, get_lean_angle_max_cd());
+    const float pitch_accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(pitch_angle_max * 0.01));
+
+    const float roll_angle_max = MIN(althold_lean_max, get_roll_angle_max_cd());
+    const float roll_accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(roll_angle_max * 0.01));
+
+    // elliptical accel limit
+    // https://en.wikipedia.org/wiki/Ellipse#Polar_form_relative_to_center
+    const float theta = atan2f(_accel_target.x, _accel_target.y) + _ahrs.yaw;
+    const float b_cos = pitch_accel_max * cosf(theta);
+    const float a_sin = roll_accel_max * sinf(theta);
+    const float accel_max = (pitch_accel_max * roll_accel_max) / sqrtf( b_cos*b_cos + a_sin*a_sin );
+
     if (_accel_target.limit_length_xy(accel_max)) {
         _limit_vector.xy() = _accel_target.xy();
     }
@@ -1015,6 +1028,15 @@ float AC_PosControl::get_lean_angle_max_cd() const
         return _attitude_control.lean_angle_max();
     }
     return _lean_angle_max * 100.0f;
+}
+
+/// get_roll_angle_max_cd - returns the maximum roll angle the autopilot may request, if set
+float AC_PosControl::get_roll_angle_max_cd() const
+{
+    if (is_positive(_roll_angle_max)) {
+        return _roll_angle_max * 100.0;
+    }
+    return get_lean_angle_max_cd();
 }
 
 /// set position, velocity and acceleration targets

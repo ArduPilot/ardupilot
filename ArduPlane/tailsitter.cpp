@@ -177,6 +177,9 @@ void Tailsitter::output(void)
         return;
     }
 
+    // keep poscontrol roll angle limit upto date with param
+    quadplane.pos_control->set_roll_angle_max(max_roll_angle);
+
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
 
