@@ -1,5 +1,18 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.0-rc1 28-Aug-2021
+Changes from 4.1.0-beta7
+1) Enhancements
+    a) DCM fallback easier on boats
+    b) Flywoo F745 Goku Nano support
+    c) MatekF765-Wing support 
+2) Bug Fixes
+    a) ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH7
+    b) EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+    c) External AHRS (e.g. VectorNav driver) init fix
+    d) KakuteF4Mini SBUS fix
+    e) Pixhawk4 blue and red LEDs swapped
+------------------------------------------------------------------
 Rover 4.1.0-beta7 14-Aug-2021
 Changes from 4.1.0-beta6
 1) Enhancements
