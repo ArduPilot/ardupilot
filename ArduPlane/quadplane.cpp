@@ -936,7 +936,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
-    if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
+    if ((throttle_in <= 0) && !air_mode_active()) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         relax_attitude_control();
@@ -1164,7 +1164,7 @@ bool QuadPlane::is_flying_vtol(void) const
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
     }
-    if (plane.control_mode->is_vtol_man_throttle() && air_mode == AirMode::ON) {
+    if (plane.control_mode->is_vtol_man_throttle() && air_mode_active()) {
         // in manual throttle modes with airmode on, don't consider aircraft landed
         return true;
     }
@@ -1233,7 +1233,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (!manual_air_mode &&
         plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() &&
         plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
@@ -1268,7 +1268,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         yaw_cds += desired_auto_yaw_rate_cds();
     }
-    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() && !manual_air_mode && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
         // the user may be trying to disarm
         return 0;
@@ -1865,7 +1865,7 @@ void QuadPlane::update_throttle_suppression(void)
     }
 
     // if in a VTOL manual throttle mode and air_mode is on then allow motors to run
-    if (plane.control_mode->is_vtol_man_throttle() && air_mode == AirMode::ON) {
+    if (plane.control_mode->is_vtol_man_throttle() && air_mode_active()) {
         return;
     }
 
@@ -3582,7 +3582,7 @@ void QuadPlane::update_throttle_mix(void)
 
     if (plane.control_mode->is_vtol_man_throttle()) {
         // manual throttle
-        if ((plane.get_throttle_input() <= 0) && (air_mode == AirMode::OFF)) {
+        if ((plane.get_throttle_input() <= 0) && !air_mode_active()) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
@@ -3793,6 +3793,14 @@ void QuadPlane::set_desired_spool_state(AP_Motors::DesiredSpoolState state)
     if (motors->get_desired_spool_state() != state) {
         motors->set_desired_spool_state(state);
     }
+}
+
+bool QuadPlane::air_mode_active() const
+{
+    if ((air_mode == AirMode::ON) || ((air_mode == AirMode::ASSISTED_FLIGHT_ONLY) && assisted_flight)) {
+        return true;
+    }
+    return false;
 }
 
 QuadPlane *QuadPlane::_singleton = nullptr;
