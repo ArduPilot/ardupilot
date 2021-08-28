@@ -330,6 +330,9 @@ public:
     /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
     float get_lean_angle_max_cd() const;
 
+    /// get_roll_angle_max_cd - returns the maximum roll angle the autopilot may request, if set
+    float get_roll_angle_max_cd() const;
+    void set_roll_angle_max(float val) { _roll_angle_max = val; }
 
     /// Other
 
@@ -446,6 +449,7 @@ protected:
     float       _accel_max_xy_cmss;     // max horizontal acceleration in cm/s/s used for kinematic shaping
     float       _accel_max_z_cmss;      // max vertical acceleration in cm/s/s used for kinematic shaping
     float       _vel_z_control_ratio = 2.0f;    // confidence that we have control in the vertical axis
+    float       _roll_angle_max;        // maximum commanded roll angle in degrees, set to zero for _lean_angle_max
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
