@@ -1,3 +1,25 @@
+Release 4.1.0beta6 29th August 2021
+-----------------------------------
+
+This is a small beta update, with a few important fixes.
+
+Changes are:
+
+ - Flywoo F745 Goku Nano support
+ - Scripting support for getting circle mode radius and setting rate
+ - Scripting support for new Guided mode controls including acceleration control
+ - ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH743
+ - EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+ - External AHRS (e.g. VectorNav driver) init fix
+ - KakuteF4Mini SBUS fix
+ - Pixhawk4 blue and red LEDs swapped
+ - Position control fixes to limit initial desired accel (horizontal and vertical) which could lead to an excessive climb or descent
+ - fixed airspeed constraint by AHRS_WIND_MAX
+ - fixed use of hw serial inversion pins on F4 boards
+ - updates for new revisions of QioTekF427Zealot
+
+Happy flying!
+
 Release 4.1.0beta5 16th August 2021
 -----------------------------------
 
