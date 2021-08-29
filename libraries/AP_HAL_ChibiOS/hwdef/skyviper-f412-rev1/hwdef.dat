@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 # old F412 layout
 
-MCU STM32F4xx STM32F412Rx
+MCU STM32F4xx STM32F412xx
 
 # board ID for firmware load
 APJ_BOARD_ID 9
