@@ -54,7 +54,6 @@ enum iopage {
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
-    PAGE_SAFETY_PWM = 108,
     PAGE_MIXING = 200,
 };
 
