@@ -87,12 +87,6 @@ public:
      */
     void force_safety_off(void) override;
 
-    /*
-      set PWM to send to a set of channels when the safety switch is
-      in the safe state
-     */
-    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
-
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -514,7 +508,6 @@ private:
                 && _dshot_current_command.cycle > 0;
     }
 #endif
-    uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
