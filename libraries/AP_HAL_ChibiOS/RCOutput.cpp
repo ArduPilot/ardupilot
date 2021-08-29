@@ -508,7 +508,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
         // implement safety pwm value
-        period_us = safe_pwm[chan];
+        period_us = 0;
     }
 
     chan -= chan_offset;
@@ -555,7 +555,7 @@ void RCOutput::push_local(void)
 
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
-                    period_us = safe_pwm[chan+chan_offset];
+                    period_us = 0;
                 }
 
                 if (group.current_mode == MODE_PWM_BRUSHED) {
@@ -1372,7 +1372,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                 // safety is on, overwride pwm
-                pwm = safe_pwm[chan+chan_offset];
+                pwm = 0;
             }
 
             const uint16_t chan_mask = (1U<<chan);
@@ -1954,24 +1954,6 @@ void RCOutput::force_safety_off(void)
 #else
     safety_state = AP_HAL::Util::SAFETY_ARMED;
 #endif
-}
-
-/*
-  set PWM to send to a set of channels when the safety switch is
-  in the safe state
-*/
-void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.set_safety_pwm(chmask, period_us);
-    }
-#endif
-    for (uint8_t i=0; i<16; i++) {
-        if (chmask & (1U<<i)) {
-            safe_pwm[i] = period_us;
-        }
-    }
 }
 
 /*
