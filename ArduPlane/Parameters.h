@@ -144,7 +144,7 @@ public:
         k_param_arming = 100,
         k_param_parachute_channel, // unused - moved to RC option
         k_param_crash_accel_threshold,
-        k_param_override_safety,
+        k_param_override_safety, // unused
         k_param_land_throttle_slewrate, // 104 unused - moved to AP_Landing
 
         // 105: Extra parameters
@@ -473,7 +473,6 @@ public:
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
     AP_Int8 override_channel;
-    AP_Int8 override_safety;
 #endif
     AP_Int16 gcs_pid_mask;
 };
