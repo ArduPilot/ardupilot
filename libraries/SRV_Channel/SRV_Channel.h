@@ -423,9 +423,6 @@ public:
     // setup failsafe for an auxiliary channel function
     static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
-    // setup safety for an auxiliary channel function (used when disarmed)
-    static void set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
-
     // set servo to a Limit
     static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 

@@ -403,24 +403,6 @@ SRV_Channels::set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV
 }
 
 /*
-  setup safety value for an auxiliary function type to a Limit
- */
-void
-SRV_Channels::set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit)
-{
-    if (!function_assigned(function)) {
-        return;
-    }
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        const SRV_Channel &c = channels[i];
-        if (c.function.get() == function) {
-            uint16_t pwm = c.get_limit_pwm(limit);
-            hal.rcout->set_safety_pwm(1U<<c.ch_num, pwm);
-        }
-    }
-}
-
-/*
   set radio output value for an auxiliary function type to a Limit
  */
 void
