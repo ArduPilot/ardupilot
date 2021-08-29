@@ -46,9 +46,6 @@ public:
     // force safety off
     void force_safety_off(void);
 
-    // set PWM of channels when safety is on
-    void set_safety_pwm(uint16_t chmask, uint16_t period_us);
-
     // set mask of channels that ignore safety state
     void set_safety_mask(uint16_t chmask);
 
@@ -184,9 +181,6 @@ private:
     struct {
         uint8_t num_channels;
         uint16_t pwm[IOMCU_MAX_CHANNELS];
-        uint8_t safety_pwm_set;
-        uint8_t safety_pwm_sent;
-        uint16_t safety_pwm[IOMCU_MAX_CHANNELS];
         uint16_t safety_mask;
         uint16_t failsafe_pwm[IOMCU_MAX_CHANNELS];
         uint8_t failsafe_pwm_set;
