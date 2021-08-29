@@ -396,8 +396,8 @@ public:
     // set and save the trim for a function channel to the output value
     static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
 
-    // set the trim for a function channel to min of the channel
-    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
+    // set the trim for a function channel to min of the channel honnoring reverse unless ignore_reversed is true
+    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function, bool ignore_reversed = false);
 
     // set the trim for a function channel to given pwm
     static void set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm);
