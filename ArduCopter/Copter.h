@@ -597,7 +597,8 @@ private:
         SMARTRTL           = 3,
         SMARTRTL_LAND      = 4,
         TERMINATE          = 5,
-        AUTO_DO_LAND_START = 6
+        AUTO_DO_LAND_START = 6,
+        PARACHUTE_LAND     = 7,
     };
 
     enum class FailsafeOption {
@@ -709,7 +710,9 @@ private:
     uint32_t last_yaw_warn_ms;
     void parachute_check();
     void parachute_release();
-    void parachute_manual_release();
+
+    // return true if chute is released
+    bool parachute_manual_release();
 
     // ekf_check.cpp
     void ekf_check();
