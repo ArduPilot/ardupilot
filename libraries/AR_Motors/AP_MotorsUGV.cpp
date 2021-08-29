@@ -145,9 +145,10 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
+        // ignore servo revese flag, it is used by the relay
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft, true);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight, true);
     }
 
     // stop sending pwm if main CPU fails
