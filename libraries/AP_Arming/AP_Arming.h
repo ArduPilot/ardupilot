@@ -158,6 +158,8 @@ protected:
 
     virtual bool rc_calibration_checks(bool report);
 
+    bool rc_in_calibration_check(bool report);
+
     bool rc_arm_checks(AP_Arming::Method method);
 
     bool manual_transmitter_checks(bool report);
@@ -195,7 +197,7 @@ protected:
     bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
-    virtual bool mandatory_checks(bool report) { return true; }
+    virtual bool mandatory_checks(bool report);
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
