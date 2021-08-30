@@ -210,7 +210,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_LOGGING_ENABLED)
+#if !defined(HAL_BUILD_AP_PERIPH) || (defined(HAL_LOGGING_ENABLED) && (HAL_LOGGING_ENABLED == 1) && defined(HAL_PERIPH_ENABLE_GPS))
     const AP_Logger &logger = AP::logger();
     if (logger.logging_present() || gps.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
