@@ -469,6 +469,7 @@ protected:
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
