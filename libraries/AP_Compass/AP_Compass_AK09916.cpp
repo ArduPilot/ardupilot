@@ -170,6 +170,7 @@ fail:
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
                                                      enum Rotation rotation)
 {
+#if HAL_INS_ENABLED
     AP_InertialSensor &ins = AP::ins();
 
     AP_AK09916_BusDriver *bus =
@@ -185,6 +186,9 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
     }
 
     return sensor;
+#else
+    return nullptr;
+#endif
 }
 
 bool AP_Compass_AK09916::init()
@@ -368,12 +372,14 @@ AP_AK09916_BusDriver_Auxiliary::AP_AK09916_BusDriver_Auxiliary(AP_InertialSensor
      * Only initialize members. Fails are handled by configure or while
      * getting the semaphore
      */
+#if HAL_INS_ENABLED
     _bus = ins.get_auxiliary_bus(backend_id, backend_instance);
     if (!_bus) {
         return;
     }
 
     _slave = _bus->request_next_slave(addr);
+#endif
 }
 
 AP_AK09916_BusDriver_Auxiliary::~AP_AK09916_BusDriver_Auxiliary()
