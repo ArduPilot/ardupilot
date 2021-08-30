@@ -639,11 +639,9 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // allow user to override acceptance radius
         acceptance_distance_m = cmd_acceptance_distance;
     } else if (cmd_passby == 0) {
-        acceptance_distance_m = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
-    } else {
-
+        acceptance_distance_m = nav_controller->turn_distance(get_wp_radius(), auto_state.next_turn_angle);
     }
-    
+
     if (auto_state.wp_distance <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
@@ -768,7 +766,7 @@ bool Plane::verify_RTL()
         loiter.direction = 1;
     }
     update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
+	if (auto_state.wp_distance <= (uint32_t)MAX(get_wp_radius(),0) || 
         reached_loiter_target()) {
 			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
 			return true;
@@ -1097,4 +1095,14 @@ bool Plane::verify_loiter_heading(bool init)
     }
 
     return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
+}
+
+float Plane::get_wp_radius() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.in_vtol_mode()) {
+        return plane.quadplane.wp_nav->get_wp_radius_cm() * 0.01;
+    }
+#endif
+    return g.waypoint_radius;
 }
