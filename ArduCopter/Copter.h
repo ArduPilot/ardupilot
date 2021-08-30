@@ -993,7 +993,7 @@ private:
 #if MODE_TURTLE_ENABLED == ENABLED
     ModeTurtle mode_turtle;
 #endif
-#if MODE_LOITER_ENABLED == ENABLED
+#if MODE_LOITER_POI_ENABLED == ENABLED
     ModeLoiter_POI mode_loiter_poi;
 #endif
 

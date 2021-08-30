@@ -331,6 +331,18 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Loiter_POI mode - allows vehicle to hold global position and auto yaw control
+#if (MODE_AUTO_ENABLED == DISABLED) || (MODE_LOITER_ENABLED == DISABLED)
+# ifndef MODE_LOITER_POI_ENABLED
+#  define MODE_LOITER_POI_ENABLED DISABLED
+# endif
+#else
+# ifndef MODE_LOITER_POI_ENABLED
+#  define MODE_LOITER_POI_ENABLED ENABLED
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
