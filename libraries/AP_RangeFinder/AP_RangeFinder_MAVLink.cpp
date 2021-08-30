@@ -24,8 +24,8 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     mavlink_distance_sensor_t packet;
     mavlink_msg_distance_sensor_decode(&msg, &packet);
 
-    // only accept distances for downward facing sensors
-    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
+    // only accept distances for the configured orentation
+    if (packet.orientation == orientation()) {
         state.last_reading_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
         _max_distance_cm = packet.max_distance;
