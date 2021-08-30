@@ -137,3 +137,19 @@ int16_t Plane::get_throttle_input(bool no_deadzone) const
     }
     return ret;
 }
+
+/*
+  return control in from the radio throttle channel with curve giving mid-stick equal to TRIM_THROTTLE.
+ */
+int16_t Plane::get_adjusted_throttle_input(bool no_deadzone) const
+{
+    if ((plane.channel_throttle->get_type() != RC_Channel::RC_CHANNEL_TYPE_RANGE) || (g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM) == 0) { 
+       return  get_throttle_input(no_deadzone);
+    }
+    int16_t ret = channel_throttle->get_range() * throttle_curve(aparm.throttle_cruise * 0.01, 0, 0.5 + 0.5*channel_throttle->norm_input());
+    if (reversed_throttle) {
+        // RC option for reverse throttle has been set
+        return -ret;
+    }
+    return ret;
+}
