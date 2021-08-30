@@ -3822,6 +3822,8 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         return _handle_command_preflight_calibration_baro();
     }
 
+    rc().calibrating(is_positive(packet.param4));
+
 #if HAL_INS_ENABLED
     if (is_equal(packet.param5,1.0f)) {
         // start with gyro calibration
