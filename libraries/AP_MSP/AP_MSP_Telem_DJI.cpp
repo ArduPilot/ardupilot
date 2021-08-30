@@ -127,9 +127,9 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_esc_sensor_data(sbuf_t *dst)
     if (msp && msp->check_option(AP_MSP::MspOption::OPTION_TELEMETRY_DJI_WORKAROUNDS)) {
         AP_ESC_Telem& telem = AP::esc_telem();
         int16_t highest_temperature = 0;
-        telem.get_highest_motor_temperature(highest_temperature);
-        sbuf_write_u8(dst, uint8_t(highest_temperature / 100));         // deg, report max temperature
-        sbuf_write_u16(dst, uint16_t(telem.get_average_motor_rpm() * 0.1f));  // rpm, report average RPM across all motors
+        telem.get_highest_temperature(highest_temperature);
+        sbuf_write_u8(dst, uint8_t(highest_temperature * 0.01f));               // deg, report max temperature
+        sbuf_write_u16(dst, uint16_t(telem.get_average_motor_rpm() * 0.1f));    // rpm, report average RPM across all motors
     } else {
         return AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(dst);
     }
