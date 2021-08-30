@@ -61,6 +61,7 @@ public:
         Driver_Type_USD1 = 7,
         Driver_Type_KDECAN = 8,
         Driver_Type_MPPT_PacketDigital = 9,
+        Driver_Type_Scripting = 10,
     };
 
     void init(void);
@@ -90,7 +91,7 @@ public:
     }
     
     // Method to log status and debug information for review while debugging
-    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...);
+    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...) FMT_PRINTF(4,5);
 
     void log_retrieve(ExpandingString &str) const;
 

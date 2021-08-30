@@ -567,9 +567,8 @@ bool NavEKF3_core::use_compass(void) const
         return false;
     }
 
-    const auto *compass = dal.get_compass();
-    return compass &&
-           compass->use_for_yaw(magSelectIndex) &&
+    const auto &compass = dal.compass();
+    return compass.use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
 }
 
@@ -758,7 +757,7 @@ void NavEKF3_core::runYawEstimatorCorrection()
 
         // action an external reset request
         if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
-            EKFGSF_resetMainFilterYaw();
+            EKFGSF_resetMainFilterYaw(true);
         }
     } else {
         EKFGSF_yaw_valid_count = 0;

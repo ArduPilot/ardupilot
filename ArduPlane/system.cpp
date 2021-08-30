@@ -202,8 +202,16 @@ void Plane::startup_ground(void)
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
+    // update last reason
+    const ModeReason last_reason = _last_reason;
+    _last_reason = reason;
+
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
+        // only make happy noise if using a difent method to switch, this stops beeping for repeated change mode requests from GCS
+        if ((reason != last_reason) && (reason != ModeReason::INITIALISED)) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         return true;
     }
 
@@ -211,6 +219,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
         set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
         return false;
     }
 #endif
@@ -234,14 +246,11 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         // we failed entering new mode, roll back to old
         previous_mode = &old_previous_mode;
         control_mode = &old_mode;
-
         control_mode_reason = previous_mode_reason;
 
-        // currently, only Q modes can fail enter(). This will likely change in the future and all modes
-        // should be changed to check dependencies and fail early before depending on changes in Mode::set_mode()
-        if (control_mode->is_vtol_mode()) {
-            // ignore result because if we fail we risk looping at the qautotune check above
-            control_mode->enter();
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
         }
         return false;
     }
@@ -262,6 +271,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     notify_mode(*control_mode);
     gcs().send_message(MSG_HEARTBEAT);
 
+    // make happy noise
+    if (reason != ModeReason::INITIALISED) {
+        AP_Notify::events.user_mode_change = 1;
+    }
     return true;
 }
 
@@ -364,8 +377,8 @@ void Plane::startup_INS_ground(void)
 
     ahrs.init();
     ahrs.set_fly_forward(true);
-    ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
-    ahrs.set_wind_estimation(true);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::FIXED_WING);
+    ahrs.set_wind_estimation_enabled(true);
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
@@ -408,7 +421,7 @@ bool Plane::should_log(uint32_t mask)
  */
 int8_t Plane::throttle_percentage(void)
 {
-    if (quadplane.in_vtol_mode() && !quadplane.in_tailsitter_vtol_transition()) {
+    if (quadplane.in_vtol_mode() && !quadplane.tailsitter.in_vtol_transition()) {
         return quadplane.throttle_percentage();
     }
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);

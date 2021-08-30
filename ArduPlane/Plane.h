@@ -138,6 +138,7 @@ public:
     friend class GCS_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
+    friend class Tailsitter;
 
     friend class Mode;
     friend class ModeCircle;
@@ -210,7 +211,7 @@ private:
     AP_SteerController steerController{};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SIM sitl;
 #endif
 
     // Training mode
@@ -642,7 +643,7 @@ private:
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
-    AP_AdvancedFailsafe_Plane afs {mission};
+    AP_AdvancedFailsafe_Plane afs;
 #endif
 
     /*
@@ -854,6 +855,8 @@ private:
     void calc_nav_yaw_ground(void);
 
     // Log.cpp
+    uint32_t last_log_fast_ms;
+
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Startup(uint8_t type);
@@ -864,7 +867,6 @@ private:
     void Log_Write_Status();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
-    void Log_Write_AOA_SSA();
     void Log_Write_AETR();
     void Log_Write_MavCmdI(const mavlink_command_int_t &packet);
     void log_init();
@@ -949,6 +951,9 @@ private:
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
+# if OSD_ENABLED
+    void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
+#endif
     float tecs_hgt_afe(void);
     void efi_update(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -1013,6 +1018,7 @@ private:
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    ModeReason _last_reason;
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);
@@ -1145,8 +1151,11 @@ private:
 
 public:
     void failsafe_check(void);
+#ifdef ENABLE_SCRIPTING
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern Plane plane;

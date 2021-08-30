@@ -83,7 +83,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
-    SCHED_TASK(Log_Write_Fast,         25,    300),
+    SCHED_TASK(Log_Write_Fast,        400,    300),
     SCHED_TASK(update_logging1,        25,    300),
     SCHED_TASK(update_logging2,        25,    300),
 #if HAL_SOARING_ENABLED
@@ -102,7 +102,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(avoidance_adsb_update,  10,    100),
 #endif
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100),
+#endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats, &plane.g2.stats, update, 1, 100),
 #endif
@@ -143,7 +145,7 @@ void Plane::ahrs_update()
     roll_limit_cd = aparm.roll_limit_cd;
     pitch_limit_min_cd = aparm.pitch_limit_min_cd;
 
-    if (!quadplane.tailsitter_active()) {
+    if (!quadplane.tailsitter.active()) {
         roll_limit_cd *= ahrs.cos_pitch();
         pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
     }
@@ -185,9 +187,7 @@ void Plane::update_speed_height(void)
  */
 void Plane::update_compass(void)
 {
-    if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
-    }
+    compass.read();
 }
 
 /*
@@ -266,7 +266,7 @@ void Plane::one_second_loop()
     // make it possible to change orientation at runtime
     ahrs.update_orientation();
 #if HAL_ADSB_ENABLED
-    adsb.set_stall_speed_cm(aparm.airspeed_min);
+    adsb.set_stall_speed_cm(aparm.airspeed_min * 100); // convert m/s to cm/s
     adsb.set_max_speed(aparm.airspeed_max);
 #endif
 
@@ -314,7 +314,7 @@ void Plane::three_hz_loop()
 
 void Plane::compass_save()
 {
-    if (AP::compass().enabled() &&
+    if (AP::compass().available() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !hal.util->get_soft_armed()) {
         /*
@@ -393,7 +393,7 @@ void Plane::update_GPS_10Hz(void)
             if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
-            } else {
+            } else if (!hal.util->was_watchdog_reset()) {
                 if (!set_home_persistently(gps.location())) {
                     // silently ignore failure...
                 }
@@ -432,7 +432,10 @@ void Plane::update_control_mode(void)
     // ensure we are fly-forward when we are flying as a pure fixed
     // wing aircraft. This helps the EKF produce better state
     // estimates as it can make stronger assumptions
-    if (quadplane.in_vtol_mode() ||
+    if (quadplane.available() &&
+        quadplane.tailsitter.is_in_fw_flight()) {
+        ahrs.set_fly_forward(true);
+    } else if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
         ahrs.set_fly_forward(false);
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
@@ -651,7 +654,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-
+#ifdef ENABLE_SCRIPTING
 // set target location (for use by scripting)
 bool Plane::set_target_location(const Location& target_loc)
 {
@@ -689,5 +692,21 @@ bool Plane::get_target_location(Location& target_loc)
     }
     return false;
 }
+#endif // ENABLE_SCRIPTING
+
+#if OSD_ENABLED
+// correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
+void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+{
+   pitch = ahrs.pitch;
+   roll = ahrs.roll;
+   if (!quadplane.show_vtol_view()) {  // correct for TRIM_PITCH_CD
+      pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
+   } else {
+      pitch = quadplane.ahrs_view->pitch;
+      roll = quadplane.ahrs_view->roll;
+   }
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&plane);

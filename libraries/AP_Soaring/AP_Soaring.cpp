@@ -183,9 +183,7 @@ bool SoaringController::suppress_throttle()
 
 bool SoaringController::check_thermal_criteria()
 {
-    ActiveStatus status = active_state();
-
-    return (status == ActiveStatus::AUTO_MODE_CHANGE
+    return (_last_update_status == ActiveStatus::AUTO_MODE_CHANGE
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
             && (_vario.get_trigger_value() - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
@@ -199,9 +197,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
     // heading before some of these conditions will actually trigger.
     // The GCS messages are emitted in mode_thermal.cpp. Update these if the logic here is changed.
 
-    ActiveStatus status = active_state();
-
-    if (status == ActiveStatus::SOARING_DISABLED) {
+    if (_last_update_status == ActiveStatus::SOARING_DISABLED) {
         return LoiterStatus::DISABLED;
     }
 
@@ -257,7 +253,7 @@ void SoaringController::init_thermalling()
     }
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
-    const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
+    const float init_xr[4] = {_vario.get_trigger_value(),
                               INITIAL_THERMAL_RADIUS,
                               position.x + thermal_distance_ahead * cosf(_ahrs.yaw),
                               position.y + thermal_distance_ahead * sinf(_ahrs.yaw)};
@@ -281,7 +277,7 @@ void SoaringController::init_thermalling()
 
 void SoaringController::init_cruising()
 {
-    if (active_state()>=ActiveStatus::MANUAL_MODE_CHANGE) {
+    if (_last_update_status >= ActiveStatus::MANUAL_MODE_CHANGE) {
         _cruise_start_time_us = AP_HAL::micros64();
         // Start glide. Will be updated on the next loop.
         set_throttle_suppressed(true);
@@ -333,7 +329,7 @@ void SoaringController::update_thermalling()
     // @Field: dx_w: Wind speed north
     // @Field: dy_w: Wind speed east
     // @Field: th: Estimate of achievable climbrate in thermal
-    AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
+    AP::logger().WriteStreaming("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
                                            AP_HAL::micros64(),
                                            (double)_vario.reading,
                                            (double)_ekf.X[0],
@@ -366,18 +362,18 @@ float SoaringController::McCready(float alt)
     return thermal_vspeed;
 }
 
-SoaringController::ActiveStatus SoaringController::active_state() const
+SoaringController::ActiveStatus SoaringController::active_state(bool override_disable) const
 {
-    if (!soar_active) {
+    if (override_disable || !soar_active) {
         return ActiveStatus::SOARING_DISABLED;
     }
 
     return _pilot_desired_state;
 }
 
-void SoaringController::update_active_state()
+void SoaringController::update_active_state(bool override_disable)
 {
-    ActiveStatus status = active_state();
+    ActiveStatus status = active_state(override_disable);
     bool state_changed = !(status == _last_update_status);
 
     if (state_changed) {

@@ -167,6 +167,11 @@ void AP_Logger_File::periodic_1Hz()
         _write_fd = -1;
         _initialised = false;
     }
+
+    if (rate_limiter == nullptr && _front._params.file_ratemax > 0) {
+        // setup rate limiting
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.file_ratemax);
+    }
 }
 
 void AP_Logger_File::periodic_fullrate()
@@ -1021,7 +1026,7 @@ bool AP_Logger_File::io_thread_alive() const
     // the IO thread is working with hardware - writing to a physical
     // disk.  Unfortunately these hardware devices do not obey our
     // SITL speedup options, so we allow for it here.
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl != nullptr) {
         timeout_ms *= sitl->speedup;
     }

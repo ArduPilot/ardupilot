@@ -221,7 +221,7 @@ RC4_DZ              15
 PSC_POSXY_P           0.7
 PSC_VELXY_I           0.3
 PSC_VELXY_P           0.6
-PSC_VELXY_FILT        1.0
+PSC_VELXY_FLTE        1.0
 WPNAV_LOIT_JERK     4000
 WPNAV_LOIT_MAXA      800
 WPNAV_LOIT_MINA      250

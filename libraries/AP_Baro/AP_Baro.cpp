@@ -537,7 +537,8 @@ void AP_Baro::init(void)
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+    const int8_t serial_port = AP::externalAHRS().get_port();
+    if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif
@@ -624,7 +625,7 @@ void AP_Baro::init(void)
         break;
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }

@@ -33,37 +33,27 @@ copter.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
 /*
   returns: "yaw":_6.594794831471518e-05,"pitch":_-0.0005172680830582976,"roll":_0.022908752784132957}}
 */
-void getInertia (const WbDeviceTag inertialUnit, const double *northDirection, char *buf)
+void getInertia (const WbDeviceTag inertialUnit, char *buf)
 {
   const double *inertial_directions = wb_inertial_unit_get_roll_pitch_yaw (inertialUnit);
-  if (northDirection[0] == 1)
-  {
-    sprintf(buf,"\"roll\": %f,\"pitch\": %f,\"yaw\": %f",inertial_directions[0], inertial_directions[1], inertial_directions[2]);
-  }
-  else
-  {
-    sprintf(buf,"\"roll\": %f,\"pitch\": %f,\"yaw\": %f",inertial_directions[1], -inertial_directions[0], inertial_directions[2]);
-  }
   
-    return ;
+  sprintf(buf,"\"roll\": %f,\"pitch\": %f,\"yaw\": %f",inertial_directions[0], inertial_directions[1], inertial_directions[2]);
+  
+  return ;
+
 }
 
 /*
   returns: "magnetic_field":_[23088.669921875,_3876.001220703125,_-53204.57421875]
 */
-void getCompass (const WbDeviceTag compass, const double *northDirection, char *buf)
+void getCompass (const WbDeviceTag compass, char *buf)
 {
     const double *north3D = wb_compass_get_values(compass);
-    if (northDirection[0] == 1)
-    {
-      sprintf(buf,"[%f, %f, %f]",north3D[0], north3D[2], north3D[1]);
-    }
-    else
-    {
-      sprintf(buf,"[%f, %f, %f]",north3D[2], -north3D[0], north3D[1]);
-    }
+    
+    sprintf(buf,"[%f, %f, %f]",north3D[0], north3D[2], north3D[1]);
     
     return ;
+
 }
 
 
@@ -71,39 +61,25 @@ void getCompass (const WbDeviceTag compass, const double *northDirection, char *
 /*
   returns: "vehicle.gps":{"timestamp":_1563301031.055164,"x":_5.5127296946011484e-05,"y":_-0.0010968948481604457,"z":_0.037179552018642426}, 
 */
-void getGPS (const WbDeviceTag gps, const double *northDirection, char *buf)
+void getGPS (const WbDeviceTag gps, char *buf)
 {
 
     const double *north3D = wb_gps_get_values(gps);
-    if (northDirection[0] == 1)
-    {
-      sprintf(buf,"\"x\": %f,\"y\": %f,\"z\": %f", north3D[0], north3D[2], north3D[1]);
-    }
-    else
-    {
-      sprintf(buf,"\"x\": %f,\"y\": %f,\"z\": %f", north3D[2], -north3D[0], north3D[1]);
-    }
     
-
+    sprintf(buf,"\"x\": %f,\"y\": %f,\"z\": %f", north3D[0], north3D[2], north3D[1]);
+    
     return ;
 }
 
 /*
  returns: "linear_acceleration": [0.005074390675872564, 0.22471477091312408, 9.80740737915039]
 */
-void getAcc (const WbDeviceTag accelerometer, const double *northDirection, char *buf)
+void getAcc (const WbDeviceTag accelerometer, char *buf)
 {
     //SHOULD BE CORRECT 
     const double *a = wb_accelerometer_get_values(accelerometer);
-    if (northDirection[0] == 1)
-    {
-      sprintf(buf,"[%f, %f, %f]",a[0], a[2], a[1]);
-    }
-    else
-    {
-      sprintf(buf,"[%f, %f, %f]",a[0], a[2], a[1]);
-    }
     
+    sprintf(buf,"[%f, %f, %f]",a[0], a[2], a[1]);
     
     //sprintf(buf,"[0.0, 0.0, 0.0]");
 
@@ -114,41 +90,28 @@ void getAcc (const WbDeviceTag accelerometer, const double *northDirection, char
 /*
   returns: "angular_velocity": [-1.0255117643964695e-07, -8.877226775894087e-08, 2.087078510015772e-09]
 */
-void getGyro (const WbDeviceTag gyro, const double *northDirection, char *buf)
+void getGyro (const WbDeviceTag gyro, char *buf)
 {
 
     const double *g = wb_gyro_get_values(gyro);
-    if (northDirection[0] == 1)
-    {
-      sprintf(buf,"[%f, %f, %f]",g[0], g[2], g[1]);
-    }
-    else
-    {
-      sprintf(buf,"[%f, %f, %f]",g[0], g[2], g[1]);
-    }
+    
+    sprintf(buf,"[%f, %f, %f]",g[0], g[2], g[1]);
     
     return ;
 }
 
 
-void getLinearVelocity (WbNodeRef nodeRef, const double *northDirection,  char * buf)
+void getLinearVelocity (WbNodeRef nodeRef,  char * buf)
 {
-    const double * vel = wb_supervisor_node_get_velocity (nodeRef);
-    if (vel != NULL)
+    if (linear_velocity != NULL)
     {
-      if (northDirection[0] == 1)
-      {
-        sprintf (buf,"[%f, %f, %f]", vel[0], vel[2], vel[1]);
-      }
-      else
-      {
-        sprintf (buf,"[%f, %f, %f]",  vel[2], -vel[0], vel[1]);
-      } 
+      sprintf (buf,"[%f, %f, %f]", linear_velocity[0], linear_velocity[2], linear_velocity[1]);
     }
-    
+
+    return ;
 }
 
-void getAllSensors (char *buf, const double *northDirection, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDeviceTag compass, const WbDeviceTag gps, WbDeviceTag inertial_unit)
+void getAllSensors (char *buf, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDeviceTag compass, const WbDeviceTag gps, const WbDeviceTag inertial_unit)
 {
 
 /*
@@ -179,16 +142,16 @@ void getAllSensors (char *buf, const double *northDirection, WbDeviceTag gyro, W
 
         char szTime[21];
         double time = wb_robot_get_time(); // current simulation time in [s]
-        sprintf(szTime,"%f", time);
+        sprintf(szTime,"%lf", time);
         
-        getGyro(gyro, northDirection, gyro_buf);
-        getAcc(accelerometer, northDirection, acc_buf);
-        getCompass(compass, northDirection, compass_buf);
-        getGPS(gps, northDirection, gps_buf);
-        getInertia (inertial_unit, northDirection, inertial_buf);
-        getLinearVelocity(wb_supervisor_node_get_self(), northDirection, linear_velocity_buf);
+        getGyro(gyro, gyro_buf);
+        getAcc(accelerometer, acc_buf);
+        getCompass(compass, compass_buf);
+        getGPS(gps, gps_buf);
+        getInertia (inertial_unit, inertial_buf);
+        getLinearVelocity(self_node, linear_velocity_buf);
 
         sprintf (buf,"{\"ts\": %s,\"vehicle.imu\": {\"av\": %s,\"la\": %s,\"mf\": %s,\"vehicle.gps\":{%s},\"vehicle.velocity\":{\"wlv\": %s},\"vehicle.pose\":{%s,%s}}\r\n"
-                                  , szTime,                                  gyro_buf,                    acc_buf,                 compass_buf,               gps_buf,                                  linear_velocity_buf,               gps_buf, inertial_buf );
+                      , szTime,                     gyro_buf,    acc_buf,   compass_buf,               gps_buf,                                  linear_velocity_buf,               gps_buf, inertial_buf );
 
 }

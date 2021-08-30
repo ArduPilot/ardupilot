@@ -82,6 +82,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(550, 500);  // flight mode       2Hz
     add_scheduler_entry(5000, 100); // passthrough       max 10Hz
     add_scheduler_entry(5000, 500); // status text       max 2Hz
+    add_scheduler_entry(5, 20);     // command          50Hz (generally not active unless requested by the TX)
 }
 
 void AP_CRSF_Telem::setup_custom_telemetry()
@@ -92,6 +93,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
 
     if (!rc().crsf_custom_telemetry()) {
         return;
+    }
+
+    // check if passthru already assigned
+    const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough,0); 
+    if (frsky_port != -1) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "CRSF: passthrough telemetry conflict on SERIAL%d",frsky_port);
+       _custom_telem.init_done = true;
+       return;
     }
 
     // we need crossfire firmware version
@@ -166,7 +175,8 @@ void AP_CRSF_Telem::process_rf_mode_changes()
     if ((now - _telem_last_report_ms > 5000) &&
         (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
         if (!rc().suppress_crsf_message()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "CRSF: RF mode %d, rate is %dHz", (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
+            gcs().send_text(MAV_SEVERITY_INFO, "CRSFv%d: RF mode %d, rate is %dHz", uint8_t(2 + AP::crsf()->is_crsf_v3_active()),
+                (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
         }
         update_custom_telemetry_rates(current_rf_mode);
         _telem_rf_mode = current_rf_mode;
@@ -312,6 +322,8 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         return rc().crsf_custom_telemetry();
     case STATUS_TEXT:
         return rc().crsf_custom_telemetry() && !queue_empty;
+    case GENERAL_COMMAND:
+        return _baud_rate_request.pending;
     default:
         return _enable_telemetry;
     }
@@ -357,6 +369,9 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
         case STATUS_TEXT:
             calc_status_text();
             break;
+        case GENERAL_COMMAND:
+            calc_command_response();
+            break;
         default:
             break;
     }
@@ -394,6 +409,10 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
 
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
         process_device_info_frame((ParameterDeviceInfoFrame*)data);
+        break;
+
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
+        process_command_frame((CommandFrame*)data);
         break;
 
     default:
@@ -538,6 +557,34 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     }
 
     _crsf_version.pending = false;
+}
+
+// request for a general command
+void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
+{
+    debug("process_command_frame: 0x%x -> 0x%x: 0x%x", command->origin, command->destination, command->payload[0]);
+    if (command->destination != 0 && command->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+        return; // request was not for us
+    }
+
+    // we are only interested in commands from the RX
+    if (command->origin != 0 && command->origin != AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER) {
+        return;
+    }
+
+    switch (command->payload[0]) {
+        case AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_PROPOSAL: {
+            uint32_t baud_rate = command->payload[2] << 24 | command->payload[3] << 16
+                | command->payload[4] << 8 | command->payload[5];
+            _baud_rate_request.port_id = command->payload[1];
+            _baud_rate_request.valid = AP::crsf()->change_baud_rate(baud_rate);
+            _baud_rate_request.pending = true;
+            debug("requested baud rate change %lu", baud_rate);
+            break;
+        }
+        default:
+            break; // do nothing
+    }
 }
 
 void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_frame)
@@ -816,6 +863,33 @@ void AP_CRSF_Telem::calc_device_ping() {
     _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_BROADCAST;
     _pending_request.frame_type = 0;
 
+    _telem_pending = true;
+}
+
+// send a command response
+void AP_CRSF_Telem::calc_command_response() {
+    _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
+    _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL;
+    _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_RESPONSE;
+    _telem.ext.command.payload[1] = _baud_rate_request.port_id;
+    _telem.ext.command.payload[2] = _baud_rate_request.valid;
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
+
+    // calculate command crc
+    uint8_t len = 6;
+    uint8_t* crcptr = &_telem.ext.command.destination;
+    uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+    for (uint8_t i = 0; i < len; i++) {
+        crc = crc8_dvb(crc, crcptr[i], 0xBA);
+    }
+    crcptr[len] = crc;
+    _telem_size = len + 1;
+
+    _pending_request.frame_type = 0;
+    _baud_rate_request.pending = false;
+
+    debug("sent baud rate response: %u", _baud_rate_request.valid);
     _telem_pending = true;
 }
 

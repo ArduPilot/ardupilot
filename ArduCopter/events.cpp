@@ -33,6 +33,9 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_ALWAYS_LAND:
             desired_action = Failsafe_Action_Land;
             break;
+        case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
+            desired_action = Failsafe_Action_Auto_DO_LAND_START;
+            break;
         default:
             desired_action = Failsafe_Action_Land;
     }
@@ -169,6 +172,9 @@ void Copter::failsafe_gcs_on_event(void)
             break;
         case FS_GCS_ENABLED_ALWAYS_LAND:
             desired_action = Failsafe_Action_Land;
+            break;
+        case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
+            desired_action = Failsafe_Action_Auto_DO_LAND_START;
             break;
         default: // if an invalid parameter value is set, the fallback is RTL
             desired_action = Failsafe_Action_RTL;
@@ -336,6 +342,21 @@ void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
     }
 }
 
+// Sets mode to Auto and jumps to DO_LAND_START, as set with AUTO_RTL param
+// This can come from failsafe or RC option
+void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
+{
+#if MODE_AUTO_ENABLED == ENABLED
+    if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(reason)) {
+        AP_Notify::events.failsafe_mode_change = 1;
+        return;
+    }
+#endif
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Trying RTL Mode");
+    set_mode_RTL_or_land_with_pause(reason);
+}
+
 bool Copter::should_disarm_on_failsafe() {
     if (ap.in_arming_delay) {
         return true;
@@ -347,6 +368,7 @@ bool Copter::should_disarm_on_failsafe() {
             // if throttle is zero OR vehicle is landed disarm motors
             return ap.throttle_zero || ap.land_complete;
         case Mode::Number::AUTO:
+        case Mode::Number::AUTO_RTL:
             // if mission has not started AND vehicle is landed, disarm motors
             return !ap.auto_armed && ap.land_complete;
         default:
@@ -381,8 +403,11 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
+            break;
         }
-        break;
+        case Failsafe_Action_Auto_DO_LAND_START:
+            set_mode_auto_do_land_start_or_RTL(reason);
+            break;
     }
 
 #if GRIPPER_ENABLED == ENABLED

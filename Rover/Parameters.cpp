@@ -297,7 +297,7 @@ const AP_Param::Info Rover::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
     // @Group: AHRS_
@@ -371,9 +371,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
+#if HAL_BUTTON_ENABLED
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     GOBJECT(button, "BTN_",  AP_Button),
+#endif
 
     // @Group:
     // @Path: Parameters.cpp
@@ -654,6 +656,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(torqeedo, "TRQD_", 49, ParametersG2, AP_Torqeedo),
 #endif
 
+#if HAL_AIS_ENABLED
+    // @Group: AIS_
+    // @Path: ../libraries/AP_AIS/AP_AIS.cpp
+    AP_SUBGROUPINFO(ais, "AIS_",  50, ParametersG2, AP_AIS),
+#endif
+
     AP_GROUPEND
 };
 
@@ -690,7 +698,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 ParametersG2::ParametersG2(void)
     :
 #if ADVANCED_FAILSAFE == ENABLED
-    afs(rover.mode_auto.mission),
+    afs(),
 #endif
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents, wheel_rate_control),

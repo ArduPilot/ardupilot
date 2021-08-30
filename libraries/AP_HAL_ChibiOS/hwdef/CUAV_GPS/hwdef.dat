@@ -2,7 +2,7 @@
 # MCU class and specific type
 
 # MCU class and specific type
-MCU STM32F4xx STM32F412Rx
+MCU STM32F4xx STM32F412xx
 
 # bootloader starts firmware at 64k
 FLASH_RESERVE_START_KB 64

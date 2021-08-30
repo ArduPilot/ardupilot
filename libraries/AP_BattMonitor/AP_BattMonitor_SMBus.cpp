@@ -2,19 +2,47 @@
 
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
 
+extern const AP_HAL::HAL& hal;
+
+const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
+
+    // @Param: I2C_BUS
+    // @DisplayName: Battery monitor I2C bus number
+    // @Description: Battery monitor I2C bus number
+    // @Range: 0 3
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("I2C_BUS", 1, AP_BattMonitor_SMBus, _bus, 0),
+
+    // @Param: I2C_ADDR
+    // @DisplayName: Battery monitor I2C address
+    // @Description: Battery monitor I2C address
+    // @Range: 0 127
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("I2C_ADDR", 2, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
+
+    AP_GROUPEND
+};
+
 AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                                            AP_BattMonitor::BattMonitor_State &mon_state,
                                            AP_BattMonitor_Params &params,
-                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-        : AP_BattMonitor_Backend(mon, mon_state, params),
-        _dev(std::move(dev))
+                                           uint8_t i2c_bus)
+        : AP_BattMonitor_Backend(mon, mon_state, params)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
+
+    _bus.set_default(i2c_bus);
     _params._serial_number = AP_BATT_SERIAL_NUMBER_DEFAULT;
     _params._pack_capacity = 0;
 }
 
 void AP_BattMonitor_SMBus::init(void)
 {
+    _dev = hal.i2c_mgr->get_device(_bus, _address, 100000, true, 20);
+    
     if (_dev) {
         timer_handle = _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus::timer, void));
     }
@@ -128,7 +156,7 @@ bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
 
     // check PEC
     if (_pec_supported) {
-        const uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, 2);
+        const uint8_t pec = get_PEC(_address, reg, true, buff, 2);
         if (pec != buff[2]) {
             return false;
         }

@@ -11,7 +11,9 @@ void Plane::update_soaring() {
     
     // Check if soaring is active. Also sets throttle suppressed
     // status on active state changes.
-    plane.g2.soaring_controller.update_active_state();
+    bool override_disable = mission.get_in_landing_sequence_flag();
+
+    plane.g2.soaring_controller.update_active_state(override_disable);
 
     if (!g2.soaring_controller.is_active()) {
         return;

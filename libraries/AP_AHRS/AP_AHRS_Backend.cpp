@@ -20,18 +20,12 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 extern const AP_HAL::HAL& hal;
 
 // init sets up INS board orientation
 void AP_AHRS_Backend::init()
 {
-    update_orientation();
-
-#if !HAL_MINIMIZE_FEATURES
-    _nmea_out = AP_NMEA_Output::probe();
-#endif
 }
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
@@ -42,7 +36,7 @@ Vector3f AP_AHRS_Backend::get_gyro_latest(void) const
 }
 
 // set_trim
-void AP_AHRS_Backend::set_trim(const Vector3f &new_trim)
+void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
     Vector3f trim;
     trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
@@ -51,7 +45,7 @@ void AP_AHRS_Backend::set_trim(const Vector3f &new_trim)
 }
 
 // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-void AP_AHRS_Backend::add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom)
+void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom)
 {
     Vector3f trim = _trim.get();
 
@@ -69,25 +63,21 @@ void AP_AHRS_Backend::add_trim(float roll_in_radians, float pitch_in_radians, bo
 }
 
 // Set the board mounting orientation, may be called while disarmed
-void AP_AHRS_Backend::update_orientation()
+void AP_AHRS::update_orientation()
 {
     const enum Rotation orientation = (enum Rotation)_board_orientation.get();
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation);
-        }
+        AP::compass().set_board_orientation(orientation);
     } else {
         _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
         AP::ins().set_board_orientation(orientation, &_custom_rotation);
-        if (_compass != nullptr) {
-            _compass->set_board_orientation(orientation, &_custom_rotation);
-        }
+        AP::compass().set_board_orientation(orientation, &_custom_rotation);
     }
 }
 
 // return a ground speed estimate in m/s
-Vector2f AP_AHRS_Backend::groundspeed_vector(void)
+Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 {
     // Generate estimate of ground speed vector using air data system
     Vector2f gndVelADS;
@@ -204,12 +194,6 @@ void AP_AHRS_Backend::calc_trig(const Matrix3f &rot,
 //      should be called after _dcm_matrix is updated
 void AP_AHRS_Backend::update_trig(void)
 {
-    if (_last_trim != _trim.get()) {
-        _last_trim = _trim.get();
-        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
-        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
-    }
-
     calc_trig(get_rotation_body_to_ned(),
               _cos_roll, _cos_pitch, _cos_yaw,
               _sin_roll, _sin_pitch, _sin_yaw);
@@ -253,7 +237,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
  * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
  * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
  */
-void AP_AHRS_Backend::update_AOA_SSA(void)
+void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     const uint32_t now = AP_HAL::millis();
@@ -299,20 +283,6 @@ void AP_AHRS_Backend::update_AOA_SSA(void)
 #endif
 }
 
-// return current AOA
-float AP_AHRS_Backend::getAOA(void)
-{
-    update_AOA_SSA();
-    return _AOA;
-}
-
-// return calculated SSA
-float AP_AHRS_Backend::getSSA(void)
-{
-    update_AOA_SSA();
-    return _SSA;
-}
-
 // rotate a 2D vector from earth frame to body frame
 Vector2f AP_AHRS_Backend::earth_to_body2D(const Vector2f &ef) const
 {
@@ -328,7 +298,7 @@ Vector2f AP_AHRS_Backend::body_to_earth2D(const Vector2f &bf) const
 }
 
 // log ahrs home and EKF origin
-void AP_AHRS_Backend::Log_Write_Home_And_Origin()
+void AP_AHRS::Log_Write_Home_And_Origin()
 {
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
@@ -349,43 +319,34 @@ float AP_AHRS_Backend::get_EAS2TAS(void) const {
     return AP::baro().get_EAS2TAS();
 }
 
-void AP_AHRS_Backend::update_nmea_out()
-{
-#if !HAL_MINIMIZE_FEATURES
-    if (_nmea_out != nullptr) {
-        _nmea_out->update();
-    }
-#endif
-}
-
 // return current vibration vector for primary IMU
 Vector3f AP_AHRS_Backend::get_vibration(void) const
 {
     return AP::ins().get_vibration_levels();
 }
 
-void AP_AHRS_Backend::set_takeoff_expected(bool b)
+void AP_AHRS::set_takeoff_expected(bool b)
 {
-    _flags.takeoff_expected = b;
+    takeoff_expected = b;
     takeoff_expected_start_ms = AP_HAL::millis();
 }
 
-void AP_AHRS_Backend::set_touchdown_expected(bool b)
+void AP_AHRS::set_touchdown_expected(bool b)
 {
-    _flags.touchdown_expected = b;
+    touchdown_expected = b;
     touchdown_expected_start_ms = AP_HAL::millis();
 }
 
 /*
   update takeoff/touchdown flags
  */
-void AP_AHRS_Backend::update_flags(void)
+void AP_AHRS::update_flags(void)
 {
     const uint32_t timeout_ms = 1000;
-    if (_flags.takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
-        _flags.takeoff_expected = false;
+    if (takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
+        takeoff_expected = false;
     }
-    if (_flags.touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
-        _flags.touchdown_expected = false;
+    if (touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
+        touchdown_expected = false;
     }
 }

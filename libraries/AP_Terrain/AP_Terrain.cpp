@@ -59,6 +59,14 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Bitmask: 0:Disable Download
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
+
+    // @Param: MARGIN
+    // @DisplayName: Acceptance margin
+    // @Description: Margin in centi-meters to accept terrain data from the GCS. This can be used to allow older terrain data generated with less accurate latitude/longitude scaling to be used
+    // @Units: cm
+    // @Range: 2 30000
+    // @User: Advanced
+    AP_GROUPINFO("MARGIN",   3, AP_Terrain, margin, 2),
     
     AP_GROUPEND
 };

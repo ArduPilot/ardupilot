@@ -20,7 +20,7 @@ public:
     bool update() override;
 
 private:
-    SITL::SITL          *_sitl;                 // sitl instance pointer
+    SITL::SIM          *_sitl;                 // sitl instance pointer
     uint32_t _last_timestamp = 0;
 };
 #endif // CONFIG_HAL_BOARD

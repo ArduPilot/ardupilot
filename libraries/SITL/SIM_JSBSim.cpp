@@ -428,7 +428,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     accel_body = Vector3f(fdm.A_X_pilot, fdm.A_Y_pilot, fdm.A_Z_pilot) * FEET_TO_METERS;
 
     double p, q, r;
-    SITL::convert_body_frame(degrees(fdm.phi), degrees(fdm.theta),
+    SIM::convert_body_frame(degrees(fdm.phi), degrees(fdm.theta),
                              degrees(fdm.phidot), degrees(fdm.thetadot), degrees(fdm.psidot),
                              &p, &q, &r);
     gyro = Vector3f(p, q, r);

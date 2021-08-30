@@ -220,7 +220,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
     }
 
     // thresholds for when we consider an event to start and end
-    const float rate_threshold1 = 0.6 * MIN(att_limit_deg / current.tau.get(), current.rmax_pos);
+    const float rate_threshold1 = 0.4 * MIN(att_limit_deg / current.tau.get(), current.rmax_pos);
     const float rate_threshold2 = 0.25 * rate_threshold1;
     bool in_att_demand = fabsf(angle_err_deg) >= 0.3 * att_limit_deg;
 

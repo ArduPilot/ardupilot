@@ -123,7 +123,7 @@ private:
     const uint8_t num_flight_modes = 6;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SIM sitl;
 #endif
 
     // Arming/Disarming management class
@@ -202,7 +202,6 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
-        uint8_t primary_gps : 2;    // primary gps index
     } sensor_health;
 
     // Motor Output
@@ -430,7 +429,6 @@ private:
     bool rangefinder_up_ok();
     void rpm_update();
     void update_optical_flow(void);
-    void compass_cal_update(void);
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();

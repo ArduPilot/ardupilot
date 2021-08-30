@@ -501,7 +501,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // button reporting library
+#if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
+#endif
 
 #if STATS_ENABLED == ENABLED
     // vehicle statistics

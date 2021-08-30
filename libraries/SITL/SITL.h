@@ -20,6 +20,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -51,7 +52,7 @@ struct sitl_fdm {
     double heading;   // degrees
     double speedN, speedE, speedD; // m/s
     double xAccel, yAccel, zAccel;       // m/s/s in body frame
-    double rollRate, pitchRate, yawRate; // degrees/s/s in body frame
+    double rollRate, pitchRate, yawRate; // degrees/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
     double airspeed; // m/s
@@ -88,10 +89,10 @@ struct sitl_fdm {
 // number of rc output channels
 #define SITL_NUM_CHANNELS 16
 
-class SITL {
+class SIM {
 public:
 
-    SITL() {
+    SIM() {
         // set a default compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
@@ -115,11 +116,11 @@ public:
     }
 
     /* Do not allow copies */
-    SITL(const SITL &other) = delete;
-    SITL &operator=(const SITL&) = delete;
+    SIM(const SIM &other) = delete;
+    SIM &operator=(const SIM&) = delete;
 
-    static SITL *_singleton;
-    static SITL *get_singleton() { return _singleton; }
+    static SIM *_singleton;
+    static SIM *get_singleton() { return _singleton; }
 
     enum SITL_RCFail {
         SITL_RCFail_None = 0,
@@ -307,10 +308,10 @@ public:
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
     AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
-    // temperature control
-    AP_Float temp_start;
-    AP_Float temp_flight;
-    AP_Float temp_tconst;
+    // barometer temperature control
+    AP_Float temp_start;            // [deg C] Barometer start temperature
+    AP_Float temp_board_offset;     // [deg C] Barometer board temperature offset from atmospheric temperature
+    AP_Float temp_tconst;           // [deg C] Barometer warmup temperature time constant
     AP_Float temp_baro_factor;
     
     AP_Int8 thermal_scenario;
@@ -421,6 +422,7 @@ public:
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
+    FETtecOneWireESC fetteconewireesc_sim;
 
     // ESC telemetry
     AP_Int8 esc_telem;
@@ -475,13 +477,16 @@ public:
     // Sailboat sim only
     AP_Int8 sail_type;
 
+    // Master instance to use servos from with slave instances
+    AP_Int8 ride_along_master;
+
 };
 
 } // namespace SITL
 
 
 namespace AP {
-    SITL::SITL *sitl();
+    SITL::SIM *sitl();
 };
 
 #endif // CONFIG_HAL_BOARD

@@ -22,17 +22,7 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 
     if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
-        // alert user to mode change failure
-        if (copter.ap.initialised) {
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
         return;
-    }
-
-    // play a tone
-    // alert user to mode change (except if autopilot is just starting up)
-    if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change = 1;
     }
 
     if (!rc().find_channel_for_option(AUX_FUNC::SIMPLE_MODE) &&
@@ -98,6 +88,8 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
     case AUX_FUNC::ACRO:
+    case AUX_FUNC::AUTO_RTL:
+    case AUX_FUNC::TURTLE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -130,14 +122,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = copter.set_mode(mode, ModeReason::RC_COMMAND);
-        if (copter.ap.initialised) {
-            if (success) {
-                AP_Notify::events.user_mode_change = 1;
-            } else {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
+        copter.set_mode(mode, ModeReason::RC_COMMAND);
         break;
     }
     default:
@@ -211,7 +196,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (copter.flightmode->mode_number() == Mode::Number::AUTO || !copter.motors->armed()) {
+                if (copter.flightmode->mode_number() == Mode::Number::AUTO || copter.flightmode->mode_number() == Mode::Number::AUTO_RTL || !copter.motors->armed()) {
                     break;
                 }
 
@@ -575,6 +560,18 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             do_aux_function_change_air_mode(ch_flag);
 #if MODE_ACRO_ENABLED == ENABLED && FRAME_CONFIG != HELI_FRAME
             copter.mode_acro.air_mode_aux_changed();
+#endif
+            break;
+
+        case AUX_FUNC::AUTO_RTL:
+#if MODE_AUTO_ENABLED == ENABLED
+            do_aux_function_change_mode(Mode::Number::AUTO_RTL, ch_flag);
+#endif
+            break;
+
+        case AUX_FUNC::TURTLE:
+#if MODE_TURTLE_ENABLED == ENABLED
+            do_aux_function_change_mode(Mode::Number::TURTLE, ch_flag);
 #endif
             break;
 

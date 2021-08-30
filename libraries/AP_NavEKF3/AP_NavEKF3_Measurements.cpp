@@ -93,12 +93,6 @@ void NavEKF3_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
-                rangeDataNew.time_ms = imuSampleTime_ms;
-
-                // don't allow time to go backwards
-                if (imuSampleTime_ms > rangeDataNew.time_ms) {
-                    rangeDataNew.time_ms = imuSampleTime_ms;
-                }
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -199,11 +193,10 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // need to run the optical flow takeoff detection
     detectOptFlowTakeoff();
 
-    // calculate rotation matrices at mid sample time for flow observations
-    stateStruct.quat.rotation_matrix(Tbn_flow);
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
+        of_elements ofDataNew {};
         ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
@@ -283,12 +276,12 @@ void NavEKF3_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF3_core::readMagData()
 {
-    if (!dal.get_compass()) {
+    const auto &compass = dal.compass();
+
+    if (!compass.available()) {
         allMagSensorsFailed = true;
         return;        
     }
-
-    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -678,8 +671,9 @@ void NavEKF3_core::readGpsData()
     }
 
     if (gpsGoodToAlign && !have_table_earth_field) {
-        const auto *compass = dal.get_compass();
-        if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
+        const auto &compass = dal.compass();
+        if (compass.have_scale_factor(magSelectIndex) &&
+            compass.auto_declination_enabled()) {
             getEarthFieldTable(gpsloc);
             if (frontend->_mag_ef_limit > 0) {
                 // initialise earth field from tables
@@ -1139,15 +1133,12 @@ void NavEKF3_core::update_gps_selection(void)
  */
 void NavEKF3_core::update_mag_selection(void)
 {
-    const auto *compass = dal.get_compass();
-    if (compass == nullptr) {
-        return;
-    }
+    const auto &compass = dal.compass();
 
     if (frontend->_affinity & EKF_AFFINITY_MAG) {
-        if (core_index < compass->get_count() &&
-            compass->healthy(core_index) &&
-            compass->use_for_yaw(core_index)) {
+        if (core_index < compass.get_count() &&
+            compass.healthy(core_index) &&
+            compass.use_for_yaw(core_index)) {
             // use core_index compass if it is healthy
             magSelectIndex = core_index;
         }
@@ -1322,7 +1313,7 @@ ftype NavEKF3_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return dal.get_compass()->get_declination();
+    return dal.compass().get_declination();
 }
 
 /*

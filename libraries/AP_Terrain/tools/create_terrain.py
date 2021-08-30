@@ -50,14 +50,28 @@ def longitude_scale(lat):
     scale = to_float32(math.cos(to_float32(math.radians(lat))))
     return max(scale, 0.01)
 
+def diff_longitude_E7(lon1, lon2):
+    '''get longitude difference, handling wrap'''
+    if lon1 * lon2 >= 0:
+        # common case of same sign
+        return lon1 - lon2
+    dlon = lon1 - lon2
+    if dlon > 1800000000:
+        dlon -= 3600000000
+    elif dlon < -1800000000:
+        dlon += 3600000000
+    return dlon
+
 def get_distance_NE_e7(lat1, lon1, lat2, lon2):
     '''get distance tuple between two positions in 1e7 format'''
-    return ((lat2 - lat1) * LOCATION_SCALING_FACTOR, (lon2 - lon1) * LOCATION_SCALING_FACTOR * longitude_scale(lat1*1.0e-7))
+    dlat = lat2 - lat1
+    dlng = diff_longitude_E7(lon2,lon1) * longitude_scale((lat1+lat2)*0.5*1.0e-7)
+    return (dlat * LOCATION_SCALING_FACTOR, dlng * LOCATION_SCALING_FACTOR)
 
 def add_offset(lat_e7, lon_e7, ofs_north, ofs_east):
     '''add offset in meters to a position'''
     dlat = int(float(ofs_north) * LOCATION_SCALING_FACTOR_INV)
-    dlng = int((float(ofs_east) * LOCATION_SCALING_FACTOR_INV) / longitude_scale(lat_e7*1.0e-7))
+    dlng = int((float(ofs_east) * LOCATION_SCALING_FACTOR_INV) / longitude_scale((lat_e7+dlat*0.5)*1.0e-7))
     return (int(lat_e7+dlat), int(lon_e7+dlng))
 
 def east_blocks(lat_e7, lon_e7):
