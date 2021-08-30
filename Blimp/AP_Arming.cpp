@@ -303,7 +303,7 @@ bool AP_Arming_Blimp::mandatory_checks(bool display_failure)
         result = false;
     }
 
-    return result;
+    return result & AP_Arming::mandatory_checks(display_failure);
 }
 
 void AP_Arming_Blimp::set_pre_arm_check(bool b)
