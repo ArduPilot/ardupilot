@@ -541,8 +541,9 @@ void Plane::set_servos_controlled(void)
             // STABILIZE mode with THR_PASS_STAB set
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         } else {
+            // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
-                                            constrain_int16(get_throttle_input(true), min_throttle, max_throttle));
+                                            constrain_int16(get_adjusted_throttle_input(true), min_throttle, max_throttle));
         }
     } else if (control_mode->is_guided_mode() &&
                guided_throttle_passthru) {

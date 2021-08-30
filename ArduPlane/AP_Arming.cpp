@@ -122,6 +122,14 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (plane.g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM){
+       int16_t trim = plane.channel_throttle->get_radio_trim();
+       if (trim < 1250 || trim > 1750) {
+           check_failed(display_failure, "Throttle trim not near center stick(%u)",trim );
+           ret = false;
+       }
+    }
+
     return ret;
 }
 

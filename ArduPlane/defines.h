@@ -163,6 +163,7 @@ enum FlightOptions {
     ENABLE_DEFAULT_AIRSPEED = (1<<7),
     GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
     OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
+    CENTER_THROTTLE_TRIM = (1<<10),
 };
 
 enum CrowFlapOptions {
