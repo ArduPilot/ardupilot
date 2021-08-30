@@ -1,12 +1,12 @@
 #include "Copter.h"
 
-#if MODE_LOITER_ENABLED == ENABLED
+#if MODE_LOITER_POI_ENABLED == ENABLED
 
 /*
- * Init and run calls for loiter flight mode
+ * Init and run calls for loiter-poi flight mode
  */
 
-// loiter_init - initialise loiter controller
+// loiter_poi_init - initialise loiter-poi controller
 bool ModeLoiter::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
