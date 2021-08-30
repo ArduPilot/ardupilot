@@ -175,6 +175,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_LOITER_ENABLED == ENABLED
+        case Mode::Number::LOITER_POI:
+            ret = &mode_loiter_poi;
+            break;
+#endif
+
         default:
             break;
     }
