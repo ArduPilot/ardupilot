@@ -240,6 +240,10 @@ bool PeriodicThread::set_rate(uint32_t rate_hz)
     return true;
 }
 
+#ifndef PTHREAD_STACK_MIN
+#define PTHREAD_STACK_MIN 16384U
+#endif
+
 bool Thread::set_stack_size(size_t stack_size)
 {
     if (_started) {
