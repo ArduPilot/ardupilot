@@ -929,6 +929,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+    float get_wp_radius() const;
 
     // commands.cpp
     void set_guided_WP(void);
