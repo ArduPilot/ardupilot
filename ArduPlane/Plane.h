@@ -1093,6 +1093,7 @@ private:
     bool allow_reverse_thrust(void) const;
     bool have_reverse_thrust(void) const;
     int16_t get_throttle_input(bool no_deadzone=false) const;
+    int16_t get_adjusted_throttle_input(bool no_deadzone=false) const;
 
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
