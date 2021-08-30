@@ -496,7 +496,7 @@ bool AP_Arming::gps_checks(bool report)
 #endif
                     (gps.get_type(i) == AP_GPS::GPS_Type::GPS_TYPE_NONE)) {
                 if (gps.primary_sensor() == i) {
-                    check_failed(ARMING_CHECK_GPS, report, "GPS %i: primary but not configured", i+1);
+                    check_failed(ARMING_CHECK_GPS, report, "GPS %i: primary but TYPE 0", i+1);
                     return false;
                 }
                 continue;
