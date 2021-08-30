@@ -38,8 +38,6 @@ private:
 
     bool parse(uint8_t temp);
     bool process_message();
-    uint32_t CRC32Value(uint32_t icrc);
-    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     static const uint8_t NOVA_PREAMBLE1 = 0xaa;
     static const uint8_t NOVA_PREAMBLE2 = 0x44;
@@ -49,15 +47,17 @@ private:
     bool            _new_position:1;
     // do we have new speed information?
     bool            _new_speed:1;
-    
-    uint32_t        _last_vel_time;
-    
+
+    uint32_t      _last_vel_time;
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
-    static const char* const _initialisation_blob[6];
-   
-    uint32_t crc_error_counter = 0;
 
+    static const char* const _initialisation_blob[6];
+    static constexpr const char* nova_heading_init_blob = "log dualantennaheadingb ontime 0.1\r\n";
+    static constexpr const char* unicore_heading_init_blob  = "log headingb ontime 0.1\r\n";
+
+    uint32_t crc_error_counter = 0;
+    uint8_t nova_type = 0;
     struct PACKED nova_header
     {
         // 0
@@ -88,7 +88,7 @@ private:
         uint16_t resv;
         //26
         uint16_t recvswver;
-    };    
+    };
 
     struct PACKED psrdop
     {
@@ -140,14 +140,36 @@ private:
         double vertspd;
         float resv;
     };
-    
+
+    struct PACKED nova_heading
+    {
+        uint32_t solstat;
+        uint32_t postype;
+        float    length;
+        float    heading;
+        float    pitch;
+        float    resv1;
+        float    hdgstddev;
+        float    ptchstddev;
+        uint8_t  stnid[4];
+        uint8_t  svstracked;
+        uint8_t  svsused;
+        uint8_t  obs;
+        uint8_t  multi;
+        uint8_t  resv2;
+        uint8_t  extsolstat;
+        uint8_t  resv3;
+        uint8_t  sigmask;
+    };
+
     union PACKED msgbuffer {
         bestvel bestvelu;
         bestpos bestposu;
-        psrdop psrdopu;
+        psrdop  psrdopu;
+        nova_heading headingu;
         uint8_t bytes[256];
     };
-    
+
     union PACKED msgheader {
         nova_header nova_headeru;
         uint8_t data[28];
@@ -168,7 +190,7 @@ private:
             CRC3,
             CRC4,
         } nova_state;
-        
+
         msgbuffer data;
         uint32_t crc;
         msgheader header;
