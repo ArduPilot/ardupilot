@@ -243,6 +243,10 @@ class generate_apj(Task.Task):
             "board_revision": 0,
             "USBID": self.env.USBID
         }
+        if self.env.MANUFACTURER:
+            d["manufacturer"] = self.env.MANUFACTURER
+        if self.env.BRAND_NAME:
+            d["brand_name"] = self.env.BRAND_NAME
         if self.env.build_dates:
             # we omit build_time when we don't have build_dates so that apj
             # file is idential for same git hash and compiler
