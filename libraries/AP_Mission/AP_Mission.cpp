@@ -149,15 +149,10 @@ void AP_Mission::resume()
     //      update will take care of finding and starting the nav command
 }
 
-/// check mission starts with a takeoff command
-bool AP_Mission::starts_with_takeoff_cmd()
+/// check if the next nav command is a takeoff, skipping delays
+bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
 {
     Mission_Command cmd = {};
-    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
-    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
-    }
-
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
     for (uint8_t i=0; i<16; i++, cmd_index++) {
@@ -178,6 +173,33 @@ bool AP_Mission::starts_with_takeoff_cmd()
         }
     }
     return false;
+}
+
+/// check mission starts with a takeoff command
+bool AP_Mission::starts_with_takeoff_cmd()
+{
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    }
+    return is_takeoff_next(cmd_index);
+}
+
+/*
+    return true if MIS_OPTIONS is set to allow continue of mission
+    logic after a land and the next waypoint is a takeoff. If this
+    is false then after a landing is complete the vehicle should 
+    disarm and mission logic should stop
+*/
+bool AP_Mission::continue_after_land_check_for_takeoff()
+{
+    if (!continue_after_land()) {
+        return false;
+    }
+    if (_nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        return false;
+    }
+    return is_takeoff_next(_nav_cmd.index+1);
 }
 
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
