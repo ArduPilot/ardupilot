@@ -1,5 +1,22 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-beta8 28-Aug-2021
+Changes from 4.1.0-beta7
+1) Enhancements
+    a) Flywoo F745 Goku Nano support
+    b) MatekF765-Wing support
+    c) Scripting support for getting circle mode radius and setting rate
+    d) Scripting support for new Guided mode controls including acceleration control
+2) Bug Fixes
+    a) ATC_RATE_Y_MAX applies to all modes including Loiter
+    b) ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH7
+    c) EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+    d) External AHRS (e.g. VectorNav driver) init fix
+    e) KakuteF4Mini SBUS fix
+    f) Pixhawk4 blue and red LEDs swapped
+    g) Position control fixes to limit initial desired accel (horizontal and vertical) which could lead to an excessive climb or descent
+    h) TradHeli takeoff in Guided fix
+------------------------------------------------------------------
 Copter 4.1.0-beta7 14-Aug-2021
 Changes from 4.1.0-beta6
 1) Enhancements

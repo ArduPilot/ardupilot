@@ -877,6 +877,7 @@ class FRSkySPort(FRSky):
             0x5007: "parameters",
             0x500A: "rpm",
             0x500B: "terrain",
+            0x500C: "wind",
 
             # SPort non-passthrough:
             0x082F: "GALT", # gps altitude integer cm
@@ -9829,6 +9830,21 @@ switch value'''
             return True
         return False
 
+    def tfp_validate_wind(self, value):
+        self.progress("validating wind(0x%02x)" % value)
+        speed_m = self.bit_extract(value, 8, 7) * (10 ^ self.bit_extract(value, 7, 1)) * 0.1 # speed in m/s
+        wind = self.mav.recv_match(
+            type='WIND',
+            blocking=True,
+            timeout=1
+        )
+        if wind is None:
+            raise NotAchievedException("Did not get WIND message")
+        self.progress("WIND mav==%f frsky==%f" % (speed_m, wind.speed))
+        if abs(speed_m - wind.speed) < 0.5:
+            return True
+        return False
+
     def test_frsky_passthrough_do_wants(self, frsky, wants):
 
         tstart = self.get_sim_time_cached()
@@ -9856,7 +9872,7 @@ switch value'''
 
     def test_frsky_passthrough(self):
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
-        self.set_parameter("RPM_TYPE", 10) # enable RPM output
+        self.set_parameter("RPM1_TYPE", 10) # enable RPM output
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
@@ -9958,6 +9974,7 @@ switch value'''
             0x5003: self.tfp_validate_battery1,
             0x5007: self.tfp_validate_params,
             0x500B: self.tfp_validate_terrain,
+            0x500C: self.tfp_validate_wind,
         }
         self.test_frsky_passthrough_do_wants(frsky, wants)
 
@@ -10359,7 +10376,7 @@ switch value'''
 
     def test_frsky_sport(self):
         self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
-        self.set_parameter("RPM_TYPE", 10) # enable SITL RPM sensor
+        self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])

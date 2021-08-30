@@ -116,6 +116,10 @@ public:
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate() const override;
 
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
 
     /*
      * airspeed support
@@ -170,17 +174,17 @@ public:
 
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NED_home(Vector3f &vec) const override;
+    bool get_relative_position_NED_home(Vector3f &vec) const;
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
 
     // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const override;
+    bool get_relative_position_NE_home(Vector2f &posNE) const;
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
 
     // return the relative position down to either home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const override;
+    void get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const override;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
@@ -295,8 +299,6 @@ public:
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const override;
 
-    bool getGpsGlitchStatus() const;
-
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
     // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
@@ -333,6 +335,11 @@ public:
     // active EKF type for logging
     uint8_t get_active_AHRS_type(void) const {
         return uint8_t(active_EKF_type());
+    }
+
+    // get the selected ekf type, for allocation decisions
+    int8_t get_ekf_type(void) const {
+        return _ekf_type;
     }
 
     // these are only out here so vehicles can reference them for parameters
@@ -466,6 +473,21 @@ private:
      */
     VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
 
+    /*
+     * Parameters
+     */
+    AP_Int8 _wind_max;
+    AP_Int8 _board_orientation;
+    AP_Int8 _ekf_type;
+    AP_Float _custom_roll;
+    AP_Float _custom_pitch;
+    AP_Float _custom_yaw;
+
+    /*
+     * support for custom AHRS orientation, replacing _board_orientation
+     */
+    Matrix3f _custom_rotation;
+
     enum class EKFType {
         NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
@@ -595,6 +617,9 @@ private:
      * use to provide additional and/or improved estimates.
      */
     bool fly_forward; // true if we can assume the vehicle will be flying forward on its X axis
+
+    // poke AP_Notify based on values from status
+    void update_notify_from_filter_status(const nav_filter_status &status);
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;

@@ -82,8 +82,6 @@ public:
         return _wind;
     }
 
-    void get_relative_position_D_home(float &posD) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;
@@ -100,6 +98,9 @@ public:
         ret = _last_airspeed;
         return true;
     }
+
+    // return a ground vector estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector() override;
 
     bool            use_compass() override;
 
@@ -122,7 +123,18 @@ public:
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
     bool get_relative_position_D_origin(float &posD) const override;
-    
+
+protected:
+
+    // settable parameters
+    AP_Float _kp_yaw;
+    AP_Float _kp;
+    AP_Float gps_gain;
+
+    AP_Float beta;
+
+    AP_Int8 _gps_minsats;
+
 private:
 
     // these are experimentally derived from the simulator
@@ -193,6 +205,9 @@ private:
     float _ra_deltat;
     uint32_t _ra_sum_start;
 
+    // which accelerometer instance is active
+    uint8_t _active_accel_instance;
+
     // the earths magnetic field
     float _last_declination;
     Vector2f _mag_earth{1, 0};
@@ -232,4 +247,10 @@ private:
 
     // last origin we returned, for DCM fallback from EKF
     Location last_origin;
+
+    // Declare filter states for HPF and LPF used by complementary
+    // filter in AP_AHRS::groundspeed_vector
+    Vector2f _lp; // ground vector low-pass filter
+    Vector2f _hp; // ground vector high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input
 };

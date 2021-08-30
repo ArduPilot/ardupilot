@@ -184,12 +184,19 @@ public:
     */
     virtual bool start_takeoff(float alt) { return false; }
     virtual bool set_target_location(const Location& target_loc) { return false; }
+    virtual bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) { return false; }
     virtual bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) { return false; }
+    virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
     virtual bool set_target_velocity_NED(const Vector3f& vel_ned) { return false; }
+    virtual bool set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
     virtual bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) { return false; }
 
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
+
+    // circle mode controls (only used by scripting with Copter)
+    virtual bool get_circle_radius(float &radius_m) { return false; }
+    virtual bool set_circle_rate(float rate_dps) { return false; }
 
     // set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
@@ -284,7 +291,9 @@ protected:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
+#if HAL_BUTTON_ENABLED
     AP_Button button;
+#endif
     RangeFinder rangefinder;
 
     AP_RSSI rssi;

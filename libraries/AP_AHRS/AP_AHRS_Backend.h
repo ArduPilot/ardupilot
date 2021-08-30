@@ -206,13 +206,8 @@ public:
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
-    // return the parameter AHRS_WIND_MAX in metres per second
-    uint8_t get_max_wind() const {
-        return _wind_max;
-    }
-
     // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void);
+    virtual Vector2f groundspeed_vector(void) = 0;
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
@@ -226,22 +221,10 @@ public:
         return false;
     }
 
-    // return a position relative to home in meters, North/East/Down
-    // order. This will only be accurate if have_inertial_nav() is
-    // true
-    virtual bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
     virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-    // return a position relative to home in meters, North/East
-    // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -250,10 +233,6 @@ public:
     virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
-
-    // return a Down position relative to home in meters
-    // if EKF is unavailable will return the baro altitude
-    virtual void get_relative_position_D_home(float &posD) const = 0;
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
@@ -374,11 +353,6 @@ public:
         return false;
     }
 
-    // get the selected ekf type, for allocation decisions
-    int8_t get_ekf_type(void) const {
-        return _ekf_type;
-    }
-
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
@@ -437,17 +411,6 @@ public:
 
 protected:
 
-    // multi-thread access support
-    HAL_Semaphore _rsem;
-
-    // settable parameters
-    // these are public for ArduCopter
-    AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
-
-    AP_Float beta;
-
     enum class GPSUse : uint8_t {
         Disable = 0,
         Enable  = 1,
@@ -455,15 +418,9 @@ protected:
     };
 
     AP_Enum<GPSUse> _gps_use;
-    AP_Int8 _wind_max;
-    AP_Int8 _board_orientation;
-    AP_Int8 _gps_minsats;
-    AP_Int8 _ekf_type;
-    AP_Float _custom_roll;
-    AP_Float _custom_pitch;
-    AP_Float _custom_yaw;
 
-    Matrix3f _custom_rotation;
+    // multi-thread access support
+    HAL_Semaphore _rsem;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
@@ -481,12 +438,6 @@ protected:
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
 
-    // Declare filter states for HPF and LPF used by complementary
-    // filter in AP_AHRS::groundspeed_vector
-    Vector2f _lp; // ground vector low-pass filter
-    Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input
-
     // helper trig variables
     float _cos_roll{1.0f};
     float _cos_pitch{1.0f};
@@ -494,7 +445,4 @@ protected:
     float _sin_roll;
     float _sin_pitch;
     float _sin_yaw;
-
-    // which accelerometer instance is active
-    uint8_t _active_accel_instance;
 };

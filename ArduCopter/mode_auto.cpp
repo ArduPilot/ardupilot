@@ -889,12 +889,8 @@ void ModeAuto::land_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-#if PRECISION_LANDING == ENABLED
-        // the state machine takes care of the entire landing procedure
-        run_precland();
-#else
-        run_land_controllers();
-#endif
+    // run normal landing or precision landing (if enabled)
+    land_run_normal_or_precland();
 }
 
 // auto_rtl_run - rtl in AUTO flight mode

@@ -306,7 +306,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming, ThrLandControl: enable throttle stick control of landing rate, DisableApproach: Disable use of approach and airbrake stages in VTOL landing, EnableLandResponsition: enable pilot controlled repositioning in AUTO land. Descent will pause while repositioning.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition,18:Only allow arming in Qmodes or auto
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -551,8 +551,6 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
     { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
     { Parameters::k_param_quadplane, 50,  AP_PARAM_INT8,  "Q_TAILSIT_INPUT" },
-    { Parameters::k_param_quadplane, 51,  AP_PARAM_INT8,  "Q_TAILSIT_MASK" },
-    { Parameters::k_param_quadplane, 52,  AP_PARAM_INT8,  "Q_TAILSIT_MASKCH" },
     { Parameters::k_param_quadplane, 53,  AP_PARAM_FLOAT, "Q_TAILSIT_VFGAIN" },
     { Parameters::k_param_quadplane, 54,  AP_PARAM_FLOAT, "Q_TAILSIT_VHGAIN" },
     { Parameters::k_param_quadplane, 56,  AP_PARAM_FLOAT, "Q_TAILSIT_VHPOW" },
@@ -1223,7 +1221,7 @@ bool QuadPlane::is_flying_vtol(void) const
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt. 
  */
-float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
+float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
     if (poscontrol.get_state() == QPOS_LAND_FINAL) {
         // when in final use descent rate for final even if alt has climbed again
@@ -1237,19 +1235,24 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
         const float thr_in = get_pilot_land_throttle();
-        const float dz = 0.1;
-        const float thresh1 = 0.5+dz;
-        const float thresh2 = 0.5-dz;
-        const float scaling = 1.0 / (0.5 - dz);
-        if (thr_in > thresh1) {
-            // start climbing
-            ret = -(thr_in - thresh1)*scaling*max_climb_speed;
-        } else if (thr_in > thresh2) {
-            // hold height
-            ret = 0;
-        } else {
-            ret *= (thresh2 - thr_in)*scaling;
+        if (thr_in > THR_CTRL_LAND_THRESH) {
+            thr_ctrl_land = true;
         }
+        if (thr_ctrl_land) {
+            const float dz = 0.1;
+            const float thresh1 = 0.5+dz;
+            const float thresh2 = 0.5-dz;
+            const float scaling = 1.0 / (0.5 - dz);
+            if (thr_in > thresh1) {
+                // start climbing
+                ret = -(thr_in - thresh1)*scaling*max_climb_speed;
+            } else if (thr_in > thresh2) {
+                // hold height
+                ret = 0;
+            } else {
+                ret *= (thresh2 - thr_in)*scaling;
+            }
+        }    
     }
 
     if (poscontrol.pilot_correction_active) {
@@ -2302,6 +2305,9 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         } else if (s == QPOS_AIRBRAKE) {
             // start with zero integrator on vertical throttle
             qp.pos_control->get_accel_z_pid().set_integrator(0);
+        } else if (s == QPOS_LAND_DESCEND) {
+            // reset throttle descent control
+            qp.thr_ctrl_land = false;
         }
     }
     state = s;

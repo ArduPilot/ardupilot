@@ -17,7 +17,6 @@ For purchase, connection and configuration information please see the [Ardupilot
   - sum the current telemetry info from all ESCs and use it as virtual battery current monitor sensor
   - average the voltage telemetry info and use it as virtual battery voltage monitor sensor
   - average the temperature telemetry info and use it as virtual battery temperature monitor sensor
-- ~~report telemetry communication error rate in the dataflash logs~~
 - Obey the safety switch. Keeps motors from turning
 - Use `SERVO_FWT_MASK` to define which servo output should be routed to FETtec ESCs
 - Use `SERVO_FWT_RVMASK` to define the rotation direction of the motors
@@ -29,8 +28,8 @@ For purchase, connection and configuration information please see the [Ardupilot
   - check that the desired motor poles parameter (`SERVO_FWT_POLES`) is valid
   - check that the all desired ESCs are found and configured
   - check that the ESCs are periodically sending telemetry data
-- re-enumerate all ESCs if not armed (motors not spinning) when
-  - communication with one of the ESCs is lost
+- re-init and configure an ESC(s) if not armed (motors not spinning) when
+  - telemetry communication with the ESC(s) is lost
 - adds a serial simulator (--uartF=sim:fetteconewireesc) of FETtec OneWire ESCs
 - adds autotest (using the simulator) to:
   - simulate telemetry voltage, current, temperature, RPM data using SITL internal variables
@@ -96,7 +95,7 @@ The signal is used to transfer the eleven bit throttle signals with as few bytes
 All motors wait for the complete message with all throttle signals before changing their output.
 
 If telemetry is requested the ESCs will answer them in the ESC-ID order.
-See *ESC to Ardupilot Protocol* section below and comments in `FETtecOneWire.cpp` for details.
+See *ESC to Ardupilot Protocol* section below and comments in `AP_FETtecOneWire.cpp` for details.
 
 
 ### Timing
@@ -136,8 +135,12 @@ The data is forwarded to the `AP_ESC_Telem` class that distributes it to other p
 
 ## Function structure
 
-There are two public top level functions `update()` and `pre_arm_check()`. And these two call all other private internal functions:
+There are two public top level functions `update()` and `pre_arm_check()`.
+And these two call all other private internal functions.
+A single (per ESC) state variable (`_escs[i]._state`) is used in both the RX and TX state machnines.
+Here is the callgraph:
 
+```
 update()
   init()
     init_uart()
@@ -155,6 +158,7 @@ update()
     pack_fast_throttle_command()
     transmit()
 pre_arm_check()
+```
 
 
 ## Device driver parameters
@@ -164,15 +168,16 @@ You need to reboot after changing this parameter.
 When `HAL_WITH_ESC_TELEM` is active (default) only the first 12 (`ESC_TELEM_MAX_ESCS`) can be used.
 The FETtec ESC IDs set inside the FETtec firmware by the FETtec configuration tool are one-indexed.
 These IDs must start at ID 1 and be in a single contiguous block.
-You do not need to change these FETtec IDs if you change the servo output assignments inside ArduPilot the using the `SERVO_FTW_MASK` parameter
+You do not need to change these FETtec IDs if you change the servo output assignments inside ArduPilot the using the `SERVO_FTW_MASK` parameter.
 
 The `SERVO_FTW_RVMASK` parameter selects which servo outputs, if any, will reverse their rotation.
-This parameter is only visible if the `SERVO_FTW_MASK` parameter has at least one bit set.
 This parameter effects the outputs immediately when changed and the motors are not armed.
+This parameter is only visible if the `SERVO_FTW_MASK` parameter has at least one bit set.
 
 The `SERVO_FTW_POLES` parameter selects Number of motor electrical poles.
 It is used to calculate the motors RPM
 This parameter effects the RPM calculation immediately when changed.
+This parameter is only visible if the `SERVO_FTW_MASK` parameter has at least one bit set.
 
 ## Extra features
 

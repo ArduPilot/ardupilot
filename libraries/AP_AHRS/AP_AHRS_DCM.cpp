@@ -1091,6 +1091,7 @@ bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret)
         return false;
     }
 
+    const float _wind_max = AP::ahrs().get_max_wind();
     if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
@@ -1138,18 +1139,6 @@ bool AP_AHRS::set_home(const Location &loc)
     pd.home_alt_cm = loc.alt;
 
     return true;
-}
-
-//  a relative ground position to home in meters, Down
-void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
-{
-    const auto &gps = AP::gps();
-    if (_gps_use == GPSUse::EnableWithHeight &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        posD = (AP::ahrs().get_home().alt - gps.location().alt) * 0.01;
-    } else {
-        posD = -AP::baro().get_altitude();
-    }
 }
 
 /*

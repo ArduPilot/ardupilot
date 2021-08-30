@@ -14,7 +14,7 @@ mcu = {
     # DMA peripheral capabilities:
     # - can't use ITCM or DTCM for any DMA
     # - SPI1 to SPI5 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
-    # - SPI6, I2C4 and ADC3 can use SRAM4 on BDMA (I didn't actually test ADC3)
+    # - SPI6, I2C4 and ADC3 can use SRAM4 on BDMA
     # - UARTS can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
     # - I2C1, I2C2 and I2C3 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 with DMA
     # - timers can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 with DMA

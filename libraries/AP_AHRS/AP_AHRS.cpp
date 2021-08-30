@@ -51,8 +51,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0f),
 
     // @Param: GPS_USE
-    // @DisplayName: AHRS DCM use GPS for navigation
-    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS whenever it is available. A value of 2 means to use GPS for height as well as position in DCM.
+    // @DisplayName: AHRS use GPS for DCM navigation and position-down
+    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS according to its own parameters. A value of 2 means to use GPS for height as well as position - both in DCM estimation and when determining altitude-above-home.
     // @Values: 0:Disabled,1:Use GPS for DCM position,2:Use GPS for DCM position and height
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, float(GPSUse::Enable)),
@@ -410,6 +410,13 @@ void AP_AHRS::update_DCM(bool skip_ins_update)
     _dcm_attitude = {roll, pitch, yaw};
 }
 
+void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
+{
+    AP_Notify::flags.gps_fusion = status.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+    AP_Notify::flags.gps_glitching = status.flags.gps_glitching;
+    AP_Notify::flags.have_pos_abs = status.flags.horiz_pos_abs;
+}
+
 #if HAL_NAVEKF2_AVAILABLE
 void AP_AHRS::update_EKF2(void)
 {
@@ -482,9 +489,7 @@ void AP_AHRS::update_EKF2(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF2.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
@@ -563,9 +568,7 @@ void AP_AHRS::update_EKF3(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
@@ -805,6 +808,18 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
     bool ret = false;
     if (airspeed_sensor_enabled()) {
         airspeed_ret = AP::airspeed()->get_airspeed();
+
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            // constrain the airspeed by the ground speed
+            // and AHRS_WIND_MAX
+            const float gnd_speed = AP::gps().ground_speed();
+            float true_airspeed = airspeed_ret * get_EAS2TAS();
+            true_airspeed = constrain_float(true_airspeed,
+                                            gnd_speed - _wind_max,
+                                            gnd_speed + _wind_max);
+            airspeed_ret = true_airspeed / get_EAS2TAS();
+        }
+
         return true;
     }
 
@@ -822,16 +837,11 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
-#if HAL_NAVEKF3_AVAILABLE
-        if (EKF3.getWind(-1,wind_vel)) {
-             ret = true;
-        } else {
-            ret = false;
+        if (!_sitl) {
+            return false;
         }
-#else
-        ret = false;
-#endif
-        break;
+        airspeed_ret = _sitl->state.airspeed;
+        return true;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1632,7 +1642,13 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !get_origin(originLLH)) {
-        AP_AHRS_DCM::get_relative_position_D_home(posD);
+        const auto &gps = AP::gps();
+        if (_gps_use == GPSUse::EnableWithHeight &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            posD = (get_home().alt - gps.location().alt) * 0.01;
+        } else {
+            posD = -AP::baro().get_altitude();
+        }
         return;
     }
 
@@ -2819,15 +2835,6 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
     }
 
     return false;
-}
-
-bool AP_AHRS::getGpsGlitchStatus() const
-{
-    nav_filter_status ekf_status {};
-    if (!get_filter_status(ekf_status)) {
-        return false;
-    }
-    return ekf_status.flags.gps_glitching;
 }
 
 //get the index of the active airspeed sensor, wrt the primary core

@@ -264,3 +264,7 @@
 #ifndef HAL_INS_ENABLED
 #define HAL_INS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
 #endif
+
+#ifndef HAL_WITH_MCU_MONITORING
+#define HAL_WITH_MCU_MONITORING defined(STM32H7)
+#endif

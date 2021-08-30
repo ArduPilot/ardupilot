@@ -225,6 +225,9 @@ public:
     void send_meminfo(void);
     void send_fence_status() const;
     void send_power_status(void);
+#if HAL_WITH_MCU_MONITORING
+    void send_mcu_status(void);
+#endif
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
     void send_distance_sensor();
@@ -545,6 +548,8 @@ protected:
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
+
+    uint8_t receiver_rssi() const;
 
     /*
       correct an offboard timestamp in microseconds to a local time

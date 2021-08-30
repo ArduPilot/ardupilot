@@ -477,6 +477,18 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         variances = extNavVelVarInnov.tofloat();
         return true;
 #endif // EK3_FEATURE_EXTERNAL_NAV
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+        // check for timeouts
+        if (AP_HAL::millis() - flowInnovTime_ms > 500) {
+            return false;
+        }
+        innovations.x = flowInnov[0];
+        innovations.y = flowInnov[1];
+        innovations.z = 0;
+        variances.x = flowVarInnov[0];
+        variances.y = flowVarInnov[1];
+        variances.z = 0;
+        return true;
     default:
         // variances are not available for this source
         return false;

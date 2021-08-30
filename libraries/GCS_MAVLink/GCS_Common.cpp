@@ -194,6 +194,23 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
+#if HAL_WITH_MCU_MONITORING
+// report MCU voltage/temperature status
+void GCS_MAVLINK::send_mcu_status(void)
+{
+    if (!gcs().vehicle_initialised()) {
+        // avoid unnecessary errors being reported to user
+        return;
+    }
+    mavlink_msg_mcu_status_send(chan,
+                                0, // only one MCU
+                                hal.analogin->mcu_temperature() * 100,
+                                hal.analogin->mcu_voltage() * 1000,
+                                hal.analogin->mcu_voltage_min() * 1000,
+                                hal.analogin->mcu_voltage_max() * 1000);
+}
+#endif
+
 void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
@@ -796,6 +813,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN,     MSG_ORIGIN},
         { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
         { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
+        { MAVLINK_MSG_ID_MCU_STATUS,            MSG_MCU_STATUS},
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
         { MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, MSG_NAV_CONTROLLER_OUTPUT},
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
@@ -1618,12 +1636,6 @@ void GCS_MAVLINK::send_system_time()
  */
 void GCS_MAVLINK::send_rc_channels() const
 {
-    AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = 0;
-    if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_uint8();
-    }
-
     uint16_t values[18] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
@@ -1649,7 +1661,7 @@ void GCS_MAVLINK::send_rc_channels() const
         values[15],
         values[16],
         values[17],
-        receiver_rssi);        
+        receiver_rssi());
 }
 
 bool GCS_MAVLINK::sending_mavlink1() const
@@ -1669,11 +1681,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
     if (!sending_mavlink1()) {
         return;
     }
-    AP_RSSI *rssi = AP::rssi();
-    uint8_t receiver_rssi = 0;
-    if (rssi != nullptr) {
-        receiver_rssi = rssi->read_receiver_rssi_uint8();
-    }
+
     uint16_t values[8] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
@@ -1689,7 +1697,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
         values[5],
         values[6],
         values[7],
-        receiver_rssi);
+        receiver_rssi());
 }
 
 void GCS_MAVLINK::send_raw_imu()
@@ -4984,6 +4992,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_power_status();
         break;
 
+    case MSG_MCU_STATUS:
+#if HAL_WITH_MCU_MONITORING
+        CHECK_PAYLOAD_SIZE(MCU_STATUS);
+        send_mcu_status();
+#endif
+        break;
+        
     case MSG_RC_CHANNELS:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_rc_channels();
@@ -5459,6 +5474,21 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     }
     c->set_override(override_value, tnow);
+}
+
+uint8_t GCS_MAVLINK::receiver_rssi() const
+{
+    AP_RSSI *aprssi = AP::rssi();
+    if (aprssi == nullptr) {
+        return 255;
+    }
+
+    if (!aprssi->enabled()) {
+        return 255;
+    }
+
+    // scale across the full valid range
+    return aprssi->read_receiver_rssi() * 254;
 }
 
 GCS &gcs()

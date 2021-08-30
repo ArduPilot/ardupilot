@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 # new SkyViper 2018 Journey
 
-MCU STM32F4xx STM32F412Rx
+MCU STM32F4xx STM32F412xx
 
 # board ID for firmware load
 APJ_BOARD_ID 9
@@ -116,8 +116,6 @@ define ARMING_DELAY_SEC 0
 define LAND_START_ALT 700
 define LAND_DETECTOR_ACCEL_MAX 2.0f
 define ALLOW_ARM_NO_COMPASS
-
-define CHIBIOS_ADC_MAVLINK_DEBUG 1
 
 COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
 

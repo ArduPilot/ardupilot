@@ -470,8 +470,8 @@ void AC_PosControl::init_xy_controller_stopping_point()
 {
     init_xy();
 
-    _vel_desired.xy().zero();
     get_stopping_point_xy_cm(_pos_target.xy());
+    _vel_desired.xy().zero();
     _accel_desired.xy().zero();
 
     _pid_vel_xy.set_integrator(_accel_target);
@@ -486,8 +486,7 @@ void AC_PosControl::relax_velocity_controller_xy()
     // decay resultant acceleration and therefore current attitude target to zero
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
 
-    _accel_target.x *= decay;
-    _accel_target.y *= decay;
+    _accel_target.xy() *= decay;
     _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 }
 
@@ -507,15 +506,12 @@ void AC_PosControl::init_xy()
     _pos_target.y = curr_pos.y;
 
     const Vector3f &curr_vel = _inav.get_velocity();
-    _vel_desired.x = curr_vel.x;
-    _vel_desired.y = curr_vel.y;
-    _vel_target.x = curr_vel.x;
-    _vel_target.y = curr_vel.y;
-
+    _vel_desired.xy() = curr_vel.xy();
+    _vel_target.xy() = curr_vel.xy();
 
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
-    _accel_desired.x = curr_accel.x;
-    _accel_desired.y = curr_accel.y;
+    _accel_desired.xy() = curr_accel.xy();
+    _accel_desired.xy().limit_length(_accel_max_xy_cmss);
 
     lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
 
@@ -578,22 +574,19 @@ void AC_PosControl::input_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const V
 void AC_PosControl::stop_pos_xy_stabilisation()
 {
     const Vector3f& curr_pos = _inav.get_position();
-    _pos_target.x = curr_pos.x;
-    _pos_target.y = curr_pos.y;
+    _pos_target.xy() = curr_pos.xy().topostype();
 }
 
 /// stop_vel_xy_stabilisation - sets the target to the current position and velocity to the current velocity to remove any position and velocity corrections from the system
 void AC_PosControl::stop_vel_xy_stabilisation()
 {
     const Vector3f curr_pos = _inav.get_position();
-    _pos_target.x = curr_pos.x;
-    _pos_target.y = curr_pos.y;
+    _pos_target.xy() = curr_pos.xy().topostype();
 
     const Vector3f &curr_vel = _inav.get_velocity();
-    _vel_desired.x = curr_vel.x;
-    _vel_desired.y = curr_vel.y;
-    _vel_target.x = curr_vel.x;
-    _vel_target.y = curr_vel.y;
+    _vel_desired.xy() = curr_vel.xy();
+    // with zero position error _vel_target = _vel_desired
+    _vel_target.xy() = curr_vel.xy();
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
@@ -635,10 +628,8 @@ void AC_PosControl::update_xy_controller()
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
-    _vel_target.x = vel_target.x;
-    _vel_target.y = vel_target.y;
-    _vel_target.x += _vel_desired.x;
-    _vel_target.y += _vel_desired.y;
+    _vel_target.xy() = vel_target;
+    _vel_target.xy() += _vel_desired.xy();
 
     // Velocity Controller
 
@@ -647,31 +638,26 @@ void AC_PosControl::update_xy_controller()
     if (_flags.vehicle_horiz_vel_override) {
         _flags.vehicle_horiz_vel_override = false;
     } else {
-        _vehicle_horiz_vel.x = _inav.get_velocity().x;
-        _vehicle_horiz_vel.y = _inav.get_velocity().y;
+        _vehicle_horiz_vel = _inav.get_velocity().xy();
     }
     Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, Vector2f(_limit_vector.x, _limit_vector.y));
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;
 
     // pass the correction acceleration to the target acceleration output
-    _accel_target.x = accel_target.x;
-    _accel_target.y = accel_target.y;
+    _accel_target.xy() = accel_target;
 
     // Add feed forward into the target acceleration output
-    _accel_target.x += _accel_desired.x;
-    _accel_target.y += _accel_desired.y;
+    _accel_target.xy() += _accel_desired.xy();
 
     // Acceleration Controller
 
     // limit acceleration using maximum lean angles
-    _limit_vector.x = 0.0f;
-    _limit_vector.y = 0.0f;
+    _limit_vector.xy().zero();
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
     float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
     if (_accel_target.limit_length_xy(accel_max)) {
-        _limit_vector.x = _accel_target.x;
-        _limit_vector.y = _accel_target.y;
+        _limit_vector.xy() = _accel_target.xy();
     }
 
     // update angle targets that will be passed to stabilize controller
@@ -764,7 +750,8 @@ void AC_PosControl::init_z_controller_stopping_point()
     init_z_controller();
 
     get_stopping_point_z_cm(_pos_target.z);
-    _vel_target.z = 0.0f;
+    _vel_desired.z = 0.0f;
+    _accel_desired.z = 0.0f;
 }
 
 // relax_z_controller - initialise the position controller to the current position and velocity with decaying acceleration.
@@ -789,6 +776,7 @@ void AC_PosControl::init_z()
 
     const Vector3f &curr_vel = _inav.get_velocity();
     _vel_desired.z = curr_vel.z;
+    // with zero position error _vel_target = _vel_desired
     _vel_target.z = curr_vel.z;
 
     const Vector3f &curr_accel = _ahrs.get_accel_ef_blended();
@@ -798,7 +786,7 @@ void AC_PosControl::init_z()
     _pid_vel_z.set_integrator(0.0f);
 
     _accel_desired.z = constrain_float(-(curr_accel.z + GRAVITY_MSS) * 100.0f, -_accel_max_z_cmss, _accel_max_z_cmss);
-    _accel_target.z = -(curr_accel.z + GRAVITY_MSS) * 100.0f;
+    _accel_target.z = _accel_desired.z;
     _pid_accel_z.reset_filter();
 
     // initialise vertical offsets
@@ -1020,26 +1008,6 @@ void AC_PosControl::update_z_controller()
 /// Accessors
 ///
 
-/// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
-void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
-{
-    const float curr_pos_z = _inav.get_position().z;
-    float curr_vel_z = _inav.get_velocity().z;
-
-    // if position controller is active remove the desired velocity component
-    if (is_active_z()) {
-        curr_vel_z -= _vel_desired.z;
-    }
-
-    // avoid divide by zero by using current position if kP is very low or acceleration is zero
-    if (!is_positive(_p_pos_z.kP()) || !is_positive(_accel_max_z_cmss)) {
-        stopping_point = curr_pos_z;
-        return;
-    }
-
-    stopping_point = curr_pos_z + constrain_float(stopping_distance(curr_vel_z, _p_pos_z.kP(), _accel_max_z_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
-}
-
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
 float AC_PosControl::get_lean_angle_max_cd() const
 {
@@ -1060,12 +1028,9 @@ void AC_PosControl::set_pos_vel_accel(const Vector3p& pos, const Vector3f& vel, 
 /// set position, velocity and acceleration targets
 void AC_PosControl::set_pos_vel_accel_xy(const Vector2p& pos, const Vector2f& vel, const Vector2f& accel)
 {
-    _pos_target.x = pos.x;
-    _pos_target.y = pos.y;
-    _vel_desired.x = vel.x;
-    _vel_desired.y = vel.y;
-    _accel_desired.x = accel.x;
-    _accel_desired.y = accel.y;
+    _pos_target.xy() = pos;
+    _vel_desired.xy() = vel;
+    _accel_desired.xy() = accel;
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean target angles to lat/lon frame accelerations in cm/s/s
@@ -1102,16 +1067,10 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
     stopping_point = curr_pos.xy().topostype();
     float kP = _p_pos_xy.kP();
 
-    Vector3f curr_vel = _inav.get_velocity();
-
-    // if position controller is active remove the desired velocity component
-    if (is_active_xy()) {
-        curr_vel.x -= _vel_desired.x;
-        curr_vel.y -= _vel_desired.y;
-    }
+    Vector2f curr_vel = _inav.get_velocity().xy();
 
     // calculate current velocity
-    float vel_total = norm(curr_vel.x, curr_vel.y);
+    float vel_total = curr_vel.length();
 
     if (!is_positive(vel_total)) {
         return;
@@ -1124,8 +1083,22 @@ void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
 
     // convert the stopping distance into a stopping point using velocity vector
     const float t = stopping_dist / vel_total;
-    stopping_point.x += t * curr_vel.x;
-    stopping_point.y += t * curr_vel.y;
+    stopping_point += (curr_vel * t).topostype();
+}
+
+/// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
+void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
+{
+    const float curr_pos_z = _inav.get_position().z;
+    float curr_vel_z = _inav.get_velocity().z;
+
+    // avoid divide by zero by using current position if kP is very low or acceleration is zero
+    if (!is_positive(_p_pos_z.kP()) || !is_positive(_accel_max_z_cmss)) {
+        stopping_point = curr_pos_z;
+        return;
+    }
+
+    stopping_point = curr_pos_z + constrain_float(stopping_distance(curr_vel_z, _p_pos_z.kP(), _accel_max_z_cmss), - POSCONTROL_STOPPING_DIST_DOWN_MAX, POSCONTROL_STOPPING_DIST_UP_MAX);
 }
 
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
@@ -1239,23 +1212,21 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
 {
     // Calculate the turn rate
     float turn_rate = 0.0f;
-    const Vector2f vel_desired_xy(_vel_desired.x, _vel_desired.y);
-    const Vector2f accel_desired_xy(_accel_desired.x, _accel_desired.y);
-    const float vel_desired_xy_len = vel_desired_xy.length();
+    const float vel_desired_xy_len = _vel_desired.xy().length();
     if (is_positive(vel_desired_xy_len)) {
-        const float accel_forward = (accel_desired_xy.x * vel_desired_xy.x + accel_desired_xy.y * vel_desired_xy.y)/vel_desired_xy_len;
-        const Vector2f accel_turn = accel_desired_xy - vel_desired_xy * accel_forward / vel_desired_xy_len;
+        const float accel_forward = (_accel_desired.x * _vel_desired.x + _accel_desired.y * _vel_desired.y) / vel_desired_xy_len;
+        const Vector2f accel_turn = _accel_desired.xy() - _vel_desired.xy() * accel_forward / vel_desired_xy_len;
         const float accel_turn_xy_len = accel_turn.length();
         turn_rate = accel_turn_xy_len / vel_desired_xy_len;
-        if ((accel_turn.y * vel_desired_xy.x - accel_turn.x * vel_desired_xy.y) < 0.0) {
+        if ((accel_turn.y * _vel_desired.x - accel_turn.x * _vel_desired.y) < 0.0) {
             turn_rate = -turn_rate;
         }
     }
 
     // update the target yaw if velocity is greater than 5% _vel_max_xy_cms
     if (vel_desired_xy_len > _vel_max_xy_cms * 0.05f) {
-        _yaw_target = degrees(vel_desired_xy.angle()) * 100.0f;
-        _yaw_rate_target = turn_rate*degrees(100.0f);
+        _yaw_target = degrees(_vel_desired.xy().angle()) * 100.0f;
+        _yaw_rate_target = turn_rate * degrees(100.0f);
         return true;
     }
     return false;
@@ -1277,12 +1248,10 @@ void AC_PosControl::handle_ekf_xy_reset()
     if (reset_ms != _ekf_xy_reset_ms) {
 
         const Vector3f& curr_pos = _inav.get_position();
-        _pos_target.x = curr_pos.x + _p_pos_xy.get_error().x;
-        _pos_target.y = curr_pos.y + _p_pos_xy.get_error().y;
+        _pos_target.xy() = (curr_pos.xy() + _p_pos_xy.get_error()).topostype();
 
         const Vector3f& curr_vel = _inav.get_velocity();
-        _vel_target.x = curr_vel.x + _pid_vel_xy.get_error().x;
-        _vel_target.y = curr_vel.y + _pid_vel_xy.get_error().y;
+        _vel_target.xy() = curr_vel.xy() + _pid_vel_xy.get_error();
 
         _ekf_xy_reset_ms = reset_ms;
     }
