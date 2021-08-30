@@ -546,6 +546,10 @@ public:
     // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
 
+    // set and get calibrating flag, stops arming if true
+    void calibrating(bool b) { gcs_is_calibrating = b; }
+    bool calibrating() { return gcs_is_calibrating; }
+
 protected:
 
     enum class Option {
@@ -583,6 +587,9 @@ private:
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
+
+    // true if GCS is performing a RC calibration
+    bool gcs_is_calibrating;
 };
 
 RC_Channels &rc();
