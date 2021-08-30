@@ -1495,14 +1495,6 @@ void AP_InertialSensor::update(void)
             _backends[i]->update();
         }
 
-        // clear accumulators
-        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-            _delta_velocity_acc[i].zero();
-            _delta_velocity_acc_dt[i] = 0;
-            _delta_angle_acc[i].zero();
-            _delta_angle_acc_dt[i] = 0;
-        }
-
         if (!_startup_error_counts_set) {
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
                 _accel_startup_error_count[i] = _accel_error_count[i];
