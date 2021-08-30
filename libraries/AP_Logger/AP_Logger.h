@@ -557,6 +557,7 @@ private:
 
     // last time we handled a log-transfer-over-mavlink message:
     uint32_t _last_mavlink_log_transfer_message_handled_ms;
+    bool _warned_log_disarm; // true if we have sent a message warning to disarm for logging
 
     // next log list entry to send
     uint16_t _log_next_list_entry;
@@ -592,7 +593,6 @@ private:
     // can be used by other subsystems to detect if they should log data
     uint8_t _log_start_count;
 
-    bool should_handle_log_message() const;
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
 
     void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
