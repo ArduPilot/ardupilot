@@ -790,6 +790,7 @@ void AC_PosControl::init_z()
     _pid_accel_z.reset_filter();
 
     // initialise vertical offsets
+    _pos_offset_target_z = 0.0;
     _pos_offset_z = 0.0;
     _vel_offset_z = 0.0;
     _accel_offset_z = 0.0;
@@ -855,11 +856,33 @@ void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore
 
 /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
 ///     using the default position control kinematic path.
-///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
-void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ignore_descent_limit)
+///     The zero target altitude is varied to follow pos_offset_z
+void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel)
 {
-    float vel2 = vel;
-    input_vel_accel_z(vel2, 0, ignore_descent_limit);
+    // remove terrain offsets for flat earth assumption
+    _pos_target.z -= _pos_offset_z;
+    _vel_desired.z -= _vel_offset_z;
+    _accel_desired.z -= _accel_offset_z;
+
+    float vel_temp = vel;
+    input_vel_accel_z(vel_temp, 0, false);
+
+    // update the vertical position, velocity and acceleration offsets
+    update_pos_offset_z(_pos_offset_target_z);
+
+    // add terrain offsets
+    _pos_target.z += _pos_offset_z;
+    _vel_desired.z += _vel_offset_z;
+    _accel_desired.z += _accel_offset_z;
+}
+
+/// land_at_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
+///     using the default position control kinematic path.
+///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+void AC_PosControl::land_at_climb_rate_cm(const float vel, bool ignore_descent_limit)
+{
+    float vel_temp = vel;
+    input_vel_accel_z(vel_temp, 0, ignore_descent_limit);
 }
 
 /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
