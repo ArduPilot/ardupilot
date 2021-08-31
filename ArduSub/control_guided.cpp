@@ -498,7 +498,7 @@ void Sub::guided_angle_control_run()
     attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
 
     // call position controller
-    pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms, false);
+    pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
     pos_control.update_z_controller();
 }
 
