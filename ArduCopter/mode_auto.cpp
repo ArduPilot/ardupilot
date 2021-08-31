@@ -983,7 +983,12 @@ void ModeAuto::loiter_to_alt_run()
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+    // update the vertical offset based on the surface measurement
+    copter.surface_tracking.update_surface_offset();
+
+    // Send the commanded climb rate to the position controller
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+
     pos_control->update_z_controller();
 }
 
