@@ -1000,6 +1000,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 };
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
+    // duplicate of OSDn_ENABLE to ensure params are hidden when not enabled
+    AP_GROUPINFO_FLAGS("ENABLE", 2, AP_OSD_Screen, enabled, 0, AP_PARAM_FLAG_ENABLE | AP_PARAM_FLAG_HIDDEN),
+
     // @Param: LINK_Q_EN
     // @DisplayName: LINK_Q_EN
     // @Description: Displays Receiver link quality
