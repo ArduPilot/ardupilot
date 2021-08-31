@@ -151,8 +151,10 @@ void ModeAuto::run()
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
-    if (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE)) {
+    if (auto_RTL && (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE))) {
         auto_RTL = false;
+        // log exit from Auto RTL
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), ModeReason::AUTO_RTL_EXIT);
     }
 }
 
@@ -169,13 +171,28 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
         // if not already in auto switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
             auto_RTL = true;
+            // log entry into AUTO RTL
+            copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+
+            // make happy noise
+            if (copter.ap.initialised) {
+                AP_Notify::events.user_mode_change = 1;
+            }
             return true;
         }
         // mode change failed, revert force resume flag
         mission.set_force_resume(false);
-        return false;
+
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "No landing sequence found");
+
+    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+    // make sad noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
     return false;
 }
 
