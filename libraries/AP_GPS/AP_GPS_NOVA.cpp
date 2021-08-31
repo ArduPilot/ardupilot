@@ -93,7 +93,7 @@ AP_GPS_NOVA::read(void)
         }
     }
 
-    if (now - state.gps_yaw_time_ms >= 1000) {
+    if (now - state.gps_yaw_time_ms > 1000) {
         state.have_gps_yaw = false;
     }
 
