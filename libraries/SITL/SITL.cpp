@@ -226,8 +226,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
     AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
+#if BARO_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, SIM::BaroParm),
+#endif
+#if BARO_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
+#endif
 
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
