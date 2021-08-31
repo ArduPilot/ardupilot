@@ -158,16 +158,14 @@ void ModePosHold::run()
     case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
-        }
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+        // update the vertical offset based on the surface measurement
+        copter.surface_tracking.update_surface_offset();
+
+        // Send the commanded climb rate to the position controller
+        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
         break;
     }
 
