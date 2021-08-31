@@ -1682,6 +1682,9 @@ AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *gr
                     ((AP_Int8 *)ret)->get() == 0) {
                     token->last_disabled = 1;
                 }
+                if (group_info[i].flags & AP_PARAM_FLAG_HIDDEN) {
+                    continue;
+                }
                 return ret;
             }
             if (group_id(group_info, group_base, i, group_shift) == token->group_element) {
