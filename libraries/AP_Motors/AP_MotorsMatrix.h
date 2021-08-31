@@ -95,9 +95,17 @@ public:
         int8_t yaw_factor;
         uint8_t testing_order;
     };
+    // same structure, but with floats.
+    struct MotorDef {
+        int8_t motor_num;
+        float angle_degrees;
+        float yaw_factor;
+        uint8_t testing_order;
+    };
 
     // method to add many motors specified in a structure:
-    void add_motors(const struct MotorDefInt *motor, uint8_t num_motors);
+    template <typename T>
+    void add_motors(T *motor, uint8_t num_motors);
 
 protected:
     // output - sends commands to the motors
