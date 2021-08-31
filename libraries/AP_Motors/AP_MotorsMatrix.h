@@ -90,14 +90,12 @@ public:
     // the arguments to add_motor - with the exception of the type,
     // for compactness.
     struct MotorDefInt {
-        int8_t motor_num;
         int16_t angle_degrees;
         int8_t yaw_factor;
         uint8_t testing_order;
     };
     // same structure, but with floats.
     struct MotorDef {
-        int8_t motor_num;
         float angle_degrees;
         float yaw_factor;
         uint8_t testing_order;
@@ -113,7 +111,6 @@ public:
     // factor as that is only used in the scripting binding, not in
     // the static motors at the moment.
     struct MotorDefRaw {
-        int8_t motor_num;
         float roll_fac;
         float pitch_fac;
         float yaw_fac;
