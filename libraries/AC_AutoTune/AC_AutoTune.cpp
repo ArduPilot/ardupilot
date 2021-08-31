@@ -409,7 +409,7 @@ void AC_AutoTune::run()
     }
 
     // call position controller
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms, false);
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
     pos_control->update_z_controller();
 
 }
