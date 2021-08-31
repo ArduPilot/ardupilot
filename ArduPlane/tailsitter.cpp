@@ -24,7 +24,8 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable Tailsitter
-    // @Description: This enables Tailsitter functionality, 2: forces Qassist active and always stabilize in forward flight with airmode for stabalisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
+    // @Values: 0:Disable, 1:Enable, 2:Enable Always
+    // @Description: This enables Tailsitter functionality. A value of 2 forces Qassist active and always stabilize in forward flight with airmode for stabalisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Tailsitter, enable, 0, AP_PARAM_FLAG_ENABLE),
