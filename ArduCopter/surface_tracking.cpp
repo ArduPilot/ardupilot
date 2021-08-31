@@ -1,67 +1,46 @@
 #include "Copter.h"
 
-// adjust_climb_rate - hold copter at the desired distance above the
-//      ground; returns climb rate (in cm/s) which should be passed to
-//      the position controller
-float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
+// update_surface_offset - manages the vertical offset of the position controller to follow the measured ground or ceiling
+//   level measured using the range finder.
+void Copter::SurfaceTracking::update_surface_offset()
 {
+    float offset_cm = 0.0;
 #if RANGEFINDER_ENABLED == ENABLED
     // check tracking state and that range finders are healthy
-    if ((surface == Surface::NONE) ||
-        ((surface == Surface::GROUND) && (!copter.rangefinder_alt_ok() || (copter.rangefinder_state.glitch_count != 0))) ||
-        ((surface == Surface::CEILING) && !copter.rangefinder_up_ok()) || (copter.rangefinder_up_state.glitch_count != 0)) {
-        return target_rate;
+    if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
+        ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0))) {
+
+        // init based on tracking direction/state
+        RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
+        const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
+        offset_cm = copter.inertial_nav.get_altitude() - dir * rf_state.alt_cm;
+
+        // reset target altitude if this controller has just been engaged
+        // target has been changed between upwards vs downwards
+        // or glitch has cleared
+        const uint32_t now = millis();
+        if ((now - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) ||
+            reset_target ||
+            (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
+            copter.pos_control->set_pos_offset_z_cm(offset_cm);
+            reset_target = false;
+            last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
+        }
+        last_update_ms = now;
+        valid_for_logging = true;
+    } else {
+        copter.pos_control->set_pos_offset_z_cm(offset_cm);
     }
-
-    // calculate current ekf based altitude error
-    const float current_alt_error = copter.pos_control->get_pos_target_z_cm() - copter.inertial_nav.get_altitude();
-
-    // init based on tracking direction/state
-    RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
-    const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
-
-    // reset target altitude if this controller has just been engaged
-    // target has been changed between upwards vs downwards
-    // or glitch has cleared
-    const uint32_t now = millis();
-    if ((now - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) ||
-        reset_target ||
-        (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
-        target_dist_cm = rf_state.alt_cm + (dir * current_alt_error);
-        reset_target = false;
-        last_glitch_cleared_ms = rf_state.glitch_cleared_ms;\
-    }
-    last_update_ms = now;
-
-    // adjust rangefinder target alt if motors have not hit their limits
-    if ((target_rate<0 && !copter.motors->limit.throttle_lower) || (target_rate>0 && !copter.motors->limit.throttle_upper)) {
-        target_dist_cm += dir * target_rate * copter.G_Dt;
-    }
-    valid_for_logging = true;
-
-#if AC_AVOID_ENABLED == ENABLED
-    // upward facing terrain following never gets closer than avoidance margin
-    if (surface == Surface::CEILING) {
-        const float margin_cm = copter.avoid.enabled() ? copter.avoid.get_margin() * 100.0f : 0.0f;
-        target_dist_cm = MAX(target_dist_cm, margin_cm);
-    }
-#endif
-
-    // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    const float distance_error = (target_dist_cm - rf_state.alt_cm) - (dir * current_alt_error);
-    float velocity_correction = dir * distance_error * copter.g.rangefinder_gain;
-    velocity_correction = constrain_float(velocity_correction, -SURFACE_TRACKING_VELZ_MAX, SURFACE_TRACKING_VELZ_MAX);
-
-    // return combined pilot climb rate + rate to correct rangefinder alt error
-    return (target_rate + velocity_correction);
 #else
-    return target_rate;
+    copter.pos_control->set_pos_offset_z_cm(offset_cm);
 #endif
+    copter.pos_control->set_pos_offset_target_z_cm(offset_cm);
 }
+
 
 // get target altitude (in cm) above ground
 // returns true if there is a valid target
-bool Copter::SurfaceTracking::get_target_alt_cm(float &_target_alt_cm) const
+bool Copter::SurfaceTracking::get_target_alt_cm(float &target_alt_cm) const
 {
     // fail if we are not tracking downwards
     if (surface != Surface::GROUND) {
@@ -71,7 +50,7 @@ bool Copter::SurfaceTracking::get_target_alt_cm(float &_target_alt_cm) const
     if (AP_HAL::millis() - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
         return false;
     }
-    _target_alt_cm = target_dist_cm;
+    target_alt_cm = (copter.pos_control->get_pos_target_z_cm() - copter.pos_control->get_pos_offset_z_cm());
     return true;
 }
 
@@ -82,7 +61,7 @@ void Copter::SurfaceTracking::set_target_alt_cm(float _target_alt_cm)
     if (surface != Surface::GROUND) {
         return;
     }
-    target_dist_cm = _target_alt_cm;
+    copter.pos_control->set_pos_offset_z_cm(copter.inertial_nav.get_altitude() - _target_alt_cm);
     last_update_ms = AP_HAL::millis();
 }
 
@@ -92,7 +71,8 @@ bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) co
         return false;
     }
 
-    target_dist = target_dist_cm * 0.01f;
+    const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
+    target_dist = dir * (copter.pos_control->get_pos_target_z_cm() - copter.pos_control->get_pos_offset_z_cm()) * 0.01f;
     return true;
 }
 
