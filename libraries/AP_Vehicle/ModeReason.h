@@ -62,4 +62,5 @@ enum class ModeReason : uint8_t {
   FRSKY_COMMAND = 42,
   FENCE_RETURN_PREVIOUS_MODE = 43,
   QRTL_INSTEAD_OF_RTL = 44,
+  AUTO_RTL_EXIT = 45,
 };
