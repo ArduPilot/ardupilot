@@ -220,7 +220,7 @@ bool AC_Circle::update(float climb_rate_cms)
         float target_zf = target.z;
         _pos_control.input_pos_vel_accel_z(target_zf, zero2, 0);
     } else {
-        _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms,  false);
+        _pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
     }
 
     // update position controller
