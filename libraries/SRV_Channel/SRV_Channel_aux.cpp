@@ -452,6 +452,9 @@ SRV_Channels::set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_C
 bool
 SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t function)
 {
+    if (!initialised) {
+        update_aux_servo_function();
+    }
     return function_mask.get(uint16_t(function));
 }
 
@@ -486,9 +489,6 @@ SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t function,
  */
 bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t function, uint8_t channel)
 {
-    if (!initialised) {
-        update_aux_servo_function();
-    }
     if (function_assigned(function)) {
         // already assigned
         return true;
@@ -513,9 +513,6 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
 // find first channel that a function is assigned to
 bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan)
 {
-    if (!initialised) {
-        update_aux_servo_function();
-    }
     if (!function_assigned(function)) {
         return false;
     }
