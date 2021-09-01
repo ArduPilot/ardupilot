@@ -145,10 +145,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
     for (uint8_t i=0; i<num_routes; i++) {
 
-        // Skip if channel is private and the target system or component IDs do not match
-        if ((GCS_MAVLINK::is_private(routes[i].channel)) &&
-            (target_system != routes[i].sysid ||
-             target_component != routes[i].compid)) {
+        // Skip if channel is private
+        if (GCS_MAVLINK::is_private(routes[i].channel)) {
             continue;
         }
 
