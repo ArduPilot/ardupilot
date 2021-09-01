@@ -16,7 +16,16 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            navigator
+            linux,
+            navigator,
+            navio,
+            navio2,
+            bbbmini,
+            bhat,
+            bebop,
+            erlebrain2,
+            pxfmini,
+            pxf
         ]
         toolchain: [
             armhf,
@@ -24,8 +33,12 @@ jobs:
         include:
           - config: navigator
             toolchain: armhf-musl
+          - config: linux
+            toolchain: base # GCC
         exclude:
           - config: navigator
+            toolchain: armhf
+          - config: linux
             toolchain: armhf
 
     steps:
@@ -59,7 +72,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
-          if [[ ${{ matrix.toolchain }} == ",clang" ]]; then
+          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang-7
             export CXX=clang++-7
           fi
