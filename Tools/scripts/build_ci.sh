@@ -10,7 +10,6 @@ set -ex
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
-unset CXX CC
 
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
