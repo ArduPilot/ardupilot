@@ -43,7 +43,7 @@ function run_autotest() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone --recursive https://github.com/ardupilot/MAVProxy
+          git clone https://github.com/ardupilot/MAVProxy
           pushd MAVProxy
             python setup.py build install --user --force
           popd
