@@ -37,6 +37,8 @@
 #include <ardupilot/gnss/RelPosHeading.hpp>
 #endif
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 extern const AP_HAL::HAL& hal;
 
 #define GPS_UAVCAN_DEBUGGING 0
@@ -103,59 +105,73 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
     uavcan::Subscriber<uavcan::equipment::gnss::Fix, FixCb> *gnss_fix;
     gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix, FixCb>(*node);
+    if (gnss_fix == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_fix");
+    }
     const int gnss_fix_start_res = gnss_fix->start(FixCb(ap_uavcan, &handle_fix_msg_trampoline));
     if (gnss_fix_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::gnss::Fix2, Fix2Cb> *gnss_fix2;
     gnss_fix2 = new uavcan::Subscriber<uavcan::equipment::gnss::Fix2, Fix2Cb>(*node);
+    if (gnss_fix2 == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_fix2");
+    }
     const int gnss_fix2_start_res = gnss_fix2->start(Fix2Cb(ap_uavcan, &handle_fix2_msg_trampoline));
     if (gnss_fix2_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
     
     uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary, AuxCb> *gnss_aux;
     gnss_aux = new uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary, AuxCb>(*node);
+    if (gnss_aux == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_aux");
+    }
     const int gnss_aux_start_res = gnss_aux->start(AuxCb(ap_uavcan, &handle_aux_msg_trampoline));
     if (gnss_aux_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 
     uavcan::Subscriber<ardupilot::gnss::Heading, HeadingCb> *gnss_heading;
     gnss_heading = new uavcan::Subscriber<ardupilot::gnss::Heading, HeadingCb>(*node);
+    if (gnss_heading == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_heading");
+    }
     const int gnss_heading_start_res = gnss_heading->start(HeadingCb(ap_uavcan, &handle_heading_msg_trampoline));
     if (gnss_heading_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 
     uavcan::Subscriber<ardupilot::gnss::Status, StatusCb> *gnss_status;
     gnss_status = new uavcan::Subscriber<ardupilot::gnss::Status, StatusCb>(*node);
+    if (gnss_status == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_status");
+    }
     const int gnss_status_start_res = gnss_status->start(StatusCb(ap_uavcan, &handle_status_msg_trampoline));
     if (gnss_status_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 
 #if GPS_MOVING_BASELINE
     uavcan::Subscriber<ardupilot::gnss::MovingBaselineData, MovingBaselineDataCb> *gnss_moving_baseline;
     gnss_moving_baseline = new uavcan::Subscriber<ardupilot::gnss::MovingBaselineData, MovingBaselineDataCb>(*node);
+    if (gnss_moving_baseline == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_moving_baseline");
+    }
     const int gnss_moving_baseline_start_res = gnss_moving_baseline->start(MovingBaselineDataCb(ap_uavcan, &handle_moving_baseline_msg_trampoline));
     if (gnss_moving_baseline_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 
     uavcan::Subscriber<ardupilot::gnss::RelPosHeading, RelPosHeadingCb> *gnss_relposheading;
     gnss_relposheading = new uavcan::Subscriber<ardupilot::gnss::RelPosHeading, RelPosHeadingCb>(*node);
+    if (gnss_relposheading == nullptr) {
+        AP_BoardConfig::allocation_error("gnss_relposheading");
+    }
     const int gnss_relposheading_start_res = gnss_relposheading->start(RelPosHeadingCb(ap_uavcan, &handle_relposheading_msg_trampoline));
     if (gnss_relposheading_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-        return;
     }
 #endif
 }
