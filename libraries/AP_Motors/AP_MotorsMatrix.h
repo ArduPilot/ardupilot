@@ -86,14 +86,6 @@ public:
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor = 1.0f);
 
-    // structure to statically store motor information.  Entries match
-    // the arguments to add_motor - with the exception of the type,
-    // for compactness.
-    struct MotorDefInt {
-        int16_t angle_degrees;
-        int8_t yaw_factor;
-        uint8_t testing_order;
-    };
     // same structure, but with floats.
     struct MotorDef {
         float angle_degrees;
@@ -102,8 +94,7 @@ public:
     };
 
     // method to add many motors specified in a structure:
-    template <typename T>
-    void add_motors(T *motor, uint8_t num_motors);
+    void add_motors(const struct MotorDef *motors, uint8_t num_motors);
 
     // structure used for initialising motors that add have separate
     // roll/pitch/yaw factors.  Note that this does *not* include

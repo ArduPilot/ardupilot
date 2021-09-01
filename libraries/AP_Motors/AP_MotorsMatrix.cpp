@@ -560,8 +560,7 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
     }
 }
 
-template <typename T>
-void AP_MotorsMatrix::add_motors(T *motors, uint8_t num_motors)
+void AP_MotorsMatrix::add_motors(const struct MotorDef *motors, uint8_t num_motors)
 {
     for (uint8_t i=0; i<num_motors; i++) {
         const auto &motor = motors[i];
@@ -593,7 +592,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2 },
                         { -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },
                         {   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
@@ -604,7 +603,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_X: {
                     _frame_type_string = "X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 },
                         {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4 },
@@ -616,7 +615,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
                 case MOTOR_FRAME_TYPE_NYT_PLUS: {
                     _frame_type_string = "NYT_PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {  90, 0,  2 },
                         { -90, 0,  4 },
                         {   0, 0,  1 },
@@ -627,7 +626,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_NYT_X: {
                     _frame_type_string = "NYT_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, 0,  1 },
                         { -135, 0,  3 },
                         {  -45, 0,  4 },
@@ -641,7 +640,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     // betaflight quad X order
                     // see: https://fpvfrenzy.com/betaflight-motor-order/
                     _frame_type_string = "BF_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2 },
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3 },
@@ -653,7 +652,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 case MOTOR_FRAME_TYPE_BF_X_REV: {
                     // betaflight quad X order, reversed motors
                     _frame_type_string = "X_REV";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2 },
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 },
@@ -666,7 +665,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     // DJI quad X order
                     // see https://forum44.djicdn.com/data/attachment/forum/201711/26/172348bppvtt1ot1nrtp5j.jpg
                     _frame_type_string = "DJI_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 },
@@ -679,7 +678,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     // "clockwise X" motor order. Motors are ordered clockwise from front right
                     // matching test order
                     _frame_type_string = "CW_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 },
@@ -702,7 +701,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 case MOTOR_FRAME_TYPE_H: {
                     // H frame set-up - same as X but motors spin in opposite directiSons
                     _frame_type_string = "H";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 },
                         {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },
@@ -757,7 +756,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 case MOTOR_FRAME_TYPE_PLUSREV:{
                     // plus with reversed motor directions
                     _frame_type_string = "PLUSREV";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         { 90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2 },
                         { -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4 },
                         { 0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
@@ -780,7 +779,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         {  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },
                         { -120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5 },
@@ -793,7 +792,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_X: {
                     _frame_type_string = "X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 },
                         {  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 },
                         {  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6 },
@@ -820,7 +819,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_DJI_X: {
                     _frame_type_string = "DJI_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {  -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6 },
                         {  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 },
@@ -833,7 +832,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_CW_X: {
                     _frame_type_string = "CW_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 },
                         {  150, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 },
@@ -858,7 +857,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         {  180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5 },
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2 },
@@ -976,7 +975,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         { -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   7 },
                         { 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 },
@@ -991,7 +990,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_X: {
                     _frame_type_string = "X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   7 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5 },
@@ -1022,7 +1021,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 case MOTOR_FRAME_TYPE_H: {
                     // H frame set-up - same as X but motors spin in opposite directions
                     _frame_type_string = "H";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7 },
                         { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5 },
@@ -1037,7 +1036,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_CW_X:
                     _frame_type_string = "CW_X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 },
                         {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 },
@@ -1063,7 +1062,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 }, // forward-top
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 }, // forward-bottom
                         {   60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 }, // forward-right-top
@@ -1082,7 +1081,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_X: {
                     _frame_type_string = "X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1 }, // forward-right-top
                         {   30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2 }, // forward-right-bottom
                         {   90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    3 }, // right-top
@@ -1161,7 +1160,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
                     _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1 },
                         {   36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2 },
                         {   72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   3 },
@@ -1178,7 +1177,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                 }
                 case MOTOR_FRAME_TYPE_X: {
                     _frame_type_string = "X";
-                    static const AP_MotorsMatrix::MotorDefInt motors[] {
+                    static const AP_MotorsMatrix::MotorDef motors[] {
                         {   18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1 },
                         {   54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2 },
                         {   90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   3 },
