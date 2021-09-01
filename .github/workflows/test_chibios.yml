@@ -28,7 +28,7 @@ jobs:
         ]
         toolchain: [
             chibios,  # GCC-6
-            chibios-clang,
+            #chibios-clang,
         ]
         gcc: [6, 10]
         exclude:
