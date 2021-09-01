@@ -24,7 +24,11 @@ jobs:
             iofirmware,
             CubeOrange-bootloader,
             revo-bootloader,
-            stm32h7-debug
+            stm32h7-debug,
+            fmuv3,
+            revo-mini,
+            MatekF405-Wing,
+            configure-all
         ]
         toolchain: [
             chibios,  # GCC-6
