@@ -3,7 +3,7 @@
 
 # MCU class and specific type
 # note: the device is STM32F412CE, not all F412 pins are available
-MCU STM32F4xx STM32F412xx
+MCU STM32F4xx STM32F412Rx
 
 FLASH_RESERVE_START_KB 0
 # two sectors for bootloader, two for storage
