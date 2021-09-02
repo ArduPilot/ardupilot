@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 # new SkyViper 2018 Journey
 
-MCU STM32F4xx STM32F412xx
+MCU STM32F4xx STM32F412Rx
 
 # board ID for firmware load
 APJ_BOARD_ID 9
