@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 
 # MCU class and specific type
-MCU STM32F4xx STM32F412xx
+MCU STM32F4xx STM32F412Rx
 
 FLASH_RESERVE_START_KB 0
 # two sectors for bootloader, two for storage
