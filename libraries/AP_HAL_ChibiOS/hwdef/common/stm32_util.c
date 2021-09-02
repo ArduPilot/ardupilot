@@ -305,6 +305,9 @@ void peripheral_power_enable(void)
 #ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
 #endif
+#ifdef HAL_GPIO_PIN_VDD_5V_HIPOWER_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_EN, 1);
+#endif
 #ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS_EN
     // the TBS-Colibri-F7 needs PE3 low at power on
     palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN, 1);
