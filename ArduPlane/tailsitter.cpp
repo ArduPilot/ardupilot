@@ -152,6 +152,13 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
     { "Q_TRANS_DECEL",    6 },
+    { "Q_A_ACCEL_P_MAX",    30000},
+    { "Q_A_ACCEL_R_MAX",    30000},
+    { "Q_P_POSXY_P",        0.5},
+    { "Q_P_VELXY_P",        1.0},
+    { "Q_P_VELXY_I",        0.5},
+    { "Q_P_VELXY_D",        0.25},
+    
 };
 
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
