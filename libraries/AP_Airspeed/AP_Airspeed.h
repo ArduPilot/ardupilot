@@ -279,6 +279,8 @@ private:
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 
     void Log_Airspeed();
+
+    bool add_backend(AP_Airspeed_Backend *backend);
 };
 
 namespace AP {
