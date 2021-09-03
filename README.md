@@ -136,3 +136,20 @@ for reviewing patches on their specific area.
   - ***Subsystem***: Marvelmind
 - [Samuel Tabor](https://github.com/samuelctabor):
   - ***Subsystem***: Soaring/Gliding
+- [Henry Wurzburg](https://github.com/Hwurzburg):
+  - ***Subsystem***: OSD
+  - ***Site***: Wiki
+- [Peter Hall](https://github.com/IamPete1):
+  - ***Vehicle***: Tailsitters
+  - ***Vehicle***: Sailboat
+  - ***Subsystem***: Scripting
+- [Andy Piper](https://github.com/andyp1per):
+  - ***Subsystem***: Crossfire
+  - ***Subsystem***: ESC
+  - ***Subsystem***: OSD
+  - ***Subsystem***: SmartAudio
+- [Alessandro Apostoli ](https://github.com/yaapu):
+  - ***Subsystem***: Telemetry
+  - ***Subsystem***: OSD
+- [Rishab Singh ](https://github.com/rishabsingh3003):
+  - ***Subsystem***: Avoidance/Proximity
