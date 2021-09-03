@@ -36,13 +36,29 @@ AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, co
     range_inH2O(_range_inH2O)
 {}
 
-// probe and initialise the sensor
-bool AP_Airspeed_DLVR::init()
+/*
+  probe for a sensor on a given i2c address
+ */
+AP_Airspeed_Backend *AP_Airspeed_DLVR::probe(AP_Airspeed &_frontend,
+                                             uint8_t _instance,
+                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev,
+                                             const float _range_inH2O)
 {
-    dev = hal.i2c_mgr->get_device(get_bus(), DLVR_I2C_ADDR);
-    if (!dev) {
-        return false;
+    if (!_dev) {
+        return nullptr;
     }
+    AP_Airspeed_DLVR *sensor = new AP_Airspeed_DLVR(_frontend, _instance, _range_inH2O);
+    if (!sensor) {
+        return nullptr;
+    }
+    sensor->dev = std::move(_dev);
+    sensor->setup();
+    return sensor;
+}
+
+// initialise the sensor
+void AP_Airspeed_DLVR::setup()
+{
     WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
@@ -51,6 +67,16 @@ bool AP_Airspeed_DLVR::init()
 
     dev->register_periodic_callback(1000000UL/50U,
                                     FUNCTOR_BIND_MEMBER(&AP_Airspeed_DLVR::timer, void));
+}
+
+// probe and initialise the sensor
+bool AP_Airspeed_DLVR::init()
+{
+    dev = hal.i2c_mgr->get_device(get_bus(), DLVR_I2C_ADDR);
+    if (!dev) {
+        return false;
+    }
+    setup();
     return true;
 }
 
