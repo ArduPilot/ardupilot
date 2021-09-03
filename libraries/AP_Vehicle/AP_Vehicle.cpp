@@ -199,6 +199,12 @@ void AP_Vehicle::loop()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", banner_msg);
         }
     }
+    const uint32_t new_internal_errors = AP::internalerror().errors();
+    if(_last_internal_errors != new_internal_errors) {
+        AP::logger().Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors %x", (unsigned)new_internal_errors);
+        _last_internal_errors = new_internal_errors;
+    }
 }
 
 /*
@@ -347,6 +353,12 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
         update_dynamic_notch();
         _last_notch_update_ms = now;
     }
+}
+
+void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %u", mode_number);
+    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
 }
 
 // reboot the vehicle in an orderly manner, doing various cleanups and

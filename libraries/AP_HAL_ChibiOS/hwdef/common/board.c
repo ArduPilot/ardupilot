@@ -171,7 +171,9 @@ static void stm32_gpio_init(void) {
   /* Enabling GPIO-related clocks, the mask comes from the
      registry header file.*/
 #if defined(STM32H7)
+#if !EXTERNAL_PROG_FLASH_MB // if we have external flash resetting GPIO might disable all comms with it
   rccResetAHB4(STM32_GPIO_EN_MASK);
+#endif
   rccEnableAHB4(STM32_GPIO_EN_MASK, true);
 #elif defined(STM32F3)
   rccResetAHB(STM32_GPIO_EN_MASK);

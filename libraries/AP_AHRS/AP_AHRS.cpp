@@ -30,6 +30,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -287,6 +288,11 @@ void AP_AHRS::reset_gyro_drift(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
+    if (!skip_ins_update) {
+        // tell the IMU to grab some data
+        AP::ins().update();
+    }
+
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
@@ -303,7 +309,7 @@ void AP_AHRS::update(bool skip_ins_update)
     // update autopilot-body-to-vehicle-body from _trim parameters:
     update_trim_rotation_matrices();
 
-    update_DCM(skip_ins_update);
+    update_DCM();
 
     // update takeoff/touchdown flags
     update_flags();
@@ -348,7 +354,7 @@ void AP_AHRS::update(bool skip_ins_update)
 
     if (_view != nullptr) {
         // update optional alternative attitude view
-        _view->update(skip_ins_update);
+        _view->update();
     }
 
     // update AOA and SSA
@@ -394,7 +400,7 @@ void AP_AHRS::update(bool skip_ins_update)
     }
 }
 
-void AP_AHRS::update_DCM(bool skip_ins_update)
+void AP_AHRS::update_DCM()
 {
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
@@ -404,7 +410,7 @@ void AP_AHRS::update_DCM(bool skip_ins_update)
     yaw = _dcm_attitude.z;
     update_cd_values();
 
-    AP_AHRS_DCM::update(skip_ins_update);
+    AP_AHRS_DCM::_update();
 
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude = {roll, pitch, yaw};
@@ -2314,11 +2320,11 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
         // Check vs DCM yaw if this vehicle could use DCM in flight
         // and if not using an external yaw source (DCM does not support external yaw sources)
-        bool using_external_yaw = false;
+        bool using_noncompass_for_yaw = false;
 #if HAL_NAVEKF3_AVAILABLE
-        using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
+        using_noncompass_for_yaw = (ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
 #endif
-        if (!always_use_EKF() && !using_external_yaw) {
+        if (!always_use_EKF() && !using_noncompass_for_yaw) {
             Vector3f angle_diff;
             primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
@@ -2661,37 +2667,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #endif
 }
 
-// get_location - updates the provided location with the latest calculated location
-//  returns true on success (i.e. the backend knows it's latest position), false on failure
-bool AP_AHRS::get_location(struct Location &loc) const
-{
-    switch (active_EKF_type()) {
-    case EKFType::NONE:
-        return get_position(loc);
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.getLLH(loc);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.getLLH(loc);
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SIM:
-        return get_position(loc);
-#endif
-#if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL:
-        return get_position(loc);
-#endif
-    }
-
-    return false;
-}
-
 // return the innovations for the primariy EKF
 // boolean false is returned if innovations are not available
 bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
@@ -3022,8 +2997,8 @@ void AP_AHRS::Log_Write()
 #endif
 }
 
-// check whether compass can be bypassed for arming check in case when external navigation data is available 
-bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
+// check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+bool AP_AHRS::using_noncompass_for_yaw(void) const
 {
     switch (active_EKF_type()) {
 #if HAL_NAVEKF2_AVAILABLE
@@ -3033,7 +3008,7 @@ bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
     case EKFType::NONE:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.using_external_yaw();
+        return EKF3.using_noncompass_for_yaw();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
@@ -3042,6 +3017,31 @@ bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
     case EKFType::EXTERNAL:
 #endif
         return false; 
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
+
+// check if external nav is providing yaw
+bool AP_AHRS::using_extnav_for_yaw(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.isExtNavUsedForYaw();
+#endif
+    case EKFType::NONE:
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_extnav_for_yaw();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SIM:
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
     }
     // since there is no default case above, this is unreachable
     return false;

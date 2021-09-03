@@ -221,10 +221,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 #endif
 
-    Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
+    Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        notify_no_such_mode((uint8_t)mode);
         return false;
     }
 
@@ -857,6 +856,12 @@ float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 #else
     return target_rate;
 #endif
+}
+
+// send output to the motors, can be overridden by subclasses
+void Mode::output_to_motors()
+{
+    motors->output();
 }
 
 Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)

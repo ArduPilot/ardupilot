@@ -27,6 +27,8 @@ public:
 
     bool enabled() const { return enable > 0;}
 
+    void setup();
+
     // return true when flying a control surface only tailsitter
     bool is_control_surface_tailsitter(void) const;
 

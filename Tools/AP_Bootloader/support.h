@@ -8,6 +8,7 @@ struct boardinfo {
     uint32_t	board_type;
     uint32_t	board_rev;
     uint32_t	fw_size;
+    uint32_t    extf_size;
 } __attribute__((packed));
 
 extern struct boardinfo board_info;

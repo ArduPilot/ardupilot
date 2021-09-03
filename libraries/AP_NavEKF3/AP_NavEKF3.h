@@ -336,8 +336,11 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
-    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
-    bool using_external_yaw(void) const;
+    // are we using (aka fusing) a non-compass yaw?
+    bool using_noncompass_for_yaw() const;
+
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;

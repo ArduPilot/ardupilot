@@ -768,11 +768,24 @@ def write_mcu_config(f):
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
+    f.write('#define EXTERNAL_PROG_FLASH_MB %u\n' % get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int))
+
+    env_vars['EXTERNAL_PROG_FLASH_MB'] = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
+
+    if env_vars['EXTERNAL_PROG_FLASH_MB'] and not args.bootloader:
+        f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
+        f.write('#define __RAMFUNC__ __attribute__ ((long_call, __section__(".ramfunc")))\n')
+        f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__')
+    else:
+        f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+
     if args.bootloader:
+        if env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('#define APP_START_ADDRESS 0x90000000\n')
+            f.write('#define BOOT_FROM_EXT_FLASH 1\n')
         f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
         f.write('#define FLASH_RESERVE_END_KB %u\n' % get_config('FLASH_RESERVE_END_KB', default=0, type=int))
         f.write('#define APP_START_OFFSET_KB %u\n' % get_config('APP_START_OFFSET_KB', default=0, type=int))
-
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
@@ -870,25 +883,30 @@ def write_mcu_config(f):
 #define HAL_NO_UARTDRIVER
 #define HAL_NO_PRINTF
 #define HAL_NO_CCM
-#define CH_CFG_USE_TM FALSE
-#define CH_CFG_USE_REGISTRY FALSE
-#define CH_CFG_USE_WAITEXIT FALSE
-#define CH_CFG_USE_DYNAMIC FALSE
-#define CH_CFG_USE_MEMPOOLS FALSE
-#define CH_DBG_FILL_THREADS FALSE
-#define CH_CFG_USE_SEMAPHORES FALSE
-#define CH_CFG_USE_HEAP FALSE
-#define CH_CFG_USE_MUTEXES FALSE
-#define CH_CFG_USE_EVENTS FALSE
-#define CH_CFG_USE_EVENTS_TIMEOUT FALSE
-#define CH_CFG_USE_MEMCORE FALSE
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
+#define CH_CFG_USE_DYNAMIC FALSE
 // avoid timer and RCIN threads to save memory
 #define HAL_NO_TIMER_THREAD
 #define HAL_NO_RCOUT_THREAD
 #define HAL_NO_RCIN_THREAD
+#define HAL_NO_SHARED_DMA FALSE
+#define HAL_NO_ROMFS_SUPPORT TRUE
+#define CH_CFG_USE_TM FALSE
+#define CH_CFG_USE_REGISTRY FALSE
+#define CH_CFG_USE_WAITEXIT FALSE
+#define CH_CFG_USE_MEMPOOLS FALSE
+#define CH_DBG_FILL_THREADS FALSE
+#define CH_CFG_USE_MUTEXES FALSE
+#define CH_CFG_USE_EVENTS FALSE
+#define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+''')
+        if not env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('''
+#define CH_CFG_USE_HEAP FALSE
+#define CH_CFG_USE_SEMAPHORES FALSE
+#define CH_CFG_USE_MEMCORE FALSE
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
@@ -913,8 +931,13 @@ def write_ldscript(fname):
 
     # ram layout
     ram_map = get_mcu_config('RAM_MAP', True)
+    instruction_ram = get_mcu_config('INSTRUCTION_RAM', False)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
+    ext_flash_base = 0x90000000
+    if instruction_ram is not None:
+        instruction_ram_base = instruction_ram[0]
+        instruction_ram_length = instruction_ram[1]
 
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -932,8 +955,10 @@ def write_ldscript(fname):
     ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
     ram0_start += ram_reserve_start
     ram0_len -= ram_reserve_start
-
-    f.write('''/* generated ldscript.ld */
+    ext_flash_length = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
+    if ext_flash_length == 0 or args.bootloader:
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 0
+        f.write('''/* generated ldscript.ld */
 MEMORY
 {
     flash : org = 0x%08x, len = %uK
@@ -942,12 +967,31 @@ MEMORY
 
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram0_start, ram0_len))
+    else:
+        if ext_flash_length > 32:
+            error("We only support 24bit addressing over external flash")
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
+        f.write('''/* generated ldscript.ld */
+MEMORY
+{
+    default_flash : org = 0x%08x, len = %uM
+    instram : org = 0x%08x, len = %uK
+    ram0  : org = 0x%08x, len = %u
+}
 
+INCLUDE common_extf.ld
+''' % (ext_flash_base, ext_flash_length,
+       instruction_ram_base, instruction_ram_length,
+       ram0_start, ram0_len))
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
-    shutil.copy(os.path.join(dirpath, "../common/common.ld"),
-                os.path.join(outdir, "common.ld"))
+    if not get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int) or args.bootloader:
+        shutil.copy(os.path.join(dirpath, "../common/common.ld"),
+                    os.path.join(outdir, "common.ld"))
+    else:
+        shutil.copy(os.path.join(dirpath, "../common/common_extf.ld"),
+                    os.path.join(outdir, "common_extf.ld"))
 
 def get_USB_IDs():
     '''return tuple of USB VID/PID'''

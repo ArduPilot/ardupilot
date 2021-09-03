@@ -470,11 +470,17 @@ void AP_Mount::init()
 
         // init new instance
         if (_backends[instance] != nullptr) {
-            _backends[instance]->init();
             if (!primary_set) {
                 _primary = instance;
                 primary_set = true;
             }
+        }
+    }
+
+    // init each instance, do it after all instances were created, so that they all know things
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->init();
         }
     }
 }

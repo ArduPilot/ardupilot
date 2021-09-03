@@ -252,7 +252,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     plane.throttle_suppressed = plane.control_mode->does_auto_throttle();
 
     // if no airmode switch assigned, ensure airmode is off:
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+    if ((plane.quadplane.air_mode == AirMode::ON) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) {
         plane.quadplane.air_mode = AirMode::OFF;
     }
 

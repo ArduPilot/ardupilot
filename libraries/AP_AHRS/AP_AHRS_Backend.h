@@ -78,7 +78,7 @@ public:
     }
 
     // Methods
-    virtual void update(bool skip_ins_update=false) = 0;
+    virtual void _update() = 0;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
@@ -90,9 +90,12 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
-    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
-    virtual bool is_ext_nav_used_for_yaw(void) const { return false; }
-    
+    // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+    virtual bool using_noncompass_for_yaw(void) const { return false; }
+
+    // check if external nav is providing yaw
+    virtual bool using_extnav_for_yaw(void) const { return false; }
+
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     virtual void request_yaw_reset(void) {}
 

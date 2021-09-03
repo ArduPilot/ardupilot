@@ -2776,6 +2776,11 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             }
             return MAV_RESULT_ACCEPTED;
         }
+        if (is_equal(packet.param4, 98.0f)) {
+            send_text(MAV_SEVERITY_WARNING,"Creating internal error");
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return MAV_RESULT_ACCEPTED;
+        }
     }
 
     if (hal.util->get_soft_armed()) {
@@ -2949,6 +2954,28 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     logger->Write_Message(text);
 }
 
+
+/*
+  handle logging of named values from mavlink.
+ */
+void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
+{
+    auto *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
+        return;
+    }
+    mavlink_named_value_float_t p;
+    mavlink_msg_named_value_float_decode(&msg, &p);
+    char s[11] {};
+    strncpy(s, p.name, sizeof(s)-1);
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+                  AP_HAL::micros64(),
+                  p.time_boot_ms,
+                  s,
+                  p.value,
+                  msg.sysid,
+                  msg.compid);
+}
 
 void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 {
@@ -3521,6 +3548,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
+        break;
+
+    case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
+        handle_named_value(msg);
         break;
     }
 

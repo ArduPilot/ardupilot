@@ -248,6 +248,7 @@ bool Rover::set_mode(const uint8_t new_mode, ModeReason reason)
     static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
     Mode *mode = rover.mode_from_mode_num((enum Mode::Number)new_mode);
     if (mode == nullptr) {
+        notify_no_such_mode(new_mode);
         return false;
     }
     return rover.set_mode(*mode, reason);

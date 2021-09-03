@@ -154,19 +154,6 @@ bool RC_Channel::update(void)
     return true;
 }
 
-// recompute control values with no deadzone
-// When done this way the control_in value can be used as servo_out
-// to give the same output as input
-void RC_Channel::recompute_pwm_no_deadzone()
-{
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
-        control_in = pwm_to_range_dz(0);
-    } else {
-        //RC_CHANNEL_ANGLE
-        control_in = pwm_to_angle_dz(0);
-    }
-}
-
 /*
   return the center stick position expressed as a control_in value
   used for thr_mid in copter

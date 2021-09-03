@@ -85,6 +85,12 @@ public:
         return control_mode_reason;
     }
 
+    // perform any notifications required to indicate a mode change
+    // failed due to a bad mode number being supplied.  This can
+    // happen for many reasons - bad mavlink packet and bad mode
+    // parameters for example.
+    void notify_no_such_mode(uint8_t mode_number);
+
     /*
       common parameters for fixed wing aircraft
      */
@@ -373,6 +379,8 @@ private:
     static AP_Vehicle *_singleton;
 
     bool done_safety_init;
+
+    uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 };
 
 namespace AP {
