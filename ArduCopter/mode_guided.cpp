@@ -157,7 +157,7 @@ void ModeGuided::pva_control_start()
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
 
-    // initialise terain alt
+    // initialise terrain alt
     guided_pos_terrain_alt = false;
 }
 
