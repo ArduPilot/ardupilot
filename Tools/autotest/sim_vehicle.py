@@ -28,7 +28,6 @@ import shlex
 import binascii
 import math
 
-from pymavlink import mavextra
 from pysim import vehicleinfo
 
 
@@ -37,6 +36,12 @@ windowID = []
 
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
+
+try:
+    from pymavlink import mavextra
+except ImportError:
+    sys.path.append(os.path.join(root_dir, "modules/mavlink"))
+    from pymavlink import mavextra
 
 os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 
