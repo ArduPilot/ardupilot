@@ -262,8 +262,8 @@ protected:
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
-    float       _terain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terain
-    float       _terain_accel;          // acceleration value used to change _terain_vel
+    float       _terrain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terrain
+    float       _terrain_accel;          // acceleration value used to change _terain_vel
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin

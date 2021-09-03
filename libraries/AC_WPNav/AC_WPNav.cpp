@@ -177,8 +177,8 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     _this_leg_is_spline = false;
 
     // initialise the terrain velocity to the current maximum velocity
-    _terain_vel = _wp_desired_speed_xy_cms;
-    _terain_accel = 0.0;
+    _terrain_vel = _wp_desired_speed_xy_cms;
+    _terrain_accel = 0.0;
 }
 
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
@@ -187,7 +187,7 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     // range check target speed
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
         // update terrain following speed scalar
-        _terain_vel = speed_cms * _terain_vel / _wp_desired_speed_xy_cms;
+        _terrain_vel = speed_cms * _terrain_vel / _wp_desired_speed_xy_cms;
 
         // initialize the desired wp speed
         _wp_desired_speed_xy_cms = speed_cms;
@@ -463,11 +463,11 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     float vel_time_scalar = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
-        update_vel_accel(_terain_vel, _terain_accel, dt, false);
+        update_vel_accel(_terrain_vel, _terrain_accel, dt, false);
         shape_vel_accel( _wp_desired_speed_xy_cms * offset_z_scaler, 0.0,
-            _terain_vel, _terain_accel,
+            _terrain_vel, _terrain_accel,
             -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
-        vel_time_scalar = _terain_vel / _wp_desired_speed_xy_cms;
+        vel_time_scalar = _terrain_vel / _wp_desired_speed_xy_cms;
     }
 
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
