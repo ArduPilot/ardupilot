@@ -2856,6 +2856,37 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.fly_mission("wp.txt")
 
+    def WPNAV_SPEED(self):
+        '''ensure resetting WPNAV_SPEED works'''
+
+        loc = self.poll_home_position()
+        alt = 20
+        loc.alt = alt
+        items = []
+
+        # 100 waypoints in a line, 10m apart in a northerly direction
+        #        for i in range(1, 100):
+        #            items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, i*10, 0, alt))
+
+        # 1 waypoint a long way away
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),)
+
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+
+        self.upload_simple_relhome_mission(items)
+
+        start_speed_ms = 1
+        self.set_parameter('WPNAV_SPEED', start_speed_ms*100)
+
+        self.takeoff(20)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
+
+        for speed_ms in 7, 8, 7, 8, 9, 10, 11, 7:
+            self.set_parameter('WPNAV_SPEED', speed_ms*100)
+            self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
+        self.do_RTL()
+
     def fly_mission(self, filename, strict=True):
         num_wp = self.load_mission(filename, strict=strict)
         self.set_parameter("AUTO_OPTIONS", 3)
@@ -7797,6 +7828,10 @@ class AutoTestCopter(AutoTest):
             Test("GroundEffectCompensation_takeOffExpected",
                  "Test EKF's handling of takeoff-expected",
                  self.GroundEffectCompensation_takeOffExpected),
+
+            Test("WPNAV_SPEED",
+                 "Change speed during misison",
+                 self.WPNAV_SPEED),
 
             Test("LogUpload",
                  "Log upload",
