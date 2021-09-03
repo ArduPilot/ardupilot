@@ -211,6 +211,9 @@ private:
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
 
+    // check if we should keep logging after disarming
+    void check_forced_logging(const AP_Arming::Method method);
+
     enum MIS_ITEM_CHECK {
         MIS_ITEM_CHECK_LAND          = (1 << 0),
         MIS_ITEM_CHECK_VTOL_LAND     = (1 << 1),
