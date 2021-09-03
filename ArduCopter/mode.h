@@ -1287,6 +1287,7 @@ public:
     void exit() override;
 
     bool is_landing() const override;
+    bool use_pilot_yaw() const override;
 
     // Safe RTL states
     enum class SubMode : uint8_t {
