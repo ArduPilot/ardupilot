@@ -106,6 +106,9 @@ public:
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
 
+    // returns true if pilot's yaw input should be used to adjust vehicle's heading
+    virtual bool use_pilot_yaw() const {return true; }
+
 protected:
 
     // helper functions
@@ -415,6 +418,7 @@ public:
     bool is_landing() const override;
 
     bool is_taking_off() const override;
+    bool use_pilot_yaw() const override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -452,8 +456,6 @@ private:
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
     };
-
-    bool use_pilot_yaw(void) const;
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -921,6 +923,8 @@ public:
     // return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
     uint32_t get_timeout_ms() const;
 
+    bool use_pilot_yaw() const override;
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -954,7 +958,6 @@ private:
     void posvelaccel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
-    bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;
@@ -1179,6 +1182,8 @@ public:
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
 
+    bool use_pilot_yaw() const override;
+
     // RTL states
     enum class SubMode : uint8_t {
         STARTING,
@@ -1260,8 +1265,6 @@ private:
         // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
     };
-
-    bool use_pilot_yaw(void) const;
 
 };
 
