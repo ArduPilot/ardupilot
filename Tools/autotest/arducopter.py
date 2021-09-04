@@ -6502,16 +6502,6 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("MOT_PWM_MAX", 100)
         self.drain_mav()
         self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
-        self.progress("invalid; both must be non-zero or both zero (min=0)")
-        self.set_parameter("MOT_PWM_MIN", 0)
-        self.set_parameter("MOT_PWM_MAX", 100)
-        self.drain_mav()
-        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
-        self.progress("invalid; both must be non-zero or both zero (max=0)")
-        self.set_parameter("MOT_PWM_MIN", 100)
-        self.set_parameter("MOT_PWM_MAX", 0)
-        self.drain_mav()
-        self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
     def test_alt_estimate_prearm(self):
         self.context_push()
