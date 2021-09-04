@@ -125,9 +125,6 @@ void Plane::init_ardupilot()
         hal.rcout->set_output_mode(g2.oneshot_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
     }
 
-    // choose the nav controller
-    set_nav_controller();
-
     set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
 
     // set the correct flight mode

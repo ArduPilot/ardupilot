@@ -982,7 +982,6 @@ private:
     void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
 
     // navigation.cpp
-    void set_nav_controller(void);
     void loiter_angle_reset(void);
     void loiter_angle_update(void);
     void navigate();
