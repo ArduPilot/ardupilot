@@ -82,23 +82,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RC_SPEED", 21, QuadPlane, rc_speed, 490),
 
-    // @Param: THR_MIN_PWM
-    // @DisplayName: Minimum PWM output
-    // @Description: This is the minimum PWM output for the quad motors
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("THR_MIN_PWM", 22, QuadPlane, thr_min_pwm, 1000),
-
-    // @Param: THR_MAX_PWM
-    // @DisplayName: Maximum PWM output
-    // @Description: This is the maximum PWM output for the quad motors
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("THR_MAX_PWM", 23, QuadPlane, thr_max_pwm, 2000),
+    // 22: THR_MIN_PWM
+    // 23: THR_MAX_PWM
 
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
@@ -507,6 +492,9 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 55,  AP_PARAM_FLOAT,  "Q_TILT_YAW_ANGLE" },
     { Parameters::k_param_quadplane, 1467,  AP_PARAM_FLOAT,  "Q_TILT_FIX_ANGLE" },
     { Parameters::k_param_quadplane, 1531,  AP_PARAM_FLOAT,  "Q_TILT_FIX_GAIN" },
+
+    { Parameters::k_param_quadplane, 22,  AP_PARAM_INT16, "Q_M_PWM_MIN" },
+    { Parameters::k_param_quadplane, 23,  AP_PARAM_INT16, "Q_M_PWM_MAX" },
 };
 
 
@@ -682,7 +670,7 @@ bool QuadPlane::setup(void)
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
         SRV_Channel::Aux_servo_function_t func = SRV_Channels::get_motor_function(i);
-        SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
+        SRV_Channels::set_failsafe_pwm(func, motors->get_pwm_output_min());
     }
 
     transition_state = TRANSITION_DONE;
