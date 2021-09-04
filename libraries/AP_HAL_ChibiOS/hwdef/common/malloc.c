@@ -420,6 +420,7 @@ size_t mem_available(void)
     return totalp;
 }
 
+#if CH_CFG_USE_DYNAMIC == TRUE
 /*
   allocate a thread on any available heap
  */
@@ -444,6 +445,7 @@ thread_t *thread_create_alloc(size_t size,
     }
     return NULL;
 }
+#endif
 
 /*
   return heap information

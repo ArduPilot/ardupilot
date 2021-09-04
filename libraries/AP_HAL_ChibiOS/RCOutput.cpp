@@ -178,7 +178,7 @@ void RCOutput::rcout_thread()
     }
 }
 
-void RCOutput::dshot_update_tick(void* p)
+__RAMFUNC__ void RCOutput::dshot_update_tick(void* p)
 {
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
@@ -1201,7 +1201,7 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
 #endif //#ifndef DISABLE_DSHOT
 }
 
-void RCOutput::dshot_send_next_group(void* p)
+__RAMFUNC__ void RCOutput::dshot_send_next_group(void* p)
 {
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
@@ -1528,7 +1528,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 /*
   unlock DMA channel after a dshot send completes and no return value is expected
  */
-void RCOutput::dma_unlock(void *p)
+__RAMFUNC__ void RCOutput::dma_unlock(void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
@@ -1546,7 +1546,7 @@ void RCOutput::dma_unlock(void *p)
 /*
   DMA interrupt handler. Used to mark DMA completed for DShot
  */
-void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
+__RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 {
     pwm_group *group = (pwm_group *)p;
     chSysLockFromISR();

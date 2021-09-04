@@ -47,6 +47,7 @@
 #define STM32H743_MCUCONF
 #define STM32H753_MCUCONF
 #define STM32H745_MCUCONF
+#define STM32H750_MCUCONF
 #define STM32H755_MCUCONF
 #define STM32H747_MCUCONF
 #define STM32H757_MCUCONF
@@ -312,7 +313,6 @@
 #define STM32_IRQ_FDCAN2_PRIORITY           10
 
 #define STM32_IRQ_MDMA_PRIORITY             9
-
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
@@ -349,7 +349,9 @@
 #define STM32_ADC_DUAL_MODE                 FALSE
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
+#ifndef STM32H750xx
 #define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5
