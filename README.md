@@ -151,5 +151,5 @@ for reviewing patches on their specific area.
 - [Alessandro Apostoli ](https://github.com/yaapu):
   - ***Subsystem***: Telemetry
   - ***Subsystem***: OSD
-- [Rishab Singh ](https://github.com/rishabsingh3003):
+- [Rishabh Singh ](https://github.com/rishabsingh3003):
   - ***Subsystem***: Avoidance/Proximity
