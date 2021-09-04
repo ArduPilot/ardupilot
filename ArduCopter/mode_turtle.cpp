@@ -4,7 +4,7 @@
 
 #define CRASH_FLIP_EXPO 35.0f
 #define CRASH_FLIP_STICK_MINF 0.15f
-#define power3(x) ((x)*(x)*(x))
+#define power3(x) ((x) * (x) * (x))
 
 bool ModeTurtle::init(bool ignore_checks)
 {
@@ -22,7 +22,7 @@ bool ModeTurtle::init(bool ignore_checks)
     if (!is_zero(channel_pitch->norm_input_dz())
         || !is_zero(channel_roll->norm_input_dz())
         || !is_zero(channel_yaw->norm_input_dz())) {
-            return false;
+        return false;
     }
     // reverse the motors
     hal.rcout->disable_channel_mask_updates();
@@ -40,7 +40,7 @@ bool ModeTurtle::init(bool ignore_checks)
     return true;
 }
 
-bool  ModeTurtle::allows_arming(AP_Arming::Method method) const
+bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 {
     return true;
 }
@@ -74,7 +74,7 @@ void ModeTurtle::change_motor_direction(bool reverse)
                 continue;
             }
 
-            if ((hal.rcout->get_reversed_mask() & (1U<<i)) == 0) {
+            if ((hal.rcout->get_reversed_mask() & (1U << i)) == 0) {
                 hal.rcout->send_dshot_command(direction, i, 0, 10, true);
             } else {
                 hal.rcout->send_dshot_command(inverse_direction, i, 0, 10, true);
@@ -85,59 +85,58 @@ void ModeTurtle::change_motor_direction(bool reverse)
 
 void ModeTurtle::run()
 {
-    const float flipPowerFactor = 1.0f - CRASH_FLIP_EXPO / 100.0f;
+    const float flip_power_factor = 1.0f - CRASH_FLIP_EXPO / 100.0f;
     const bool norc = copter.failsafe.radio || !copter.ap.rc_receiver_present;
-    const float stickDeflectionPitch =  norc ? 0.0f : channel_pitch->norm_input_dz();
-    const float stickDeflectionRoll = norc ? 0.0f : channel_roll->norm_input_dz();
-    const float stickDeflectionYaw = norc ? 0.0f : channel_yaw->norm_input_dz();
+    const float stick_deflection_pitch = norc ? 0.0f : channel_pitch->norm_input_dz();
+    const float stick_deflection_roll = norc ? 0.0f : channel_roll->norm_input_dz();
+    const float stick_deflection_yaw = norc ? 0.0f : channel_yaw->norm_input_dz();
 
-    const float stickDeflectionPitchAbs =  fabsf(stickDeflectionPitch);
-    const float stickDeflectionRollAbs = fabsf(stickDeflectionRoll);
-    const float stickDeflectionYawAbs = fabsf(stickDeflectionYaw);
+    const float stick_deflection_pitch_abs = fabsf(stick_deflection_pitch);
+    const float stick_deflection_roll_abs = fabsf(stick_deflection_roll);
+    const float stick_deflection_yaw_abs = fabsf(stick_deflection_yaw);
 
-    const float stickDeflectionPitchExpo = flipPowerFactor * stickDeflectionPitchAbs + power3(stickDeflectionPitchAbs) * (1 - flipPowerFactor);
-    const float stickDeflectionRollExpo = flipPowerFactor * stickDeflectionRollAbs + power3(stickDeflectionRollAbs) * (1 - flipPowerFactor);
-    const float stickDeflectionYawExpo = flipPowerFactor * stickDeflectionYawAbs + power3(stickDeflectionYawAbs) * (1 - flipPowerFactor);
+    const float stick_deflection_pitch_expo = flip_power_factor * stick_deflection_pitch_abs + power3(stick_deflection_pitch_abs) * (1 - flip_power_factor);
+    const float stick_deflection_roll_expo = flip_power_factor * stick_deflection_roll_abs + power3(stick_deflection_roll_abs) * (1 - flip_power_factor);
+    const float stick_deflection_yaw_expo = flip_power_factor * stick_deflection_yaw_abs + power3(stick_deflection_yaw_abs) * (1 - flip_power_factor);
 
-    float signPitch = stickDeflectionPitch < 0 ? -1 : 1;
-    float signRoll = stickDeflectionRoll < 0 ? 1 : -1;
-    //float signYaw = stickDeflectionYaw < 0 ? -1 : 1;
+    float sign_pitch = stick_deflection_pitch < 0 ? -1 : 1;
+    float sign_roll = stick_deflection_roll < 0 ? 1 : -1;
 
-    float stickDeflectionLength = sqrtf(sq(stickDeflectionPitchAbs) + sq(stickDeflectionRollAbs));
-    float stickDeflectionExpoLength = sqrtf(sq(stickDeflectionPitchExpo) + sq(stickDeflectionRollExpo));
+    float stick_deflection_length = sqrtf(sq(stick_deflection_pitch_abs) + sq(stick_deflection_roll_abs));
+    float stick_deflection_expo_length = sqrtf(sq(stick_deflection_pitch_expo) + sq(stick_deflection_roll_expo));
 
-    if (stickDeflectionYawAbs > MAX(stickDeflectionPitchAbs, stickDeflectionRollAbs)) {
+    if (stick_deflection_yaw_abs > MAX(stick_deflection_pitch_abs, stick_deflection_roll_abs)) {
         // If yaw is the dominant, disable pitch and roll
-        stickDeflectionLength = stickDeflectionYawAbs;
-        stickDeflectionExpoLength = stickDeflectionYawExpo;
-        signRoll = 0;
-        signPitch = 0;
+        stick_deflection_length = stick_deflection_yaw_abs;
+        stick_deflection_expo_length = stick_deflection_yaw_expo;
+        sign_roll = 0;
+        sign_pitch = 0;
     }
 
-    const float cosPhi = (stickDeflectionLength > 0) ? (stickDeflectionPitchAbs + stickDeflectionRollAbs) / (sqrtf(2.0f) * stickDeflectionLength) : 0;
-    const float cosThreshold = sqrtf(3.0f)/2.0f; // cos(PI/6.0f)
+    const float cos_phi = (stick_deflection_length > 0) ? (stick_deflection_pitch_abs + stick_deflection_roll_abs) / (sqrtf(2.0f) * stick_deflection_length) : 0;
+    const float cos_threshold = sqrtf(3.0f) / 2.0f; // cos(PI/6.0f)
 
-    if (cosPhi < cosThreshold) {
+    if (cos_phi < cos_threshold) {
         // Enforce either roll or pitch exclusively, if not on diagonal
-        if (stickDeflectionRollAbs > stickDeflectionPitchAbs) {
-            signPitch = 0;
+        if (stick_deflection_roll_abs > stick_deflection_pitch_abs) {
+            sign_pitch = 0;
         } else {
-            signRoll = 0;
+            sign_roll = 0;
         }
     }
 
     // Apply a reasonable amount of stick deadband
-    const float crashFlipStickMinExpo = flipPowerFactor * CRASH_FLIP_STICK_MINF + power3(CRASH_FLIP_STICK_MINF) * (1 - flipPowerFactor);
-    const float flipStickRange = 1.0f - crashFlipStickMinExpo;
-    const float flipPower = MAX(0.0f, stickDeflectionExpoLength - crashFlipStickMinExpo) / flipStickRange;
+    const float crash_flip_stick_min_expo = flip_power_factor * CRASH_FLIP_STICK_MINF + power3(CRASH_FLIP_STICK_MINF) * (1 - flip_power_factor);
+    const float flip_stick_range = 1.0f - crash_flip_stick_min_expo;
+    const float flip_power = MAX(0.0f, stick_deflection_expo_length - crash_flip_stick_min_expo) / flip_stick_range;
 
     // at this point we have a power value in the range 0..1
 
     // notmalise the roll and pitch input to match the motors
-    Vector2f input {signRoll, signPitch};
+    Vector2f input{sign_roll, sign_pitch};
     motors_input = input.normalized() * 0.5;
     // we bypass spin min and friends in the deadzone because we only want spin up when the sticks are moved
-    motors_output = !is_zero(flipPower) ? motors->thrust_to_actuator(flipPower) : 0.0f;
+    motors_output = !is_zero(flip_power) ? motors->thrust_to_actuator(flip_power) : 0.0f;
 }
 
 // actually write values to the motors
@@ -148,15 +147,14 @@ void ModeTurtle::output_to_motors()
             continue;
         }
 
-        const Vector2f output {motors->get_roll_factor(i), motors->get_pitch_factor(i)};
+        const Vector2f output{motors->get_roll_factor(i), motors->get_pitch_factor(i)};
         // if output aligns with input then use this motor
         if ((motors_input - output).length() > 0.5) {
             motors->rc_write(i, motors->get_pwm_output_min());
             continue;
         }
 
-        int16_t pwm = motors->get_pwm_output_min()
-            + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * motors_output;
+        int16_t pwm = motors->get_pwm_output_min() + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * motors_output;
 
         motors->rc_write(i, pwm);
     }
