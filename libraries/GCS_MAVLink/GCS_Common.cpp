@@ -4358,7 +4358,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // log the packet:
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-    AP::logger().Write_Command(packet_int, result, true);
+    AP::logger().Write_Command(packet_int, msg.sysid, msg.compid, result, true);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
@@ -4545,7 +4545,7 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
                                  msg.sysid,
                                  msg.compid);
 
-    AP::logger().Write_Command(packet, result);
+    AP::logger().Write_Command(packet, msg.sysid, msg.compid, result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
