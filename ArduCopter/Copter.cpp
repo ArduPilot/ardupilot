@@ -565,7 +565,7 @@ void Copter::one_hz_loop()
 
 #if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
-        motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+        motors->update_throttle_range();
 #endif
     }
 
