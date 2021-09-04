@@ -3,17 +3,8 @@
 
 bool ModeQStabilize::_enter()
 {
-    if (!plane.quadplane.init_mode()) {
-        return false;
-    }
-    plane.auto_state.vtol_mode = true;
-    return true;
-}
-
-// init quadplane stabilize mode 
-void ModeQStabilize::init()
-{
     quadplane.throttle_wait = false;
+    return true;
 }
 
 void ModeQStabilize::update()
