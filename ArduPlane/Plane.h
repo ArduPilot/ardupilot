@@ -139,6 +139,7 @@ public:
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
     friend class Tailsitter;
+    friend class Tiltrotor;
 
     friend class Mode;
     friend class ModeCircle;

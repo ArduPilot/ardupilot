@@ -763,7 +763,7 @@ void Plane::force_flare(void)
     if (!control_mode->does_auto_throttle() && channel_throttle->in_trim_dz() && flare_mode != FlareMode::FLARE_DISABLED) {
         int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor
 #if HAL_QUADPLANE_ENABLED
-        if (quadplane.tilt.tilt_type == QuadPlane::TILT_TYPE_BICOPTER) {
+        if (quadplane.tiltrotor.enabled() && (quadplane.tiltrotor.type == Tiltrotor::TILT_TYPE_BICOPTER)) {
             tilt = 0; // this is tilts up for a Bicopter
         }
         if (quadplane.tailsitter.enabled()) {
@@ -940,7 +940,7 @@ void Plane::servos_output(void)
 #if HAL_QUADPLANE_ENABLED
     // cope with tailsitters and bicopters
     quadplane.tailsitter.output();
-    quadplane.tiltrotor_bicopter();
+    quadplane.tiltrotor.bicopter_output();
 #endif
 
     // support forced flare option
