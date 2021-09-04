@@ -460,15 +460,18 @@ void Plane::stabilize()
         stabilize_training(speed_scaler);
     } else if (control_mode == &mode_acro) {
         stabilize_acro(speed_scaler);
-    } else if ((control_mode == &mode_qstabilize ||
-                control_mode == &mode_qhover ||
-                control_mode == &mode_qloiter ||
-                control_mode == &mode_qland ||
-                control_mode == &mode_qrtl ||
-                control_mode == &mode_qacro ||
-                control_mode == &mode_qautotune) &&
-               !quadplane.tailsitter.in_vtol_transition(now)) {
-        quadplane.control_run();
+    } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
+        // run controlers specific to this mode
+        plane.control_mode->run();
+
+        // we also stabilize using fixed wing surfaces
+        if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
+            plane.stabilize_acro(speed_scaler);
+        } else {
+            plane.stabilize_roll(speed_scaler);
+            plane.stabilize_pitch(speed_scaler);
+        }
+
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
