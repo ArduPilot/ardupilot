@@ -215,6 +215,16 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return true;
     }
 
+    if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
+        // dont try and switch to a Q mode if quadplane is not enabled and initalized
+        gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        return false;
+    }
+
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
