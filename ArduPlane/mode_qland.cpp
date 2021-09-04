@@ -3,12 +3,7 @@
 
 bool ModeQLand::_enter()
 {
-    return plane.mode_qstabilize._enter();
-}
-
-void ModeQLand::init()
-{
-    plane.mode_qloiter.init();
+    plane.mode_qloiter._enter();
     quadplane.throttle_wait = false;
     quadplane.setup_target_position();
     poscontrol.set_state(QuadPlane::QPOS_LAND_DESCEND);
@@ -22,6 +17,7 @@ void ModeQLand::init()
 #if AC_FENCE == ENABLED
     plane.fence.auto_disable_fence_for_landing();
 #endif
+    return true;
 }
 
 void ModeQLand::update()
