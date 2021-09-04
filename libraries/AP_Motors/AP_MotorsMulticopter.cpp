@@ -774,3 +774,13 @@ void AP_MotorsMulticopter::save_params_on_disarm()
         _throttle_hover.save();
     }
 }
+
+// convert to PWM min and max in the motor lib
+void AP_MotorsMulticopter::convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max)
+{
+    if (_pwm_min.configured_in_storage() || _pwm_max.configured_in_storage()) {
+        return;
+    }
+    _pwm_min.set_and_save(radio_min);
+    _pwm_max.set_and_save(radio_max);
+}
