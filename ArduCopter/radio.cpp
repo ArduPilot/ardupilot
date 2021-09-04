@@ -51,6 +51,13 @@ void Copter::init_rc_out()
     motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
+    if (channel_throttle->configured_in_storage()) {
+        // throttle inputs setup, use those to set motor PWM min and max if not already configured
+        motors->convert_pwm_min_max_param(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    } else {
+        // throttle inputs default, force set motor PWM min and max to defaults so they will not be over-written by a future change in RC min / max
+        motors->convert_pwm_min_max_param(1000, 2000);
+    }
     motors->update_throttle_range();
 #else
     // setup correct scaling for ESCs like the UAVCAN ESCs which
