@@ -215,13 +215,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
 
-    // @Param: NAV_CONTROLLER
-    // @DisplayName: Navigation controller selection
-    // @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
-    // @Values: 0:Default,1:L1Controller
-    // @User: Standard
-    GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
-
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
     // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission

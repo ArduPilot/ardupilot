@@ -81,7 +81,7 @@ public:
         k_param_level_roll_limit,
         k_param_hil_servos_unused,  // unused
         k_param_vtail_output, // unused
-        k_param_nav_controller,
+        k_param_nav_controller, // unused
         k_param_elevon_output, // unused
         k_param_att_controller, // unused
         k_param_mixing_gain,
@@ -376,9 +376,6 @@ public:
 
     // speed used for speed scaling
     AP_Float scaling_speed;
-
-    // navigation controller type. See AP_Navigation::ControllerType
-    AP_Int8  nav_controller;
 
     AP_Int8  auto_fbw_steer;
 
