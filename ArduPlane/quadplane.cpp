@@ -805,15 +805,7 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-
-    tilt.is_vectored = tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW;
-
-    if (motors_var_info == AP_MotorsMatrix::var_info && tilt.is_vectored) {
-        // we will be using vectoring for yaw
-        motors->disable_yaw_torque();
-    }
-
-    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
+    motors->update_throttle_range();
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
