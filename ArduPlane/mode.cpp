@@ -65,8 +65,8 @@ bool Mode::enter()
     // record time of mode change
     plane.last_mode_change_ms = AP_HAL::millis();
 
-    // assume non-VTOL mode
-    plane.auto_state.vtol_mode = false;
+    // set VTOL auto state
+    plane.auto_state.vtol_mode = is_vtol_mode();
     plane.auto_state.vtol_loiter = false;
 
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
