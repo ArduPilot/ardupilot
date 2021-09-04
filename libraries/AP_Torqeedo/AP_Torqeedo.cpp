@@ -365,7 +365,7 @@ void AP_Torqeedo::send_motor_speed_cmd()
     send_start();
 
     // by default use tiller connection command
-    uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, 0x0, 0x0, 0x5, 0x0, HIGHBYTE(_motor_speed), LOWBYTE(_motor_speed), 0x0, TORQEEDO_PACKET_FOOTER};
+    uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, (uint8_t)MsgId::SET_MOTOR_SPEED, 0x0, 0x5, 0x0, HIGHBYTE(_motor_speed), LOWBYTE(_motor_speed), 0x0, TORQEEDO_PACKET_FOOTER};
     uint8_t buff_size = ARRAY_SIZE(mot_speed_cmd_buff);
 
     // update message if using motor connection
