@@ -3,17 +3,10 @@
 
 bool ModeQAcro::_enter()
 {
-    return plane.mode_qstabilize._enter();
-}
-
-/*
-  init QACRO mode
- */
-void ModeQAcro::init()
-{
     quadplane.throttle_wait = false;
     quadplane.transition_state = QuadPlane::TRANSITION_DONE;
     attitude_control->relax_attitude_controllers();
+    return true;
 }
 
 void ModeQAcro::update()
