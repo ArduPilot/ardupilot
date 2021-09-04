@@ -108,6 +108,11 @@ private:
     // value is taken directly from SRV_Channel
     void send_motor_speed_cmd();
 
+    // calculate the limited motor speed that is sent to the motors
+    // desired_motor_speed argument and returned value are in the range -1000 to 1000
+    int16_t calc_motor_speed_limited(int16_t desired_motor_speed);
+    int16_t get_motor_speed_limited() const { return (int16_t)_motor_speed_limited; }
+
     // output logging and debug messages (if required)
     // force_logging should be true if caller wants to ensure the latest status is logged
     void log_and_debug(bool force_logging);
@@ -118,15 +123,23 @@ private:
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
     AP_Int16 _options;      // options bitmask
     AP_Int8 _motor_power;   // motor power (0 ~ 100).  only applied when using motor connection
+    AP_Float _slew_time;    // slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  A value of zero disables the limit
+    AP_Float _dir_delay;    // direction change delay.  output will remain at zero for this many seconds when transitioning between forward and backwards rotation
 
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
     bool _initialised;              // true once driver has been initialised
     bool _send_motor_speed;         // true if motor speed should be sent at next opportunity
-    int16_t _motor_speed;           // desired motor speed (set from within update method)
+    int16_t _motor_speed_desired;   // desired motor speed (set from within update method)
     uint32_t _last_send_motor_ms;   // system time (in millis) last motor speed command was sent (used for health reporting)
     uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;        // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
+
+    // motor speed limit variables
+    float _motor_speed_limited;     // limited desired motor speed. this value is actually sent to the motor
+    uint32_t _motor_speed_limited_ms; // system time that _motor_speed_limited was last updated
+    int8_t _dir_limit;              // acceptable directions for output to motor (+1 = positive OK, -1 = negative OK, 0 = either positive or negative OK)
+    uint32_t _motor_speed_zero_ms;  // system time that _motor_speed_limited reached zero.  0 if currently not zero
 
     // health reporting
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_ms

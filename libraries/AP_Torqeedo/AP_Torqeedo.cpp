@@ -74,6 +74,24 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("POWER", 5, AP_Torqeedo, _motor_power, 100),
 
+    // @Param: SLEW_TIME
+    // @DisplayName: Torqeedo Slew Time
+    // @Description: Torqeedo slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  A value of zero disables the limit
+    // @Units: s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_TIME", 6, AP_Torqeedo, _slew_time, 2.0),
+
+    // @Param: DIR_DELAY
+    // @DisplayName: Torqeedo Direction Change Delay
+    // @Description: Torqeedo direction change delay.  Output will remain at zero for this many seconds when transitioning between forward and backwards rotation
+    // @Units: s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("DIR_DELAY", 7, AP_Torqeedo, _dir_delay, 1.0),
+
     AP_GROUPEND
 };
 
@@ -365,18 +383,21 @@ void AP_Torqeedo::send_motor_speed_cmd()
 {
     // calculate desired motor speed
     if (!hal.util->get_soft_armed()) {
-        _motor_speed = 0;
+        _motor_speed_desired = 0;
     } else {
         // convert throttle output to motor output in range -1000 to +1000
         // ToDo: convert PWM output to motor output so that SERVOx_MIN, MAX and TRIM take effect
-        _motor_speed = constrain_int16(SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_throttle) * 1000.0, -1000, 1000);
+        _motor_speed_desired = constrain_int16(SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_throttle) * 1000.0, -1000, 1000);
     }
+
+    // updated limited motor speed
+    int16_t mot_speed_limited = calc_motor_speed_limited(_motor_speed_desired);
 
     // set send pin
     send_start();
 
     // by default use tiller connection command
-    uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, (uint8_t)MsgId::SET_MOTOR_SPEED, 0x0, 0x5, 0x0, HIGHBYTE(_motor_speed), LOWBYTE(_motor_speed), 0x0, TORQEEDO_PACKET_FOOTER};
+    uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, (uint8_t)MsgId::SET_MOTOR_SPEED, 0x0, 0x5, 0x0, HIGHBYTE(mot_speed_limited), LOWBYTE(mot_speed_limited), 0x0, TORQEEDO_PACKET_FOOTER};
     uint8_t buff_size = ARRAY_SIZE(mot_speed_cmd_buff);
 
     // update message if using motor connection
@@ -384,8 +405,8 @@ void AP_Torqeedo::send_motor_speed_cmd()
         const uint8_t motor_power = (uint8_t)constrain_int16(_motor_power, 0, 100);
         mot_speed_cmd_buff[1] = 0x30;
         mot_speed_cmd_buff[2] = 0x82;
-        mot_speed_cmd_buff[3] = _motor_speed == 0 ? 0 : 0x1;    // enable motor
-        mot_speed_cmd_buff[4] = _motor_speed == 0 ? 0 : motor_power;    // motor power from 0 to 100
+        mot_speed_cmd_buff[3] = mot_speed_limited == 0 ? 0 : 0x1;    // enable motor
+        mot_speed_cmd_buff[4] = mot_speed_limited == 0 ? 0 : motor_power;    // motor power from 0 to 100
     }
 
     // calculate crc and add to buffer
@@ -406,6 +427,77 @@ void AP_Torqeedo::send_motor_speed_cmd()
 
 }
 
+// calculate the limited motor speed that is sent to the motors
+// desired_motor_speed argument and returned value are in the range -1000 to 1000
+int16_t AP_Torqeedo::calc_motor_speed_limited(int16_t desired_motor_speed)
+{
+    uint32_t now_ms = AP_HAL::millis();
+
+    // update dir_limit flag for forward-reverse transition delay
+    const bool dir_delay_active = (_dir_delay > 0);
+    if (!dir_delay_active) {
+        // allow movement in either direction
+        _dir_limit = 0;
+    } else {
+        // by default limit motor direction to previous iteration's direction
+        if (is_positive(_motor_speed_limited)) {
+            _dir_limit = 1;
+        } else if (is_negative(_motor_speed_limited)) {
+            _dir_limit = -1;
+        } else {
+            // motor speed is zero
+            if ((_motor_speed_zero_ms != 0) && ((now_ms - _motor_speed_zero_ms) > (_dir_delay * 1000))) {
+                // delay has passed so allow movement in either direction
+                _dir_limit = 0;
+                _motor_speed_zero_ms = 0;
+            }
+        }
+    }
+
+    // calculate upper and lower limits for forward-reverse transition delay
+    int16_t lower_limit = -1000;
+    int16_t upper_limit = 1000;
+    if (_dir_limit < 0) {
+        upper_limit = 0;
+    }
+    if (_dir_limit > 0) {
+        lower_limit = 0;
+    }
+
+    // calculate dt since last update
+    float dt = (now_ms - _motor_speed_limited_ms) / 1000.0f;
+    if (dt > 1.0) {
+        // after a long delay limit motor output to zero to avoid sudden starts
+        lower_limit = 0;
+        upper_limit = 0;
+    }
+    _motor_speed_limited_ms = now_ms;
+
+    // apply slew limit
+    if (_slew_time > 0) {
+       const float chg_max = 1000.0 * dt / _slew_time;
+       _motor_speed_limited = constrain_float(desired_motor_speed, _motor_speed_limited - chg_max, _motor_speed_limited + chg_max);
+    } else {
+        // no slew limit
+        _motor_speed_limited = desired_motor_speed;
+    }
+
+    // apply upper and lower limits
+    _motor_speed_limited = constrain_float(_motor_speed_limited, lower_limit, upper_limit);
+
+    // record time motor speed becomes zero
+    if (is_zero(_motor_speed_limited)) {
+        if (_motor_speed_zero_ms == 0) {
+            _motor_speed_zero_ms = now_ms;
+        }
+    } else {
+        // clear timer
+        _motor_speed_zero_ms = 0;
+    }
+
+    return (int16_t)_motor_speed_limited;
+}
+
 // output logging and debug messages (if required)
 // force_logging should be true if caller wants to ensure the latest status is logged
 void AP_Torqeedo::log_and_debug(bool force_logging)
@@ -423,28 +515,31 @@ void AP_Torqeedo::log_and_debug(bool force_logging)
     _last_debug_ms = now_ms;
 
     const bool health = healthy();
-    const int16_t mot_speed = health ? _motor_speed : 0;
+    int16_t actual_motor_speed = get_motor_speed_limited();
 
     if ((_options & options::LOG) != 0) {
         // @LoggerMessage: TRQD
         // @Description: Torqeedo Status
         // @Field: TimeUS: Time since system startup
         // @Field: Health: Health
+        // @Field: DesMotSpeed: Desired Motor Speed (-1000 to 1000)
         // @Field: MotSpeed: Motor Speed (-1000 to 1000)
         // @Field: SuccCnt: Success Count
         // @Field: ErrCnt: Error Count
-        AP::logger().Write("TRQD", "TimeUS,Health,MotSpeed,SuccCnt,ErrCnt", "QBHII",
+        AP::logger().Write("TRQD", "TimeUS,Health,DesMotSpeed,MotSpeed,SuccCnt,ErrCnt", "QBhhII",
                            AP_HAL::micros64(),
                            health,
-                           mot_speed,
+                           _motor_speed_desired,
+                           actual_motor_speed,
                            _parse_success_count,
                            _parse_error_count);
     }
 
     if ((_options & options::DEBUG_TO_GCS) != 0) {
-        gcs().send_text(MAV_SEVERITY_INFO,"Trqd h:%u spd:%d succ:%ld err:%ld",
+        gcs().send_text(MAV_SEVERITY_INFO,"Trqd h:%u dspd:%d spd:%d succ:%ld err:%ld",
                 (unsigned)health,
-                (int)mot_speed,
+                (int)_motor_speed_desired,
+                (int)actual_motor_speed,
                 (unsigned long)_parse_success_count,
                 (unsigned long)_parse_error_count);
     }
