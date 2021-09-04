@@ -105,6 +105,9 @@ public:
     // return whether a motor is enabled or not
     bool                is_motor_enabled(uint8_t i) override { return motor_enabled[i]; }
 
+    // convert values to PWM min and max if not configured
+    void                convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
