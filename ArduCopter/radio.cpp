@@ -51,7 +51,7 @@ void Copter::init_rc_out()
     motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
-    motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    motors->update_throttle_range();
 #else
     // setup correct scaling for ESCs like the UAVCAN ESCs which
     // take a proportion of speed.
