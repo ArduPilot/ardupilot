@@ -217,6 +217,8 @@ void AP_Logger::Write_RSSI()
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
+                              uint8_t source_system,
+                              uint8_t source_component,
                               const MAV_RESULT result,
                               bool was_command_long)
 {
@@ -225,10 +227,10 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
         time_us         : AP_HAL::micros64(),
         target_system   : packet.target_system,
         target_component: packet.target_component,
+        source_system   : source_system,
+        source_component: source_component,
         frame           : packet.frame,
         command         : packet.command,
-        current         : packet.current,
-        autocontinue    : packet.autocontinue,
         param1          : packet.param1,
         param2          : packet.param2,
         param3          : packet.param3,
