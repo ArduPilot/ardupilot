@@ -169,7 +169,7 @@ Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):qu
 void Tailsitter::setup()
 {
     // Set tailsitter enable flag based on old heuristics
-    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tilt.tilt_type != QuadPlane::TILT_TYPE_BICOPTER))) {
+    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
         enable.set_and_save(1);
     }
 
@@ -284,7 +284,7 @@ void Tailsitter::output(void)
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
                 // remove scaling from surface speed scaling and apply throttle scaling
-                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.tilt_throttle_scaling() / plane.get_speed_scaler());
+                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
                 // thrust vectoring in fixed wing flight
                 float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
                 float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
