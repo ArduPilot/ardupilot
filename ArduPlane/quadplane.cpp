@@ -672,7 +672,7 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
+    motors->update_throttle_range();
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
