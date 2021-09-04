@@ -44,9 +44,8 @@ public:
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
-    // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    // also sets minimum and maximum pwm values that will be sent to the motors
-    void                set_throttle_range(int16_t radio_min, int16_t radio_max);
+    // update_throttle_range - update throttle endpoints
+    void                update_throttle_range();
 
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
@@ -81,9 +80,9 @@ public:
     virtual uint16_t    get_motor_mask() override;
 
     // get minimum or maximum pwm value that can be output to motors
-    int16_t             get_pwm_output_min() const;
-    int16_t             get_pwm_output_max() const;
-
+    int16_t             get_pwm_output_min() const { return _pwm_min; }
+    int16_t             get_pwm_output_max() const { return _pwm_max; }
+    
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
 
@@ -193,9 +192,6 @@ protected:
 
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
-    int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
-    int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
-    // spool variables
 
     // spool variables
     float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
