@@ -241,7 +241,7 @@ bool Blimp::should_log(uint32_t mask)
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
 {
-    return MAV_TYPE_QUADROTOR; //TODO: Mavlink changes to allow type to be correct
+    return MAV_TYPE_AIRSHIP;
 }
 
 // return string corresponding to frame_class

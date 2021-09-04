@@ -27,11 +27,11 @@ Mode *Blimp::mode_from_mode_num(const Mode::Number mode)
     Mode *ret = nullptr;
 
     switch (mode) {
-    case Mode::Number::MANUAL:
-        ret = &mode_manual;
-        break;
     case Mode::Number::LAND:
         ret = &mode_land;
+        break;
+    case Mode::Number::MANUAL:
+        ret = &mode_manual;
         break;
     case Mode::Number::VELOCITY:
         ret = &mode_velocity;
