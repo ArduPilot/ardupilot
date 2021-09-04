@@ -222,13 +222,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
 
-    // @Param: ALT_CTRL_ALG
-    // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be selected using this parameter.
-    // @Values: 0:Automatic
-    // @User: Advanced
-    GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
-
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
     // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission

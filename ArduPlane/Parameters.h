@@ -83,7 +83,7 @@ public:
         k_param_vtail_output, // unused
         k_param_nav_controller,
         k_param_elevon_output, // unused
-        k_param_att_controller,
+        k_param_att_controller, // unused
         k_param_mixing_gain,
         k_param_scheduler,
         k_param_relay,
@@ -173,7 +173,7 @@ public:
         k_param_airspeed_max,
         k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
         k_param_flybywire_elev_reverse,
-        k_param_alt_control_algorithm,
+        k_param_alt_control_algorithm, // unused
         k_param_flybywire_climb_rate,
         k_param_acro_roll_rate,
         k_param_acro_pitch_rate,
@@ -305,7 +305,7 @@ public:
         //
         // 220: Waypoint data
         //
-        k_param_waypoint_mode = 220,
+        k_param_waypoint_mode = 220, // unused
         k_param_command_total,  // unused
         k_param_command_index,  // unused
         k_param_waypoint_radius,
@@ -380,18 +380,10 @@ public:
     // navigation controller type. See AP_Navigation::ControllerType
     AP_Int8  nav_controller;
 
-    // attitude controller type.
-    AP_Int8  att_controller;
-
     AP_Int8  auto_fbw_steer;
-
-    // Estimation
-    //
-    AP_Int8  alt_control_algorithm;
 
     // Waypoints
     //
-    AP_Int8 waypoint_mode;
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
@@ -516,9 +508,6 @@ public:
 
     // dual motor tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
-
-    // QACRO mode max yaw rate in deg/sec
-    AP_Int16 acro_yaw_rate;
 
     // mask of channels to do manual pass-thru for
     AP_Int32 manual_rc_mask;
