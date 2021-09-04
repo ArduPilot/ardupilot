@@ -85,19 +85,19 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: PWM_MIN
     // @DisplayName: PWM output minimum
-    // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors, 0 = use input RC3_MIN
+    // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
     // @User: Advanced
-    AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 0),
+    AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 1000),
 
     // @Param: PWM_MAX
     // @DisplayName: PWM output maximum
-    // @Description: This sets the max PWM value in microseconds that will ever be output to the motors, 0 = use input RC3_MAX
+    // @Description: This sets the max PWM value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
     // @User: Advanced
-    AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 0),
+    AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 2000),
 
     // @Param: SPIN_MIN
     // @DisplayName: Motor Spin minimum
@@ -221,9 +221,6 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
-    // default throttle range
-    _throttle_radio_min = 1100;
-    _throttle_radio_max = 1900;
 };
 
 // output - sends commands to the motors
@@ -485,59 +482,23 @@ float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
     return constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
 }
 
-// get minimum pwm value that can be output to motors
-int16_t AP_MotorsMulticopter::get_pwm_output_min() const
-{
-    // return _pwm_min if both PWM_MIN and PWM_MAX parameters are defined and valid
-    if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
-        return _pwm_min;
-    }
-    return _throttle_radio_min;
-}
-
-// get maximum pwm value that can be output to motors
-int16_t AP_MotorsMulticopter::get_pwm_output_max() const
-{
-    // return _pwm_max if both PWM_MIN and PWM_MAX parameters are defined and valid
-    if ((_pwm_min > 0) && (_pwm_max > 0) && (_pwm_max > _pwm_min)) {
-        return _pwm_max;
-    }
-    return _throttle_radio_max;
-}
-
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
-    // both must be zero or both non-zero:
-    if (_pwm_min == 0 && _pwm_max != 0) {
-        return false;
-    }
-    if (_pwm_min != 0 && _pwm_max == 0) {
-        return false;
-    }
     // sanity says that minimum should be less than maximum:
-    if (_pwm_min != 0 && _pwm_min >= _pwm_max) {
+    if (_pwm_min >= _pwm_max) {
         return false;
     }
     // negative values are out-of-range:
-    if (_pwm_min < 0 || _pwm_max < 0) {
+    if (_pwm_max <= 0) {
         return false;
     }
     return true;
 }
 
-// set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-// also sets throttle channel minimum and maximum pwm
-void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_max)
+// update_throttle_range - update throttle endpoints
+void AP_MotorsMulticopter::update_throttle_range()
 {
-    // sanity check
-    if (radio_max <= radio_min) {
-        return;
-    }
-
-    _throttle_radio_min = radio_min;
-    _throttle_radio_max = radio_max;
-
     // if all outputs are digital adjust the range. We also do this for type PWM_RANGE, as those use the
     // scaled output, which is then mapped to PWM via the SRV_Channel library
     if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == PWM_TYPE_PWM_RANGE)) {
