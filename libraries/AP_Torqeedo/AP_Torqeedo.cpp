@@ -170,8 +170,10 @@ void AP_Torqeedo::thread_main()
             int16_t b = _uart->read();
             if (b >= 0 ) {
                 if (parse_byte((uint8_t)b)) {
-                    // request received to send updated motor speed
-                    if (_type == ConnectionType::TYPE_TILLER) {
+                    // complete message received, check message id
+                    const MsgId msg_id = (MsgId)_received_buff[0];
+                    if ((msg_id == MsgId::REQUEST_MOTOR_SPEED) &&  (_type == ConnectionType::TYPE_TILLER)) {
+                        // request received to send updated motor speed
                         _send_motor_speed = true;
                     }
                 }
@@ -233,10 +235,10 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 }
 
 // process a single byte received on serial port
-// return true if a this driver should send a set-motor-speed message
+// return true if a complete message has been received (the message will be held in _received_buff)
 bool AP_Torqeedo::parse_byte(uint8_t b)
 {
-    bool motor_speed_requested = false;
+    bool complete_msg_received = false;
 
     switch (_parse_state) {
     case ParseState::WAITING_FOR_HEADER:
@@ -267,13 +269,7 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
                 WITH_SEMAPHORE(_last_healthy_sem);
                 _last_received_ms = AP_HAL::millis();
             }
-
-            // check message id
-            MsgId msg_id = (MsgId)_received_buff[0];
-            if (msg_id == MsgId::REQUEST_MOTOR_SPEED) {
-                motor_speed_requested = true;
-            }
-
+            complete_msg_received = true;
         } else {
             // add to buffer
             _received_buff[_received_buff_len] = b;
@@ -287,7 +283,7 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
         break;
     }
 
-    return motor_speed_requested;
+    return complete_msg_received;
 }
 
 // set DE Serial CTS pin to enable sending commands to motor

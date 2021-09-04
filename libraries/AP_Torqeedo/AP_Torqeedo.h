@@ -89,7 +89,7 @@ private:
     bool enabled() const;
 
     // process a single byte received on serial port
-    // return true if a this driver should send a set-motor-speed message
+    // return true if a complete message has been received (the message will be held in _received_buff)
     bool parse_byte(uint8_t b);
 
     // returns true if it is safe to send a message
