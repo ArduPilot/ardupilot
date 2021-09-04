@@ -99,6 +99,9 @@ public:
     // as vectoring is used for yaw control
     virtual void        disable_yaw_torque(void) {}
 
+    // convert values to PWM min and max if not configured
+    void                convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
