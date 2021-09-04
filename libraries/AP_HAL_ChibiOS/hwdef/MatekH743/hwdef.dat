@@ -55,6 +55,9 @@ PE12 SPI4_SCK SPI4
 PE13 SPI4_MISO SPI4
 PE14 SPI4_MOSI SPI4
 
+# add ICM42605 on SPI4 as a backup to replace ICM20602
+PC13 IMU3_CS CS
+
 # two I2C bus
 I2C_ORDER I2C2 I2C1
 
@@ -180,6 +183,7 @@ define STORAGE_FLASH_PAGE 14
 # spi devices
 SPIDEV mpu6000   SPI1 DEVID1 IMU1_CS      MODE3  1*MHZ  4*MHZ
 SPIDEV icm20602  SPI4 DEVID1 IMU2_CS      MODE3  1*MHZ  4*MHZ
+SPIDEV icm42605  SPI4 DEVID1 IMU3_CS      MODE3  2*MHZ  8*MHZ
 SPIDEV osd       SPI2 DEVID4 MAX7456_CS   MODE0 10*MHZ 10*MHZ
 
 DMA_NOSHARE SPI1* SPI4*
@@ -197,10 +201,11 @@ define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # two IMUs. We put icm20602 first as we can sample accel at 4kHz
 IMU Invensense SPI:icm20602 ROTATION_ROLL_180_YAW_270
+IMU Invensensev3 SPI:icm42605 ROTATION_YAW_270
 IMU Invensense SPI:mpu6000 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
-# MS5611 integrated on I2C2 bus, multiple possible choices for external barometer
+# DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
 BARO MS56XX I2C:0:0x77
 BARO DPS310 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
