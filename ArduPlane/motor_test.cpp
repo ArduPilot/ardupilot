@@ -42,6 +42,9 @@ void QuadPlane::motor_test_output()
     int16_t pwm = 0;   // pwm that will be output to the motors
 
     // calculate pwm based on throttle type
+    const int16_t thr_min_pwm = motors->get_pwm_output_min();
+    const int16_t thr_max_pwm = motors->get_pwm_output_max();
+
     switch (motor_test.throttle_type) {
     case MOTOR_TEST_THROTTLE_PERCENT:
         // sanity check motor_test.throttle value
