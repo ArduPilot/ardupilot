@@ -3,18 +3,13 @@
 
 bool ModeQHover::_enter()
 {
-    return plane.mode_qstabilize._enter();
-}
-
-// init quadplane hover mode 
-void ModeQHover::init()
-{
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
     quadplane.set_climb_rate_cms(0, false);
 
     quadplane.init_throttle_wait();
+    return true;
 }
 
 void ModeQHover::update()
