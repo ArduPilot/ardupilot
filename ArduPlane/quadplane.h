@@ -53,9 +53,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
 
-    void control_run(void);
     void control_auto(void);
-    bool init_mode(void);
     bool setup(void);
 
     void vtol_position_controller(void);
