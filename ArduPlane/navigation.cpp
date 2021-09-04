@@ -1,20 +1,5 @@
 #include "Plane.h"
 
-// set the nav_controller pointer to the right controller
-void Plane::set_nav_controller(void)
-{
-    switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
-
-    default:
-    case AP_Navigation::CONTROLLER_DEFAULT:
-        // no break, fall through to L1 as default controller
-
-    case AP_Navigation::CONTROLLER_L1:
-        nav_controller = &L1_controller;
-        break;
-    }
-}
-
 /*
   reset the total loiter angle
  */
@@ -100,9 +85,6 @@ void Plane::loiter_angle_update(void)
 //****************************************************************
 void Plane::navigate()
 {
-    // allow change of nav controller mid-flight
-    set_nav_controller();
-
     // do not navigate with corrupt data
     // ---------------------------------
     if (!have_position) {
