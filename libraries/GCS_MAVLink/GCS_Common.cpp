@@ -4971,6 +4971,41 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+void GCS_MAVLINK::send_position_target_global_int() const
+{
+    Position_Target_Info target;
+    target.yaw = 0.0;
+    target.yaw_rate = 0.0;
+    if (!get_target_info(target)) {
+        return;
+    }
+
+    // Note, currently get_target_info only returns either ABOVE_TERRAIN or ABOVE_ORIGIN
+    MAV_FRAME frame = MAV_FRAME_GLOBAL_INT;
+    if (!location_alt_frame_to_mavlink_coordinate_frame(target.loc, frame)) {
+        return; // failed altitude frame conversion
+    }
+
+    target.type_mask |= Position_Target_Mask::LAST_BYTE;
+
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        frame,              // target MAV_FRAME
+        target.type_mask,          // ignore items for the given type mask
+        target.loc.lat,         // latitude as 1e7
+        target.loc.lng,         // longitude as 1e7
+        target.loc.alt * 0.01f, // altitude [m] is sent as a float
+        target.vel.x,       // vx [m/s], frame NED
+        target.vel.y,       // vy [m/s], frame NED
+        -target.vel.z,      // vz [m/s], frame NED
+        target.accel.x,     // afx [m/s^2], frame NED
+        target.accel.y,     // afy [m/s^2], frame NED
+        -target.accel.z,    // afz [m/s^2], frame NED
+        target.yaw,         // yaw [rad]
+        target.yaw_rate);   // yaw_rate [rad/s]
+}
+
 void GCS_MAVLINK::send_generator_status() const
 {
 #if HAL_GENERATOR_ENABLED

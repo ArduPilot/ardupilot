@@ -309,8 +309,30 @@ public:
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
-    virtual void send_position_target_global_int() { };
-    virtual void send_position_target_local_ned() { };
+
+    struct Position_Target_Info{
+        Location loc;
+        Vector3f vel;
+        Vector3f accel;
+        float    yaw;
+        float    yaw_rate;
+        uint16_t type_mask;
+    };
+
+    enum Position_Target_Mask{
+        POS_IGNORE   = POSITION_TARGET_TYPEMASK_X_IGNORE  | POSITION_TARGET_TYPEMASK_Y_IGNORE  | POSITION_TARGET_TYPEMASK_Z_IGNORE,
+        VEL_IGNORE   = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE,
+        ACCEL_IGNORE = POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE,
+        YAW_IGNORE   = POSITION_TARGET_TYPEMASK_YAW_IGNORE,
+        YAW_RATE_IGNORE = POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE,
+        POS_ONLY    = VEL_IGNORE | ACCEL_IGNORE | YAW_IGNORE | YAW_RATE_IGNORE,
+        LAST_BYTE   = 0xF000,
+    };
+
+    void send_position_target_global_int() const;
+    virtual bool get_target_info(Position_Target_Info &target) const { return false; }
+    void send_position_target_local_ned() const;
+
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature));
