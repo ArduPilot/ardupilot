@@ -117,6 +117,7 @@ private:
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
     AP_Int16 _options;      // options bitmask
+    AP_Int8 _motor_power;   // motor power (0 ~ 100).  only applied when using motor connection
 
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor

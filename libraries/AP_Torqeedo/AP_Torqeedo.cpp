@@ -65,6 +65,15 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 4, AP_Torqeedo, _options, (int8_t)options::LOG),
 
+    // @Param: POWER
+    // @DisplayName: Torqeedo Motor Power
+    // @Description: Torqeedo motor power.  Only applied when using motor connection type (e.g. TRQD_TYPE=2)
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("POWER", 5, AP_Torqeedo, _motor_power, 100),
+
     AP_GROUPEND
 };
 
@@ -372,10 +381,11 @@ void AP_Torqeedo::send_motor_speed_cmd()
 
     // update message if using motor connection
     if (_type == ConnectionType::TYPE_MOTOR) {
+        const uint8_t motor_power = (uint8_t)constrain_int16(_motor_power, 0, 100);
         mot_speed_cmd_buff[1] = 0x30;
         mot_speed_cmd_buff[2] = 0x82;
         mot_speed_cmd_buff[3] = _motor_speed == 0 ? 0 : 0x1;    // enable motor
-        mot_speed_cmd_buff[4] = _motor_speed == 0 ? 0 : 0x64;   // motor power from 0 to 100
+        mot_speed_cmd_buff[4] = _motor_speed == 0 ? 0 : motor_power;    // motor power from 0 to 100
     }
 
     // calculate crc and add to buffer
