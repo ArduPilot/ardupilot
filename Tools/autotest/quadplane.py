@@ -112,7 +112,7 @@ class AutoTestQuadPlane(AutoTest):
             raise PreconditionFailedException("FLTMODE_CH not %d" % default_fltmode_ch)
 
         """When disarmed, motor PWM will drop to min_pwm"""
-        min_pwm = self.get_parameter("Q_THR_MIN_PWM")
+        min_pwm = self.get_parameter("Q_M_PWM_MIN")
 
         self.progress("Verify Motor1 is at min_pwm when disarmed")
         self.wait_servo_channel_value(5, min_pwm, comparator=operator.eq)
@@ -623,7 +623,7 @@ class AutoTestQuadPlane(AutoTest):
         # disable stall prevention so roll angle is not limited
         self.set_parameter("STALL_PREVENTION", 0)
 
-        thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
+        thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
         lim_roll_deg = self.get_parameter("LIM_ROLL_CD") * 0.01
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
