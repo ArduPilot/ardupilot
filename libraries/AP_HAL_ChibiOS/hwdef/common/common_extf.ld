@@ -19,13 +19,17 @@
     generated from hwdef.dat
 */
 
+/* RAM region to be used for fast code. */
+REGION_ALIAS("FASTCODE_RAM", ram1)
+
+/* stack areas are configured to be in AXI RAM (ram1) to ensure the SSBL will load the image */
 /* RAM region to be used for Main stack. This stack accommodates the processing
    of all exceptions and interrupts*/
-REGION_ALIAS("MAIN_STACK_RAM", ram0);
+REGION_ALIAS("MAIN_STACK_RAM", ram1);
 
 /* RAM region to be used for the process stack. This is the stack used by
    the main() function.*/
-REGION_ALIAS("PROCESS_STACK_RAM", ram0);
+REGION_ALIAS("PROCESS_STACK_RAM", ram1);
 
 /* RAM region to be used for data segment.*/
 REGION_ALIAS("DATA_RAM", ram0);
@@ -40,6 +44,17 @@ __ram0_start__          = ORIGIN(ram0);
 __ram0_size__           = LENGTH(ram0);
 __ram0_end__            = __ram0_start__ + __ram0_size__;
 
+/* AXI */
+__ram1_start__          = ORIGIN(ram1);
+__ram1_size__           = LENGTH(ram1);
+__ram1_end__            = __ram1_start__ + __ram1_size__;
+
+/* DTCM */
+__ram2_start__          = ORIGIN(ram2);
+__ram2_size__           = LENGTH(ram2);
+__ram2_end__            = __ram2_start__ + __ram2_size__;
+
+/* ITCM */
 __instram_start__      = ORIGIN(instram);
 __instram_size__       = LENGTH(instram);
 __instram_end__        = __instram_start__ + __instram_size__;
@@ -72,17 +87,123 @@ SECTIONS
         __fini_array_end__ = .;
     } > default_flash
 
-    .ramfunc : ALIGN(4) SUBALIGN(4)
+    /* INSTRUCTION_RAM area is fast-access ITCM used for RAM-based code, 64k on H7 */
+    .fastramfunc : ALIGN(4) SUBALIGN(4)
     {
         . = ALIGN(4);
-        __instram_init_text__ = LOADADDR(.ramfunc);
+        __instram_init_text__ = LOADADDR(.fastramfunc);
         __instram_init__ = .;
+        /* ChibiOS won't boot unless these are excluded */
         EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o)
-        *libch.a:*(.text .text.* .rodata .rodata.* .glue_7t .glue_7 .gcc*)
-        *(.ramfunc)
+        /* performance critical sections of ChibiOS */
+        *libch.a:ch*.*(.text*)
+        *libch.a:nvic.*(.text*)
+        *libch.a:bouncebuffer.*(.text*)
+        *libch.a:stm32_util.*(.text*)
+        *libch.a:stm32_dma.*(.text*)
+        *libch.a:memstreams.*(.text*)
+        *libch.a:malloc.*(.text*)
+        *libch.a:hrt.*(.text*)
+        *libch.a:hal*.*(.text*)
+        /* a selection of performance critical functions driven CPUInfo results */
+        lib/lib*.a:Semaphores.*(.text*)
+        lib/lib*.a:AP_Math.*(.text*)
+        lib/lib*.a:vector3.*(.text*)
+        lib/lib*.a:matrix3.*(.text*)
+        /* only used on debug builds */
+        *libg_nano.a:*memset*(.text*)
+        *libg_nano.a:*memcpy*(.text*)
+        *libm.a:*(.text*)
+        /* For some reason boards won't boot if libc is in RAM, but will with debug on */
+        /**libc_nano.a:*(.text* .rodata*)
+        *libstdc++_nano.a:(.text* .rodata*)*/
+        *(.fastramfunc)
         . = ALIGN(4);
         __instram_end__ = .;
     } > instram AT > default_flash
+
+    /* FLASH_RAM area is primarily used for RAM-based code and data, 256k allocation on H7 */
+    .ramfunc : ALIGN(4) SUBALIGN(4)
+    {
+        . = ALIGN(4);
+        __ram1_init_text__ = LOADADDR(.ramfunc);
+        __ram1_init__ = .;
+        /* ChibiOS won't boot unless these are excluded */
+        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o)
+        /*libch.a:*(.text* .rodata* .glue_7t .glue_7 .gcc*)*/
+        /* a selection of larger performance critical functions */
+        lib/lib*.a:*Filter.*(.text* .rodata*)
+        lib/lib*.a:*Filter2p.*(.text* .rodata*)
+        lib/lib*.a:SPIDevice.*(.text* .rodata*)
+        lib/lib*.a:Util.*(.text* .rodata*)
+        lib/lib*.a:Device.*(.text* .rodata*)
+        lib/lib*.a:Scheduler.*(.text* .rodata*)
+        lib/lib*.a:shared_dma.*(.text* .rodata*)
+        lib/lib*.a:RingBuffer.*(.text* .rodata*)
+        lib/lib*.a:crc.*(.text* .rodata*)
+        lib/lib*.a:matrixN.*(.text* .rodata*)
+        lib/lib*.a:matrix_alg.*(.text* .rodata*)
+        lib/lib*.a:AP_NavEKF*.*(.text* .rodata*)
+        lib/lib*.a:EKFGSF*.*(.text* .rodata*)
+        lib/lib*.a:vector2.*(.text* .rodata*)
+        lib/lib*.a:quaternion.*(.text* .rodata*)
+        lib/lib*.a:polygon.*(.text* .rodata*)
+        /* uncomment these to test CPUInfo in FLASH_RAM */
+        /*Tools/CPUInfo/CPUInfo.*(.text* .rodata*)
+        Tools/CPUInfo/EKF_Maths.*(.text* .rodata*)*/
+        *(.ramfunc*)
+        . = ALIGN(4);
+    } > ram1 AT > default_flash
+
+    .ram1 (NOLOAD) : ALIGN(4)
+    {
+        . = ALIGN(4);
+        __ram1_clear__ = .;
+        . = ALIGN(4);
+        __ram1_noinit__ = .;
+        *(.ram1*)
+        . = ALIGN(4);
+        __ram1_free__ = .;
+    } > ram1
+
+    /* DATA_RAM area is DTCM primarily used for RAM-based data, e.g. vtables */
+    .ramdata : ALIGN(4)
+    {
+        . = ALIGN(4);
+        __ram2_init_text__ = LOADADDR(.ramdata);
+        __ram2_init__ = .;
+        /* ChibiOS won't boot unless these are excluded */
+        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o)
+        /* performance critical sections of ChibiOS */
+        *libch.a:ch*.*(.rodata*)
+        *libch.a:nvic.*(.rodata*)
+        *libch.a:bouncebuffer.*(.rodata*)
+        *libch.a:stm32_util.*(.rodata*)
+        *libch.a:stm32_dma.*(.rodata*)
+        *libch.a:memstreams.*(.rodata*)
+        *libch.a:malloc.*(.rodata*)
+        *libch.a:hrt.*(.rodata*)
+        *libch.a:hal*.*(.rodata*)
+        /* a selection of performance critical functions driven CPUInfo results */
+        lib/lib*.a:Semaphores.*(.rodata*)
+        lib/lib*.a:AP_Math.*(.rodata*)
+        lib/lib*.a:vector3.*(.rodata*)
+        lib/lib*.a:matrix3.*(.rodata*)
+        *libm.a:*(.rodata*)
+        *(.ramdata*)
+        . = ALIGN(4);
+    } > ram2 AT > default_flash
+
+    .ram2 (NOLOAD) : ALIGN(4)
+    {
+        . = ALIGN(4);
+        __ram2_clear__ = .;
+        . = ALIGN(4);
+        __ram2_noinit__ = .;
+        *(.ram2*)
+        . = ALIGN(4);
+        __ram2_free__ = .;
+    } > ram2
 
     .text : ALIGN(4) SUBALIGN(4)
     {
@@ -210,4 +331,13 @@ SECTIONS
         . = ORIGIN(HEAP_RAM) + LENGTH(HEAP_RAM);
         __heap_end__ = .;
     } > HEAP_RAM
+
+    /* The crash log uses the unused part of a flash section.*/
+    .crash_log (NOLOAD) :
+    {
+        . = ALIGN(32);
+        __crash_log_base__ = .;
+        . = ORIGIN(default_flash) + LENGTH(default_flash);
+        __crash_log_end__ = .;
+    } > default_flash
 }

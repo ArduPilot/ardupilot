@@ -24,7 +24,7 @@ void EventSource::signal(uint32_t evt_mask)
     ch_evt_src_.broadcastFlags(evt_mask);
 }
 
-void EventSource::signalI(uint32_t evt_mask)
+__RAMFUNC__ void EventSource::signalI(uint32_t evt_mask)
 {
     chSysLockFromISR();
     ch_evt_src_.broadcastFlagsI(evt_mask);

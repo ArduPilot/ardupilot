@@ -549,7 +549,7 @@ void UARTDriver::rx_irq_cb(void* self)
 /*
   handle a RX DMA full interrupt
  */
-void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
+__RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
@@ -895,7 +895,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 /*
   DMA transmit completion interrupt handler
  */
-void UARTDriver::tx_complete(void* self, uint32_t flags)
+__RAMFUNC__ void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     chSysLockFromISR();
@@ -1419,7 +1419,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
   software update of rts line. We don't use the HW support for RTS as
   it has no hysteresis, so it ends up toggling RTS on every byte
  */
-void UARTDriver::update_rts_line(void)
+__RAMFUNC__ void UARTDriver::update_rts_line(void)
 {
     if (arts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
         return;
@@ -1546,7 +1546,7 @@ void UARTDriver::set_stop_bits(int n)
 
 
 // record timestamp of new incoming data
-void UARTDriver::receive_timestamp_update(void)
+__RAMFUNC__ void UARTDriver::receive_timestamp_update(void)
 {
     _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
     _receive_timestamp_idx ^= 1;
