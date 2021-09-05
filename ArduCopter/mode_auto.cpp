@@ -335,6 +335,12 @@ void ModeAuto::land_start(const Vector2f& destination)
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
+
+    // reset flag indicating if pilot has applied roll or pitch inputs during landing
+    copter.ap.land_repo_active = false;
+
+    // this will be set true if prec land is later active
+    copter.ap.prec_land_active = false;
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
