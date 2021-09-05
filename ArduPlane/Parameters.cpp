@@ -25,6 +25,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(hm_attack_angle,         "HM_ATTACK_ANGLE", HM_ATTACK_ANGLE_DEFAULT),
 
+    // @Param: HM_ATTACK_THR
+    // @DisplayName: Hit Mode attack throttle
+    // @Description: Attack throttle to use in Hit Target Mode
+    // @User: Advanced
+    GSCALAR(hm_attack_thr,         "HM_ATTACK_THR", HM_ATTACK_THR_DEFAULT),
+
     // @Param: HM_MIN_ALT
     // @DisplayName: Hit Mode Minimum altitude
     // @Description: Minimum altitude to recover its way

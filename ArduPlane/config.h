@@ -35,6 +35,10 @@
 #ifndef HM_ATTACK_ANGLE_DEFAULT
 # define HM_ATTACK_ANGLE_DEFAULT      -85    // default value for minimum altitude
 #endif
+
+#ifndef HM_ATTACK_THR_DEFAULT
+# define HM_ATTACK_THR_DEFAULT      30    // default value for forced throttle in attack
+#endif
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // HARDWARE CONFIGURATION AND CONNECTIONS
