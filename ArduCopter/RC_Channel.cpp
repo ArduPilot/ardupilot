@@ -90,6 +90,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::ACRO:
     case AUX_FUNC::AUTO_RTL:
     case AUX_FUNC::TURTLE:
+    case AUX_FUNC::SIMPLE_HEADING_RESET:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -573,6 +574,13 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if MODE_TURTLE_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::TURTLE, ch_flag);
 #endif
+            break;
+
+        case AUX_FUNC::SIMPLE_HEADING_RESET:
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                copter.init_simple_bearing();
+                gcs().send_text(MAV_SEVERITY_INFO, "Simple heading reset");
+            }
             break;
 
     default:
