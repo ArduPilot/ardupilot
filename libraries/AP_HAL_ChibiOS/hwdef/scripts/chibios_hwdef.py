@@ -671,6 +671,15 @@ def has_sdcard_spi():
     return False
 
 
+def get_ram_map():
+    '''get RAM_MAP. May be different for bootloader'''
+    if args.bootloader:
+        ram_map = get_mcu_config('RAM_MAP_BOOTLOADER', False)
+        if ram_map is not None:
+            return ram_map
+    return get_mcu_config('RAM_MAP', True)
+
+
 def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
@@ -788,7 +797,7 @@ def write_mcu_config(f):
         f.write('#define APP_START_OFFSET_KB %u\n' % get_config('APP_START_OFFSET_KB', default=0, type=int))
     f.write('\n')
 
-    ram_map = get_mcu_config('RAM_MAP', True)
+    ram_map = get_ram_map()
     f.write('// memory regions\n')
     regions = []
     total_memory = 0
@@ -930,7 +939,7 @@ def write_ldscript(fname):
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
     # ram layout
-    ram_map = get_mcu_config('RAM_MAP', True)
+    ram_map = get_ram_map()
     instruction_ram = get_mcu_config('INSTRUCTION_RAM', False)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
