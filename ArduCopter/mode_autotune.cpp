@@ -35,9 +35,6 @@ bool AutoTune::init()
 
 void AutoTune::run()
 {
-    // apply SIMPLE mode transform to pilot inputs
-    copter.update_simple_mode();
-
     // reset target lean angles and heading while landed
     if (copter.ap.land_complete) {
         // we are landed, shut down

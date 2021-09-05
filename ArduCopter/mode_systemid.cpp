@@ -106,9 +106,6 @@ bool ModeSystemId::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeSystemId::run()
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
