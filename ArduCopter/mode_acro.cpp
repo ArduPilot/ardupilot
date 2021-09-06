@@ -17,8 +17,8 @@ void ModeAcro::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (copter.ap.throttle_zero) {
-        // Attempting to Land
+    } else if (copter.ap.throttle_zero && copter.air_mode != AirMode::AIRMODE_ENABLED) {
+        // Attempting to Land, if airmode is enabled only an actual landing will spool down the motors
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
