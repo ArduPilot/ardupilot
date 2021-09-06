@@ -622,13 +622,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_comp_gps(sbuf_t *dst)
         uint16_t dist_home_m;
         uint16_t home_angle_deg;
         uint8_t toggle_gps;
-    } p;
+    } gps;
 
-    p.dist_home_m = home_state.home_distance_m;
-    p.home_angle_deg = home_angle_deg;
-    p.toggle_gps = 1;
+    gps.dist_home_m = home_state.home_distance_m;
+    gps.home_angle_deg = home_angle_deg;
+    gps.toggle_gps = 1;
 
-    sbuf_write_data(dst, &p, sizeof(p));
+    sbuf_write_data(dst, &gps, sizeof(gps));
 
     return MSP_RESULT_ACK;
 }
@@ -714,25 +714,26 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_name(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_status(sbuf_t *dst)
 {
-    const uint32_t mode_bitmask = get_osd_flight_mode_bitmask();
-    sbuf_write_u16(dst, 0);                     // task delta time
-    sbuf_write_u16(dst, 0);                     // I2C error count
-    sbuf_write_u16(dst, 0);                     // sensor status
-    sbuf_write_data(dst, &mode_bitmask, 4);     // unconditional part of flags, first 32 bits
-    sbuf_write_u8(dst, 0);
 
-    sbuf_write_u16(dst, constrain_int16(0, 0, 100));  //system load
-    sbuf_write_u16(dst, 0);                     // gyro cycle time
+    struct PACKED {
+        uint16_t task_delta_time;
+        uint16_t i2c_error_count;
+        uint16_t sensor_status;
+        uint32_t flight_mode_flags;
+        uint8_t pid_profile;
+        uint16_t system_load;
+        uint16_t gyro_cycle_time;
+        uint8_t box_mode_flags;
+        uint8_t arming_disable_flags_count;
+        uint32_t arming_disable_flags;
+        uint8_t extra_flags;
+    } status {};
 
-    // Cap BoxModeFlags to 32 bits
-    sbuf_write_u8(dst, 0);
+    status.flight_mode_flags = get_osd_flight_mode_bitmask();
+    status.arming_disable_flags_count = 1;
+    status.arming_disable_flags = !AP::notify().flags.armed;
 
-    // Write arming disable flags
-    sbuf_write_u8(dst, 1);
-    sbuf_write_u32(dst, !AP::notify().flags.armed);
-
-    // Extra flags
-    sbuf_write_u8(dst, 0);
+    sbuf_write_data(dst, &status, sizeof(status));
     return MSP_RESULT_ACK;
 }
 
@@ -748,25 +749,40 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
     if (msp == nullptr) {
         return MSP_RESULT_ERROR;
     }
-    sbuf_write_u8(dst, OSD_FLAGS_OSD_FEATURE);                      // flags
-    sbuf_write_u8(dst, 0);                                          // video system
+    struct PACKED {
+        uint8_t flags;
+        uint8_t video_system;
+        uint8_t units;
+        uint8_t rssi_alarm;
+        uint16_t capacity_alarm;
+        uint8_t unused_0;
+        uint8_t item_count;
+        uint16_t alt_alarm;
+        uint16_t items_position[OSD_ITEM_COUNT];
+        uint8_t stats_items_count;
+        uint16_t stats_items[OSD_STAT_COUNT] ;
+        uint8_t timers_count;
+        uint16_t timers[OSD_TIMER_COUNT];
+        uint16_t enabled_warnings_old;
+        uint8_t warnings_count_new;
+        uint32_t enabled_warnings_new;
+        uint8_t available_profiles;
+        uint8_t selected_profile;
+        uint8_t osd_stick_overlay;
+    } osd_config {};
+
     // Configuration
-    uint8_t units = OSD_UNIT_METRIC;
+    osd_config.units = OSD_UNIT_METRIC;
 #if OSD_ENABLED
-    units = osd->units == AP_OSD::UNITS_METRIC ? OSD_UNIT_METRIC : OSD_UNIT_IMPERIAL;
+    osd_config.units = osd->units == AP_OSD::UNITS_METRIC ? OSD_UNIT_METRIC : OSD_UNIT_IMPERIAL;
 #endif
-
-    sbuf_write_u8(dst, units);                                 // units
     // Alarms
-    sbuf_write_u8(dst, msp->_osd_config.rssi_alarm);                 // rssi alarm
-    sbuf_write_u16(dst, msp->_osd_config.cap_alarm);                 // capacity alarm
+    osd_config.rssi_alarm = msp->_osd_config.rssi_alarm;
+    osd_config.capacity_alarm = msp->_osd_config.cap_alarm;
+    osd_config.alt_alarm = msp->_osd_config.alt_alarm;
     // Reuse old timer alarm (U16) as OSD_ITEM_COUNT
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, OSD_ITEM_COUNT);                             // osd items count
-
-    sbuf_write_u16(dst, msp->_osd_config.alt_alarm);                 // altitude alarm
-
-    // element position and visibility
+    osd_config.item_count = OSD_ITEM_COUNT;
+    // Element position and visibility
     uint16_t pos = 0;   // default is hide this element
     for (uint8_t i = 0; i < OSD_ITEM_COUNT; i++) {
         pos = 0;    // 0 is hide this item
@@ -778,43 +794,27 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
                 }
             }
         }
-        sbuf_write_u16(dst, pos);
+        osd_config.items_position[i] = pos;
     }
-
-    // post flight statistics
-    sbuf_write_u8(dst, OSD_STAT_COUNT);                         // stats items count
-    for (uint8_t i = 0; i < OSD_STAT_COUNT; i++ ) {
-        sbuf_write_u16(dst, 0);                                 // stats not supported
-    }
-
-    // timers
-    sbuf_write_u8(dst, OSD_TIMER_COUNT);                      // timers
-    for (uint8_t i = 0; i < OSD_TIMER_COUNT; i++) {
-        // no timer support
-        sbuf_write_u16(dst, 0);
-    }
-
+    // Post flight statistics
+    osd_config.stats_items_count = OSD_STAT_COUNT;             // stats items count
+    // Timers
+    osd_config.timers_count = OSD_TIMER_COUNT;                      // timers
     // Enabled warnings
     // API < 1.41
     // Send low word first for backwards compatibility
-    sbuf_write_u16(dst, (uint16_t)(msp->_osd_config.enabled_warnings & 0xFFFF)); // Enabled warnings
+    osd_config.enabled_warnings_old = (uint16_t)(msp->_osd_config.enabled_warnings & 0xFFFF);
     // API >= 1.41
     // Send the warnings count and 32bit enabled warnings flags.
     // Add currently active OSD profile (0 indicates OSD profiles not available).
     // Add OSD stick overlay mode (0 indicates OSD stick overlay not available).
-    sbuf_write_u8(dst, OSD_WARNING_COUNT);            // warning count
-    sbuf_write_u32(dst, msp->_osd_config.enabled_warnings);  // enabled warning
-
+    osd_config.warnings_count_new = OSD_WARNING_COUNT;
+    osd_config.enabled_warnings_new = msp->_osd_config.enabled_warnings;
     // If the feature is not available there is only 1 profile and it's always selected
-    sbuf_write_u8(dst, 1);    // available profiles
-    sbuf_write_u8(dst, 1);    // selected profile
+    osd_config.available_profiles = 1;
+    osd_config.selected_profile = 1;
 
-    sbuf_write_u8(dst, 0);    // OSD stick overlay
-
-    // API >= 1.43
-    // Add the camera frame element width/height
-    //sbuf_write_u8(dst, osdConfig()->camera_frame_width);
-    //sbuf_write_u8(dst, osdConfig()->camera_frame_height);
+    sbuf_write_data(dst, &osd_config, sizeof(osd_config));
     return MSP_RESULT_ACK;
 }
 
@@ -842,8 +842,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
     home_state_t home_state;
     update_home_pos(home_state);
 
-    sbuf_write_u32(dst, home_state.rel_altitude_cm);                // relative altitude cm
-    sbuf_write_u16(dst, int16_t(get_vspeed_ms() * 100));            // climb rate cm/s
+    struct PACKED {
+        int32_t rel_altitude_cm;    // relative altitude cm
+        int16_t vspeed_cms;         // climb rate cm/s
+    } altitude {};
+
+    altitude.rel_altitude_cm = home_state.rel_altitude_cm;
+    altitude.vspeed_cms = int16_t(get_vspeed_ms() * 100);
+
+    sbuf_write_data(dst, &altitude, sizeof(altitude));
     return MSP_RESULT_ACK;
 }
 
@@ -907,16 +914,24 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *d
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem& telem = AP::esc_telem();
     if (telem.get_last_telem_data_ms(0)) {
-        const uint8_t num_motors = telem.get_num_active_escs();
-        sbuf_write_u8(dst, num_motors);
-        for (uint8_t i = 0; i < num_motors; i++) {
+        struct PACKED {
+            uint8_t num_motors;
+            struct PACKED {
+                uint8_t temp;
+                uint16_t rpm;
+            } data[ESC_TELEM_MAX_ESCS];
+        } esc_sensor {};
+
+        esc_sensor.num_motors = telem.get_num_active_escs();
+        for (uint8_t i = 0; i < esc_sensor.num_motors; i++) {
             int16_t temp = 0;
             float rpm = 0.0f;
             IGNORE_RETURN(telem.get_rpm(i, rpm));
             IGNORE_RETURN(telem.get_temperature(i, temp));
-            sbuf_write_u8(dst, uint8_t(temp * 0.01f));
-            sbuf_write_u16(dst, uint16_t(rpm * 0.1f));
+            esc_sensor.data[i].temp = uint8_t(temp * 0.01f);
+            esc_sensor.data[i].rpm = uint16_t(rpm * 0.1f);
         }
+        sbuf_write_data(dst, &esc_sensor, 1 + 3*esc_sensor.num_motors);
     }
 #endif
     return MSP_RESULT_ACK;
@@ -982,11 +997,22 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_board_info(sbuf_t *dst)
 {
     const AP_FWVersion &fwver = AP::fwversion();
 
+    struct PACKED {
+        uint16_t hw_revision;
+        uint8_t aio_flags;
+        uint8_t capabilities;
+        uint8_t fw_string_len;
+    } fw_info {};
+
+#if HAL_WITH_OSD_BITMAP
+    fw_info.aio_flags = 2; // 2 == FC with MAX7456
+#else
+    fw_info.aio_flags = 0; // 0 == FC without MAX7456
+#endif
+    fw_info.fw_string_len = strlen(fwver.fw_string);
+
     sbuf_write_data(dst, "ARDU", BOARD_IDENTIFIER_LENGTH);
-    sbuf_write_u16(dst, 0);
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, strlen(fwver.fw_string));
+    sbuf_write_data(dst, &fw_info, sizeof(fw_info));
     sbuf_write_data(dst, fwver.fw_string, strlen(fwver.fw_string));
     return MSP_RESULT_ACK;
 }
