@@ -181,6 +181,7 @@ void AP_Torqeedo::thread_main()
         }
 
         // send motor speed
+        bool log_update = false;
         if (safe_to_send()) {
             // if connected to motor send motor speed every 0.5sec
             if (_type == ConnectionType::TYPE_MOTOR &&
@@ -192,11 +193,12 @@ void AP_Torqeedo::thread_main()
             if (_send_motor_speed) {
                 send_motor_speed_cmd();
                 _send_motor_speed = false;
+                log_update = true;
             }
         }
 
         // logging and debug output
-        log_and_debug();
+        log_and_debug(log_update);
     }
 }
 
@@ -395,7 +397,8 @@ void AP_Torqeedo::send_motor_speed_cmd()
 }
 
 // output logging and debug messages (if required)
-void AP_Torqeedo::log_and_debug()
+// force_logging should be true if caller wants to ensure the latest status is logged
+void AP_Torqeedo::log_and_debug(bool force_logging)
 {
     // exit immediately if options are all unset
     if (_options == 0) {
@@ -404,7 +407,7 @@ void AP_Torqeedo::log_and_debug()
 
     // return if not enough time has passed since last output
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_debug_ms < TORQEEDO_LOG_INTERVAL_MS) {
+    if (!force_logging && (now_ms - _last_debug_ms < TORQEEDO_LOG_INTERVAL_MS)) {
         return;
     }
     _last_debug_ms = now_ms;

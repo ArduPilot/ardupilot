@@ -109,7 +109,8 @@ private:
     void send_motor_speed_cmd();
 
     // output logging and debug messages (if required)
-    void log_and_debug();
+    // force_logging should be true if caller wants to ensure the latest status is logged
+    void log_and_debug(bool force_logging);
 
     // parameters
     AP_Enum<ConnectionType> _type;      // connector type used (0:disabled, 1:tiller connector, 2: motor connector)
