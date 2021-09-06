@@ -60,7 +60,7 @@ class upload_fw(Task.Task):
         if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
             cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
         else:
-            cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
+            cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src.abspath())
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
@@ -106,14 +106,14 @@ class generate_bin(Task.Task):
                 return ret
             return ret
         else:
-            cmd = "{} -O binary {} {}".format(self.env.get_flat('OBJCOPY'), self.inputs[0], self.outputs[0])
+            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', self.inputs[0].relpath(),  self.outputs[0].relpath()]
             self.exec_command(cmd)
 
     '''list sections and split into two binaries based on section's location in internal, external or in ram'''
     def split_sections(self):
         # get a list of sections
-        cmd = "{} -A -x {}".format(self.env.get_flat('SIZE'), self.inputs[0])
-        out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH)
+        cmd = "'{}' -A -x {}".format(self.env.get_flat('SIZE'), self.inputs[0].relpath())
+        out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=self.env.get_flat('BUILDROOT'))
         extf_sections = []
         intf_sections = []
         is_text_in_extf = False
@@ -153,16 +153,16 @@ class generate_bin(Task.Task):
             Logs.error("Couldn't find .text section")
         # create intf binary
         if len(intf_sections):
-            cmd = "{} {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
-                                                ' '.join(intf_sections), self.inputs[0], self.outputs[0])
+            cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+                                                ' '.join(intf_sections), self.inputs[0].relpath(), self.outputs[0].relpath())
         else:
-            cmd = "cp /dev/null {}".format(self.outputs[0])
+            cmd = "cp /dev/null {}".format(self.outputs[0].relpath())
         ret = self.exec_command(cmd)
         if (ret < 0):
             return ret
         # create extf binary
-        cmd = "{} {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
-                                                ' '.join(extf_sections), self.inputs[0], self.outputs[1])
+        cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+                                                ' '.join(extf_sections), self.inputs[0].relpath(), self.outputs[1].relpath())
         return self.exec_command(cmd)
 
     def __str__(self):
