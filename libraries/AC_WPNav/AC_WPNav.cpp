@@ -873,9 +873,9 @@ void AC_WPNav::calc_scurve_jerk_and_jerk_time()
     }
 
     // calculate jerk time
-    // jounce (the rate of change of jerk) uses the attitude control input time constant because multicopters
-    // lean to accelerate meaning the change in angle is equivalent to the change in acceleration
-    const float jounce = MIN(_attitude_control.get_accel_roll_max() * GRAVITY_MSS, _attitude_control.get_accel_pitch_max() * GRAVITY_MSS);
+    // Jounce (the rate of change of jerk) uses the attitude control input time constant because multicopters
+    // lean to accelerate. This means the change in angle is equivalent to the change in acceleration
+    const float jounce = MIN(_attitude_control.get_accel_roll_max_radss() * GRAVITY_MSS, _attitude_control.get_accel_pitch_max_radss() * GRAVITY_MSS);
     if (is_positive(jounce)) {
         _scurve_jerk_time = MAX(_attitude_control.get_input_tc(), 0.5f * _scurve_jerk * M_PI / jounce);
     } else {
