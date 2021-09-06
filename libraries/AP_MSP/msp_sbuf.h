@@ -19,9 +19,6 @@ uint8_t* sbuf_ptr(sbuf_t *buf);
 uint16_t sbuf_bytes_remaining(const sbuf_t *buf);
 bool sbuf_check_bounds(const sbuf_t *buf, const uint8_t len);
 void sbuf_switch_to_reader(sbuf_t *buf, uint8_t *base);
-void sbuf_write_u8(sbuf_t *dst, uint8_t val);
-void sbuf_write_u16(sbuf_t *dst, uint16_t val);
-void sbuf_write_u32(sbuf_t *dst, uint32_t val);
 void sbuf_write_data(sbuf_t *dst, const void *data, int len);
 }
 
