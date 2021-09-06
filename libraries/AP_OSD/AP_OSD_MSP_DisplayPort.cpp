@@ -97,11 +97,8 @@ void AP_OSD_MSP_DisplayPort::flush(void)
 void AP_OSD_MSP_DisplayPort::init_symbol_set(uint8_t *lookup_table, const uint8_t size)
 {
     const AP_MSP *msp = AP::msp();
-    if (msp == nullptr) {
-        return;
-    }
     // do we use backend specific symbols table?
-    if (msp->check_option(AP_MSP::MspOption::OPTION_DISPLAYPORT_BTFL_SYMBOLS)) {
+    if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS)) {
         memcpy(lookup_table, symbols, size);
     } else {
         memcpy(lookup_table, AP_OSD_Backend::symbols, size);
