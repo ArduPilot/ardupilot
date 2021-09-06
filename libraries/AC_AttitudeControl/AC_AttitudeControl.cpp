@@ -1007,7 +1007,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 }
 
 // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-float AC_AttitudeControl::get_althold_lean_angle_max() const
+float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 {
     // convert to centi-degrees for public interface
     return MAX(ToDeg(_althold_lean_angle_max), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;

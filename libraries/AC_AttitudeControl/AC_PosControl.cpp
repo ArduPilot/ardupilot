@@ -654,7 +654,7 @@ void AC_PosControl::update_xy_controller()
 
     // limit acceleration using maximum lean angles
     _limit_vector.xy().zero();
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
+    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
     float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
     if (_accel_target.limit_length_xy(accel_max)) {
         _limit_vector.xy() = _accel_target.xy();
@@ -1033,7 +1033,7 @@ void AC_PosControl::update_z_controller()
 float AC_PosControl::get_lean_angle_max_cd() const
 {
     if (is_zero(_lean_angle_max)) {
-        return _attitude_control.lean_angle_max();
+        return _attitude_control.lean_angle_max_cd();
     }
     return _lean_angle_max * 100.0f;
 }
