@@ -129,6 +129,7 @@ public:
 private:
     friend class AP_MSP;
     friend class AP_MSP_Telem_Backend;
+    friend class AP_MSP_Telem_DJI;
 
     static const uint8_t message_visible_width = 26;
     static const uint8_t message_scroll_time_ms = 200;
@@ -498,7 +499,21 @@ public:
         uint16_t wp_number;
     };
 
+    struct StatsInfo {
+        uint32_t last_update_ms;
+        float last_distance_m;
+        float max_dist_m;
+        float max_alt_m;
+        float max_speed_mps;
+        float max_airspeed_mps;
+        float max_current_a;
+        float avg_current_a;
+        float min_voltage_v = FLT_MAX;
+        float min_rssi = FLT_MAX;   // 0-1
+    };
+
     void set_nav_info(NavInfo &nav_info);
+    const volatile StatsInfo& get_stats_info() const {return _stats;};
     // disable the display
     void disable() {
         _disable = true;
@@ -520,6 +535,8 @@ public:
     // Check whether arming is allowed
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
     bool is_readonly_screen() const { return current_screen < AP_OSD_NUM_DISPLAY_SCREENS; }
+    // get the current screen
+    uint8_t get_current_screen() const { return current_screen; };
 #endif // OSD_ENABLED
 #if OSD_PARAM_ENABLED
     AP_OSD_ParamScreen param_screen[AP_OSD_NUM_PARAM_SCREENS] { 0, 1 };
@@ -533,12 +550,16 @@ public:
 #endif
     // handle OSD parameter configuration
     void handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link);
+    // allow threads to lock against OSD update
+    HAL_Semaphore &get_semaphore(void) {
+        return _sem;
+    }
 
 private:
     void osd_thread();
 #if OSD_ENABLED
     void update_osd();
-    void stats();
+    void update_stats();
     void update_current_screen();
     void next_screen();
 
@@ -554,17 +575,13 @@ private:
     bool was_failsafe;
     bool _disable;
 
-    uint32_t last_update_ms;
-    float last_distance_m;
-    float max_dist_m;
-    float max_alt_m;
-    float max_speed_mps;
-    float max_current_a;
-    float avg_current_a;
+    StatsInfo _stats;
 #endif
     AP_OSD_Backend *backend;
 
     static AP_OSD *_singleton;
+    // multi-thread access support
+    HAL_Semaphore _sem;
 };
 
 namespace AP
