@@ -84,15 +84,15 @@ uint32_t AP_MSP_Telem_DJI::get_osd_flight_mode_bitmask(void)
 
 MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_api_version(sbuf_t *dst)
 {
-    struct {
+    const struct {
         uint8_t proto;
         uint8_t major;
         uint8_t minor;
-    } api_version;
-
-    api_version.proto = MSP_PROTOCOL_VERSION;
-    api_version.major = API_VERSION_MAJOR;
-    api_version.minor = API_VERSION_MINOR;
+    } api_version  {
+        proto : MSP_PROTOCOL_VERSION,
+        major : API_VERSION_MAJOR,
+        minor : API_VERSION_MINOR
+    };
 
     sbuf_write_data(dst, &api_version, sizeof(api_version));
     return MSP_RESULT_ACK;
@@ -100,15 +100,15 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_api_version(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_fc_version(sbuf_t *dst)
 {
-    struct {
+    const struct {
         uint8_t major;
         uint8_t minor;
         uint8_t patch;
-    } fc_version;
-
-    fc_version.major = FC_VERSION_MAJOR;
-    fc_version.minor = FC_VERSION_MINOR;
-    fc_version.patch = FC_VERSION_PATCH_LEVEL;
+    } fc_version {
+        major : FC_VERSION_MAJOR,
+        minor : FC_VERSION_MINOR,
+        patch : FC_VERSION_PATCH_LEVEL
+    };
 
     sbuf_write_data(dst, &fc_version, sizeof(fc_version));
     return MSP_RESULT_ACK;
@@ -129,13 +129,14 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_esc_sensor_data(sbuf_t *dst)
         int16_t highest_temperature = 0;
         telem.get_highest_motor_temperature(highest_temperature);
 
-        struct PACKED {
+        const struct PACKED {
             uint8_t temp;
             uint16_t rpm;
-        } esc_sensor_data {};
+        } esc_sensor_data {
+            temp : uint8_t(highest_temperature * 0.01f),            // deg, report max temperature
+            rpm : uint16_t(telem.get_average_motor_rpm() * 0.1f)    // rpm, report average RPM across all motors
+        };
 
-        esc_sensor_data.temp = uint8_t(highest_temperature * 0.01f);            // deg, report max temperature
-        esc_sensor_data.rpm = uint16_t(telem.get_average_motor_rpm() * 0.1f);   // rpm, report average RPM across all motors
         sbuf_write_data(dst, &esc_sensor_data, sizeof(esc_sensor_data));
     } else {
         return AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(dst);
