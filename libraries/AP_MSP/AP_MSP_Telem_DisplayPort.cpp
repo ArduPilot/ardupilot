@@ -25,38 +25,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace MSP;
 
-MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_api_version(sbuf_t *dst)
-{
-    const struct {
-        uint8_t proto;
-        uint8_t major;
-        uint8_t minor;
-    } api_version  {
-        proto : MSP_PROTOCOL_VERSION,
-        major : API_VERSION_MAJOR,
-        minor : API_VERSION_MINOR
-    };
-
-    sbuf_write_data(dst, &api_version, sizeof(api_version));
-    return MSP_RESULT_ACK;
-}
-
-MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_version(sbuf_t *dst)
-{
-    const struct {
-        uint8_t major;
-        uint8_t minor;
-        uint8_t patch;
-    } fc_version {
-        major : FC_VERSION_MAJOR,
-        minor : FC_VERSION_MINOR,
-        patch : FC_VERSION_PATCH_LEVEL
-    };
-
-    sbuf_write_data(dst, &fc_version, sizeof(fc_version));
-    return MSP_RESULT_ACK;
-}
-
 MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_variant(sbuf_t *dst)
 {
     const AP_MSP *msp = AP::msp();

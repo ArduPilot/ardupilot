@@ -28,8 +28,6 @@ public:
     bool use_msp_thread() const override { return false; }
     AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_MSP_DisplayPort; };
 
-    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
-    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
 };
 
