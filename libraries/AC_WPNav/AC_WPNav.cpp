@@ -112,8 +112,10 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;
 
-    // initialise old WPNAV_SPEED value
-    _last_wp_speed_cms = get_default_speed_down();
+    // initialise old WPNAV_SPEED values
+    _last_wp_speed_cms = _wp_speed_cms;
+    _last_wp_speed_up_cms = _wp_speed_up_cms;
+    _last_wp_speed_down_cms = get_default_speed_down();
 }
 
 // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
@@ -578,6 +580,14 @@ bool AC_WPNav::update_wpnav()
     if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
         set_speed_xy(_wp_speed_cms);
         _last_wp_speed_cms = _wp_speed_cms;
+    }
+    if (!is_equal(_wp_speed_up_cms.get(), _last_wp_speed_up_cms)) {
+        set_speed_up(_wp_speed_up_cms);
+        _last_wp_speed_up_cms = _wp_speed_up_cms;
+    }
+    if (!is_equal(_wp_speed_down_cms.get(), _last_wp_speed_down_cms)) {
+        set_speed_down(_wp_speed_down_cms);
+        _last_wp_speed_down_cms = _wp_speed_down_cms;
     }
 
     // advance the target if necessary
