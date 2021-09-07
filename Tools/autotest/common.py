@@ -4940,6 +4940,32 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def wait_climbrate(self, speed_min, speed_max, timeout=30, **kwargs):
+        """Wait for a given vertical rate."""
+        assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
+
+        def get_climbrate(timeout2):
+            msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
+            if msg:
+                return msg.climb
+            raise MsgRcvTimeoutException("Failed to get climb rate")
+
+        def validator(value2, target2=None):
+            if speed_min <= value2 <= speed_max:
+                return True
+            else:
+                return False
+
+        self.wait_and_maintain(
+            value_name="Climbrate",
+            target=speed_min,
+            current_value_getter=lambda: get_climbrate(timeout),
+            accuracy=(speed_max - speed_min),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
