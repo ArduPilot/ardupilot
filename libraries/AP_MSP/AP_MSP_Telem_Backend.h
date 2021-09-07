@@ -195,9 +195,9 @@ protected:
     virtual bool displaying_stats_screen() const;
 
     // implementation specific MSP out command processing
-    virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) = 0;
-    virtual MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) = 0;
-    virtual MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) = 0;
+    virtual MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_uid(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_board_info(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_build_info(MSP::sbuf_t *dst);
