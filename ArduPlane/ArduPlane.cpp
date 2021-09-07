@@ -657,7 +657,7 @@ bool Plane::get_wp_distance_m(float &distance) const
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() : 0;
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() * 0.01 : 0;
         return true;
     }
 #endif
