@@ -68,7 +68,7 @@ public:
     float get_default_speed_up() const { return _wp_speed_up_cms; }
 
     /// get default target descent rate in cm/s during missions.  Note: always positive
-    float get_default_speed_down() const { return _wp_speed_down_cms; }
+    float get_default_speed_down() const { return fabsf(_wp_speed_down_cms); }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cmss; }
