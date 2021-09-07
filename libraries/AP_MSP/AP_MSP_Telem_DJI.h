@@ -63,8 +63,6 @@ public:
     void update_airspeed(airspeed_state_t &airspeed_state) override;
     void update_flight_mode_str(char *flight_mode_str, uint8_t size, bool wind_enabled) override;
 
-    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
-    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
 
     enum : uint8_t {
