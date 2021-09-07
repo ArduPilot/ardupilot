@@ -898,11 +898,6 @@ void ModeGuided::angle_control_run()
     }
 }
 
-// helper function to update position controller's desired velocity while respecting acceleration limits
-void ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des)
-{
-}
-
 // helper function to set yaw state and targets
 void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
