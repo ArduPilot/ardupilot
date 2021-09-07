@@ -40,6 +40,9 @@ extern const AP_HAL::HAL& hal;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_RCIN_RATE             500
 #define APM_LINUX_IO_RATE               50
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
+#define APM_LINUX_RCIN_RATE             50
+#define APM_LINUX_IO_RATE               50
 #else
 #define APM_LINUX_RCIN_RATE             100
 #define APM_LINUX_IO_RATE               50
