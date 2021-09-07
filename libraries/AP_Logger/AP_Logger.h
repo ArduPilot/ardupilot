@@ -384,6 +384,7 @@ public:
 
     // accesss to public parameters
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
+    void set_long_log_persist(bool b) { _force_long_log_persist = b; }
     bool log_while_disarmed(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
@@ -537,6 +538,7 @@ private:
 
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
+    bool _force_long_log_persist:1;
 
     // remember formats for replay
     void save_format_Replay(const void *pBuffer);
