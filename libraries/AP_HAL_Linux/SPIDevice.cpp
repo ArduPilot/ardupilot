@@ -144,6 +144,11 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("rst_a",    0, 2,  SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
     SPIDesc("ms5611",   0, 3,  SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
 };
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 && \
+    defined (HAL_BOARD_SUBTYPE_LINUX_OBAL_V1_MPU_9250_SPI)
+SPIDesc SPIDeviceManager::_device[] = {
+    SPIDesc("mpu9250",    0, 0, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
+};
 #else
 // empty device table
 SPIDesc SPIDeviceManager::_device[] = {
