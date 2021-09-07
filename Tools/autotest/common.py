@@ -1220,7 +1220,8 @@ class AutoTest(ABC):
                  force_ahrs_type=None,
                  replay=False,
                  sup_binaries=[],
-                 reset_after_every_test=False):
+                 reset_after_every_test=False,
+                 sitl_32bit=False):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1244,6 +1245,7 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        self.sitl_32bit = sitl_32bit
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
