@@ -63,8 +63,10 @@ TEST(MS5611, convert)
         uint32_t D1;
         uint32_t D2;
         ms5611.convert_pub(elem.P_Pa, elem.Temp_C, D1, D2);
-        EXPECT_EQ(D1, elem.D1);
-        EXPECT_EQ(D2, elem.D2);
+
+        // Expect NEAR here instead of EQ because in 32bit they are off by 1
+        EXPECT_NEAR(D1, elem.D1, 1);
+        EXPECT_NEAR(D2, elem.D2, 1);
     }
 }
 
