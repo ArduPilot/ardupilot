@@ -150,6 +150,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter-heli.parm",
                                             "default_params/copter-heli-dual.parm"],
             },
+            "heli-blade360": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                ],
+            },
             "singlecopter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm",
@@ -193,6 +198,11 @@ class VehicleInfo(object):
             #     "default_params_filename": ["default_params/copter-heli.parm",
             #                                 "default_params/copter-heli-compound.parm"],
             # },
+            "heli-blade360": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                ],
+            },
         },
     },
     "Blimp": {

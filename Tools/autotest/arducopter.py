@@ -6777,6 +6777,7 @@ class AutoTestCopter(AutoTest):
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
             'heli': "wrong binary, different takeoff regime",
+            'heli-blade360': "wrong binary, different takeoff regime",
             'tri': "bad yaw rate",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
