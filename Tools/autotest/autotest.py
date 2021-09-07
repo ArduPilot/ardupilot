@@ -435,6 +435,7 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
+        "sitl_32bit" : opts.sitl_32bit,
     }
 
     if opts.Werror:
@@ -938,6 +939,11 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
+    group_build.add_option("--sitl-32bit",
+                           default=False,
+                           action='store_true',
+                           dest="sitl_32bit",
+                           help="compile sitl using 32-bit")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")

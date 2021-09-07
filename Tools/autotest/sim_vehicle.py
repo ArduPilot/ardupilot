@@ -341,6 +341,9 @@ def do_build(opts, frame_options):
     if opts.ekf_single:
         cmd_configure.append("--ekf-single")
 
+    if opts.sitl_32bit:
+        cmd_configure.append("--sitl-32bit")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -919,6 +922,11 @@ group_build.add_option("--enable-math-check-indexes",
                        action="store_true",
                        dest="math_check_indexes",
                        help="enable checking of math indexes")
+group_build.add_option("", "--sitl-32bit",
+                       default=False,
+                       action='store_true',
+                       dest="sitl_32bit",
+                       help="compile sitl using 32-bit")
 group_build.add_option("", "--rebuild-on-failure",
                        dest="rebuild_on_failure",
                        action='store_true',
