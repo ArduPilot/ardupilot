@@ -55,8 +55,6 @@ public:
     AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_DJI_FPV; };
     uint32_t get_osd_flight_mode_bitmask(void) override;
     void hide_osd_items(void) override;
-    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
-    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
     MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst) override;
 
