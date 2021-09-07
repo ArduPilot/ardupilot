@@ -712,7 +712,7 @@ void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, floa
 void AC_PosControl::set_correction_speed_accel_z(float speed_down, float speed_up, float accel_cmss)
 {
     // define maximum position error and maximum first and second differential limits
-    _p_pos_z.set_limits(-fabsf(speed_down), _vel_max_up_cms, _accel_max_z_cmss, 0.0f);
+    _p_pos_z.set_limits(-fabsf(speed_down), speed_up, accel_cmss, 0.0f);
 }
 
 /// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
