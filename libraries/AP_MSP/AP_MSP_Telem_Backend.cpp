@@ -612,24 +612,23 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_comp_gps(sbuf_t *dst)
     update_home_pos(home_state);
 
     // no need to apply yaw compensation, the DJI air unit will do it for us :-)
-    int32_t home_angle_deg = home_state.home_bearing_cd * 0.01;
+    uint16_t angle_deg = home_state.home_bearing_cd * 0.01;
     if (home_state.home_distance_m < 2) {
         //avoid fast rotating arrow at small distances
-        home_angle_deg = 0;
+        angle_deg = 0;
     }
 
-    struct PACKED {
+    const struct PACKED {
         uint16_t dist_home_m;
         uint16_t home_angle_deg;
         uint8_t toggle_gps;
-    } gps;
-
-    gps.dist_home_m = home_state.home_distance_m;
-    gps.home_angle_deg = home_angle_deg;
-    gps.toggle_gps = 1;
+    } gps {
+        dist_home_m : uint16_t(constrain_int32(home_state.home_distance_m, 0, 0xFFFF)),
+        home_angle_deg : angle_deg,
+        toggle_gps : 1
+    };
 
     sbuf_write_data(dst, &gps, sizeof(gps));
-
     return MSP_RESULT_ACK;
 }
 
@@ -823,15 +822,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    struct PACKED {
+    const struct PACKED {
         int16_t roll;
         int16_t pitch;
         int16_t yaw;
-    } attitude;
-
-    attitude.roll = ahrs.roll_sensor * 0.1;     // centidegress to decidegrees
-    attitude.pitch = ahrs.pitch_sensor * 0.1;   // centidegress to decidegrees
-    attitude.yaw = ahrs.yaw_sensor * 0.01;      // centidegress to degrees
+    } attitude {
+        roll : int16_t(ahrs.roll_sensor * 0.1),     // centidegress to decidegrees
+        pitch : int16_t(ahrs.pitch_sensor * 0.1),   // centidegress to decidegrees
+        yaw : int16_t(ahrs.yaw_sensor * 0.01)       // centidegress to degrees
+    };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));
     return MSP_RESULT_ACK;
@@ -842,13 +841,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
     home_state_t home_state;
     update_home_pos(home_state);
 
-    struct PACKED {
+    const struct PACKED {
         int32_t rel_altitude_cm;    // relative altitude cm
         int16_t vspeed_cms;         // climb rate cm/s
-    } altitude {};
-
-    altitude.rel_altitude_cm = home_state.rel_altitude_cm;
-    altitude.vspeed_cms = int16_t(get_vspeed_ms() * 100);
+    } altitude {
+        rel_altitude_cm : home_state.rel_altitude_cm,
+        vspeed_cms : int16_t(get_vspeed_ms() * 100)
+    };
 
     sbuf_write_data(dst, &altitude, sizeof(altitude));
     return MSP_RESULT_ACK;
@@ -887,7 +886,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     battery_state_t battery_state;
     update_battery_state(battery_state);
 
-    struct PACKED {
+    const struct PACKED {
         uint8_t cellcount;
         uint16_t capacity_mah;
         uint8_t voltage_dv;
@@ -895,15 +894,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
         int16_t current_ca;
         uint8_t state;
         uint16_t voltage_cv;
-    } battery;
-
-    battery.cellcount = constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255);    // cell count 0 indicates battery not detected.
-    battery.capacity_mah = battery_state.batt_capacity_mah;                                                                          // in mAh
-    battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);                                        // battery voltage V to dV
-    battery.mah = MIN(battery_state.batt_consumed_mah, 0xFFFF);                                                             // milliamp hours drawn from battery
-    battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);                              // current A to cA (0.01 steps, range is -320A to 320A)
-    battery.state = battery_state.batt_state;                                                                               // BATTERY: OK=0, CRITICAL=2
-    battery.voltage_cv = constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF);                                    // battery voltage in 0.01V steps
+    } battery {
+        cellcount : (uint8_t)constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255),   // cell count 0 indicates battery not detected.
+        capacity_mah : (uint16_t)battery_state.batt_capacity_mah,                                                               // in mAh
+        voltage_dv : (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255),                                       // battery voltage V to dV
+        mah : (uint16_t)MIN(battery_state.batt_consumed_mah, 0xFFFF),                                                           // milliamp hours drawn from battery
+        current_ca : (int16_t)constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF),                             // current A to cA (0.01 steps, range is -320A to 320A)
+        state : (uint8_t)battery_state.batt_state,                                                                              // BATTERY: OK=0, CRITICAL=2
+        voltage_cv : (uint16_t)constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF)                                   // battery voltage in 0.01V steps
+    };
 
     sbuf_write_data(dst, &battery, sizeof(battery));
     return MSP_RESULT_ACK;
@@ -945,7 +944,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
         const time_t time_sec = time_usec / 1000000;
         localtime_tm = *gmtime(&time_sec);
     }
-    struct PACKED {
+    const struct PACKED {
         uint16_t year;
         uint8_t mon;
         uint8_t mday;
@@ -953,15 +952,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
         uint8_t min;
         uint8_t sec;
         uint16_t millis;
-    } rtc;
-
-    rtc.year = localtime_tm.tm_year + 1900;   // tm_year is relative to year 1900
-    rtc.mon = localtime_tm.tm_mon + 1;        // MSP requires [1-12] months
-    rtc.mday = localtime_tm.tm_mday;
-    rtc.hour = localtime_tm.tm_hour;
-    rtc.min = localtime_tm.tm_min;
-    rtc.sec = localtime_tm.tm_sec;
-    rtc.millis = (time_usec / 1000U) % 1000U;
+    } rtc {
+        year : uint16_t(localtime_tm.tm_year + 1900),   // tm_year is relative to year 1900
+        mon : uint8_t(localtime_tm.tm_mon + 1),        // MSP requires [1-12] months
+        mday : uint8_t(localtime_tm.tm_mday),
+        hour : uint8_t(localtime_tm.tm_hour),
+        min : uint8_t(localtime_tm.tm_min),
+        sec : uint8_t(localtime_tm.tm_sec),
+        millis : uint16_t((time_usec / 1000U) % 1000U)
+    };
 
     sbuf_write_data(dst, &rtc, sizeof(rtc));
     return MSP_RESULT_ACK;
@@ -976,18 +975,19 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     uint16_t values[16] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
-    struct PACKED {
+    const struct PACKED {
         uint16_t a;
         uint16_t e;
         uint16_t r;
         uint16_t t;
-    } rc;
-    // send only 4 channels, MSP order is AERT
-    // note: rcmap channels start at 1
-    rc.a = values[rcmap->roll()-1];       // A
-    rc.e = values[rcmap->pitch()-1];      // E
-    rc.r = values[rcmap->yaw()-1];        // R
-    rc.t = values[rcmap->throttle()-1];   // T
+    } rc {
+        // send only 4 channels, MSP order is AERT
+        // note: rcmap channels start at 1
+        a : values[rcmap->roll()-1],       // A
+        e : values[rcmap->pitch()-1],      // E
+        r : values[rcmap->yaw()-1],        // R
+        t : values[rcmap->throttle()-1]    // T
+    };
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
@@ -1158,10 +1158,7 @@ void AP_MSP_Telem_Backend::msp_displayport_draw_screen()
 
 void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string)
 {
-    int len = strlen(string);
-    if (len >= OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH) {
-        len = OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH;
-    }
+    const uint8_t len = strnlen(string, OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH);
 
     struct PACKED {
         uint8_t sub_cmd;
