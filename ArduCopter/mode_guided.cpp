@@ -832,7 +832,7 @@ void ModeGuided::angle_control_run()
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {
         // constrain climb rate
-        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav->get_default_speed_down()), wp_nav->get_default_speed_up());
+        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
 
         // get avoidance adjusted climb rate
         climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
