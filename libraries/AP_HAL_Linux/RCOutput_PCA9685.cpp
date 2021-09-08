@@ -167,6 +167,29 @@ void RCOutput_PCA9685::disable_ch(uint8_t ch)
     write(ch, 0);
 }
 
+bool RCOutput_PCA9685::force_safety_on() {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
+        return false;
+    }
+    /* Shutdown before sleeping. */
+    _dev->write_register(PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
+    /* Put PCA9685 to sleep */
+    _dev->write_register(PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
+
+    _dev->get_semaphore()->give();
+    return true;
+}
+
+void RCOutput_PCA9685::force_safety_off() {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
+        return;
+    }
+    /* Restart the device and enable auto-incremented write */
+    _dev->write_register(PCA9685_RA_MODE1,
+                         PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
+    _dev->get_semaphore()->give();
+}
+
 void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
