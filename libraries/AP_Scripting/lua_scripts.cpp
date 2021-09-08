@@ -54,7 +54,6 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     if (int error = luaL_loadfile(L, filename)) {
         switch (error) {
             case LUA_ERRSYNTAX:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Syntax error in %s", filename);
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Error: %s", lua_tostring(L, -1));
                 lua_pop(L, lua_gettop(L));
                 return nullptr;
