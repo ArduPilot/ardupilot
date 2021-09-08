@@ -41,12 +41,10 @@ void ModeGuided::update()
         uint32_t now = AP_HAL::millis();
 
         int32_t diff = currentBearing - wrap_360_cd(plane.ahrs.yaw_sensor);
-        int32_t diffAbs = abs(diff);
+        bool shouldRoll = abs(diff) > plane.g.hm_deg_eps;
+        bool shouldPitch = plane.adjusted_relative_altitude_cm() * 0.01 > minAlt;
 
-        stopRoll = diffAbs <= plane.g.hm_deg_eps;
-        stopPitch = plane.adjusted_relative_altitude_cm() * 0.01 <= minAlt;
-
-        if (!stopPitch && !stopRoll) {
+        if (shouldRoll && shouldPitch && !stopRoll) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Hd: %f \n", diff * 0.01);
             plane.guided_state.forced_rpy_cd.x = diff;
             plane.guided_state.last_forced_rpy_ms.x = now;
@@ -54,7 +52,9 @@ void ModeGuided::update()
             plane.guided_state.forced_rpy_cd.y = 1;
             plane.guided_state.last_forced_rpy_ms.y = now;
         }
-        else if (!stopPitch) {
+        else if (shouldPitch && !stopPitch) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Alt: %f \n", plane.adjusted_relative_altitude_cm() * 0.01 - minAlt);
+            stopRoll = true;
             plane.guided_state.forced_rpy_cd.x = 1;
             plane.guided_state.last_forced_rpy_ms.x = now;
 
@@ -65,19 +65,17 @@ void ModeGuided::update()
             plane.guided_state.last_forced_throttle_ms = now;
         }
         else {
+            stopPitch = true;
+
             plane.guided_state.last_forced_rpy_ms.zero();
             plane.guided_state.last_forced_throttle_ms = 0;
 
-            plane.set_mode(plane.mode_cruise, ModeReason::MISSION_END);
+            plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
         }
 
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();
-
-        if (plane.nav_pitch_cd != plane.guided_state.forced_rpy_cd.y) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Pitch_Nav: %d, Pitch_Dem: %d\n", plane.nav_pitch_cd, plane.guided_state.forced_rpy_cd.y);
-        }
     }
 }
 
