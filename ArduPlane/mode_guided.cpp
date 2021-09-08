@@ -62,7 +62,7 @@ void ModeGuided::update()
             plane.guided_state.last_forced_rpy_ms.y = now;
 
             plane.guided_state.forced_throttle = plane.g.hm_attack_thr;
-            plane.guided_state.last_forced_throttle_ms = now;schedu
+            plane.guided_state.last_forced_throttle_ms = now;
         }
         else {
             plane.guided_state.last_forced_rpy_ms.zero();
