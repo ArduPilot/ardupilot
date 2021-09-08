@@ -36,7 +36,7 @@ Helicopter::Helicopter(const char *frame_str) :
         _time_delay = 50;
         nominal_rpm = 1500;
     } else if (strstr(frame_str, "-blade360")) {
-        frame_type = HELI_FRAME_BLADE;
+        frame_type = HELI_FRAME_BLADE360;
         _time_delay = 40;
         nominal_rpm = 2100;
     } else {
@@ -164,7 +164,7 @@ void Helicopter::update(const struct sitl_input &input)
         break;
     }
 
-    case HELI_FRAME_BLADE: {
+    case HELI_FRAME_BLADE360: {
         // simulate a Blade 360 helicopter.  This model was taken from the following reference.
         // Walker, J, Tishler, M, "Identification and Control Design of a Sub-Scale Flybarless Helicopter",
         // Vertical Flight Society’s 77th Annual Forum & Technology Display, Virtual, May 10-14, 2021.
@@ -336,7 +336,7 @@ void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector
     float Mflt;
     float Mflg;
 
-    if (frame_type == HELI_FRAME_BLADE) {
+    if (frame_type == HELI_FRAME_BLADE360) {
         tf_inv = 1.0f / 0.0353f;
         Lfa1s = 1.0477f;
         Mfb1s = -1.0057f;
