@@ -27,7 +27,7 @@
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
 #define TORQEEDO_PACKET_FOOTER      0xAD    // communication packer footer
 #define TORQEEDO_LOG_INTERVAL_MS    5000    // log debug info at this interval in milliseconds
-#define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US   20000   // motor speed sent at 50hz if connected to motor
+#define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_US   100000  // motor speed sent at 10hz if connected to motor
 
 extern const AP_HAL::HAL& hal;
 
