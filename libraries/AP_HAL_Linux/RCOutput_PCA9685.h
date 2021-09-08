@@ -26,6 +26,8 @@ public:
     uint16_t get_freq(uint8_t ch) override;
     void     enable_ch(uint8_t ch) override;
     void     disable_ch(uint8_t ch) override;
+    bool     force_safety_on() override;
+    void     force_safety_off() override;
     void     write(uint8_t ch, uint16_t period_us) override;
     void     cork() override;
     void     push() override;
