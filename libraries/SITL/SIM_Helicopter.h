@@ -84,7 +84,7 @@ private:
         HELI_FRAME_CONVENTIONAL,
         HELI_FRAME_DUAL,
         HELI_FRAME_COMPOUND,
-        HELI_FRAME_BLADE
+        HELI_FRAME_BLADE360,
     } frame_type = HELI_FRAME_CONVENTIONAL;
     bool gas_heli = false;
     float nominal_rpm;
