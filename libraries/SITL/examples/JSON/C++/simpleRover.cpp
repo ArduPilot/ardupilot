@@ -59,7 +59,7 @@ bool simpleRover::update(simpleRover &rover, uint16_t servo_out[]) {
 
     // how fast is the rover moving
     double max_velocity = 1; // m/s
-    double body_v = _interp1D(servo_out[0], 1100, 1900, 0, max_velocity);
+    double body_v = _interp1D(servo_out[2], 1100, 1900, -max_velocity, max_velocity);
 
     // how fast is the rover turning
     // Just doing 1-D right now. This Needs a bit of system dynamics math and geometry to get to 2-D.
