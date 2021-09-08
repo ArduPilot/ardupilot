@@ -29,7 +29,7 @@ void AC_AttitudeControl::control_monitor_update(void)
     control_monitor_filter_pid(iroll.D,             _control_monitor.rms_roll_D);
 
     const AP_Logger::PID_Info &ipitch = get_rate_pitch_pid().get_pid_info();
-    control_monitor_filter_pid(ipitch.P + iroll.FF,  _control_monitor.rms_pitch_P);
+    control_monitor_filter_pid(ipitch.P + ipitch.FF,  _control_monitor.rms_pitch_P);
     control_monitor_filter_pid(ipitch.D,             _control_monitor.rms_pitch_D);
 
     const AP_Logger::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
