@@ -468,6 +468,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
+    update_time_ms = millis();
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
@@ -677,6 +678,13 @@ void ModeGuided::pos_control_run()
     // send position and velocity targets to position controller
     guided_accel_target_cmss.zero();
     guided_vel_target_cms.zero();
+
+    // stop rotating if no updates received within timeout_ms
+    if (millis() - update_time_ms > get_timeout_ms()) {
+        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
+            auto_yaw.set_rate(0.0f);
+        }
+    }
 
     float pos_offset_z_buffer = 0.0; // Vertical buffer size in m
     if (guided_pos_terrain_alt) {
@@ -1163,7 +1171,7 @@ float ModeGuided::crosstrack_error() const
     return 0;
 }
 
-// return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+// return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rates
 uint32_t ModeGuided::get_timeout_ms() const
 {
     return MAX(copter.g2.guided_timeout, 0.1) * 1000;
