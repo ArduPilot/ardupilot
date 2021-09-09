@@ -122,7 +122,7 @@ class AutoTestCopter(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("DISARM_DELAY", delay)
 
-    def user_takeoff(self, alt_min=30):
+    def user_takeoff(self, alt_min=30, timeout=30, max_err=5):
         '''takeoff using mavlink takeoff command'''
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
                      0, # param1
@@ -133,15 +133,15 @@ class AutoTestCopter(AutoTest):
                      0, # param6
                      alt_min # param7
                      )
-        self.progress("Ran command")
-        self.wait_for_alt(alt_min)
+        self.wait_for_alt(alt_min, timeout=timeout, max_err=max_err)
 
     def takeoff(self,
                 alt_min=30,
                 takeoff_throttle=1700,
                 require_absolute=True,
                 mode="STABILIZE",
-                timeout=120):
+                timeout=120,
+                max_err=5):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
         self.change_mode(mode)
@@ -150,10 +150,10 @@ class AutoTestCopter(AutoTest):
             self.zero_throttle()
             self.arm_vehicle()
         if mode == 'GUIDED':
-            self.user_takeoff(alt_min=alt_min)
+            self.user_takeoff(alt_min=alt_min, timeout=timeout, max_err=max_err)
         else:
             self.set_rc(3, takeoff_throttle)
-        self.wait_for_alt(alt_min=alt_min, timeout=timeout)
+        self.wait_for_alt(alt_min=alt_min, timeout=timeout, max_err=max_err)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
@@ -202,7 +202,7 @@ class AutoTestCopter(AutoTest):
             3: 1000,
             4: 1500,
         })
-        self.takeoff(alt_min=dAlt)
+        self.takeoff(alt_min=dAlt, mode='GUIDED')
         self.change_mode("ALT_HOLD")
 
         self.progress("Yaw to east")
@@ -905,6 +905,7 @@ class AutoTestCopter(AutoTest):
             self.test_battery_failsafe(timeout=timeout)
         except Exception as e:
             self.print_exception_caught(e)
+            self.disarm_vehicle(force=True)
             ex = e
 
         self.set_parameter('BATT_LOW_VOLT', 0)
@@ -6573,6 +6574,37 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
 
+    def fly_rangefinder_drivers_maxalt(self):
+        '''test max-height behaviour'''
+        # lightwareserial goes to 130m when out of range
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 8,
+            "WPNAV_SPEED_UP": 1000,  # cm/s
+        })
+        self.customise_SITL_commandline([
+            "--uartE=sim:lightwareserial",
+        ])
+        self.takeoff(95, mode='GUIDED', timeout=240, max_err=0.5)
+        self.assert_rangefinder_distance_between(90, 100)
+
+        self.wait_rangefinder_distance(90, 100)
+
+        rf_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION
+
+        self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        self.assert_distance_sensor_quality(100)
+
+        self.progress("Moving higher to be out of max rangefinder range")
+        self.fly_guided_move_local(0, 0, 150)
+
+        # sensor remains healthy even out-of-range
+        self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+
+        self.assert_distance_sensor_quality(1)
+
+        self.do_RTL()
+
     def fly_ship_takeoff(self):
         # test ship takeoff
         self.wait_groundspeed(0, 2)
@@ -7837,6 +7869,10 @@ class AutoTestCopter(AutoTest):
             ("RangeFinderDrivers",
              "Test rangefinder drivers",
              self.fly_rangefinder_drivers),  # 62s
+
+            ("RangeFinderDriversMaxAlt",
+             "Test rangefinder drivers - test max alt",
+             self.fly_rangefinder_drivers_maxalt),  # 25s
 
             ("MaxBotixI2CXL",
              "Test maxbotix rangefinder drivers",
