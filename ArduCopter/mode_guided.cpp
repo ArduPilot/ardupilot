@@ -895,7 +895,8 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
     if (use_yaw && relative_angle) {
         auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
+        const int8_t direction = signbit(yaw_rate_cds) ? -1 : 1;
+        auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, fabs(yaw_rate_cds) * 0.01f, direction, relative_angle);
     } else if (use_yaw && !use_yaw_rate) {
         auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
     } else if (use_yaw_rate) {
