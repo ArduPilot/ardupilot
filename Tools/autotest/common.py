@@ -5206,6 +5206,51 @@ class AutoTest(ABC):
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
 
+    def assert_rangefinder_distance_between(self, dist_min, dist_max):
+        m = self.assert_receive_message('RANGEFINDER')
+
+        if m.distance < dist_min:
+            raise NotAchievedException("below min height (%f < %f)" %
+                                       (m.distance, dist_min))
+
+        if m.distance > dist_max:
+            raise NotAchievedException("above max height (%f > %f)" %
+                                       (m.distance, dist_max))
+
+    def assert_distance_sensor_quality(self, quality):
+        m = self.assert_receive_message('DISTANCE_SENSOR')
+
+        if m.signal_quality != quality:
+            raise NotAchievedException("Unexpected quality; want=%f got=%f" %
+                                       (quality, m.signal_quality))
+
+    def get_rangefinder_distance(self):
+        m = self.mav.recv_match(type='RANGEFINDER',
+                                blocking=True,
+                                timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not get RANGEFINDER message")
+
+        return m.distance
+
+    def wait_rangefinder_distance(self, dist_min, dist_max, timeout=30, **kwargs):
+        '''wait for RANGEFINDER distance'''
+        def validator(value2, target2=None):
+            if dist_min <= value2 <= dist_max:
+                return True
+            else:
+                return False
+
+        self.wait_and_maintain(
+            value_name="RageFinderDistance",
+            target=dist_min,
+            current_value_getter=lambda: self.get_rangefinder_distance(),
+            accuracy=(dist_max - dist_min),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs
+        )
+
     def get_esc_rpm(self, esc):
         if esc > 4:
             raise ValueError("Only does 1-4")
