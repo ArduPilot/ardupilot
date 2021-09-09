@@ -5123,6 +5123,7 @@ class AutoTest(ABC):
     def wait_yaw_speed(self, yaw_speed, accuracy=0.1, timeout=30, **kwargs):
         """Wait for a given yaw speed in radians per second."""
         def get_yawspeed(timeout2):
+            '''returns yaw speed in radians/second'''
             msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
             if msg:
                 return msg.yawspeed
@@ -8386,6 +8387,56 @@ Also, ignores heartbeats not from our target system'''
                                    target_altitude=(targetpos.alt if test_alt else None),
                                    height_accuracy=2, minimum_duration=2)
                 self.wait_heading(42, minimum_duration=5, timeout=timeout)
+
+                self.start_subtest("Yaw and yawrate combined")
+                yaw = 90
+                yaw_rate = 1
+                self.mav.mav.set_position_target_global_int_send(
+                    0,  # timestamp
+                    self.sysid_thismav(),  # target system_id
+                    1,  # target component id
+                    frame,
+                    MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE,
+                    int(targetpos.lat * 1.0e7),  # lat
+                    int(targetpos.lng * 1.0e7),  # lon
+                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    0,  # vx
+                    0,  # vy
+                    0,  # vz
+                    0,  # afx
+                    0,  # afy
+                    0,  # afz
+                    math.radians(yaw),  # yaw
+                    math.radians(yaw_rate),  # radians/s
+                )
+                self.wait_yaw_speed(math.radians(yaw_rate), minimum_duration=2)
+                self.wait_heading(yaw, minimum_duration=5, timeout=timeout)
+
+                self.start_subsubtest("And back again")
+                yaw = 42
+                yaw_rate = -2
+                self.mav.mav.set_position_target_global_int_send(
+                    0,  # timestamp
+                    self.sysid_thismav(),  # target system_id
+                    1,  # target component id
+                    frame,
+                    MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE,
+                    int(targetpos.lat * 1.0e7),  # lat
+                    int(targetpos.lng * 1.0e7),  # lon
+                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    0,  # vx
+                    0,  # vy
+                    0,  # vz
+                    0,  # afx
+                    0,  # afy
+                    0,  # afz
+                    math.radians(yaw),  # yaw
+                    math.radians(yaw_rate),  # radians/s
+                )
+                self.wait_yaw_speed(math.radians(yaw_rate), minimum_duration=2)
+                self.wait_heading(yaw, minimum_duration=5, timeout=timeout)
 
                 self.start_subtest("Revert Latitude and Heading")
                 targetpos.lat -= 0.0001
