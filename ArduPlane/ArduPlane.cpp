@@ -419,12 +419,7 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::update_control_mode(void)
 {
-    Mode *effective_mode = control_mode;
-    if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
-        effective_mode = &mode_fbwa;
-    }
-
-    if (effective_mode != &mode_auto) {
+    if (control_mode != &mode_auto) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
     }
@@ -444,7 +439,7 @@ void Plane::update_control_mode(void)
         ahrs.set_fly_forward(true);
     }
 
-    effective_mode->update();
+    control_mode->update();
 }
 
 /*

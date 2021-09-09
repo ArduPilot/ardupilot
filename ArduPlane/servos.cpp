@@ -80,11 +80,6 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
-        // user has throttle control
-        return false;
-    }
-
     bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
     
     if ((control_mode == &mode_auto &&
