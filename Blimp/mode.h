@@ -178,9 +178,7 @@ public:
     // these are candidates for moving into the Mode base
     // class.
     bool set_mode(Mode::Number mode, ModeReason reason);
-    void set_land_complete(bool b);
     GCS_Blimp &gcs();
-    void set_throttle_takeoff(void);
 
     // end pass-through functions
 };
