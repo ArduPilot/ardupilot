@@ -1060,7 +1060,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if MODE_GUIDED_ENABLED == ENABLED
     // @Param: GUID_TIMEOUT
     // @DisplayName: Guided mode timeout
-    // @Description: Guided mode timeout after which vehicle will stop or return to level if no updates are received from caller.  Only applicable during velocity, acceleration or angle control
+    // @Description: Guided mode timeout after which vehicle will stop or return to level if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
     // @Units: s
     // @Range: 0.1 5
     // @User: Advanced
