@@ -226,8 +226,7 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == &mode_qrtl ||
         control_mode == &mode_qacro ||
         control_mode == &mode_training ||
-        control_mode == &mode_qautotune ||
-        (control_mode == &mode_auto && g.auto_fbw_steer == 42)) {
+        control_mode == &mode_qautotune) {
         return;
     }
     // do FBW style stick mixing. We don't treat it linearly
