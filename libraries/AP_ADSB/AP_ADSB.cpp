@@ -355,22 +355,22 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = now;
 
     } else if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) &&
+                !_my_loc.is_zero() && 
                 (out_state.cfg.ICAO_id == 0 || out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param)) {
 
         // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
         if (out_state.cfg.ICAO_id_param == 0) {
             out_state.cfg.ICAO_id = genICAO(_my_loc);
+            if (strlen(out_state.cfg.callsign)>0) {
+                gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using generated ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using generated ICAO_id %d", (int)out_state.cfg.ICAO_id);
+            }
         } else {
             out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
         }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
 
-#ifndef ADSB_STATIC_CALLSIGN
-        if (!out_state.cfg.was_set_externally) {
-            set_callsign("PING", true);
-        }
-#endif
-        gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -379,7 +379,6 @@ void AP_ADSB::update(void)
             _backend[i]->update();
         }
     }
-
 }
 
 /*
@@ -633,6 +632,26 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 }
 
 /*
+ * handle incoming packet UAVIONIX_ADSB_OUT_CONTROL
+ * allows a GCS to set the contents of the control message sent by ardupilot to the transponder
+ */
+void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet)
+{
+    out_state.ctrl.baroCrossChecked = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_EXTERNAL_BARO_CROSSCHECKED;
+    out_state.ctrl.airGroundState = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_ON_GROUND;
+    out_state.ctrl.identActive = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE;
+    out_state.ctrl.modeAEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_A_ENABLED;
+    out_state.ctrl.modeCEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_C_ENABLED;
+    out_state.ctrl.modeSEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_S_ENABLED;
+    out_state.ctrl.es1090TxEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_1090ES_TX_ENABLED;
+    out_state.ctrl.externalBaroAltitude_mm = packet.baroAltMSL;
+    out_state.ctrl.squawkCode = packet.squawk;
+    out_state.ctrl.emergencyState = packet.emergencyStatus;
+    memcpy(out_state.ctrl.callsign, packet.flight_id, sizeof(out_state.ctrl.callsign));
+    out_state.ctrl.x_bit = packet.x_bit;
+}
+
+/*
  * this is a message from the transceiver reporting it's health. Using this packet
  * we determine which channel is on so we don't have to send out_state to all channels
  */
@@ -667,53 +686,6 @@ uint32_t AP_ADSB::genICAO(const Location &loc) const
     return( (timeSum ^ M3) & 0x00FFFFFF);
 }
 
-// assign a string to out_state.cfg.callsign but ensure it's null terminated
-void AP_ADSB::set_callsign(const char* str, const bool append_icao)
-{
-    bool zero_char_pad = false;
-
-    // clean slate
-    memset(out_state.cfg.callsign, 0, sizeof(out_state.cfg.callsign));
-
-    // copy str to cfg.callsign but we can't use strncpy because we need
-    // to restrict values to only 'A' - 'Z' and '0' - '9' and pad
-    for (uint8_t i=0; i<sizeof(out_state.cfg.callsign)-1; i++) {
-        if (!str[i] || zero_char_pad) {
-            // finish early. Either pad the rest with zero char or null terminate and call it a day
-            if ((append_icao && i<4) || zero_char_pad) {
-                out_state.cfg.callsign[i] = '0';
-                zero_char_pad = true;
-            } else {
-                // already null terminated via memset so just stop
-                break;
-            }
-
-        } else if (('A' <= str[i] && str[i] <= 'Z') ||
-                   ('0' <= str[i] && str[i] <= '9')) {
-            // valid as-is
-            // spaces are also allowed but are handled in the last else
-            out_state.cfg.callsign[i] = str[i];
-
-        } else if ('a' <= str[i] && str[i] <= 'z') {
-            // toupper()
-            out_state.cfg.callsign[i] = str[i] - ('a' - 'A');
-
-        } else if (i == 0) {
-            // invalid, pad to char zero because first index can't be space
-            out_state.cfg.callsign[i] = '0';
-
-        } else {
-            // invalid, pad with space
-            out_state.cfg.callsign[i] = ' ';
-        }
-    } // for i
-
-    if (append_icao) {
-        hal.util->snprintf(&out_state.cfg.callsign[4], 5, "%04X", unsigned(out_state.cfg.ICAO_id % 0x10000));
-    }
-}
-
-
 void AP_ADSB::push_sample(const adsb_vehicle_t &vehicle)
 {
     _samples.push(vehicle);
@@ -727,31 +699,38 @@ bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-    case MAVLINK_MSG_ID_ADSB_VEHICLE: {
-        adsb_vehicle_t vehicle {};
-        mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
-        vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
-        handle_adsb_vehicle(vehicle);
-        break;
-    }
+        case MAVLINK_MSG_ID_ADSB_VEHICLE: {
+            adsb_vehicle_t vehicle {};
+            mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
+            vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
+            handle_adsb_vehicle(vehicle);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
-        mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-        mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
-        handle_transceiver_report(chan, packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
+            mavlink_uavionix_adsb_transceiver_health_report_t packet {};
+            mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
+            handle_transceiver_report(chan, packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
-        mavlink_uavionix_adsb_out_cfg_t packet {};
-        mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
-        handle_out_cfg(packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
+            mavlink_uavionix_adsb_out_cfg_t packet {};
+            mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
+            handle_out_cfg(packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        // unhandled, this is an outbound packet only
-        break;
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+            // unhandled, this is an outbound packet only
+            break;
+
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL: {
+            mavlink_uavionix_adsb_out_control_t packet {};            
+            mavlink_msg_uavionix_adsb_out_control_decode(&msg, &packet);
+            handle_out_control(packet);
+            break;
+        }
     }
 
 }

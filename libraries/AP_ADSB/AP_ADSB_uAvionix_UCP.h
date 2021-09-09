@@ -62,6 +62,8 @@ private:
     uint16_t gdl90Transmit(GDL90_TX_MESSAGE &message, const uint16_t length);
     static bool parseByte(const uint8_t data, GDL90_RX_MESSAGE &msg, GDL90_RX_STATUS &status);
 
+    bool send_gps;
+
     struct {
         uint32_t last_msg_ms;
         GDL90_RX_MESSAGE msg;
@@ -84,6 +86,12 @@ private:
     struct {
         uint32_t last_packet_GPS_ms;
         uint32_t last_packet_Transponder_Control_ms;
+        uint32_t last_packet_Transponder_Status_ms;
+        uint32_t last_packet_Transponder_Heartbeat_ms;
+        uint32_t last_packet_Transponder_Ownship_ms;
+        uint32_t first_packet_Heartbeat_ms;
+        bool first_packet_Tx_Status_recieved;
+        bool Heartbeat_two_seconds_b;
     } run_state;
 
 };
