@@ -177,11 +177,6 @@ bool Mode::set_mode(Mode::Number mode, ModeReason reason)
     return blimp.set_mode(mode, reason);
 }
 
-void Mode::set_land_complete(bool b)
-{
-    return blimp.set_land_complete(b);
-}
-
 GCS_Blimp &Mode::gcs()
 {
     return blimp.gcs();
