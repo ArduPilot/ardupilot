@@ -197,9 +197,10 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
     }
 
     // run speed controller if motor is forced on or motor assistance is required for low speeds or tacking
-    if ((motor_state == UseMotor::USE_MOTOR_ALWAYS) ||
+    if ((!SRV_Channels::get_emergency_stop() && hal.util->get_soft_armed()) &&
+        ((motor_state == UseMotor::USE_MOTOR_ALWAYS) ||
          motor_assist_tack() ||
-         motor_assist_low_wind()) {
+         motor_assist_low_wind())) {
         // run speed controller - duplicate of calls found in mode::calc_throttle();
         throttle_out = 100.0f * rover.g2.attitude_control.get_throttle_out_speed(desired_speed,
                                                                         rover.g2.motors.limit.throttle_lower,

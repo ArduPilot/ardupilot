@@ -312,7 +312,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
         rover.g2.motors.set_mainsail(mainsail_out);
         rover.g2.motors.set_wingsail(wingsail_out);
         rover.g2.motors.set_mast_rotation(mast_rotation_out);
-    } else {
+    } else if (!SRV_Channels::get_emergency_stop() && hal.util->get_soft_armed()) {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {
             bool stopped;
@@ -336,14 +336,16 @@ bool Mode::stop_vehicle()
 {
     // call throttle controller and convert output to -100 to +100 range
     bool stopped = false;
-    float throttle_out;
+    float throttle_out = 0.0;
 
     // if vehicle is balance bot, calculate throttle required for balancing
-    if (rover.is_balancebot()) {
-        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(0, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
-        rover.balancebot_pitch_control(throttle_out);
-    } else {
-        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
+    if (!SRV_Channels::get_emergency_stop() && hal.util->get_soft_armed()) {
+        if (rover.is_balancebot()) {
+            throttle_out = 100.0f * attitude_control.get_throttle_out_speed(0, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
+            rover.balancebot_pitch_control(throttle_out);
+        } else {
+            throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
+        }
     }
 
     // relax sails if present
