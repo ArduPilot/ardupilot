@@ -1823,9 +1823,9 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
     // wait for dwell to start before determining gain and phase or just start if sweep
     if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
         if (freq_resp_input == 1) {
-            freqresp_rate.determine_gain(filt_target_rate,rotation_rate, dwell_freq);
+            freqresp_rate.update_rate(filt_target_rate,rotation_rate, dwell_freq);
         } else {
-            freqresp_rate.determine_gain(command_out,rotation_rate, dwell_freq);
+            freqresp_rate.update_rate(command_out,rotation_rate, dwell_freq);
         }
         if (freqresp_rate.is_cycle_complete()) {
             if (!is_equal(start_frq,stop_frq)) {
@@ -2024,7 +2024,7 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
 
     // wait for dwell to start before determining gain and phase
     if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
-        freqresp_angle.determine_gain_angle(command_out, filt_target_rate, rotation_rate, dwell_freq);
+        freqresp_angle.update_angle(command_out, filt_target_rate, rotation_rate, dwell_freq);
         if (freqresp_angle.is_cycle_complete()) {
             if (!is_equal(start_frq,stop_frq)) {
                 curr_test_freq = freqresp_angle.get_freq();
