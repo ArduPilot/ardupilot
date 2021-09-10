@@ -173,7 +173,7 @@ void RCOutput::rcout_thread()
     }
 }
 
-void RCOutput::dshot_update_tick(void* p)
+void RCOutput::dshot_update_tick(ch_virtual_timer *tmr, void* p)
 {
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
@@ -1512,7 +1512,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 /*
   unlock DMA channel after a dshot send completes and no return value is expected
  */
-void RCOutput::dma_unlock(void *p)
+void RCOutput::dma_unlock(ch_virtual_timer *tmr, void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
@@ -1779,7 +1779,7 @@ void RCOutput::serial_bit_irq(void)
 /*
   timeout a byte read
  */
-void RCOutput::serial_byte_timeout(void *ctx)
+void RCOutput::serial_byte_timeout(ch_virtual_timer *tmr, void *ctx)
 {
     chSysLockFromISR();
     irq.timed_out = true;

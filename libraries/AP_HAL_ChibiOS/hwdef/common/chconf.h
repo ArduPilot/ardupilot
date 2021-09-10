@@ -1,22 +1,22 @@
 /*
- * This file is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
+    ChibiOS - Copyright (C) 2006..2020 Giovanni Di Sirio
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
  */
 
 /**
- * @file    templates/chconf.h
+ * @file    rt/templates/chconf.h
  * @brief   Configuration file template.
  * @details A copy of this file must be placed in each project directory, it
  *          contains the application specific kernel settings.
@@ -28,16 +28,9 @@
 
 #pragma once
 
-#include "hwdef.h"
-
 #define _CHIBIOS_RT_CONF_
-#define _CHIBIOS_RT_CONF_VER_6_1_
-/*===========================================================================*/
-/**
- * @name System timers settings
- * @{
- */
-/*===========================================================================*/
+#define _CHIBIOS_RT_CONF_VER_7_0_
+#include "hwdef.h"
 
 #if !defined(FALSE)
 #define FALSE                               0
@@ -45,6 +38,24 @@
 
 #if !defined(TRUE)
 #define TRUE                                1
+#endif
+
+/*===========================================================================*/
+/**
+ * @name System settings
+ * @{
+ */
+/*===========================================================================*/
+
+/**
+ * @brief   Handling of instances.
+ * @note    If enabled then threads assigned to various instances can
+ *          interact each other using the same synchronization objects.
+ *          If disabled then each OS instance is a separate world, no
+ *          direct interactions are handled by the OS.
+ */
+#if !defined(CH_CFG_SMP_MODE)
+#define CH_CFG_SMP_MODE                     FALSE
 #endif
 
 #ifdef HAL_CHIBIOS_ENABLE_ASSERTS
@@ -78,9 +89,9 @@ extern "C" {
 
 /**
  * @brief   System time counter resolution.
- * @note    Allowed values are 16 or 32 bits.
+ * @note    Allowed values are 16, 32 or 64 bits.
  */
-#ifndef CH_CFG_ST_RESOLUTION
+#if !defined(CH_CFG_ST_RESOLUTION)
 #define CH_CFG_ST_RESOLUTION                32
 #endif
 
@@ -159,21 +170,6 @@ extern "C" {
 #endif
 
 /**
- * @brief   Managed RAM size.
- * @details Size of the RAM area to be managed by the OS. If set to zero
- *          then the whole available RAM is used. The core memory is made
- *          available to the heap allocator and/or can be used directly through
- *          the simplified core memory allocator.
- *
- * @note    In order to let the OS manage the whole RAM the linker script must
- *          provide the @p __heap_base__ and @p __heap_end__ symbols.
- * @note    Requires @p CH_CFG_USE_MEMCORE.
- */
-#if !defined(CH_CFG_MEMCORE_SIZE)
-#define CH_CFG_MEMCORE_SIZE                 0
-#endif
-
-/**
  * @brief   Idle thread automatic spawn suppression.
  * @details When this option is activated the function @p chSysInit()
  *          does not spawn the idle thread. The application @p main()
@@ -223,6 +219,17 @@ extern "C" {
  */
 #if !defined(CH_CFG_USE_TM)
 #define CH_CFG_USE_TM                       TRUE
+#endif
+
+/**
+ * @brief   Time Stamps APIs.
+ * @details If enabled then the time time stamps APIs are included in
+ *          the kernel.
+ *
+ * @note    The default is @p TRUE.
+ */
+#if !defined(CH_CFG_USE_TIMESTAMP)
+#define CH_CFG_USE_TIMESTAMP                TRUE
 #endif
 
 /**
@@ -362,6 +369,28 @@ extern "C" {
 #endif
 
 /**
+ * @brief   Dynamic Threads APIs.
+ * @details If enabled then the dynamic threads creation APIs are included
+ *          in the kernel.
+ *
+ * @note    The default is @p TRUE.
+ * @note    Requires @p CH_CFG_USE_WAITEXIT.
+ * @note    Requires @p CH_CFG_USE_HEAP and/or @p CH_CFG_USE_MEMPOOLS.
+ */
+#if !defined(CH_CFG_USE_DYNAMIC)
+#define CH_CFG_USE_DYNAMIC                  TRUE
+#endif
+
+/** @} */
+
+/*===========================================================================*/
+/**
+ * @name OSLIB options
+ * @{
+ */
+/*===========================================================================*/
+
+/**
  * @brief   Mailboxes APIs.
  * @details If enabled then the asynchronous messages (mailboxes) APIs are
  *          included in the kernel.
@@ -382,6 +411,21 @@ extern "C" {
  */
 #if !defined(CH_CFG_USE_MEMCORE)
 #define CH_CFG_USE_MEMCORE                  TRUE
+#endif
+
+/**
+ * @brief   Managed RAM size.
+ * @details Size of the RAM area to be managed by the OS. If set to zero
+ *          then the whole available RAM is used. The core memory is made
+ *          available to the heap allocator and/or can be used directly through
+ *          the simplified core memory allocator.
+ *
+ * @note    In order to let the OS manage the whole RAM the linker script must
+ *          provide the @p __heap_base__ and @p __heap_end__ symbols.
+ * @note    Requires @p CH_CFG_USE_MEMCORE.
+ */
+#if !defined(CH_CFG_MEMCORE_SIZE)
+#define CH_CFG_MEMCORE_SIZE                 0
 #endif
 
 /**
@@ -462,19 +506,6 @@ extern "C" {
  */
 #if !defined(CH_CFG_USE_JOBS)
 #define CH_CFG_USE_JOBS                     FALSE
-#endif
-
-/**
- * @brief   Dynamic Threads APIs.
- * @details If enabled then the dynamic threads creation APIs are included
- *          in the kernel.
- *
- * @note    The default is @p TRUE.
- * @note    Requires @p CH_CFG_USE_WAITEXIT.
- * @note    Requires @p CH_CFG_USE_HEAP and/or @p CH_CFG_USE_MEMPOOLS.
- */
-#if !defined(CH_CFG_USE_DYNAMIC)
-#define CH_CFG_USE_DYNAMIC                  TRUE
 #endif
 
 /** @} */
@@ -680,7 +711,23 @@ extern "C" {
  *          just before interrupts are enabled globally.
  */
 #define CH_CFG_SYSTEM_INIT_HOOK() {                                         \
-  /* Add threads initialization code here.*/                                \
+  /* Add system initialization code here.*/                                 \
+}
+
+/**
+ * @brief   OS instance structure extension.
+ * @details User fields added to the end of the @p os_instance_t structure.
+ */
+#define CH_CFG_OS_INSTANCE_EXTRA_FIELDS                                     \
+  /* Add OS instance custom fields here.*/
+
+/**
+ * @brief   OS instance initialization hook.
+ *
+ * @param[in] oip       pointer to the @p os_instance_t structure
+ */
+#define CH_CFG_OS_INSTANCE_INIT_HOOK(oip) {                                 \
+  /* Add OS instance initialization code here.*/                            \
 }
 
 /**
@@ -696,6 +743,8 @@ extern "C" {
  *
  * @note    It is invoked from within @p _thread_init() and implicitly from all
  *          the threads creation APIs.
+ *
+ * @param[in] tp        pointer to the @p thread_t structure
  */
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
   /* Add threads initialization code here.*/                                \
@@ -704,6 +753,8 @@ extern "C" {
 /**
  * @brief   Threads finalization hook.
  * @details User finalization code added to the @p chThdExit() API.
+ *
+ * @param[in] tp        pointer to the @p thread_t structure
  */
 #define CH_CFG_THREAD_EXIT_HOOK(tp) {                                       \
   /* Add threads finalization code here.*/                                  \
@@ -712,6 +763,9 @@ extern "C" {
 /**
  * @brief   Context switch hook.
  * @details This hook is invoked just before switching between threads.
+ *
+ * @param[in] ntp       thread being switched in
+ * @param[in] otp       thread being switched out
  */
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
@@ -801,6 +855,14 @@ extern "C" {
  */
 #define CH_CFG_TRACE_HOOK(tep) {                                            \
   /* Trace code here.*/                                                     \
+}
+
+/**
+ * @brief   Runtime Faults Collection Unit hook.
+ * @details This hook is invoked each time new faults are collected and stored.
+ */
+#define CH_CFG_RUNTIME_FAULTS_HOOK(mask) {                                  \
+  /* Faults handling code here.*/                                           \
 }
 
 /** @} */
