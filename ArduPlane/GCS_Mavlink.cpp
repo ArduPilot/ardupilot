@@ -4,7 +4,11 @@
 
 MAV_TYPE GCS_Plane::frame_type() const
 {
+#if HAL_QUADPLANE_ENABLED
     return plane.quadplane.get_mav_type();
+#else
+    return MAV_TYPE_FIXED_WING;
+#endif
 }
 
 MAV_MODE GCS_MAVLINK_Plane::base_mode() const
@@ -23,19 +27,25 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::MANUAL:
     case Mode::Number::TRAINING:
     case Mode::Number::ACRO:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
+#endif
     case Mode::Number::STABILIZE:
     case Mode::Number::FLY_BY_WIRE_A:
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QSTABILIZE:
     case Mode::Number::QHOVER:
     case Mode::Number::QLOITER:
     case Mode::Number::QLAND:
-    case Mode::Number::CRUISE:
+#if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
+#endif
+#endif  // HAL_QUADPLANE_ENABLED
+    case Mode::Number::CRUISE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case Mode::Number::AUTO:
@@ -46,7 +56,9 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::GUIDED:
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QRTL:
+#endif
         _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                      MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
@@ -120,13 +132,15 @@ void GCS_MAVLINK_Plane::send_attitude() const
     if (!(plane.g2.flight_options & FlightOptions::GCS_REMOVE_TRIM_PITCH_CD)) {
         p -= radians(plane.g.pitch_trim_cd * 0.01f);
     }
-    
+
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.show_vtol_view()) {
         r = plane.quadplane.ahrs_view->roll;
         p = plane.quadplane.ahrs_view->pitch;
         y = plane.quadplane.ahrs_view->yaw;
     }
-    
+#endif
+
     const Vector3f &omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
@@ -155,6 +169,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
     if (plane.control_mode == &plane.mode_manual) {
         return;
     }
+#if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
@@ -170,7 +185,10 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_z_cm() * 1.0e-2f : 0,
             plane.airspeed_error * 100,
             wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
-    } else {
+        return;
+    }
+#endif
+    {
         const AP_Navigation *nav_controller = plane.nav_controller;
         mavlink_msg_nav_controller_output_send(
             chan,
@@ -295,27 +313,30 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
 
     const AP_Logger::PID_Info *pid_info;
     if (g.gcs_pid_mask & TUNING_BITS_ROLL) {
+        pid_info = &plane.rollController.get_pid_info();
+#if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.in_vtol_mode()) {
             pid_info = &plane.quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
-        } else {
-            pid_info = &plane.rollController.get_pid_info();
         }
+#endif
         send_pid_info(pid_info, PID_TUNING_ROLL, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_PITCH) {
+        pid_info = &plane.pitchController.get_pid_info();
+#if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.in_vtol_mode()) {
             pid_info = &plane.quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
-        } else {
-            pid_info = &plane.pitchController.get_pid_info();
         }
+#endif
         send_pid_info(pid_info, PID_TUNING_PITCH, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_YAW) {
+        pid_info = &plane.yawController.get_pid_info();
+#if HAL_QUADPLANE_ENABLED
         if (plane.quadplane.in_vtol_mode()) {
             pid_info = &plane.quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
-        } else {
-            pid_info = &plane.yawController.get_pid_info();
         }
+#endif
         send_pid_info(pid_info, PID_TUNING_YAW, pid_info->actual);
     }
     if (g.gcs_pid_mask & TUNING_BITS_STEER) {
@@ -327,10 +348,12 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         const Vector3f &gyro = ahrs.get_gyro();
         send_pid_info(plane.landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
     }
+#if HAL_QUADPLANE_ENABLED
     if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
         pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
         send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
+#endif
  }
 
 uint8_t GCS_MAVLINK_Plane::sysid_my_gcs() const
@@ -917,6 +940,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
+#if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_TAKEOFF: {
         // user takeoff only works with quadplane code for now
         // param7 : altitude [metres]
@@ -926,6 +950,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
     }
+#endif  // HAL_QUADPLANE_ENABLED
 
     case MAV_CMD_MISSION_START:
         plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
@@ -953,9 +978,15 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 
                 // only fly a fixed wing abort if we aren't doing quadplane stuff, or potentially
                 // shooting a quadplane approach
-                if ((!plane.quadplane.available()) ||
+#if HAL_QUADPLANE_ENABLED
+                const bool attempt_go_around =
+                    (!plane.quadplane.available()) ||
                     ((!plane.quadplane.in_vtol_auto()) &&
-                     (!(plane.quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)))) {
+                     (!(plane.quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)));
+#else
+                const bool attempt_go_around = true;
+#endif
+                if (attempt_go_around) {
                     // Initiate an aborted landing. This will trigger a pitch-up and
                     // climb-out to a safe altitude holding heading then one of the
                     // following actions will occur, check for in this order:
@@ -1039,6 +1070,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     case MAV_CMD_DO_MOTOR_TEST:
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
@@ -1057,6 +1089,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+#endif
 
     case MAV_CMD_DO_ENGINE_CONTROL:
         if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
@@ -1337,39 +1370,43 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     struct Location global_position_current;
     UNUSED_RESULT(ahrs.get_position(global_position_current));
 
+#if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
         return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_z_cm()) : 0;
-    } else {
-        return 0.01 * (global_position_current.alt + plane.altitude_error_cm);
     }
+#endif
+    return 0.01 * (global_position_current.alt + plane.altitude_error_cm);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const
 {
     // return units are deg/2
+#if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
         return ((uint16_t)(targets.z * 0.01)) / 2;
-    } else {
+    }
+#endif
         const AP_Navigation *nav_controller = plane.nav_controller;
         // need to convert -18000->18000 to 0->360/2
         return wrap_360_cd(nav_controller->target_bearing_cd() ) / 200;
-    }   
 }
-    
+
+// return units are dm
 uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
 {
-    // return units are dm
+#if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
         return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) / 10;
-    } else {
-        return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
     }
+    #endif
+
+    return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const

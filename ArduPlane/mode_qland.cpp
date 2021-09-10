@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQLand::_enter()
 {
     plane.mode_qloiter._enter();
@@ -29,3 +31,5 @@ void ModeQLand::run()
 {
     plane.mode_qloiter.run();
 }
+
+#endif
