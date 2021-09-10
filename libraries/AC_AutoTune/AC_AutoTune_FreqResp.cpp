@@ -7,13 +7,7 @@ is set.  This function must be reset using the reset flag prior to the next dwel
 #include <AP_HAL/AP_HAL.h>
 #include "AC_AutoTune_FreqResp.h"
 
-float AC_AutoTune_FreqResp::update()
-{
-    float dummy = 0.0f;
-    return dummy;
-}
-
-// Initialize the Frequency Response methods. Must be called before running dwell or frequency sweep tests
+// Initialize the Frequency Response Object. Must be called before running dwell or frequency sweep tests
 void AC_AutoTune_FreqResp::init(InputType input_type)
 {
     excitation = input_type;
@@ -43,7 +37,7 @@ void AC_AutoTune_FreqResp::init(InputType input_type)
 // and the cycles_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and 
 // cycle_complete flag is set to indicate when to pull the phase and gain data.  The flag is reset to enable the next 
 // cycle to be analyzed.
-void AC_AutoTune_FreqResp::determine_gain(float tgt_rate, float meas_rate, float tgt_freq)
+void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tgt_freq)
 {
     uint32_t now = AP_HAL::millis();
     uint32_t half_cycle_time_ms = 0;
@@ -209,12 +203,12 @@ void AC_AutoTune_FreqResp::determine_gain(float tgt_rate, float meas_rate, float
     prev_meas = meas_rate;
 }
 
-// determine_gain_angle - this function receives time history data during a dwell and frequency sweep tests for angle_p tuning  
+// update_angle - this function receives time history data during a dwell and frequency sweep tests for angle_p tuning  
 // and determines the gain, phase, and max acceleration of the response to the input. For dwell tests once the designated number  
 // of cycles are complete, the average of the gain, phase, and max acceleration are determined over the last 5 cycles and the 
 // cycles_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and cycle_complete flag is set
 // to indicate when to pull the phase and gain data.  The flag is reset to enable the next cycle to be analyzed.
-void AC_AutoTune_FreqResp::determine_gain_angle(float command, float tgt_angle, float meas_angle, float tgt_freq)
+void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float meas_angle, float tgt_freq)
 {
 
     uint32_t now = AP_HAL::millis();
