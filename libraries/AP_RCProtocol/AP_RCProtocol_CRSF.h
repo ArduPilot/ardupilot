@@ -200,7 +200,7 @@ private:
     static AP_RCProtocol_CRSF* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    bool decode_csrf_packet();
+    bool decode_crsf_packet();
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
     void write_frame(Frame* frame);
