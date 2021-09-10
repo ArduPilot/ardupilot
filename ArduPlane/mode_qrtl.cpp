@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQRTL::_enter()
 {
     // use do_RTL() to setup next_WP_loc
@@ -78,3 +80,4 @@ bool ModeQRTL::update_target_altitude()
     return true;
 }
 
+#endif

@@ -1,5 +1,13 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_QUADPLANE_ENABLED
+#define HAL_QUADPLANE_ENABLED 1
+#endif
+
+#if HAL_QUADPLANE_ENABLED
+
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
@@ -651,3 +659,5 @@ private:
 
     static QuadPlane *_singleton;
 };
+
+#endif  // HAL_QUADPLANE_ENABLED

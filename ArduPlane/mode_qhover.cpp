@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQHover::_enter()
 {
     // set vertical speed and acceleration limits
@@ -31,3 +33,5 @@ void ModeQHover::run()
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());
     }
 }
+
+#endif

@@ -1,4 +1,7 @@
 #include "Plane.h"
+
+#if HAL_QUADPLANE_ENABLED
+
 #include "AC_AttitudeControl/AC_AttitudeControl_TS.h"
 
 const AP_Param::GroupInfo QuadPlane::var_info[] = {
@@ -2120,7 +2123,9 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
     return (plane.control_mode == &plane.mode_qloiter ||
             plane.control_mode == &plane.mode_qland ||
             plane.control_mode == &plane.mode_qrtl ||
+#if QAUTOTUNE_ENABLED
             plane.control_mode == &plane.mode_qautotune ||
+#endif
             (plane.control_mode->is_guided_mode() &&
             plane.auto_state.vtol_loiter &&
              poscontrol.get_state() > QPOS_APPROACH) ||
@@ -3181,8 +3186,13 @@ int8_t QuadPlane::forward_throttle_pct()
     /*
       in qautotune mode or modes without a velocity controller
     */
-    if (vel_forward.gain <= 0 ||
-        plane.control_mode == &plane.mode_qautotune) {
+    bool use_forward_gain = (vel_forward.gain > 0);
+#if QAUTOTUNE_ENABLED
+    if (plane.control_mode == &plane.mode_qautotune) {
+        use_forward_gain = false;
+    }
+#endif
+    if (!use_forward_gain) {
         return 0;
     }
 
@@ -3281,8 +3291,11 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         !motors->armed() ||
         weathervane.gain <= 0 ||
         plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune) {
+#if QAUTOTUNE_ENABLED
+        plane.control_mode == &plane.mode_qautotune ||
+#endif
+        plane.control_mode == &plane.mode_qhover
+        ) {
         weathervane.last_output = 0;
         return 0;
     }
@@ -3741,3 +3754,5 @@ bool QuadPlane::air_mode_active() const
 }
 
 QuadPlane *QuadPlane::_singleton = nullptr;
+
+#endif  // HAL_QUADPLANE_ENABLED
