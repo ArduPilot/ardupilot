@@ -427,6 +427,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             sercfg.ctx = (void*)this;
 
+            sdStop((SerialDriver*)sdef.serial);
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
