@@ -92,13 +92,16 @@ const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
  */
 AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 {
+#if HAL_QUADPLANE_ENABLED
     if (parm < TUNING_FIXED_WING_BASE && !plane.quadplane.available()) {
         // quadplane tuning options not available
         return nullptr;
     }
-    
+#endif
+
     switch(parm) {
 
+#if HAL_QUADPLANE_ENABLED
     case TUNING_RATE_ROLL_PI:
         // use P for initial value when tuning PI
         return &plane.quadplane.attitude_control->get_rate_roll_pid().kP();
@@ -177,6 +180,7 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 
     case TUNING_RATE_YAW_FF:
         return &plane.quadplane.attitude_control->get_rate_yaw_pid().ff();
+#endif // HAL_QUADPLANE_ENABLED
 
     // fixed wing tuning parameters
     case TUNING_RLL_P:
@@ -300,6 +304,7 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
  */
 float AP_Tuning_Plane::controller_error(uint8_t parm)
 {
+#if HAL_QUADPLANE_ENABLED
     if (!plane.quadplane.available()) {
         return 0;
     }
@@ -360,4 +365,8 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
         // no special handler
         return 0;
     }
+#else
+    // no special handler
+    return 0;
+#endif  // HAL_QUADPLANE_ENABLED
 }

@@ -15,7 +15,7 @@
 void Plane::update_is_flying_5Hz(void)
 {
     float aspeed=0;
-    bool is_flying_bool;
+    bool is_flying_bool = false;
     uint32_t now_ms = AP_HAL::millis();
 
     uint32_t ground_speed_thresh_cm = (aparm.min_gndspeed_cm > 0) ? ((uint32_t)(aparm.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
@@ -34,9 +34,11 @@ void Plane::update_is_flying_5Hz(void)
         airspeed_movement = aspeed >= airspeed_threshold;
     }
 
-    if (quadplane.is_flying()) {
-        is_flying_bool = true;
-
+#if HAL_QUADPLANE_ENABLED
+    is_flying_bool = quadplane.is_flying();
+#endif
+    if (is_flying_bool) {
+        // no need to look further
     } else if(arming.is_armed()) {
         // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
@@ -182,9 +184,11 @@ void Plane::update_is_flying_5Hz(void)
 bool Plane::is_flying(void)
 {
     if (hal.util->get_soft_armed()) {
+#if HAL_QUADPLANE_ENABLED
         if (quadplane.is_flying_vtol()) {
             return true;
         }
+#endif
         // when armed, assume we're flying unless we probably aren't
         return (isFlyingProbability >= 0.1f);
     }
@@ -317,9 +321,13 @@ bool Plane::in_preLaunch_flight_stage(void)
     if (control_mode == &mode_takeoff && throttle_suppressed) {
         return true;
     }
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.is_vtol_takeoff(mission.get_current_nav_cmd().id)) {
+        return false;
+    }
+#endif
     return (control_mode == &mode_auto &&
             throttle_suppressed &&
             flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
-            mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF &&
-            !quadplane.is_vtol_takeoff(mission.get_current_nav_cmd().id));
+            mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF);
 }

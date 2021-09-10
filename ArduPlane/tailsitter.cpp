@@ -20,6 +20,8 @@
 #include "tailsitter.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: ENABLE
@@ -633,3 +635,5 @@ void Tailsitter::speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
+
+#endif  // HAL_QUADPLANE_ENABLED

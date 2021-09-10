@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 /*
   control code for tiltrotors and tiltwings. Enabled by setting
   Q_TILT_MASK to a non-zero value
@@ -113,10 +115,12 @@ void QuadPlane::tiltrotor_continuous_update(void)
          to forward flight and should put the rotors all the way forward
     */
 
+#if QAUTOTUNE_ENABLED
     if (plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
         return;
     }
+#endif
 
     // if not in assisted flight and in QACRO, QSTABILIZE or QHOVER mode
     if (!assisted_flight &&
@@ -468,3 +472,5 @@ void QuadPlane::tiltrotor_bicopter(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  tilt_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 }
+
+#endif  // HAL_QUADPLANE_ENABLED
