@@ -118,6 +118,7 @@ void Copter::set_land_complete(bool b)
     land_detector_count = 0;
 
     if(b){
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Land Complete");
         AP::logger().Write_Event(LogEvent::LAND_COMPLETE);
     } else {
         AP::logger().Write_Event(LogEvent::NOT_LANDED);
@@ -148,6 +149,7 @@ void Copter::set_land_complete_maybe(bool b)
         return;
 
     if (b) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Land Complete Maybe");
         AP::logger().Write_Event(LogEvent::LAND_COMPLETE_MAYBE);
     }
     ap.land_complete_maybe = b;
