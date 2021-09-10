@@ -44,18 +44,24 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         break;
 
     case Mode::Number::ACRO:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QACRO:
+#endif
         rate_controlled = true;
         break;
 
     case Mode::Number::STABILIZE:
     case Mode::Number::FLY_BY_WIRE_A:
     case Mode::Number::AUTOTUNE:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QSTABILIZE:
     case Mode::Number::QHOVER:
     case Mode::Number::QLAND:
     case Mode::Number::QLOITER:
+#if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
+#endif
+#endif  // HAL_QUADPLANE_ENABLED
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
         rate_controlled = true;
@@ -76,7 +82,9 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     case Mode::Number::GUIDED:
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QRTL:
+#endif
     case Mode::Number::THERMAL:
         rate_controlled = true;
         attitude_stabilized = true;

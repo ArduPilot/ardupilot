@@ -12,6 +12,7 @@
 #define MOTOR_TEST_TIMEOUT_MS_MAX       30000   // max timeout is 30 seconds
 
 // motor_test_output - checks for timeout and sends updates to motors objects
+#if HAL_QUADPLANE_ENABLED
 void QuadPlane::motor_test_output()
 {
     // exit immediately if the motor test is not running
@@ -132,3 +133,5 @@ void QuadPlane::motor_test_stop()
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 }
+
+#endif  // HAL_QUADPLANE_ENABLED
