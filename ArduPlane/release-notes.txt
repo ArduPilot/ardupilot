@@ -1,3 +1,29 @@
+Release 4.1.0beta7 11th September 2021
+--------------------------------------
+
+This is a small beta update, with a few important fixes. I expect this
+to be the final beta and will release 4.1.0 in one week if no
+significant issues are found.
+
+Changes since beta6 are:
+
+ - USB log download speeds improved on F765 and F777 based boards (USB buffers increased)
+ - Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+ - Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+ - DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+ - IMU semaphore fix to avoid occasional corruption
+ - QioTek Zealot F427 GPIO pin fix
+ - Replay/DAL RMGH log message format fix
+ - Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+ - increase CRSF frame timeout to cope with scheduling delays
+ - fixed quadplane Z controller init calculation
+
+Please test this final beta and report on the discuss.ardupilot.org
+4.1.0beta topic.
+
+Happy flying!
+
+
 Release 4.1.0beta6 29th August 2021
 -----------------------------------
 
