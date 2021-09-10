@@ -19,30 +19,28 @@ public:
     tgt_peak_info_buffer = new ObjectBuffer<peak_info>(AUTOTUNE_DWELL_CYCLES);
 }
 
-//    CLASS_NO_COPY(AC_PI);
-
-    // update calculations
-    float update();
-
     enum InputType {
         DWELL = 0,                 
         SWEEP = 1, 
     };
 
+    // Initialize the Frequency Response Object. 
+    // Must be called before running dwell or frequency sweep tests
     void init(InputType input_type);
 
-    // determines the gain and phase for a dwell
-    void determine_gain(float tgt_rate, float meas_rate, float tgt_freq);
+    // determines the gain and phase based on rate response for a dwell or sweep
+    void update_rate(float tgt_rate, float meas_rate, float tgt_freq);
 
-    // determines the gain and phase for a dwell
-    void determine_gain_angle(float command, float tgt_angle, float meas_angle, float tgt_freq);
+    // determines the gain and phase based on angle response for a dwell or sweep
+    void update_angle(float command, float tgt_angle, float meas_angle, float tgt_freq);
 
-    // enable external query if cycle is complete and phase and gain data are available
+    // enable external query if cycle is complete and freq response data are available
     bool is_cycle_complete() { return cycle_complete;}
 
+    // reset cycle_complete flag
     void reset_cycle_complete() { cycle_complete = false; }
 
-    // frequency response accessors
+    // frequency response data accessors
     float get_freq() { return curr_test_freq; }
     float get_gain() { return curr_test_gain; }
     float get_phase() { return curr_test_phase; }
@@ -72,7 +70,7 @@ private:
     sweep_peak_finding_data sweep_meas;
     sweep_peak_finding_data sweep_tgt;
 
-    //store determine gain data in ring buffer
+    //store gain data in ring buffer
     struct peak_info {
         uint16_t curr_count;
         float amplitude;
