@@ -1,5 +1,24 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-rc1 10-Sep-2021
+Changes from 4.1.0-beta8
+1) Enhancements
+    a) Log download speeds improved on F765 and F777 based boards (USB buffers increased)
+    b) Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+    c) WPNAV_SPEED param changes take immediate effect in Auto
+2) Bug Fixes
+    a) Airmode fix if throttle held at zero for long time
+    b) Auto mode SCurve jerk time calculation fix (prevents jerk from being set too high)
+    c) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    d) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    e) IMU semaphore fix to avoid occasional corruption
+    f) QioTek Zealot F427 GPIO pin fix
+    g) Replay/DAL RMGH log message format fix
+    h) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+    i) Surface tracking fix to reduce lag and overshoot
+    j) WPNAV_SPEED change with ch6 tuning knob feature gets divide-by-zero protection
+    k) WPNAV_SPEED_DN handles negative values
+------------------------------------------------------------------
 Copter 4.1.0-beta8 28-Aug-2021
 Changes from 4.1.0-beta7
 1) Enhancements
