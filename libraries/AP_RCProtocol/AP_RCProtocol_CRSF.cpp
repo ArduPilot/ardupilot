@@ -97,7 +97,7 @@ static const char* get_frame_type(uint8_t byte)
 # define debug(fmt, args...)	do {} while(0)
 #endif
 
-#define CRSF_MAX_FRAME_TIME_US      1100U // 700us + 400us for potential ad-hoc request
+#define CRSF_FRAME_TIMEOUT_US      10000U // 10ms to account for scheduling delays
 #define CRSF_INTER_FRAME_TIME_US_250HZ    4000U // At fastest, frames are sent by the transmitter every 4 ms, 250 Hz
 #define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At medium, frames are sent by the transmitter every 6.667 ms, 150 Hz
 #define CRSF_INTER_FRAME_TIME_US_50HZ    20000U // At slowest, frames are sent by the transmitter every 20ms, 50 Hz
@@ -145,8 +145,9 @@ void AP_RCProtocol_CRSF::process_pulse(uint32_t width_s0, uint32_t width_s1)
 void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
 {
     //debug("process_byte(0x%x)", byte);
-    // we took too long decoding, start again - the RX will only send complete frames so this is unlikely to fail
-    if (_frame_ofs > 0 && (timestamp_us - _start_frame_time_us) > CRSF_MAX_FRAME_TIME_US) {
+    // we took too long decoding, start again - the RX will only send complete frames so this is unlikely to fail,
+    // however thread scheduling can introduce longer delays even when the data has been received
+    if (_frame_ofs > 0 && (timestamp_us - _start_frame_time_us) > CRSF_FRAME_TIMEOUT_US) {
         _frame_ofs = 0;
     }
 
@@ -203,7 +204,7 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
         _last_frame_time_us = timestamp_us;
         // decode here
-        if (decode_csrf_packet()) {
+        if (decode_crsf_packet()) {
             add_input(MAX_CHANNELS, _channels, false, _link_status.rssi);
         }
     }
@@ -268,7 +269,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #endif
 }
 
-bool AP_RCProtocol_CRSF::decode_csrf_packet()
+bool AP_RCProtocol_CRSF::decode_crsf_packet()
 {
 #ifdef CRSF_DEBUG
     hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
@@ -293,7 +294,6 @@ bool AP_RCProtocol_CRSF::decode_csrf_packet()
         default:
             break;
     }
-
 #if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
