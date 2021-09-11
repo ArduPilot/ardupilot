@@ -36,6 +36,13 @@ public:
     const Vector3f&    get_position() const;
 
     /**
+     * get_position_xy - returns the current x-y position relative to the home location in cm.
+     *
+     * @return
+     */
+    const Vector2f&    get_position_xy() const;
+
+    /**
      * get_velocity - returns the current velocity in cm/s
      *
      * @return velocity vector:
@@ -44,6 +51,13 @@ public:
      * 				.z : vertical  velocity in cm/s
      */
     const Vector3f&    get_velocity() const;
+
+    /**
+     * get_velocity_xy - returns the current x-y velocity relative to the home location in cm.
+     *
+     * @return
+     */
+    const Vector2f& get_velocity_xy() const;
 
     /**
      * get_speed_xy - returns the current horizontal speed in cm/s
