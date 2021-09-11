@@ -10,10 +10,10 @@
  */
 
 // return horizontal distance in centimeters between two positions
-float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
+float        get_horizontal_distance_cm(const Vector2f &origin, const Vector2f &destination);
 
 // return bearing in centi-degrees between two positions
-float        get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
+float        get_bearing_cd(const Vector2f &origin, const Vector2f &destination);
 
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
