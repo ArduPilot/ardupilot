@@ -213,6 +213,7 @@ public:
         // options 150-199 continue user rc switch options
         CRUISE =             150,  ///CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
+        SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input

@@ -61,9 +61,6 @@ public:
     // run controllers specific to this mode
     virtual void run() {};
 
-    // init function, used only be quadplane modes, to be factored in to _enter() in the future
-    virtual void init() {};
-
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
 
@@ -470,8 +467,6 @@ public:
 
     void run() override;
 
-    void init() override;
-
 protected:
 private:
 
@@ -496,8 +491,6 @@ public:
 
     void run() override;
 
-    void init() override;
-
 protected:
 
     bool _enter() override;
@@ -521,8 +514,6 @@ public:
 
     void run() override;
 
-    void init() override;
-
 protected:
 
     bool _enter() override;
@@ -542,8 +533,6 @@ public:
     void update() override;
 
     void run() override;
-
-    void init() override;
 
     bool allows_arming() const override { return false; }
 
@@ -566,8 +555,6 @@ public:
     void update() override;
 
     void run() override;
-
-    void init() override;
 
     bool allows_arming() const override { return false; }
 
@@ -596,8 +583,6 @@ public:
     void update() override;
 
     void run() override;
-
-    void init() override;
 
 protected:
 

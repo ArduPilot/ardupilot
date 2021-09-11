@@ -149,7 +149,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: TailSitter, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix, 17:Dynamic Scripting Matrix
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: Single/Dual, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix, 17:Dynamic Scripting Matrix
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
@@ -987,11 +987,9 @@ void QuadPlane::relax_attitude_control()
  */
 void QuadPlane::check_attitude_relax(void)
 {
-    uint32_t now = AP_HAL::millis();
-    if (now - last_att_control_ms > 100) {
+    if (AP_HAL::millis() - last_att_control_ms > 100) {
         relax_attitude_control();
     }
-    last_att_control_ms = now;
 }
 
 /*
@@ -1943,8 +1941,10 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
+    const uint32_t now = AP_HAL::millis();
     if (run_rate_controller) {
         attitude_control->rate_controller_run();
+        last_att_control_ms = now;
     }
 
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
@@ -1992,80 +1992,9 @@ void QuadPlane::motors_output(bool run_rate_controller)
 
     // remember when motors were last active for throttle suppression
     if (motors->get_throttle() > 0.01f || tilt.motors_active) {
-        last_motors_active_ms = AP_HAL::millis();
+        last_motors_active_ms = now;
     }
 
-}
-
-/*
-  update control mode for quadplane modes
- */
-void QuadPlane::control_run(void)
-{
-    if (!initialised) {
-        return;
-    }
-
-    switch (plane.control_mode->mode_number()) {
-    case Mode::Number::QACRO:
-    case Mode::Number::QSTABILIZE:
-    case Mode::Number::QHOVER:
-    case Mode::Number::QLOITER:
-    case Mode::Number::QLAND:
-    case Mode::Number::QRTL:
-#if QAUTOTUNE_ENABLED
-    case Mode::Number::QAUTOTUNE:
-#endif
-        plane.control_mode->run();
-        break;
-    default:
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        break;
-    }
-
-    // we also stabilize using fixed wing surfaces
-    float speed_scaler = plane.get_speed_scaler();
-    if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-        plane.stabilize_acro(speed_scaler);
-    } else {
-        plane.stabilize_roll(speed_scaler);
-        plane.stabilize_pitch(speed_scaler);
-    }
-}
-
-/*
-  enter a quadplane mode
- */
-bool QuadPlane::init_mode(void)
-{
-    if (!setup()) {
-        return false;
-    }
-    if (!initialised) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");
-        return false;
-    }
-
-    AP_Notify::flags.esc_calibration = false;
-
-    switch (plane.control_mode->mode_number()) {
-    case Mode::Number::QSTABILIZE:
-    case Mode::Number::QHOVER:
-    case Mode::Number::QLOITER:
-    case Mode::Number::QLAND:
-    case Mode::Number::QRTL:
-    case Mode::Number::QACRO:
-        plane.control_mode->init();
-        break;
-#if QAUTOTUNE_ENABLED
-    case Mode::Number::QAUTOTUNE:
-        return qautotune.init();
-#endif
-    default:
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        break;
-    }
-    return true;
 }
 
 /*

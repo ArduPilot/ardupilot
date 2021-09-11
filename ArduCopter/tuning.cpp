@@ -142,13 +142,6 @@ void Copter::tuning()
         break;
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
-    case TUNING_RANGEFINDER_GAIN:
-        // set rangefinder gain
-        g.rangefinder_gain.set(tuning_value);
-        break;
-#endif
-
     case TUNING_RC_FEEL_RP:
         attitude_control->set_input_tc(tuning_value);
         break;

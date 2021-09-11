@@ -1000,6 +1000,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 };
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
+    // duplicate of OSDn_ENABLE to ensure params are hidden when not enabled
+    AP_GROUPINFO_FLAGS("ENABLE", 2, AP_OSD_Screen, enabled, 0, AP_PARAM_FLAG_ENABLE | AP_PARAM_FLAG_HIDDEN),
+
     // @Param: LINK_Q_EN
     // @DisplayName: LINK_Q_EN
     // @Description: Displays Receiver link quality
@@ -1252,16 +1255,22 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
-    uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
+    uint8_t pct;
+    if (!battery.capacity_remaining_pct(pct)) {
+        // Do not show battery percentage
+        backend->write(x,y, v < osd->warn_batvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        return;
+    }
+    uint8_t p = (100 - pct) / 16.6;
     backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
 }
 
 void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t pct = 0;
+    IGNORE_RETURN(battery.capacity_remaining_pct(pct));
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
@@ -1280,7 +1289,8 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t pct = 0;
+    IGNORE_RETURN(battery.capacity_remaining_pct(pct));
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage_resting_estimate();
     backend->write(x,y, v < osd->warn_restvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
@@ -1894,9 +1904,14 @@ void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct2 = battery.capacity_remaining_pct(1);
-    uint8_t p2 = (100 - pct2) / 16.6;
+    uint8_t pct2 = 0;
     float v2 = battery.voltage(1);
+    if (!battery.capacity_remaining_pct(pct2, 1)) {
+        // Do not show battery percentage
+        backend->write(x,y, v2 < osd->warn_bat2volt, "%2.1f%c", (double)v2, SYMBOL(SYM_VOLT));
+        return;
+    }
+    uint8_t p2 = (100 - pct2) / 16.6;
     backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p2, (double)v2, SYMBOL(SYM_VOLT));
 }
 

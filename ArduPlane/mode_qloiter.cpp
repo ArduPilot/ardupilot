@@ -3,11 +3,6 @@
 
 bool ModeQLoiter::_enter()
 {
-    return plane.mode_qstabilize._enter();
-}
-
-void ModeQLoiter::init()
-{
     // initialise loiter
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
@@ -23,6 +18,7 @@ void ModeQLoiter::init()
 
     // prevent re-init of target position
     quadplane.last_loiter_ms = AP_HAL::millis();
+    return true;
 }
 
 void ModeQLoiter::update()
@@ -43,7 +39,7 @@ void ModeQLoiter::run()
         return;
     }
     if (!quadplane.motors->armed()) {
-        plane.mode_qloiter.init();
+        plane.mode_qloiter._enter();
     }
 
     quadplane.check_attitude_relax();
@@ -67,7 +63,7 @@ void ModeQLoiter::run()
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
-    quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+    quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
     loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
     
     // run loiter controller

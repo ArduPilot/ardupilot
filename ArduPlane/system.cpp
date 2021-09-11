@@ -125,9 +125,6 @@ void Plane::init_ardupilot()
         hal.rcout->set_output_mode(g2.oneshot_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
     }
 
-    // choose the nav controller
-    set_nav_controller();
-
     set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
 
     // set the correct flight mode
@@ -213,6 +210,16 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
             AP_Notify::events.user_mode_change = 1;
         }
         return true;
+    }
+
+    if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
+        // dont try and switch to a Q mode if quadplane is not enabled and initalized
+        gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        return false;
     }
 
 #if !QAUTOTUNE_ENABLED

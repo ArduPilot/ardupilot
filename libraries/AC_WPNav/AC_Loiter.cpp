@@ -186,7 +186,7 @@ void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 float AC_Loiter::get_angle_max_cd() const
 {
     if (is_zero(_angle_max)) {
-        return MIN(_attitude_control.lean_angle_max(), _pos_control.get_lean_angle_max_cd()) * (2.0f/3.0f);
+        return MIN(_attitude_control.lean_angle_max_cd(), _pos_control.get_lean_angle_max_cd()) * (2.0f/3.0f);
     }
     return MIN(_angle_max*100.0f, _pos_control.get_lean_angle_max_cd());
 }
@@ -202,7 +202,7 @@ void AC_Loiter::update(bool avoidance_on)
 void AC_Loiter::sanity_check_params()
 {
     _speed_cms = MAX(_speed_cms, LOITER_SPEED_MIN);
-    _accel_cmss = MIN(_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
+    _accel_cmss = MIN(_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max_cd() * 0.01f)));
 }
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance

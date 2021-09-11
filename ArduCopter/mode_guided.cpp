@@ -154,7 +154,7 @@ void ModeGuided::pva_control_start()
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
 
-    // initialise terain alt
+    // initialise terrain alt
     guided_pos_terrain_alt = false;
 }
 
@@ -806,7 +806,7 @@ void ModeGuided::angle_control_run()
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
     float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control->get_althold_lean_angle_max(), copter.aparm.angle_max);
+    float angle_max = MIN(attitude_control->get_althold_lean_angle_max_cd(), copter.aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -820,7 +820,7 @@ void ModeGuided::angle_control_run()
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {
         // constrain climb rate
-        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav->get_default_speed_down()), wp_nav->get_default_speed_up());
+        climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
 
         // get avoidance adjusted climb rate
         climb_rate_cms = get_avoidance_adjusted_climbrate(climb_rate_cms);
@@ -879,7 +879,7 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.use_thrust) {
         attitude_control->set_throttle_out(guided_angle_state.thrust, true, copter.g.throttle_filt);
     } else {
-        pos_control->set_pos_target_z_from_climb_rate_cm(climb_rate_cms, false);
+        pos_control->set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
         pos_control->update_z_controller();
     }
 }

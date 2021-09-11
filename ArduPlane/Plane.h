@@ -981,7 +981,6 @@ private:
     void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
 
     // navigation.cpp
-    void set_nav_controller(void);
     void loiter_angle_reset(void);
     void loiter_angle_update(void);
     void navigate();
@@ -1092,6 +1091,7 @@ private:
     bool allow_reverse_thrust(void) const;
     bool have_reverse_thrust(void) const;
     int16_t get_throttle_input(bool no_deadzone=false) const;
+    int16_t get_adjusted_throttle_input(bool no_deadzone=false) const;
 
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,

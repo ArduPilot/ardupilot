@@ -86,18 +86,28 @@ public:
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor = 1.0f);
 
-    // structure to statically store motor information.  Entries match
-    // the arguments to add_motor - with the exception of the type,
-    // for compactness.
-    struct MotorDefInt {
-        int8_t motor_num;
-        int16_t angle_degrees;
-        int8_t yaw_factor;
+    // same structure, but with floats.
+    struct MotorDef {
+        float angle_degrees;
+        float yaw_factor;
         uint8_t testing_order;
     };
 
     // method to add many motors specified in a structure:
-    void add_motors(const struct MotorDefInt *motor, uint8_t num_motors);
+    void add_motors(const struct MotorDef *motors, uint8_t num_motors);
+
+    // structure used for initialising motors that add have separate
+    // roll/pitch/yaw factors.  Note that this does *not* include
+    // the final parameter for the add_motor_raw call - throttle
+    // factor as that is only used in the scripting binding, not in
+    // the static motors at the moment.
+    struct MotorDefRaw {
+        float roll_fac;
+        float pitch_fac;
+        float yaw_fac;
+        uint8_t testing_order;
+    };
+    void add_motors_raw(const struct MotorDefRaw *motors, uint8_t num_motors);
 
 protected:
     // output - sends commands to the motors
@@ -140,8 +150,6 @@ protected:
 
     const char*         _frame_class_string = ""; // string representation of frame class
     const char*         _frame_type_string = "";  //  string representation of frame type
-
 private:
     static AP_MotorsMatrix *_singleton;
-
 };

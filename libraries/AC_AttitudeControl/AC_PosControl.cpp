@@ -654,7 +654,7 @@ void AC_PosControl::update_xy_controller()
 
     // limit acceleration using maximum lean angles
     _limit_vector.xy().zero();
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
+    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
     float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
     if (_accel_target.limit_length_xy(accel_max)) {
         _limit_vector.xy() = _accel_target.xy();
@@ -712,7 +712,7 @@ void AC_PosControl::set_max_speed_accel_z(float speed_down, float speed_up, floa
 void AC_PosControl::set_correction_speed_accel_z(float speed_down, float speed_up, float accel_cmss)
 {
     // define maximum position error and maximum first and second differential limits
-    _p_pos_z.set_limits(-fabsf(speed_down), _vel_max_up_cms, _accel_max_z_cmss, 0.0f);
+    _p_pos_z.set_limits(-fabsf(speed_down), speed_up, accel_cmss, 0.0f);
 }
 
 /// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
@@ -790,6 +790,7 @@ void AC_PosControl::init_z()
     _pid_accel_z.reset_filter();
 
     // initialise vertical offsets
+    _pos_offset_target_z = 0.0;
     _pos_offset_z = 0.0;
     _vel_offset_z = 0.0;
     _accel_offset_z = 0.0;
@@ -805,7 +806,7 @@ void AC_PosControl::init_z()
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The function alters the vel to be the kinematic path based on accel
-void AC_PosControl::input_accel_z(const float accel)
+void AC_PosControl::input_accel_z(float accel)
 {
     // calculated increased maximum acceleration if over speed
     float accel_z_cmss = _accel_max_z_cmss;
@@ -826,7 +827,7 @@ void AC_PosControl::input_accel_z(const float accel)
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
-void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore_descent_limit, bool limit_output)
+void AC_PosControl::input_vel_accel_z(float &vel, float accel, bool ignore_descent_limit, bool limit_output)
 {
     if (ignore_descent_limit) {
         // turn off limits in the negative z direction
@@ -855,11 +856,32 @@ void AC_PosControl::input_vel_accel_z(float &vel, const float accel, bool ignore
 
 /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
 ///     using the default position control kinematic path.
-///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
-void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ignore_descent_limit)
+///     The zero target altitude is varied to follow pos_offset_z
+void AC_PosControl::set_pos_target_z_from_climb_rate_cm(float vel)
 {
-    float vel2 = vel;
-    input_vel_accel_z(vel2, 0, ignore_descent_limit);
+    // remove terrain offsets for flat earth assumption
+    _pos_target.z -= _pos_offset_z;
+    _vel_desired.z -= _vel_offset_z;
+    _accel_desired.z -= _accel_offset_z;
+
+    float vel_temp = vel;
+    input_vel_accel_z(vel_temp, 0, false);
+
+    // update the vertical position, velocity and acceleration offsets
+    update_pos_offset_z(_pos_offset_target_z);
+
+    // add terrain offsets
+    _pos_target.z += _pos_offset_z;
+    _vel_desired.z += _vel_offset_z;
+    _accel_desired.z += _accel_offset_z;
+}
+
+/// land_at_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
+///     using the default position control kinematic path.
+///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+void AC_PosControl::land_at_climb_rate_cm(float vel, bool ignore_descent_limit)
+{
+    input_vel_accel_z(vel, 0, ignore_descent_limit);
 }
 
 /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
@@ -867,7 +889,7 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(const float vel, bool ig
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The function alters the pos and vel to be the kinematic path based on accel
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
-void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float accel, bool limit_output)
+void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, float accel, bool limit_output)
 {
     // calculated increased maximum acceleration if over speed
     float accel_z_cmss = _accel_max_z_cmss;
@@ -894,11 +916,10 @@ void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, const float ac
 
 /// set_alt_target_with_slew - adjusts target up or down using a commanded altitude in cm
 ///     using the default position control kinematic path.
-void AC_PosControl::set_alt_target_with_slew(const float& pos)
+void AC_PosControl::set_alt_target_with_slew(float pos)
 {
-    float posf = pos;
     float zero = 0;
-    input_pos_vel_accel_z(posf, zero, 0);
+    input_pos_vel_accel_z(pos, zero, 0);
 }
 
 /// update_pos_offset_z - updates the vertical offsets used by terrain following
@@ -1012,7 +1033,7 @@ void AC_PosControl::update_z_controller()
 float AC_PosControl::get_lean_angle_max_cd() const
 {
     if (is_zero(_lean_angle_max)) {
-        return _attitude_control.lean_angle_max();
+        return _attitude_control.lean_angle_max_cd();
     }
     return _lean_angle_max * 100.0f;
 }
