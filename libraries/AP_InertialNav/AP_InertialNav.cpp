@@ -62,6 +62,16 @@ const Vector3f &AP_InertialNav::get_position(void) const
 }
 
 /**
+ * get_position_xy - returns the current x-y position relative to the home location in cm.
+ *
+ * @return
+ */
+const Vector2f &AP_InertialNav::get_position_xy() const
+{
+    return _relpos_cm.xy();
+}
+
+/**
  * get_velocity - returns the current velocity in cm/s
  *
  * @return velocity vector:
@@ -72,6 +82,16 @@ const Vector3f &AP_InertialNav::get_position(void) const
 const Vector3f &AP_InertialNav::get_velocity() const
 {
     return _velocity_cm;
+}
+
+/**
+ * get_velocity_xy - returns the current x-y velocity relative to the home location in cm.
+ *
+ * @return
+ */
+const Vector2f &AP_InertialNav::get_velocity_xy() const
+{
+    return _velocity_cm.xy();
 }
 
 /**
