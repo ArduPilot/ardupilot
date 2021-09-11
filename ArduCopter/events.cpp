@@ -55,7 +55,7 @@ void Copter::failsafe_radio_on_event()
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
         // Allow landing to continue when FS_OPTIONS is set to continue landing
         gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = Failsafe_Action_None;
 
     } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
@@ -100,7 +100,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING) && desired_action != Failsafe_Action_None) {
         // Allow landing to continue when FS_OPTIONS is set to continue when landing
-        desired_action = Failsafe_Action_Land;
+        desired_action = Failsafe_Action_None;
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe - Continuing Landing");
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "Battery Failsafe");
@@ -199,7 +199,7 @@ void Copter::failsafe_gcs_on_event(void)
     } else if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
         // Allow landing to continue when FS_OPTIONS is set to continue landing
         gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe - Continuing Landing");
-        desired_action = Failsafe_Action_Land;
+        desired_action = Failsafe_Action_None;
 
     } else if (flightmode->mode_number() == Mode::Number::AUTO && failsafe_option(FailsafeOption::GCS_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
