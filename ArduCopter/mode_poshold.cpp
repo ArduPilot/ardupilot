@@ -378,7 +378,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake.to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
-        loiter_nav->init_target(inertial_nav.get_position().xy());
+        loiter_nav->init_target(inertial_nav.get_position_xy());
         // set delay to start of wind compensation estimate updates
         wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
     }
