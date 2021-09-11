@@ -491,9 +491,9 @@ void AC_PosControl::init_xy()
     _yaw_target = att_target_euler_cd.z; // todo: this should be thrust vector heading, not yaw.
     _yaw_rate_target = 0.0f;
 
-    _pos_target.xy() = _inav.get_position().xy().topostype();
+    _pos_target.xy() = _inav.get_position_xy().topostype();
 
-    const Vector2f &curr_vel = _inav.get_velocity().xy();
+    const Vector2f &curr_vel = _inav.get_velocity_xy();
     _vel_desired.xy() = curr_vel;
     _vel_target.xy() = curr_vel;
 
@@ -561,15 +561,15 @@ void AC_PosControl::input_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const V
 /// stop_pos_xy_stabilisation - sets the target to the current position to remove any position corrections from the system
 void AC_PosControl::stop_pos_xy_stabilisation()
 {
-    _pos_target.xy() = _inav.get_position().xy().topostype();
+    _pos_target.xy() = _inav.get_position_xy().topostype();
 }
 
 /// stop_vel_xy_stabilisation - sets the target to the current position and velocity to the current velocity to remove any position and velocity corrections from the system
 void AC_PosControl::stop_vel_xy_stabilisation()
 {
-    _pos_target.xy() =  _inav.get_position().xy().topostype();
+    _pos_target.xy() =  _inav.get_position_xy().topostype();
 
-    const Vector2f &curr_vel = _inav.get_velocity().xy();
+    const Vector2f &curr_vel = _inav.get_velocity_xy();
     _vel_desired.xy() = curr_vel;
     // with zero position error _vel_target = _vel_desired
     _vel_target.xy() = curr_vel;
@@ -624,7 +624,7 @@ void AC_PosControl::update_xy_controller()
     if (_flags.vehicle_horiz_vel_override) {
         _flags.vehicle_horiz_vel_override = false;
     } else {
-        _vehicle_horiz_vel = _inav.get_velocity().xy();
+        _vehicle_horiz_vel = _inav.get_velocity_xy();
     }
     Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, Vector2f(_limit_vector.x, _limit_vector.y));
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
@@ -1063,10 +1063,10 @@ Vector3f AC_PosControl::get_thrust_vector() const
 ///    function does not change the z axis
 void AC_PosControl::get_stopping_point_xy_cm(Vector2p &stopping_point) const
 {
-    stopping_point = _inav.get_position().xy().topostype();
+    stopping_point = _inav.get_position_xy().topostype();
     float kP = _p_pos_xy.kP();
 
-    Vector2f curr_vel = _inav.get_velocity().xy();
+    Vector2f curr_vel = _inav.get_velocity_xy();
 
     // calculate current velocity
     float vel_total = curr_vel.length();
@@ -1102,7 +1102,7 @@ void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
 int32_t AC_PosControl::get_bearing_to_target_cd() const
 {
-    return get_bearing_cd(_inav.get_position().xy(), _pos_target.tofloat().xy());
+    return get_bearing_cd(_inav.get_position_xy(), _pos_target.tofloat().xy());
 }
 
 
@@ -1165,7 +1165,7 @@ void AC_PosControl::write_log()
 /// crosstrack_error - returns horizontal error to the closest point to the current track
 float AC_PosControl::crosstrack_error() const
 {
-    const Vector2f pos_error = _inav.get_position().xy() - (_pos_target.xy()).tofloat();
+    const Vector2f pos_error = _inav.get_position_xy() - (_pos_target.xy()).tofloat();
     if (is_zero(_vel_desired.xy().length_squared())) {
         // crosstrack is the horizontal distance to target when stationary
         return pos_error.length();
@@ -1249,8 +1249,8 @@ void AC_PosControl::handle_ekf_xy_reset()
     uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
     if (reset_ms != _ekf_xy_reset_ms) {
 
-        _pos_target.xy() = (_inav.get_position().xy() + _p_pos_xy.get_error()).topostype();
-        _vel_target.xy() = _inav.get_velocity().xy() + _pid_vel_xy.get_error();
+        _pos_target.xy() = (_inav.get_position_xy() + _p_pos_xy.get_error()).topostype();
+        _vel_target.xy() = _inav.get_velocity_xy() + _pid_vel_xy.get_error();
 
         _ekf_xy_reset_ms = reset_ms;
     }

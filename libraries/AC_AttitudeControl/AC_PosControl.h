@@ -263,7 +263,7 @@ public:
     const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position().topostype()).tofloat(); }
 
     /// get_pos_error_xy_cm - get the length of the position error vector in the xy plane
-    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position().xy().topostype(), _pos_target.xy()); }
+    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position_xy().topostype(), _pos_target.xy()); }
 
     /// get_pos_error_z_cm - returns altitude error in cm
     float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_altitude()); }
