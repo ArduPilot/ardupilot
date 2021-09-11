@@ -1111,7 +1111,7 @@ void AC_PosControl::get_stopping_point_z_cm(postype_t &stopping_point) const
 /// get_bearing_to_target_cd - get bearing to target position in centi-degrees
 int32_t AC_PosControl::get_bearing_to_target_cd() const
 {
-    return get_bearing_cd(_inav.get_position(), _pos_target.tofloat());
+    return get_bearing_cd(_inav.get_position().xy(), _pos_target.tofloat().xy());
 }
 
 
