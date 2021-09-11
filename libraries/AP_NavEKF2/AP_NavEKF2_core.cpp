@@ -676,7 +676,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = velDotNEDfilt.xy().length();
 
     // if we are not aiding, then limit the horizontal magnitude of acceleration
     // to prevent large manoeuvre transients disturbing the attitude

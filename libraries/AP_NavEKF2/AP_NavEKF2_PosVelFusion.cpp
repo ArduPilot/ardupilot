@@ -983,7 +983,7 @@ void NavEKF2_core::selectHeightForFusion()
         // If the terrain height is consistent and we are moving slowly, then it can be
         // used as a height reference in combination with a range finder
         // apply a hysteresis to the speed check to prevent rapid switching
-        ftype horizSpeed = norm(stateStruct.velocity.x, stateStruct.velocity.y);
+        ftype horizSpeed = stateStruct.velocity.xy().length();
         bool dontTrustTerrain = ((horizSpeed > frontend->_useRngSwSpd) && filterStatus.flags.horiz_vel) || !terrainHgtStable;
         ftype trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
         bool trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
