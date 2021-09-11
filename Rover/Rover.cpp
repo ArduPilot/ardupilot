@@ -256,7 +256,7 @@ void Rover::ahrs_update()
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
-        ground_speed = norm(velocity.x, velocity.y);
+        ground_speed = velocity.xy().length();
     } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }
