@@ -61,12 +61,10 @@ void ModeLoiter::precision_loiter_xy()
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
-        target_pos.x = inertial_nav.get_position().x;
-        target_pos.y = inertial_nav.get_position().y;
+        target_pos = inertial_nav.get_position_xy();
     }
     if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
-        target_vel_rel.x = -inertial_nav.get_velocity().x;
-        target_vel_rel.y = -inertial_nav.get_velocity().y;
+        target_vel_rel = -inertial_nav.get_velocity_xy();
     }
     pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
     pos_control->override_vehicle_velocity_xy(-target_vel_rel);
