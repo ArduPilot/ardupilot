@@ -394,7 +394,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
             Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
             interim_state.velocity = vel;
-            interim_state.ground_speed = norm(vel.x, vel.y);
+            interim_state.ground_speed = vel.xy().length();
             interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
             interim_state.have_vertical_velocity = true;
         } else {
@@ -518,7 +518,7 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
             Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
             interim_state.velocity = vel;
-            interim_state.ground_speed = norm(vel.x, vel.y);
+            interim_state.ground_speed = vel.xy().length();
             interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
             interim_state.have_vertical_velocity = true;
         } else {
