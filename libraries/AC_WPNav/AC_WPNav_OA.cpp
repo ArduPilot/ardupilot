@@ -44,7 +44,7 @@ float AC_WPNav_OA::get_wp_distance_to_destination() const
         return AC_WPNav::get_wp_distance_to_destination();
     }
 
-    return get_horizontal_distance_cm(_inav.get_position().xy(), _destination_oabak.xy());
+    return get_horizontal_distance_cm(_inav.get_position_xy(), _destination_oabak.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
@@ -55,7 +55,7 @@ int32_t AC_WPNav_OA::get_wp_bearing_to_destination() const
         return AC_WPNav::get_wp_bearing_to_destination();
     }
 
-    return get_bearing_cd(_inav.get_position().xy(), _destination_oabak.xy());
+    return get_bearing_cd(_inav.get_position_xy(), _destination_oabak.xy());
 }
 
 /// true when we have come within RADIUS cm of the waypoint
