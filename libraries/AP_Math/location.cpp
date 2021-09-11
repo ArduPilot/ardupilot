@@ -23,12 +23,6 @@
 #include "AP_Math.h"
 #include "location.h"
 
-// return horizontal distance between two positions in cm
-float get_horizontal_distance_cm(const Vector2f &origin, const Vector2f &destination)
-{
-    return (destination - origin).length();
-}
-
 // return bearing in centi-degrees between two positions
 float get_bearing_cd(const Vector2f &origin, const Vector2f &destination)
 {
