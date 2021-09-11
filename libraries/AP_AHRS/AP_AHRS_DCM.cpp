@@ -383,8 +383,8 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 float
 AP_AHRS_DCM::_yaw_gain(void) const
 {
-    const float VdotEFmag = norm(_accel_ef[_active_accel_instance].x,
-                                   _accel_ef[_active_accel_instance].y);
+    const float VdotEFmag = _accel_ef[_active_accel_instance].xy().length();
+
     if (VdotEFmag <= 4.0f) {
         return 0.2f*(4.5f - VdotEFmag);
     }
@@ -850,7 +850,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const float earth_error_Z = error.z;
 
     // equation 10
-    const float tilt = norm(GA_e.x, GA_e.y);
+    const float tilt = GA_e.xy().length();
 
     // equation 11
     const float theta = atan2f(GA_b[besti].y, GA_b[besti].x);
