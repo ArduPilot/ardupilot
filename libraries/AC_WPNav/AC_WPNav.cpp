@@ -561,15 +561,13 @@ void AC_WPNav::update_track_with_speed_accel_limits()
 /// get_wp_distance_to_destination - get horizontal distance to destination in cm
 float AC_WPNav::get_wp_distance_to_destination() const
 {
-    // get current location
-    const Vector3f &curr = _inav.get_position();
-    return norm(_destination.x-curr.x,_destination.y-curr.y);
+    return get_horizontal_distance_cm(_inav.get_position().xy(), _destination.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
 int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
-    return get_bearing_cd(_inav.get_position(), _destination);
+    return get_bearing_cd(_inav.get_position().xy(), _destination.xy());
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
