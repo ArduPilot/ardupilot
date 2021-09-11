@@ -570,16 +570,21 @@ public:
         return _flags.in_landing_sequence;
     }
 
-    // force mission to resume when start_or_resume() is called
-    void set_force_resume(bool force_resume)
-    {
-        _force_resume = force_resume;
-    }
-
     // set in_rejoin_sequence flag
     void set_in_rejoin_sequence_flag(bool flag)
     {
         _flags.in_rejoin_sequence = flag;
+    }
+    
+    // get in_rejoin_sequence flag
+    bool get_in_rejoin_sequence_flag() const {
+        return _flags.in_rejoin_sequence;
+    }
+
+    // force mission to resume when start_or_resume() is called
+    void set_force_resume(bool force_resume)
+    {
+        _force_resume = force_resume;
     }
 
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
@@ -625,6 +630,7 @@ private:
         bool do_cmd_all_done;        // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
+        bool in_rejoin_sequence;    // true if the misison has passed a rejoin, or rejoined
     } _flags;
 
     // mission WP resume history
