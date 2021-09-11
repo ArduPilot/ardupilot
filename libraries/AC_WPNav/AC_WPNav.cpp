@@ -399,13 +399,11 @@ void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_xy()
     _pos_control.init_xy_controller();
 
     // get current and target locations
-    const Vector3f& curr_pos = _inav.get_position();
+    const Vector2f& curr_pos = _inav.get_position_xy();
 
     // shift origin and destination horizontally
-    _origin.x = curr_pos.x;
-    _origin.y = curr_pos.y;
-    _destination.x = curr_pos.x;
-    _destination.y = curr_pos.y;
+    _origin.xy() = curr_pos;
+    _destination.xy() = curr_pos;
 }
 
 /// shifts the origin and destination horizontally to the achievable stopping point
@@ -561,13 +559,13 @@ void AC_WPNav::update_track_with_speed_accel_limits()
 /// get_wp_distance_to_destination - get horizontal distance to destination in cm
 float AC_WPNav::get_wp_distance_to_destination() const
 {
-    return get_horizontal_distance_cm(_inav.get_position().xy(), _destination.xy());
+    return get_horizontal_distance_cm(_inav.get_position_xy(), _destination.xy());
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
 int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
-    return get_bearing_cd(_inav.get_position().xy(), _destination.xy());
+    return get_bearing_cd(_inav.get_position_xy(), _destination.xy());
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
