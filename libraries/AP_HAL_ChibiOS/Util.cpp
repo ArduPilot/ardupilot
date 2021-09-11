@@ -531,7 +531,7 @@ void Util::apply_persistent_params(void) const
         if (eq) {
             *eq = 0;
             const char *pname = p;
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, NULL);
             if (AP_Param::set_default_by_name(pname, value)) {
                 count++;
                 /*
