@@ -426,7 +426,7 @@ bool ModeAuto::is_landing() const
     case SubMode::RTL:
         return copter.mode_rtl.is_landing();
     default:
-        return false;
+        return (mission.state() == AP_Mission::MISSION_RUNNING) && mission.get_in_landing_sequence_flag();
     }
     return false;
 }
