@@ -1017,7 +1017,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
                 return MAV_RESULT_FAILED;
             }
             AP::ahrs().lock_home();
-            return MAV_RESULT_ACCEPTED;
         } else {
             // ensure param1 is zero
             if (!is_zero(packet.param1)) {
@@ -1030,9 +1029,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             if (!set_home(new_home_loc, true)) {
                 return MAV_RESULT_FAILED;
             }
-            return MAV_RESULT_ACCEPTED;
         }
-        break;
+        if ((plane.control_mode == &plane.mode_rtl)
+#if HAL_QUADPLANE_ENABLED
+                || (plane.control_mode == &plane.mode_qrtl)
+#endif
+                                                            ) {
+            // if in RTL head to the updated home location
+            plane.control_mode->enter();
+        }
+        return MAV_RESULT_ACCEPTED;
     }
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
