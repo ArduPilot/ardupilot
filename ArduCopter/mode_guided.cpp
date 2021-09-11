@@ -1091,7 +1091,7 @@ bool ModeGuided::limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
@@ -1122,7 +1122,7 @@ uint32_t ModeGuided::wp_distance() const
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination();
     case SubMode::Pos:
-        return norm(guided_pos_target_cm.x - inertial_nav.get_position().x, guided_pos_target_cm.y - inertial_nav.get_position().y);
+        return get_horizontal_distance_cm(inertial_nav.get_position().xy(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_xy_cm();
         break;
@@ -1137,7 +1137,7 @@ int32_t ModeGuided::wp_bearing() const
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
     case SubMode::Pos:
-        return get_bearing_cd(inertial_nav.get_position(), guided_pos_target_cm.tofloat());
+        return get_bearing_cd(inertial_nav.get_position().xy(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
         break;
