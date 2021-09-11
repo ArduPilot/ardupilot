@@ -1081,7 +1081,7 @@ void NavEKF3_core::selectHeightForFusion()
         bool dontTrustTerrain, trustTerrain;
         if (filterStatus.flags.horiz_vel) {
             // We can use the velocity estimate
-            ftype horizSpeed = norm(stateStruct.velocity.x, stateStruct.velocity.y);
+            ftype horizSpeed = stateStruct.velocity.xy().length();
             dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainHgtStable;
             ftype trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
             trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
