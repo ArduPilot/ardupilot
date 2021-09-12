@@ -185,7 +185,7 @@ void AC_Loiter::get_stopping_point_xy(Vector2f& stopping_point) const
 /// get maximum lean angle when using loiter
 float AC_Loiter::get_angle_max_cd() const
 {
-    if (is_zero(_angle_max)) {
+    if (!is_positive(_angle_max)) {
         return MIN(_attitude_control.lean_angle_max_cd(), _pos_control.get_lean_angle_max_cd()) * (2.0f/3.0f);
     }
     return MIN(_angle_max*100.0f, _pos_control.get_lean_angle_max_cd());
