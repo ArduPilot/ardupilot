@@ -1,7 +1,5 @@
 /*
-This function receives time history data during a dwell test or frequency sweep and determines the gain and phase of the response to the input.
-Once the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles and the cycles_complete flag
-is set.  This function must be reset using the reset flag prior to the next dwell.
+This library receives time history data (angular rate or angle) during a dwell test or frequency sweep test and determines the gain and phase of the response to the input. For dwell tests once the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles and the cycle_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and cycle_complete flag is set to indicate when to pull the phase and gain data.  The flag is reset to enable the next cycle to be analyzed.  The init function must be used when initializing the dwell or frequency sweep test.
 */
 
 #include <AP_HAL/AP_HAL.h>
@@ -31,11 +29,11 @@ void AC_AutoTune_FreqResp::init(InputType input_type)
     cycle_complete = false;
 }
 
-// determine_gain - this function receives time history data during a dwell and frequency sweep tests for max gain,  
-// rate P and rate D tuning and determines the gain and phase of the response to the input. For dwell tests once  
-// the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles 
-// and the cycles_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and 
-// cycle_complete flag is set to indicate when to pull the phase and gain data.  The flag is reset to enable the next 
+// update_rate - this function receives time history data during a dwell and frequency sweep tests for max gain,
+// rate P and rate D tuning and determines the gain and phase of the response to the input. For dwell tests once
+// the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles
+// and the cycle_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and
+// cycle_complete flag is set to indicate when to pull the phase and gain data.  The flag is reset to enable the next
 // cycle to be analyzed.
 void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tgt_freq)
 {
@@ -48,8 +46,8 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
     }
 
     if (!is_zero(tgt_freq)) {
-        half_cycle_time_ms = (uint32_t)(300 * 6.28 / tgt_freq);
-        cycle_time_ms = (uint32_t)(1000 * 6.28 / tgt_freq);
+        half_cycle_time_ms = (uint32_t)(300 * M_2PI / tgt_freq);
+        cycle_time_ms = (uint32_t)(1000 * M_2PI / tgt_freq);
     }
 
     if (input_start_time_ms == 0) {
@@ -101,7 +99,7 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
         if (cnt > 0) {
             delta_time = delta_time / cnt;
         }
-        curr_test_phase = tgt_freq * delta_time * 0.001f * 360.0f / 6.28f;
+        curr_test_phase = tgt_freq * delta_time * 0.001f * 360.0f / M_2PI;
         if (curr_test_phase > 360.0f) {
             curr_test_phase = curr_test_phase - 360.0f;
         }
@@ -157,7 +155,7 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
             if (excitation == SWEEP) {
                 float tgt_period = 0.001f * (temp_max_tgt_time - sweep_tgt.max_time_m1);
                 if (!is_zero(tgt_period)) {
-                    curr_test_freq = 6.28f / tgt_period;
+                    curr_test_freq = M_2PI / tgt_period;
                 } else {
                     curr_test_freq = 0.0f;
                 }
@@ -166,7 +164,7 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
                 } else {
                     curr_test_gain = 0.0f;
                 }
-                curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / 6.28f;
+                curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / M_2PI;
                 // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f sweepgain=%f", (double)(curr_test_freq), (double)(curr_test_gain));
                 cycle_complete = true;
             }
@@ -203,9 +201,9 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
     prev_meas = meas_rate;
 }
 
-// update_angle - this function receives time history data during a dwell and frequency sweep tests for angle_p tuning  
-// and determines the gain, phase, and max acceleration of the response to the input. For dwell tests once the designated number  
-// of cycles are complete, the average of the gain, phase, and max acceleration are determined over the last 5 cycles and the 
+// update_angle - this function receives time history data during a dwell and frequency sweep tests for angle_p tuning
+// and determines the gain, phase, and max acceleration of the response to the input. For dwell tests once the designated number
+// of cycles are complete, the average of the gain, phase, and max acceleration are determined over the last 5 cycles and the
 // cycles_complete flag is set. For frequency sweep tests, phase and gain are determined for every cycle and cycle_complete flag is set
 // to indicate when to pull the phase and gain data.  The flag is reset to enable the next cycle to be analyzed.
 void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float meas_angle, float tgt_freq)
@@ -221,8 +219,8 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
     }
 
     if (!is_zero(tgt_freq)) {
-        half_cycle_time_ms = (uint32_t)(300 * 6.28 / tgt_freq);
-        cycle_time_ms = (uint32_t)(1000 * 6.28 / tgt_freq);
+        half_cycle_time_ms = (uint32_t)(300 * M_2PI / tgt_freq);
+        cycle_time_ms = (uint32_t)(1000 * M_2PI / tgt_freq);
     }
 
     if (input_start_time_ms == 0) {
@@ -281,7 +279,7 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
         if (cnt > 0) {
             delta_time = delta_time / cnt;
         }
-        curr_test_phase = tgt_freq * delta_time * 0.001f * 360.0f / 6.28f;
+        curr_test_phase = tgt_freq * delta_time * 0.001f * 360.0f / M_2PI;
         if (curr_test_phase > 360.0f) {
             curr_test_phase = curr_test_phase - 360.0f;
         }
@@ -345,7 +343,7 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
             if (excitation == SWEEP) {
                 float tgt_period = 0.001f * (temp_max_tgt_time - sweep_tgt.max_time_m1);
                 if (!is_zero(tgt_period)) {
-                    curr_test_freq = 6.28f / tgt_period;
+                    curr_test_freq = M_2PI / tgt_period;
                 } else {
                     curr_test_freq = 0.0f;
                 }
@@ -354,7 +352,7 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
                 } else {
                     curr_test_gain = 0.0f;
                 }
-                curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / 6.28f;
+                curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / M_2PI;
                //gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f phase=%f", (double)(curr_test_freq), (double)(curr_test_gain), (double)(curr_test_phase));
                 cycle_complete = true;
             }
