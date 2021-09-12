@@ -163,6 +163,7 @@ private:
 
     void update_loop(void);
     void report_FPS(void);
+    void socket_creator(void);
 
     struct sitl_input last_input;
 
@@ -183,8 +184,10 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
+    SocketAPM *socknext;
     SocketAPM *sock;
     char replybuf[10000];
+    pid_t socket_pid;
 };
 
 

@@ -33,6 +33,15 @@ extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
 
+/*
+  we use a thread for socket creation to reduce the impact of socket
+  creation latency. These condition variables are used to synchronise
+  the thread
+ */
+static pthread_cond_t sockcond1 = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t sockcond2 = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t sockmtx = PTHREAD_MUTEX_INITIALIZER;
+
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -106,6 +115,11 @@ FlightAxis::FlightAxis(const char *frame_str) :
             }
         }
     }
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&FlightAxis::socket_creator, void), "SocketCreator", 8192,
+                                      AP_HAL::Scheduler::PRIORITY_BOOST, 0)) {
+        printf("Failed to create socket_creator thread\n");
+    }
 }
     
 /*
@@ -151,22 +165,23 @@ bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
     va_list ap;
     char *req1;
 
+    if (sock) {
+        delete sock;
+        sock = nullptr;
+    }
+
     va_start(ap, fmt);
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    // open SOAP socket to FlightAxis
-    delete sock;
-
-    sock = new SocketAPM(false);
-    if (!sock->connect(controller_ip, controller_port)) {
-        ::printf("connect failed\n");
-        delete sock;
-        sock = nullptr;
-        free(req1);
-        return false;
+    pthread_mutex_lock(&sockmtx);
+    while (socknext == nullptr) {
+        pthread_cond_wait(&sockcond1, &sockmtx);
     }
-    sock->set_blocking(false);
+    sock = socknext;
+    socknext = nullptr;
+    pthread_cond_broadcast(&sockcond2);
+    pthread_mutex_unlock(&sockmtx);
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -239,6 +254,7 @@ char *FlightAxis::soap_request_end(uint32_t timeout_ms)
     }
     delete sock;
     sock = nullptr;
+
     return strdup(replybuf);
 }
 
@@ -521,5 +537,33 @@ void FlightAxis::report_FPS(void)
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
         last_frame_count_s = state.m_currentPhysicsTime_SEC;
+    }
+}
+
+void FlightAxis::socket_creator(void)
+{
+    socket_pid = getpid();
+    while (true) {
+        pthread_mutex_lock(&sockmtx);
+        while (socknext != nullptr) {
+            pthread_cond_wait(&sockcond2, &sockmtx);
+        }
+        pthread_mutex_unlock(&sockmtx);
+        auto *sck = new SocketAPM(false);
+        if (sck == nullptr) {
+            usleep(500);
+            continue;
+        }
+        if (!sck->connect(controller_ip, controller_port)) {
+            ::printf("connect failed\n");
+            delete sck;
+            usleep(5000);
+            continue;
+        }
+        sck->set_blocking(false);
+        socknext = sck;
+        pthread_mutex_lock(&sockmtx);
+        pthread_cond_broadcast(&sockcond1);
+        pthread_mutex_unlock(&sockmtx);
     }
 }
