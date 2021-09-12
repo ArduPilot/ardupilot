@@ -2309,6 +2309,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "Winch";
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return "Scripting";
+    case MAV_CMD_DO_JUMP:
+        return "Jump";
+    case MAV_CMD_DO_GO_AROUND:
+        return "Go Around";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
