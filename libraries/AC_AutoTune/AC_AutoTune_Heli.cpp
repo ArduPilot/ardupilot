@@ -76,6 +76,13 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MAX_GN", 4, AC_AutoTune_Heli, max_resp_gain,  1.4f),
 
+    // @Param: VELXY_P
+    // @DisplayName: AutoTune velocity xy P gain
+    // @Description: Velocity xy P gain used to hold position during Max Gain, Rate P, and Rate D frequency sweeps
+    // @Range: 0 1
+    // @User: Standard
+    AP_GROUPINFO("VELXY_P", 5, AC_AutoTune_Heli, vel_hold_gain,  0.1f),
+
     AP_GROUPEND
 };
 
