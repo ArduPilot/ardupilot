@@ -967,10 +967,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.yaw.relative_angle = packet.param4; // lng=0: absolute angle provided, lng=1: relative angle provided
         break;
 
-    case MAV_CMD_DO_SET_MODE:                           // MAV ID: 176
-        cmd.p1 = packet.param1;                         // flight mode identifier
-        break;
-
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
         cmd.content.jump.target = packet.param1;        // jump-to command number
         cmd.content.jump.num_times = packet.param2;     // repeat count
@@ -1421,10 +1417,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.yaw.turn_rate_dps;  // 0 = use default turn rate otherwise specific turn rate in deg/sec
         packet.param3 = cmd.content.yaw.direction;      // -1 = ccw, +1 = cw
         packet.param4 = cmd.content.yaw.relative_angle; // 0 = absolute angle provided, 1 = relative angle provided
-        break;
-
-    case MAV_CMD_DO_SET_MODE:                           // MAV ID: 176
-        packet.param1 = cmd.p1;                         // set flight mode identifier
         break;
 
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
