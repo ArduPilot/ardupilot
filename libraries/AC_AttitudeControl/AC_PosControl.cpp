@@ -1032,7 +1032,7 @@ void AC_PosControl::update_z_controller()
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
 float AC_PosControl::get_lean_angle_max_cd() const
 {
-    if (is_zero(_lean_angle_max)) {
+    if (!is_positive(_lean_angle_max)) {
         return _attitude_control.lean_angle_max_cd();
     }
     return _lean_angle_max * 100.0f;
