@@ -133,7 +133,7 @@ void AC_AutoTune_Heli::test_init()
         }
         if (!is_zero(start_freq)) {
             // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
-            step_time_limit_ms = (uint32_t)(4000 + (float)(AUTOTUNE_DWELL_CYCLES + 2) * 1000.0f * 6.28f / start_freq);
+            step_time_limit_ms = (uint32_t)(4000 + (float)(AUTOTUNE_DWELL_CYCLES + 2) * 1000.0f * M_2PI / start_freq);
         }
     } else if (tune_type == SP_UP) {
         // initialize start frequency when dwell test is used
@@ -158,7 +158,7 @@ void AC_AutoTune_Heli::test_init()
         // TODO add time limit for sweep test
         if (!is_zero(start_freq)) {
             // 1 seconds is added for a little buffer.  Then the time to conduct the dwells is added to it.
-            step_time_limit_ms = (uint32_t)(2000 + (float)(AUTOTUNE_DWELL_CYCLES + 7) * 1000.0f * 6.28f / start_freq);
+            step_time_limit_ms = (uint32_t)(2000 + (float)(AUTOTUNE_DWELL_CYCLES + 7) * 1000.0f * M_2PI / start_freq);
         }
     } else {
 
