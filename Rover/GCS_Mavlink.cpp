@@ -1001,21 +1001,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
         // convert vector direction to target yaw
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
-
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
 
     // consume yaw heading
     if (!yaw_ignore) {
         target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
+
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
