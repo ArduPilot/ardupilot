@@ -1118,6 +1118,7 @@ void UARTDriver::write_pending_bytes(void)
     if (_flow_control == FLOW_CONTROL_AUTO) {
         if (_first_write_started_us == 0) {
             _first_write_started_us = AP_HAL::micros();
+            _total_written = 0;
         }
 #ifndef HAL_UART_NODMA
         if (tx_dma_enabled) {
