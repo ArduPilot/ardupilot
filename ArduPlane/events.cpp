@@ -41,9 +41,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         
     case Mode::Number::AUTO:
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
+            flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
             quadplane.in_vtol_land_sequence()) {
-            // don't failsafe in a landing sequence
-            break;
+            gcs().send_text(MAV_SEVERITY_ALERT, "Failsafe action inhibited while landing");
+            return;
         }
         FALLTHROUGH;
 
@@ -118,9 +119,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         
     case Mode::Number::AUTO:
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
+            flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND ||
             quadplane.in_vtol_land_sequence()) {
-            // don't failsafe in a landing sequence
-            break;
+            gcs().send_text(MAV_SEVERITY_ALERT, "Failsafe action inhibited while landing");
+            return;
         }
         FALLTHROUGH;
 
@@ -178,7 +180,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_Land:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND &&
+                flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND &&
+                control_mode != &mode_qland) {
                 // never stop a landing if we were already committed
                 if (plane.mission.is_best_land_sequence()) {
                     // continue mission as it will reach a landing in less distance
@@ -192,7 +196,10 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland && !quadplane.in_vtol_land_sequence()) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND &&
+                flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND &&
+                control_mode != &mode_qland &&
+                !quadplane.in_vtol_land_sequence()) {
                 // never stop a landing if we were already committed
                 if (g.rtl_autoland == 2 && plane.mission.is_best_land_sequence()) {
                     // continue mission as it will reach a landing in less distance
