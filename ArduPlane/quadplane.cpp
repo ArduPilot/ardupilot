@@ -1248,6 +1248,14 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 
     // add in rudder input
     float max_rate = yaw_rate_max;
+    if (!in_vtol_mode() && tailsitter.enabled()) {
+        // scale by RUDD_DT_GAIN when not in a VTOL mode for
+        // tailsitters. This allows for flat turns in tailsitters for
+        // fixed wing modes if you want them, but prevents crazy yaw
+        // rate demands in fixed wing based on your preferred yaw rate
+        // when hovering
+        max_rate *= plane.g2.rudd_dt_gain * 0.01;
+    }
     if (tailsitter.enabled() &&
         tailsitter.input_type & Tailsitter::input::TAILSITTER_INPUT_BF_ROLL) {
         // must have a non-zero max yaw rate for scaling to work
