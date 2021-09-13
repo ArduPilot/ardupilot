@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include "stdio.h"
 
 #ifndef HYGROMETER_MAX_SENSORS
