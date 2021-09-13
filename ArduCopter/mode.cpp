@@ -927,10 +927,32 @@ float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
 
     // range check expo
     g2.acro_y_expo = constrain_float(g2.acro_y_expo, -0.5f, 1.0f);
-
+   
     // calculate yaw rate request
     float yaw_request;
-    if (is_zero(g2.acro_y_expo)) {
+
+   //if alternative rate is set to BETAFLIGHT, calculate rate using betaflight rates 
+    if (g.altrate_type==ALTRATE_TYPE_BETAFLIGHT) {
+        
+        float y_in,y_sign,bf_p,bf_q;
+
+
+        // range check BF rates 
+        g.altrate_bf_y_rc = constrain_float(g.altrate_bf_y_rc, 0, 2.55);
+        g.altrate_bf_y_super = constrain_float(g.altrate_bf_y_super, 0, 0.99);    
+        g.altrate_bf_y_expo = constrain_float(g.altrate_bf_y_expo, 0, 1);
+
+
+        y_in = abs(float(stick_angle))/ROLL_PITCH_YAW_INPUT_MAX;    //calculate input ratio. Need to take absolute value as input is signed.
+        y_sign= stick_angle/abs(stick_angle);                       //get sign for final rate alculation   
+
+        bf_p = 1.0f/(1.0f-(y_in*g.altrate_bf_y_super));
+        bf_q = (y_in*y_in*y_in*y_in*g.altrate_bf_y_expo)+y_in*(1.0f-g.altrate_bf_y_expo);
+        yaw_request = y_sign*20000.0f*bf_q*g.altrate_bf_y_rc*bf_p;     //ardupilot rate is in units of centidegrees
+
+    }
+    //otherwise calculate rates with default method using  ACRP_Y_EXP and YAW_P 
+    else if (is_zero(g2.acro_y_expo)) {
         yaw_request = stick_angle * g.acro_yaw_p;
     } else {
         // expo variables

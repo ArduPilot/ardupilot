@@ -471,7 +471,68 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: -0.5 1.0
     // @User: Advanced
     GSCALAR(acro_rp_expo,  "ACRO_RP_EXPO",    ACRO_RP_EXPO_DEFAULT),
+
+ 
 #endif
+    // @Param: ALTRATE_TYPE
+    // @DisplayName: Alternate Rate Type
+    // @Description: Enables use of alternative rates (ie. betaflight rates)
+    // @Values: 0:default, 1:Betaflight
+    // @Range: 0 1
+    // @User: Advanced
+    GSCALAR(altrate_type,  "ARATE_TYPE",    ALTRATE_TYPE_DEFAULT),
+
+
+    // @Param: ALTRATE_BF_RP_RC
+    // @DisplayName: Acro Betaflight Pitch/Yaw RC rate 
+    // @Description: Acro Betaflight Pitch/Yaw RC rate 
+    // @Values: 0:min, 2.55:max
+    // @Range: 0 2.55
+    // @User: Advanced
+    GSCALAR(altrate_bf_rp_rc,  "ARATE_BF_RP_RC",    ALTRATE_BF_RP_RC_DEFAULT),
+
+    // @Param: ALTRATE_BF_RP_SUPER
+    // @DisplayName: Acro Betaflight Pitch/Yaw Super rate 
+    // @Description: Acro Betaflight Pitch/Yaw Super rate 
+    // @Values: 0:min, 0.99:max
+    // @Range: 0 0.99
+    // @User: Advanced
+    GSCALAR(altrate_bf_rp_super,  "ARATE_BF_RP_SPR",    ALTRATE_BF_RP_SUPER_DEFAULT),
+
+    // @Param: ALTRATE_BF_RP_EXPO
+    // @DisplayName: Acro Betaflight Pitch/Yaw Expo  
+    // @Description: Acro Betaflight Pitch/Yaw Expo  
+    // @Values: 0:min, 1:max
+    // @Range: 0 1
+    // @User: Advanced
+    GSCALAR(altrate_bf_rp_expo,  "ARATE_BF_RP_EXP",    ALTRATE_BF_RP_EXPO_DEFAULT),
+
+    // @Param: ALTRATE_BF_Y_RC
+    // @DisplayName: Acro Betaflight Pitch/Yaw RC rate 
+    // @Description: Acro Betaflight Pitch/Yaw RC rate 
+    // @Values: 0:min 2.55:max
+    // @Range: 0 2.55
+    // @User: Advanced
+    GSCALAR(altrate_bf_y_rc,  "ARATE_BF_Y_RC",    ALTRATE_BF_Y_RC_DEFAULT),
+
+    // @Param: ALTRATE_BF_Y_SUPER
+    // @DisplayName: Acro Betaflight Pitch/Yaw Super rate 
+    // @Description: Acro Betaflight Pitch/Yaw Super rate 
+    // @Values: 0:min 0.99:max
+    // @Range: 0 0.99
+    // @User: Advanced
+    GSCALAR(altrate_bf_y_super,  "ARATE_BF_Y_SPR",    ALTRATE_BF_Y_SUPER_DEFAULT),
+
+    // @Param: ALTRATE_BF_RP_EXPO
+    // @DisplayName: Acro Betaflight Pitch/Yaw Expo  
+    // @Description: Acro Betaflight Pitch/Yaw Expo  
+    // @Values: 0:min 1:max
+    // @Range: 0 1
+    // @User: Advanced
+    GSCALAR(altrate_bf_y_expo,  "ARATE_BF_Y_EXP",    ALTRATE_BF_Y_EXPO_DEFAULT),
+
+    
+
 
     // variables not in the g class which contain EEPROM saved variables
 

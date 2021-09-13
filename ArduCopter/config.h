@@ -474,6 +474,39 @@
  #define ACRO_RP_EXPO_DEFAULT       0.3f
 #endif
 
+#ifndef ALTRATE_TYPE_DEFAULT
+ #define ALTRATE_TYPE_DEFAULT           0
+#endif
+
+#ifndef ALTRATE_TYPE_BETAFLIGHT
+  #define ALTRATE_TYPE_BETAFLIGHT       1
+#endif 
+
+#ifndef ALTRATE_BF_RP_RC_DEFAULT
+ #define ALTRATE_BF_RP_RC_DEFAULT       1.0f
+#endif
+
+#ifndef ALTRATE_BF_RP_SUPER_DEFAULT
+ #define ALTRATE_BF_RP_SUPER_DEFAULT    0.2f
+#endif
+
+#ifndef ALTRATE_BF_RP_EXPO_DEFAULT
+# define ALTRATE_BF_RP_EXPO_DEFAULT      0.4f
+#endif
+
+#ifndef ALTRATE_BF_Y_RC_DEFAULT
+# define ALTRATE_BF_Y_RC_DEFAULT        1.0f
+#endif
+
+#ifndef ALTRATE_BF_Y_SUPER_DEFAULT
+ #define ALTRATE_BF_Y_SUPER_DEFAULT      0.2f
+#endif
+
+#ifndef ALTRATE_BF_Y_EXPO_DEFAULT
+ #define ALTRATE_BF_Y_EXPO_DEFAULT      0.4f
+#endif
+
+
 #ifndef ACRO_Y_EXPO_DEFAULT
  #define ACRO_Y_EXPO_DEFAULT        0.0f
 #endif
