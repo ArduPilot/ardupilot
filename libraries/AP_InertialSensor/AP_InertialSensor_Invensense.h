@@ -32,7 +32,6 @@ class AP_InertialSensor_Invensense : public AP_InertialSensor_Backend
 
 public:
     virtual ~AP_InertialSensor_Invensense();
-
     static AP_InertialSensor_Invensense &from(AP_InertialSensor_Backend &backend) {
         return static_cast<AP_InertialSensor_Invensense&>(backend);
     }
@@ -46,8 +45,8 @@ public:
                                             enum Rotation rotation);
 
     /* update accel and gyro state */
-    bool update() override;
-    void accumulate() override;
+    bool update() override; /* front end */
+    void accumulate() override; /* front end */
 
     /*
      * Return an AuxiliaryBus if the bus driver allows it
@@ -86,31 +85,31 @@ private:
     bool _check_whoami();
 
     void _set_filter_register(void);
-    void _fifo_reset(bool log_error);
+    void _fifo_reset(bool log_error) __RAMFUNC__;
     bool _has_auxiliary_bus();
 
     /* Read samples from FIFO (FIFO enabled) */
-    void _read_fifo();
+    void _read_fifo() __RAMFUNC__;
 
     /* Check if there's data available by either reading DRDY pin or register */
-    bool _data_ready();
+    bool _data_ready() __RAMFUNC__;
 
     /* Poll for new data (non-blocking) */
-    void _poll_data();
+    void _poll_data() __RAMFUNC__;
 
     // debug function to watch for register changes
-    void _check_register_change(void);
+    void _check_register_change(void) __RAMFUNC__;
 
     /* Read and write functions taking the differences between buses into
      * account */
-    bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
-    uint8_t _register_read(uint8_t reg);
-    void _register_write(uint8_t reg, uint8_t val, bool checked=false);
+    bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size) __RAMFUNC__;
+    uint8_t _register_read(uint8_t reg) __RAMFUNC__;
+    void _register_write(uint8_t reg, uint8_t val, bool checked=false) __RAMFUNC__;
 
-    bool _accumulate(uint8_t *samples, uint8_t n_samples);
-    bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples);
+    bool _accumulate(uint8_t *samples, uint8_t n_samples) __RAMFUNC__;
+    bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples) __RAMFUNC__;
 
-    bool _check_raw_temp(int16_t t2);
+    bool _check_raw_temp(int16_t t2) __RAMFUNC__;
 
     int16_t _raw_temp;
     
