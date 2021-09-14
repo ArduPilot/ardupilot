@@ -160,11 +160,16 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::PARACHUTE_RELEASE:
     case AUX_FUNC::MODE_SWITCH_RESET:
     case AUX_FUNC::CRUISE:
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+#endif
         break;
 
-    case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::SOARING:
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::AIRMODE:
+#endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     case AUX_FUNC::ARSPD_CALIBRATE:
 #endif
@@ -333,6 +338,14 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         do_aux_function_change_mode(Mode::Number::CRUISE, ch_flag);
         break;
 
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+        RC_Channel::do_aux_function_armdisarm(ch_flag);
+        if (plane.arming.is_armed()) {
+            plane.quadplane.air_mode = AirMode::ON;
+        }
+        break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
