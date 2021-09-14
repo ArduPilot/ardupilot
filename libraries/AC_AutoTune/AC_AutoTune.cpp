@@ -508,6 +508,11 @@ void AC_AutoTune::control_attitude()
             step = WAITING_FOR_LEVEL;
         }
 
+        // protect from roll over
+        if (ahrs_view->roll_sensor > 3000.0f || ahrs_view->roll_sensor < -3000.0f ||ahrs_view->pitch_sensor > 3000.0f || ahrs_view->pitch_sensor < -3000.0f) {
+            step = WAITING_FOR_LEVEL;
+        }
+
         // log this iterations lean angle and rotation rate
         Log_AutoTuneDetails();
         ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
@@ -1739,7 +1744,17 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
         trim_command = command_out;
         filt_attitude_cd = attitude_cd;
         trim_attitude_cd = attitude_cd;
+        filt_att_fdbk_from_velxy_cd = Vector2f(0.0f,0.0f);
     }
+
+    // limit rate correction for position hold
+    Vector3f trim_rate_cds;
+    trim_rate_cds.x = att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.x) - filt_attitude_cd.x);
+    trim_rate_cds.y = att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.y) - filt_attitude_cd.y);
+    trim_rate_cds.z = att_hold_gain * wrap_180_cd(trim_attitude_cd.z - filt_attitude_cd.z);
+    trim_rate_cds.x = constrain_float(trim_rate_cds.x, -15000.0f, 15000.0f);
+    trim_rate_cds.y = constrain_float(trim_rate_cds.y, -15000.0f, 15000.0f);
+    trim_rate_cds.z = constrain_float(trim_rate_cds.z, -15000.0f, 15000.0f);
 
     switch (axis) {
     case ROLL:
@@ -1751,9 +1766,9 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
             if (tune_roll_rff > 0.0f) {
                 ff_rate_contr = 5730.0f * trim_command / tune_roll_rff;
             }
-            float trim_rate_cds = ff_rate_contr + att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.x) - filt_attitude_cd.x);
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.y) - filt_attitude_cd.y), 0.0f);
-            attitude_control->rate_bf_roll_target(target_rate_cds + trim_rate_cds);
+            trim_rate_cds.x += ff_rate_contr;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, trim_rate_cds.y, 0.0f);
+            attitude_control->rate_bf_roll_target(target_rate_cds + trim_rate_cds.x);
         } else {
             attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
             if (!is_zero(attitude_control->get_rate_roll_pid().ff() + attitude_control->get_rate_roll_pid().kP())) {
@@ -1771,9 +1786,9 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
             if (tune_pitch_rff > 0.0f) {
                 ff_rate_contr = 5730.0f * trim_command / tune_pitch_rff;
             }
-            float trim_rate_cds = ff_rate_contr + att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.y) - filt_attitude_cd.y);
-            attitude_control->input_rate_bf_roll_pitch_yaw(att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.x) - filt_attitude_cd.x), 0.0f, 0.0f);
-            attitude_control->rate_bf_pitch_target(target_rate_cds + trim_rate_cds);
+            trim_rate_cds.y += ff_rate_contr;
+            attitude_control->input_rate_bf_roll_pitch_yaw(trim_rate_cds.x, 0.0f, 0.0f);
+            attitude_control->rate_bf_pitch_target(target_rate_cds + trim_rate_cds.y);
         } else {
             attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
             if (!is_zero(attitude_control->get_rate_pitch_pid().ff() + attitude_control->get_rate_pitch_pid().kP())) {
@@ -1791,9 +1806,9 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float
             if (tune_yaw_rp > 0.0f) {
                 rp_rate_contr = 5730.0f * trim_command / tune_yaw_rp;
             }
-            float trim_rate_cds = rp_rate_contr + att_hold_gain * wrap_180_cd(trim_attitude_cd.z - filt_attitude_cd.z);
-            attitude_control->input_rate_bf_roll_pitch_yaw(att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.x) - filt_attitude_cd.x), att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.y) - filt_attitude_cd.y), 0.0f);
-            attitude_control->rate_bf_yaw_target(target_rate_cds + trim_rate_cds);
+            trim_rate_cds.z += rp_rate_contr;
+            attitude_control->input_rate_bf_roll_pitch_yaw(trim_rate_cds.x, trim_rate_cds.y, 0.0f);
+            attitude_control->rate_bf_yaw_target(target_rate_cds + trim_rate_cds.z);
         } else {
             attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
             if (!is_zero(attitude_control->get_rate_yaw_pid().ff() + attitude_control->get_rate_yaw_pid().kP())) {
