@@ -1268,3 +1268,18 @@ bool RC_Channels::duplicate_options_exist()
     }
    return false;
 }
+
+// convert option parameter from old to new
+void RC_Channels::convert_options(const RC_Channel::aux_func_t old_option, const RC_Channel::aux_func_t new_option)
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::aux_func_t)c->option.get() == old_option) {
+            c->option.set_and_save((int16_t)new_option);
+        }
+    }
+}
