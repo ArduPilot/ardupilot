@@ -60,6 +60,7 @@ void Tracker::init_ardupilot()
 
     // initialise rc channels including setting mode
     rc().init();
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
 
     // initialise servos
     init_servos();
