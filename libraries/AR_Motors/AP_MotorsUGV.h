@@ -102,6 +102,8 @@ public:
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_angle_max); }
 
+    bool is_omni() const { return _motors_num > 0; }
+
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
     // dt should be expected time between calls to this function
@@ -176,7 +178,7 @@ protected:
     void slew_limit_throttle(float dt);
 
     // set limits based on steering and throttle input
-    void set_limits_from_input(bool armed, float steering, float throttle);
+    void set_limits_from_input(float steering, float throttle);
 
     // scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
     float get_scaled_throttle(float throttle) const;

@@ -283,8 +283,21 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
         armed = false;
-        _throttle = 0.0f;
+        _throttle = 0.0;
+        _throttle_prev = 0.0;
     }
+
+    const bool E_stop = SRV_Channels::get_emergency_stop();
+    if (E_stop) {
+        _throttle = 0.0;
+        _throttle_prev = 0.0;
+    }
+
+    // reset limit flags
+    limit.steer_left = false;
+    limit.steer_right = false;
+    limit.throttle_lower = !(armed || E_stop);
+    limit.throttle_upper = !(armed || E_stop);
 
     // sanity check parameters
     sanity_check_parameters();
@@ -294,6 +307,17 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // output for regular steering/throttle style frames
     output_regular(armed, ground_speed, _steering, _throttle);
+
+    if (armed || E_stop) {
+        // Skid and Omni both use motors to actuate sterring
+        // no point in trying in e-stop
+        _steering = 0.0;
+        if (have_skid_steering() || is_omni()) {
+            // if output type setup then set limit flags
+            limit.steer_left = true;
+            limit.steer_right = true;
+        }
+    }
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle, dt);
@@ -702,9 +726,9 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
         }
     }
 
-    // clear and set limits based on input
+    // Set limits based on input
     // we do this here because vectored thrust or speed scaling may have reduced steering request
-    set_limits_from_input(armed, steering, throttle);
+    set_limits_from_input(steering, throttle);
 
     // constrain steering
     steering = constrain_float(steering, -4500.0f, 4500.0f);
@@ -721,7 +745,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // clear and set limits based on input
-    set_limits_from_input(armed, steering, throttle);
+    set_limits_from_input(steering, throttle);
 
     // constrain steering
     steering = constrain_float(steering, -4500.0f, 4500.0f);
@@ -760,6 +784,10 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
             throttle_scaled *= linear_interpolate(fair_scaler, 1.0f, 0.5f - str_thr_mix, 0.0f, 0.5f);
             steering_scaled = (1.0f - fabsf(throttle_scaled)) * (is_negative(steering_scaled) ? -1.0f : 1.0f);
         }
+        limit.steer_left = true;
+        limit.steer_right = true;
+        limit.throttle_lower = true;
+        limit.throttle_upper = true;
     }
 
     // add in throttle and steering
@@ -775,13 +803,13 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
 {
     // exit immediately if the frame type is set to UNDEFINED
-    if (_frame_type == FRAME_TYPE_UNDEFINED) {
+    if (!is_omni()) {
         return;
     }
 
     if (armed) {
         // clear and set limits based on input
-        set_limits_from_input(armed, steering, throttle);
+        set_limits_from_input(steering, throttle);
 
         // constrain steering
         steering = constrain_float(steering, -4500.0f, 4500.0f);
@@ -797,11 +825,19 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
             thr_str_ltr_out = (scaled_throttle * _throttle_factor[i]) +
                               (scaled_steering * _steering_factor[i]) +
                               (scaled_lateral * _lateral_factor[i]);
-            if (fabsf(thr_str_ltr_out) > thr_str_ltr_max) {
-                thr_str_ltr_max = fabsf(thr_str_ltr_out);
-            }
-
-            float output_vectored = (thr_str_ltr_out / thr_str_ltr_max);
+            thr_str_ltr_max = MAX(thr_str_ltr_max, fabsf(thr_str_ltr_out));
+        }
+        const float output_vectored = 1 / thr_str_ltr_max;
+        if (output_vectored < 1.0) {
+            limit.steer_left = true;
+            limit.steer_right = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
+        }
+        for (uint8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
+            thr_str_ltr_out = (scaled_throttle * _throttle_factor[i]) +
+                              (scaled_steering * _steering_factor[i]) +
+                              (scaled_lateral * _lateral_factor[i]);
 
             // send output for each motor
             output_throttle(SRV_Channels::get_motor_function(i), 100.0f * output_vectored);
@@ -913,13 +949,13 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
 }
 
 // set limits based on steering and throttle input
-void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throttle)
+void AP_MotorsUGV::set_limits_from_input(float steering, float throttle)
 {
     // set limits based on inputs
-    limit.steer_left = !armed || (steering <= -4500.0f);
-    limit.steer_right = !armed || (steering >= 4500.0f);
-    limit.throttle_lower = !armed || (throttle <= -_throttle_max);
-    limit.throttle_upper = !armed || (throttle >= _throttle_max);
+    limit.steer_left |= steering <= -4500.0;
+    limit.steer_right |= steering >= 4500.0;
+    limit.throttle_lower |= throttle <= -_throttle_max;
+    limit.throttle_upper |= throttle >= _throttle_max;
 }
 
 // scale a throttle using the _throttle_min and _thrust_curve_expo parameters.  throttle should be in the range -100 to +100

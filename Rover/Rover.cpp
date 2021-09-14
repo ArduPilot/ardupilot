@@ -381,7 +381,12 @@ void Rover::update_current_mode(void)
     // check for emergency stop
     if (SRV_Channels::get_emergency_stop()) {
         // relax controllers, motor stopping done at output level
-        g2.attitude_control.relax_I();
+        g2.attitude_control.get_throttle_speed_pid().reset_I();
+        g2.attitude_control.get_pitch_to_throttle_pid().reset_I();
+        if (!rover.g2.sailboat.sail_enabled()) {
+            // sailboats can still move along in E-stop, so dont reset I
+            g2.attitude_control.get_steering_rate_pid().reset_I();
+        }
     }
 
     control_mode->update();

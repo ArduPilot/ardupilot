@@ -148,9 +148,6 @@ public:
     // get speed below which vehicle is considered stopped (in m/s)
     float get_stop_speed() const { return MAX(_stop_speed, 0.0f); }
 
-    // relax I terms of throttle and steering controllers
-    void relax_I();
-
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
