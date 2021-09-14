@@ -138,7 +138,7 @@ public:
         AVOID_ADSB =          38, // enable AP_Avoidance library
         PRECISION_LOITER =    39, // enable precision loiter
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
-        ARMDISARM =           41, // arm or disarm vehicle
+        ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
         INVERTED  =           43, // enable inverted flight
         WINCH_ENABLE =        44, // winch enable/disable
@@ -214,6 +214,8 @@ public:
         CRUISE =             150,  ///CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
+        ARMDISARM =          153, // arm or disarm vehicle
+        ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
