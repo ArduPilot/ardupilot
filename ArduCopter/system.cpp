@@ -81,6 +81,7 @@ void Copter::init_ardupilot()
 
     // initialise rc channels including setting mode
     rc().init();
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE);
 
     // sets up motors and output to escs
     init_rc_out();
