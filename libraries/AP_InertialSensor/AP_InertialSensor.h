@@ -361,7 +361,7 @@ public:
         };
 
         void init();
-        void sample(uint8_t instance, IMU_SENSOR_TYPE _type, uint64_t sample_us, const Vector3f &sample);
+        void sample(uint8_t instance, IMU_SENSOR_TYPE _type, uint64_t sample_us, const Vector3f &sample) __RAMFUNC__;
 
         // a function called by the main thread at the main loop rate:
         void periodic();
@@ -400,7 +400,7 @@ public:
         void rotate_to_next_sensor();
         void update_doing_sensor_rate_logging();
 
-        bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
+        bool should_log(uint8_t instance, IMU_SENSOR_TYPE type) __RAMFUNC__;
         void push_data_to_log();
 
         // Logging functions
