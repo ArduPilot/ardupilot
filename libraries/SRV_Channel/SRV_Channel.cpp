@@ -113,6 +113,8 @@ uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
 void SRV_Channel::calc_pwm(int16_t output_scaled)
 {
     if (have_pwm_mask & (1U<<ch_num)) {
+        // Note that this allows a set_output_pwm call to override E-Stop!!
+        // tricky to fix because we would endup E-stoping to individual SEROVx_MIN not MOT_PWM_MIN on copter
         return;
     }
 
@@ -123,13 +125,16 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
         force = true;
     }
 
-    uint16_t pwm;
-    if (type_angle) {
-        pwm = pwm_from_angle(output_scaled);
-    } else {
-        pwm = pwm_from_range(output_scaled);
+    if (!force && override_active) {
+        // don't overwrite a override
+        return;
     }
-    set_output_pwm(pwm,force);
+
+    if (type_angle) {
+        output_pwm = pwm_from_angle(output_scaled);
+    } else {
+        output_pwm = pwm_from_range(output_scaled);
+    }
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
