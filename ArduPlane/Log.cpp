@@ -388,8 +388,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Sscl: speed scalar for tailsitter control surfaces
 // @Field: Trn: Transistion state
 // @Field: Ast: Q assist active state
+#if HAL_QUADPLANE_ENABLED
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
       "QTUN", "QffffffeccffBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trn,Ast", "s----mmmnn----", "F----00000-0--" , true },
+#endif
 
 // @LoggerMessage: PIQR,PIQP,PIQY,PIQA
 // @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
