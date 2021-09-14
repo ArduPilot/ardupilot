@@ -36,6 +36,7 @@ void Plane::init_ardupilot()
 
     // initialise rc channels including setting mode
     rc().init();
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && (quadplane.options & QuadPlane::OPTION_AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
 
     relay.init();
 
