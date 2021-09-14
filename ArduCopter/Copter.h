@@ -364,7 +364,7 @@ private:
             uint8_t initialised_params      : 1; // 24      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
             uint8_t unused3                 : 1; // 25      // was compass_init_location; true when the compass's initial location has been set
             uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
-            uint8_t armed_with_switch       : 1; // 27      // we armed using a arming switch
+            uint8_t armed_with_airmode_switch : 1; // 27      // we armed using a arming switch
         };
         uint32_t value;
     } ap_t;
