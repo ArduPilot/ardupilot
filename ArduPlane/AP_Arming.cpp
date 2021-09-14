@@ -220,15 +220,6 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
-#if HAL_QUADPLANE_ENABLED
-    if ((method == Method::AUXSWITCH) && (plane.quadplane.options & QuadPlane::OPTION_AIRMODE)) {
-        // if no airmode switch assigned, honour the QuadPlane option bit:
-        if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
-            plane.quadplane.air_mode = AirMode::ON;
-        }
-    }
-#endif
-
     change_arm_state();
 
     // rising edge of delay_arming oneshot
