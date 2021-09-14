@@ -63,6 +63,7 @@ void Sub::init_ardupilot()
 
     // initialise rc channels including setting mode
     rc().init();
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
