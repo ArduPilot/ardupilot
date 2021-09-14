@@ -177,6 +177,12 @@ private:
     Parameters g;
     ParametersG2 g2;
 
+    // main loop scheduler
+    AP_Scheduler scheduler;
+
+    // used to detect MAVLink acks from GCS to stop compassmot
+    uint8_t command_ack_counter;
+
     // mapping between input channels
     RCMapper rcmap;
 
@@ -235,6 +241,10 @@ private:
     // external failsafe boards during baro and airspeed calibration
     bool in_calibration;
 
+    // is compass_mot running? This is used to prevent multiple instances
+    // of compass_mot calibration from running
+    bool compass_mot;
+    
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()
     GCS_Plane &gcs() { return _gcs; }
@@ -1070,6 +1080,10 @@ private:
 
     // parachute.cpp
     void parachute_check();
+
+    // compassmot.cpp
+    MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
+
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
