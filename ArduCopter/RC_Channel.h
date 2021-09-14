@@ -16,7 +16,6 @@ protected:
 
 private:
 
-    void do_aux_function_armdisarm(const AuxSwitchPos ch_flag) override;
     void do_aux_function_change_mode(const Mode::Number mode,
                                      const AuxSwitchPos ch_flag);
     void do_aux_function_change_air_mode(const AuxSwitchPos ch_flag);
