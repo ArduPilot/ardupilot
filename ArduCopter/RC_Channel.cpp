@@ -101,6 +101,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::AUTO_RTL:
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
+    case AUX_FUNC::ARMDISARM_AIRMODE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -142,16 +143,6 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
         if (copter.flightmode->mode_number() == mode) {
             rc().reset_mode_switch();
         }
-    }
-}
-
-void RC_Channel_Copter::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
-{
-    RC_Channel::do_aux_function_armdisarm(ch_flag);
-    if (copter.arming.is_armed()) {
-        // remember that we are using an arming switch, for use by
-        // set_throttle_zero_flag
-        copter.ap.armed_with_switch = true;
     }
 }
 
@@ -590,6 +581,13 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             if (ch_flag == AuxSwitchPos::HIGH) {
                 copter.init_simple_bearing();
                 gcs().send_text(MAV_SEVERITY_INFO, "Simple heading reset");
+            }
+            break;
+
+        case AUX_FUNC::ARMDISARM_AIRMODE:
+            RC_Channel::do_aux_function_armdisarm(ch_flag);
+            if (copter.arming.is_armed()) {
+                copter.ap.armed_with_airmode_switch = true;
             }
             break;
 
