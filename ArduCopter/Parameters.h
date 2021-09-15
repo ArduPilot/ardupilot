@@ -394,7 +394,7 @@ public:
     AP_Float        pilot_takeoff_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
-    AP_Int16        rtl_altitude;
+    AP_Int32        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
     AP_Int16        rtl_alt_final;
