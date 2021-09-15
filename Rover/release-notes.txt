@@ -1,17 +1,23 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.0-rc3 15-Sep-2021
+Changes from 4.1.0-rc2
+1) Bug Fixes
+    a) Serial port auto detection of flow control fix
+------------------------------------------------------------------
 Rover 4.1.0-rc2 10-Sep-2021
 Changes from 4.1.0-rc1
 1) Enhancements
     a) Log download speeds improved on F765 and F777 based boards (USB buffers increased)
     b) Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
 2) Bug Fixes
-    a) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
-    b) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
-    c) IMU semaphore fix to avoid occasional corruption
-    d) QioTek Zealot F427 GPIO pin fix
-    e) Replay/DAL RMGH log message format fix
-    f) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+    a) CRSF frame timeout increased to reduce RC failsafes
+    b) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    c) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    d) IMU semaphore fix to avoid occasional corruption
+    e) QioTek Zealot F427 GPIO pin fix
+    f) Replay/DAL RMGH log message format fix
+    g) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
 ------------------------------------------------------------------
 Rover 4.1.0-rc1 28-Aug-2021
 Changes from 4.1.0-beta7
