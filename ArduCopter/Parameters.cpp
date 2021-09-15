@@ -109,7 +109,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: RTL Altitude
     // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
     // @Units: cm
-    // @Range: 200 8000
+    // @Range: 200 300000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
@@ -1185,6 +1185,10 @@ void Copter::load_parameters(void)
 
     // convert fs_options parameters
     convert_fs_options_params();
+
+#if MODE_RTL_ENABLED == ENABLED
+    g.rtl_altitude.convert_parameter_width(AP_PARAM_INT16);
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
