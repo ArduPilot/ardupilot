@@ -1,3 +1,15 @@
+Release 4.1.0beta8 15th September 2021
+--------------------------------------
+
+This is a very small beta update, with a single patch to fix a serial
+flow control issue that came in beta7.
+
+Changes since beta7 are:
+
+ - fixed auto-detection of serial flow control
+
+Happy flying!
+
 Release 4.1.0beta7 11th September 2021
 --------------------------------------
 
