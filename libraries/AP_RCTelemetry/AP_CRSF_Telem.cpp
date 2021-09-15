@@ -272,7 +272,10 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
      We start a "fast parameter window" that we close after 5sec
     */
     bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
-    if (!_custom_telem.params_mode_active && _pending_request.frame_type > 0) {
+    if (!_custom_telem.params_mode_active
+        && _pending_request.frame_type > 0
+        && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
+        && !hal.util->get_soft_armed()) {
         // fast window start
         _custom_telem.params_mode_start_ms = now_ms;
         _custom_telem.params_mode_active = true;
@@ -301,7 +304,7 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
                 gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: RX device ping failed");
             } else {
                 _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
                 gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: requesting RX device info");
             }
         }
@@ -496,7 +499,7 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
     }
 
     _param_request.origin = ping->origin;
-    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
+    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
 }
 
 // request for device info
@@ -559,20 +562,21 @@ void AP_CRSF_Telem::update()
 
 void AP_CRSF_Telem::update_params()
 {
-    uint32_t now = AP_HAL::millis();
-    // reset parameter passthrough timeout
-    _custom_telem.params_mode_start_ms = now;
-
     // handle general parameter requests
     switch (_pending_request.frame_type) {
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
+    // construct a response to a ping frame
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
         calc_device_info();
         break;
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
-        calc_parameter();
-        break;
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+    // construct a ping frame originating here
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         calc_device_ping();
+        break;
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
+        // reset parameter passthrough timeout
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        calc_parameter();
         break;
     default:
         break;
