@@ -40,6 +40,7 @@
 #include <uavcan/equipment/safety/ArmingStatus.hpp>
 #include <ardupilot/indication/SafetyState.hpp>
 #include <ardupilot/indication/Button.hpp>
+#include <ardupilot/indication/NotifyState.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
@@ -106,6 +107,14 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
+    // @Param: NTF_RT
+    // @DisplayName: Notify State rate
+    // @Description: Maximum transmit rate for Notify State Message
+    // @Range: 1 200
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("NTF_RT", 6, AP_UAVCAN, _notify_state_hz, 20),
+
     AP_GROUPEND
 };
 
@@ -121,6 +130,7 @@ static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<ardupilot::indication::NotifyState>* notify_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // Clients
 UC_CLIENT_CALL_REGISTRY_BINDER(ParamGetSetCb, uavcan::protocol::param::GetSet);
@@ -310,7 +320,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node);
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
-    
+
+    notify_state[driver_index] = new uavcan::Publisher<ardupilot::indication::NotifyState>(*_node);
+    notify_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    notify_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
     param_get_set_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::GetSet, ParamGetSetCb>(*_node, ParamGetSetCb(this, &AP_UAVCAN::handle_param_get_set_response));
 
     param_execute_opcode_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::ExecuteOpcode, ParamExecuteOpcodeCb>(*_node, ParamExecuteOpcodeCb(this, &AP_UAVCAN::handle_param_save_response));
@@ -413,6 +427,7 @@ void AP_UAVCAN::loop(void)
         buzzer_send();
         rtcm_stream_send();
         safety_state_send();
+        notify_state_send();
         send_parameter_request();
         send_parameter_save_request();
         AP::uavcan_dna_server().verify_nodes(this);
@@ -621,6 +636,94 @@ void AP_UAVCAN::set_buzzer_tone(float frequency, float duration_s)
     _buzzer.frequency = frequency;
     _buzzer.duration = duration_s;
     _buzzer.pending_mask = 0xFF;
+}
+
+// notify state send
+void AP_UAVCAN::notify_state_send()
+{
+    uint32_t now = AP_HAL::native_millis();
+
+    if (_notify_state_hz == 0 || (now - _last_notify_state_ms) < uint32_t(1000 / _notify_state_hz)) {
+        return;
+    }
+
+    ardupilot::indication::NotifyState msg;
+    msg.vehicle_state = 0;
+    if (AP_Notify::flags.initialising) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_INITIALISING;
+    }
+    if (AP_Notify::flags.armed) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_ARMED;
+    }
+    if (AP_Notify::flags.flying) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_FLYING;
+    }
+    if (AP_Notify::flags.compass_cal_running) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_MAGCAL_RUN;
+    }
+    if (AP_Notify::flags.ekf_bad) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_EKF_BAD;
+    }
+    if (AP_Notify::flags.esc_calibration) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_ESC_CALIBRATION;
+    }
+    if (AP_Notify::flags.failsafe_battery) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_FAILSAFE_BATT;
+    }
+    if (AP_Notify::flags.failsafe_gcs) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_FAILSAFE_GCS;
+    }
+    if (AP_Notify::flags.failsafe_radio) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_FAILSAFE_RADIO;
+    }
+    if (AP_Notify::flags.firmware_update) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_FW_UPDATE;
+    }
+    if (AP_Notify::flags.gps_fusion) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_GPS_FUSION;
+    }
+    if (AP_Notify::flags.gps_glitching) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_GPS_GLITCH;
+    }
+    if (AP_Notify::flags.have_pos_abs) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_POS_ABS_AVAIL;
+    }
+    if (AP_Notify::flags.leak_detected) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_LEAK_DET;
+    }
+    if (AP_Notify::flags.parachute_release) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_CHUTE_RELEASED;
+    }
+    if (AP_Notify::flags.powering_off) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_POWERING_OFF;
+    }
+    if (AP_Notify::flags.pre_arm_check) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_PREARM;
+    }
+    if (AP_Notify::flags.pre_arm_gps_check) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_PREARM_GPS;
+    }
+    if (AP_Notify::flags.save_trim) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_SAVE_TRIM;
+    }
+    if (AP_Notify::flags.vehicle_lost) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_LOST;
+    }
+    if (AP_Notify::flags.video_recording) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_VIDEO_RECORDING;
+    }
+    if (AP_Notify::flags.waiting_for_throw) {
+        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_THROW_READY;
+    }
+
+    msg.aux_data_type = ardupilot::indication::NotifyState::VEHICLE_YAW_EARTH_CENTIDEGREES;
+    uint16_t yaw_cd = (uint16_t)(360.0f - degrees(AP::ahrs().get_yaw()))*100.0f;
+    const uint8_t *data = (uint8_t *)&yaw_cd;
+    for (uint8_t i=0; i<2; i++) {
+        msg.aux_data.push_back(data[i]);
+    }
+    notify_state[_driver_index]->broadcast(msg);
+    _last_notify_state_ms = AP_HAL::native_millis();
 }
 
 void AP_UAVCAN::rtcm_stream_send()
