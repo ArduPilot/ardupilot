@@ -232,6 +232,9 @@ public:
     // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
     static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
 
+    // return true if function is for a control surface
+    static bool is_control_surface(SRV_Channel::Aux_servo_function_t function);
+
     // return the function of a channel
     SRV_Channel::Aux_servo_function_t get_function(void) const {
         return (SRV_Channel::Aux_servo_function_t)function.get();

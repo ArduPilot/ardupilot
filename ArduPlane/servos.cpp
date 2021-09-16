@@ -897,24 +897,6 @@ void Plane::set_servos(void)
         }
     }
 
-    if (landing.get_then_servos_neutral() > 0 &&
-            control_mode == &mode_auto &&
-            landing.get_disarm_delay() > 0 &&
-            landing.is_complete() &&
-            !arming.is_armed()) {
-        // after an auto land and auto disarm, set the servos to be neutral just
-        // in case we're upside down or some crazy angle and straining the servos.
-        if (landing.get_then_servos_neutral() == 1) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-        } else if (landing.get_then_servos_neutral() == 2) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_aileron, SRV_Channel::Limit::ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_elevator, SRV_Channel::Limit::ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_rudder, SRV_Channel::Limit::ZERO_PWM);
-        }
-    }
-
     uint8_t override_pct;
     if (g2.ice_control.throttle_override(override_pct)) {
         // the ICE controller wants to override the throttle for starting
@@ -923,6 +905,37 @@ void Plane::set_servos(void)
 
     // run output mixer and send values to the hal for output
     servos_output();
+}
+
+/*
+    This sets servos to neutral if it is a control surface servo in auto mode
+*/
+void Plane::landing_neutral_control_surface_servos(void)
+{
+    if (!(landing.get_then_servos_neutral() > 0 &&
+            control_mode == &mode_auto &&
+            landing.get_disarm_delay() > 0 &&
+            landing.is_complete() &&
+            !arming.is_armed())) {
+                return;
+    }
+
+
+    // after an auto land and auto disarm, set the servos to be neutral just
+    // in case we're upside down or some crazy angle and straining the servos.
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS ; i++) {
+            SRV_Channel *chan = SRV_Channels::srv_channel(i);
+            if (chan == nullptr || !SRV_Channel::is_control_surface(chan->get_function())) {
+                continue;
+            }
+
+            if (landing.get_then_servos_neutral() == 1) {
+                SRV_Channels::set_output_scaled(chan->get_function(), 0);
+            } else if (landing.get_then_servos_neutral() == 2) {
+                SRV_Channels::set_output_limit(chan->get_function(), SRV_Channel::Limit::ZERO_PWM);
+            }
+    }
+ 
 }
 
 /*
@@ -948,6 +961,9 @@ void Plane::servos_output(void)
  
     // run vtail and elevon mixers
     servo_output_mixers();
+
+    //  set control surface servos to neutral
+    landing_neutral_control_surface_servos();
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
