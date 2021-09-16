@@ -29,7 +29,6 @@
 #include "AP_RCProtocol_CRSF.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
-#include "AP_RCProtocol_FPort2.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
