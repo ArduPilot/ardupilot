@@ -170,6 +170,11 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
         // if not already in auto then switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
             auto_RTL = true;
+            if ((g2.auto_rtl_type == 4) || (g2.auto_rtl_type == 5)) {
+                mission.set_in_rejoin_sequence_flag(true);
+            } else {
+                mission.set_in_landing_sequence_flag(true);
+            }
             // log entry into AUTO RTL
             copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
 
