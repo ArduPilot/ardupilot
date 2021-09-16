@@ -2652,7 +2652,25 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    set_climb_rate_cms(wp_nav->get_default_speed_up(), false);
+    float vel_z = wp_nav->get_default_speed_up();
+    if (guided_takeoff) {
+        // for guided takeoff we aim for a specific height with zero
+        // velocity at that height
+        Location origin;
+        if (ahrs.get_origin(origin)) {
+            // a small margin to ensure we do move to the next takeoff
+            // stage
+            const int32_t margin_cm = 5;
+            float pos_z = margin_cm + plane.next_WP_loc.alt - origin.alt;
+            vel_z = 0;
+            pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
+        } else {
+            set_climb_rate_cms(vel_z, false);
+        }
+    } else {
+        set_climb_rate_cms(vel_z, false);
+    }
+
     run_z_controller();
 }
 
@@ -3267,6 +3285,9 @@ void QuadPlane::guided_update(void)
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         takeoff_controller();
     } else {
+        if (guided_takeoff) {
+            poscontrol.set_state(QPOS_POSITION2);
+        }
         guided_takeoff = false;
         // run VTOL position controller
         vtol_position_controller();
