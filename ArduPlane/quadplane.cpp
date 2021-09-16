@@ -2011,6 +2011,10 @@ bool QuadPlane::in_vtol_mode(void) const
         poscontrol.get_state() > QPOS_APPROACH) {
         return true;
     }
+    if (plane.control_mode == &plane.mode_guided &&
+        guided_takeoff) {
+        return true;
+    }
     if (in_vtol_auto()) {
         if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
             return true;
