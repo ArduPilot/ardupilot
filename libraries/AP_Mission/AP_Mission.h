@@ -576,6 +576,12 @@ public:
         _force_resume = force_resume;
     }
 
+    // set in_rejoin_sequence flag
+    void set_in_rejoin_sequence_flag(bool flag)
+    {
+        _flags.in_rejoin_sequence = flag;
+    }
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore &get_semaphore(void)
