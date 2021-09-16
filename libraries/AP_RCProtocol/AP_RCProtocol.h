@@ -41,7 +41,6 @@ public:
         CRSF,
         ST24,
         FPORT,
-        FPORT2,
         NONE    //last enum always is None
     };
     void init();
@@ -61,7 +60,7 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT);
     }
 
     uint8_t num_channels();
