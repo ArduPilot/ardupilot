@@ -1069,6 +1069,36 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
 #endif
 
+#if MODE_ACRO_ENABLED == ENABLED
+    // @Param: ACRO_RP_RATE
+    // @DisplayName: Acro Roll and Pitch Rate
+    // @Description: Acro mode maximum roll and pitch rate.  Higher values mean faster rate of rotation
+    // @Range: 1 360
+    // @User: Standard
+    AP_GROUPINFO("ACRO_RP_RATE", 47, ParametersG2, acro_rp_rate, ACRO_RP_RATE_DEFAULT),
+
+    // @Param: ACRO_Y_RATE
+    // @DisplayName: Acro Yaw Rate
+    // @Description: Acro mode maximum yaw rate.  Higher value means faster rate of rotation
+    // @Range: 1 360
+    // @User: Standard
+    AP_GROUPINFO("ACRO_Y_RATE", 48, ParametersG2, acro_y_rate, ACRO_Y_RATE_DEFAULT),
+#endif
+
+    // @Param: PILOT_Y_RATE
+    // @DisplayName: Pilot controlled yaw rate
+    // @Description: Pilot controlled yaw rate max.  Used in all pilot controlled modes except Acro
+    // @Range: 1 360
+    // @User: Standard
+    AP_GROUPINFO("PILOT_Y_RATE", 49, ParametersG2, pilot_y_rate, PILOT_Y_RATE_DEFAULT),
+
+    // @Param: PILOT_Y_EXPO
+    // @DisplayName: Pilot controlled yaw expo
+    // @Description: Pilot controlled yaw expo.  Used in all pilot controlled modes except Acrxo
+    // @Range: 1 360
+    // @User: Standard
+    AP_GROUPINFO("PILOT_Y_EXPO", 50, ParametersG2, pilot_y_expo, PILOT_Y_EXPO_DEFAULT),
+
     AP_GROUPEND
 };
 
