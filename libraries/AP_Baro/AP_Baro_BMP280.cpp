@@ -85,18 +85,18 @@ bool AP_Baro_BMP280::_init()
     uint8_t buf[24];
     _dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf));
 
-    _t1 = ((int16_t)buf[1] << 8) | buf[0];
-    _t2 = ((int16_t)buf[3] << 8) | buf[2];
-    _t3 = ((int16_t)buf[5] << 8) | buf[4];
-    _p1 = ((int16_t)buf[7] << 8) | buf[6];
-    _p2 = ((int16_t)buf[9] << 8) | buf[8];
-    _p3 = ((int16_t)buf[11] << 8) | buf[10];
-    _p4 = ((int16_t)buf[13] << 8) | buf[12];
-    _p5 = ((int16_t)buf[15] << 8) | buf[14];
-    _p6 = ((int16_t)buf[17] << 8) | buf[16];
-    _p7 = ((int16_t)buf[19] << 8) | buf[18];
-    _p8 = ((int16_t)buf[21] << 8) | buf[20];
-    _p9 = ((int16_t)buf[23] << 8) | buf[22];
+    _t1 = ((uint16_t)buf[1] << 8) | (uint16_t)buf[0];
+    _t2 = ((int16_t)buf[3] << 8) | (int16_t)buf[2];
+    _t3 = ((int16_t)buf[5] << 8) | (int16_t)buf[4];
+    _p1 = ((uint16_t)buf[7] << 8) | (uint16_t)buf[6];
+    _p2 = ((int16_t)buf[9] << 8) | (int16_t)buf[8];
+    _p3 = ((int16_t)buf[11] << 8) | (int16_t)buf[10];
+    _p4 = ((int16_t)buf[13] << 8) | (int16_t)buf[12];
+    _p5 = ((int16_t)buf[15] << 8) | (int16_t)buf[14];
+    _p6 = ((int16_t)buf[17] << 8) | (int16_t)buf[16];
+    _p7 = ((int16_t)buf[19] << 8) | (int16_t)buf[18];
+    _p8 = ((int16_t)buf[21] << 8) | (int16_t)buf[20];
+    _p9 = ((int16_t)buf[23] << 8) | (int16_t)buf[22];
 
     // SPI write needs bit mask
     uint8_t mask = 0xFF;
