@@ -188,6 +188,8 @@ private:
     SocketAPM *sock;
     char replybuf[10000];
     pid_t socket_pid;
+    uint32_t sock_error_count;
+    double last_recv_sec;
 };
 
 
