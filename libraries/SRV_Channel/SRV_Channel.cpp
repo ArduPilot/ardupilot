@@ -221,3 +221,33 @@ bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
             (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
             function == k_engine_run_enable);
 }
+
+// return true if function is for a control surface
+bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
+{
+    switch (function)
+    {
+    case SRV_Channel::Aux_servo_function_t::k_flap:  
+    case SRV_Channel::Aux_servo_function_t::k_flap_auto:
+    case SRV_Channel::Aux_servo_function_t::k_aileron:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft2:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight2:
+    case SRV_Channel::Aux_servo_function_t::k_elevator:
+    case SRV_Channel::Aux_servo_function_t::k_rudder:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_left:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_right:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_left:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_right:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_left:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_right:
+    case SRV_Channel::Aux_servo_function_t::k_airbrake:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
