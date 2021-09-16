@@ -18,12 +18,16 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+static AP_VideoTX vtx; // for set_vtx functions
 
 static AP_RCProtocol *rcprot;
 
@@ -70,11 +74,15 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
 static bool test_byte_protocol(const char *name, uint32_t baudrate,
                                const uint8_t *bytes, uint8_t nbytes,
                                const uint16_t *values, uint8_t nvalues,
-                               uint8_t repeats)
+                               uint8_t repeats,
+                               uint8_t pause_at)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
         for (uint8_t i=0; i<nbytes; i++) {
+            if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
+                hal.scheduler->delay(10);
+            }
             rcprot->process_byte(bytes[i], baudrate);
         }
         hal.scheduler->delay(10);
@@ -85,11 +93,11 @@ static bool test_byte_protocol(const char *name, uint32_t baudrate,
     return ret;
 }
 
-static void send_bit(uint8_t bit, uint32_t baudrate)
+static void send_bit(uint8_t bit, uint32_t baudrate, bool inverted)
 {
     static uint16_t bits_0, bits_1;
-    if (baudrate == 115200) {
-        // yes, this is backwards ...
+    if (!inverted) {
+        // inverted serial idles low
         bit = !bit;
     }
     if (bit == 0) {
@@ -111,24 +119,35 @@ static void send_bit(uint8_t bit, uint32_t baudrate)
 /*
   call process_pulse() for a byte of input
  */
-static void send_byte(uint8_t b, uint32_t baudrate)
+static void send_byte(uint8_t b, uint32_t baudrate, bool inverted)
 {
-    send_bit(0, baudrate); // start bit
+    send_bit(0, baudrate, inverted); // start bit
     uint8_t parity = 0;
     for (uint8_t i=0; i<8; i++) {
         uint8_t bit = (b & (1U<<i))?1:0;
-        send_bit(bit, baudrate);
+        send_bit(bit, baudrate, inverted);
         if (bit) {
             parity = !parity;
         }
     }
     if (baudrate == 100000) {
         // assume SBUS, send parity
-        send_bit(parity, baudrate);
+        send_bit(parity, baudrate, inverted);
     }
-    send_bit(1, baudrate); // stop bit
+    send_bit(1, baudrate, inverted); // stop bit
     if (baudrate == 100000) {
-        send_bit(1, baudrate); // 2nd stop bit
+        send_bit(1, baudrate, inverted); // 2nd stop bit
+    }
+}
+
+/*
+  add a gap in bits
+ */
+static void send_pause(uint8_t b, uint32_t baudrate, uint32_t pause_us, bool inverted)
+{
+    uint32_t nbits = pause_us * 1e6 / baudrate;
+    for (uint32_t i=0; i<nbits; i++) {
+        send_bit(b, baudrate, inverted);
     }
 }
 
@@ -138,19 +157,19 @@ static void send_byte(uint8_t b, uint32_t baudrate)
 static bool test_pulse_protocol(const char *name, uint32_t baudrate,
                                 const uint8_t *bytes, uint8_t nbytes,
                                 const uint16_t *values, uint8_t nvalues,
-                                uint8_t repeats)
+                                uint8_t repeats, uint8_t pause_at,
+                                bool inverted)
 {
     bool ret = true;
     for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
-        for (uint16_t i=0; i<8000; i++) {
-            send_bit(1, baudrate);
-        }
+        send_pause(1, baudrate, 6000, inverted);
         for (uint8_t i=0; i<nbytes; i++) {
-            send_byte(bytes[i], baudrate);
+            if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
+                send_pause(1, baudrate, 10000, inverted);
+            }
+            send_byte(bytes[i], baudrate, inverted);
         }
-        for (uint16_t i=0; i<8000; i++) {
-            send_bit(1, baudrate);
-        }
+        send_pause(1, baudrate, 6000, inverted);
         if (repeat > repeats) {
             ret &= check_result(name, false, values, nvalues);
         }
@@ -164,18 +183,20 @@ static bool test_pulse_protocol(const char *name, uint32_t baudrate,
 static bool test_protocol(const char *name, uint32_t baudrate,
                           const uint8_t *bytes, uint8_t nbytes,
                           const uint16_t *values, uint8_t nvalues,
-                          uint8_t repeats=1)
+                          uint8_t repeats=1,
+                          int8_t pause_at=0,
+                          bool inverted=false)
 {
     bool ret = true;
-
     rcprot = new AP_RCProtocol();
     rcprot->init();
-    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats);
+
+    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
     delete rcprot;
 
     rcprot = new AP_RCProtocol();
     rcprot->init();
-    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats);
+    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at, inverted);
     delete rcprot;
 
     return ret;
@@ -191,14 +212,92 @@ void loop()
     const uint8_t sbus_bytes[] = {0x0F, 0x4C, 0x1C, 0x5F, 0x32, 0x34, 0x38, 0xDD, 0x89,
                                   0x83, 0x0F, 0x7C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const uint16_t sbus_output[] = {1562, 1496, 1000, 1530, 1806, 2006, 1494, 1494, 874,
-                                    874, 874, 874, 874, 874, 874, 874};
+    const uint16_t sbus_output[] = {1562, 1496, 1000, 1531, 1806, 2006, 1495, 1495, 875,
+                                    875, 875, 875, 875, 875, 875, 875};
 
     const uint8_t dsm_bytes[] = {0x00, 0xab, 0x00, 0xae, 0x08, 0xbf, 0x10, 0xd0, 0x18,
                                  0xe1, 0x20, 0xf2, 0x29, 0x03, 0x31, 0x14, 0x00, 0xab,
                                  0x39, 0x25, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                                  0xff, 0xff, 0xff, 0xff, 0xff};
     const uint16_t dsm_output[] = {1010, 1020, 1000, 1030, 1040, 1050, 1060, 1070};
+
+    // DSMX_2048_11MS
+    const uint8_t dsm_bytes2[] = {0x00, 0xb2, 0x80, 0x94, 0x3c, 0x02, 0x1b, 0xfe,
+                                  0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
+                                  0x00, 0xb2, 0x0c, 0x03, 0x2e, 0xaa, 0x14, 0x00,
+                                  0x21, 0x56, 0x34, 0x02, 0x54, 0x00, 0xff, 0xff };
+
+    const uint16_t dsm_output2[] = {1501, 1500, 985, 1499, 1099, 1901, 1501, 1501, 1500, 1500, 1500, 1500};
+
+    // DSMX_2048_11MS, from genuine spektrum satellite, 12 channels
+    const uint8_t dsm_bytes3[] = {0x00, 0x00, 0x81, 0x56, 0x39, 0x50, 0x1C, 0x06,
+                                  0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
+                                  0x00, 0x00, 0x0c, 0x06, 0x2b, 0x32, 0x14, 0x06,
+                                  0x21, 0x96, 0x31, 0x50, 0x54, 0x00, 0xff, 0xff };
+
+    const uint16_t dsm_output3[] = {1503, 1503, 1099, 1503, 1137, 1379, 1096, 1096, 1500, 1500, 1500, 1500};
+
+    // DSMX_2048_22MS, from genuine spektrum satellite, 12 channels
+    const uint8_t dsm_bytes4[] = {0x00, 0x5a, 0x81, 0x7a, 0x39, 0x50, 0x1C, 0x06,
+                                  0x44, 0x00, 0x4c, 0x00, 0x5c, 0x00, 0xff, 0xff,
+                                  0x00, 0x5a, 0x0c, 0x06, 0x2b, 0x32, 0x14, 0x06,
+                                  0x21, 0x96, 0x31, 0x50, 0x54, 0x00, 0xff, 0xff };
+
+    const uint16_t dsm_output4[] = {1503, 1503, 1120, 1503, 1137, 1379, 1096, 1096, 1500, 1500, 1500, 1500};
+
+    const uint8_t dsm_bytes5[] = {0x03, 0xB2, 0x05, 0xFE, 0x17, 0x55, 0x13, 0x55,
+                                  0x09, 0xFC, 0x18, 0xAB, 0x00, 0x56, 0x0D, 0xFD};
+
+    const uint16_t dsm_output5[] = {1498, 1496, 999, 1497, 1901, 1901, 1099};
+
+    // DSMX 22ms D6G3 and SPM4648 autobound
+    const uint8_t dsmx22ms_bytes[] = {
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0x54, 0x00, 0xFF, 0xFF,
+        0x00, 0xB2, 0x81, 0x50, 0x3C, 0x00, 0x1B, 0xFD,
+        0x44, 0x00, 0x4C, 0x00, 0x5C, 0x00, 0xFF, 0xFF
+    };
+    const uint16_t dsmx22ms_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500, 1500, 1500
+    };
+
+    // DSMX 22ms D6G3 and SPM4648 autobound VTX frame Ch1, B1, Pw25, Race
+    const uint8_t dsmx22ms_vtx_bytes[] = {
+        // two normal frames to satisfy the format guesser
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0x54, 0x00, 0xFF, 0xFF,
+        0x00, 0xB2, 0x81, 0x50, 0x3C, 0x00, 0x1B, 0xFD,
+        0x44, 0x00, 0x4C, 0x00, 0x5C, 0x00, 0xFF, 0xFF,
+        // This is channels 1, 5, 2, 4, 6
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x25, 0xF8, 0x34, 0x00, 0xE0, 0x00, 0xE0, 0x0A
+    };
+    const uint16_t dsmx22ms_vtx_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500, 1500, 1500
+    };
+    // DSMX 11ms D6G3 and SPM4648 autobound
+    const uint8_t dsmx11ms_bytes[] = {
+        0x01, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFC, 0x25, 0xF8, 0x44, 0x00, 0x4C, 0x00,
+        0x01, 0xB2, 0x8C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFC, 0x01, 0x50, 0x3C, 0x00, 0x34, 0x00
+    };
+    const uint16_t dsmx11ms_output[] = {
+        1500, 1500, 1096, 1498, 1796, 1099, 1500, 1500, 1500, 1500
+    };
+
+    // DSMX 11ms D6G3 and SPM4648 autobound VTX frame Ch1, B1, Pw25, Race
+    const uint8_t dsmx11ms_vtx_bytes[] = {
+        0x01, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x25, 0xF8, 0x44, 0x00, 0x4C, 0x00,
+        0x01, 0xB2, 0x8C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x01, 0x50, 0x3C, 0x00, 0x34, 0x00,
+        0x00, 0xB2, 0x0C, 0x00, 0x29, 0x56, 0x14, 0x00,
+        0x1B, 0xFD, 0x25, 0xF8, 0xE0, 0x00, 0xE0, 0x0A
+    };
+    const uint16_t dsmx11ms_vtx_output[] = {
+        1500, 1500, 1096, 1499, 1796, 1099, 1500, 1500, 1500, 1500
+    };
 
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
@@ -219,6 +318,28 @@ void loop()
     const uint8_t ibus_bytes[] = {0x20, 0x40, 0xdc, 0x05, 0xdc, 0x05, 0xe8, 0x03, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0x47, 0xf3};
     const uint16_t ibus_output[] = {1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
 
+    const uint8_t fport_bytes[] = {0x7e, 0x19, 0x00, 0xe7, 0x3b, 0xdf, 0x5a, 0xce,
+                                   0x07, 0x10, 0x75, 0x49, 0x9c, 0x15, 0xe0, 0x03,
+                                   0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f,
+                                   0x7c, 0x00, 0x38, 0xfa, 0x7e};
+
+    const uint16_t fport_output[] = {1499, 1499, 1101, 1499, 1035, 1341, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+
+    const uint8_t fport2_16ch_bytes[] = {0x18, 0xff, 
+                                    0xac, 0x00, 0x5f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0x00, 0x5e, 0x98};
+    const uint16_t fport2_16ch_output[] = {982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+
+    const uint8_t fport2_24ch_bytes[] = {0x23, 0xff,
+                                    0xe0, 0x03, 0xdf, 0x2c, 0xc2, 0xc7, 0x0a, 0xf0, 0xb1, 0x82, 0x15, // 8ch on 11 bits
+                                    0xe0, 0x9b, 0x38, 0x2b, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0x00, 0x5b, 0x02 };
+
+    // we only decode up to 18ch
+    const uint16_t fport2_24ch_output[] = {1495, 1495, 986, 1495, 982, 1495, 982, 982, 1495, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
     test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
@@ -226,10 +347,22 @@ void loop()
     test_protocol("IBUS", 115200, ibus_bytes, sizeof(ibus_bytes), ibus_output, ARRAY_SIZE(ibus_output), 1);
 
     // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
-    test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3);
+    test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3, 0, true);
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
-    test_protocol("DSM", 115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
+    test_protocol("DSM1", 115200, dsm_bytes,  sizeof(dsm_bytes),  dsm_output,  ARRAY_SIZE(dsm_output), 9);
+    test_protocol("DSM2", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
+    test_protocol("DSM3", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
+    test_protocol("DSM4", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 9, 16);
+    test_protocol("DSM5", 115200, dsm_bytes5, sizeof(dsm_bytes5), dsm_output5, ARRAY_SIZE(dsm_output5), 9);
+    test_protocol("DSMX22", 115200, dsmx22ms_bytes, sizeof(dsmx22ms_bytes), dsmx22ms_output, ARRAY_SIZE(dsmx22ms_output), 9, 16);
+    test_protocol("DSMX22_VTX", 115200, dsmx22ms_vtx_bytes, sizeof(dsmx22ms_vtx_bytes), dsmx22ms_vtx_output, ARRAY_SIZE(dsmx22ms_vtx_output), 9, 16);
+    test_protocol("DSMX11", 115200, dsmx11ms_bytes, sizeof(dsmx11ms_bytes), dsmx11ms_output, ARRAY_SIZE(dsmx11ms_output), 9, 16);
+    test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 9, 16);
+
+    test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
+    test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 3, 0, true);
+    test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 3, 0, true);
 }
 
 AP_HAL_MAIN();
