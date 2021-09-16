@@ -99,6 +99,9 @@ void Plane::set_guided_WP(void)
     auto_state.vtol_loiter = false;
     
     loiter_angle_reset();
+
+    // cancel pending takeoff
+    quadplane.guided_takeoff = false;
 }
 
 /*
