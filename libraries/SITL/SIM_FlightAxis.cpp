@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -92,6 +93,15 @@ static const struct {
     { "RPM1_TYPE", 10 },
 };
 
+/*
+  get system timestamp in seconds
+ */
+static double timestamp_sec()
+{
+    struct timeval tval;
+    gettimeofday(&tval,NULL);
+    return tval.tv_sec + (tval.tv_usec*1.0e-6);
+}
 
 FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
@@ -258,7 +268,6 @@ char *FlightAxis::soap_request_end(uint32_t timeout_ms)
     return strdup(replybuf);
 }
 
-
 void FlightAxis::exchange_data(const struct sitl_input &input)
 {
     if (!sock &&
@@ -355,9 +364,21 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
     char *reply = nullptr;
     if (sock) {
         reply = soap_request_end(0);
+        if (reply == nullptr) {
+            sock_error_count++;
+            if (sock_error_count >= 10000 && timestamp_sec() - last_recv_sec > 1) {
+                printf("socket timeout\n");
+                delete sock;
+                sock = nullptr;
+                sock_error_count = 0;
+                last_recv_sec = timestamp_sec();
+            }
+        }
     }
 
     if (reply) {
+        sock_error_count = 0;
+        last_recv_sec = timestamp_sec();
         double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
         double dt = state.m_currentPhysicsTime_SEC - lastt_s;
