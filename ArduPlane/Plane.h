@@ -1070,6 +1070,7 @@ private:
     void dspoiler_update(void);
     void airbrake_update(void);
     void servo_output_mixers(void);
+    void landing_neutral_control_surface_servos(void);
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
