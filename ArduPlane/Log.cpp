@@ -94,6 +94,7 @@ struct PACKED log_Control_Tuning {
     float airspeed_estimate;
     float synthetic_airspeed;
     float EAS2TAS;
+    int32_t groundspeed_undershoot;
 };
 
 // Write a control tuning packet. Total length : 22 bytes
@@ -119,7 +120,8 @@ void Plane::Log_Write_Control_Tuning()
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand(),
         airspeed_estimate : est_airspeed,
         synthetic_airspeed : synthetic_airspeed,
-        EAS2TAS            : ahrs.get_EAS2TAS()
+        EAS2TAS            : ahrs.get_EAS2TAS(),
+        groundspeed_undershoot  : groundspeed_undershoot,
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -317,9 +319,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
 // @Field: SAs: synthetic airspeed measurement derived from non-airspeed sensors, NaN if not available
 // @Field: E2T: equivalent to true airspeed ratio
+// @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "Qcccchhhfff",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdrOut,ThD,As,SAs,E2T", "sdddd---nn-", "FBBBB---00-" , true },
+      "CTUN", "Qcccchhhfffi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdrOut,ThD,As,SAs,E2T,GU", "sdddd---nn-n", "FBBBB---00-B" , true },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
