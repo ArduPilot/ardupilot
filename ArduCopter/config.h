@@ -482,6 +482,14 @@
  #define ACRO_THR_MID_DEFAULT       0.0f
 #endif
 
+#ifndef ACRO_RP_RATE_DEFAULT
+ #define ACRO_RP_RATE_DEFAULT      90
+#endif
+
+#ifndef ACRO_Y_RATE_DEFAULT
+ #define ACRO_Y_RATE_DEFAULT       90
+#endif
+
 // RTL Mode
 #ifndef RTL_ALT_FINAL
  # define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
@@ -560,7 +568,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Throttle control defaults
+// Pilot control defaults
 //
 
 #ifndef THR_DZ_DEFAULT
@@ -573,6 +581,13 @@
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
  # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#endif
+
+#ifndef PILOT_Y_RATE_DEFAULT
+ # define PILOT_Y_RATE_DEFAULT  90  // pilot controlled yaw rotation rate parameter default
+#endif
+#ifndef PILOT_Y_EXPO_DEFAULT
+ # define PILOT_Y_EXPO_DEFAULT  90  // pilot controlled yaw expo parameter default
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
