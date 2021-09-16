@@ -20,15 +20,15 @@
 #include <AP_GPS/AP_GPS.h>
 
 // attitude control default definition
-#define AR_ATTCONTROL_STEER_ANG_P       2.50f
+#define AR_ATTCONTROL_STEER_ANG_P       2.00f
 #define AR_ATTCONTROL_STEER_RATE_FF     0.20f
 #define AR_ATTCONTROL_STEER_RATE_P      0.20f
 #define AR_ATTCONTROL_STEER_RATE_I      0.20f
 #define AR_ATTCONTROL_STEER_RATE_IMAX   1.00f
 #define AR_ATTCONTROL_STEER_RATE_D      0.00f
 #define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
-#define AR_ATTCONTROL_STEER_RATE_MAX    360.0f
-#define AR_ATTCONTROL_STEER_ACCEL_MAX   180.0f
+#define AR_ATTCONTROL_STEER_RATE_MAX    120.0f
+#define AR_ATTCONTROL_STEER_ACCEL_MAX   120.0f
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
@@ -50,7 +50,7 @@
 #define AR_ATTCONTROL_DT                0.02f
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
-#define AR_ATTCONTROL_THR_ACCEL_MAX     2.00f
+#define AR_ATTCONTROL_THR_ACCEL_MAX     1.00f
 
 // minimum speed in m/s
 #define AR_ATTCONTROL_STEER_SPEED_MIN   1.0f
