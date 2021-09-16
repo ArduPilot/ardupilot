@@ -22,19 +22,19 @@
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
-#define FPORT_CONTROL_FRAME_SIZE 29
+#define FPORT2_CONTROL_FRAME_SIZE 38
 
-struct FPort_Frame;
+struct FPort2_Frame;
 
-class AP_RCProtocol_FPort : public AP_RCProtocol_Backend {
+class AP_RCProtocol_FPort2 : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool inverted);
+    AP_RCProtocol_FPort2(AP_RCProtocol &_frontend, bool inverted);
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:
-    void decode_control(const FPort_Frame &frame);
-    void decode_downlink(const FPort_Frame &frame);
+    void decode_control(const FPort2_Frame &frame);
+    void decode_downlink(const FPort2_Frame &frame);
     bool check_checksum(void);
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
@@ -42,22 +42,19 @@ private:
     uint32_t saved_width;
 
     struct {
-        uint8_t buf[FPORT_CONTROL_FRAME_SIZE];
+        uint8_t buf[FPORT2_CONTROL_FRAME_SIZE];
         uint8_t ofs;
         uint32_t last_byte_us;
-        bool got_DLE;
+        uint8_t control_len;
+        bool is_downlink;
     } byte_input;
+
+    uint8_t chan_count;
 
     const bool inverted;
 
     struct {
-        bool available = false;
+        bool available;
         AP_Frsky_SPort::sport_packet_t packet;
     } telem_data;
-
-    // receiver sends 0x10 when ready to receive telemetry frames (R-XSR)
-    bool rx_driven_frame_rate = false;
-
-    // if the receiver is not controlling frame rate apply a constraint on consecutive frames
-    uint8_t consecutive_telemetry_frame_count;
 };
