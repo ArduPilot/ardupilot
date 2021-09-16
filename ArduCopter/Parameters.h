@@ -648,6 +648,14 @@ public:
 #if MODE_GUIDED_ENABLED == ENABLED
     AP_Float guided_timeout;
 #endif
+
+#if MODE_ACRO_ENABLED == ENABLED
+    AP_Int16 acro_rp_rate;
+    AP_Int16 acro_y_rate;
+#endif
+
+    AP_Int16 pilot_y_rate;
+    AP_Int16 pilot_y_expo;
 };
 
 extern const AP_Param::Info        var_info[];
