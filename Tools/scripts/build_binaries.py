@@ -62,9 +62,32 @@ def get_required_compiler(tag, board):
     return None
 
 
+ARDUCOPTER = "arducopter"
+ARDUPLANE = "arduplane"
+ROVER = "rover"
+ANTENNATRACKER = "antennatracker"
+ARDUSUB = "ardusub"
+AP_PERIPH = "AP_Periph"
+
+ALL_PROJECTS = [
+    ARDUCOPTER,
+    ARDUPLANE,
+    ROVER,
+    ANTENNATRACKER,
+    ARDUSUB,
+    AP_PERIPH
+]
+
+
 class build_binaries(object):
-    def __init__(self, tags):
+    def __init__(self, tags, boards=None, projects=ALL_PROJECTS, require_checkout=True):
         self.tags = tags
+        self.require_checkout = require_checkout
+        if boards:
+            self.selected_boards = boards
+        else:
+            self.selected_boards = [] # build all boards
+        self.projects = projects
         self.dirty = False
         binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
                                                  "build_binaries_history.sqlite")
@@ -285,7 +308,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def write_string_to_filepath(self, string, filepath):
         '''writes the entirety of string to filepath'''
-        with open(filepath, "w") as x:
+        with open(filepath, "w") as x:  # FIXME: encoding='utf-8' ?
             x.write(string)
 
     def version_h_path(self, src):
@@ -301,7 +324,7 @@ is bob we will attempt to checkout bob-AVR'''
         gitversion_content = gitlog
         versionfile = self.version_h_path(src)
         if os.path.exists(versionfile):
-            content = self.read_string_from_filepath(versionfile)
+            content = self.read_string_from_filepath(versionfile).decode('utf-8')
             match = re.search('define.THISFIRMWARE "([^"]+)"', content)
             if match is None:
                 self.progress("Failed to retrieve THISFIRMWARE from version.h")
@@ -323,7 +346,8 @@ is bob we will attempt to checkout bob-AVR'''
         ss = r".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*" \
              r"(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*" \
              r"(?P<type>[A-Z_]+)[	 ]*"
-        content = self.read_string_from_filepath(versionfile)
+        # FIXME: content returned by read_string_from_filepath is binary!    
+        content = self.read_string_from_filepath(versionfile).decode('utf-8')
         match = re.search(ss, content)
         if match is None:
             self.progress("Failed to retrieve FIRMWARE_VERSION from version.h")
@@ -342,7 +366,11 @@ is bob we will attempt to checkout bob-AVR'''
     def addfwversion(self, destdir, src):
         '''write version information into destdir'''
         self.addfwversion_gitversion(destdir, src)
-        self.addfwversion_firmwareversiontxt(destdir, src)
+        try:
+            self.addfwversion_firmwareversiontxt(destdir, src)
+        except:
+            import traceback
+            traceback.print_stack()
 
     def read_string_from_filepath(self, filepath):
         '''returns content of filepath as a string'''
@@ -394,7 +422,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build vehicle binaries'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
-
+        boards = self.filter_selected_boards(boards)
         board_count = len(boards)
         count = 0
         for board in sorted(boards, key=str.lower):
@@ -410,7 +438,7 @@ is bob we will attempt to checkout bob-AVR'''
                     framesuffix = ""
                 else:
                     framesuffix = "-%s" % frame
-                if not self.checkout(vehicle, tag, board, frame, submodule_update=False):
+                if self.require_checkout and not self.checkout(vehicle, tag, board, frame, submodule_update=False):
                     msg = ("Failed checkout of %s %s %s %s" %
                            (vehicle, board, tag, frame,))
                     self.progress(msg)
@@ -509,18 +537,28 @@ is bob we will attempt to checkout bob-AVR'''
                         self.copyit(path, ddir, tag, vehicle)
                     except Exception as e:
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
+                        import traceback
+                        traceback.print_stack()
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
 
                 # record some history about this build
-                self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
+                try:
+                    self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
+                except:
+                    pass
 
         self.checkout(vehicle, "latest")
 
     def common_boards(self):
         '''returns list of boards common to all vehicles'''
         return AUTOBUILD_BOARDS
+
+    def filter_selected_boards(self, boards):
+        no_selected_boards = len(self.selected_boards) == 0
+        return [b for b in boards
+                if no_selected_boards or (b in self.selected_boards)]
 
     def AP_Periph_boards(self):
         return AP_PERIPH_BOARDS
@@ -660,7 +698,7 @@ is bob we will attempt to checkout bob-AVR'''
         now = datetime.datetime.now()
         self.progress(now)
 
-        if not self.dirty:
+        if not self.dirty and self.require_checkout:
             self.run_git(["checkout", "-f", "master"])
         githash = self.run_git(["rev-parse", "HEAD"])
         githash = githash.rstrip()
@@ -684,15 +722,24 @@ is bob we will attempt to checkout bob-AVR'''
         self.buildroot = os.path.join(os.environ.get("TMPDIR"),
                                       "binaries.build")
 
+
         for tag in self.tags:
             t0 = time.time()
-            self.build_arducopter(tag)
-            self.build_arduplane(tag)
-            self.build_rover(tag)
-            self.build_antennatracker(tag)
-            self.build_ardusub(tag)
-            self.build_AP_Periph(tag)
-            self.history.record_run(githash, tag, t0, time.time()-t0)
+            possible_builds = [
+                (ARDUCOPTER, lambda: self.build_arducopter(tag)),
+                (ARDUPLANE, lambda: self.build_arduplane(tag)),
+                (ROVER, lambda: self.build_rover(tag)),
+                (ANTENNATRACKER, lambda: self.build_antennatracker(tag)),
+                (ARDUSUB, lambda: self.build_ardusub(tag)),
+                (AP_PERIPH, lambda: self.build_AP_Periph(tag))
+            ]
+            for p, build_fn in possible_builds:
+                if p in self.projects:
+                    build_fn()
+            try:
+                self.history.record_run(githash, tag, t0, time.time()-t0)
+            except:
+                print('history failed')
 
         if os.path.exists(self.tmpdir):
             shutil.rmtree(self.tmpdir)
@@ -704,11 +751,38 @@ is bob we will attempt to checkout bob-AVR'''
         sys.exit(len(self.error_strings))
 
 
+def flatten_comma_opts(opts):
+    """
+    allow multiple options to be passed separated by comma, e.g `arduplane,arducoper`
+    (useful for manual build workflow)
+
+    >>> flatten_comma_opts(['a', 'b'])
+    ['a', 'b']
+    >>> flatten_comma_opts(['a', 'b,c,d'])
+    ['a', 'b', 'c', 'd']
+    """
+    return [extracted_opt
+            for opt_value in opts
+            for extracted_opt in opt_value.replace(' ', '').split(',')
+            if extracted_opt != '']
+
+
+def filter_valid_projects(projects):
+    return [p for p in projects if p in ALL_PROJECTS]
+
 if __name__ == '__main__':
     parser = optparse.OptionParser("build_binaries.py")
 
     parser.add_option("", "--tags", action="append", type="string",
                       default=[], help="tags to build")
+    parser.add_option("", "--boards", action="append", type="string",
+                      default=[], help="boards to build")
+    parser.add_option("", "--projects", action="append", type="string",
+                      default=[], help="projects to build")
+    parser.add_option("", "--skip-history", type="string",
+                      default=[], help="skip recording of build history?")
+    parser.add_option("", "--require-checkout", type="string",
+                      default='no', help="shall we do git checkout?") # FIXME!
     cmd_opts, cmd_args = parser.parse_args()
 
     tags = cmd_opts.tags
@@ -716,5 +790,12 @@ if __name__ == '__main__':
         # FIXME: wedge this defaulting into parser somehow
         tags = ["stable", "beta", "latest"]
 
-    bb = build_binaries(tags)
+    boards = flatten_comma_opts(cmd_opts.boards)
+    projects = flatten_comma_opts(cmd_opts.projects)
+    require_checkout = cmd_opts.require_checkout == "yes"
+    if len(projects) == 0:
+        projects = ALL_PROJECTS
+    projects = filter_valid_projects(projects)
+
+    bb = build_binaries(tags, boards=boards, projects=projects, require_checkout=require_checkout)
     bb.run()

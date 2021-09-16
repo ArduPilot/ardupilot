@@ -1,0 +1,72 @@
+name: Manual Firmware build (produce downloadable *_with_bl.hex ready to upload to FC)
+
+on:
+  workflow_dispatch:
+    inputs:
+      boards:
+        description: 'Boards to build (see `Tools/scripts/board_list.py` for a full list)'
+        required: true
+        default: 'MatekF405-Wing,MatekF405-CAN,MatekF765-Wing,MambaF405v2'
+      projects:
+        description: 'Boards to build (e.g. `arducopter,arduplane,rover,antennatracker,ardusub,AP_Periph` )'
+        required: true
+        default: 'arduplane'
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: 'macos-latest'
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Install Prerequisites
+        shell: bash
+        run: |
+          Tools/environment_install/install-prereqs-mac.sh -y
+          source ~/.bash_profile
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-manual-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-manual # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: manual build for ${{ github.event.inputs.boards }}
+        env:
+          BUILDLOGS: /tmp/buildlogs
+          BUILD_BINARIES_PATH: /tmp/ardu-build-dir
+        shell: bash
+        run: |
+          source ~/.bash_profile
+          PATH="/github/home/.local/bin:$PATH"
+          mkdir -p $BUILDLOGS/binaries
+          mkdir -p $BUILD_BINARIES_PATH
+          # latest tag would use newer compiled, but it's not installed here (linked)...
+          ./Tools/scripts/build_binaries.py --tags beta --boards ${{ github.event.inputs.boards }} --projects ${{ github.event.inputs.projects }} --skip-history yes --require-checkout no
+          tar -cvf /tmp/buildlogs/built_binaries.tar /tmp/buildlogs/binaries/Plane/
+          ccache -s
+          ccache -z
+      - name: 'Upload'
+        uses: actions/upload-artifact@v2
+        with:
+          name: arduplane build files tar of ${{ github.event.inputs.boards }}
+          path: /tmp/buildlogs/built_binaries.tar
