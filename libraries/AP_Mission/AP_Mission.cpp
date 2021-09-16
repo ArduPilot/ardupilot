@@ -2321,7 +2321,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
         }
         index = temp_cmd.index+1;
 
-        if (!(temp_cmd.content.location.lat == 0 && temp_cmd.content.location.lng == 0)) {
+        if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
             // add distance to running total
             float disttemp = prev_loc.get_distance(temp_cmd.content.location);
             tot_distance = tot_distance + disttemp;
@@ -2377,7 +2377,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
         }
         index = temp_cmd.index + 1;
 
-        if (!(temp_cmd.content.location.lat == 0 && temp_cmd.content.location.lng == 0)) {
+        if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
             ret = true;
             if (prev_loc.lat == 0 && prev_loc.lng == 0) {
                 // Need a valid previous location to do distance to leg calculation
