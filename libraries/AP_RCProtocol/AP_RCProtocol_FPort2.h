@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
-
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
