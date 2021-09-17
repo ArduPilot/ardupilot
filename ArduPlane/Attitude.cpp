@@ -464,16 +464,10 @@ void Plane::stabilize()
     float speed_scaler = get_speed_scaler();
 
     uint32_t now = AP_HAL::millis();
+    bool allow_stick_mixing = true;
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.tailsitter.in_vtol_transition(now)) {
-        /*
-          during transition to vtol in a tailsitter try to raise the
-          nose while keeping the wings level
-         */
-        uint32_t dt = now - quadplane.transition_start_ms;
-        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
-        nav_pitch_cd = constrain_float(quadplane.transition_initial_pitch + (quadplane.tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
-        nav_roll_cd = 0;
+    if (quadplane.available()) {
+        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd, allow_stick_mixing);
     }
 #endif
 
@@ -508,12 +502,12 @@ void Plane::stabilize()
         }
 #endif
     } else {
-        if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
+        if (allow_stick_mixing && g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
         }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        if (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize) {
+        if (allow_stick_mixing && (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize)) {
             stabilize_stick_mixing_direct();
         }
         stabilize_yaw(speed_scaler);
@@ -755,10 +749,7 @@ void Plane::update_load_factor(void)
     aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition() &&
-        (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
-        // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
-        roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+    if (quadplane.available() && quadplane.transition->set_FW_roll_limit(roll_limit_cd)) {
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         return;
     }
