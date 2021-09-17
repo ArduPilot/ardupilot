@@ -371,8 +371,10 @@ public:
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
     void draw(void) override;
 #endif
+#if HAL_GCS_ENABLED
     void handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link);
     void handle_read_msg(const mavlink_osd_param_show_config_t& packet, const GCS_MAVLINK& link);
+#endif
     // get a setting and associated metadata
     AP_OSD_ParamSetting* get_setting(uint8_t param_idx);
     // Save button co-ordinates
@@ -555,7 +557,10 @@ public:
     }
 #endif
     // handle OSD parameter configuration
+#if HAL_GCS_ENABLED
     void handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link);
+#endif
+
     // allow threads to lock against OSD update
     HAL_Semaphore &get_semaphore(void) {
         return _sem;
