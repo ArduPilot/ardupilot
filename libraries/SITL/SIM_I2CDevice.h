@@ -4,6 +4,7 @@
 
 #include <SITL/SIM_Aircraft.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_Common/Bitmask.h>
 
 namespace SITL {
 
