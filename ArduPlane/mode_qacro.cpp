@@ -6,7 +6,7 @@
 bool ModeQAcro::_enter()
 {
     quadplane.throttle_wait = false;
-    quadplane.transition_state = QuadPlane::TRANSITION_DONE;
+    quadplane.transition->force_transistion_complete();
     attitude_control->relax_attitude_controllers();
     return true;
 }
