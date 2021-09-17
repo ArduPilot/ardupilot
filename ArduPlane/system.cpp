@@ -448,7 +448,7 @@ int8_t Plane::throttle_percentage(void)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() && !quadplane.tailsitter.in_vtol_transition()) {
-        return quadplane.throttle_percentage();
+        return quadplane.motors->get_throttle_out() * 100.0;
     }
 #endif
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
