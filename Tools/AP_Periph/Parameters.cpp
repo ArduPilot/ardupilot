@@ -347,6 +347,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 #endif
 
+#ifdef ENABLE_SCRIPTING
+    // @Group: SCR_
+    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
+    GOBJECT(scripting, "SCR_", AP_Scripting),
+#endif
     AP_VAREND
 };
 
