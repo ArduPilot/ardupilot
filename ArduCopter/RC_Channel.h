@@ -42,6 +42,9 @@ public:
         return &obj_channels[chan];
     }
 
+    // returns true if throttle arming checks should be run
+    bool arming_check_throttle() const override;
+
 protected:
 
     int8_t flight_mode_channel_number() const override;
