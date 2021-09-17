@@ -79,6 +79,7 @@ class AP_GPS
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_UAVCAN;
+    friend class AP_GPS_FEMTO;
 
 public:
     AP_GPS();
@@ -121,6 +122,7 @@ public:
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+        GPS_TYPE_FEMTO = 24,
     };
 
     /// GPS status codes
