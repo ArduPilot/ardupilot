@@ -1,6 +1,7 @@
 #include "SIM_MS5611.h"
 
 #include <SITL/SITL.h>
+#include <AP_Baro/AP_Baro_SITL.h>
 
 #include <stdio.h>
 
@@ -111,4 +112,5 @@ void MS5611::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T);
     P_Pa = p;
     Temp_C = T - C_TO_KELVIN;
+    AP_Baro_SITL::temperature_adjustment(p, Temp_C);
 }
