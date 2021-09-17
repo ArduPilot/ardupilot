@@ -29,6 +29,8 @@
 #include <uavcan/protocol/NodeStatus.h>
 #include <uavcan/protocol/RestartNode.h>
 #include <uavcan/protocol/GetNodeInfo.h>
+#include <uavcan/equipment/indication/LightsCommand.h>
+#include <ardupilot/indication/NotifyState.h>
 #include "can.h"
 #include "bl_protocol.h"
 #include <drivers/stm32/canard_stm32.h>

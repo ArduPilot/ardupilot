@@ -16,7 +16,7 @@
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 #include <AP_CANManager/AP_CANManager.h>
-
+#include <AP_Scripting/AP_Scripting.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANIface.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -32,7 +32,7 @@
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
-    #ifndef HAL_PERIPH_ENABLE_RC_OUT
+    #if !defined(HAL_PERIPH_ENABLE_RC_OUT) && !defined(HAL_PERIPH_NOTIFY_WITHOUT_RCOUT)
         #error "HAL_PERIPH_ENABLE_NOTIFY requires HAL_PERIPH_ENABLE_RC_OUT"
     #endif
     #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
@@ -212,6 +212,21 @@ public:
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
+    uint64_t vehicle_state = 1; // default to initialisation
+    float yaw_earth;
+    uint32_t last_vehicle_state;
+
+    // Handled under LUA script to control LEDs
+    float get_yaw_earth() { return yaw_earth; }
+    uint32_t get_vehicle_state() { return vehicle_state; }
+#elif defined(ENABLE_SCRIPTING)
+    // create dummy methods for the case when the user doesn't want to use the notify object
+    float get_yaw_earth() { return 0.0; }
+    uint32_t get_vehicle_state() { return 0.0; }
+#endif
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
 #endif
 
 #if HAL_LOGGING_ENABLED
