@@ -122,7 +122,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && ((plane.quadplane.options & QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO) != 0) &&
-            !plane.control_mode->is_vtol_mode() && (plane.control_mode != &plane.mode_auto)) {
+            !plane.control_mode->is_vtol_mode() && (plane.control_mode != &plane.mode_auto) && (plane.control_mode != &plane.mode_guided)) {
         check_failed(display_failure,"not in Q mode");
         ret = false;
     }
