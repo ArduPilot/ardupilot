@@ -534,6 +534,7 @@ void AP_OSD::set_nav_info(NavInfo &navinfo)
 #endif // OSD_ENABLED
 
 // handle OSD parameter configuration
+#if HAL_GCS_ENABLED
 void AP_OSD::handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link)
 {
     bool found = false;
@@ -578,6 +579,7 @@ void AP_OSD::handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link)
         break;
     }
 }
+#endif
 
 AP_OSD *AP::osd() {
     return AP_OSD::get_singleton();
