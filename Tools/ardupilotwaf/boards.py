@@ -9,7 +9,7 @@ import fnmatch
 import waflib
 from waflib import Utils
 from waflib.Configure import conf
-
+import json
 _board_classes = {}
 _board = None
 
@@ -113,6 +113,15 @@ class Board:
         cfg.env.prepend_value('INCLUDES', [
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
+        if os.path.exists(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')):
+            # change c_cpp_properties.json configure the VSCode Intellisense env
+            c_cpp_properties = json.load(open(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')))
+            for config in c_cpp_properties['configurations']:
+                config['compileCommands'] = "${workspaceFolder}/build/%s/compile_commands.json" % self.get_name()
+            json.dump(c_cpp_properties, open(os.path.join(env.SRCROOT, './.vscode/c_cpp_properties.json'), 'w'), indent=4)
+            cfg.msg("Configured VSCode Intellisense", 'yes')
+        else:
+            cfg.msg("Configured VSCode Intellisense:", 'no', color='YELLOW')
 
     def cc_version_gte(self, cfg, want_major, want_minor):
         (major, minor, patchlevel) = cfg.env.CC_VERSION
@@ -596,6 +605,9 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
 
+    def get_name(self):
+        return self.__class__.__name__
+
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
@@ -824,6 +836,9 @@ class chibios(Board):
             fun(bld)
         super(chibios, self).pre_build(bld)
 
+    def get_name(self):
+        return self.name
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
@@ -864,6 +879,11 @@ class linux(Board):
             waflib.Options.commands.append('rsync')
             # Avoid infinite recursion
             bld.options.upload = False
+
+    def get_name(self):
+        # get name of class
+        return self.__class__.__name__
+
 
 class navigator(linux):
     toolchain = 'arm-linux-gnueabihf'
