@@ -58,6 +58,9 @@ public:
         return custom_defaults;
     }
 
+    /* Parse cpu set in the form 0,2 or 0-2 or 0:2*/
+    bool parse_cpu_set(const char *s, cpu_set_t *cpu_set) const;
+
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;
     void set_imu_target_temp(int8_t *target) override;

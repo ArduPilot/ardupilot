@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <signal.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -295,6 +296,8 @@ void _usage(void)
     printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
     printf("\t                   -M %s\n", AP_MODULE_DEFAULT_DIRECTORY);
 #endif
+    printf("\tcpu affinity       --cpu-affinity 0,3 or 0,3\n");
+    printf("\t                   -c 0,3  or range -c 1,3\n");
 }
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
@@ -319,11 +322,12 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"storage-directory",   true,  0, 's'},
         {"module-directory",    true,  0, 'M'},
         {"defaults",            true,  0, 'd'},
+        {"cpu-affinity",        true,  0, 'c'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:l:t:s:he:SM:",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:l:t:s:he:SM:c:",
                     options);
 
     /*
@@ -374,6 +378,13 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #endif
         case 'd':
             utilInstance.set_custom_defaults_path(gopt.optarg);
+            break;
+        case 'c':
+            cpu_set_t cpu_affinity;
+            if (!utilInstance.parse_cpu_set(gopt.optarg, &cpu_affinity)) {
+                exit(1);
+            }
+            Linux::Scheduler::from(scheduler)->set_cpu_affinity(cpu_affinity);
             break;
         case 'h':
             _usage();
