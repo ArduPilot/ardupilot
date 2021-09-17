@@ -2101,6 +2101,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
+#if HAL_GCS_ENABLED
 MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
@@ -2260,6 +2261,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 
     return result;
 }
+#endif
 
 /*
   see if gyro calibration should be performed
