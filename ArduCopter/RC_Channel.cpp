@@ -48,6 +48,16 @@ bool RC_Channels_Copter::has_valid_input() const
     return true;
 }
 
+// returns true if throttle arming checks should be run
+bool RC_Channels_Copter::arming_check_throttle() const {
+    if ((copter.g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
+        // center sprung throttle configured, dont run AP_Arming check
+        // Copter already checks this case in its own arming checks
+        return false;
+    }
+    return RC_Channels::arming_check_throttle();
+}
+
 RC_Channel * RC_Channels_Copter::get_arming_channel(void) const
 {
     return copter.channel_yaw;
