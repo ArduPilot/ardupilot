@@ -439,3 +439,10 @@ userdata AP_HAL::CANFrame method isErrorFrame boolean
 ap_object ScriptingCANBuffer depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t 0U UINT32_MAX
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
+
+
+include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
+singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
+singleton AP_Periph_FW alias periph
+singleton AP_Periph_FW method get_yaw_earth float
+singleton AP_Periph_FW method get_vehicle_state uint32_t
