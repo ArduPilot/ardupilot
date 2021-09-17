@@ -460,16 +460,12 @@
 //
 
 // Acro Mode
-#ifndef ACRO_RP_P
- # define ACRO_RP_P                 4.5f
-#endif
-
-#ifndef ACRO_YAW_P
- # define ACRO_YAW_P                4.5f
-#endif
-
 #ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000
+ # define ACRO_LEVEL_MAX_ANGLE      3000 // maximum lean angle in trainer mode measured in centidegrees
+#endif
+
+#ifndef ACRO_LEVEL_MAX_OVERSHOOT
+ # define ACRO_LEVEL_MAX_OVERSHOOT  1000 // maximum overshoot angle in trainer mode when full roll or pitch stick is held in centidegrees
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
@@ -481,11 +477,11 @@
 #endif
 
 #ifndef ACRO_RP_EXPO_DEFAULT
- #define ACRO_RP_EXPO_DEFAULT       0.3f
+ #define ACRO_RP_EXPO_DEFAULT       0.3f    // ACRO roll and pitch expo parameter default
 #endif
 
 #ifndef ACRO_Y_EXPO_DEFAULT
- #define ACRO_Y_EXPO_DEFAULT        0.0f
+ #define ACRO_Y_EXPO_DEFAULT        0.0f    // ACRO yaw expo parameter default
 #endif
 
 #ifndef ACRO_THR_MID_DEFAULT
@@ -493,16 +489,16 @@
 #endif
 
 #ifndef ACRO_RP_RATE_DEFAULT
- #define ACRO_RP_RATE_DEFAULT      90
+ #define ACRO_RP_RATE_DEFAULT      360      // ACRO roll and pitch rotation rate parameter default in deg/s
 #endif
 
 #ifndef ACRO_Y_RATE_DEFAULT
- #define ACRO_Y_RATE_DEFAULT       90
+ #define ACRO_Y_RATE_DEFAULT       202.5    // ACRO yaw rotation rate parameter default in deg/s
 #endif
 
 // RTL Mode
 #ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+ # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
 #ifndef RTL_ALT
@@ -609,10 +605,10 @@
  # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 #ifndef PILOT_Y_RATE_DEFAULT
- # define PILOT_Y_RATE_DEFAULT  90  // pilot controlled yaw rotation rate parameter default
+ # define PILOT_Y_RATE_DEFAULT  202.5   // yaw rotation rate parameter default in deg/s for all mode except ACRO
 #endif
 #ifndef PILOT_Y_EXPO_DEFAULT
- # define PILOT_Y_EXPO_DEFAULT  90  // pilot controlled yaw expo parameter default
+ # define PILOT_Y_EXPO_DEFAULT  0.0     // yaw expo parameter default for all mode except ACRO
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
