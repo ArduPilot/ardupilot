@@ -178,12 +178,25 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     update_nmea_out();
 #endif
 
-    EKFType active = active_EKF_type();
+    EKFType active = _active_EKF_type();
+
     if (active != last_active_ekf_type) {
+        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+             _vehicle_class == AHRS_VEHICLE_GROUND) &&
+            last_active_ekf_type == EKFType::NONE) {
+            const uint32_t now = AP_HAL::millis();
+            const uint32_t min_switch_ms = 5000;
+            if (now - last_DCM_switch_ms < min_switch_ms) {
+                // don't switch too rapidly between state estimators
+                return;
+            }
+        }
         last_active_ekf_type = active;
+        current_active_ekf_type = active;
         const char *shortname = "???";
         switch ((EKFType)active) {
         case EKFType::NONE:
+            last_DCM_switch_ms = AP_HAL::millis();
             shortname = "DCM";
             break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1487,7 +1500,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::ekf_type(void) const
 #endif
 }
 
-AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
+AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::_active_EKF_type(void) const
 {
     EKFType ret = EKFType::NONE;
 

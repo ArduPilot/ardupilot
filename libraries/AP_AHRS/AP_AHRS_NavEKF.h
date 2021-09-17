@@ -343,7 +343,10 @@ private:
         ,EXTERNAL = 11
 #endif
     };
-    EKFType active_EKF_type(void) const;
+    EKFType _active_EKF_type(void) const;
+    EKFType active_EKF_type(void) const {
+        return current_active_ekf_type;
+    }
 
     // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
     // returns false if no secondary (i.e. only using DCM)
@@ -389,7 +392,9 @@ private:
 
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
+    EKFType current_active_ekf_type;
     EKFType last_active_ekf_type;
+    uint32_t last_DCM_switch_ms;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
