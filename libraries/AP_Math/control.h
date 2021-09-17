@@ -115,3 +115,8 @@ float stopping_distance(float velocity, float p, float accel_max);
 // calculate the maximum acceleration or velocity in a given direction
 // based on horizontal and vertical limits.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg);
+
+// calculate the expo function on the normalised input
+// input must be in the range of -1 to 1
+// expo should be less than 1.0 but limited to be less than 0.95
+float input_expo(float input, float expo);
