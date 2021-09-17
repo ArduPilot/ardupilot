@@ -213,6 +213,9 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
+#ifdef ENABLE_SCRIPTING
+    scripting.init();
+#endif
     start_ms = AP_HAL::native_millis();
 }
 
