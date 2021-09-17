@@ -15,17 +15,21 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include "transition.h"
+
 class QuadPlane;
 class AP_MotorsMulticopter;
+class Tiltrotor_Transition;
 class Tiltrotor
 {
 friend class QuadPlane;
 friend class Plane;
+friend class Tiltrotor_Transition;
 public:
 
     Tiltrotor(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors);
 
-    bool enabled() const { return enable > 0;}
+    bool enabled() const { return (enable > 0) && setup_complete;}
 
     void setup();
 
@@ -81,8 +85,30 @@ public:
 
 private:
 
+    bool setup_complete;
+
     // refences for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
+
+    Tiltrotor_Transition* transition;
+
+};
+
+// Transition for separate left thrust quadplanes
+class Tiltrotor_Transition : public SLT_Transition
+{
+friend class Tiltrotor;
+public:
+
+    Tiltrotor_Transition(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors, Tiltrotor& _tiltrotor):SLT_Transition(_quadplane, _motors), tiltrotor(_tiltrotor) {};
+
+    bool update_yaw_target(float& yaw_target_cd) override;
+
+    bool show_vtol_view() const override;
+
+private:
+
+    Tiltrotor& tiltrotor;
 
 };
