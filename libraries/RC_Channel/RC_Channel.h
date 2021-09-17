@@ -477,7 +477,7 @@ public:
         return _options & uint32_t(Option::LOG_DATA);
     }
     
-    bool arming_check_throttle() const {
+    virtual bool arming_check_throttle() const {
         return _options & uint32_t(Option::ARMING_CHECK_THROTTLE);
     }
 
