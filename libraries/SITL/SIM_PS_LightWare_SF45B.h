@@ -44,6 +44,7 @@ rc 2 1450
 #include "SIM_PS_LightWare.h"
 
 #include <AP_Math/crc.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 namespace SITL {
 
