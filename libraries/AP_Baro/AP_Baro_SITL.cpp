@@ -28,18 +28,22 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 // adjust for board temperature warmup on start-up
 void AP_Baro_SITL::temperature_adjustment(float &p, float &T)
 {
+    const auto *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
     const float tsec = AP_HAL::millis() * 0.001f;
-    const float T_sensor = T + _sitl->temp_board_offset;
-    const float tconst = _sitl->temp_tconst;
+    const float T_sensor = T + sitl->temp_board_offset;
+    const float tconst = sitl->temp_tconst;
     if (tsec < 23 * tconst) { // time which past the equation below equals T_sensor within approx. 1E-9
-        const float T0 = _sitl->temp_start;
+        const float T0 = sitl->temp_start;
         T = T_sensor - (T_sensor - T0) * expf(-tsec / tconst);
     }
     else {
         T = T_sensor;
     }
 
-    const float baro_factor = _sitl->temp_baro_factor;
+    const float baro_factor = sitl->temp_baro_factor;
     const float Tzero = 30.0f;  // start baro adjustment at 30C
     if (is_positive(baro_factor)) {
         // this produces a pressure change with temperature that
