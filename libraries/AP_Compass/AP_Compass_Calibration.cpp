@@ -3,6 +3,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "AP_Compass.h"
 
