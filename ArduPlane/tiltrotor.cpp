@@ -92,7 +92,7 @@ void Tiltrotor::setup()
         enable.set_and_save(1);
     }
 
-    if (!enabled()) {
+    if (enable <= 0) {
         return;
     }
 
@@ -115,6 +115,14 @@ void Tiltrotor::setup()
             SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearRight, 1000);
         }
     }
+
+    transition = new Tiltrotor_Transition(quadplane, motors, *this);
+    if (!transition) {
+        AP_BoardConfig::allocation_error("tiltrotor transition");
+    }
+    quadplane.transition = transition;
+
+    setup_complete = true;
 }
 
 /*
@@ -248,7 +256,7 @@ void Tiltrotor::continuous_update(void)
     }
 
     if (quadplane.assisted_flight &&
-        quadplane.transition_state >= QuadPlane::TRANSITION_TIMER) {
+        transition->transition_state >= Tiltrotor_Transition::TRANSITION_TIMER) {
         // we are transitioning to fixed wing - tilt the motors all
         // the way forward
         slew(1);
@@ -600,4 +608,30 @@ void Tiltrotor::update_yaw_target(void)
     }
     transition_yaw_set_ms = now;
 }
+
+bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
+{
+    if (!(tiltrotor.is_vectored() &&
+        transition_state <= TRANSITION_TIMER)) {
+        return false;
+    }
+    tiltrotor.update_yaw_target();
+    yaw_target_cd = tiltrotor.transition_yaw_cd;
+    return true;
+}
+
+// return true if we should show VTOL view
+bool Tiltrotor_Transition::show_vtol_view() const
+{
+    bool show_vtol = quadplane.in_vtol_mode();
+
+    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER) {
+        // we use multirotor controls during fwd transition for
+        // vectored yaw vehicles
+        return true;
+    }
+
+    return show_vtol;
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
