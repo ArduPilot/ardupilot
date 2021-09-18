@@ -293,7 +293,7 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
                 mast_rotation_angle = 90.0f;
                 if (wind_dir_apparent_abs > 135.0f) {
                     // wind is almost directly behind, keep wing on current tack
-                    if (SRV_Channels::get_output_scaled(SRV_Channel::k_mast_rotation) < 0) {
+                    if (is_negative(SRV_Channels::get_output_scaled(SRV_Channel::k_mast_rotation))) {
                         mast_rotation_angle *= -1.0f;
                     }
                 } else {

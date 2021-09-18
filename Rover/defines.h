@@ -11,7 +11,7 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-#define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
+#define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
