@@ -340,7 +340,7 @@ void Plane::trim_radio()
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_left);
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_right);
     
-    if (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) == 0) {
+    if (is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_rudder))) {
         // trim differential spoilers if no rudder input
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft1);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft2);
@@ -348,8 +348,8 @@ void Plane::trim_radio()
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
-    if (SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) == 0 &&
-        SRV_Channels::get_output_scaled(SRV_Channel::k_flap) == 0) {
+    if (is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)) &&
+        is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap))) {
         // trim flaperons if no flap input
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_left);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_right);
