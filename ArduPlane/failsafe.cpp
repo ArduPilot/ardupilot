@@ -63,10 +63,10 @@ void Plane::failsafe_check(void)
         // pass RC inputs to outputs every 20ms
         RC_Channels::clear_overrides();
 
-        int16_t roll = roll_in_expo(false);
-        int16_t pitch = pitch_in_expo(false);
-        int16_t throttle = get_throttle_input(true);
-        int16_t rudder = rudder_in_expo(false);
+        float roll = roll_in_expo(false);
+        float pitch = pitch_in_expo(false);
+        float throttle = get_throttle_input(true);
+        float rudder = rudder_in_expo(false);
 
         if (!hal.util->get_soft_armed()) {
             throttle = 0;
@@ -95,8 +95,8 @@ void Plane::failsafe_check(void)
         // setup secondary output channels that do have
         // corresponding input channels
         SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0.0);
 
         // setup flaperons
         flaperon_update(0);

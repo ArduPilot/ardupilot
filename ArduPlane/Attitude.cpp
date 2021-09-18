@@ -225,11 +225,11 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == &mode_training) {
         return;
     }
-    int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     aileron = channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
 
-    int16_t elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+    float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
     elevator = channel_pitch->stick_mixing(elevator);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
 }
@@ -379,8 +379,8 @@ void Plane::stabilize_acro(float speed_scaler)
 {
     const float rexpo = roll_in_expo(true);
     const float pexpo = pitch_in_expo(true);
-    float roll_rate = (rexpo/float(SERVO_MAX)) * g.acro_roll_rate;
-    float pitch_rate = (pexpo/float(SERVO_MAX)) * g.acro_pitch_rate;
+    float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
+    float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
 
     /*
       check for special roll handling near the pitch poles
@@ -545,7 +545,7 @@ void Plane::calc_throttle()
         // user has asked for zero throttle - this may be done by a
         // mission which wants to turn off the engine for a parachute
         // landing
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         return;
     }
 
