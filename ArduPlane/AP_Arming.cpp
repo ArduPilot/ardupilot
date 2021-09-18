@@ -174,7 +174,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
         }
 
         // if throttle is not down, then pilot cannot rudder arm/disarm
-        if (plane.get_throttle_input() != 0){
+        if (!is_zero(plane.get_throttle_input())){
             check_failed(true, "Non-zero throttle");
             return false;
         }
