@@ -118,17 +118,17 @@ void Plane::stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    const int32_t roll_out = stabilize_roll_get_roll_out(speed_scaler);
+    const float roll_out = stabilize_roll_get_roll_out(speed_scaler);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
-int32_t Plane::stabilize_roll_get_roll_out(float speed_scaler)
+float Plane::stabilize_roll_get_roll_out(float speed_scaler)
 {
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
         const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
-        const int32_t roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        const float roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
         /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
            opposing integrators balancing between the two controllers
         */
@@ -159,11 +159,11 @@ void Plane::stabilize_pitch(float speed_scaler)
         return;
     }
 
-    const int32_t pitch_out = stabilize_pitch_get_pitch_out(speed_scaler);
+    const float pitch_out = stabilize_pitch_get_pitch_out(speed_scaler);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
-int32_t Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
+float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
 {
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
@@ -549,7 +549,7 @@ void Plane::calc_throttle()
         return;
     }
 
-    int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
+    float commanded_throttle = SpdHgt_Controller->get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
     if (control_mode->is_guided_mode() &&
