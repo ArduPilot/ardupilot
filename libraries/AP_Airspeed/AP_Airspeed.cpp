@@ -687,7 +687,7 @@ bool AP_Airspeed::use(uint8_t i) const
         return false;
     }
 #ifndef HAL_BUILD_AP_PERIPH
-    if (param[i].use == 2 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0) {
+    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
         // special case for gliders with airspeed sensors behind the
         // propeller. Allow airspeed to be disabled when throttle is
         // running
