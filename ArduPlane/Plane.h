@@ -851,9 +851,9 @@ private:
     float get_speed_scaler(void);
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
-    int32_t stabilize_roll_get_roll_out(float speed_scaler);
+    float stabilize_roll_get_roll_out(float speed_scaler);
     void stabilize_pitch(float speed_scaler);
-    int32_t stabilize_pitch_get_pitch_out(float speed_scaler);
+    float stabilize_pitch_get_pitch_out(float speed_scaler);
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
