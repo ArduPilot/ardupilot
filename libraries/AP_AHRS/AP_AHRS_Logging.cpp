@@ -5,6 +5,15 @@
 #include <AC_AttitudeControl/AC_PosControl.h>
 
 
+#include <AP_HAL/utility/Socket.h>  //UDP header file used for streaming to MATLAB
+
+//ADP Socket
+class streaming_example
+{
+  private:
+  SocketAPM   sock{true};
+};
+
 // Write an AHRS2 packet
 void AP_AHRS_Backend::Write_AHRS2() const
 {
@@ -29,6 +38,9 @@ void AP_AHRS_Backend::Write_AHRS2() const
         q4    : quat.q4,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+    sock.sendto(&log_AHRS, sideof(log_AHRS), 127.0.0.1, 9002) //Send to MATLAB
+
 }
 
 // Write AOA and SSA
