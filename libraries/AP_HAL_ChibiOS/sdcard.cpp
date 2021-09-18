@@ -160,7 +160,7 @@ bool sdcard_retry(void)
     if (!sdcard_running) {
         if (sdcard_init()) {
             // create APM directory
-            AP::FS().mkdir("/APM");
+            AP::FS().mkdir(HAL_BOARD_STORAGE_DIRECTORY);
         }
     }
     return sdcard_running;
