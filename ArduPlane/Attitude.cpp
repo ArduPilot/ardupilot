@@ -520,7 +520,7 @@ void Plane::stabilize()
     /*
       see if we should zero the attitude controller integrators. 
      */
-    if (get_throttle_input() == 0 &&
+    if (is_zero(get_throttle_input()) &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
         ahrs.groundspeed() < 3) {
@@ -616,7 +616,7 @@ void Plane::calc_nav_yaw_course(void)
 void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
-        get_throttle_input() == 0 &&
+        is_zero(get_throttle_input()) &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         // manual rudder control while still
