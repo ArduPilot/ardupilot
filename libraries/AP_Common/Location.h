@@ -63,9 +63,14 @@ public:
     // return distance in meters between two locations
     ftype get_distance(const struct Location &loc2) const;
 
+    // return the altitude difference in meters taking into account alt frame.
+    bool get_alt_distance(const struct Location &loc2, float &distance) const WARN_IF_UNUSED;
+
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+    // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
+    Vector3f get_distance_NED_alt_frame(const Location &loc2) const;
 
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
