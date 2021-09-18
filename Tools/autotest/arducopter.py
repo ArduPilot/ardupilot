@@ -7190,7 +7190,7 @@ class AutoTestCopter(AutoTest):
             0,  # p6
             0,  # p7
         )
-        self.wait_heading(target, minimum_duration=2)
+        self.wait_heading(target, minimum_duration=2, timeout=50)
 
         degsecond = 2
 
