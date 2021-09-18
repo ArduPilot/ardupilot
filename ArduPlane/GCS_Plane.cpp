@@ -84,6 +84,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     case Mode::Number::TAKEOFF:
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QRTL:
+    case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::THERMAL:
         rate_controlled = true;
