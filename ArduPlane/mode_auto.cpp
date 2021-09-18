@@ -82,7 +82,7 @@ void ModeAuto::update()
 
         if (plane.landing.is_throttle_suppressed()) {
             // if landing is considered complete throttle is never allowed, regardless of landing type
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         } else {
             plane.calc_throttle();
         }
