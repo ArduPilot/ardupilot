@@ -400,7 +400,7 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;
     } else {
-        SRV_Channels::set_output_scaled(_aux_fn, (uint16_t) (servo_out * 1000));
+        SRV_Channels::set_output_scaled(_aux_fn, servo_out * 1000);
     }
 }
 
