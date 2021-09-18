@@ -117,7 +117,7 @@ public:
     }
 
     // return desired forward throttle percentage
-    int8_t forward_throttle_pct();
+    float forward_throttle_pct();
     float get_weathervane_yaw_rate_cds(void);
 
     // see if we are flying from vtol point of view
@@ -356,7 +356,7 @@ private:
         AP_Float gain;
         float integrator;
         uint32_t last_ms;
-        int8_t last_pct;
+        float last_pct;
     } vel_forward;
 
     struct {
