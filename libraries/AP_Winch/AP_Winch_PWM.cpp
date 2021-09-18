@@ -58,7 +58,7 @@ void AP_Winch_PWM::control_winch()
     const float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
 
     // use linear interpolation to calculate output to move winch at desired rate
-    const int16_t scaled_output = linear_interpolate(-1000, 1000, rate_limited, -config.rate_max, config.rate_max);
+    const float scaled_output = linear_interpolate(-1000, 1000, rate_limited, -config.rate_max, config.rate_max);
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
 
     // update distance estimate assuming winch will move exactly as requested

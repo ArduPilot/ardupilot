@@ -214,7 +214,7 @@ void AP_Winch_Daiwa::control_winch()
     const float rate_limited = get_rate_limited_by_accel(config.rate_desired, dt);
 
     // use linear interpolation to calculate output to move winch at desired rate
-    int16_t scaled_output = 0;
+    float scaled_output = 0;
     if (!is_zero(rate_limited)) {
         scaled_output = linear_interpolate(output_dz, 1000, fabsf(rate_limited), 0, config.rate_max) * (is_positive(rate_limited) ? 1.0f : -1.0f);
     }
