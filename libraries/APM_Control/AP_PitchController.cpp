@@ -144,7 +144,7 @@ AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
 /*
   AC_PID based rate controller
 */
-int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
+float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
     const float dt = AP::scheduler().get_loop_period_s();
 
@@ -209,7 +209,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     
     // output is scaled to notional centidegrees of deflection
-    return constrain_int32(out * 100, -4500, 4500);
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 /*
@@ -222,7 +222,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
  4) minimum FBW airspeed (metres/sec)
  5) maximum FBW airspeed (metres/sec)
 */
-int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
+float AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
     float aspeed;
 	if (!AP::ahrs().airspeed_estimate(aspeed)) {
@@ -282,7 +282,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
