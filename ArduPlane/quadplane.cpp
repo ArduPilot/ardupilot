@@ -3081,7 +3081,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
   reduces the need for down pitch which reduces load on the vertical
   lift motors.
  */
-int8_t QuadPlane::forward_throttle_pct()
+float QuadPlane::forward_throttle_pct()
 {
     /*
       Unless an RC channel is assigned for manual forward throttle control,
@@ -3191,7 +3191,7 @@ int8_t QuadPlane::forward_throttle_pct()
         vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
                                                   height_above_ground, alt_cutoff, alt_cutoff+2);
     }
-    if (vel_forward.last_pct == 0) {
+    if (is_zero(vel_forward.last_pct)) {
         // if the percent is 0 then decay the integrator
         vel_forward.integrator *= 0.95f;
     }
