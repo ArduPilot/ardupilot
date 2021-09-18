@@ -522,7 +522,7 @@ SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t fun
     return &channels[chan];
 }
 
-void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function, int16_t value)
+void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value)
 {
     if (function < SRV_Channel::k_nr_aux_servo_functions) {
         functions[function].output_scaled = value;
@@ -530,7 +530,7 @@ void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function,
     }
 }
 
-int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t function)
+float SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t function)
 {
     if (function < SRV_Channel::k_nr_aux_servo_functions) {
         return functions[function].output_scaled;
