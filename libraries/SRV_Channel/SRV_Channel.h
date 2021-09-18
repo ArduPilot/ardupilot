@@ -285,13 +285,13 @@ private:
     uint16_t high_out;
 
     // convert a 0..range_max to a pwm
-    uint16_t pwm_from_range(int16_t scaled_value) const;
+    uint16_t pwm_from_range(float scaled_value) const;
 
     // convert a -angle_max..angle_max to a pwm
-    uint16_t pwm_from_angle(int16_t scaled_value) const;
+    uint16_t pwm_from_angle(float scaled_value) const;
 
     // convert a scaled output to a pwm value
-    void calc_pwm(int16_t output_scaled);
+    void calc_pwm(float output_scaled);
 
     // output value based on function
     void output_ch(void);
@@ -351,10 +351,10 @@ public:
 
     // set output value for a function channel as a scaled value. This
     // calls calc_pwm() to also set the pwm value
-    static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, int16_t value);
+    static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get scaled output for the given function type.
-    static int16_t get_output_scaled(SRV_Channel::Aux_servo_function_t function);
+    static float get_output_scaled(SRV_Channel::Aux_servo_function_t function);
 
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
@@ -593,7 +593,7 @@ private:
         SRV_Channel::servo_mask_t channel_mask;
 
         // scaled output for this function
-        int16_t output_scaled;
+        float output_scaled;
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;

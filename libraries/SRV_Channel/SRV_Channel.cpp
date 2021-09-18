@@ -84,33 +84,33 @@ SRV_Channel::SRV_Channel(void)
 }
 
 // convert a 0..range_max to a pwm
-uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 {
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    scaled_value = constrain_int16(scaled_value, 0, high_out);
+    scaled_value = constrain_float(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
-    return servo_min + ((int32_t)scaled_value * (int32_t)(servo_max - servo_min)) / (int32_t)high_out;
+    return servo_min + uint16_t( (scaled_value * (float)(servo_max - servo_min)) / (float)high_out );
 }
 
 // convert a -angle_max..angle_max to a pwm
-uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
     if (reversed) {
         scaled_value = -scaled_value;
     }
-    scaled_value = constrain_int16(scaled_value, -high_out, high_out);
+    scaled_value = constrain_float(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
-        return servo_trim + ((int32_t)scaled_value * (int32_t)(servo_max - servo_trim)) / (int32_t)high_out;
+        return servo_trim + uint16_t( (scaled_value * (float)(servo_max - servo_trim)) / (float)high_out);
     } else {
-        return servo_trim - (-(int32_t)scaled_value * (int32_t)(servo_trim - servo_min)) / (int32_t)high_out;
+        return servo_trim - uint16_t( (-scaled_value * (float)(servo_trim - servo_min)) / (float)high_out);
     }
 }
 
-void SRV_Channel::calc_pwm(int16_t output_scaled)
+void SRV_Channel::calc_pwm(float output_scaled)
 {
     if (have_pwm_mask & (1U<<ch_num)) {
         // Note that this allows a set_output_pwm call to override E-Stop!!
@@ -121,7 +121,7 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     // check for E - stop
     bool force = false;
     if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
-        output_scaled = 0;
+        output_scaled = 0.0;
         force = true;
     }
 
