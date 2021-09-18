@@ -369,14 +369,14 @@ bool RC_Channel::has_override() const
   controller as it increases the influence of the users stick input,
   allowing the user full deflection if needed
  */
-int16_t RC_Channel::stick_mixing(const int16_t servo_in)
+float RC_Channel::stick_mixing(const float servo_in)
 {
     float ch_inf = (float)(radio_in - radio_trim);
     ch_inf = fabsf(ch_inf);
     ch_inf = MIN(ch_inf, 400.0f);
     ch_inf = ((400.0f - ch_inf) / 400.0f);
 
-    int16_t servo_out = servo_in;
+    float servo_out = servo_in;
     servo_out *= ch_inf;
     servo_out += control_in;
 
