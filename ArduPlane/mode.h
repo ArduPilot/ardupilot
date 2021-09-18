@@ -51,6 +51,9 @@ public:
         QACRO         = 23,
 #endif
         THERMAL       = 24,
+#if HAL_QUADPLANE_ENABLED
+        LOITER_ALT_QLAND = 25,
+#endif
     };
 
     // Constructor
@@ -268,6 +271,26 @@ protected:
 
     bool _enter() override;
 };
+
+#if HAL_QUADPLANE_ENABLED
+class ModeLoiterAltQLand : public ModeLoiter
+{
+public:
+
+    Number mode_number() const override { return Number::LOITER_ALT_QLAND; }
+    const char *name() const override { return "Loiter to QLAND"; }
+    const char *name4() const override { return "L2QL"; }
+
+protected:
+    bool _enter() override;
+
+    void navigate() override;
+
+private:
+    void switch_qland();
+
+};
+#endif // HAL_QUADPLANE_ENABLED
 
 class ModeManual : public Mode
 {
