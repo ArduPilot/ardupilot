@@ -21,9 +21,8 @@
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
-#include "AP_GPS_BinaryCRCMessageParser.h"
 
-class AP_GPS_NOVA : public AP_GPS_Backend, public AP_GPS_BinaryCRCMessageParser
+class AP_GPS_NOVA : public AP_GPS_Backend
 {
 public:
     AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
@@ -37,20 +36,14 @@ public:
 
 private:
 
-    // bool parse(uint8_t temp);
-    // bool process_message();
-    // uint32_t CRC32Value(uint32_t icrc);
-    // uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
+    bool parse(uint8_t temp);
+    bool process_message();
+    uint32_t CRC32Value(uint32_t icrc);
+    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     static const uint8_t NOVA_PREAMBLE1 = 0xaa;
     static const uint8_t NOVA_PREAMBLE2 = 0x44;
     static const uint8_t NOVA_PREAMBLE3 = 0x12;
-
-    virtual uint8_t get_message_header_length_from_header_buff() override {return nova_msg.header.nova_headeru.headerlength;}
-    virtual uint16_t get_message_body_length_from_header_buff() override {return nova_msg.header.nova_headeru.messagelength;}
-    virtual uint8_t *get_message_header_buff() override {return (uint8_t *)&nova_msg.header;}
-    virtual uint8_t *get_message_body_buff() override {return (uint8_t *)&nova_msg.data;}
-    virtual bool process_message() override;
 
     // do we have new position information?
     bool            _new_position:1;
@@ -63,7 +56,7 @@ private:
     uint32_t _init_blob_time = 0;
     static const char* const _initialisation_blob[6];
    
-    // uint32_t crc_error_counter = 0;
+    uint32_t crc_error_counter = 0;
 
     struct PACKED nova_header
     {
@@ -162,23 +155,23 @@ private:
 
     struct PACKED nova_msg_parser
     {
-        // enum
-        // {
-        //     PREAMBLE1 = 0,
-        //     PREAMBLE2,
-        //     PREAMBLE3,
-        //     HEADERLENGTH,
-        //     HEADERDATA,
-        //     DATA,
-        //     CRC1,
-        //     CRC2,
-        //     CRC3,
-        //     CRC4,
-        // } nova_state;
+        enum
+        {
+            PREAMBLE1 = 0,
+            PREAMBLE2,
+            PREAMBLE3,
+            HEADERLENGTH,
+            HEADERDATA,
+            DATA,
+            CRC1,
+            CRC2,
+            CRC3,
+            CRC4,
+        } nova_state;
         
         msgbuffer data;
-        // uint32_t crc;
+        uint32_t crc;
         msgheader header;
-        // uint16_t read;
+        uint16_t read;
     } nova_msg;
 };

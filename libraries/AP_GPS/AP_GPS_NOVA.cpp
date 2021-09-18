@@ -40,10 +40,9 @@ do {                                            \
 
 AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    AP_GPS_BinaryCRCMessageParser({NOVA_PREAMBLE1, NOVA_PREAMBLE2, NOVA_PREAMBLE3},4,sizeof(nova_msg.header),sizeof(nova_msg.data))
+    AP_GPS_Backend(_gps, _state, _port)
 {
-    // nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+    nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
     const char *init_str = _initialisation_blob[0];
     const char *init_str1 = _initialisation_blob[1];
@@ -87,107 +86,107 @@ AP_GPS_NOVA::read(void)
     return ret;
 }
 
-// bool
-// AP_GPS_NOVA::parse(uint8_t temp)
-// {
-//     switch (nova_msg.nova_state)
-//     {
-//         default:
-//         case nova_msg_parser::PREAMBLE1:
-//             if (temp == NOVA_PREAMBLE1)
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE2;
-//             nova_msg.read = 0;
-//             break;
-//         case nova_msg_parser::PREAMBLE2:
-//             if (temp == NOVA_PREAMBLE2)
-//             {
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE3;
-//             }
-//             else
-//             {
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
-//             }
-//             break;
-//         case nova_msg_parser::PREAMBLE3:
-//             if (temp == NOVA_PREAMBLE3)
-//             {
-//                 nova_msg.nova_state = nova_msg_parser::HEADERLENGTH;
-//             }
-//             else
-//             {
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
-//             }
-//             break;
-//         case nova_msg_parser::HEADERLENGTH:
-//             Debug("NOVA HEADERLENGTH\n");
-//             nova_msg.header.data[0] = NOVA_PREAMBLE1;
-//             nova_msg.header.data[1] = NOVA_PREAMBLE2;
-//             nova_msg.header.data[2] = NOVA_PREAMBLE3;
-//             nova_msg.header.data[3] = temp;
-//             nova_msg.header.nova_headeru.headerlength = temp;
-//             nova_msg.nova_state = nova_msg_parser::HEADERDATA;
-//             nova_msg.read = 4;
-//             break;
-//         case nova_msg_parser::HEADERDATA:
-//             if (nova_msg.read >= sizeof(nova_msg.header.data)) {
-//                 Debug("parse header overflow length=%u\n", (unsigned)nova_msg.read);
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
-//                 break;
-//             }
-//             nova_msg.header.data[nova_msg.read] = temp;
-//             nova_msg.read++;
-//             if (nova_msg.read >= nova_msg.header.nova_headeru.headerlength)
-//             {
-//                 nova_msg.nova_state = nova_msg_parser::DATA;
-//             }
-//             break;
-//         case nova_msg_parser::DATA:
-//             if (nova_msg.read >= sizeof(nova_msg.data)) {
-//                 Debug("parse data overflow length=%u msglength=%u\n", (unsigned)nova_msg.read,nova_msg.header.nova_headeru.messagelength);
-//                 nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
-//                 break;
-//             }
-//             nova_msg.data.bytes[nova_msg.read - nova_msg.header.nova_headeru.headerlength] = temp;
-//             nova_msg.read++;
-//             if (nova_msg.read >= (nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength))
-//             {
-//                 Debug("NOVA DATA exit\n");
-//                 nova_msg.nova_state = nova_msg_parser::CRC1;
-//             }
-//             break;
-//         case nova_msg_parser::CRC1:
-//             nova_msg.crc = (uint32_t) (temp << 0);
-//             nova_msg.nova_state = nova_msg_parser::CRC2;
-//             break;
-//         case nova_msg_parser::CRC2:
-//             nova_msg.crc += (uint32_t) (temp << 8);
-//             nova_msg.nova_state = nova_msg_parser::CRC3;
-//             break;
-//         case nova_msg_parser::CRC3:
-//             nova_msg.crc += (uint32_t) (temp << 16);
-//             nova_msg.nova_state = nova_msg_parser::CRC4;
-//             break;
-//         case nova_msg_parser::CRC4:
-//             nova_msg.crc += (uint32_t) (temp << 24);
-//             nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+bool
+AP_GPS_NOVA::parse(uint8_t temp)
+{
+    switch (nova_msg.nova_state)
+    {
+        default:
+        case nova_msg_parser::PREAMBLE1:
+            if (temp == NOVA_PREAMBLE1)
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE2;
+            nova_msg.read = 0;
+            break;
+        case nova_msg_parser::PREAMBLE2:
+            if (temp == NOVA_PREAMBLE2)
+            {
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE3;
+            }
+            else
+            {
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+            }
+            break;
+        case nova_msg_parser::PREAMBLE3:
+            if (temp == NOVA_PREAMBLE3)
+            {
+                nova_msg.nova_state = nova_msg_parser::HEADERLENGTH;
+            }
+            else
+            {
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+            }
+            break;
+        case nova_msg_parser::HEADERLENGTH:
+            Debug("NOVA HEADERLENGTH\n");
+            nova_msg.header.data[0] = NOVA_PREAMBLE1;
+            nova_msg.header.data[1] = NOVA_PREAMBLE2;
+            nova_msg.header.data[2] = NOVA_PREAMBLE3;
+            nova_msg.header.data[3] = temp;
+            nova_msg.header.nova_headeru.headerlength = temp;
+            nova_msg.nova_state = nova_msg_parser::HEADERDATA;
+            nova_msg.read = 4;
+            break;
+        case nova_msg_parser::HEADERDATA:
+            if (nova_msg.read >= sizeof(nova_msg.header.data)) {
+                Debug("parse header overflow length=%u\n", (unsigned)nova_msg.read);
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+                break;
+            }
+            nova_msg.header.data[nova_msg.read] = temp;
+            nova_msg.read++;
+            if (nova_msg.read >= nova_msg.header.nova_headeru.headerlength)
+            {
+                nova_msg.nova_state = nova_msg_parser::DATA;
+            }
+            break;
+        case nova_msg_parser::DATA:
+            if (nova_msg.read >= sizeof(nova_msg.data)) {
+                Debug("parse data overflow length=%u msglength=%u\n", (unsigned)nova_msg.read,nova_msg.header.nova_headeru.messagelength);
+                nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
+                break;
+            }
+            nova_msg.data.bytes[nova_msg.read - nova_msg.header.nova_headeru.headerlength] = temp;
+            nova_msg.read++;
+            if (nova_msg.read >= (nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength))
+            {
+                Debug("NOVA DATA exit\n");
+                nova_msg.nova_state = nova_msg_parser::CRC1;
+            }
+            break;
+        case nova_msg_parser::CRC1:
+            nova_msg.crc = (uint32_t) (temp << 0);
+            nova_msg.nova_state = nova_msg_parser::CRC2;
+            break;
+        case nova_msg_parser::CRC2:
+            nova_msg.crc += (uint32_t) (temp << 8);
+            nova_msg.nova_state = nova_msg_parser::CRC3;
+            break;
+        case nova_msg_parser::CRC3:
+            nova_msg.crc += (uint32_t) (temp << 16);
+            nova_msg.nova_state = nova_msg_parser::CRC4;
+            break;
+        case nova_msg_parser::CRC4:
+            nova_msg.crc += (uint32_t) (temp << 24);
+            nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
-//             uint32_t crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.headerlength, (uint8_t *)&nova_msg.header.data, (uint32_t)0);
-//             crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.messagelength, (uint8_t *)&nova_msg.data, crc);
+            uint32_t crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.headerlength, (uint8_t *)&nova_msg.header.data, (uint32_t)0);
+            crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.messagelength, (uint8_t *)&nova_msg.data, crc);
 
-//             if (nova_msg.crc == crc)
-//             {
-//                 return process_message();
-//             }
-//             else
-//             {
-//                 Debug("crc failed");
-//                 crc_error_counter++;
-//             }
-//             break;
-//     }
+            if (nova_msg.crc == crc)
+            {
+                return process_message();
+            }
+            else
+            {
+                Debug("crc failed");
+                crc_error_counter++;
+            }
+            break;
+    }
 
-//     return false;
-// }
+    return false;
+}
 
 bool
 AP_GPS_NOVA::process_message(void)
@@ -291,26 +290,26 @@ AP_GPS_NOVA::process_message(void)
     return false;
 }
 
-// #define CRC32_POLYNOMIAL 0xEDB88320L
-// uint32_t AP_GPS_NOVA::CRC32Value(uint32_t icrc)
-// {
-//     int i;
-//     uint32_t crc = icrc;
-//     for ( i = 8 ; i > 0; i-- )
-//     {
-//         if ( crc & 1 )
-//             crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-//         else
-//             crc >>= 1;
-//     }
-//     return crc;
-// }
+#define CRC32_POLYNOMIAL 0xEDB88320L
+uint32_t AP_GPS_NOVA::CRC32Value(uint32_t icrc)
+{
+    int i;
+    uint32_t crc = icrc;
+    for ( i = 8 ; i > 0; i-- )
+    {
+        if ( crc & 1 )
+            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
+        else
+            crc >>= 1;
+    }
+    return crc;
+}
 
-// uint32_t AP_GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
-// {
-//     while ( length-- != 0 )
-//     {
-//         crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
-//     }
-//     return( crc );
-// }
+uint32_t AP_GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
+{
+    while ( length-- != 0 )
+    {
+        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
+    }
+    return( crc );
+}

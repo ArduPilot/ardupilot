@@ -150,15 +150,15 @@ bool AP_GPS_FEMTO::process_message(void)
         state.vdop = (uint16_t) (uav_gps.vdop*100);
 
         /** about heading */
-        state.gps_yaw = uav_gps.heading;
-        state.gps_yaw_time_ms = state.last_gps_time_ms;
-        state.gps_yaw_accuracy = uav_gps.c_variance_rad * RAD_TO_DEG;
-        bool headingFixed = uav_gps.heading_type == 6;
-        state.gps_yaw_configured = headingFixed;
-        state.have_gps_yaw = headingFixed;
-        state.have_gps_yaw_accuracy = headingFixed;
-
-
+        if (uav_gps.heading_type == 6) {    /**< RTK fixed */
+            state.gps_yaw_configured = true;
+            state.have_gps_yaw = true;
+            state.have_gps_yaw_accuracy = true;
+            state.gps_yaw = uav_gps.heading;
+            state.gps_yaw_time_ms = state.last_gps_time_ms;
+            state.gps_yaw_accuracy = uav_gps.c_variance_rad * RAD_TO_DEG;
+        }
+        
         _new_uavgps = true;
     }
 
