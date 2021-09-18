@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-APM automatic test suite.
+ArduPilot automatic test suite.
 
 Andrew Tridgell, October 2011
 

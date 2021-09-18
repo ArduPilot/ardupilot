@@ -219,7 +219,7 @@ class AutoTestRover(AutoTest):
     #
     #     # reduce throttle
     #     self.mavproxy.send('rc 3 1500\n')
-    #     self.mavproxy.expect('APM: Failsafe ended')
+    #     self.mavproxy.expect('AP: Failsafe ended')
     #     self.mavproxy.send('switch 2\n')  # manual mode
     #     self.wait_heartbeat()
     #     self.wait_mode('MANUAL')
