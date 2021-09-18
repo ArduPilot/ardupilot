@@ -798,6 +798,7 @@ private:
     bool terrain_disabled();
 #if AP_TERRAIN_AVAILABLE
     bool terrain_enabled_in_current_mode() const;
+    bool terrain_enabled_in_mode(Mode::Number num) const;
     enum class terrain_bitmask {
         ALL             = 1U << 0,
         FLY_BY_WIRE_B   = 1U << 1,
