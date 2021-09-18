@@ -129,7 +129,7 @@ AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
 /*
   AC_PID based rate controller
 */
-int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
+float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -197,7 +197,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     }
     
     // output is scaled to notional centidegrees of deflection
-    return constrain_int32(out * 100, -4500, 4500);
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 /*
@@ -207,7 +207,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
  1) desired roll rate in degrees/sec
  2) control gain scaler = scaling_speed / aspeed
 */
-int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
+float AP_RollController::get_rate_out(float desired_rate, float scaler)
 {
     return _get_rate_out(desired_rate, scaler, false);
 }
@@ -221,7 +221,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
 */
-int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
