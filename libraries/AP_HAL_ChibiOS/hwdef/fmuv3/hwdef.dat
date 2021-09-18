@@ -426,8 +426,8 @@ SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 define HAL_CHIBIOS_ARCH_FMUV3 1
 
 # Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+define HAL_BOARD_LOG_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/TERRAIN"
 
 # We need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes).
