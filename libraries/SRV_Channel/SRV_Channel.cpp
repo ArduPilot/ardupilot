@@ -215,11 +215,32 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
 bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
 {
-    return ((function >= SRV_Channel::k_heli_rsc && function <= SRV_Channel::k_motor8) ||
-            function == SRV_Channel::k_starter || function == SRV_Channel::k_throttle ||
-            function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight ||
-            (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
-            function == k_engine_run_enable);
+    switch (function) {
+    case Aux_servo_function_t::k_heli_rsc:  
+    case Aux_servo_function_t::k_heli_tail_rsc:
+    case Aux_servo_function_t::k_motor1:
+    case Aux_servo_function_t::k_motor2:
+    case Aux_servo_function_t::k_motor3:
+    case Aux_servo_function_t::k_motor4:
+    case Aux_servo_function_t::k_motor5:
+    case Aux_servo_function_t::k_motor6:
+    case Aux_servo_function_t::k_motor7:
+    case Aux_servo_function_t::k_motor8:
+    case Aux_servo_function_t::k_starter:
+    case Aux_servo_function_t::k_throttle:
+    case Aux_servo_function_t::k_throttleLeft:
+    case Aux_servo_function_t::k_throttleRight:
+    case Aux_servo_function_t::k_boost_throttle:
+    case Aux_servo_function_t::k_motor9:
+    case Aux_servo_function_t::k_motor10:
+    case Aux_servo_function_t::k_motor11:
+    case Aux_servo_function_t::k_motor12:
+    case Aux_servo_function_t::k_engine_run_enable:
+        return true;
+    default:
+        return false;
+    }
+    return false;
 }
 
 // return true if function is for a control surface
