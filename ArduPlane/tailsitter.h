@@ -137,7 +137,8 @@ public:
 
     bool complete() const override { return transition_state == TRANSITION_DONE; }
 
-    void restart() override { transition_state = TRANSITION_ANGLE_WAIT_FW; };
+    // setup for the transition back to fixed wing
+    void restart() override;
 
     uint8_t get_log_transision_state() const override { return static_cast<uint8_t>(transition_state); }
 
