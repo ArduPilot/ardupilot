@@ -49,137 +49,144 @@ float AP_Baro::get_altitude_difference_function(float base_pressure, float press
   altitudes than using the function
  */
 static const struct {
-    float amsl_feet;
-    float temp_K;
-    float pressure_Pa;
+    int16_t amsl_kfeet;
+    int16_t temp_cK; // in centi-degrees kelvin
     float density;
+    float temp_K(void) const {
+        return temp_cK * 0.1;
+    }
+    float amsl_meters(void) const {
+        return amsl_kfeet * (1000.0 * FEET_TO_METERS);
+    }
+    float pressure_Pa(void) const {
+        constexpr float Rho_specific = 287.053;
+        return density * Rho_specific * temp_K();
+    }
 } atmospheric_table[] = {
-    { -15000, 317.9, 169732.9, 1.86000},
-    { -14000, 315.9, 164245.9, 1.81156},
-    { -13000, 313.9, 158903.4, 1.76363},
-    { -12000, 311.9, 153702.6, 1.71673},
-    { -11000, 309.9, 148640.3, 1.67086},
-    { -10000, 308.0, 143714.4, 1.62550},
-    { -9000, 306.0, 138921.1, 1.58170},
-    { -8000, 304.0, 134258.0, 1.53841},
-    { -7000, 302.0, 129722.3, 1.49614},
-    { -6000, 300.0, 125311.6, 1.45491},
-    { -5000, 298.1, 121023.5, 1.41471},
-    { -4000, 296.1, 116854.5, 1.37503},
-    { -3000, 294.1, 112802.9, 1.33638},
-    { -2000, 292.1, 108865.7, 1.29824},
-    { -1000, 290.1, 105040.6, 1.26113},
-    { 0, 288.2, 101325.1, 1.22506},
-    { 1000, 286.2, 97716.8, 1.18949},
-    { 2000, 284.2, 94212.9, 1.15496},
-    { 3000, 282.2, 90811.5, 1.12095},
-    { 4000, 280.2, 87510.7, 1.08796},
-    { 5000, 278.2, 84307.5, 1.05550},
-    { 6000, 276.3, 81199.6, 1.02406},
-    { 7000, 274.3, 78185.5, 0.99313},
-    { 8000, 272.3, 75262.4, 0.96273},
-    { 9000, 270.3, 72428.4, 0.93335},
-    { 10000, 268.3, 69681.5, 0.90449},
-    { 11000, 266.4, 67019.8, 0.87666},
-    { 12000, 264.4, 64440.5, 0.84934},
-    { 13000, 262.4, 61942.6, 0.82254},
-    { 14000, 260.4, 59523.7, 0.79626},
-    { 15000, 258.4, 57181.9, 0.77101},
-    { 16000, 256.5, 54915.2, 0.74575},
-    { 17000, 254.5, 52721.9, 0.72153},
-    { 18000, 252.5, 50599.8, 0.69834},
-    { 19000, 250.5, 48547.7, 0.67515},
-    { 20000, 248.5, 46563.0, 0.65247},
-    { 21000, 246.5, 44644.9, 0.63082},
-    { 22000, 244.6, 42791.5, 0.60969},
-    { 23000, 242.6, 41000.3, 0.58856},
-    { 24000, 240.6, 39270.9, 0.56846},
-    { 25000, 238.6, 37600.8, 0.54888},
-    { 26000, 236.6, 35988.7, 0.52981},
-    { 27000, 234.7, 34433.1, 0.51120},
-    { 28000, 232.7, 32932.0, 0.49306},
-    { 29000, 230.7, 31484.6, 0.47544},
-    { 31000, 226.7, 28744.4, 0.44163},
-    { 32000, 224.8, 27448.8, 0.42545},
-    { 33000, 222.8, 26200.5, 0.40973},
-    { 34000, 220.8, 24998.7, 0.39442},
-    { 35000, 218.8, 23841.9, 0.37958},
-    { 36000, 216.8, 22729.2, 0.36520},
-    { 36089, 216.7, 22632.0, 0.36391},
-    { 37000, 216.7, 21662.4, 0.34834},
-    { 38000, 216.7, 20645.9, 0.33201},
-    { 39000, 216.7, 19677.3, 0.31639},
-    { 40000, 216.7, 18753.7, 0.30155},
-    { 41000, 216.7, 17873.7, 0.28743},
-    { 42000, 216.7, 17034.8, 0.27392},
-    { 43000, 216.7, 16235.7, 0.26109},
-    { 44000, 216.7, 15473.9, 0.24882},
-    { 45000, 216.7, 14747.6, 0.23713},
-    { 46000, 216.7, 14055.7, 0.22599},
-    { 47000, 216.7, 13395.9, 0.21543},
-    { 48000, 216.7, 12767.3, 0.20528},
-    { 49000, 216.7, 12168.3, 0.19564},
-    { 50000, 216.7, 11597.1, 0.18646},
-    { 51000, 216.7, 11053.1, 0.17775},
-    { 52000, 216.7, 10534.1, 0.16941},
-    { 53000, 216.7, 10040.0, 0.16142},
-    { 54000, 216.7, 9568.9, 0.15384},
-    { 55000, 216.7, 9119.7, 0.14663},
-    { 56000, 216.7, 8691.7, 0.13977},
-    { 57000, 216.7, 8283.8, 0.13323},
-    { 58000, 216.7, 7895.0, 0.12694},
-    { 59000, 216.7, 7524.9, 0.12101},
-    { 60000, 216.7, 7171.5, 0.11534},
-    { 61000, 216.7, 6834.9, 0.10993},
-    { 62000, 216.7, 6514.1, 0.10472},
-    { 63000, 216.7, 6208.6, 0.09983},
-    { 64000, 216.7, 5917.0, 0.09514},
-    { 65000, 216.7, 5639.3, 0.09071},
-    { 65617, 216.7, 5474.6, 0.08803},
-    { 66000, 216.8, 5375.0, 0.08638},
-    { 67000, 217.1, 5123.2, 0.08220},
-    { 68000, 217.4, 4883.3, 0.07823},
-    { 69000, 217.7, 4654.9, 0.07447},
-    { 70000, 218.0, 4437.5, 0.07092},
-    { 71000, 218.3, 4230.7, 0.06751},
-    { 72000, 218.6, 4033.9, 0.06427},
-    { 73000, 218.9, 3846.2, 0.06123},
-    { 74000, 219.2, 3667.6, 0.05829},
-    { 76000, 219.8, 3335.8, 0.05288},
-    { 77000, 220.1, 3181.6, 0.05035},
-    { 78000, 220.4, 3034.6, 0.04796},
-    { 79000, 220.7, 2894.8, 0.04569},
-    { 80000, 221.0, 2761.3, 0.04352},
-    { 81000, 221.3, 2634.4, 0.04146},
-    { 82000, 221.6, 2513.2, 0.03950},
-    { 83000, 222.0, 2398.3, 0.03764},
-    { 84000, 222.3, 2288.2, 0.03587},
-    { 85000, 222.6, 2183.8, 0.03418},
-    { 86000, 222.9, 2083.7, 0.03258},
-    { 87000, 223.2, 1988.9, 0.03105},
-    { 88000, 223.5, 1898.5, 0.02959},
-    { 89000, 223.8, 1811.8, 0.02821},
-    { 90000, 224.1, 1729.4, 0.02689},
-    { 91000, 224.4, 1650.9, 0.02563},
-    { 92000, 224.7, 1576.2, 0.02444},
-    { 93000, 225.0, 1504.9, 0.02330},
-    { 94000, 225.3, 1436.9, 0.02222},
-    { 95000, 225.6, 1372.2, 0.02119},
-    { 96000, 225.9, 1310.0, 0.02020},
-    { 97000, 226.2, 1251.1, 0.01927},
-    { 98000, 226.5, 1195.1, 0.01838},
-    { 99000, 226.8, 1141.5, 0.01753},
-    { 100000, 227.1, 1090.2, 0.01672},
-    { 105000, 228.7, 867.6, 0.01321},
-    { 110000, 232.9, 692.3, 0.01035},
-    { 115000, 237.2, 554.9, 0.00815},
-    { 120000, 241.5, 446.2, 0.00644},
-    { 125000, 245.7, 360.5, 0.00511},
-    { 130000, 250.0, 292.1, 0.00407},
-    { 135000, 254.3, 237.5, 0.00326},
-    { 140000, 258.5, 193.9, 0.00261},
-    { 145000, 262.8, 159.0, 0.00211},
-    { 150000, 267.1, 130.7, 0.00170},
+    { -15, 3179, 1.86000},
+    { -14, 3159, 1.81156},
+    { -13, 3139, 1.76363},
+    { -12, 3119, 1.71673},
+    { -11, 3099, 1.67086},
+    { -10, 3080, 1.62550},
+    { -9, 3060, 1.58170},
+    { -8, 3040, 1.53841},
+    { -7, 3020, 1.49614},
+    { -6, 3000, 1.45491},
+    { -5, 2981, 1.41471},
+    { -4, 2961, 1.37503},
+    { -3, 2941, 1.33638},
+    { -2, 2921, 1.29824},
+    { -1, 2901, 1.26113},
+    { 0, 2882, 1.22506},
+    { 1, 2862, 1.18949},
+    { 2, 2842, 1.15496},
+    { 3, 2822, 1.12095},
+    { 4, 2802, 1.08796},
+    { 5, 2782, 1.05550},
+    { 6, 2763, 1.02406},
+    { 7, 2743, 0.99313},
+    { 8, 2723, 0.96273},
+    { 9, 2703, 0.93335},
+    { 10, 2683, 0.90449},
+    { 11, 2664, 0.87666},
+    { 12, 2644, 0.84934},
+    { 13, 2624, 0.82254},
+    { 14, 2604, 0.79626},
+    { 15, 2584, 0.77101},
+    { 16, 2565, 0.74575},
+    { 17, 2545, 0.72153},
+    { 18, 2525, 0.69834},
+    { 19, 2505, 0.67515},
+    { 20, 2485, 0.65247},
+    { 21, 2465, 0.63082},
+    { 22, 2446, 0.60969},
+    { 23, 2426, 0.58856},
+    { 24, 2406, 0.56846},
+    { 25, 2386, 0.54888},
+    { 26, 2366, 0.52981},
+    { 27, 2347, 0.51120},
+    { 28, 2327, 0.49306},
+    { 29, 2307, 0.47544},
+    { 31, 2267, 0.44163},
+    { 32, 2248, 0.42545},
+    { 33, 2228, 0.40973},
+    { 34, 2208, 0.39442},
+    { 35, 2188, 0.37958},
+    { 36, 2168, 0.36520},
+    { 37, 2167, 0.34834},
+    { 38, 2167, 0.33201},
+    { 39, 2167, 0.31639},
+    { 40, 2167, 0.30155},
+    { 41, 2167, 0.28743},
+    { 42, 2167, 0.27392},
+    { 43, 2167, 0.26109},
+    { 44, 2167, 0.24882},
+    { 45, 2167, 0.23713},
+    { 46, 2167, 0.22599},
+    { 47, 2167, 0.21543},
+    { 48, 2167, 0.20528},
+    { 49, 2167, 0.19564},
+    { 50, 2167, 0.18646},
+    { 51, 2167, 0.17775},
+    { 52, 2167, 0.16941},
+    { 53, 2167, 0.16142},
+    { 54, 2167, 0.15384},
+    { 55, 2167, 0.14663},
+    { 56, 2167, 0.13977},
+    { 57, 2167, 0.13323},
+    { 58, 2167, 0.12694},
+    { 59, 2167, 0.12101},
+    { 60, 2167, 0.11534},
+    { 61, 2167, 0.10993},
+    { 62, 2167, 0.10472},
+    { 63, 2167, 0.09983},
+    { 64, 2167, 0.09514},
+    { 65, 2167, 0.09071},
+    { 66, 2168, 0.08638},
+    { 67, 2171, 0.08220},
+    { 68, 2174, 0.07823},
+    { 69, 2177, 0.07447},
+    { 70, 2180, 0.07092},
+    { 71, 2183, 0.06751},
+    { 72, 2186, 0.06427},
+    { 73, 2189, 0.06123},
+    { 74, 2192, 0.05829},
+    { 76, 2198, 0.05288},
+    { 77, 2201, 0.05035},
+    { 78, 2204, 0.04796},
+    { 79, 2207, 0.04569},
+    { 80, 2210, 0.04352},
+    { 81, 2213, 0.04146},
+    { 82, 2216, 0.03950},
+    { 83, 2220, 0.03764},
+    { 84, 2223, 0.03587},
+    { 85, 2226, 0.03418},
+    { 86, 2229, 0.03258},
+    { 87, 2232, 0.03105},
+    { 88, 2235, 0.02959},
+    { 89, 2238, 0.02821},
+    { 90, 2241, 0.02689},
+    { 91, 2244, 0.02563},
+    { 92, 2247, 0.02444},
+    { 93, 2250, 0.02330},
+    { 94, 2253, 0.02222},
+    { 95, 2256, 0.02119},
+    { 96, 2259, 0.02020},
+    { 97, 2262, 0.01927},
+    { 98, 2265, 0.01838},
+    { 99, 2268, 0.01753},
+    { 100, 2271, 0.01672},
+    { 105, 2287, 0.01321},
+    { 110, 2329, 0.01035},
+    { 115, 2372, 0.00815},
+    { 120, 2415, 0.00644},
+    { 125, 2457, 0.00511},
+    { 130, 2500, 0.00407},
+    { 135, 2543, 0.00326},
+    { 140, 2585, 0.00261},
+    { 145, 2628, 0.00211},
+    { 150, 2671, 0.00170},
 };
 
 /*
@@ -190,13 +197,13 @@ static uint32_t lookup_atmospheric_table_by_pressure(float pressure)
     const uint32_t table_size = ARRAY_SIZE(atmospheric_table);
     uint32_t idx_min = 1;
     uint32_t idx_max = table_size-1;
-    if (pressure > atmospheric_table[0].pressure_Pa) {
+    if (pressure > atmospheric_table[0].pressure_Pa()) {
         // off the bottom of the table
         idx_max = 1;
     }
     while (idx_min < idx_max) {
         const uint32_t mid = (idx_max+idx_min)/2;
-        if (atmospheric_table[mid].pressure_Pa < pressure) {
+        if (atmospheric_table[mid].pressure_Pa() < pressure) {
             idx_max = mid;
         } else {
             idx_min = mid+1;
@@ -213,14 +220,13 @@ static uint32_t lookup_atmospheric_table_by_alt(float alt_m)
     const uint32_t table_size = ARRAY_SIZE(atmospheric_table);
     uint32_t idx_min = 1;
     uint32_t idx_max = table_size-1;
-    float alt_feet = alt_m / FEET_TO_METERS;
-    if (alt_feet <= atmospheric_table[0].amsl_feet) {
+    if (alt_m <= atmospheric_table[0].amsl_meters()) {
         // off the bottom of the table
         idx_max = 1;
     }
     while (idx_min < idx_max) {
         const uint32_t mid = (idx_max+idx_min)/2;
-        if (atmospheric_table[mid].amsl_feet > alt_feet) {
+        if (atmospheric_table[mid].amsl_meters() > alt_m) {
             idx_max = mid;
         } else {
             idx_min = mid+1;
@@ -236,10 +242,9 @@ static float lookup_atmospheric_table_alt(const float pressure)
 {
     uint32_t idx = lookup_atmospheric_table_by_pressure(pressure);
     const float slope =
-        (atmospheric_table[idx].amsl_feet - atmospheric_table[idx-1].amsl_feet) /
-        (atmospheric_table[idx-1].pressure_Pa - atmospheric_table[idx].pressure_Pa);
-    const float feet = atmospheric_table[idx-1].amsl_feet - slope * (pressure - atmospheric_table[idx-1].pressure_Pa);
-    return FEET_TO_METERS * feet;
+        (atmospheric_table[idx].amsl_meters() - atmospheric_table[idx-1].amsl_meters()) /
+        (atmospheric_table[idx-1].pressure_Pa() - atmospheric_table[idx].pressure_Pa());
+    return atmospheric_table[idx-1].amsl_meters() - slope * (pressure - atmospheric_table[idx-1].pressure_Pa());
 }
 
 /*
@@ -250,8 +255,8 @@ static float lookup_atmospheric_table_density_by_pressure(const float pressure)
     uint32_t idx = lookup_atmospheric_table_by_pressure(pressure);
     const float slope =
         (atmospheric_table[idx].density - atmospheric_table[idx-1].density) /
-        (atmospheric_table[idx-1].pressure_Pa - atmospheric_table[idx].pressure_Pa);
-    return atmospheric_table[idx-1].density - slope * (pressure - atmospheric_table[idx-1].pressure_Pa);
+        (atmospheric_table[idx-1].pressure_Pa() - atmospheric_table[idx].pressure_Pa());
+    return atmospheric_table[idx-1].density - slope * (pressure - atmospheric_table[idx-1].pressure_Pa());
 }
 
 /*
@@ -260,11 +265,10 @@ static float lookup_atmospheric_table_density_by_pressure(const float pressure)
 static float lookup_atmospheric_table_density_by_alt(const float alt_amsl)
 {
     uint32_t idx = lookup_atmospheric_table_by_alt(alt_amsl);
-    const float alt_feet = alt_amsl / FEET_TO_METERS;
     const float slope =
         (atmospheric_table[idx].density - atmospheric_table[idx-1].density) /
-        (atmospheric_table[idx-1].amsl_feet - atmospheric_table[idx].amsl_feet);
-    return atmospheric_table[idx-1].density - slope * (alt_feet - atmospheric_table[idx-1].amsl_feet);
+        (atmospheric_table[idx-1].amsl_meters() - atmospheric_table[idx].amsl_meters());
+    return atmospheric_table[idx-1].density - slope * (alt_amsl - atmospheric_table[idx-1].amsl_meters());
 }
 
 
@@ -285,19 +289,18 @@ float AP_Baro::get_altitude_difference_table(float base_pressure, float pressure
 */
 void AP_Baro::get_pressure_temperature_for_alt_amsl(float alt_m, float &pressure, float &temperature_K)
 {
-    const float alt_feet = alt_m / FEET_TO_METERS;
     uint32_t idx = lookup_atmospheric_table_by_alt(alt_m);
     const float temp_zero = 288.2;
     // to match SITL assumed board temperature behaviour we start at 30C
     const float temp_sea_level = C_TO_KELVIN + 30;
     const float slopeP =
-        (atmospheric_table[idx-1].pressure_Pa - atmospheric_table[idx].pressure_Pa) /
-        (atmospheric_table[idx].amsl_feet - atmospheric_table[idx-1].amsl_feet);
+        (atmospheric_table[idx-1].pressure_Pa() - atmospheric_table[idx].pressure_Pa()) /
+        (atmospheric_table[idx].amsl_meters() - atmospheric_table[idx-1].amsl_meters());
     const float slopeT =
-        (atmospheric_table[idx-1].temp_K - atmospheric_table[idx].temp_K) /
-        (atmospheric_table[idx].amsl_feet - atmospheric_table[idx-1].amsl_feet);
-    pressure = atmospheric_table[idx-1].pressure_Pa - slopeP * (alt_feet - atmospheric_table[idx-1].amsl_feet);
-    temperature_K = atmospheric_table[idx-1].temp_K - slopeT * (alt_feet - atmospheric_table[idx-1].amsl_feet);
+        (atmospheric_table[idx-1].temp_K() - atmospheric_table[idx].temp_K()) /
+        (atmospheric_table[idx].amsl_meters() - atmospheric_table[idx-1].amsl_meters());
+    pressure = atmospheric_table[idx-1].pressure_Pa() - slopeP * (alt_m - atmospheric_table[idx-1].amsl_meters());
+    temperature_K = atmospheric_table[idx-1].temp_K() - slopeT * (alt_m - atmospheric_table[idx-1].amsl_meters());
     temperature_K += (temp_sea_level - temp_zero);
 }
 
