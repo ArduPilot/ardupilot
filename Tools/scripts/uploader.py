@@ -158,16 +158,22 @@ class firmware(object):
         f.close()
 
         self.image = bytearray(zlib.decompress(base64.b64decode(self.desc['image'])))
-        self.extf_image = bytearray(zlib.decompress(base64.b64decode(self.desc['extf_image'])))
+        if 'extf_image' in self.desc:
+            self.extf_image = bytearray(zlib.decompress(base64.b64decode(self.desc['extf_image'])))
+        else:
+            self.extf_image = None
         # pad image to 4-byte length
         while ((len(self.image) % 4) != 0):
             self.image.append('\xff')
         # pad image to 4-byte length
-        while ((len(self.extf_image) % 4) != 0):
-            self.extf_image.append('\xff')
+        if self.extf_image is not None:
+            while ((len(self.extf_image) % 4) != 0):
+                self.extf_image.append('\xff')
 
-    def property(self, propname):
-        return self.desc[propname]
+    def property(self, propname, default=None):
+        if propname in self.desc:
+            return self.desc[propname]
+        return default
 
     def extf_crc(self, size):
         state = crc32(self.extf_image[:size], int(0))
@@ -853,7 +859,7 @@ class uploader(object):
 
         self.dump_board_info()
 
-        if self.fw_maxsize < fw.property('image_size') or self.extf_maxsize < fw.property('extf_image_size'):
+        if self.fw_maxsize < fw.property('image_size') or self.extf_maxsize < fw.property('extf_image_size', 0):
             raise RuntimeError("Firmware image is too large for this board")
 
         if self.baudrate_bootloader_flash != self.baudrate_bootloader:
@@ -862,10 +868,10 @@ class uploader(object):
             self.port.baudrate = self.baudrate_bootloader_flash
             self.__sync()
 
-        if (fw.property('extf_image_size') > 0):
-            self.erase_extflash("Erase ExtF  ", fw.property('extf_image_size'))
+        if (fw.property('extf_image_size', 0) > 0):
+            self.erase_extflash("Erase ExtF  ", fw.property('extf_image_size', 0))
             self.__program_extf("Program ExtF", fw)
-            self.__verify_extf("Verify ExtF ", fw, fw.property('extf_image_size'))
+            self.__verify_extf("Verify ExtF ", fw, fw.property('extf_image_size', 0))
 
         if (fw.property('image_size') > 0):
             self.__erase("Erase  ")
