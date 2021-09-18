@@ -1069,7 +1069,7 @@ bool QuadPlane::is_flying_vtol(void) const
     }
     if (plane.control_mode->is_vtol_man_mode()) {
         // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
-        return plane.get_throttle_input() > 0;
+        return is_positive(plane.get_throttle_input());
     }
     if (in_vtol_mode() && millis() - landing_detect.lower_limit_start_ms > 5000) {
         // use landing detector
@@ -1131,7 +1131,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (!manual_air_mode &&
-        plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() &&
+        !is_positive(plane.get_throttle_input()) && !plane.control_mode->does_auto_throttle() &&
         plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
         // the user may be trying to disarm
         return 0;
@@ -1173,7 +1173,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         yaw_cds += desired_auto_yaw_rate_cds();
     }
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
-    if (plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() && !manual_air_mode && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
+    if (!is_positive(plane.get_throttle_input()) && !plane.control_mode->does_auto_throttle() && !manual_air_mode && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
         // the user may be trying to disarm
         return 0;
     }
@@ -1277,7 +1277,7 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
     }
 
     if (!tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
-                                                                      || plane.get_throttle_input()>0 
+                                                                      || is_positive(plane.get_throttle_input()) 
                                                                       || plane.is_flying() ) ) {
         // not in a flight mode and condition where it would be safe to turn on vertial lift motors
         // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
@@ -1763,7 +1763,7 @@ void QuadPlane::update_throttle_suppression(void)
     }
 
     // if the users throttle is above zero then allow motors to run
-    if (plane.get_throttle_input() != 0) {
+    if (!is_zero(plane.get_throttle_input())) {
         return;
     }
 
@@ -3460,7 +3460,7 @@ void QuadPlane::update_throttle_mix(void)
 
     if (plane.control_mode->is_vtol_man_throttle()) {
         // manual throttle
-        if ((plane.get_throttle_input() <= 0) && !air_mode_active()) {
+        if (!is_positive(plane.get_throttle_input()) && !air_mode_active()) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
