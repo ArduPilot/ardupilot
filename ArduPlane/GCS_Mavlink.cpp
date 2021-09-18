@@ -58,6 +58,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::TAKEOFF:
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QRTL:
+    case Mode::Number::LOITER_ALT_QLAND:
 #endif
         _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                      MAV_MODE_FLAG_STABILIZE_ENABLED;
