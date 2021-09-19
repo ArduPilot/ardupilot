@@ -67,20 +67,11 @@ void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, const char* text)
     _displayport->msp_displayport_write_string(x, y, 0, text);
 }
 
-void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
+uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, bool decimal_packed, const char *fmt, va_list ap)
 {
-    if (blink && !_blink_on) {
-        return;
-    }
-    char buf[32+1]; // +1 for snprintf null-termination
-    va_list ap;
-    va_start(ap, fmt);
-    int res = hal.util->vsnprintf(buf, sizeof(buf), fmt, ap);
-    res = MIN(res, int(sizeof(buf)));
-    if (res < int(sizeof(buf))-1) {
-        _displayport->msp_displayport_write_string(x, y, blink, buf);
-    }
-    va_end(ap);
+    const AP_MSP *msp = AP::msp();
+    const bool pack =  decimal_packed && msp && !msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS);
+    return AP_OSD_Backend::format_string_for_osd(buff, size, pack, fmt, ap);
 }
 
 void AP_OSD_MSP_DisplayPort::flush(void)
