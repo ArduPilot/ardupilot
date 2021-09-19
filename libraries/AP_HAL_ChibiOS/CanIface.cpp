@@ -758,9 +758,15 @@ void CANIface::initOnce(bool enable_irq)
         CriticalSectionLocker lock;
         switch (can_interfaces[self_index_]) {
         case 0:
+#if defined(RCC_APB1ENR1_CAN1EN)
+            RCC->APB1ENR1 |=  RCC_APB1ENR1_CAN1EN;
+            RCC->APB1RSTR1 |=  RCC_APB1RSTR1_CAN1RST;
+            RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CAN1RST;
+#else
             RCC->APB1ENR  |=  RCC_APB1ENR_CAN1EN;
             RCC->APB1RSTR |=  RCC_APB1RSTR_CAN1RST;
             RCC->APB1RSTR &= ~RCC_APB1RSTR_CAN1RST;
+#endif
             break;
 #ifdef RCC_APB1ENR_CAN2EN
         case 1:
