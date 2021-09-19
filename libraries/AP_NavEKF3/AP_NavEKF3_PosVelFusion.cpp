@@ -1220,11 +1220,13 @@ void NavEKF3_core::selectHeightForFusion()
         ResetPositionD(-hgtMea);
     }
 
-    // If we haven't fused height data for a while, then declare the height data as being timed out
-    // set timeout period based on whether we have vertical GPS velocity available to constrain drift
+    // If we haven't fused height data for a while or have bad IMU data, then declare the height data as being timed out
+    // set height timeout period based on whether we have vertical GPS velocity available to constrain drift
     hgtRetryTime_ms = ((useGpsVertVel || useExtNavVel) && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
     if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms ||
-        (badIMUdata && (imuSampleTime_ms - goodIMUdata_ms < BAD_IMU_DATA_TIMEOUT_MS))) {
+        (badIMUdata &&
+        (imuSampleTime_ms - goodIMUdata_ms > BAD_IMU_DATA_TIMEOUT_MS) &&
+        (imuSampleTime_ms - lastPosResetD_ms > BAD_IMU_DATA_TIMEOUT_MS))) {
         hgtTimeout = true;
     } else {
         hgtTimeout = false;
