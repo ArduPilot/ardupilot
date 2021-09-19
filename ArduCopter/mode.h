@@ -1357,6 +1357,32 @@ private:
 
 };
 
+class ModeBackstepping : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::BACKSTEPPING; }
+
+    virtual void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "BACKSTEPPING"; }
+    const char *name4() const override { return "BACK"; }
+
+private:
+
+};
+
 
 class ModeStabilize : public Mode {
 

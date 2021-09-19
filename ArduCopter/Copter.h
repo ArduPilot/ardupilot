@@ -929,6 +929,11 @@ private:
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;
 #endif
+
+#if MODE_BACKSTEPPING == ENABLED
+    ModeBackstepping mode_backstepping;
+#endif
+
 #if MODE_BRAKE_ENABLED == ENABLED
     ModeBrake mode_brake;
 #endif
