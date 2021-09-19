@@ -55,10 +55,11 @@ void AP_OSD_MSP_DisplayPort::clear(void)
     // clear remote MSP screen
     _displayport->msp_displayport_clear_screen();
 
-    // toggle flashing @2Hz
+    // toggle flashing @1Hz
     const uint32_t now = AP_HAL::millis();
-    if (((now / 500) & 0x01) != _blink_on) {
+    if ((uint32_t(now * 0.004) & 0x01) != _blink_on) {
         _blink_on = !_blink_on;
+        blink_phase = (blink_phase+1)%4;
     }
 }
 
