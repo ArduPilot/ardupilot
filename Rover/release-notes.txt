@@ -1,6 +1,6 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.1.0-rc3 15-Sep-2021
+Rover 4.1.0 20-Sep-2021 / 4.1.0-rc3 15-Sep-2021
 Changes from 4.1.0-rc2
 1) Bug Fixes
     a) Serial port auto detection of flow control fix
