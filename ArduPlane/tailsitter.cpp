@@ -246,40 +246,44 @@ void Tailsitter::output(void)
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
 
-
+    // throttle 0 to 1
+    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
 
     // handle forward flight modes and transition to VTOL modes
     if (!active() || in_vtol_transition()) {
         // get FW controller throttle demand and mask of motors enabled during forward flight
-        float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         if (hal.util->get_soft_armed() && in_vtol_transition() && !quadplane.throttle_wait && quadplane.is_flying()) {
             /*
-              during transitions to vtol mode set the throttle to
-              hover thrust, center the rudder and set the altitude controller
-              integrator to the same throttle level
-              convert the hover throttle to the same output that would result if used via AP_Motors
-              apply expo, battery scaling and SPIN min/max. 
+              during transitions to vtol mode set the throttle to hover thrust, center the rudder
             */
-            throttle = motors->thrust_to_actuator(motors->get_throttle_hover()) * 100;
-            throttle = MAX(throttle,plane.aparm.throttle_cruise.get());
+            throttle = motors->get_throttle_hover();
+            // work out equivelent motors throttle level for cruise
+            throttle = MAX(throttle,motors->actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
 
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-            quadplane.pos_control->get_accel_z_pid().set_integrator(throttle*10);
+            plane.rudder_dt = 0;
 
-            // override AP_MotorsTailsitter throttles during back transition
+            // in assisted flight this is done in the normal motor output path
+            if (!quadplane.assisted_flight) {
+                // convert the hover throttle to the same output that would result if used via AP_Motors
+                // apply expo, battery scaling and SPIN min/max.
+                throttle = motors->thrust_to_actuator(throttle);
 
-            // apply PWM min and MAX to throttle left and right, just as via AP_Motors
-            uint16_t throttle_pwm = motors->get_pwm_output_min() + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * throttle * 0.01f;
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, throttle_pwm);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, throttle_pwm);
+                // override AP_MotorsTailsitter throttles during back transition
 
-            // throttle output is not used by AP_Motors so might have diffrent PWM range, set scaled
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+                // apply PWM min and MAX to throttle left and right, just as via AP_Motors
+                uint16_t throttle_pwm = motors->get_pwm_output_min() + (motors->get_pwm_output_max() - motors->get_pwm_output_min()) * throttle;
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, throttle_pwm);
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, throttle_pwm);
+
+                // throttle output is not used by AP_Motors so might have diffrent PWM range, set scaled
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100.0);
+            }
         }
 
         if (!quadplane.assisted_flight) {
             // set AP_MotorsMatrix throttles for forward flight
-            motors->output_motor_mask(throttle * 0.01f, motor_mask, plane.rudder_dt);
+            motors->output_motor_mask(throttle, motor_mask, plane.rudder_dt);
 
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
@@ -302,7 +306,7 @@ void Tailsitter::output(void)
     // to motors_output() from quadplane.update(), unless we are in assisted flight
     // tailsitter in TRANSITION_ANGLE_WAIT_FW is not really in assisted flight, its still in a VTOL mode
     if (quadplane.assisted_flight && (quadplane.transition_state != QuadPlane::TRANSITION_ANGLE_WAIT_FW)) {
-        quadplane.hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
+        quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
         if ((quadplane.options & QuadPlane::OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
@@ -315,10 +319,10 @@ void Tailsitter::output(void)
             tilt_right = 0.0f;
             if (vectored_hover_gain > 0) {
                 const float hover_throttle = motors->get_throttle_hover();
-                const float throttle = motors->get_throttle();
+                const float output_throttle = motors->get_throttle();
                 float throttle_scaler = throttle_scale_max;
-                if (is_positive(throttle)) {
-                    throttle_scaler = constrain_float(hover_throttle / throttle, gain_scaling_min, throttle_scale_max);
+                if (is_positive(output_throttle)) {
+                    throttle_scaler = constrain_float(hover_throttle / output_throttle, gain_scaling_min, throttle_scale_max);
                 }
                 tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * vectored_hover_gain * throttle_scaler;
                 tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * vectored_hover_gain * throttle_scaler;
