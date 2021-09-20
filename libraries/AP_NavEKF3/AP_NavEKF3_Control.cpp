@@ -88,11 +88,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
             }
 
             // set the wind state variances to the measurement uncertainty
-            for (uint8_t index=22; index<=23; index++) {
-                zeroCols(P, 22, 23);
-                zeroRows(P, 22, 23);
-                P[index][index] = trueAirspeedVariance;
-            }
+            zeroCols(P, 22, 23);
+            zeroRows(P, 22, 23);
+            P[22][22] = P[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
