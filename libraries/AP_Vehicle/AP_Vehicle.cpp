@@ -440,6 +440,7 @@ void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
  */
 void AP_Vehicle::accel_cal_update()
 {
+#if HAL_INS_ENABLED
     if (hal.util->get_soft_armed()) {
         return;
     }
@@ -457,6 +458,7 @@ void AP_Vehicle::accel_cal_update()
         hal.scheduler->reboot(false);
     }
 #endif
+#endif // HAL_INS_ENABLED
 }
 
 
