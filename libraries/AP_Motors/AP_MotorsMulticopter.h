@@ -83,12 +83,15 @@ public:
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;
-    
+
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
 
     // converts desired thrust to linearized actuator output in a range of 0~1
-    float               thrust_to_actuator(float thrust_in);
+    float               thrust_to_actuator(float thrust_in) const;
+
+    // inverse of above
+    float               actuator_to_thrust(float actuator) const;
 
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
@@ -122,6 +125,8 @@ protected:
 
     // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
     float               apply_thrust_curve_and_volt_scaling(float thrust) const;
+    // inverse of above
+    float               remove_thrust_curve_and_volt_scaling(float throttle) const;
 
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
