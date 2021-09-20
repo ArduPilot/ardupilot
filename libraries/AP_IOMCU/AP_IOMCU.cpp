@@ -34,7 +34,8 @@ enum ioevents {
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
     IOEVENT_SET_SAFETY_MASK,
-    IOEVENT_MIXING
+    IOEVENT_MIXING,
+    IOEVENT_GPIO,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -217,6 +218,16 @@ void AP_IOMCU::thread_main(void)
             }
         }
         mask &= ~EVENT_MASK(IOEVENT_SET_SAFETY_MASK);
+
+        if (is_chibios_backend) {
+            if (mask & EVENT_MASK(IOEVENT_GPIO)) {
+                if (!write_registers(PAGE_GPIO, 0, sizeof(GPIO)/sizeof(uint16_t), (const uint16_t*)&GPIO)) {
+                    event_failed(mask);
+                    continue;
+                }
+            }
+            mask &= ~EVENT_MASK(IOEVENT_GPIO);
+        }
 
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -1050,6 +1061,62 @@ void AP_IOMCU::check_iomcu_reset(void)
         trigger_event(IOEVENT_SET_SAFETY_MASK);
     }
     last_rc_protocols = 0;
+}
+
+// Check if pin number is valid for GPIO
+bool AP_IOMCU::valid_GPIO_pin(uint8_t pin) const
+{
+    return convert_pin_number(pin);
+}
+
+// convert external pin numbers 101 to 108 to internal 0 to 7
+bool AP_IOMCU::convert_pin_number(uint8_t& pin) const
+{
+    if (pin < 101) {
+        return false;
+    }
+    pin -= 101;
+    if (pin > 7) {
+        return false;
+    }
+    return true;
+}
+
+// set GPIO mask of channels setup for output
+void AP_IOMCU::set_GPIO_mask(uint8_t mask)
+{
+    if (mask == GPIO.channel_mask) {
+        return;
+    }
+    GPIO.channel_mask = mask;
+    trigger_event(IOEVENT_GPIO);
+}
+
+// write to a output pin
+void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
+{
+    if (!convert_pin_number(pin)) {
+        return;
+    }
+    if (value == ((GPIO.output_mask & (1U << pin)) != 0)) {
+        return;
+    }
+    if (value) {
+        GPIO.output_mask |= (1U << pin);
+    } else {
+        GPIO.output_mask &= ~(1U << pin);
+    }
+    trigger_event(IOEVENT_GPIO);
+}
+
+// toggle a output pin
+void AP_IOMCU::toggle_GPIO(uint8_t pin)
+{
+    if (!convert_pin_number(pin)) {
+        return;
+    }
+    GPIO.output_mask ^= (1U << pin);
+    trigger_event(IOEVENT_GPIO);
 }
 
 

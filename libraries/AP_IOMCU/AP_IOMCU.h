@@ -105,6 +105,21 @@ public:
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
 
+    // Check if pin number is valid for GPIO
+    bool valid_GPIO_pin(uint8_t pin) const;
+
+    // convert external pin numbers 101 to 108 to internal 0 to 7
+    bool convert_pin_number(uint8_t& pin) const;
+
+    // set GPIO mask of channels setup for output
+    void set_GPIO_mask(uint8_t mask);
+
+    // write to a output pin
+    void write_GPIO(uint8_t pin, bool value);
+
+    // toggle a output pin
+    void toggle_GPIO(uint8_t pin);
+
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
 
@@ -201,6 +216,8 @@ private:
         bool oneshot_enabled;
         bool brushed_enabled;
     } rate;
+
+    struct page_GPIO GPIO;
 
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;
