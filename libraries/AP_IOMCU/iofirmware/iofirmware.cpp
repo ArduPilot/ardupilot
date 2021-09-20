@@ -257,6 +257,7 @@ void AP_IOMCU_FW::update()
         if (dsm_bind_state) {
             dsm_bind_step();
         }
+        GPIO_write();
     }
 }
 
@@ -616,6 +617,24 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
+    case PAGE_GPIO:
+        if (rx_io_packet.count != 1) {
+            return false;
+        }
+        memcpy(&GPIO, &rx_io_packet.regs[0] + rx_io_packet.offset, sizeof(GPIO));
+        if (GPIO.channel_mask != last_GPIO_channel_mask) {
+            for (uint8_t i=0; i<8; i++) {
+                if ((GPIO.channel_mask & (1U << i)) != 0) {
+                    hal.rcout->disable_ch(i);
+                    hal.gpio->pinMode(101+i, HAL_GPIO_OUTPUT);
+                } else {
+                    hal.rcout->enable_ch(i);
+                }
+            }
+            last_GPIO_channel_mask = GPIO.channel_mask;
+        }
+        break;
+
     default:
         break;
     }
@@ -746,6 +765,15 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
     }
     if (mixing.enabled) {
         run_mixer();
+    }
+}
+
+void AP_IOMCU_FW::GPIO_write()
+{
+    for (uint8_t i=0; i<8; i++) {
+        if ((GPIO.channel_mask & (1U << i)) != 0) {
+            hal.gpio->write(101+i, (GPIO.output_mask & (1U << i)) != 0);
+        }
     }
 }
 
