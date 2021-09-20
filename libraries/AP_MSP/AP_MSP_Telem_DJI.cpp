@@ -96,14 +96,18 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_esc_sensor_data(sbuf_t *dst)
     AP_ESC_Telem& telem = AP::esc_telem();
     if (!displaying_stats_screen()) {
         telem.get_highest_motor_temperature(highest_temperature);
+#if OSD_ENABLED
     } else {
-        AP_OSD *osd = AP::osd();
+        AP_OSD* osd = AP::osd();
         if (osd == nullptr) {
             return MSP_RESULT_ERROR;
         }
         WITH_SEMAPHORE(osd->get_semaphore());
         highest_temperature = osd->get_stats_info().max_esc_temp;
     }
+#else
+    }
+#endif
     const struct PACKED {
         uint8_t temp;
         uint16_t rpm;
