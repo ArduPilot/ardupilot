@@ -30,8 +30,8 @@ const struct forward_check {
         float P_Pa;
         float Temp_C;
     } conversion_table [] = {
-        {3897939, 7529942, 1200, -20},          // < -15 deg C Temperature, Low Pressure
-        {10398464, 7529942, 115200, -20},       // < -15 deg C Temperatures, High Pressure
+        {3894332, 7304992, 1200, -30},          // < -15 deg C Temperature, Low Pressure
+        {10566581, 7304992, 115200, -30},       // < -15 deg C Temperatures, High Pressure
 
         {3919542, 8425824, 1200, 15.15},        // < 20 deg C Temperatures, Low Pressure
         {9937566, 8425824, 115200, 15.15},      // < 20 deg C Temperatures, High Pressure
