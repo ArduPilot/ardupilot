@@ -43,6 +43,7 @@ void Sub::circle_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+        circle_nav.init();
         return;
     }
 
