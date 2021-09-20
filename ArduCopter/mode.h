@@ -194,7 +194,7 @@ public:
         float yaw();
 
         // mode(): current method of determining desired yaw:
-        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
+        autopilot_yaw_mode mode() const { return _mode; }
         void set_mode_to_default(bool rtl);
         void set_mode(autopilot_yaw_mode new_mode);
         autopilot_yaw_mode default_mode(bool rtl) const;
@@ -220,7 +220,7 @@ public:
         float roi_yaw() const;
 
         // auto flight mode's yaw mode
-        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
+        autopilot_yaw_mode _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
 
         // Yaw will point at this location if mode is set to AUTO_YAW_ROI
         Vector3f roi;
