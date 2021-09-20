@@ -108,3 +108,17 @@ public:
 private:
     ioline_t line;
 };
+
+#if HAL_WITH_IO_MCU
+class ChibiOS::IOMCU_DigitalSource : public AP_HAL::DigitalSource {
+public:
+    IOMCU_DigitalSource(uint8_t _pin);
+    void    write(uint8_t value) override;
+    void    toggle() override;
+    // IOMCU GPIO is write only
+    void    mode(uint8_t output) override {};
+    uint8_t    read() override { return 0; }
+private:
+    uint8_t pin;
+};
+#endif
