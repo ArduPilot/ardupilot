@@ -116,6 +116,7 @@ void Sub::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+        wp_nav.wp_and_spline_init();                                                // Reset xy target
         return;
     }
 
@@ -307,6 +308,7 @@ void Sub::auto_loiter_run()
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
 
+        wp_nav.wp_and_spline_init();                                                // Reset xy target
         return;
     }
 
@@ -591,6 +593,9 @@ void Sub::auto_terrain_recover_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+
+        loiter_nav.init_target();                                                   // Reset xy target
+        pos_control.relax_z_controller(motors.get_throttle_hover());                // Reset z axis controller
         return;
     }
 
