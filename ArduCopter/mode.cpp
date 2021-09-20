@@ -405,17 +405,14 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
         pitch_out = 0;
         return;
     }
-    // fetch roll and pitch inputs
-    roll_out = channel_roll->get_control_in();
-    pitch_out = channel_pitch->get_control_in();
 
     // limit max lean angle
     angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range
     float scaler = angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
-    roll_out *= scaler;
-    pitch_out *= scaler;
+    roll_out = scaler * channel_roll->get_control_in();
+    pitch_out = scaler * channel_pitch->get_control_in();
 
     // do circular limit
     float total_in = norm(pitch_out, roll_out);
