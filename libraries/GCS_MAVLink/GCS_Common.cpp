@@ -211,6 +211,12 @@ void GCS_MAVLINK::send_mcu_status(void)
 }
 #endif
 
+// returns the battery remaining percentage if valid, -1 otherwise
+int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
+    uint8_t percentage;
+    return AP::battery().capacity_remaining_pct(percentage, instance) ? MIN(percentage, INT8_MAX) : -1;
+}
+
 void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
@@ -256,6 +262,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     }
 
     float current, consumed_mah, consumed_wh;
+    const int8_t percentage = battery_remaining_pct(instance);
+    
     if (battery.current_amps(current, instance)) {
          current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
     } else {
@@ -269,8 +277,6 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     } else {
         consumed_wh = -1;
     }
-    uint8_t _percentage = -1;
-    const int8_t percentage = battery.capacity_remaining_pct(_percentage, instance) ? _percentage : -1;
 
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
@@ -4671,10 +4677,10 @@ void GCS_MAVLINK::send_sys_status()
 
     const AP_BattMonitor &battery = AP::battery();
     float battery_current;
-    uint8_t battery_remaining = -1;
+    int8_t battery_remaining = -1;
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        IGNORE_RETURN(battery.capacity_remaining_pct(battery_remaining));
+        battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
@@ -5574,10 +5580,10 @@ void GCS_MAVLINK::send_high_latency() const
 
     const AP_BattMonitor &battery = AP::battery();
     float battery_current;
-    uint8_t battery_remaining = -1;
+    int8_t battery_remaining = -1;
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        IGNORE_RETURN(battery.capacity_remaining_pct(battery_remaining));
+        battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
