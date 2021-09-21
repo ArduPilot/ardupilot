@@ -698,9 +698,9 @@ void NavEKF3_core::FuseVelPosNED()
             }
             if (imuSampleTime_ms - badIMUdata_ms < BAD_IMU_DATA_HOLD_MS) {
                 badIMUdata = true;
+                stateStruct.velocity.z = gpsDataDelayed.vel.z;
             } else {
                 badIMUdata = false;
-
             }
         }
 
