@@ -72,11 +72,11 @@ private:
             GDL90_IDENTIFICATION_V3 identification;
             GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 transponder_config;
             GDL90_HEARTBEAT heartbeat;
+            GDL90_TRANSPONDER_STATUS_MSG transponder_status;
 #if AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
             GDL90_OWNSHIP_REPORT ownship_report;
             GDL90_OWNSHIP_GEO_ALTITUDE ownship_geometric_altitude;
             GDL90_SENSOR_BARO_MESSAGE sensor_message;
-            GDL90_TRANSPONDER_STATUS_MSG transponder_status;
 #endif
         } decoded;
     } rx;
@@ -84,6 +84,7 @@ private:
     struct {
         uint32_t last_packet_GPS_ms;
         uint32_t last_packet_Transponder_Control_ms;
+        uint32_t last_packet_Transponder_Status_ms;
     } run_state;
 
 };
