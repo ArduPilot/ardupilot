@@ -216,6 +216,7 @@ public:
         SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
+        TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
