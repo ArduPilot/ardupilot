@@ -690,13 +690,24 @@ void NavEKF3_core::FuseVelPosNED()
             // calculate innovations for height and vertical GPS vel measurements
             const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
             const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
-            // check if they are the same sign and both more than 3-sigma out of bounds
-            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > 9.0f * R_OBS[5]) && (sq(velDErr) > 9.0f * R_OBS[2])) {
+            // Check if they are the same sign and both more than 3-sigma out of bounds
+            // Step the test threshold up in stages from 1 to 2 to 3 sigma after exiting
+            // from a previous bad IMU event so that a subsequent error is caught more quickly.
+            const uint32_t timeSinceLastBadIMU_ms = imuSampleTime_ms - badIMUdata_ms;
+            float R_gain;
+            if (timeSinceLastBadIMU_ms > (BAD_IMU_DATA_HOLD_MS * 2)) {
+                R_gain = 9.0F;
+            } else if  (timeSinceLastBadIMU_ms > ((BAD_IMU_DATA_HOLD_MS * 3) / 2)) {
+                R_gain = 4.0F;
+            } else {
+                R_gain = 1.0F;
+            }
+            if ((hgtErr*velDErr > 0.0f) && (sq(hgtErr) > R_gain * R_OBS[5]) && (sq(velDErr) >R_gain * R_OBS[2])) {
                 badIMUdata_ms = imuSampleTime_ms;
             } else {
                 goodIMUdata_ms = imuSampleTime_ms;
             }
-            if (imuSampleTime_ms - badIMUdata_ms < BAD_IMU_DATA_HOLD_MS) {
+            if (timeSinceLastBadIMU_ms < BAD_IMU_DATA_HOLD_MS) {
                 badIMUdata = true;
                 stateStruct.velocity.z = gpsDataDelayed.vel.z;
             } else {
