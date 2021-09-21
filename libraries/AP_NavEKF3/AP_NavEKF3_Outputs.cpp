@@ -274,47 +274,49 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 bool NavEKF3_core::getLLH(struct Location &loc) const
 {
     Location origin;
-    if (getOriginLLH(origin)) {
-        float posD;
-        if(getPosD(posD) && PV_AidingMode != AID_NONE) {
-            // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-            loc.set_alt_cm(origin.alt - posD*100, Location::AltFrame::ABSOLUTE);
-            if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
-                // The EKF is able to provide a position estimate
-                loc.lat = EKF_origin.lat;
-                loc.lng = EKF_origin.lng;
-                loc.offset(outputDataNew.position.x + posOffsetNED.x,
-                           outputDataNew.position.y + posOffsetNED.y);
-                return true;
-            } else {
-                // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-                if (getGPSLLH(loc)) {
-                    return true;
-                } else {
-                    // Return the EKF estimate but mark it as invalid
-                    loc.lat = EKF_origin.lat;
-                    loc.lng = EKF_origin.lng;
-                    loc.offset(outputDataNew.position.x + posOffsetNED.x,
-                               outputDataNew.position.y + posOffsetNED.y);
-                    return false;
-                }
-            }
-        } else {
-            // Return a raw GPS reading if available and the last recorded positon if not
-            if (getGPSLLH(loc)) {
-                return true;
-            } else {
-                loc.lat = EKF_origin.lat;
-                loc.lng = EKF_origin.lng;
-                loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
-                           lastKnownPositionNE.y + posOffsetNED.y);
-                return false;
-            }
-        }
-    } else {
+    if (!getOriginLLH(origin)) {
         // The EKF is not navigating so use raw GPS if available
         return getGPSLLH(loc);
     }
+
+    float posD;
+    if (PV_AidingMode == AID_NONE || !getPosD(posD)) {
+        // Return a raw GPS reading if available and the last recorded
+        // positon if not
+        if (getGPSLLH(loc)) {
+            return true;
+        }
+
+        // default return is last recorded position:
+        loc.lat = EKF_origin.lat;
+        loc.lng = EKF_origin.lng;
+        loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
+                   lastKnownPositionNE.y + posOffsetNED.y);
+
+        return false;
+    }
+
+    // Altitude returned is an absolute altitude relative to the
+    // WGS-84 spherioid
+    loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
+
+    // set location to EKF-estimated position:
+    loc.lat = EKF_origin.lat;
+    loc.lng = EKF_origin.lng;
+    loc.offset(outputDataNew.position.x + posOffsetNED.x,
+               outputDataNew.position.y + posOffsetNED.y);
+
+    if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
+        // The EKF is able to provide a position estimate
+        return true;
+    }
+    // We have been be doing inertial dead reckoning for too long so use raw GPS if available
+    if (getGPSLLH(loc)) {
+        return true;
+    }
+
+    // Return the EKF estimate but mark it as invalid
+    return false;
 }
 
 bool NavEKF3_core::getGPSLLH(struct Location &loc) const
