@@ -57,6 +57,9 @@ public:
     /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
+    /// get current target climb rate in cm/s
+    float get_speed_up() const;
+
     /// set current target climb or descent rate during wp navigation
     void set_speed_up(float speed_up_cms);
     void set_speed_down(float speed_down_cms);

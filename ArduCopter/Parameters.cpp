@@ -1069,6 +1069,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
 #endif
 
+    // @Param: TKOFF_SPEED
+    // @DisplayName: Takeoff speed
+    // @Description: Vertical speed (in cm/s) when taking off in Auto or Guided.  Leave as zero to use WPNAV_SPEED_UP.
+    // @Units: cm/s
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_SPEED", 47, ParametersG2, takeoff_speed_cms, 0),
+
     AP_GROUPEND
 };
 

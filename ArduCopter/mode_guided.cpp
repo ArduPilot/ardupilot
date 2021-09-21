@@ -129,6 +129,11 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         return false;
     }
 
+    // set wp_nav's speed up if necessary
+    if (copter.g2.takeoff_speed_cms > 0) {
+        wp_nav->set_speed_up(copter.g2.takeoff_speed_cms);
+    }
+
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 

@@ -402,12 +402,14 @@ public:
         NAV_PAYLOAD_PLACE,
     };
 
-    // Auto
+    // submode
     SubMode mode() const { return _mode; }
+    void set_submode(SubMode submode);
 
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
+    void takeoff_end();
     void wp_start(const Location& dest_loc);
     void land_start();
     void land_start(const Vector2f& destination);
@@ -584,6 +586,9 @@ private:
 
     // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
     bool auto_RTL;
+
+    // takeoff speed used (0 if not used)
+    float takeoff_speed_used_cms = 0;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED

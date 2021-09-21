@@ -650,6 +650,8 @@ public:
 #if MODE_GUIDED_ENABLED == ENABLED
     AP_Float guided_timeout;
 #endif
+
+    AP_Int16 takeoff_speed_cms;
 };
 
 extern const AP_Param::Info        var_info[];
