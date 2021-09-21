@@ -35,12 +35,12 @@ void Plane::init_ardupilot()
     pitchController.convert_pid();
 
     // initialise rc channels including setting mode
-    rc().init();
 #if HAL_QUADPLANE_ENABLED
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && (quadplane.options & QuadPlane::OPTION_AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
 #else
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
 #endif
+    rc().init();
 
     relay.init();
 
