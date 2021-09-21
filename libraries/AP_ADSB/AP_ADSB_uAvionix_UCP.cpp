@@ -31,11 +31,12 @@
 
 extern const AP_HAL::HAL &hal;
 
+#define AP_ADSB_UAVIONIX_HEALTH_TIMEOUT_MS                     (5000UL)
+
 #define AP_ADSB_UAVIONIX_GCS_LOST_COMMS_LONG_TIMEOUT_MINUTES    (15UL)
 #define AP_ADSB_UAVIONIX_GCS_LOST_COMMS_LONG_TIMEOUT_MS         (1000UL * 60UL * AP_ADSB_UAVIONIX_GCS_LOST_COMMS_LONG_TIMEOUT_MINUTES)
 
 #define AP_ADSB_UAVIONIX_DETECT_GROUNDSTATE                     0
-#define AP_ADSB_UAVIONIX_ALLOW_USING_AUTOPILOT_BARO             0
 #define AP_ADSB_UAVIONIX_EMERGENCY_STATUS_ON_LOST_LINK          0
 
 // detect if any port is configured as uAvionix_UCP
@@ -54,6 +55,7 @@ bool AP_ADSB_uAvionix_UCP::init()
     }
 
     request_msg(GDL90_ID_IDENTIFICATION);
+    request_msg(GDL90_ID_TRANSPONDER_CONFIG);
     return true;
 }
 
@@ -90,6 +92,15 @@ void AP_ADSB_uAvionix_UCP::update()
     if ((now_ms - run_state.last_packet_GPS_ms >= 200) && (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
         run_state.last_packet_GPS_ms = now_ms;
         send_GPS_Data();
+    }
+
+    if (run_state.last_packet_Transponder_Status_ms == 0) {
+        // never seen a status packet. Let us linger in initializing for up to 10s before we declare it failed
+        _frontend.out_state.status = (now_ms < 10000) ? UAVIONIX_ADSB_RF_HEALTH_INITIALIZING : UAVIONIX_ADSB_RF_HEALTH_FAIL_TX;
+    } else if (now_ms - run_state.last_packet_Transponder_Status_ms < AP_ADSB_UAVIONIX_HEALTH_TIMEOUT_MS) {
+        _frontend.out_state.status = rx.decoded.transponder_status.fault ? UAVIONIX_ADSB_RF_HEALTH_FAIL_TX : UAVIONIX_ADSB_RF_HEALTH_OK;
+    } else {
+        _frontend.out_state.status = UAVIONIX_ADSB_RF_HEALTH_FAIL_TX;
     }
 }
 
@@ -156,11 +167,12 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
     case GDL90_ID_SENSOR_MESSAGE:
         memcpy(&rx.decoded.sensor_message, msg.raw, sizeof(rx.decoded.sensor_message));
         break;
+#endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
 
     case GDL90_ID_TRANSPONDER_STATUS:
         memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
+        run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
         break;
-#endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
 
     case GDL90_ID_TRANSPONDER_CONTROL:
     case GDL90_ID_GPS_DATA:
@@ -211,15 +223,7 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     msg.modeCEnabled = true;
     msg.modeSEnabled = true;
     msg.es1090TxEnabled = (_frontend.out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) != 0;
-
-#if AP_ADSB_UAVIONIX_ALLOW_USING_AUTOPILOT_BARO
-    if ((rx.decoded.transponder_config.baroAltSource == GDL90_BARO_DATA_SOURCE_EXTERNAL) && AP::baro().healthy()) {
-        msg.externalBaroAltitude_mm = AP::baro().get_altitude() * 1000; // convert m to mm
-    } else
-#endif
-    {
-        msg.externalBaroAltitude_mm = INT32_MAX;
-    }
+    msg.externalBaroAltitude_mm = INT32_MAX;
 
     // if enabled via param ADSB_OPTIONS, use squawk 7400 while in any Loss-Comms related failsafe
     // https://www.faa.gov/documentLibrary/media/Notice/N_JO_7110.724_5-2-9_UAS_Lost_Link_2.pdf
@@ -259,7 +263,7 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     msg.utcTime_s = gps.time_epoch_usec() * 1E-6;
     msg.latitude_ddE7 = fix_is_good ? _frontend._my_loc.lat : INT32_MAX;
     msg.longitude_ddE7 = fix_is_good ? _frontend._my_loc.lng : INT32_MAX;
-    msg.altitudeGnss_mm = fix_is_good ? _frontend._my_loc.alt : INT32_MAX;
+    msg.altitudeGnss_mm = fix_is_good ? (_frontend._my_loc.alt * 10): INT32_MAX;
 
     // Protection Limits. FD or SBAS-based depending on state bits
     msg.HPL_mm = UINT32_MAX;
