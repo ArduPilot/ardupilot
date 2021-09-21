@@ -1053,7 +1053,7 @@ private:
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
-    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     struct Location EKF_origin;     // LLH origin of the NED axis system, internal only
     struct Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid

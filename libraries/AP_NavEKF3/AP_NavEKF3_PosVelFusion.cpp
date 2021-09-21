@@ -243,8 +243,11 @@ void NavEKF3_core::ResetHeight(void)
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
-    if (inFlight && !gpsNotAvailable && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) &&
-        gpsDataNew.have_vz) {
+    if (inFlight &&
+        (gpsIsInUse || badIMUdata) &&
+        frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) &&
+        gpsDataNew.have_vz &&
+        (imuSampleTime_ms - gpsDataDelayed.time_ms < 500)) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
 #if EK3_FEATURE_EXTERNAL_NAV
     } else if (inFlight && useExtNavVel && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {
@@ -1225,8 +1228,7 @@ void NavEKF3_core::selectHeightForFusion()
     hgtRetryTime_ms = ((useGpsVertVel || useExtNavVel) && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
     if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms ||
         (badIMUdata &&
-        (imuSampleTime_ms - goodIMUdata_ms > BAD_IMU_DATA_TIMEOUT_MS) &&
-        (imuSampleTime_ms - lastPosResetD_ms > BAD_IMU_DATA_TIMEOUT_MS))) {
+        (imuSampleTime_ms - goodIMUdata_ms > BAD_IMU_DATA_TIMEOUT_MS))) {
         hgtTimeout = true;
     } else {
         hgtTimeout = false;
