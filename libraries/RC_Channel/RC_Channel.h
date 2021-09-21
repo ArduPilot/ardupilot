@@ -220,6 +220,7 @@ public:
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
+        TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
