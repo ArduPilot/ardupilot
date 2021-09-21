@@ -24,6 +24,7 @@
 #include <AP_Math/definitions.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include <stdio.h>
@@ -93,11 +94,18 @@ void AP_NMEA_Output::update()
     char dstring[7];
     snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
-    auto &ahrs = AP::ahrs();
-
-    // get location (note: get_position from AHRS always returns true after having GPS position once)
     Location loc;
-    bool pos_valid = ahrs.get_position(loc);
+    bool pos_valid = false;
+    
+    // get location (note: get_position from AHRS always returns true after having GPS position once)
+    AP_AHRS *ahrs = AP_AHRS::get_singleton();
+    AP_GPS *gps = AP_GPS::get_singleton();
+    if (ahrs != nullptr) {
+        pos_valid = ahrs->get_position(loc);
+    } else if (gps != nullptr && gps->status() >= AP_GPS::GPS_OK_FIX_2D) {
+        loc = gps->location();
+        pos_valid = true;
+    }
 
     // format latitude
     char lat_string[13];
@@ -137,9 +145,16 @@ void AP_NMEA_Output::update()
     snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(gga));
 
     // get speed
-    Vector2f speed = ahrs.groundspeed_vector();
-    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
-    float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
+    float speed_knots = 0;
+    float heading = 0;
+    if (ahrs != nullptr) {
+        const Vector2f speed = ahrs->groundspeed_vector();
+        speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
+        heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
+    } else if (gps != nullptr && gps->status() >= AP_GPS::GPS_OK_FIX_2D) {
+        speed_knots = gps->ground_speed() * M_PER_SEC_TO_KNOTS;
+        heading = wrap_360(gps->ground_course());        
+    }
 
     // format RMC message
     char* rmc = nullptr;
