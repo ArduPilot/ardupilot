@@ -692,8 +692,8 @@ void NavEKF3_core::readGpsData()
             gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
         }
         storedGPS.push(gpsDataNew);
-        // declare GPS available for use
-        gpsNotAvailable = false;
+        // declare GPS in use
+        gpsIsInUse = true;
     }
 }
 
