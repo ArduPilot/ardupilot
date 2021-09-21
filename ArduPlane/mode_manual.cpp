@@ -1,13 +1,6 @@
 #include "mode.h"
 #include "Plane.h"
 
-void ModeManual::_exit()
-{
-    if (plane.g.auto_trim > 0) {
-        plane.trim_radio();
-    }
-}
-
 void ModeManual::update()
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.roll_in_expo(false));
