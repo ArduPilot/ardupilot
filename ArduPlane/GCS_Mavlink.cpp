@@ -644,19 +644,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
-{
-    if (is_equal(packet.param4,1.0f)) {
-        if (plane.trim_radio()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    }
-
-    return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
-}
-
 void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
