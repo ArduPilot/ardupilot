@@ -213,6 +213,10 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
+#if HAL_NMEA_OUTPUT_ENABLED
+    _nmea_out = AP_NMEA_Output::probe();
+#endif
+
     start_ms = AP_HAL::native_millis();
 }
 
@@ -387,6 +391,12 @@ void AP_Periph_FW::update()
 #ifndef HAL_NO_GCS
         gcs().update_receive();
         gcs().update_send();
+#endif
+#if HAL_NMEA_OUTPUT_ENABLED
+        // update NMEA output
+        if (_nmea_out != nullptr) {
+            _nmea_out->update();
+        }
 #endif
     }
 

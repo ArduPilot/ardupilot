@@ -11,6 +11,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
@@ -112,6 +113,10 @@ public:
 #if HAL_NUM_CAN_IFACES >= 2
     int8_t gps_mb_can_port = -1;
 #endif
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    class AP_NMEA_Output* _nmea_out;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
