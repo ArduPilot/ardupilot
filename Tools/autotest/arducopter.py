@@ -1072,8 +1072,8 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("Vibration compensation ON", timeout=30)
         self.change_mode("LAND")
 
-        # check vehicle descends to 2m or less within 30 seconds
-        self.wait_altitude(-5, 2, timeout=30, relative=True)
+        # check vehicle descends to 2m or less within 40 seconds
+        self.wait_altitude(-5, 2, timeout=40, relative=True)
 
         # force disarm of vehicle (it will likely not automatically disarm)
         self.disarm_vehicle(force=True)
