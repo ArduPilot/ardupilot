@@ -290,7 +290,7 @@ void NavEKF3_core::InitialiseVariables()
     velErrintegral.zero();
     posErrintegral.zero();
     gpsGoodToAlign = false;
-    gpsNotAvailable = true;
+    gpsIsInUse = false;
     motorsArmed = false;
     prevMotorsArmed = false;
     memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
