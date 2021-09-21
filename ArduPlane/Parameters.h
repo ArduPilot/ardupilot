@@ -51,7 +51,7 @@ public:
 
         // Misc
         //
-        k_param_auto_trim      = 10,
+        k_param_auto_trim      = 10, // unused
         k_param_log_bitmask_old,  // unused
         k_param_pitch_trim_cd,
         k_param_mix_mode,
@@ -424,7 +424,6 @@ public:
 
     // Misc
     //
-    AP_Int8 auto_trim;
     AP_Int8 rudder_only;
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
