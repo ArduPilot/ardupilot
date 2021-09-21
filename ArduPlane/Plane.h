@@ -1024,7 +1024,7 @@ private:
     void read_radio();
     int16_t rudder_input(void);
     void control_failsafe();
-    bool trim_radio();
+    void trim_radio();
     bool rc_throttle_value_ok(void) const;
     bool rc_failsafe_active(void) const;
 
