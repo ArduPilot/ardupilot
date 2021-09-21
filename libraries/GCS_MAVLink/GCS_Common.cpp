@@ -851,6 +851,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
             };
 
