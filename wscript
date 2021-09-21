@@ -242,6 +242,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
+    g.add_option('--sitl-32bit', action='store_true',
+                 default=False,
+                 help="Enable SITL 32bit")
+
     g.add_option('--build-dates', action='store_true',
                  default=False,
                  help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
@@ -331,6 +335,7 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.COVERAGE = cfg.options.coverage
+    cfg.env.SITL32BIT = cfg.options.sitl_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -414,6 +419,12 @@ def configure(cfg):
 
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('SITL 32-bit build')
+    if cfg.env.SITL32BIT:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
