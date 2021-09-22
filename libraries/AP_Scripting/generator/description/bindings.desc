@@ -384,7 +384,7 @@ ap_object AP_HAL::I2CDevice method read_registers boolean uint8_t 0 UINT8_MAX &u
 ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
 
 
-ap_object AP_HAL::AnalogSource method set_pin void uint8_t 0 UINT8_MAX
+ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t 0 UINT8_MAX
 ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
