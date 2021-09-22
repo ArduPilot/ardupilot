@@ -1315,43 +1315,31 @@ void AP_BLHeli::init(void)
       allow mode override - this makes it possible to use DShot for
       rovers and subs, plus for quadplane fwd motors
      */
-    AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
-    AP_Motors::pwm_type otype = AP_Motors::pwm_type(output_type.get());
-
+    // +1 converts from AP_Motors::pwm_type to AP_HAL::RCOutput::output_mode and saves doing a param conversion
+    // this is the only use of the param, but this is still a bit of a hack
+    const int16_t type = output_type.get() + 1;
+    AP_HAL::RCOutput::output_mode otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
     switch (otype) {
-    case AP_Motors::PWM_TYPE_ONESHOT:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
-        break;
-    case AP_Motors::PWM_TYPE_ONESHOT125:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT125;
-        break;
-    case AP_Motors::PWM_TYPE_BRUSHED:
-        mode = AP_HAL::RCOutput::MODE_PWM_BRUSHED;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT150:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT150;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT300:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT300;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT600:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT600;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT1200:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT1200;
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
+    case AP_HAL::RCOutput::MODE_PWM_BRUSHED:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT1200:
+        if (mask) {
+            hal.rcout->set_output_mode(mask, otype);
+        }
         break;
     default:
         break;
-    }
-    if (mask && mode != AP_HAL::RCOutput::MODE_PWM_NONE) {
-        hal.rcout->set_output_mode(mask, mode);
     }
 
     uint16_t digital_mask = 0;
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
-    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+    if (mask && otype >= AP_HAL::RCOutput::MODE_PWM_DSHOT150) {
         digital_mask = mask;
     }
 
