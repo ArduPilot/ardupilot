@@ -574,7 +574,7 @@ case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
     }
 
     // brushed 16kHz defaults to 16kHz pulses
-    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->is_brushed_pwm_type()) {
         g.rc_speed.set_default(16000);
     }
     
