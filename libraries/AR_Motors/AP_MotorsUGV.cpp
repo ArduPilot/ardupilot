@@ -1004,6 +1004,24 @@ bool AP_MotorsUGV::active() const
     return false;
 }
 
+// returns true if the configured PWM type is digital and should have fixed endpoints
+bool AP_MotorsUGV::is_digital_pwm_type() const
+{
+    switch (_pwm_type) {
+        case PWM_TYPE_DSHOT150:
+        case PWM_TYPE_DSHOT300:
+        case PWM_TYPE_DSHOT600:
+        case PWM_TYPE_DSHOT1200:
+            return true;
+        case PWM_TYPE_NORMAL:
+        case PWM_TYPE_ONESHOT:
+        case PWM_TYPE_ONESHOT125:
+        case PWM_TYPE_BRUSHED_WITH_RELAY:
+        case PWM_TYPE_BRUSHED_BIPOLAR:
+            break;
+    }
+    return false;
+}
 
 namespace AP {
     AP_MotorsUGV *motors_ugv()
