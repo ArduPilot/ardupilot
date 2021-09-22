@@ -2483,7 +2483,7 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
             char *buf = nullptr;
             if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
-                AP_BoardConfig::config_error(buf);
+                AP_BoardConfig::config_error("%s", buf);
             }
         }
     }
