@@ -186,7 +186,9 @@ public:
     
     /*
       output modes. Allows for support of PWM, oneshot and dshot 
-     */
+    */
+    // this enum is used by BLH_OTYPE and ESC_PWM_TYPE on AP_Periph
+    // double check params are still correct when changing
     enum output_mode {
         MODE_PWM_NONE,
         MODE_PWM_NORMAL,
