@@ -836,7 +836,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_GPS2_RAW,              MSG_GPS2_RAW},
         { MAVLINK_MSG_ID_GPS2_RTK,              MSG_GPS2_RTK},
         { MAVLINK_MSG_ID_SYSTEM_TIME,           MSG_SYSTEM_TIME},
-        { MAVLINK_MSG_ID_RC_CHANNELS_SCALED,    MSG_SERVO_OUT},
         { MAVLINK_MSG_ID_PARAM_VALUE,           MSG_NEXT_PARAM},
         { MAVLINK_MSG_ID_FENCE_STATUS,          MSG_FENCE_STATUS},
         { MAVLINK_MSG_ID_AHRS,                  MSG_AHRS},
