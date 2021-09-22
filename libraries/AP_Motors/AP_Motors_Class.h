@@ -219,16 +219,14 @@ public:
     // This function is overriden in motors_heli class.   Always true for multicopters.
     virtual bool init_targets_on_arming() const { return true; }
 
-    enum pwm_type { PWM_TYPE_NORMAL     = 0,
-                    PWM_TYPE_ONESHOT    = 1,
-                    PWM_TYPE_ONESHOT125 = 2,
-                    PWM_TYPE_BRUSHED    = 3,
-                    PWM_TYPE_DSHOT150   = 4,
-                    PWM_TYPE_DSHOT300   = 5,
-                    PWM_TYPE_DSHOT600   = 6,
-                    PWM_TYPE_DSHOT1200  = 7,
-                    PWM_TYPE_PWM_RANGE  = 8 };
-    pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
+    // returns true if the configured PWM type is digital and should have fixed endpoints
+    bool is_digital_pwm_type() const;
+
+    // returns true is pwm type is brushed
+    bool is_brushed_pwm_type() const { return _pwm_type == PWM_TYPE_BRUSHED; }
+
+    // returns true is pwm type is normal
+    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
@@ -299,6 +297,16 @@ protected:
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
+
+    enum pwm_type { PWM_TYPE_NORMAL     = 0,
+                    PWM_TYPE_ONESHOT    = 1,
+                    PWM_TYPE_ONESHOT125 = 2,
+                    PWM_TYPE_BRUSHED    = 3,
+                    PWM_TYPE_DSHOT150   = 4,
+                    PWM_TYPE_DSHOT300   = 5,
+                    PWM_TYPE_DSHOT600   = 6,
+                    PWM_TYPE_DSHOT1200  = 7,
+                    PWM_TYPE_PWM_RANGE  = 8 };
 
 private:
 
