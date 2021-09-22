@@ -373,22 +373,6 @@ void GCS_MAVLINK::send_distance_sensor()
     send_proximity();
 }
 
-void GCS_MAVLINK::send_rangefinder() const
-{
-    RangeFinder *rangefinder = RangeFinder::get_singleton();
-    if (rangefinder == nullptr) {
-        return;
-    }
-    AP_RangeFinder_Backend *s = rangefinder->find_instance(ROTATION_PITCH_270);
-    if (s == nullptr) {
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-            chan,
-            s->distance_cm() * 0.01f,
-            s->voltage_mv() * 0.001f);
-}
-
 void GCS_MAVLINK::send_proximity()
 {
 #if HAL_PROXIMITY_ENABLED
@@ -845,7 +829,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AHRS2,                 MSG_AHRS2},
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
-        { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
             // request also does report:
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN},
@@ -4950,11 +4933,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         send_fence_status();
-        break;
-
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder();
         break;
 
     case MSG_DISTANCE_SENSOR:
