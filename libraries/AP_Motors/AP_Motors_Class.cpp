@@ -208,6 +208,25 @@ void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
     limit.yaw = flag;
 }
 
+// returns true if the configured PWM type is digital and should have fixed endpoints
+bool AP_Motors::is_digital_pwm_type() const
+{
+    switch (_pwm_type) {
+        case PWM_TYPE_DSHOT150:
+        case PWM_TYPE_DSHOT300:
+        case PWM_TYPE_DSHOT600:
+        case PWM_TYPE_DSHOT1200:
+            return true;
+        case PWM_TYPE_NORMAL:
+        case PWM_TYPE_ONESHOT:
+        case PWM_TYPE_ONESHOT125:
+        case PWM_TYPE_BRUSHED:
+        case PWM_TYPE_PWM_RANGE:
+            break;
+    }
+    return false;
+}
+
 namespace AP {
     AP_Motors *motors()
     {
