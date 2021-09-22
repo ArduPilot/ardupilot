@@ -2018,22 +2018,6 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 }
 
 /*
-  true when the output mode is of type dshot
-*/
-bool RCOutput::is_dshot_protocol(const enum output_mode mode)
-{
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        return false;
-    }
-}
-
-/*
     returns the bitrate in Hz of the given output_mode
 */
 uint32_t RCOutput::protocol_bitrate(const enum output_mode mode)
