@@ -140,11 +140,26 @@ float AnalogSource::voltage_latest()
     return _pin_scaler() * read_latest();
 }
 
-void AnalogSource::set_pin(uint8_t pin)
+bool AnalogSource::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
-        return;
+        return true;
     }
+    bool found_pin = false;
+    if (_pin == ANALOG_SERVO_VRSSI_PIN) {
+        found_pin = true;
+    } else {
+        for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
+            if (AnalogIn::pin_config[i].channel == pin) {
+                found_pin = true;
+                break;
+            }
+        }
+    }
+    if (!found_pin) {
+        return false;
+    }
+
     WITH_SEMAPHORE(_semaphore);
     _pin = pin;
     _sum_value = 0;
@@ -153,6 +168,7 @@ void AnalogSource::set_pin(uint8_t pin)
     _latest_value = 0;
     _value = 0;
     _value_ratiometric = 0;
+    return true;
 }
 
 /*
