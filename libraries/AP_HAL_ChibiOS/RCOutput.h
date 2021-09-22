@@ -600,7 +600,6 @@ private:
     const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
-    static bool is_dshot_protocol(const enum output_mode mode);
     static uint32_t protocol_bitrate(const enum output_mode mode);
     void print_group_setup_error(pwm_group &group, const char* error_string);
 
