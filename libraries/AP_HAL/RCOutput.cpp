@@ -52,3 +52,19 @@ void AP_HAL::RCOutput::append_to_banner(char banner_msg[], uint8_t banner_msg_le
         hal.util->snprintf(banner_msg, banner_msg_len, "%s %s:%u-%u", banner_msg_temp, mode_str, (unsigned)low_ch, (unsigned)high_ch);
     }
 }
+
+/*
+  true when the output mode is of type dshot
+*/
+bool AP_HAL::RCOutput::is_dshot_protocol(const enum output_mode mode)
+{
+    switch (mode) {
+    case MODE_PWM_DSHOT150:
+    case MODE_PWM_DSHOT300:
+    case MODE_PWM_DSHOT600:
+    case MODE_PWM_DSHOT1200:
+        return true;
+    default:
+        return false;
+    }
+}
