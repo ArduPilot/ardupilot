@@ -553,41 +553,53 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y)
+void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    struct log_PSC pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSC_MSG),
+    const struct log_PSCN pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCN_MSG),
         time_us         : AP_HAL::micros64(),
-        pos_target_x    : pos_target.x * 0.01f,
-        pos_target_Y    : pos_target.y * 0.01f,
-        position_x      : position.x * 0.01f,
-        position_y      : position.y * 0.01f,
-        vel_target_x    : vel_target.x * 0.01f,
-        vel_target_y    : vel_target.y * 0.01f,
-        velocity_x      : velocity.x * 0.01f,
-        velocity_y      : velocity.y * 0.01f,
-        accel_target_x  : accel_target.x * 0.01f,
-        accel_target_y  : accel_target.y * 0.01f,
-        accel_x         : accel_x * 0.01f,
-        accel_y         : accel_y * 0.01f
+        pos_target    : pos_target * 0.01f,
+        pos           : pos * 0.01f,
+        vel_desired   : vel_desired * 0.01f,
+        vel_target    : vel_target * 0.01f,
+        vel           : vel * 0.01f,
+        accel_desired : accel_desired * 0.01f,
+        accel_target  : accel_target * 0.01f,
+        accel         : accel * 0.01f
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out)
+void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    const struct log_PSCZ pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSCZ_MSG),
-        time_us         : AP_HAL::micros64(),
-        pos_target_z    : pos_target_z * 0.01f,
-        pos_z           : pos_z * 0.01f,
-        vel_desired_z   : vel_desired_z * 0.01f,
-        vel_target_z    : vel_target_z * 0.01f,
-        vel_z           : vel_z * 0.01f,
-        accel_desired_z : accel_desired_z * 0.01f,
-        accel_target_z  : accel_target_z * 0.01f,
-        accel_z         : accel_z * 0.01f,
-        throttle_out    : throttle_out
+    const struct log_PSCE pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCE_MSG),
+            time_us         : AP_HAL::micros64(),
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    const struct log_PSCD pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCD_MSG),
+            time_us         : AP_HAL::micros64(),
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
