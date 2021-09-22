@@ -1339,7 +1339,7 @@ void AP_BLHeli::init(void)
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
-    if (mask && otype >= AP_HAL::RCOutput::MODE_PWM_DSHOT150) {
+    if (mask && hal.rcout->is_dshot_protocol(otype)) {
         digital_mask = mask;
     }
 
