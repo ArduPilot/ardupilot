@@ -955,6 +955,14 @@ void NavEKF3_core::calcOutputStates()
         Vector3F velErr = (stateStruct.velocity - outputDataDelayed.velocity);
         Vector3F posErr = (stateStruct.position - outputDataDelayed.position);
 
+        if (badIMUdata) {
+            // When IMU accel is bad,  calculate an integral that will be used to drive the difference
+            // between the output state and internal EKF state at the delayed time horizon to zero.
+            badImuVelErrIntegral += (stateStruct.velocity.z - outputDataNew.velocity.z);
+        } else {
+            badImuVelErrIntegral = velErrintegral.z;
+        }
+
         // collect magnitude tracking error for diagnostics
         outputTrackError.x = deltaAngErr.length();
         outputTrackError.y = velErr.length();
@@ -969,8 +977,16 @@ void NavEKF3_core::calcOutputStates()
         // use a PI feedback to calculate a correction that will be applied to the output state history
         posErrintegral += posErr;
         velErrintegral += velErr;
-        Vector3F velCorrection = velErr * velPosGain + velErrintegral * sq(velPosGain) * 0.1f;
-        Vector3F posCorrection = posErr * velPosGain + posErrintegral * sq(velPosGain) * 0.1f;
+        Vector3F posCorrection = posErr * velPosGain + posErrintegral * sq(velPosGain) * 0.1F;
+        Vector3F velCorrection;
+        velCorrection.x = velErr.x * velPosGain + velErrintegral.x * sq(velPosGain) * 0.1F;
+        velCorrection.y = velErr.y * velPosGain + velErrintegral.y * sq(velPosGain) * 0.1F;
+        if (badIMUdata) {
+            velCorrection.z = velErr.z * velPosGain + badImuVelErrIntegral * sq(velPosGain) * 0.07F;
+            velErrintegral.z = badImuVelErrIntegral;
+        } else {
+            velCorrection.z = velErr.z * velPosGain + velErrintegral.z * sq(velPosGain) * 0.1F;
+        }
 
         // loop through the output filter state history and apply the corrections to the velocity and position states
         // this method is too expensive to use for the attitude states due to the quaternion operations required
