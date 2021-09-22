@@ -1367,7 +1367,7 @@ void AP_BLHeli::init(void)
     if (motors) {
         uint16_t motormask = motors->get_motor_mask();
         // set the rest of the digital channels
-        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+        if (motors->is_digital_pwm_type()) {
             digital_mask |= motormask;
         }
         mask |= motormask;
