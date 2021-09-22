@@ -147,36 +147,6 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
     return rover.g2.motors.get_throttle();
 }
 
-void GCS_MAVLINK_Rover::send_rangefinder() const
-{
-    float distance_cm;
-    float voltage;
-    bool got_one = false;
-
-    // report smaller distance of all rangefinders
-    for (uint8_t i=0; i<rover.rangefinder.num_sensors(); i++) {
-        AP_RangeFinder_Backend *s = rover.rangefinder.get_backend(i);
-        if (s == nullptr) {
-            continue;
-        }
-        if (!got_one ||
-            s->distance_cm() < distance_cm) {
-            distance_cm = s->distance_cm();
-            voltage = s->voltage_mv();
-            got_one = true;
-        }
-    }
-    if (!got_one) {
-        // no relevant data found
-        return;
-    }
-
-    mavlink_msg_rangefinder_send(
-        chan,
-        distance_cm * 0.01f,
-        voltage);
-}
-
 /*
   send PID tuning message
  */
