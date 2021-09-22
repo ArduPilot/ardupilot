@@ -882,6 +882,99 @@ bool AP_Logger::logging_started(void) const {
     return false;
 }
 
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+void AP_Logger::handle_message_request_event(GCS_MAVLINK &link, const mavlink_message_t &msg)
+{
+    mavlink_request_event_t packet;
+    mavlink_msg_request_event_decode(&msg, &packet);
+
+    // if (packet.target_system != gcs().sysid_this_mav()) {
+    //     return;
+    // }
+
+    // if (packet.target_component != gcs().compid_this_mav()) {
+    //     return;
+    // }
+
+    if (packet.target_system != 1) {
+        return;
+    }
+
+    if (packet.target_component != 1) {
+        return;
+    }
+
+    // every requested sequence number gets either an EVENT or a
+    // RESPONSE_EVENT_ERROR; a receiver waiting on an event we no
+    // longer hold will otherwise re-request it forever.  Sequence
+    // numbers wrap, so first_sequence may be larger than last_sequence
+    const uint16_t count = packet.last_sequence - packet.first_sequence;
+    for (uint32_t ofs=0; ofs<=count; ofs++) {
+        const uint16_t seqno = packet.first_sequence + ofs;
+        const MAVLinkEventInterfaceQueue *entry = find_mavlink_event_interface_queue_entry(seqno);
+        if (entry != nullptr) {
+            if (!HAVE_PAYLOAD_SPACE(link.get_chan(), EVENT)) {
+                return;
+            }
+            send_mavlink_event_interface_queue_entry(*entry, link);
+            continue;
+        }
+        if (!HAVE_PAYLOAD_SPACE(link.get_chan(), RESPONSE_EVENT_ERROR)) {
+            return;
+        }
+        const uint16_t oldest_available = oldest_mavlink_event_interface_seq_after(seqno);
+        mavlink_msg_response_event_error_send(
+            link.get_chan(),
+            msg.sysid,
+            msg.compid,
+            seqno,
+            oldest_available,
+            MAV_EVENT_ERROR_REASON_UNAVAILABLE
+            );
+        // nothing between seqno and oldest_available is available either
+        const uint16_t skip = oldest_available - seqno;
+        if (skip == 0 || skip > UINT16_MAX/2) {
+            // nothing newer than seqno is held
+            return;
+        }
+        ofs += skip - 1;
+    }
+}
+
+const AP_Logger::MAVLinkEventInterfaceQueue *AP_Logger::find_mavlink_event_interface_queue_entry(uint16_t seqno) const
+{
+    const uint8_t queue_count = queue_full ? ARRAY_SIZE(mavlink_event_interface_queue) : next_mavlink_event_interface_queue_entry;
+    for (uint8_t i=0; i<queue_count; i++) {
+        if (mavlink_event_interface_queue[i].seqno == seqno) {
+            return &mavlink_event_interface_queue[i];
+        }
+    }
+    return nullptr;
+}
+
+// returns the oldest sequence number still held which is newer than
+// seqno.  If none is held, returns the sequence number the next event
+// will be given
+uint16_t AP_Logger::oldest_mavlink_event_interface_seq_after(uint16_t seqno) const
+{
+    uint16_t ret = mavlink_event_interface_seq;
+    uint16_t ret_delta = UINT16_MAX;
+    const uint8_t queue_count = queue_full ? ARRAY_SIZE(mavlink_event_interface_queue) : next_mavlink_event_interface_queue_entry;
+    for (uint8_t i=0; i<queue_count; i++) {
+        const uint16_t delta = mavlink_event_interface_queue[i].seqno - seqno;
+        if (delta == 0 || delta > UINT16_MAX/2) {
+            // not newer than seqno
+            continue;
+        }
+        if (delta < ret_delta) {
+            ret_delta = delta;
+            ret = mavlink_event_interface_queue[i].seqno;
+        }
+    }
+    return ret;
+}
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
 void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
@@ -897,6 +990,11 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
         break;
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    case MAVLINK_MSG_ID_REQUEST_EVENT:
+        handle_message_request_event(link, msg);
+        break;
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
     }
 }
 
@@ -1527,9 +1625,57 @@ void AP_Logger::start_io_thread(void)
 
 #undef FOR_EACH_BACKEND
 
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+void AP_Logger::queue_entry_to_event_message(mavlink_event_t &packet, const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    packet = {
+        entry.mavlink_event_id,  // event id (component metadata)
+        entry.time_boot_ms,
+        entry.seqno,
+        0,  // destination sysID
+        0,  // destination compid
+        entry.log_level,
+        { entry.args[0] }
+    };
+}
+
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry)
+{
+    // note reordering of packet fields here; see mavlink_msg_event.h
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+
+void AP_Logger::send_mavlink_event_interface_queue_entry(const MAVLinkEventInterfaceQueue &entry, GCS_MAVLINK &link)
+{
+    mavlink_event_t packet {};
+    queue_entry_to_event_message(packet, entry);
+    link.send_message(MAVLINK_MSG_ID_EVENT, (const char*)&packet);
+}
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
 // Wrote an event packet
 void AP_Logger::Write_Event(LogEvent id)
 {
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    const struct MAVLinkEventInterfaceQueue queue_entry {
+        (uint8_t)id,
+        AP_HAL::millis(),
+        mavlink_event_interface_seq++,
+        0,
+        { uint8_t(id) }
+    };
+    mavlink_event_interface_queue[next_mavlink_event_interface_queue_entry++] = queue_entry;
+    if (next_mavlink_event_interface_queue_entry >= ARRAY_SIZE(mavlink_event_interface_queue)) {
+        next_mavlink_event_interface_queue_entry = 0;
+        queue_full = true;
+    }
+
+    send_mavlink_event_interface_queue_entry(queue_entry);
+#endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
+
     const struct log_Event pkt{
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
