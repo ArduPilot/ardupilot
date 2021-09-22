@@ -1170,13 +1170,18 @@ void AC_PosControl::write_log()
     if (is_active_xy()) {
         float accel_x, accel_y;
         lean_angles_to_accel_xy(accel_x, accel_y);
-        AP::logger().Write_PSC(get_pos_target_cm().tofloat(), _inav.get_position(), get_vel_target_cms(), _inav.get_velocity(), get_accel_target_cmss(), accel_x, accel_y);
+        AP::logger().Write_PSCN(get_pos_target_cm().x, _inav.get_position().x,
+                                get_vel_desired_cms().x, get_vel_target_cms().x, _inav.get_velocity().x,
+                                _accel_desired.x, get_accel_target_cmss().x, accel_x);
+        AP::logger().Write_PSCE(get_pos_target_cm().y, _inav.get_position().y,
+                                get_vel_desired_cms().y, get_vel_target_cms().y, _inav.get_velocity().y,
+                                _accel_desired.y, get_accel_target_cmss().y, accel_y);
     }
 
     if (is_active_z()) {
-        AP::logger().Write_PSCZ(get_pos_target_cm().z, _inav.get_position().z,
-                                get_vel_desired_cms().z, get_vel_target_cms().z, _inav.get_velocity().z,
-                                _accel_desired.z, get_accel_target_cmss().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
+        AP::logger().Write_PSCD(-get_pos_target_cm().z, -_inav.get_position().z,
+                                -get_vel_desired_cms().z, -get_vel_target_cms().z, -_inav.get_velocity().z,
+                                -_accel_desired.z, -get_accel_target_cmss().z, -get_z_accel_cmss());
     }
 }
 
