@@ -12,18 +12,6 @@ public:
     // singleton support
     static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
 
-    enum pwm_type {
-        PWM_TYPE_NORMAL = 0,
-        PWM_TYPE_ONESHOT = 1,
-        PWM_TYPE_ONESHOT125 = 2,
-        PWM_TYPE_BRUSHED_WITH_RELAY = 3,
-        PWM_TYPE_BRUSHED_BIPOLAR = 4,
-        PWM_TYPE_DSHOT150 = 5,
-        PWM_TYPE_DSHOT300 = 6,
-        PWM_TYPE_DSHOT600 = 7,
-        PWM_TYPE_DSHOT1200 = 8
-    };
-
     enum motor_test_order {
         MOTOR_TEST_THROTTLE = 1,
         MOTOR_TEST_STEERING = 2,
@@ -120,8 +108,8 @@ public:
     // return the motor mask
     uint16_t get_motor_mask() const { return _motor_mask; }
 
-    // returns the configured PWM type
-    uint8_t get_pwm_type() const { return _pwm_type; }
+    // returns true if the configured PWM type is digital and should have fixed endpoints
+    bool is_digital_pwm_type() const;
 
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
@@ -134,7 +122,20 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
+private:
+
+    enum pwm_type {
+        PWM_TYPE_NORMAL = 0,
+        PWM_TYPE_ONESHOT = 1,
+        PWM_TYPE_ONESHOT125 = 2,
+        PWM_TYPE_BRUSHED_WITH_RELAY = 3,
+        PWM_TYPE_BRUSHED_BIPOLAR = 4,
+        PWM_TYPE_DSHOT150 = 5,
+        PWM_TYPE_DSHOT300 = 6,
+        PWM_TYPE_DSHOT600 = 7,
+        PWM_TYPE_DSHOT1200 = 8
+    };
+
     // sanity check parameters
     void sanity_check_parameters();
 
