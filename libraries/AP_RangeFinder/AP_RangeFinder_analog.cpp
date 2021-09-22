@@ -63,12 +63,11 @@ bool AP_RangeFinder_analog::detect(AP_RangeFinder_Params &_params)
  */
 void AP_RangeFinder_analog::update_voltage(void)
 {
-   if (source == nullptr) {
+   if (source == nullptr || !source->set_pin(params.pin)) {
        state.voltage_mv = 0;
+       set_status(RangeFinder::Status::NotConnected);
        return;
    }
-   // cope with changed settings
-   source->set_pin(params.pin);
    if (params.ratiometric) {
        state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
    } else {
