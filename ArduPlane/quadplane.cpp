@@ -606,7 +606,7 @@ bool QuadPlane::setup(void)
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
         break;
     default:
-        AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
+        AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", (unsigned int)(frame_class.get()));
     }
 
     // Make sure not both a tailsiter and tiltrotor
