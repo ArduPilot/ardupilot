@@ -849,7 +849,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
             // request also does report:
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN},
-        { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
         { MAVLINK_MSG_ID_MOUNT_STATUS,          MSG_MOUNT_STATUS},
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
@@ -2189,22 +2188,6 @@ void GCS::setup_uarts()
     ltm_telemetry.init();
     devo_telemetry.init();
 #endif
-}
-
-// report battery2 state
-void GCS_MAVLINK::send_battery2()
-{
-    const AP_BattMonitor &battery = AP::battery();
-
-    if (battery.num_instances() > 1) {
-        float current;
-        if (battery.current_amps(current, 1)) {
-            current = constrain_float(current * 100,-INT16_MAX,INT16_MAX); // 10*mA
-        } else {
-            current = -1;
-        }
-        mavlink_msg_battery2_send(chan, battery.voltage(1)*1000, current);
-    }
 }
 
 /*
@@ -4930,11 +4913,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_BATTERY_STATUS:
         send_battery_status();
-        break;
-
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2();
         break;
 
     case MSG_EKF_STATUS_REPORT:

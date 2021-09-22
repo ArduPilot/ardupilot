@@ -256,7 +256,6 @@ public:
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
-    void send_battery2();
     void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
