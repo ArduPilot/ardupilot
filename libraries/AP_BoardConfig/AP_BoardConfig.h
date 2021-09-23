@@ -124,11 +124,13 @@ public:
 #endif
     }
 
+#ifdef HAL_PIN_ALT_CONFIG
     // get alternative config selection
     uint8_t get_alt_config(void) {
         return uint8_t(_alt_config.get());
     }
-    
+#endif // HAL_PIN_ALT_CONFIG
+
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
@@ -284,7 +286,9 @@ private:
 
     AP_Int32 _options;
 
+#ifdef HAL_PIN_ALT_CONFIG
     AP_Int8  _alt_config;
+#endif
 };
 
 namespace AP {
