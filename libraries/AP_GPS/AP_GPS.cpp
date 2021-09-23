@@ -385,6 +385,8 @@ AP_GPS::AP_GPS()
 {
     static_assert((sizeof(_initialisation_blob) * (CHAR_BIT + 2)) < (4800 * GPS_BAUD_TIME_MS * 1e-3),
                     "GPS initilisation blob is too large to be completely sent before the baud rate changes");
+    static_assert(GPS_MAX_RECEIVERS <= GPS_MAX_INSTANCES,
+                    "Not enough instances to cover GPS_MAX_RECEIVERS");
 
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -1056,6 +1058,7 @@ void AP_GPS::update_primary(void)
 
     uint32_t now = AP_HAL::millis();
 
+#if GPS_MAX_RECEIVERS > 1
     // special handling of RTK moving baseline pair. Always use the
     // base as the rover position is derived from the base, which
     // means the rover always has worse position and velocity than the
@@ -1075,6 +1078,7 @@ void AP_GPS::update_primary(void)
             return;
         }
     }
+#endif
 
 #if defined(GPS_BLENDED_INSTANCE)
     // handling switching away from blended GPS

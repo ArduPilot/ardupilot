@@ -181,25 +181,32 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     WITH_SEMAPHORE(_sem_registry);
     int8_t found_match = -1, last_match = -1;
     AP_GPS_UAVCAN* backend = nullptr;
+#if GPS_MAX_RECEIVERS > 1
     bool bad_override_config = false;
+#endif
     for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
+#if GPS_MAX_RECEIVERS > 1
             if (_gps._override_node_id[_state.instance] != 0 &&
                 _gps._override_node_id[_state.instance] != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
             }
+#endif
             last_match = found_match;
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+#if GPS_MAX_RECEIVERS > 1
                 if (_detected_modules[i].node_id == _gps._override_node_id[j] &&
                     (j != _state.instance)) {
                     //wrong instance
                     found_match = -1;
                     break;
                 }
+#endif
                 found_match = i;
             }
 
             // Handle Duplicate overrides
+#if GPS_MAX_RECEIVERS > 1
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
                 if (_gps._override_node_id[i] != 0 && (i != j) &&
                     _gps._override_node_id[i] == _gps._override_node_id[j]) {
@@ -210,7 +217,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps._override_node_id[i].get());
                 last_match = i;
             }
-
+#endif
             if (found_match == -1) {
                 found_match = last_match;
                 continue;
@@ -255,6 +262,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                             _state.instance);
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "UAVCAN%u-%u", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
+#if GPS_MAX_RECEIVERS > 1
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
             if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
                 if (i == _state.instance) {
@@ -267,6 +275,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                 AP::gps()._node_id[i].set_and_notify(tmp);
             }
         }
+#endif
 #if GPS_MOVING_BASELINE
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
             backend->rtcm3_parser = new RTCM3_Parser;
@@ -282,6 +291,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 
 bool AP_GPS_UAVCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_len)
 {
+#if GPS_MAX_RECEIVERS > 1
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         bool overriden_node_found = false;
         bool bad_override_config = false;
@@ -311,6 +321,7 @@ bool AP_GPS_UAVCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_le
             return false;
         }
     }
+#endif
 
     return true;
 }
@@ -329,6 +340,7 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
         }
     }
 
+#if GPS_MAX_RECEIVERS > 1
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
@@ -363,6 +375,7 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
             }
         }
     }
+#endif
     return nullptr;
 }
 
