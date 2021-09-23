@@ -44,8 +44,6 @@ void ModeQLoiter::run()
         plane.mode_qloiter._enter();
     }
 
-    quadplane.check_attitude_relax();
-
     if (quadplane.should_relax()) {
         loiter_nav->soften_for_landing();
     }
