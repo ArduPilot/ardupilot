@@ -155,6 +155,12 @@ bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
         // the user can set the option to use current integration in the backend instead.
         return AP_BattMonitor_Backend::capacity_remaining_pct(percentage);
     }
+
+    // the monitor must have current readings in order to estimate consumed_mah and be healthy
+    if (!has_current() || !_state.healthy) {
+        return false;
+    }
+
     percentage = _soc;
     return true;
 }
