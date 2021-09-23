@@ -90,6 +90,12 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHAN_HIGH", 6, AP_RSSI, rssi_channel_high_pwm_value,  2000),
 
+    // @Param: SCALE
+    // @DisplayName: Scale factor for rssi signal
+    // @Description: Scale factor for rssi signal
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("SCALE", 7, AP_RSSI, rssi_scale_factor,  1),
     AP_GROUPEND
 };
 
@@ -135,19 +141,25 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::TYPE_DISABLED:
             return 0.0f;
         case RssiType::ANALOG_PIN:
+            // RSSI_SCALE is applied in scale_and_constrain_float_rssi()
             return read_pin_rssi();
         case RssiType::RC_CHANNEL_VALUE:
+            // RSSI_SCALE is applied in scale_and_constrain_float_rssi()
             return read_channel_rssi();
         case RssiType::RECEIVER: {
+            // RSSI_SCALE is applied in the AP_RCProtocol_* backends
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
-                return rssi / 255.0;
+                // make sure the value is clipped to the 0.0 - 1.0 range.
+                return constrain_float(rssi / 255.0, 0, 1);
             }
             return 0.0f;
         }
         case RssiType::PWM_PIN:
+            // RSSI_SCALE is applied in scale_and_constrain_float_rssi()
             return read_pwm_pin_rssi();
         case RssiType::TELEMETRY_RADIO_RSSI:
+            // RSSI_SCALE is applied in read_telemetry_radio_rssi()
             return read_telemetry_radio_rssi();
     }
     // should never get to here
@@ -226,7 +238,7 @@ float AP_RSSI::read_pwm_pin_rssi()
 
 float AP_RSSI::read_telemetry_radio_rssi()
 {
-    return GCS_MAVLINK::telemetry_radio_rssi();
+    return constrain_float(GCS_MAVLINK::telemetry_radio_rssi() * rssi_scale_factor, 0, 1);
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
@@ -252,8 +264,8 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
         std::swap(low_rssi_range, high_rssi_range);        
     }
 
-    // Scale the value down to a 0.0 - 1.0 range
-    float rssi_value_scaled = (current_rssi_value - low_rssi_range) / rssi_value_range;
+    // Scale the value down to a 0.0 - 1.0 range and apply the user scale factor
+    float rssi_value_scaled = ((current_rssi_value - low_rssi_range) / rssi_value_range) * rssi_scale_factor;
     // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
     // value retrieved falls outside the user-supplied range.
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
