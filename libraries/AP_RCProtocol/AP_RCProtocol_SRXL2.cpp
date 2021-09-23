@@ -24,7 +24,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX.h>
-
+#ifndef IOMCU_FW
+#include <AP_RSSI/AP_RSSI.h>
+#endif
 #include "spm_srxl.h"
 
 extern const AP_HAL::HAL& hal;
@@ -197,7 +199,16 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in
     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
     // SRXL2 rssi: -ve rssi in dBM, +ve rssi in percentage
     if (new_rssi >= 0) {
-        _new_rssi = new_rssi * 255 / 100;
+#ifndef IOMCU_FW
+        // we assume _new_rssi is 0-100, we scale to 0-255
+        // and apply a user scaling factor from RSSI_SCALE
+        AP_RSSI* ap_rssi = AP::rssi();
+        float scale = ap_rssi ? ap_rssi->get_rssi_scale() : 1.0;
+        _new_rssi = constrain_int16(new_rssi * scale * 2.55f, 0, 255);
+#else
+        // we assume _new_rssi is 0-100, we scale to 0-255
+        _new_rssi = constrain_int16(new_rssi * 2.55f, 0, 255);
+#endif
     }
 
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {

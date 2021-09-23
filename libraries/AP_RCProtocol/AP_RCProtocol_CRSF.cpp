@@ -26,6 +26,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#ifndef IOMCU_FW
+#include <AP_RSSI/AP_RSSI.h>
+#endif
 
 #define CRSF_SUBSET_RC_STARTING_CHANNEL_BITS        5
 #define CRSF_SUBSET_RC_STARTING_CHANNEL_MASK        0x1F
@@ -468,8 +471,14 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
     } else if (rssi_dbm > 120) {
         _link_status.rssi = 0;
     } else {
+#ifndef IOMCU_FW
+        AP_RSSI* ap_rssi = AP::rssi();
+        float scale = ap_rssi ? ap_rssi->get_rssi_scale() : 1;
         // this is an approximation recommended by Remo from TBS
+        _link_status.rssi = constrain_int16(roundf((1.0f - (rssi_dbm - 50.0f) / 70.0f) * 255.0f) * scale, 0, 255);
+#else
         _link_status.rssi = int16_t(roundf((1.0f - (rssi_dbm - 50.0f) / 70.0f) * 255.0f));
+#endif
     }
 
     _link_status.rf_mode = static_cast<RFMode>(MIN(link->rf_mode, 3U));

@@ -24,7 +24,9 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
-
+#ifndef IOMCU_FW
+#include <AP_RSSI/AP_RSSI.h>
+#endif
 extern const AP_HAL::HAL& hal;
 
 #define FRAME_HEAD 0x7E
@@ -90,9 +92,15 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
 
     bool failsafe = ((frame.control.flags & (1 << FLAGS_FAILSAFE_BIT)) != 0);
 
-    // fport rssi 0-50, ardupilot rssi 0-255, scale factor 255/50=5.1
+#ifndef IOMCU_FW
+    AP_RSSI* ap_rssi = AP::rssi();
+    float user_scale = ap_rssi ? ap_rssi->get_rssi_scale() : 1;
+    // we assume fport rssi is 0-50 and scale to 0-255 (scaling = 5.1)
+    // but we also allow users to apply an external scaling factor with the RSSI_SCALE parameter
+    const uint8_t scaled_rssi = MIN(frame.control.rssi * 5.1f * user_scale, 255);
+#else
     const uint8_t scaled_rssi = MIN(frame.control.rssi * 5.1f, 255);
-
+#endif
     add_input(MAX_CHANNELS, values, failsafe, scaled_rssi);
 }
 
