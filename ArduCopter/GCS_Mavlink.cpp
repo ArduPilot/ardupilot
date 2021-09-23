@@ -1055,14 +1055,14 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         // ensure type_mask specifies to use thrust
-        if ((packet.type_mask & (1<<6)) != 0) {
+        if ((packet.type_mask & ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE) != 0) {
             break;
         }
 
         // only one of these flags is true
-        bool use_roll_pitch_rates = (packet.type_mask & (1<<7)) == 128;
-        bool use_yaw_rate = (packet.type_mask & ((1<<0) | (1<<1) | (1<<2))) == 3;
-        bool use_attitude = (packet.type_mask & ((1<<0) | (1<<1) | (1<<2))) == 7;
+        bool use_roll_pitch_rates = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE;
+        bool use_yaw_rate         = (packet.type_mask & (ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE | ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE)) == 3;
+        bool use_attitude         = (packet.type_mask & (ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE | ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE | ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE)) == 7;
         if (use_roll_pitch_rates + use_yaw_rate + use_attitude > 1) {
             // Invalid type mask
             break;
