@@ -951,6 +951,8 @@ void ModeGuided::angle_control_run()
     // wrap yaw request
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
     float yaw_rate_in = guided_angle_state.yaw_rate_cds;
+    float pitch_rate_in = guided_angle_state.pitch_rate_cds;
+    float roll_rate_in = guided_angle_state.roll_rate_cds;
 
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {
@@ -968,6 +970,8 @@ void ModeGuided::angle_control_run()
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
         yaw_rate_in = 0.0f;
+        pitch_rate_in = 0.0f;
+        roll_rate_in = 0.0f;
         if (guided_angle_state.use_thrust) {
             // initialise vertical velocity controller
             pos_control->init_z_controller();
@@ -1007,7 +1011,7 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.use_yaw_rate) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll_in, pitch_in, yaw_rate_in);
     } else if (guided_angle_state.use_roll_pitch_rates) {
-        attitude_control->input_rate_bf_roll_pitch_yaw(guided_angle_state.roll_rate_cds, guided_angle_state.pitch_rate_cds, guided_angle_state.yaw_rate_cds);
+        attitude_control->input_rate_bf_roll_pitch_yaw(roll_rate_in, pitch_rate_in, yaw_rate_in);
     } else {
         attitude_control->input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
     }
