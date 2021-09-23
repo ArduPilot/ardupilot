@@ -546,6 +546,7 @@ class generic_pin(object):
             'UART*TX' : 'PERIPH_TYPE::UART_TX',
             'I2C*SDA' : 'PERIPH_TYPE::I2C_SDA',
             'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
+            'EXTERN_GPIO*' : 'PERIPH_TYPE::GPIO',
         }
         for k in patterns.keys():
             if fnmatch.fnmatch(self.label, k):
@@ -554,7 +555,10 @@ class generic_pin(object):
 
     def periph_instance(self):
         '''return peripheral instance'''
-        result = re.match(r'[A-Z]*([0-9]*)', self.type)
+        if self.periph_type() == 'PERIPH_TYPE::GPIO':
+            result = re.match(r'[A-Z_]*([0-9]*)', self.label)
+        else:
+            result = re.match(r'[A-Z_]*([0-9]*)', self.type)
         if result:
             return int(result.group(1))
         return 0
@@ -1708,7 +1712,7 @@ def write_PWM_config(f, ordered_timers):
             else:
                 chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             alt_functions[chan - 1] = p.af
-            pal_lines[chan - 1] = 'PAL_LINE(GPIO%s, %uU)' % (p.port, p.pin)
+            pal_lines[chan - 1] = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
         groups.append('HAL_PWM_GROUP%u' % group)
         if n in [1, 8]:
             # only the advanced timers do 8MHz clocks
@@ -1816,14 +1820,31 @@ def write_GPIO_config(f):
         pwm = p.extra_value('PWM', type=int, default=0)
         port = p.port
         pin = p.pin
-        gpios.append((gpio, pwm, port, pin, p))
+        # default config always enabled
+        gpios.append((gpio, pwm, port, pin, p, 'true'))
+    for alt in altmap.keys():
+        for pp in altmap[alt].keys():
+            p = altmap[alt][pp]
+            gpio = p.extra_value('GPIO', type=int)
+            if gpio is None:
+                continue
+            if gpio in gpioset:
+                error("Duplicate GPIO value %u" % gpio)
+            pwm = p.extra_value('PWM', type=int, default=0)
+            if pwm != 0:
+                error("PWM not supported for alt config: %s" % p)
+            gpioset.add(gpio)
+            port = p.port
+            pin = p.pin
+            # aux config disabled by defualt
+            gpios.append((gpio, pwm, port, pin, p, 'false'))
     gpios = sorted(gpios)
-    for (gpio, pwm, port, pin, p) in gpios:
-        f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s, %2uU)\n' % (gpio, port, pin))
+    for (gpio, pwm, port, pin, p, enabled) in gpios:
+        f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s,%uU)\n' % (gpio, port, pin))
     f.write('#define HAL_GPIO_PINS { \\\n')
-    for (gpio, pwm, port, pin, p) in gpios:
-        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU)}, /* %s */ \\\n' %
-                (gpio, pwm, port, pin, p))
+    for (gpio, pwm, port, pin, p, enabled) in gpios:
+        f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
+                (gpio, enabled, pwm, port, pin, p))
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
