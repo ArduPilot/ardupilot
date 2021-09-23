@@ -190,16 +190,22 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 bool AP_ESC_Telem::get_highest_temperature(int16_t& temp) const
 {
     uint8_t valid_escs = 0;
+    int16_t lh_temp = INT16_MIN;
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         int16_t temp_temp;
         if (get_temperature(i, temp_temp)) {
-            temp = MAX(temp, temp_temp);
+            lh_temp = MAX(lh_temp, temp_temp);
             valid_escs++;
         }
     }
 
-    return valid_escs > 0;
+    if (valid_escs > 0) {
+        temp = lh_temp;
+        return true;
+    }
+
+    return false;
 }
 
 // get an individual ESC's current in Ampere if available, returns true on success
@@ -218,16 +224,22 @@ bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 bool AP_ESC_Telem::get_highest_current(float& amps) const
 {
     uint8_t valid_escs = 0;
+    float lh_amps = -std::numeric_limits<float>::max();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         float temp_amps;
         if (get_current(i, temp_amps)) {
-            amps = MAX(amps, temp_amps);
+            lh_amps = MAX(lh_amps, temp_amps);
             valid_escs++;
         }
     }
 
-    return valid_escs > 0;
+    if (valid_escs > 0) {
+        amps = lh_amps;
+        return true;
+    }
+
+    return false;
 }
 
 // get the average ESC current between all ESCs if available, returns true if there is valid data for at least one ESC
