@@ -2056,6 +2056,7 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
             } else {
                 dwell_gain = freqresp_angle.get_gain();
                 dwell_phase = freqresp_angle.get_phase();
+                test_accel_max = freqresp_angle.get_accel_max();
             }
         }
     }
