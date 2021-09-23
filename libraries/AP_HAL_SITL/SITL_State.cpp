@@ -385,6 +385,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         vectornav = new SITL::VectorNav();
         return vectornav->fd();
+    } else if (streq(name, "LORD")) {
+        if (lord != nullptr) {
+            AP_HAL::panic("Only one LORD at a time");
+        }
+        lord = new SITL::LORD();
+        return lord->fd();
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
             AP_HAL::panic("Only one AIS at a time");
@@ -513,6 +519,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No VectorNav created");
         }
         return vectornav->write_fd();
+    } else if (streq(name, "LORD")) {
+        if (lord == nullptr) {
+            AP_HAL::panic("No LORD created");
+        }
+        return lord->write_fd();
     } else if (streq(name, "AIS")) {
         if (ais == nullptr) {
             AP_HAL::panic("No AIS created");
@@ -737,6 +748,10 @@ void SITL_State::_fdm_input_local(void)
     }
     if (vectornav != nullptr) {
         vectornav->update();
+    }
+
+    if (lord != nullptr) {
+        lord->update();
     }
 
     if (ais != nullptr) {
