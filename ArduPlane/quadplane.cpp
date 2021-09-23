@@ -637,7 +637,7 @@ bool QuadPlane::setup(void)
     }
 
     if (!motors) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "motors");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "motors");
     }
 
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
@@ -645,29 +645,29 @@ bool QuadPlane::setup(void)
     // create the attitude view used by the VTOL code
     ahrs_view = ahrs.create_view(tailsitter.enabled() ? ROTATION_PITCH_90 : ROTATION_NONE, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "ahrs_view");
     }
 
     attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "attitude_control");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "attitude_control");
     }
 
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control, loop_delta_t);
     if (!pos_control) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "pos_control");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "pos_control");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "wp_nav");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "loiter_nav");
+        AP_BoardConfig::allocation_error("Unable to allocate %s", "loiter_nav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
