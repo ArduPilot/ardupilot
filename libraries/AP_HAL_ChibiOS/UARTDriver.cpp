@@ -924,8 +924,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 
     while (n > 0) {
         if (_flow_control != FLOW_CONTROL_DISABLE &&
-            sdef.cts_line != 0 &&
-            palReadLine(sdef.cts_line)) {
+            acts_line != 0 &&
+            palReadLine(acts_line)) {
             // we are using hw flow control and the CTS line is high. We
             // will hold off trying to transmit until the CTS line goes
             // low to indicate the receiver has space. We do this before
@@ -1349,7 +1349,7 @@ void UARTDriver::_tx_timer_tick(void)
  */
 void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 {
-    if (sdef.rts_line == 0 || sdef.is_usb) {
+    if (arts_line == 0 || sdef.is_usb) {
         // no hw flow control available
         return;
     }
@@ -1364,8 +1364,8 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 
     case FLOW_CONTROL_DISABLE:
         // force RTS active when flow disabled
-        palSetLineMode(sdef.rts_line, 1);
-        palClearLine(sdef.rts_line);
+        palSetLineMode(arts_line, 1);
+        palClearLine(arts_line);
         _rts_is_active = true;
         // disable hardware CTS support
         chSysLock();
@@ -1386,8 +1386,8 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     case FLOW_CONTROL_ENABLE:
         // we do RTS in software as STM32 hardware RTS support toggles
         // the pin for every byte which loses a lot of bandwidth
-        palSetLineMode(sdef.rts_line, 1);
-        palClearLine(sdef.rts_line);
+        palSetLineMode(arts_line, 1);
+        palClearLine(arts_line);
         _rts_is_active = true;
         // enable hardware CTS support, disable RTS support as we do that in software
         chSysLock();
@@ -1410,16 +1410,16 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
  */
 void UARTDriver::update_rts_line(void)
 {
-    if (sdef.rts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
+    if (arts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
         return;
     }
     uint16_t space = _readbuf.space();
     if (_rts_is_active && space < 16) {
         _rts_is_active = false;
-        palSetLine(sdef.rts_line);
+        palSetLine(arts_line);
     } else if (!_rts_is_active && space > 32) {
         _rts_is_active = true;
-        palClearLine(sdef.rts_line);
+        palClearLine(arts_line);
     }
 }
 
@@ -1605,13 +1605,17 @@ bool UARTDriver::set_options(uint16_t options)
 
 #ifdef HAL_PIN_ALT_CONFIG
     /*
-      allow for RX and TX pins to be remapped via BRD_ALT_CONFIG
+      allow for RX, TX, RTS and CTS pins to be remapped via BRD_ALT_CONFIG
      */
     arx_line = GPIO::resolve_alt_config(sdef.rx_line, PERIPH_TYPE::UART_RX, sdef.instance);
     atx_line = GPIO::resolve_alt_config(sdef.tx_line, PERIPH_TYPE::UART_TX, sdef.instance);
+    arts_line = GPIO::resolve_alt_config(sdef.rts_line, PERIPH_TYPE::OTHER, sdef.instance);
+    acts_line = GPIO::resolve_alt_config(sdef.cts_line, PERIPH_TYPE::OTHER, sdef.instance);
 #else
     arx_line = sdef.rx_line;
     atx_line = sdef.tx_line;
+    arts_line = sdef.rts_line;
+    acts_line = sdef.cts_line;
 #endif
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
@@ -1765,12 +1769,12 @@ bool UARTDriver::set_CTS_pin(bool high)
         // CTS pin is being used
         return false;
     }
-    if (sdef.cts_line == 0) {
+    if (acts_line == 0) {
         // we don't have a CTS pin on this UART
         return false;
     }
-    palSetLineMode(sdef.cts_line, 1);
-    palWriteLine(sdef.cts_line, high?1:0);
+    palSetLineMode(acts_line, 1);
+    palWriteLine(acts_line, high?1:0);
     return true;
 }
 
@@ -1784,12 +1788,12 @@ bool UARTDriver::set_RTS_pin(bool high)
         // RTS pin is being used
         return false;
     }
-    if (sdef.rts_line == 0) {
+    if (arts_line == 0) {
         // we don't have a RTS pin on this UART
         return false;
     }
-    palSetLineMode(sdef.rts_line, 1);
-    palWriteLine(sdef.rts_line, high?1:0);
+    palSetLineMode(arts_line, 1);
+    palWriteLine(arts_line, high?1:0);
     return true;
 }
 
