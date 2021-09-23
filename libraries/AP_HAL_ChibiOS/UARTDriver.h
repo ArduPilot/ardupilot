@@ -152,10 +152,12 @@ private:
     bool tx_dma_enabled;
 
     /*
-      copy of rx_line and tx_line with alternative configs resolved
+      copy of rx_line, tx_line, rts_line and cts_line with alternative configs resolved
      */
     ioline_t atx_line;
     ioline_t arx_line;
+    ioline_t arts_line;
+    ioline_t acts_line;
 
     // thread used for all UARTs
     static thread_t* volatile uart_rx_thread_ctx;
