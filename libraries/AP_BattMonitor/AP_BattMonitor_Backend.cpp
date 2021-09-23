@@ -30,13 +30,20 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
 {
 }
 
-/// capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
+// capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
+// return false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
 bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const
 {
     // we consider anything under 10 mAh as being an invalid capacity and so will be our measurement of remaining capacity
     if ( _params._pack_capacity <= 10) {
         return false;
     }
+
+    // the monitor must have current readings in order to estimate consumed_mah and be healthy
+    if (!has_current() || !_state.healthy) {
+        return false;
+    }
+
     const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
     percentage = constrain_float(100 * mah_remaining / _params._pack_capacity, 0, UINT8_MAX);
     return true;
