@@ -1385,6 +1385,15 @@ void Copter::convert_pid_parameters(void)
         AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
     }
 
+    // ACRO_RP_P and ACRO_Y_P replaced with ACRO_RP_RATE and ACRO_Y_RATE for Copter-4.2
+    const AP_Param::ConversionInfo acro_rpy_conversion_info[] = {
+        { Parameters::k_param_acro_rp_p, 0, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
+        { Parameters::k_param_acro_yaw_p,  0, AP_PARAM_FLOAT, "ACRO_Y_RATE" }
+    };
+    for (const auto &info : acro_rpy_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 45.0);
+    }
+
     // make any SRV_Channel upgrades needed
     SRV_Channels::upgrade_parameters();
 }
