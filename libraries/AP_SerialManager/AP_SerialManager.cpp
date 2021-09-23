@@ -416,7 +416,7 @@ void AP_SerialManager::init()
         if (uart != nullptr) {
 
             // see if special options have been requested
-            if (state[i].protocol != SerialProtocol_None && state[i].options) {
+            if (state[i].protocol != SerialProtocol_None) {
                 set_options(i);
             }
 
