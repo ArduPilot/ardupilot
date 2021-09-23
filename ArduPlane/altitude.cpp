@@ -157,12 +157,14 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return rangefinder_state.height_estimate;
    }
 
+#if HAL_QUADPLANE_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
        rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
        return 0;
    }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
@@ -173,6 +175,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
     }
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() &&
         !(quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)) {
         // when doing a VTOL landing we can use the waypoint height as
@@ -181,6 +184,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         // height
         return height_above_target();
     }
+#endif
 
     return relative_altitude;
 }
@@ -668,11 +672,19 @@ void Plane::rangefinder_height_update(void)
             }
         } else {
             rangefinder_state.in_range = true;
+            bool flightstage_good_for_rangefinder_landing = false;
+            if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#if HAL_QUADPLANE_ENABLED
+            if (control_mode == &mode_qland ||
+                control_mode == &mode_qrtl ||
+                (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#endif
             if (!rangefinder_state.in_use &&
-                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-                 control_mode == &mode_qland ||
-                 control_mode == &mode_qrtl ||
-                 (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
+                flightstage_good_for_rangefinder_landing &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
@@ -687,7 +699,7 @@ void Plane::rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude - rangefinder_state.height_estimate;
+        float correction = adjusted_relative_altitude_cm()*0.01 - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
@@ -745,9 +757,11 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::GUIDED, terrain_bitmask::GUIDED},
     {Mode::Number::LOITER, terrain_bitmask::LOITER},
     {Mode::Number::CIRCLE, terrain_bitmask::CIRCLE},
+#if HAL_QUADPLANE_ENABLED
     {Mode::Number::QRTL, terrain_bitmask::QRTL},
     {Mode::Number::QLAND, terrain_bitmask::QLAND},
     {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
+#endif
 };
 
 bool Plane::terrain_enabled_in_current_mode() const

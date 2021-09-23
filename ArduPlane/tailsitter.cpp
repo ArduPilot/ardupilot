@@ -20,12 +20,14 @@
 #include "tailsitter.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable Tailsitter
-    // @Description: This enables Tailsitter functionality
-    // @Values: 0:Disable,1:Enable
+    // @Values: 0:Disable, 1:Enable, 2:Enable Always
+    // @Description: This enables Tailsitter functionality. A value of 2 forces Qassist active and always stabilize in forward flight with airmode for stabalisation at 0 throttle, for use on vehicles with no control surfaces, vehicle will not arm in forward flight modes, see also Q_OPTIONS "Mtrs_Only_Qassist"
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Tailsitter, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -50,17 +52,8 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Bitmask: 0:PlaneMode,1:BodyFrameRoll
     AP_GROUPINFO("INPUT", 4, Tailsitter, input_type, 0),
 
-    // @Param: MASK
-    // @DisplayName: Tailsitter input mask
-    // @Description: This controls what channels have full manual control when hovering as a tailsitter and the Q_TAILSIT_MASKCH channel in high. This can be used to teach yourself to prop-hang a 3D plane by learning one or more channels at a time.
-    // @Bitmask: 0:Aileron,1:Elevator,2:Throttle,3:Rudder
-    AP_GROUPINFO("MASK", 5, Tailsitter, input_mask, 0),
-
-    // @Param: MASKCH
-    // @DisplayName: Tailsitter input mask channel
-    // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
-    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    AP_GROUPINFO("MASKCH", 6, Tailsitter, input_mask_chan, 0),
+    // 5 was MASK
+    // 6 was MASKCH
 
     // @Param: VFGAIN
     // @DisplayName: Tailsitter vector thrust gain in forward flight
@@ -144,9 +137,73 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  defaults for tailsitters
+ */
+static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] = {
+    { "KFF_RDDRMIX",       0.02 },
+    { "Q_A_RAT_PIT_FF",    0.2 },
+    { "Q_A_RAT_YAW_FF",    0.2 },
+    { "Q_A_RAT_YAW_I",     0.18 },
+    { "Q_A_ANGLE_BOOST",   0 },
+    { "LIM_PITCH_MAX",    3000 },
+    { "LIM_PITCH_MIN",    -3000 },
+    { "MIXING_GAIN",      1.0 },
+    { "RUDD_DT_GAIN",      10 },
+    { "Q_TRANSITION_MS",   2000 },
+    { "Q_TRANS_DECEL",    6 },
+    { "Q_A_ACCEL_P_MAX",    30000},
+    { "Q_A_ACCEL_R_MAX",    30000},
+    { "Q_P_POSXY_P",        0.5},
+    { "Q_P_VELXY_P",        1.0},
+    { "Q_P_VELXY_I",        0.5},
+    { "Q_P_VELXY_D",        0.25},
+    
+};
+
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+void Tailsitter::setup()
+{
+    // Set tailsitter enable flag based on old heuristics
+    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
+        enable.set_and_save(1);
+    }
+
+    if (!enabled()) {
+        return;
+    }
+
+    // Set tailsitter transition rate to match old calculation
+    if (!transition_rate_fw.configured()) {
+        transition_rate_fw.set_and_save(transition_angle_fw / (quadplane.transition_time_ms/2000.0f));
+    }
+
+    // TODO: update this if servo function assignments change
+    // used by relax_attitude_control() to control special behavior for vectored tailsitters
+    _is_vectored = (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+                   (!is_zero(vectored_hover_gain) &&
+                    (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
+                     SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
+
+    // set defaults for dual/single motor tailsitter
+    if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
+        AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
+    }
+
+    // Setup for control surface less operation
+    if (enable == 2) {
+        quadplane.q_assist_state = QuadPlane::Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
+
+        // Do not allow arming in forward flight modes
+        // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
+        quadplane.options.set(quadplane.options.get() | QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO);
+    }
+
 }
 
 /*
@@ -227,7 +284,7 @@ void Tailsitter::output(void)
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
                 // remove scaling from surface speed scaling and apply throttle scaling
-                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.tilt_throttle_scaling() / plane.get_speed_scaler());
+                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
                 // thrust vectoring in fixed wing flight
                 float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
                 float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
@@ -317,7 +374,7 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
-    bool tilt_lim = (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX);
+    bool tilt_lim = _is_vectored && ((labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX));
     bool roll_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) == SERVO_MAX;
     bool pitch_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) == SERVO_MAX;
     bool yaw_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) == SERVO_MAX;
@@ -332,22 +389,6 @@ void Tailsitter::output(void)
         motors->limit.yaw = true;
     }
 
-    if (input_mask_chan > 0 && input_mask > 0 &&
-        RC_Channels::get_radio_in(input_mask_chan-1) > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-        // the user is learning to prop-hang
-        if (input_mask & TAILSITTER_MASK_AILERON) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
-        }
-        if (input_mask & TAILSITTER_MASK_ELEVATOR) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.channel_pitch->get_control_in_zero_dz());
-        }
-        if (input_mask & TAILSITTER_MASK_THROTTLE) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
-        }
-        if (input_mask & TAILSITTER_MASK_RUDDER) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.channel_rudder->get_control_in_zero_dz());
-        }
-    }
 }
 
 
@@ -412,8 +453,6 @@ bool Tailsitter::transition_vtol_complete(void) const
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
-    // still waiting
-    quadplane.attitude_control->reset_rate_controller_I_terms();
     return false;
 }
 
@@ -603,3 +642,5 @@ void Tailsitter::speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
+
+#endif  // HAL_QUADPLANE_ENABLED

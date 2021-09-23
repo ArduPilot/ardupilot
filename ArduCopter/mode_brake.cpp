@@ -36,7 +36,7 @@ void ModeBrake::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
         pos_control->relax_velocity_controller_xy();
         pos_control->relax_z_controller(0.0f);
         return;
@@ -59,7 +59,7 @@ void ModeBrake::run()
     // call attitude controller
     attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0f);
 
-    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f, false);
+    pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {

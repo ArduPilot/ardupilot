@@ -122,6 +122,15 @@ uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
     return crc;
 }
 
+// copied from AP_FETtecOneWire.cpp
+uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len)
+{
+    for (uint16_t i = 0; i < buf_len; i++) {
+        crc = crc8_dvb(buf[i], crc, 0x7);
+    }
+    return crc;
+}
+
 /*
  CRC8-Maxim implementation based on FastCRC library
  see https://github.com/FrankBoesing/FastCRC
@@ -326,6 +335,14 @@ uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
     for (uint32_t i = 0; i < len; i++) {
         crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    }
+    return crc;
+}
+
+uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
+{
+    for (uint32_t i = 0; i < len; i++) {
+        crc = crc16tab[crc >> 8] ^ (crc << 8) ^ (uint16_t) *buf++;
     }
     return crc;
 }

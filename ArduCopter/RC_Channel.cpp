@@ -22,17 +22,7 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 
     if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
-        // alert user to mode change failure
-        if (copter.ap.initialised) {
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
         return;
-    }
-
-    // play a tone
-    // alert user to mode change (except if autopilot is just starting up)
-    if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change = 1;
     }
 
     if (!rc().find_channel_for_option(AUX_FUNC::SIMPLE_MODE) &&
@@ -56,6 +46,16 @@ bool RC_Channels_Copter::has_valid_input() const
         return false;
     }
     return true;
+}
+
+// returns true if throttle arming checks should be run
+bool RC_Channels_Copter::arming_check_throttle() const {
+    if ((copter.g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
+        // center sprung throttle configured, dont run AP_Arming check
+        // Copter already checks this case in its own arming checks
+        return false;
+    }
+    return RC_Channels::arming_check_throttle();
 }
 
 RC_Channel * RC_Channels_Copter::get_arming_channel(void) const
@@ -99,6 +99,9 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::ZIGZAG_SaveWP:
     case AUX_FUNC::ACRO:
     case AUX_FUNC::AUTO_RTL:
+    case AUX_FUNC::TURTLE:
+    case AUX_FUNC::SIMPLE_HEADING_RESET:
+    case AUX_FUNC::ARMDISARM_AIRMODE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -131,14 +134,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = copter.set_mode(mode, ModeReason::RC_COMMAND);
-        if (copter.ap.initialised) {
-            if (success) {
-                AP_Notify::events.user_mode_change = 1;
-            } else {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
+        copter.set_mode(mode, ModeReason::RC_COMMAND);
         break;
     }
     default:
@@ -147,16 +143,6 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
         if (copter.flightmode->mode_number() == mode) {
             rc().reset_mode_switch();
         }
-    }
-}
-
-void RC_Channel_Copter::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
-{
-    RC_Channel::do_aux_function_armdisarm(ch_flag);
-    if (copter.arming.is_armed()) {
-        // remember that we are using an arming switch, for use by
-        // set_throttle_zero_flag
-        copter.ap.armed_with_switch = true;
     }
 }
 
@@ -585,6 +571,25 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #endif
             break;
 
+        case AUX_FUNC::TURTLE:
+#if MODE_TURTLE_ENABLED == ENABLED
+            do_aux_function_change_mode(Mode::Number::TURTLE, ch_flag);
+#endif
+            break;
+
+        case AUX_FUNC::SIMPLE_HEADING_RESET:
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                copter.init_simple_bearing();
+                gcs().send_text(MAV_SEVERITY_INFO, "Simple heading reset");
+            }
+            break;
+
+        case AUX_FUNC::ARMDISARM_AIRMODE:
+            RC_Channel::do_aux_function_armdisarm(ch_flag);
+            if (copter.arming.is_armed()) {
+                copter.ap.armed_with_airmode_switch = true;
+            }
+            break;
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

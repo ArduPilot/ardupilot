@@ -209,6 +209,12 @@ public:
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
+    // return the pitch factor of any motor
+    virtual float       get_pitch_factor(uint8_t i) { return 0.0f; }
+
+    // return whether a motor is enabled or not
+    virtual bool        is_motor_enabled(uint8_t i) { return false; }
+
     // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
     // This function is overriden in motors_heli class.   Always true for multicopters.
     virtual bool init_targets_on_arming() const { return true; }
@@ -226,10 +232,12 @@ public:
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
+    // direct motor write
+    virtual void        rc_write(uint8_t chan, uint16_t pwm);
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
-    virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_write_angle(uint8_t chan, int16_t angle_cd);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
 

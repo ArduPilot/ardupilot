@@ -357,7 +357,7 @@ void AP_WindVane::update()
 // @Field: SpdRaw: raw wind speed direct from sensor
 // @Field: SpdApp: Apparent wind Speed
 // @Field: SpdTru: True wind speed
-    AP::logger().Write("WIND", "TimeUS,DrRaw,DrApp,DrTru,SpdRaw,SpdApp,SpdTru",
+    AP::logger().WriteStreaming("WIND", "TimeUS,DrRaw,DrApp,DrTru,SpdRaw,SpdApp,SpdTru",
                         "sddhnnn", "F000000", "Qffffff",
                         AP_HAL::micros64(),
                         degrees(_direction_apparent_raw),

@@ -39,7 +39,13 @@ void Plane::ekf_check()
     }
 
     // return immediately if motors are not armed, or ekf check is disabled
-    if (!plane.arming.is_armed() || !quadplane.in_vtol_posvel_mode() || (g2.fs_ekf_thresh <= 0.0f)) {
+    bool ekf_check_disabled = !plane.arming.is_armed() || (g2.fs_ekf_thresh <= 0.0f);
+#if HAL_QUADPLANE_ENABLED
+    if (!quadplane.in_vtol_posvel_mode()) {
+        ekf_check_disabled = true;
+    }
+#endif
+    if (ekf_check_disabled) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -152,6 +158,7 @@ void Plane::failsafe_ekf_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // if not in a VTOL mode requring position, then nothing needs to be done
+#if HAL_QUADPLANE_ENABLED
     if (!quadplane.in_vtol_posvel_mode()) {
         return;
     }
@@ -163,6 +170,7 @@ void Plane::failsafe_ekf_event()
         // the pilot is controlling via sticks so fallbacl to QHOVER
         plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE);
     }
+#endif
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared

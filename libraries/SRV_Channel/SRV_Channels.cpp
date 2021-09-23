@@ -47,6 +47,9 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
+#endif
 #endif // HAL_BUILD_AP_PERIPH
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
@@ -197,6 +200,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
+
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    // @Group: _FTW_
+    // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
+    AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
+#endif
+
 #endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _DSHOT_RATE
@@ -236,6 +246,9 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr = &fetteconwire;
+#endif
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -315,7 +328,16 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         const uint32_t loop_count = ((timeout_ms * 1000U) + (loop_period_us - 1U)) / loop_period_us;
         override_counter[chan] = constrain_int32(loop_count, 0, UINT16_MAX);
         channels[chan].set_override(true);
+        const bool had_pwm = SRV_Channel::have_pwm_mask & (1U<<chan);
         channels[chan].set_output_pwm(value,true);
+        if (!had_pwm) {
+            // clear the have PWM mask so the channel will default back to the scaled value when timeout expires
+            // this is also cleared by set_output_scaled but that requires it to be re-called as some point
+            // after the timeout is applied
+            // note that we can't default back to a pre-override PWM value as it is not stored
+            // checking had_pwm means the PWM will not change after the timeout, this was the existing behaviour
+            SRV_Channel::have_pwm_mask &= ~(1U<<chan);
+        }
     }
 }
 
@@ -343,7 +365,11 @@ void SRV_Channels::push()
 
     // give robotis library a chance to update
     robotis_ptr->update();
-    
+
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr->update();
+#endif
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();

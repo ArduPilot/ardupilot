@@ -18,15 +18,15 @@ private:
     void do_aux_function_change_mode(Mode::Number number,
                                      AuxSwitchPos ch_flag);
 
+#if HAL_QUADPLANE_ENABLED
     void do_aux_function_q_assist_state(AuxSwitchPos ch_flag);
+#endif
 
     void do_aux_function_crow_mode(AuxSwitchPos ch_flag);
 
     void do_aux_function_soaring_3pos(AuxSwitchPos ch_flag);
 
     void do_aux_function_flare(AuxSwitchPos ch_flag);
-
-    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag) override;
 
 };
 

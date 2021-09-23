@@ -146,7 +146,7 @@ protected:
 
     virtual bool ins_checks(bool report);
 
-    virtual bool compass_checks(bool report);
+    bool compass_checks(bool report);
 
     virtual bool gps_checks(bool report);
 
@@ -180,6 +180,8 @@ protected:
 
     bool can_checks(bool report);
 
+    bool fettec_checks(bool display_failure) const;
+
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
@@ -208,6 +210,9 @@ private:
 
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
+
+    // check if we should keep logging after disarming
+    void check_forced_logging(const AP_Arming::Method method);
 
     enum MIS_ITEM_CHECK {
         MIS_ITEM_CHECK_LAND          = (1 << 0),

@@ -93,12 +93,6 @@ void NavEKF3_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
-                rangeDataNew.time_ms = imuSampleTime_ms;
-
-                // don't allow time to go backwards
-                if (imuSampleTime_ms > rangeDataNew.time_ms) {
-                    rangeDataNew.time_ms = imuSampleTime_ms;
-                }
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -199,11 +193,10 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // need to run the optical flow takeoff detection
     detectOptFlowTakeoff();
 
-    // calculate rotation matrices at mid sample time for flow observations
-    stateStruct.quat.rotation_matrix(Tbn_flow);
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
+        of_elements ofDataNew {};
         ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
@@ -699,8 +692,8 @@ void NavEKF3_core::readGpsData()
             gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
         }
         storedGPS.push(gpsDataNew);
-        // declare GPS available for use
-        gpsNotAvailable = false;
+        // declare GPS in use
+        gpsIsInUse = true;
     }
 }
 
@@ -796,7 +789,7 @@ void NavEKF3_core::correctEkfOriginHeight()
     } else if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25;
-        ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
+        ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
     } else {
         // by definition our height source is absolute so cannot run this filter
         return;

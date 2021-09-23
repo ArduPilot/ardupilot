@@ -16,6 +16,7 @@ protected:
 
     void convert(float P_Pa, float Temp_C, uint32_t &D1, uint32_t &D2) override;
     void convert_forward(int32_t D1, int32_t D2, float &P_Pa, float &Temp_C) override;
+    void check_conversion_accuracy(float P_Pa, float Temp_C, uint32_t D1, uint32_t D2) override;
 
     void load_prom(uint16_t *_loaded_prom, uint8_t len) const override {
         memcpy(_loaded_prom, prom, len);
@@ -36,7 +37,7 @@ private:
     };
 
     const uint8_t Qx_coeff[6] {
-        15, 17, 7, 5, 7, 21
+        15, 16, 8, 7, 8, 23
     };
 
 };

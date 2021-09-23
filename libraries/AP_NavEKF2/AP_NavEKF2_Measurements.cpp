@@ -99,12 +99,6 @@ void NavEKF2_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
-                rangeDataNew.time_ms = imuSampleTime_ms;
-
-                // don't allow time to go backwards
-                if (imuSampleTime_ms > rangeDataNew.time_ms) {
-                    rangeDataNew.time_ms = imuSampleTime_ms;
-                }
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -741,7 +735,7 @@ void NavEKF2_core::correctEkfOriginHeight()
     } else if (activeHgtSource == HGT_SOURCE_RNG) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25f;
-        ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
+        ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
     } else {
         // by definition our height source is absolute so cannot run this filter
         return;

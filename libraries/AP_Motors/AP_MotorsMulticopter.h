@@ -100,6 +100,9 @@ public:
     // as vectoring is used for yaw control
     virtual void        disable_yaw_torque(void) {}
 
+    // return whether a motor is enabled or not
+    bool                is_motor_enabled(uint8_t i) override { return motor_enabled[i]; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 

@@ -223,10 +223,10 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 // singleton instance
 AP_Baro *AP_Baro::_singleton;
 
-#ifdef HAL_NO_GCS
-#define BARO_SEND_TEXT(severity, format, args...)
-#else
+#if HAL_GCS_ENABLED
 #define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#else
+#define BARO_SEND_TEXT(severity, format, args...)
 #endif
 
 /*
@@ -537,7 +537,8 @@ void AP_Baro::init(void)
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+    const int8_t serial_port = AP::externalAHRS().get_port();
+    if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif

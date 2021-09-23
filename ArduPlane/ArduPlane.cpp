@@ -64,7 +64,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinder,       50,    100),
     SCHED_TASK_CLASS(AP_ICEngine, &plane.g2.ice_control, update, 10, 100),
     SCHED_TASK_CLASS(Compass,          &plane.compass,              cal_update, 50, 50),
-    SCHED_TASK(accel_cal_update,       10,    50),
 #if OPTFLOW == ENABLED
     SCHED_TASK_CLASS(OpticalFlow, &plane.optflow, update,    50,    50),
 #endif
@@ -83,7 +82,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100),
     SCHED_TASK(compass_save,          0.1,    200),
-    SCHED_TASK(Log_Write_Fast,         25,    300),
+    SCHED_TASK(Log_Write_Fast,        400,    300),
     SCHED_TASK(update_logging1,        25,    300),
     SCHED_TASK(update_logging2,        25,    300),
 #if HAL_SOARING_ENABLED
@@ -102,7 +101,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(avoidance_adsb_update,  10,    100),
 #endif
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100),
+#endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats, &plane.g2.stats, update, 1, 100),
 #endif
@@ -126,7 +127,11 @@ void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
     log_bit = MASK_LOG_PM;
 }
 
+#if HAL_QUADPLANE_ENABLED
 constexpr int8_t Plane::_failsafe_priorities[7];
+#else
+constexpr int8_t Plane::_failsafe_priorities[6];
+#endif
 
 // update AHRS system
 void Plane::ahrs_update()
@@ -143,7 +148,13 @@ void Plane::ahrs_update()
     roll_limit_cd = aparm.roll_limit_cd;
     pitch_limit_min_cd = aparm.pitch_limit_min_cd;
 
-    if (!quadplane.tailsitter.active()) {
+    bool rotate_limits = true;
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.tailsitter.active()) {
+        rotate_limits = false;
+    }
+#endif
+    if (rotate_limits) {
         roll_limit_cd *= ahrs.cos_pitch();
         pitch_limit_min_cd *= fabsf(ahrs.cos_roll());
     }
@@ -154,11 +165,13 @@ void Plane::ahrs_update()
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
 
+#if HAL_QUADPLANE_ENABLED
     // check if we have had a yaw reset from the EKF
     quadplane.check_yaw_reset();
 
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
+#endif
 }
 
 /*
@@ -173,10 +186,12 @@ void Plane::update_speed_height(void)
         SpdHgt_Controller->update_50hz();
     }
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
         quadplane.update_throttle_mix();
     }
+#endif
 }
 
 
@@ -417,29 +432,42 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::update_control_mode(void)
 {
-    Mode *effective_mode = control_mode;
-    if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
-        effective_mode = &mode_fbwa;
-    }
-
-    if (effective_mode != &mode_auto) {
+    if (control_mode != &mode_auto) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
     }
 
+    update_fly_forward();
+
+    control_mode->update();
+}
+
+
+void Plane::update_fly_forward(void)
+{
     // ensure we are fly-forward when we are flying as a pure fixed
     // wing aircraft. This helps the EKF produce better state
     // estimates as it can make stronger assumptions
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available() &&
+        quadplane.tailsitter.is_in_fw_flight()) {
+        ahrs.set_fly_forward(true);
+        return;
+    }
+
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
         ahrs.set_fly_forward(false);
-    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        return;
+    }
+#endif
+
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         ahrs.set_fly_forward(landing.is_flying_forward());
-    } else {
-        ahrs.set_fly_forward(true);
+        return;
     }
 
-    effective_mode->update();
+    ahrs.set_fly_forward(true);
 }
 
 /*
@@ -466,9 +494,11 @@ void Plane::update_alt()
 {
     barometer.update();
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {
         quadplane.motors->set_air_density_ratio(barometer.get_air_density_ratio());
     }
+#endif
 
     // calculate the sink rate.
     float sink_rate;
@@ -524,9 +554,13 @@ void Plane::update_flight_stage(void)
     // Update the speed & height controller states
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
         if (control_mode == &mode_auto) {
+#if HAL_QUADPLANE_ENABLED
             if (quadplane.in_vtol_auto()) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
-            } else if (auto_state.takeoff_complete == false) {
+                return;
+            }
+#endif
+            if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
                 if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
@@ -539,23 +573,31 @@ void Plane::update_flight_stage(void)
                 } else {
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
                 }
-            } else if (quadplane.in_assisted_flight()) {
-                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
-            } else {
-                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+                return;
             }
+#if HAL_QUADPLANE_ENABLED
+            if (quadplane.in_assisted_flight()) {
+                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
+                return;
+            }
+#endif
+            set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         } else if (control_mode != &mode_takeoff) {
             // If not in AUTO then assume normal operation for normal TECS operation.
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
             set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         }
-    } else if (quadplane.in_vtol_mode() ||
-               quadplane.in_assisted_flight()) {
-        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
-    } else {
-        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+        return;
     }
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode() ||
+        quadplane.in_assisted_flight()) {
+        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
+        return;
+    }
+#endif
+    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
 }
 
 
@@ -613,11 +655,13 @@ bool Plane::get_wp_distance_m(float &distance) const
     if (control_mode == &mode_manual) {
         return false;
     }
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
-        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() : 0;
-    } else {
-        distance = auto_state.wp_distance;
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() * 0.01 : 0;
+        return true;
     }
+#endif
+    distance = auto_state.wp_distance;
     return true;
 }
 
@@ -627,11 +671,13 @@ bool Plane::get_wp_bearing_deg(float &bearing) const
     if (control_mode == &mode_manual) {
         return false;
     }
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
         bearing = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0;
-    } else {
-        bearing = nav_controller->target_bearing_cd() * 0.01;
+        return true;
     }
+#endif
+    bearing = nav_controller->target_bearing_cd() * 0.01;
     return true;
 }
 
@@ -641,11 +687,13 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     if (control_mode == &mode_manual) {
         return false;
     }
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode()) {
         xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error() : 0;
-    } else {
-        xtrack_error = nav_controller->crosstrack_error();
+        return true;
     }
+#endif
+    xtrack_error = nav_controller->crosstrack_error();
     return true;
 }
 
@@ -676,9 +724,11 @@ bool Plane::get_target_location(Location& target_loc)
     case Mode::Number::GUIDED:
     case Mode::Number::AUTO:
     case Mode::Number::LOITER:
+#if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLOITER:
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+#endif
         target_loc = next_WP_loc;
         return true;
         break;
@@ -695,12 +745,19 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
    pitch = ahrs.pitch;
    roll = ahrs.roll;
-   if (!quadplane.show_vtol_view()) {  // correct for TRIM_PITCH_CD
-      pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
-   } else {
-      pitch = quadplane.ahrs_view->pitch;
-      roll = quadplane.ahrs_view->roll;
+#if HAL_QUADPLANE_ENABLED
+   if (quadplane.show_vtol_view()) {
+       return;
    }
+#endif
+   if (!(g2.flight_options & FlightOptions::OSD_REMOVE_TRIM_PITCH_CD)) {  // correct for TRIM_PITCH_CD
+      pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
+      return;
+   }
+#if HAL_QUADPLANE_ENABLED
+   pitch = quadplane.ahrs_view->pitch;
+   roll = quadplane.ahrs_view->roll;
+#endif
 }
 #endif
 

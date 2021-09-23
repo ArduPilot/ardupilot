@@ -41,9 +41,10 @@ TEST(ByteBufferTest, Basic)
     EXPECT_EQ(x.space(), unsigned(size-1));
     EXPECT_TRUE(x.is_empty());
 
-    static const char *str = "fo";
+    constexpr auto str_size = 3;
+    static const char str[str_size] = "fo";
     EXPECT_EQ(x.write((uint8_t*)str, 2), 2U);
-    uint8_t buf[strlen(str)+5] {};
+    uint8_t buf[str_size+5] {};
     EXPECT_EQ(x.read(buf, sizeof(buf)), 2U);
     EXPECT_STREQ((char*)buf, (char*)str);
 }

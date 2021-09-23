@@ -20,6 +20,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -307,10 +308,10 @@ public:
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
     AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
-    // temperature control
-    AP_Float temp_start;
-    AP_Float temp_flight;
-    AP_Float temp_tconst;
+    // barometer temperature control
+    AP_Float temp_start;            // [deg C] Barometer start temperature
+    AP_Float temp_board_offset;     // [deg C] Barometer board temperature offset from atmospheric temperature
+    AP_Float temp_tconst;           // [deg C] Barometer warmup temperature time constant
     AP_Float temp_baro_factor;
     
     AP_Int8 thermal_scenario;
@@ -421,6 +422,7 @@ public:
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
+    FETtecOneWireESC fetteconewireesc_sim;
 
     // ESC telemetry
     AP_Int8 esc_telem;

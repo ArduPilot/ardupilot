@@ -48,6 +48,7 @@ void Blimp::init_ardupilot()
     allocate_motors();
 
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // sets up motors and output to escs
@@ -127,7 +128,7 @@ void Blimp::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
-    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::COPTER);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());
@@ -241,7 +242,7 @@ bool Blimp::should_log(uint32_t mask)
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
 {
-    return MAV_TYPE_QUADROTOR; //TODO: Mavlink changes to allow type to be correct
+    return MAV_TYPE_AIRSHIP;
 }
 
 // return string corresponding to frame_class

@@ -70,6 +70,7 @@
 #include <AP_WindVane/AP_WindVane.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
+#include <AP_AIS/AP_AIS.h>
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -324,7 +325,6 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_servo_out(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
@@ -359,7 +359,6 @@ private:
     void update_compass(void);
     void compass_save(void);
     void update_wheel_encoder();
-    void accel_cal_update(void);
     void read_rangefinders(void);
     void read_airspeed();
     void rpm_update(void);
@@ -379,7 +378,6 @@ private:
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
-    bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);

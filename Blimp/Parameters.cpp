@@ -465,14 +465,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: VELXY_FILT
+    // @Param: VELXY_FLTE
     // @DisplayName: Velocity (horizontal) input filter
     // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELXY_D_FILT
+    // @Param: VELXY_FLTD
     // @DisplayName: Velocity (horizontal) input filter
     // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
@@ -516,14 +516,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: VELZ_FILT
+    // @Param: VELZ_FLTE
     // @DisplayName: Velocity (vertical) input filter
     // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELZ_D_FILT
+    // @Param: VELZ_FLTD
     // @DisplayName: Velocity (vertical) input filter
     // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
@@ -567,14 +567,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: VELYAW_FILT
+    // @Param: VELYAW_FLTE
     // @DisplayName: Velocity (yaw) input filter
     // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELYAW_D_FILT
+    // @Param: VELYAW_FLTE
     // @DisplayName: Velocity (yaw) input filter
     // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
@@ -618,14 +618,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: POSXY_FILT
+    // @Param: POSXY_FLTE
     // @DisplayName: Position (horizontal) input filter
     // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSXY_D_FILT
+    // @Param: POSXY_FLTD
     // @DisplayName: Position (horizontal) input filter
     // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
@@ -669,14 +669,14 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: POSZ_FILT
+    // @Param: POSZ_FLTE
     // @DisplayName: Position (vertical) input filter
     // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSZ_D_FILT
+    // @Param: POSZ_FLTD
     // @DisplayName: Position (vertical) input filter
     // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
@@ -876,8 +876,6 @@ void Blimp::load_parameters(void)
         AP_HAL::panic("Bad var table");
     }
 
-    // disable centrifugal force correction, it will be enabled as part of the arming process
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     if (!g.format_version.load() ||

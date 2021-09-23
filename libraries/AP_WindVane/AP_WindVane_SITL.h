@@ -19,8 +19,9 @@
 class AP_WindVane_SITL : public AP_WindVane_Backend
 {
 public:
+
     // constructor
-    AP_WindVane_SITL(AP_WindVane &frontend);
+    using AP_WindVane_Backend::AP_WindVane_Backend;
 
     // update state
     #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

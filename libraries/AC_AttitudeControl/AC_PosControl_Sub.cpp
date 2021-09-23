@@ -7,17 +7,11 @@ AC_PosControl_Sub::AC_PosControl_Sub(AP_AHRS_View& ahrs, const AP_InertialNav& i
     _alt_min(0.0f)
 {}
 
-/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
+/// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-///     The kinematic path is constrained by :
-///         maximum velocity - vel_max,
-///         maximum acceleration - accel_max,
-///         time constant - tc.
-///     The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
-///     The time constant also defines the time taken to achieve the maximum acceleration.
-///     The time constant must be positive.
-///     The function alters the input velocity to be the velocity that the system could reach zero acceleration in the minimum time.
-void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool force_descend)
+///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
+///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
+void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool force_descend, bool limit_output)
 {
     // check for ekf z position reset
     handle_ekf_z_reset();
@@ -48,9 +42,8 @@ void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool fo
 
     shape_vel_accel(vel, accel,
         _vel_desired.z, _accel_desired.z,
-        _vel_max_down_cms, _vel_max_up_cms,
         -accel_z_cms, accel_z_cms,
-        _tc_z_s, _dt);
+        _jerk_xy_max, _dt, limit_output);
 
     update_vel_accel(vel, accel, _dt, _limit_vector.z);
 }

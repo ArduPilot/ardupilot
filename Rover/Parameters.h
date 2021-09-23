@@ -409,6 +409,11 @@ public:
     // torqeedo motor driver
     AP_Torqeedo torqeedo;
 #endif
+
+#if HAL_AIS_ENABLED
+    // Automatic Identification System - for tracking sea-going vehicles
+    AP_AIS ais;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

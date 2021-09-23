@@ -33,9 +33,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
-#ifndef BOARD_PWM_COUNT_DEFAULT
-# define BOARD_PWM_COUNT_DEFAULT 6
-#endif
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
@@ -53,10 +50,6 @@
 #endif
 #ifndef BOARD_SAFETY_ENABLE
 #  define BOARD_SAFETY_ENABLE 1
-#endif
-
-#ifndef BOARD_PWM_COUNT_DEFAULT
-#define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 #ifndef BOARD_CONFIG_BOARD_VOLTAGE_MIN
@@ -362,11 +355,11 @@ void AP_BoardConfig::init_safety()
 /*
   notify user of a fatal startup error related to available sensors. 
 */
-bool AP_BoardConfig::_in_sensor_config_error;
+bool AP_BoardConfig::_in_error_loop;
 
-void AP_BoardConfig::config_error(const char *fmt, ...)
+void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list arg)
 {
-    _in_sensor_config_error = true;
+    _in_error_loop = true;
     /*
       to give the user the opportunity to connect to USB we keep
       repeating the error.  The mavlink delay callback is initialised
@@ -378,18 +371,12 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 5000) {
             last_print_ms = now;
-            va_list arg_list;
             char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
-            hal.util->snprintf(printfmt, sizeof(printfmt), "Config error: %s\n", fmt);
-            va_start(arg_list, fmt);
-            vprintf(printfmt, arg_list);
-            va_end(arg_list);
+            hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s\n", err_type, fmt);
+            vprintf(printfmt, arg);
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-            hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
-            va_start(arg_list, fmt);
-            gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
-            va_end(arg_list);
+            hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s", err_type, fmt);
+            gcs().send_textv(MAV_SEVERITY_CRITICAL, printfmt, arg);
 #endif
         }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
@@ -399,6 +386,22 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         EXPECT_DELAY_MS(10);
         hal.scheduler->delay(5);
     }
+}
+
+void AP_BoardConfig::allocation_error(const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    throw_error("Allocation Error", fmt, arg_list);
+    va_end(arg_list);
+}
+
+void AP_BoardConfig::config_error(const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    throw_error("Config Error", fmt, arg_list);
+    va_end(arg_list);
 }
 
 /*

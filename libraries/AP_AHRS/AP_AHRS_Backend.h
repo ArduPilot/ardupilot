@@ -33,67 +33,18 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
-enum AHRS_VehicleClass : uint8_t {
-    AHRS_VEHICLE_UNKNOWN,
-    AHRS_VEHICLE_GROUND,
-    AHRS_VEHICLE_COPTER,
-    AHRS_VEHICLE_FIXED_WING,
-    AHRS_VEHICLE_SUBMARINE,
-};
-
-
 class AP_AHRS_Backend
 {
 public:
 
     // Constructor
-    AP_AHRS_Backend() {
-        // enable centrifugal correction by default
-        _flags.correct_centrifugal = true;
-
-        _last_trim = _trim.get();
-        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
-        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
-    }
+    AP_AHRS_Backend() {}
 
     // empty virtual destructor
     virtual ~AP_AHRS_Backend() {}
 
     // init sets up INS board orientation
     virtual void init();
-
-    // Accessors
-    void set_fly_forward(bool b) {
-        _flags.fly_forward = b;
-    }
-
-    bool get_fly_forward(void) const {
-        return _flags.fly_forward;
-    }
-
-    void set_takeoff_expected(bool b);
-
-    bool get_takeoff_expected(void) const {
-        return _flags.takeoff_expected;
-    }
-
-    void set_touchdown_expected(bool b);
-
-    bool get_touchdown_expected(void) const {
-        return _flags.touchdown_expected;
-    }
-
-    AHRS_VehicleClass get_vehicle_class(void) const {
-        return _vehicle_class;
-    }
-
-    void set_vehicle_class(AHRS_VehicleClass vclass) {
-        _vehicle_class = vclass;
-    }
-
-    void set_wind_estimation(bool b) {
-        _flags.wind_estimation = b;
-    }
 
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
@@ -127,7 +78,7 @@ public:
     }
 
     // Methods
-    virtual void update(bool skip_ins_update=false) = 0;
+    virtual void _update() = 0;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
@@ -139,9 +90,12 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
-    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
-    virtual bool is_ext_nav_used_for_yaw(void) const { return false; }
-    
+    // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+    virtual bool using_noncompass_for_yaw(void) const { return false; }
+
+    // check if external nav is providing yaw
+    virtual bool using_extnav_for_yaw(void) const { return false; }
+
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     virtual void request_yaw_reset(void) {}
 
@@ -199,9 +153,6 @@ public:
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
 
-    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
-    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
-
     // get rotation matrix specifically from DCM backend (used for compass calibrator)
     virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
 
@@ -258,13 +209,8 @@ public:
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
-    // return the parameter AHRS_WIND_MAX in metres per second
-    uint8_t get_max_wind() const {
-        return _wind_max;
-    }
-
     // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void);
+    virtual Vector2f groundspeed_vector(void) = 0;
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
@@ -278,22 +224,10 @@ public:
         return false;
     }
 
-    // return a position relative to home in meters, North/East/Down
-    // order. This will only be accurate if have_inertial_nav() is
-    // true
-    virtual bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
     virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-    // return a position relative to home in meters, North/East
-    // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -302,10 +236,6 @@ public:
     virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
-
-    // return a Down position relative to home in meters
-    // if EKF is unavailable will return the baro altitude
-    virtual void get_relative_position_D_home(float &posD) const = 0;
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
@@ -320,33 +250,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // return true if yaw has been initialised
-    bool yaw_initialised(void) const {
-        return _flags.have_initial_yaw;
-    }
-
-    // set the correct centrifugal flag
-    // allows arducopter to disable corrections when disarmed
-    void set_correct_centrifugal(bool setting) {
-        _flags.correct_centrifugal = setting;
-    }
-
-    // get the correct centrifugal flag
-    bool get_correct_centrifugal(void) const {
-        return _flags.correct_centrifugal;
-    }
-
-    // get trim
-    const Vector3f &get_trim() const {
-        return _trim.get();
-    }
-
-    // set trim
-    void set_trim(const Vector3f &new_trim);
-
-    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // helper trig value accessors
     float cos_roll() const  {
@@ -453,11 +356,6 @@ public:
         return false;
     }
 
-    // get the selected ekf type, for allocation decisions
-    int8_t get_ekf_type(void) const {
-        return _ekf_type;
-    }
-
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
@@ -508,9 +406,6 @@ public:
         return _rsem;
     }
 
-    // active AHRS type for logging
-    virtual uint8_t get_active_AHRS_type(void) const { return 0; }
-
     // Logging to disk functions
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
@@ -519,19 +414,6 @@ public:
 
 protected:
 
-    // multi-thread access support
-    HAL_Semaphore _rsem;
-
-    AHRS_VehicleClass _vehicle_class{AHRS_VEHICLE_UNKNOWN};
-
-    // settable parameters
-    // these are public for ArduCopter
-    AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
-
-    AP_Float beta;
-
     enum class GPSUse : uint8_t {
         Disable = 0,
         Enable  = 1,
@@ -539,25 +421,9 @@ protected:
     };
 
     AP_Enum<GPSUse> _gps_use;
-    AP_Int8 _wind_max;
-    AP_Int8 _board_orientation;
-    AP_Int8 _gps_minsats;
-    AP_Int8 _ekf_type;
-    AP_Float _custom_roll;
-    AP_Float _custom_pitch;
-    AP_Float _custom_yaw;
 
-    Matrix3f _custom_rotation;
-
-    // flags structure
-    struct ahrs_flags {
-        uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
-        uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
-        uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t takeoff_expected        : 1;    // 1 if the vehicle is in a state that takeoff might be expected.  Ground effect may be in play.
-        uint8_t touchdown_expected      : 1;    // 1 if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
-    } _flags;
+    // multi-thread access support
+    HAL_Semaphore _rsem;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,
@@ -571,28 +437,9 @@ protected:
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
 
-    // update takeoff/touchdown flags
-    void update_flags();
-
-    // pointer to airspeed object, if available
-
-    // a vector to capture the difference between the controller and body frames
-    AP_Vector3f         _trim;
-
-    // cached trim rotations
-    Vector3f _last_trim;
-    Matrix3f _rotation_autopilot_body_to_vehicle_body;
-    Matrix3f _rotation_vehicle_body_to_autopilot_body;
-
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
-
-    // Declare filter states for HPF and LPF used by complementary
-    // filter in AP_AHRS::groundspeed_vector
-    Vector2f _lp; // ground vector low-pass filter
-    Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input
 
     // helper trig variables
     float _cos_roll{1.0f};
@@ -601,12 +448,4 @@ protected:
     float _sin_roll;
     float _sin_pitch;
     float _sin_yaw;
-
-    // which accelerometer instance is active
-    uint8_t _active_accel_instance;
-
-private:
-
-    uint32_t takeoff_expected_start_ms;
-    uint32_t touchdown_expected_start_ms;
 };

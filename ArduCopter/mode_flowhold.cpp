@@ -76,7 +76,7 @@ const AP_Param::GroupInfo ModeFlowHold::var_info[] = {
 
 ModeFlowHold::ModeFlowHold(void) : Mode()
 {
-    AP_Param::setup_object_defaults(this, var_info);            
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
@@ -215,7 +215,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 // @Field: Iy: Integral part of PI controller, Y-Axis
 
     if (log_counter++ % 20 == 0) {
-        AP::logger().Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
+        AP::logger().WriteStreaming("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
                                                AP_HAL::micros64(),
                                                (double)sensor_flow.x, (double)sensor_flow.y,
                                                (double)bf_angles.x, (double)bf_angles.y,
@@ -246,7 +246,7 @@ void ModeFlowHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
@@ -297,13 +297,14 @@ void ModeFlowHold::run()
     case AltHold_Flying:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // adjust climb rate using rangefinder
-        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        copter.pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+        // update the vertical offset based on the surface measurement
+        copter.surface_tracking.update_surface_offset();
+
+        // Send the commanded climb rate to the position controller
+        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
         break;
     }
 
@@ -313,8 +314,8 @@ void ModeFlowHold::run()
     // calculate alt-hold angles
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
-    float angle_max = copter.attitude_control->get_althold_lean_angle_max();
-    get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max());
+    float angle_max = copter.aparm.angle_max;
+    get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {
@@ -491,7 +492,7 @@ void ModeFlowHold::update_height_estimate(void)
 // @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
 // @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
 
-    AP::logger().Write("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
+    AP::logger().WriteStreaming("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
                                            (double)delta_flowrate.x,
                                            (double)delta_flowrate.y,

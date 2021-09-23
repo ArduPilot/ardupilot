@@ -274,9 +274,9 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == 0){
+    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
         handle_retry(packet.seqno);
-    } else{
+    } else {
         handle_ack(link, msg, packet.seqno);
     }
     semaphore.give();
@@ -560,7 +560,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // deliberately fail 10% of the time in SITL:
-    if (rand() < 0.1) {
+    if ((rand() % 100 + 1) < 10) {
         return false;
     }
 #endif

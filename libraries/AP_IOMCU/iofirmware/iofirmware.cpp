@@ -607,15 +607,6 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
-    case PAGE_SAFETY_PWM: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(reg_safety_pwm.pwm)/2) {
-            return false;
-        }
-        memcpy((&reg_safety_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
-        break;
-    }
-
     case PAGE_FAILSAFE_PWM: {
         uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         if (offset + num_values > sizeof(reg_failsafe_pwm.pwm)/2) {
@@ -750,7 +741,7 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
         if (reg_status.flag_safety_off) {
             reg_direct_pwm.pwm[i] = reg_failsafe_pwm.pwm[i];
         } else {
-            reg_direct_pwm.pwm[i] = reg_safety_pwm.pwm[i];
+            reg_direct_pwm.pwm[i] = 0;
         }
     }
     if (mixing.enabled) {

@@ -44,6 +44,7 @@
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
+#include <SITL/SIM_AIS.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -54,6 +55,7 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
+#include <SITL/SIM_FETtecOneWireESC.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -298,6 +300,9 @@ private:
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
 
+    // simulated FETtec OneWire ESCs:
+    SITL::FETtecOneWireESC *fetteconewireesc;
+
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
 
@@ -311,6 +316,9 @@ private:
 
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
+
+    // simulated AIS stream
+    SITL::AIS *ais;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};

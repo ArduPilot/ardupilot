@@ -500,7 +500,7 @@ void AP_ADSB_Sagetech::send_msg_GPS()
 
     // ground speed
     const Vector2f speed = AP::ahrs().groundspeed_vector();
-    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
 
     // heading

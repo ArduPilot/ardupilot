@@ -934,12 +934,21 @@ class AutoTestCopter(AutoTest):
         # no action taken.
         self.start_subtest("Batt failsafe disabled test")
         self.takeoffAndMoveAway()
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK:
+            raise NotAchievedException("Expected state ok")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_LOW:
+            raise NotAchievedException("Expected state low")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
+        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=1)
+        if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_CRITICAL:
+            raise NotAchievedException("Expected state critical")
         self.delay_sim_time(5)
         self.wait_mode("ALT_HOLD")
         self.change_mode("RTL")
@@ -1063,8 +1072,8 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("Vibration compensation ON", timeout=30)
         self.change_mode("LAND")
 
-        # check vehicle descends to 2m or less within 30 seconds
-        self.wait_altitude(-5, 2, timeout=30, relative=True)
+        # check vehicle descends to 2m or less within 40 seconds
+        self.wait_altitude(-5, 2, timeout=40, relative=True)
 
         # force disarm of vehicle (it will likely not automatically disarm)
         self.disarm_vehicle(force=True)
@@ -2139,6 +2148,12 @@ class AutoTestCopter(AutoTest):
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 
+        self.fly_loaded_mission(num_wp)
+
+        self.progress("Auto mission completed: passed!")
+
+    def fly_loaded_mission(self, num_wp):
+        '''fly mission loaded on vehicle.  FIXME: get num_wp from vehicle'''
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.set_current_waypoint(1)
 
@@ -2159,8 +2174,6 @@ class AutoTestCopter(AutoTest):
         # wait for disarm
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
-
-        self.progress("Auto mission completed: passed!")
 
     # fly_auto_test using CAN GPS - fly mission which tests normal operation alongside CAN GPS
     def fly_auto_test_using_can_gps(self):
@@ -2842,6 +2855,86 @@ class AutoTestCopter(AutoTest):
     def test_terrain_spline_mission(self):
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.fly_mission("wp.txt")
+
+    def WPNAV_SPEED(self):
+        '''ensure resetting WPNAV_SPEED works'''
+
+        loc = self.poll_home_position()
+        alt = 20
+        loc.alt = alt
+        items = []
+
+        # 100 waypoints in a line, 10m apart in a northerly direction
+        #        for i in range(1, 100):
+        #            items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, i*10, 0, alt))
+
+        # 1 waypoint a long way away
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),)
+
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+
+        self.upload_simple_relhome_mission(items)
+
+        start_speed_ms = self.get_parameter('WPNAV_SPEED') / 100.0
+
+        self.takeoff(20)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
+
+        for speed_ms in 7, 8, 7, 8, 9, 10, 11, 7:
+            self.set_parameter('WPNAV_SPEED', speed_ms*100)
+            self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
+        self.do_RTL()
+
+    def WPNAV_SPEED_UP(self):
+        '''ensure resetting WPNAV_SPEED_UP works'''
+
+        items = []
+
+        # 1 waypoint a long way up
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 20000),)
+
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+
+        self.upload_simple_relhome_mission(items)
+
+        start_speed_ms = self.get_parameter('WPNAV_SPEED_UP') / 100.0
+
+        minimum_duration = 5
+
+        self.takeoff(20)
+        self.change_mode('AUTO')
+        self.wait_climbrate(start_speed_ms-1, start_speed_ms+1, minimum_duration=minimum_duration)
+
+        for speed_ms in 7, 8, 7, 8, 6, 2:
+            self.set_parameter('WPNAV_SPEED_UP', speed_ms*100)
+            self.wait_climbrate(speed_ms-1, speed_ms+1, minimum_duration=minimum_duration)
+        self.do_RTL(timeout=240)
+
+    def WPNAV_SPEED_DN(self):
+        '''ensure resetting WPNAV_SPEED_DN works'''
+
+        items = []
+
+        # 1 waypoint a long way back down
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 10),)
+
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+
+        self.upload_simple_relhome_mission(items)
+
+        minimum_duration = 5
+
+        self.takeoff(500, timeout=60)
+        self.change_mode('AUTO')
+
+        start_speed_ms = self.get_parameter('WPNAV_SPEED_DN') / 100.0
+        self.wait_climbrate(-start_speed_ms-1, -start_speed_ms+1, minimum_duration=minimum_duration)
+
+        for speed_ms in 7, 8, 7, 8, 6, 2:
+            self.set_parameter('WPNAV_SPEED_DN', speed_ms*100)
+            self.wait_climbrate(-speed_ms-1, -speed_ms+1, minimum_duration=minimum_duration)
+        self.do_RTL()
 
     def fly_mission(self, filename, strict=True):
         num_wp = self.load_mission(filename, strict=strict)
@@ -6680,19 +6773,28 @@ class AutoTestCopter(AutoTest):
             # inspect generated log for messages:
             dfreader = self.dfreader_for_current_onboard_log()
             wanted = set([0, 1, 2])
+            seen_primary_change = False
             while True:
-                m = dfreader.recv_match(type="GPS") # disarmed
+                m = dfreader.recv_match(type=["GPS", "EV"]) # disarmed
                 if m is None:
                     break
-                try:
-                    wanted.remove(m.I)
-                except KeyError:
-                    continue
-                if len(wanted) == 0:
+                mtype = m.get_type()
+                if mtype == 'GPS':
+                    try:
+                        wanted.remove(m.I)
+                    except KeyError:
+                        continue
+                elif mtype == 'EV':
+                    if m.Id == 67:  # GPS_PRIMARY_CHANGED
+                        seen_primary_change = True
+                if len(wanted) == 0 and seen_primary_change:
                     break
 
             if len(wanted):
                 raise NotAchievedException("Did not get all three GPS types")
+            if not seen_primary_change:
+                raise NotAchievedException("Did not see primary change")
+
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
@@ -6724,6 +6826,7 @@ class AutoTestCopter(AutoTest):
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
             'heli': "wrong binary, different takeoff regime",
+            'heli-blade360': "wrong binary, different takeoff regime",
             'tri': "bad yaw rate",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
@@ -6859,17 +6962,15 @@ class AutoTestCopter(AutoTest):
 
                 messages[off] = m
 
-                # FIXME: make the numbers we use in the i2c simulated
-                # baros closer to the ones from AP_Baro_SITL
                 if None in messages:
                     return
                 first = messages[0]
                 for msg in messages[1:]:
                     delta_press_abs = abs(first.press_abs - msg.press_abs)
-                    if delta_press_abs > 5:
+                    if delta_press_abs > 0.5: # 50 Pa leeway
                         raise NotAchievedException("Press_Abs mismatch (press1=%s press2=%s)" % (first, msg))
                     delta_temperature = abs(first.temperature - msg.temperature)
-                    if delta_temperature > 1000:  # that's 10-degrees leeway
+                    if delta_temperature > 300:  # that's 3-degrees leeway
                         raise NotAchievedException("Temperature mismatch (t1=%s t2=%s)" % (first, msg))
             self.install_message_hook_context(check_pressure)
             self.fly_mission("copter_mission.txt", strict=False)
@@ -7186,6 +7287,126 @@ class AutoTestCopter(AutoTest):
         ret.extend(self.tests1d())
         ret.extend(self.tests1e())
         return ret
+
+    def FETtecESC_flight(self):
+        '''fly with servo outputs from FETtec ESC'''
+        self.start_subtest("FETtec ESC flight")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        self.fly_loaded_mission(num_wp)
+
+    def FETtecESC_esc_power_checks(self):
+        '''Make sure state machine copes with ESCs rebooting'''
+        self.start_subtest("FETtec ESC reboot")
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.progress("Turning off an ESC off ")
+        mask = int(self.get_parameter("SIM_FTOWESC_POW"))
+
+        for mot_id_to_kill in 1, 2:
+            self.progress("Turning ESC=%u off" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+            self.progress("Turning ESC=%u off (again)" % mot_id_to_kill)
+            self.set_parameter("SIM_FTOWESC_POW", mask & ~(1 << mot_id_to_kill))
+            self.assert_prearm_failure("are not sending tel")
+            self.progress("Turning it back on")
+            self.set_parameter("SIM_FTOWESC_POW", mask)
+            self.wait_ready_to_arm()
+
+        self.progress("Turning all ESCs off")
+        self.set_parameter("SIM_FTOWESC_POW", 0)
+        self.assert_prearm_failure("are not sending tel")
+        self.progress("Turning them back on")
+        self.set_parameter("SIM_FTOWESC_POW", mask)
+        self.wait_ready_to_arm()
+
+    def fettec_assert_bad_mask(self, mask):
+        '''assert the mask is bad for fettec driver'''
+        self.start_subsubtest("Checking mask (%s) is bad" % (mask,))
+        self.context_push()
+        self.set_parameter("SERVO_FTW_MASK", mask)
+        self.reboot_sitl()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 20:
+                raise NotAchievedException("Expected mask to be only problem within 20 seconds")
+            try:
+                self.assert_prearm_failure("Invalid motor mask")
+                break
+            except NotAchievedException:
+                self.delay_sim_time(1)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def fettec_assert_good_mask(self, mask):
+        '''assert the mask is bad for fettec driver'''
+        self.start_subsubtest("Checking mask (%s) is good" % (mask,))
+        self.context_push()
+        self.set_parameter("SERVO_FTW_MASK", mask)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def FETtecESC_safety_switch(self):
+        mot = self.find_first_set_bit(int(self.get_parameter("SERVO_FTW_MASK"))) + 1
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        # we have to wait for a while for the arming tone to go out
+        # before the motors will spin:
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=17640,
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.set_safetyswitch_on()
+        self.wait_esc_telem_rpm(mot, 0, 0)
+        self.set_safetyswitch_off()
+        self.wait_esc_telem_rpm(
+            esc=mot,
+            rpm_min=17640,
+            rpm_max=17640,
+            minimum_duration=2,
+            timeout=5,
+        )
+        self.context_pop()
+        self.wait_disarmed()
+
+    def FETtecESC_btw_mask_checks(self):
+        '''ensure prearm checks work as expected'''
+        for bad_mask in [0b1000000000000, 0b10100000000000]:
+            self.fettec_assert_bad_mask(bad_mask)
+        for good_mask in [0b00001, 0b00101, 0b110000000000]:
+            self.fettec_assert_good_mask(good_mask)
+
+    def FETtecESC(self):
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 38,
+            "SERVO_FTW_MASK": 0b11101000,
+            "SIM_FTOWESC_ENA": 1,
+            "SERVO1_FUNCTION": 0,
+            "SERVO2_FUNCTION": 0,
+            "SERVO3_FUNCTION": 0,
+            "SERVO4_FUNCTION": 33,
+            "SERVO5_FUNCTION": 0,
+            "SERVO6_FUNCTION": 34,
+            "SERVO7_FUNCTION": 35,
+            "SERVO8_FUNCTION": 36,
+        })
+        self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
+        self.FETtecESC_safety_switch()
+        self.FETtecESC_esc_power_checks()
+        self.FETtecESC_btw_mask_checks()
+        self.FETtecESC_flight()
 
     def tests1a(self):
         '''return list of all tests'''
@@ -7646,6 +7867,10 @@ class AutoTestCopter(AutoTest):
                  "Test Replay",
                  self.test_replay),
 
+            Test("FETtecESC",
+                 "Test FETtecESC",
+                 self.FETtecESC),
+
             Test("GroundEffectCompensation_touchDownExpected",
                  "Test EKF's handling of touchdown-expected",
                  self.GroundEffectCompensation_touchDownExpected),
@@ -7653,6 +7878,18 @@ class AutoTestCopter(AutoTest):
             Test("GroundEffectCompensation_takeOffExpected",
                  "Test EKF's handling of takeoff-expected",
                  self.GroundEffectCompensation_takeOffExpected),
+
+            Test("WPNAV_SPEED",
+                 "Change speed during misison",
+                 self.WPNAV_SPEED),
+
+            Test("WPNAV_SPEED_UP",
+                 "Change speed (up) during misison",
+                 self.WPNAV_SPEED_UP),
+
+            Test("WPNAV_SPEED_DN",
+                 "Change speed (down) during misison",
+                 self.WPNAV_SPEED_DN),
 
             Test("LogUpload",
                  "Log upload",
@@ -8058,7 +8295,6 @@ class AutoTestHeli(AutoTestCopter):
 
     def disabled_tests(self):
         return {
-            "SplineWaypoint": "See https://github.com/ArduPilot/ardupilot/issues/14593",
         }
 
 

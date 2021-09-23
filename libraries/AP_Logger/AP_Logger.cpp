@@ -1415,6 +1415,10 @@ bool AP_Logger::log_while_disarmed(void) const
 
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
+    if (_force_long_log_persist) {
+        // log for 10x longer than default
+        persist_ms *= 10U;
+    }
 
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
     const uint32_t arm_change_ms = hal.util->get_last_armed_change();

@@ -71,7 +71,7 @@ static int posix_fopen_modes_to_open(const char *mode)
     }
     if (modecmp(mode,"a+") || modecmp(mode, "a+b" ) || modecmp(mode, "ab+" )) {
         flag = O_RDWR | O_CREAT | O_APPEND;
-        return -1;
+        return flag;
     }
     return -1;
 }

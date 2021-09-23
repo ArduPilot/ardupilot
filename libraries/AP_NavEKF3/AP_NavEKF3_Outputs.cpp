@@ -285,7 +285,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                 // The EKF is able to provide a position estimate
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                           outputDataNew.position.y + posOffsetNED.y);
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
@@ -295,7 +296,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                     // Return the EKF estimate but mark it as invalid
                     loc.lat = EKF_origin.lat;
                     loc.lng = EKF_origin.lng;
-                    loc.offset(outputDataNew.position.x, outputDataNew.position.y);
+                    loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                               outputDataNew.position.y + posOffsetNED.y);
                     return false;
                 }
             }
@@ -306,7 +308,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
             } else {
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
+                           lastKnownPositionNE.y + posOffsetNED.y);
                 return false;
             }
         }
@@ -474,6 +477,18 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         variances = extNavVelVarInnov.tofloat();
         return true;
 #endif // EK3_FEATURE_EXTERNAL_NAV
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+        // check for timeouts
+        if (AP_HAL::millis() - flowInnovTime_ms > 500) {
+            return false;
+        }
+        innovations.x = flowInnov[0];
+        innovations.y = flowInnov[1];
+        innovations.z = 0;
+        variances.x = flowVarInnov[0];
+        variances.y = flowVarInnov[1];
+        variances.z = 0;
+        return true;
     default:
         // variances are not available for this source
         return false;

@@ -38,14 +38,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
-        if (plane.control_mode != &plane.mode_initializing) {
-            if (success) {
-                AP_Notify::events.user_mode_change = 1;
-            } else {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
+        plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
         break;
     }
     default:
@@ -58,6 +51,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     }
 }
 
+#if HAL_QUADPLANE_ENABLED
 void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
@@ -77,6 +71,7 @@ void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
             break;
     }
 }
+#endif  // HAL_QUADPLANE_ENABLED
 
 void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
 {
@@ -122,24 +117,25 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         switch(ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.flare_mode = Plane::FlareMode::ENABLED_PITCH_TARGET;
+#if HAL_QUADPLANE_ENABLED
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+#endif
             break;
         case AuxSwitchPos::MIDDLE:
             plane.flare_mode = Plane::FlareMode::ENABLED_NO_PITCH_TARGET;
+#if HAL_QUADPLANE_ENABLED
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+#endif
             break;
         case AuxSwitchPos::LOW:
+#if HAL_QUADPLANE_ENABLED
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+#endif
             plane.flare_mode = Plane::FlareMode::FLARE_DISABLED;
             break;
         }    
 }
 
-void RC_Channel_Plane::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
-{
-    plane.mission.start();
-    plane.prev_WP_loc = plane.current_loc;
-}
 
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
@@ -163,11 +159,17 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::LANDING_FLARE:
     case AUX_FUNC::PARACHUTE_RELEASE:
     case AUX_FUNC::MODE_SWITCH_RESET:
+    case AUX_FUNC::CRUISE:
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+#endif
         break;
 
-    case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::SOARING:
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::AIRMODE:
+#endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     case AUX_FUNC::ARSPD_CALIBRATE:
 #endif
@@ -255,9 +257,11 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::FBWA_TAILDRAGGER:
         break; // input labels, nothing to do
 
+#if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::Q_ASSIST:
         do_aux_function_q_assist_state(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FWD_THR:
         break; // VTOL forward throttle input label, nothing to do
@@ -286,6 +290,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_crow_mode(ch_flag);
         break;
 
+#if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::AIRMODE:
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
@@ -298,6 +303,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
             break;
         }
         break;
+#endif
 
 case AUX_FUNC::ARSPD_CALIBRATE:
 #if AP_AIRSPEED_AUTOCAL_ENABLE
@@ -327,6 +333,19 @@ case AUX_FUNC::ARSPD_CALIBRATE:
     case AUX_FUNC::MODE_SWITCH_RESET:
         plane.reset_control_switch();
         break;
+
+    case AUX_FUNC::CRUISE:
+        do_aux_function_change_mode(Mode::Number::CRUISE, ch_flag);
+        break;
+
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+        RC_Channel::do_aux_function_armdisarm(ch_flag);
+        if (plane.arming.is_armed()) {
+            plane.quadplane.air_mode = AirMode::ON;
+        }
+        break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

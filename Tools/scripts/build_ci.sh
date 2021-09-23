@@ -10,7 +10,6 @@ set -ex
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
-unset CXX CC
 
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
@@ -43,7 +42,7 @@ function run_autotest() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone --recursive https://github.com/ardupilot/MAVProxy
+          git clone https://github.com/ardupilot/MAVProxy
           pushd MAVProxy
             python setup.py build install --user --force
           popd
@@ -196,6 +195,10 @@ for t in $CI_BUILD_TARGET; do
         $waf AP_Periph
         echo "Building HerePro peripheral fw"
         $waf configure --board HerePro
+        $waf clean
+        $waf AP_Periph
+        echo "Building CubeOrange-periph peripheral fw"
+        $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
         echo "Building HerePro bootloader"

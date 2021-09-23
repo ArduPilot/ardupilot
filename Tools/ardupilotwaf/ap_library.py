@@ -76,8 +76,11 @@ def _depends_on_vehicle(bld, source_node):
 
 
     if path not in _depends_on_vehicle_cache:
-        s = _remove_comments(source_node.read())
-        _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        try:
+            s = _remove_comments(source_node.read())
+            _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        except Exception:
+            return False
 
     return _depends_on_vehicle_cache[path]
 

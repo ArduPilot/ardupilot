@@ -61,7 +61,6 @@ class CANIface: public AP_HAL::CANIface
     bool initialized_;
 
     char buf_[SLCAN_BUFFER_SIZE + 1]; // buffer to record raw frame nibbles before parsing
-    uint32_t _pending_frame_size = 0; // holds the size of frame to be tx
     int16_t pos_ = 0; // position in the buffer recording nibble frames before parsing
     AP_HAL::UARTDriver* _port; // UART interface port reference to be used for SLCAN iface
 

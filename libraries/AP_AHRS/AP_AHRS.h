@@ -90,7 +90,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
 
-    void            update(bool skip_ins_update=false) override;
+    void            update(bool skip_ins_update=false);
     void            reset(bool recover_eulers = false) override;
 
     // dead-reckoning support
@@ -103,8 +103,27 @@ public:
     float           get_error_rp() const override;
     float           get_error_yaw() const override;
 
+    /*
+     * wind estimation support
+     */
+
+    // enable wind estimation
+    void set_wind_estimation_enabled(bool b) { wind_estimation_enabled = b; }
+
+    // wind_estimation_enabled returns true if wind estimation is enabled
+    bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
+
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate() const override;
+
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
+
+    /*
+     * airspeed support
+     */
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -155,17 +174,17 @@ public:
 
     // return the relative position NED to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NED_home(Vector3f &vec) const override;
+    bool get_relative_position_NED_home(Vector3f &vec) const;
     bool get_relative_position_NED_origin(Vector3f &vec) const override;
 
     // return the relative position NE to either home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const override;
+    bool get_relative_position_NE_home(Vector2f &posNE) const;
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
 
     // return the relative position down to either home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const override;
+    void get_relative_position_D_home(float &posD) const;
     bool get_relative_position_D_origin(float &posD) const override;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
@@ -188,7 +207,8 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
     // get speed limit
-    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
+    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
+    float getControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
@@ -199,6 +219,11 @@ public:
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
+
+    // return true if *DCM* yaw has been initialised
+    bool dcm_yaw_initialised(void) const {
+        return AP_AHRS_DCM::yaw_initialised();
+    }
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
@@ -245,12 +270,6 @@ public:
     // this is not related to terrain following
     void set_terrain_hgt_stable(bool stable) override;
 
-    // get_location - updates the provided location with the latest
-    // calculated location including absolute altitude
-    // returns true on success (i.e. the EKF knows it's latest
-    // position), false on failure
-    bool get_location(struct Location &loc) const;
-
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
@@ -273,8 +292,6 @@ public:
 
     // returns the estimated magnetic field offsets in body frame
     bool get_mag_field_correction(Vector3f &ret) const override;
-
-    bool getGpsGlitchStatus() const;
 
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
@@ -303,15 +320,23 @@ public:
 
     void Log_Write();
 
-    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
-    bool is_ext_nav_used_for_yaw(void) const override;
+    // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+    bool using_noncompass_for_yaw(void) const override;
+
+    // check if external nav is providing yaw
+    bool using_extnav_for_yaw(void) const override;
 
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise) override;
 
     // active EKF type for logging
-    uint8_t get_active_AHRS_type(void) const override {
+    uint8_t get_active_AHRS_type(void) const {
         return uint8_t(active_EKF_type());
+    }
+
+    // get the selected ekf type, for allocation decisions
+    int8_t get_ekf_type(void) const {
+        return _ekf_type;
     }
 
     // these are only out here so vehicles can reference them for parameters
@@ -336,6 +361,23 @@ public:
 
     // return SSA
     float getSSA(void) const { return _SSA; }
+
+    /*
+     * trim-related functions
+     */
+
+    // get trim
+    const Vector3f &get_trim() const { return _trim.get(); }
+
+    // set trim
+    void set_trim(const Vector3f &new_trim);
+
+    // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
+    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
+
+    // trim rotation matrices:
+    const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
+    const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
     /*
      * home-related functionality
@@ -368,12 +410,83 @@ public:
 
     void Log_Write_Home_And_Origin();
 
+    /*
+     * AHRS is used as a transport for vehicle-takeoff-expected and
+     * vehicle-landing-expected:
+     */
+    void set_takeoff_expected(bool b);
+
+    bool get_takeoff_expected(void) const {
+        return takeoff_expected;
+    }
+
+    void set_touchdown_expected(bool b);
+
+    bool get_touchdown_expected(void) const {
+        return touchdown_expected;
+    }
+
+    /*
+     * fly_forward is set by the vehicles to indicate the vehicle
+     * should generally be moving in the direction of its heading.
+     * It is an additional piece of information that the backends can
+     * use to provide additional and/or improved estimates.
+     */
+    void set_fly_forward(bool b) {
+        fly_forward = b;
+    }
+    bool get_fly_forward(void) const {
+        return fly_forward;
+    }
+
+    /* we modify our behaviour based on what sort of vehicle the
+     * vehicle code tells us we are.  This information is also pulled
+     * from AP_AHRS by other libraries
+     */
+    enum class VehicleClass : uint8_t {
+        UNKNOWN,
+        GROUND,
+        COPTER,
+        FIXED_WING,
+        SUBMARINE,
+    };
+    VehicleClass get_vehicle_class(void) const {
+        return _vehicle_class;
+    }
+    void set_vehicle_class(VehicleClass vclass) {
+        _vehicle_class = vclass;
+    }
+
+    // get the view's rotation, or ROTATION_NONE
+    enum Rotation get_view_rotation(void) const;
+
 protected:
     // optional view class
     AP_AHRS_View *_view;
 
 private:
     static AP_AHRS *_singleton;
+
+    /* we modify our behaviour based on what sort of vehicle the
+     * vehicle code tells us we are.  This information is also pulled
+     * from AP_AHRS by other libraries
+     */
+    VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
+
+    /*
+     * Parameters
+     */
+    AP_Int8 _wind_max;
+    AP_Int8 _board_orientation;
+    AP_Int8 _ekf_type;
+    AP_Float _custom_roll;
+    AP_Float _custom_pitch;
+    AP_Float _custom_yaw;
+
+    /*
+     * support for custom AHRS orientation, replacing _board_orientation
+     */
+    Matrix3f _custom_rotation;
 
     enum class EKFType {
         NONE = 0
@@ -422,7 +535,7 @@ private:
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
-    void update_DCM(bool skip_ins_update);
+    void update_DCM();
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
@@ -463,6 +576,50 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
 #endif    
+
+    /*
+     * trim-related state and private methods:
+     */
+
+    // a vector to capture the difference between the controller and body frames
+    AP_Vector3f         _trim;
+
+    // cached trim rotations
+    Vector3f _last_trim;
+
+    Matrix3f _rotation_autopilot_body_to_vehicle_body;
+    Matrix3f _rotation_vehicle_body_to_autopilot_body;
+
+    // updates matrices responsible for rotating vectors from vehicle body
+    // frame to autopilot body frame from _trim variables
+    void update_trim_rotation_matrices();
+
+    /*
+     * AHRS is used as a transport for vehicle-takeoff-expected and
+     * vehicle-landing-expected:
+     */
+    // update takeoff/touchdown flags
+    void update_flags();
+    bool takeoff_expected;    // true if the vehicle is in a state that takeoff might be expected.  Ground effect may be in play.
+    uint32_t takeoff_expected_start_ms;
+    bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
+    uint32_t touchdown_expected_start_ms;
+
+    /*
+     * wind estimation support
+     */
+    bool wind_estimation_enabled;
+
+    /*
+     * fly_forward is set by the vehicles to indicate the vehicle
+     * should generally be moving in the direction of its heading.
+     * It is an additional piece of information that the backends can
+     * use to provide additional and/or improved estimates.
+     */
+    bool fly_forward; // true if we can assume the vehicle will be flying forward on its X axis
+
+    // poke AP_Notify based on values from status
+    void update_notify_from_filter_status(const nav_filter_status &status);
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;

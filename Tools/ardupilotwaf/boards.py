@@ -2,13 +2,14 @@
 # encoding: utf-8
 
 from collections import OrderedDict
+import re
 import sys, os
 import fnmatch
 
 import waflib
 from waflib import Utils
 from waflib.Configure import conf
-
+import json
 _board_classes = {}
 _board = None
 
@@ -42,6 +43,9 @@ class Board:
         cfg.load('cxx_checks')
 
         env = waflib.ConfigSet.ConfigSet()
+        def srcpath(path):
+            return cfg.srcnode.make_node(path).abspath()
+        env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
         # Setup scripting, had to defer this to allow checking board size
@@ -66,7 +70,7 @@ class Board:
 
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
-            env.CXXFLAGS += ['-DHAL_NO_GCS=1']
+            env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
@@ -109,6 +113,15 @@ class Board:
         cfg.env.prepend_value('INCLUDES', [
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
+        if os.path.exists(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')):
+            # change c_cpp_properties.json configure the VSCode Intellisense env
+            c_cpp_properties = json.load(open(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')))
+            for config in c_cpp_properties['configurations']:
+                config['compileCommands'] = "${workspaceFolder}/build/%s/compile_commands.json" % self.get_name()
+            json.dump(c_cpp_properties, open(os.path.join(env.SRCROOT, './.vscode/c_cpp_properties.json'), 'w'), indent=4)
+            cfg.msg("Configured VSCode Intellisense", 'yes')
+        else:
+            cfg.msg("Configured VSCode Intellisense:", 'no', color='YELLOW')
 
     def cc_version_gte(self, cfg, want_major, want_minor):
         (major, minor, patchlevel) = cfg.env.CC_VERSION
@@ -256,6 +269,10 @@ class Board:
             '-Wno-trigraphs',
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
+            '-Wuninitialized',
+            '-Wmaybe-uninitialized',
+            '-Warray-bounds',
+            '-Wduplicated-cond',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -321,6 +338,7 @@ class Board:
             ]
         else:
             env.LINKFLAGS += [
+                '-fno-exceptions',
                 '-Wl,--gc-sections',
             ]
 
@@ -428,10 +446,21 @@ def get_ap_periph_boards():
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
             with open(hwdef, "r") as f:
-                if '-periph' in f.readline():  # try to get -periph include
+                content = f.read()
+                if 'AP_PERIPH' in content:
                     list_ap.append(d)
-                if 'AP_PERIPH' in f.read():
-                    list_ap.append(d)
+                    continue
+                # process any include lines:
+                m = re.match(r"include\s+([^\s]*)", content)
+                if m is None:
+                    continue
+                include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
+                with open(include_path, "r") as g:
+                    content = g.read()
+                    if 'AP_PERIPH' in content:
+                        list_ap.append(d)
+                        continue
+
     list_ap = list(set(list_ap))
     return list_ap
 
@@ -579,10 +608,9 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-        
-        def srcpath(path):
-            return cfg.srcnode.make_node(path).abspath()
-        env.SRCROOT = srcpath('')
+
+    def get_name(self):
+        return self.__class__.__name__
 
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):
@@ -598,7 +626,7 @@ class sitl_periph_gps(sitl):
             HAL_CAN_DEFAULT_NODE_ID = 0,
             HAL_RAM_RESERVE_START = 0,
             APJ_BOARD_ID = 100,
-            HAL_NO_GCS = 1,
+            HAL_GCS_ENABLED = 0,
             HAL_LOGGING_ENABLED = 0,
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             HAL_MISSION_ENABLED = 0,
@@ -812,6 +840,9 @@ class chibios(Board):
             fun(bld)
         super(chibios, self).pre_build(bld)
 
+    def get_name(self):
+        return self.name
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
@@ -852,6 +883,11 @@ class linux(Board):
             waflib.Options.commands.append('rsync')
             # Avoid infinite recursion
             bld.options.upload = False
+
+    def get_name(self):
+        # get name of class
+        return self.__class__.__name__
+
 
 class navigator(linux):
     toolchain = 'arm-linux-gnueabihf'
@@ -1064,6 +1100,16 @@ class rst_zynq(linux):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
+        )
+
+class obal(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(obal, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_OBAL_V1',
         )
 
 class SITL_static(sitl):

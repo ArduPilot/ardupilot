@@ -58,7 +58,7 @@ void AP_AHRS_Backend::Write_Attitude(const Vector3f &targets) const
         yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
         error_rp        : (uint16_t)(get_error_rp() * 100),
         error_yaw       : (uint16_t)(get_error_yaw() * 100),
-        active          : get_active_AHRS_type(),
+        active          : AP::ahrs().get_active_AHRS_type(),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
@@ -84,7 +84,7 @@ void AP_AHRS_Backend::Write_POS() const
         return;
     }
     float home, origin;
-    get_relative_position_D_home(home);
+    AP::ahrs().get_relative_position_D_home(home);
     const struct log_POS pkt{
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),
@@ -110,7 +110,8 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
         control_yaw     : (uint16_t)wrap_360_cd(targets.z),
         yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
         error_rp        : (uint16_t)(get_error_rp() * 100),
-        error_yaw       : (uint16_t)(get_error_yaw() * 100)
+        error_yaw       : (uint16_t)(get_error_yaw() * 100),
+        active          : AP::ahrs().get_active_AHRS_type()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

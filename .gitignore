@@ -4,6 +4,7 @@
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/param_metadata/Parameters.html
 /Tools/autotest/param_metadata/Parameters.rst
+/Tools/autotest/param_metadata/ParametersLatex.rst
 /Tools/autotest/param_metadata/Parameters.wiki
 /Tools/autotest/param_metadata/Parameters.md
 /Tools/autotest/param_metadata/apm.pdef.xml
@@ -104,6 +105,7 @@ config.mk
 *.apj
 .gdbinit
 /.vscode
+/.history
 Parameters.html
 Parameters.md
 Parameters.rst

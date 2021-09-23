@@ -1,5 +1,72 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-rc2 15-Sep-2021
+Changes from 4.1.0-rc1
+1) Enhancements
+    a) Guided mode supports using SCurves and OA for position control
+2) Bug Fixes
+    a) Serial port auto detection of flow control fix
+------------------------------------------------------------------
+Copter 4.1.0-rc1 10-Sep-2021
+Changes from 4.1.0-beta8
+1) Enhancements
+    a) Log download speeds improved on F765 and F777 based boards (USB buffers increased)
+    b) Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+    c) WPNAV_SPEED param changes take immediate effect in Auto
+2) Bug Fixes
+    a) Airmode fix if throttle held at zero for long time
+    b) Auto mode SCurve jerk time calculation fix (prevents jerk from being set too high)
+    c) CRSF frame timeout increased to reduce RC failsafes
+    d) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    e) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    f) IMU semaphore fix to avoid occasional corruption
+    g) QioTek Zealot F427 GPIO pin fix
+    h) Replay/DAL RMGH log message format fix
+    i) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+    j) Surface tracking fix to reduce lag and overshoot
+    k) WPNAV_SPEED change with ch6 tuning knob feature gets divide-by-zero protection
+    l) WPNAV_SPEED_DN handles negative values
+------------------------------------------------------------------
+Copter 4.1.0-beta8 28-Aug-2021
+Changes from 4.1.0-beta7
+1) Enhancements
+    a) Flywoo F745 Goku Nano support
+    b) MatekF765-Wing support
+    c) Scripting support for getting circle mode radius and setting rate
+    d) Scripting support for new Guided mode controls including acceleration control
+2) Bug Fixes
+    a) ATC_RATE_Y_MAX applies to all modes including Loiter
+    b) ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH7
+    c) EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+    d) External AHRS (e.g. VectorNav driver) init fix
+    e) KakuteF4Mini SBUS fix
+    f) Pixhawk4 blue and red LEDs swapped
+    g) Position control fixes to limit initial desired accel (horizontal and vertical) which could lead to an excessive climb or descent
+    h) TradHeli takeoff in Guided fix
+------------------------------------------------------------------
+Copter 4.1.0-beta7 14-Aug-2021
+Changes from 4.1.0-beta6
+1) Enhancements
+    a) Attitude and altitude control changes to support higher lean angles
+    b) Flywoo F745 supports external I2C compasses
+    c) GPS-for-yaw arming check added
+    d) GPS_DRV_OPTIONS allows forcing UBlox GPS to 115200 baud
+    e) Guided mode accepts higher speed and accel targets (no longer limited by WPNAV_ parameters)
+    f) Lua scripts can be placed in root of ROMFS (only relevant for developers)
+    g) PSC_VELXY_FILT renamed to _FLTE, PSC_VELXY_D_FILT renamed to _FLTD
+2) Bug Fixes
+    a) Beacon driver protected from requests for data for non-existant beacons
+    b) CAN threading fix to resolve potential lockup when lua scripts use CAN
+    c) EKF3 GSF can be invoked multiple times with source switching (no longer limited by EK3_GSF_RST_MAX)
+    d) EKF3 IMU offset fix (vehicle's reported position was slightly incorrect if INS_POS_XYZ params set)
+    e) Guided mode terrain following init fix (might fly at incorrect alt on second use)
+    f) Guided mode yaw rate target timeout fix (vehicle could keep spinning even after targets stopped arriving)
+    g) OSD overwrite and nullptr check fix
+    h) Proximity Avoidance auxilary switch also disables avoidance using upward facing lidar
+    i) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
+    j) RCOut banner displayed at very end of startup procedure to avoid invalid output
+    k) Tricopter tail servo alway uses regular PWM (fixes use with BLHeli motors)
+------------------------------------------------------------------
 Copter 4.1.0-beta6 23-Jul-2021
 Changes from 4.1.0-beta5
 1) Enhancements

@@ -56,7 +56,9 @@ if $option_copy && $option_edit; then
     exit 1
 fi
 
-author=$(git log -n 1 --format=%ae)
+author_name=$(git log -n 1 --format=%an)
+author_email=$(git log -n 1 --format=%ae)
+author="$author_name <$author_email>"
 git log -n 1 --format=%B > "$MSG_FILE"
 
 if $option_edit; then
@@ -86,7 +88,7 @@ fi
 
 HEAD=$(git rev-parse HEAD)
 git reset HEAD~1 --soft
-if ! "$SCRIPT_DIR/git-commit-subsystems" -F "$MSG_FILE" --author=$author; then
+if ! "$SCRIPT_DIR/git-commit-subsystems" -F "$MSG_FILE" --author="$author"; then
     echo "Error on calling git-commit-subsystems." >&2
     git reset $HEAD
     exit 1

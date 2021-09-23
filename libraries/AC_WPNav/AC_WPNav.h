@@ -12,18 +12,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
-// maximum velocities and accelerations
-#define WPNAV_ACCELERATION              250.0f      // maximum horizontal acceleration in cm/s/s that wp navigation will request
-#define WPNAV_WP_SPEED                 1000.0f      // default horizontal speed between waypoints in cm/s
-#define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
-#define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
-#define WPNAV_WP_RADIUS_MIN               5.0f      // minimum waypoint radius in cm
-
-#define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
-#define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
-
-#define WPNAV_WP_ACCEL_Z_DEFAULT        100.0f      // default vertical acceleration between waypoints in cm/s/s
-
 class AC_WPNav
 {
 public:
@@ -80,7 +68,7 @@ public:
     float get_default_speed_up() const { return _wp_speed_up_cms; }
 
     /// get default target descent rate in cm/s during missions.  Note: always positive
-    float get_default_speed_down() const { return _wp_speed_down_cms; }
+    float get_default_speed_down() const { return fabsf(_wp_speed_down_cms); }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cmss; }
@@ -151,6 +139,8 @@ public:
     bool reached_wp_destination_xy() const {
         return get_wp_distance_to_destination() < _wp_radius_cm;
     }
+
+    float get_wp_radius_cm() const { return _wp_radius_cm; }
 
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     virtual bool update_wpnav();
@@ -241,6 +231,10 @@ protected:
     AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
     AP_Float    _terrain_margin;        // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
 
+    float _last_wp_speed_cms;  // last recorded WPNAV_SPEED, used for changing speed in-flight
+    float _last_wp_speed_up_cms;  // last recorded WPNAV_SPEED_UP, used for changing speed in-flight
+    float _last_wp_speed_down_cms;  // last recorded WPNAV_SPEED_DN, used for changing speed in-flight
+
     // scurve
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;            // current scurve trajectory
@@ -262,8 +256,8 @@ protected:
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
-    float       _terain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terain
-    float       _terain_accel;          // acceleration value used to change _terain_vel
+    float       _terrain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terrain
+    float       _terrain_accel;          // acceleration value used to change _terrain_vel
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin

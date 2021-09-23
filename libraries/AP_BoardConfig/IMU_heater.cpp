@@ -35,7 +35,10 @@ void AP_BoardConfig::set_imu_temp(float current)
     hal.util->set_imu_temp(current);
 
     if (target == -1) {
-        // nothing to do
+        // nothing to do, make sure heater is left off
+#if defined(HAL_HEATER_GPIO_PIN)
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, false);
+#endif
         return;
     }
 
@@ -83,7 +86,7 @@ void AP_BoardConfig::set_imu_temp(float current)
 // @Field: P: Proportional portion of response
 // @Field: I: Integral portion of response
 // @Field: Out: Controller output to heating element
-        AP::logger().Write("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
+        AP::logger().WriteStreaming("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
                            AP_HAL::micros64(),
                            avg, target,
                            heater.pi_controller.get_P(),

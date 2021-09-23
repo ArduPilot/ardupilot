@@ -15,7 +15,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 /*
  *  GCS backend used for many examples and tools
@@ -89,4 +89,4 @@ private:
     MAV_TYPE frame_type() const override { return MAV_TYPE_GENERIC; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED

@@ -15,12 +15,6 @@
 
 #include "AP_WindVane_Airspeed.h"
 
-// constructor
-AP_WindVane_Airspeed::AP_WindVane_Airspeed(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
-
 void AP_WindVane_Airspeed::update_speed()
 {
     const AP_Airspeed* airspeed = AP_Airspeed::get_singleton();

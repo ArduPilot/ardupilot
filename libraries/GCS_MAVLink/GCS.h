@@ -3,6 +3,14 @@
 // protocols.
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 1
+#endif
+
+#if HAL_GCS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
@@ -30,8 +38,6 @@
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
-
-#ifndef HAL_NO_GCS
 
 // macros used to determine if a message will fit in the space available.
 
@@ -225,6 +231,9 @@ public:
     void send_meminfo(void);
     void send_fence_status() const;
     void send_power_status(void);
+#if HAL_WITH_MCU_MONITORING
+    void send_mcu_status(void);
+#endif
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
     void send_distance_sensor();
@@ -244,8 +253,7 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
-    void send_sensor_offsets();
-    virtual void send_simstate() const;
+    void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
     void send_battery2();
@@ -467,6 +475,7 @@ protected:
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
@@ -506,6 +515,7 @@ protected:
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_long_t &packet);
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
@@ -545,6 +555,8 @@ protected:
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
+
+    uint8_t receiver_rssi() const;
 
     /*
       correct an offboard timestamp in microseconds to a local time
@@ -867,12 +879,6 @@ private:
 
     uint8_t last_battery_status_idx;
 
-    // send_sensor_offsets decimates its send rate using this counter:
-    // FIXME: decimate this instead when initialising the message
-    // intervals from the stream rates.  Consider the implications of
-    // doing so vis-a-vis the fact it will consume a bucket.
-    uint8_t send_sensor_offsets_counter;
-
     // if we've ever sent a DISTANCE_SENSOR message out of an
     // orientation we continue to send it out, even if it is not
     // longer valid.
@@ -1112,9 +1118,9 @@ void can_printf(const char *fmt, ...);
 }
 #define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
 
-#else // HAL_NO_GCS
+#else // HAL_GCS_ENABLED
 // empty send text when we have no GCS
 #define GCS_SEND_TEXT(severity, format, args...)
 
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED
 

@@ -508,7 +508,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
         // implement safety pwm value
-        period_us = safe_pwm[chan];
+        period_us = 0;
     }
 
     chan -= chan_offset;
@@ -555,7 +555,7 @@ void RCOutput::push_local(void)
 
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
-                    period_us = safe_pwm[chan+chan_offset];
+                    period_us = 0;
                 }
 
                 if (group.current_mode == MODE_PWM_BRUSHED) {
@@ -620,7 +620,12 @@ uint16_t RCOutput::read(uint8_t chan)
     }
 #if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
-        return iomcu.read_channel(chan);
+        uint16_t period_us = iomcu.read_channel(chan);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<chan) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us *= 8;
+        }
+        return period_us;
     }
 #endif
     chan -= chan_offset;
@@ -635,6 +640,10 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<i) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us[i] *= 8;
+        }
     }
 #endif
     if (len <= chan_offset) {
@@ -964,6 +973,11 @@ void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
  */
 bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const
 {
+    if (!hal.scheduler->is_system_initialized()) {
+        hal.util->snprintf(banner_msg, banner_msg_len, "RCOut: Initialising");
+        return true;
+    }
+
     // create array of each channel's mode
     output_mode ch_mode[chan_offset + NUM_GROUPS * ARRAY_SIZE(pwm_group::chan)] = {};
     bool have_nonzero_modes = false;
@@ -1149,16 +1163,14 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
 
     bool command_sent = false;
     // queue up a command if there is one
-    if (!hal.util->get_soft_armed()
-        && _dshot_current_command.cycle == 0
+    if (_dshot_current_command.cycle == 0
         && _dshot_command_queue.pop(_dshot_current_command)) {
         // got a new command
     }
 
     for (auto &group : pwm_group_list) {
         // send a dshot command
-        if (!hal.util->get_soft_armed()
-            && is_dshot_protocol(group.current_mode)
+        if (is_dshot_protocol(group.current_mode)
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
@@ -1360,7 +1372,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                 // safety is on, overwride pwm
-                pwm = safe_pwm[chan+chan_offset];
+                pwm = 0;
             }
 
             const uint16_t chan_mask = (1U<<chan);
@@ -1383,9 +1395,10 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
                     value = 0;
                 }
             }
+
+            // dshot values are from 48 to 2047. 48 means off.
             if (value != 0) {
-                // dshot values are from 48 to 2047. Zero means off.
-                value += 47;
+                value += DSHOT_ZERO_THROTTLE;
             }
 
             if (!armed) {
@@ -1941,24 +1954,6 @@ void RCOutput::force_safety_off(void)
 #else
     safety_state = AP_HAL::Util::SAFETY_ARMED;
 #endif
-}
-
-/*
-  set PWM to send to a set of channels when the safety switch is
-  in the safe state
-*/
-void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.set_safety_pwm(chmask, period_us);
-    }
-#endif
-    for (uint8_t i=0; i<16; i++) {
-        if (chmask & (1U<<i)) {
-            safe_pwm[i] = period_us;
-        }
-    }
 }
 
 /*

@@ -104,7 +104,7 @@ void JSON_Master::receive(struct sitl_input &input)
 // @Field: frame_rate: Slave instance's desired frame rate
 // @Field: frame_count: Slave instance's current frame count
 // @Field: active: 1 if the servo outputs are being used from this instance
-        AP::logger().Write("SLV1", "TimeUS,Instance,magic,frame_rate,frame_count,active",
+        AP::logger().WriteStreaming("SLV1", "TimeUS,Instance,magic,frame_rate,frame_count,active",
                        "s#----",
                        "F?????",
                        "QBHHIB",
@@ -134,7 +134,7 @@ void JSON_Master::receive(struct sitl_input &input)
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
 // @Field: C15: channel 15 output
-        AP::logger().Write("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
+        AP::logger().WriteStreaming("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
                        "s#YYYYYYYYYYYYYY",
                        "F?--------------",
                        "QBHHHHHHHHHHHHHH",

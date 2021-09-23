@@ -25,26 +25,4 @@ extern const AP_HAL::HAL& hal;
 
 using namespace MSP;
 
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_api_version(sbuf_t *dst)
-{
-    sbuf_write_u8(dst, MSP_PROTOCOL_VERSION);
-    sbuf_write_u8(dst, API_VERSION_MAJOR);
-    sbuf_write_u8(dst, API_VERSION_MINOR);
-    return MSP_RESULT_ACK;
-}
-
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_fc_version(sbuf_t *dst)
-{
-    sbuf_write_u8(dst, FC_VERSION_MAJOR);
-    sbuf_write_u8(dst, FC_VERSION_MINOR);
-    sbuf_write_u8(dst, FC_VERSION_PATCH_LEVEL);
-    return MSP_RESULT_ACK;
-}
-
-MSPCommandResult AP_MSP_Telem_Generic::msp_process_out_fc_variant(sbuf_t *dst)
-{
-    sbuf_write_data(dst, "ARDU", FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
-    return MSP_RESULT_ACK;
-}
-
 #endif //HAL_MSP_ENABLED

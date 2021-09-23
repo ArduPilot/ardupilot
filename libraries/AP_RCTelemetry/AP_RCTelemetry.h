@@ -22,7 +22,7 @@
 #define TELEM_PAYLOAD_STATUS_CAPACITY          5 // size of the message buffer queue (max number of messages waiting to be sent)
 
 // for fair scheduler
-#define TELEM_TIME_SLOT_MAX               15
+#define TELEM_TIME_SLOT_MAX               20
 //#define TELEM_DEBUG
 
 class AP_RCTelemetry {

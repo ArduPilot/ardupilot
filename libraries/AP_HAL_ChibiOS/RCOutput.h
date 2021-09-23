@@ -87,12 +87,6 @@ public:
      */
     void force_safety_off(void) override;
 
-    /*
-      set PWM to send to a set of channels when the safety switch is
-      in the safe state
-     */
-    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
-
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -148,6 +142,7 @@ public:
     /*
       enable telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
+      The mask uses servo channel numbering
      */
     void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
@@ -155,6 +150,7 @@ public:
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
+      The mask uses servo channel numbering
      */
     void set_bidir_dshot_mask(uint16_t mask) override;
 
@@ -193,19 +189,22 @@ public:
 #ifndef DISABLE_DSHOT
     /*
      * mark the channels in chanmask as reversible. This is needed for some ESC types (such as Dshot)
-     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     void set_reversible_mask(uint16_t chanmask) override;
 
     /*
-     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * mark the channels in chanmask as reversed.
+     * The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     void set_reversed_mask(uint16_t chanmask) override;
+    uint16_t get_reversed_mask() override { return _reversed_mask; }
 
     /*
       mark escs as active for the purpose of sending dshot commands
+      The mask uses servo channel numbering
      */
     void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= (chanmask >> chan_offset); }
 
@@ -219,6 +218,12 @@ public:
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
      */
     void update_channel_masks() override;
+
+    /*
+     * Allow channel mask updates to be temporarily suspended
+     */
+    void disable_channel_mask_updates() override { _disable_channel_mask_updates = true; }
+    void enable_channel_mask_updates() override { _disable_channel_mask_updates = false; }
 #endif
 
     /*
@@ -495,12 +500,14 @@ private:
 
     DshotEscType _dshot_esc_type;
 
+    // control updates to channel masks
+    bool _disable_channel_mask_updates;
+
     bool dshot_command_is_active(const pwm_group& group) const {
       return (_dshot_current_command.chan == RCOutput::ALL_CHANNELS || (group.ch_mask & (1UL << _dshot_current_command.chan)))
                 && _dshot_current_command.cycle > 0;
     }
 #endif
-    uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;

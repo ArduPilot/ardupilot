@@ -66,8 +66,12 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_FAS: // Sensor ID  2
                 switch (_SPort.fas_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining as %
-                    break;
+                    {
+                        uint8_t percentage = 0;
+                        IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
+                        send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(percentage)); // send battery remaining
+                        break;
+                    }
                 case 1:
                     send_sport_frame(SPORT_DATA_FRAME, VFAS_ID, (uint16_t)roundf(_battery.voltage() * 100.0f)); // send battery voltage in cV
                     break;
@@ -380,7 +384,13 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
     uint16_t res = 0;
     uint32_t abs_number = abs(number);
 
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
+    if ((digits == 2) && (power == 0)) { // number encoded on 7 bits, client side needs to know if expected range is 0,127 or -63,63
+        uint8_t max_value = number < 0 ? (0x1<<6)-1 : (0x1<<7)-1;
+        res = constrain_int16(abs_number,0,max_value);
+        if (number < 0) {   // if number is negative, add sign bit in front
+            res |= 1U<<6;
+        }
+    } else if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
         if (abs_number < 100) {
             res = abs_number<<1;
         } else if (abs_number < 1270) {

@@ -85,9 +85,18 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
 // chan is the servo channel to send the command to
 void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
 {
+    // once armed only priority commands will be accepted
+    if (hal.util->get_soft_armed() && !priority) {
+        return;
+    }
+    // not an FMU channel
+    if (chan < chan_offset) {
+        return;
+    }
+
     DshotCommandPacket pkt;
     pkt.command = command;
-    pkt.chan = chan;
+    pkt.chan = chan + chan_offset;
     if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
@@ -102,24 +111,27 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 
 // Set the dshot outputs that should be reversed (as opposed to 3D)
 // The chanmask passed is added (ORed) into any existing mask.
+// The mask uses servo channel numbering
 void RCOutput::set_reversed_mask(uint16_t chanmask) {
-    _reversed_mask |= chanmask;
+    _reversed_mask |= (chanmask >> chan_offset);
 }
 
 // Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
+// The mask uses servo channel numbering
 void RCOutput::set_reversible_mask(uint16_t chanmask) {
-    _reversible_mask |= chanmask;
+    _reversible_mask |= (chanmask >> chan_offset);
 }
 
 // Update the dshot outputs that should be reversible/3D at 1Hz
 void RCOutput::update_channel_masks() {
 
     // post arming dshot commands will not be accepted
-    if (hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_armed() || _disable_channel_mask_updates) {
         return;
     }
 
+#if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         switch (_dshot_esc_type) {
             case DSHOT_ESC_BLHELI:
@@ -134,6 +146,7 @@ void RCOutput::update_channel_masks() {
                 break;
         }
     }
+#endif
 }
 
 #endif // DISABLE_DSHOT

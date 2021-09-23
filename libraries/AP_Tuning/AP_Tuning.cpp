@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Tuning::var_info[] = {
 
     // @Param: ERR_THRESH
     // @DisplayName: Controller error threshold
-    // @Description: This sets the controller error threshold above which an alarm will sound and a message will be sent to the GCS to warn of controller instability
+    // @Description: This sets the controller error threshold above which an alarm will sound and a message will be sent to the GCS to warn of controller instability while tuning. The error is the rms value of the P+D corrections in the loop. High values in hover indicate possible instability due to too high PID gains or excessively high D to P gain ratios.-1 will disable this message.
     // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("ERR_THRESH", 7, AP_Tuning, error_threshold, 0.15f),
@@ -342,7 +342,7 @@ const char *AP_Tuning::get_tuning_name(uint8_t parm)
 void AP_Tuning::check_controller_error(void)
 {
     float err = controller_error(current_parm);
-    if (err > error_threshold) {
+    if (err > error_threshold && !mid_point_wait && error_threshold > 0) {
         uint32_t now = AP_HAL::millis();
         if (now - last_controller_error_ms > 2000 && hal.util->get_soft_armed()) {
             AP_Notify::events.tune_error = 1;

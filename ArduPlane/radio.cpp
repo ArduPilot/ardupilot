@@ -44,14 +44,16 @@ void Plane::set_control_channels(void)
     channel_flap     = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FLAP);
     channel_airbrake = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
 
+#if HAL_QUADPLANE_ENABLED
     // update manual forward throttle channel assignment
     quadplane.rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+#endif
 
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
-    }
-
-    if (!quadplane.enable) {
+    bool set_throttle_esc_scaling = true;
+#if HAL_QUADPLANE_ENABLED
+    set_throttle_esc_scaling = !quadplane.enable;
+#endif
+    if (set_throttle_esc_scaling) {
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
         // scaling
@@ -90,12 +92,7 @@ void Plane::init_rc_out_main()
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_elevator, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_rudder, SRV_Channel::Limit::TRIM);
-    
-    // setup flight controller to output the min throttle when safety off if arming
-    // is setup for min on disarm
-    if (arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
-    }
+
 }
 
 /*
@@ -175,15 +172,6 @@ void Plane::read_radio()
         failsafe.last_valid_rc_ms = millis();
     }
 
-    if (control_mode == &mode_training) {
-        // in training mode we don't want to use a deadzone, as we
-        // want manual pass through when not exceeding attitude limits
-        channel_roll->recompute_pwm_no_deadzone();
-        channel_pitch->recompute_pwm_no_deadzone();
-        channel_throttle->recompute_pwm_no_deadzone();
-        channel_rudder->recompute_pwm_no_deadzone();
-    }
-
     control_failsafe();
 
 #if AC_FENCE == ENABLED
@@ -206,8 +194,10 @@ void Plane::read_radio()
 
     rudder_arm_disarm_check();
 
+#if HAL_QUADPLANE_ENABLED
     // potentially swap inputs for tailsitters
     quadplane.tailsitter.check_input();
+#endif
 
     // check for transmitter tuning changes
     tuning.check_input(control_mode->mode_number());
@@ -254,19 +244,23 @@ void Plane::control_failsafe()
         throttle_nudge = 0;
 
         switch (control_mode->mode_number()) {
+#if HAL_QUADPLANE_ENABLED
             case Mode::Number::QSTABILIZE:
             case Mode::Number::QHOVER:
             case Mode::Number::QLOITER:
             case Mode::Number::QLAND: // throttle is ignored, but reset anyways
             case Mode::Number::QRTL:  // throttle is ignored, but reset anyways
             case Mode::Number::QACRO:
+#if QAUTOTUNE_ENABLED
             case Mode::Number::QAUTOTUNE:
+#endif
                 if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DesiredSpoolState::GROUND_IDLE) {
                     // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
                     channel_throttle->set_control_in(channel_throttle->get_range() / 2);
                     break;
                 }
                 FALLTHROUGH;
+#endif
             default:
                 channel_throttle->set_control_in(0);
                 break;

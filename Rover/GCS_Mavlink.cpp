@@ -117,10 +117,10 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
         control_mode->crosstrack_error());
 }
 
-void Rover::send_servo_out(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_servo_out()
 {
     float motor1, motor3;
-    if (g2.motors.have_skid_steering()) {
+    if (rover.g2.motors.have_skid_steering()) {
         motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
         motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
     } else {
@@ -139,7 +139,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        rssi.read_receiver_rssi_uint8());
+        receiver_rssi());
 }
 
 int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
@@ -196,7 +196,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -211,7 +213,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -226,7 +230,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -241,7 +247,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -256,7 +264,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -271,7 +281,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -317,7 +329,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        rover.send_servo_out(chan);
+        send_servo_out();
         break;
 
     case MSG_WHEEL_DISTANCE:
@@ -339,6 +351,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
                 oadb->send_adsb_vehicle(chan, interval_ms);
             }
         }
+        break;
+    }
+
+    case MSG_AIS_VESSEL: {
+#if HAL_AIS_ENABLED
+        rover.g2.ais.send(chan);
+#endif
         break;
     }
 
@@ -459,11 +478,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
@@ -517,7 +536,8 @@ static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
 static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE
+    MSG_ADSB_VEHICLE,
+    MSG_AIS_VESSEL,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -981,21 +1001,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
         // convert vector direction to target yaw
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
-
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
 
     // consume yaw heading
     if (!yaw_ignore) {
         target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
+
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {

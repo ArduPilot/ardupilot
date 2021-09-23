@@ -394,8 +394,11 @@ public:
         // 6 was EXTERNAL_YAW_FALLBACK (do not use)
     };
 
-    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
-    bool using_external_yaw(void) const;
+    // are we using (aka fusing) a non-compass yaw?
+    bool using_noncompass_for_yaw(void) const;
+
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
 
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
@@ -819,7 +822,8 @@ private:
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
     // fuse optical flow measurements into the main filter
-    void FuseOptFlow(const of_elements &ofDataDelayed);
+    // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
+    void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
 
     // Control filter mode changes
     void controlFilterModes();
@@ -951,8 +955,9 @@ private:
     void resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationOrder order);
 
     // attempt to reset the yaw to the EKF-GSF value
+    // emergency_reset should be true if this reset is triggered by the loss of the yaw estimate
     // returns false if unsuccessful
-    bool EKFGSF_resetMainFilterYaw();
+    bool EKFGSF_resetMainFilterYaw(bool emergency_reset);
 
     // returns true on success and populates yaw (in radians) and yawVariance (rad^2)
     bool EKFGSF_getYaw(ftype &yaw, ftype &yawVariance) const;
@@ -1048,7 +1053,7 @@ private:
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
-    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     struct Location EKF_origin;     // LLH origin of the NED axis system, internal only
     struct Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
@@ -1086,6 +1091,7 @@ private:
     Vector3F delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
     Vector3F velErrintegral;        // integral of output predictor NED velocity tracking error (m)
     Vector3F posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
+    ftype badImuVelErrIntegral;     // integral of output predictor D velocity tracking error when bad IMU data is detected (m)
     ftype innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
@@ -1162,22 +1168,22 @@ private:
 
     // variables added for optical flow fusion
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
-    of_elements ofDataNew;          // OF data at the current time horizon
     bool flowDataValid;             // true while optical flow data is still fresh
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
-    Matrix3F Tbn_flow;              // transformation matrix from body to nav axes at the middle of the optical flow sample period
-    Vector2 varInnovOptFlow;        // optical flow innovations variances (rad/sec)^2
-    Vector2 innovOptFlow;           // optical flow LOS innovations (rad/sec)
+    Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
+    Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
+    uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement
     ftype varInnovRng;              // range finder observation innovation variance (m^2)
     ftype innovRng;                 // range finder observation innovation (m)
+
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks

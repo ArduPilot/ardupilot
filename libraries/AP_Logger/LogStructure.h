@@ -133,6 +133,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_PrecLand/LogStructure.h>
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
+#include <AP_AIS/LogStructure.h>
 
 // structure used to define logging format
 struct PACKED LogStructure {
@@ -308,6 +309,10 @@ struct PACKED log_POWR {
     uint16_t flags;
     uint16_t accumulated_flags;
     uint8_t safety_and_arm;
+    float MCU_temp;
+    float MCU_voltage;
+    float MCU_voltage_min;
+    float MCU_voltage_max;
 };
 
 struct PACKED log_Cmd {
@@ -331,10 +336,10 @@ struct PACKED log_MAVLink_Command {
     uint64_t time_us;
     uint8_t target_system;
     uint8_t target_component;
+    uint8_t source_system;
+    uint8_t source_component;
     uint8_t frame;
     uint16_t command;
-    uint8_t current;
-    uint8_t autocontinue;
     float param1;
     float param2;
     float param3;
@@ -682,36 +687,46 @@ struct PACKED log_Winch {
     int8_t temp;
 };
 
-struct PACKED log_PSC {
+// position controller North axis logging
+struct PACKED log_PSCN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float pos_target_x;
-    float pos_target_Y;
-    float position_x;
-    float position_y;
-    float vel_target_x;
-    float vel_target_y;
-    float velocity_x;
-    float velocity_y;
-    float accel_target_x;
-    float accel_target_y;
-    float accel_x;
-    float accel_y;
+    float pos_target;
+    float pos;
+    float vel_desired;
+    float vel_target;
+    float vel;
+    float accel_desired;
+    float accel_target;
+    float accel;
 };
 
-// position controller z-axis logging
-struct PACKED log_PSCZ {
+// position controller East axis logging
+struct PACKED log_PSCE {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float pos_target_z;
-    float pos_z;
-    float vel_desired_z;
-    float vel_target_z;
-    float vel_z;
-    float accel_desired_z;
-    float accel_target_z;
-    float accel_z;
-    float throttle_out;
+    float pos_target;
+    float pos;
+    float vel_desired;
+    float vel_target;
+    float vel;
+    float accel_desired;
+    float accel_target;
+    float accel;
+};
+
+// position controller Down axis logging
+struct PACKED log_PSCD {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float pos_target;
+    float pos;
+    float vel_desired;
+    float vel_target;
+    float vel;
+    float accel_desired;
+    float accel_target;
+    float accel;
 };
 
 // FMT messages define all message formats other than FMT
@@ -903,10 +918,10 @@ struct PACKED log_PSCZ {
 // @Field: TimeUS: Time since system startup
 // @Field: TS: target system for command
 // @Field: TC: target component for command
+// @Field: SS: target system for command
+// @Field: SC: target component for command
 // @Field: Fr: command frame
 // @Field: Cmd: mavlink command enum value
-// @Field: Cur: current flag from mavlink packet
-// @Field: AC: autocontinue flag from mavlink packet
 // @Field: P1: first parameter from mavlink packet
 // @Field: P2: second parameter from mavlink packet
 // @Field: P3: third parameter from mavlink packet
@@ -1002,6 +1017,10 @@ struct PACKED log_PSCZ {
 // @Field: Flags: System power flags
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
 // @Field: Safety: Hardware Safety Switch status
+// @Field: MTemp: MCU Temperature
+// @Field: MVolt: MCU Voltage
+// @Field: MVmin: MCU Voltage min
+// @Field: MVmax: MCU Voltage max
 
 // @LoggerMessage: PRX
 // @Description: Proximity Filtered sensor data
@@ -1181,34 +1200,41 @@ struct PACKED log_PSCZ {
 // @Field: Vcc: Voltage to Motor
 // @Field: Temp: Motor temperature
 
-// @LoggerMessage: PSC
-// @Description: Position Control data
+// @LoggerMessage: PSCN
+// @Description: Position Control North
 // @Field: TimeUS: Time since system startup
-// @Field: TPX: Target position relative to origin, X-axis
-// @Field: TPY: Target position relative to origin, Y-axis
-// @Field: PX: Position relative to origin, X-axis
-// @Field: PY: Position relative to origin, Y-axis
-// @Field: TVX: Target velocity, X-axis
-// @Field: TVY: Target velocity, Y-axis
-// @Field: VX: Velocity, X-axis
-// @Field: VY: Velocity, Y-axis
-// @Field: TAX: Target acceleration, X-axis
-// @Field: TAY: Target acceleration, Y-axis
-// @Field: AX: Acceleration, X-axis
-// @Field: AY: Acceleration, Y-axis
+// @Field: TPN: Target position relative to EKF origin
+// @Field: PN: Position relative to EKF origin
+// @Field: DVN: Desired velocity North
+// @Field: TVN: Target velocity North
+// @Field: VN: Velocity North
+// @Field: DAN: Desired acceleration North
+// @Field: TAN: Target acceleration North
+// @Field: AN: Acceleration North
 
-// @LoggerMessage: PSCZ
-// @Description: Position Control Z-axis
+// @LoggerMessage: PSCE
+// @Description: Position Control East
 // @Field: TimeUS: Time since system startup
-// @Field: TPZ: Target position above EKF origin
-// @Field: PZ: Position above EKF origin
-// @Field: DVZ: Desired velocity Z-axis
-// @Field: TVZ: Target velocity Z-axis
-// @Field: VZ: Velocity Z-axis
-// @Field: DAZ: Desired acceleration Z-axis
-// @Field: TAZ: Target acceleration Z-axis
-// @Field: AZ: Acceleration Z-axis
-// @Field: ThO: Throttle output
+// @Field: TPE: Target position relative to EKF origin
+// @Field: PE: Position relative to EKF origin
+// @Field: DVE: Desired velocity East
+// @Field: TVE: Target velocity East
+// @Field: VE: Velocity East
+// @Field: DAE: Desired acceleration East
+// @Field: TAE: Target acceleration East
+// @Field: AE: Acceleration East
+
+// @LoggerMessage: PSCD
+// @Description: Position Control Down
+// @Field: TimeUS: Time since system startup
+// @Field: TPD: Target position relative to EKF origin
+// @Field: PD: Position relative to EKF origin
+// @Field: DVD: Desired velocity Down
+// @Field: TVD: Target velocity Down
+// @Field: VD: Velocity Down
+// @Field: DAD: Desired acceleration Down
+// @Field: TAD: Target acceleration Down
+// @Field: AD: Acceleration Down
 
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
@@ -1236,11 +1262,11 @@ LOG_STRUCTURE_FROM_GPS \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
+      "POWR","QffHHBffff","TimeUS,Vcc,VServo,Flags,AccFlags,Safety,MTemp,MVolt,MVmin,MVmax", "svv---Ovvv", "F00---0000", true }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
-      "MAVC", "QBBBHBBffffiifBB","TimeUS,TS,TC,Fr,Cmd,Cur,AC,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
+      "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
@@ -1317,10 +1343,13 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
-    { LOG_PSC_MSG, sizeof(log_PSC), \
-      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000", true }, \
-    { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
-      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002", true }
+      { LOG_PSCN_MSG, sizeof(log_PSCN), \
+        "PSCN", "Qffffffff", "TimeUS,TPN,PN,DVN,TVN,VN,DAN,TAN,AN", "smmnnnooo", "F00000000" }, \
+      { LOG_PSCE_MSG, sizeof(log_PSCE), \
+        "PSCE", "Qffffffff", "TimeUS,TPE,PE,DVE,TVE,VE,DAE,TAE,AE", "smmnnnooo", "F00000000" }, \
+      { LOG_PSCD_MSG, sizeof(log_PSCD), \
+        "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
+LOG_STRUCTURE_FROM_AIS \
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -1430,10 +1459,13 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_IDS_FROM_AVOIDANCE,
     LOG_WINCH_MSG,
-    LOG_PSC_MSG,
-    LOG_PSCZ_MSG,
+    LOG_PSCN_MSG,
+    LOG_PSCE_MSG,
+    LOG_PSCD_MSG,
     LOG_RAW_PROXIMITY_MSG,
     LOG_IDS_FROM_PRECLAND,
+    LOG_IDS_FROM_AIS,
+
 
     _LOG_LAST_MSG_
 };

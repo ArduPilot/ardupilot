@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-APM automatic test suite.
+ArduPilot automatic test suite.
 
 Andrew Tridgell, October 2011
 
@@ -116,7 +116,7 @@ def build_binaries():
 
     # copy the script (and various libraries used by the script) as it
     # changes git branch, which can change the script while running
-    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py":
+    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py", "board_list.py":
         orig = util.reltopdir('Tools/scripts/%s' % thing)
         copy = util.reltopdir('./%s' % thing)
         shutil.copy2(orig, copy)
@@ -513,6 +513,7 @@ def run_step(step):
         "replay": opts.replay,
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
+        "reset_after_every_test": opts.reset_after_every_test,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -994,6 +995,10 @@ if __name__ == "__main__":
                                 type='string',
                                 default="",
                                 help='list available subtests for a vehicle e.g Copter')
+    group_completion.add_option("--reset-after-every-test",
+                                action='store_true',
+                                default=False,
+                                help='reset everything after every test run')
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()

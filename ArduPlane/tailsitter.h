@@ -27,6 +27,8 @@ public:
 
     bool enabled() const { return enable > 0;}
 
+    void setup();
+
     // return true when flying a control surface only tailsitter
     bool is_control_surface_tailsitter(void) const;
 
@@ -73,13 +75,6 @@ public:
         TAILSITTER_INPUT_BF_ROLL = (1U<<1)
     };
 
-    enum mask {
-        TAILSITTER_MASK_AILERON  = (1U<<0),
-        TAILSITTER_MASK_ELEVATOR = (1U<<1),
-        TAILSITTER_MASK_THROTTLE = (1U<<2),
-        TAILSITTER_MASK_RUDDER   = (1U<<3),
-    };
-
     enum gscl_mask {
         TAILSITTER_GSCL_THROTTLE = (1U<<0),
         TAILSITTER_GSCL_ATT_THR = (1U<<1),
@@ -93,8 +88,6 @@ public:
     AP_Int8 transition_angle_vtol;
     AP_Float transition_rate_vtol;
     AP_Int8 input_type;
-    AP_Int8 input_mask;
-    AP_Int8 input_mask_chan;
     AP_Float vectored_forward_gain;
     AP_Float vectored_hover_gain;
     AP_Float vectored_hover_power;

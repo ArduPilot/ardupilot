@@ -35,6 +35,7 @@ singleton AP_AHRS method wind_estimate Vector3f
 singleton AP_AHRS method groundspeed_vector Vector2f
 singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_origin boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
@@ -70,7 +71,7 @@ singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 ud->num
 singleton AP_BattMonitor method current_amps boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method consumed_mah boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method consumed_wh boolean float'Null uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method capacity_remaining_pct boolean uint8_t'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method has_failsafed boolean
 singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()
@@ -199,13 +200,18 @@ singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
+singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput'enum AP_Vehicle::ControlOutput::Roll ((uint32_t)AP_Vehicle::ControlOutput::Last_ControlOutput-1) float'Null
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
-singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
-singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput'enum AP_Vehicle::ControlOutput::Roll ((uint32_t)AP_Vehicle::ControlOutput::Last_ControlOutput-1) float'Null
 singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean boolean
+singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
+singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
+singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
+singleton AP_Vehicle method get_circle_radius boolean float'Null
+singleton AP_Vehicle method set_circle_rate boolean float -FLT_MAX FLT_MAX
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
 singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
@@ -242,6 +248,9 @@ singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
 singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
+singleton RC_Channels method has_valid_input boolean
+singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
+singleton RC_Channels method lua_rc_channel alias get_channel
 
 include AP_SerialManager/AP_SerialManager.h
 
@@ -259,6 +268,12 @@ singleton AP_Baro alias baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
+
+include AP_OpticalFlow/OpticalFlow.h
+singleton OpticalFlow alias optical_flow
+singleton OpticalFlow method enabled boolean
+singleton OpticalFlow method healthy boolean
+singleton OpticalFlow method quality uint8_t
 
 include AP_ESC_Telem/AP_ESC_Telem.h
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
@@ -320,6 +335,7 @@ singleton AP_RPM alias RPM
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
 include AP_Button/AP_Button.h
+singleton AP_Button depends HAL_BUTTON_ENABLED == 1
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 
@@ -329,8 +345,9 @@ singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
 include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
-singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE_ENABLED
 singleton QuadPlane method in_vtol_mode boolean
+singleton QuadPlane method in_assisted_flight boolean
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)

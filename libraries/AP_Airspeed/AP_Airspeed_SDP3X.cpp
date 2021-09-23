@@ -115,7 +115,7 @@ bool AP_Airspeed_SDP3X::init()
 
         found = true;
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         char c = 'X';
         switch (_scale) {
         case SDP3X_SCALE_PRESSURE_SDP31:
@@ -223,16 +223,25 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 
     AP_Baro *baro = AP_Baro::get_singleton();
 
-    if (baro == nullptr) {
-        return press;
+    float baro_pressure;
+    if (baro == nullptr || baro->num_instances() == 0) {
+        // with no baro assume sea level
+        baro_pressure = SSL_AIR_PRESSURE;
+    } else {
+        baro_pressure = baro->get_pressure();
     }
 
     float temperature;
     if (!get_temperature(temperature)) {
-        return press;
+        // assume 25C if no temperature
+        temperature = 25;
     }
 
-    float rho_air = baro->get_pressure() / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
+    float rho_air = baro_pressure / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
+    if (!is_positive(rho_air)) {
+        // bad pressure
+        return press;
+    }
 
     /*
       the constants in the code below come from a calibrated test of

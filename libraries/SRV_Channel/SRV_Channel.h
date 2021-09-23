@@ -21,6 +21,7 @@
 #include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #ifndef NUM_SERVO_CHANNELS
 #if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
@@ -231,6 +232,9 @@ public:
     // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
     static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
 
+    // return true if function is for a control surface
+    static bool is_control_surface(SRV_Channel::Aux_servo_function_t function);
+
     // return the function of a channel
     SRV_Channel::Aux_servo_function_t get_function(void) const {
         return (SRV_Channel::Aux_servo_function_t)function.get();
@@ -395,8 +399,8 @@ public:
     // set and save the trim for a function channel to the output value
     static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
 
-    // set the trim for a function channel to min of the channel
-    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
+    // set the trim for a function channel to min of the channel honnoring reverse unless ignore_reversed is true
+    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function, bool ignore_reversed = false);
 
     // set the trim for a function channel to given pwm
     static void set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm);
@@ -421,9 +425,6 @@ public:
 
     // setup failsafe for an auxiliary channel function
     static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
-
-    // setup safety for an auxiliary channel function (used when disarmed)
-    static void set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
     // set servo to a Limit
     static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
@@ -568,6 +569,11 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    AP_FETtecOneWire fetteconwire;
+    static AP_FETtecOneWire *fetteconwire_ptr;
+#endif  // HAL_AP_FETTEC_ONEWIRE_ENABLED
 #endif // HAL_BUILD_AP_PERIPH
 
     static uint16_t disabled_mask;

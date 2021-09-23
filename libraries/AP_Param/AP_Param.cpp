@@ -45,7 +45,7 @@ uint16_t AP_Param::sentinal_offset;
 // singleton instance
 AP_Param *AP_Param::_singleton;
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
  # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -53,10 +53,10 @@ AP_Param *AP_Param::_singleton;
  # define Debug(fmt, args ...)
 #endif
 
-#ifdef HAL_NO_GCS
-#define GCS_SEND_PARAM(name, type, v)
-#else
+#if HAL_GCS_ENABLED
 #define GCS_SEND_PARAM(name, type, v) gcs().send_parameter_value(name, type, v)
+#else
+#define GCS_SEND_PARAM(name, type, v)
 #endif
 
 // Note about AP_Vector3f handling.
@@ -1682,6 +1682,9 @@ AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *gr
                     ((AP_Int8 *)ret)->get() == 0) {
                     token->last_disabled = 1;
                 }
+                if (group_info[i].flags & AP_PARAM_FLAG_HIDDEN) {
+                    continue;
+                }
                 return ret;
             }
             if (group_id(group_info, group_base, i, group_shift) == token->group_element) {
@@ -2120,11 +2123,13 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
+#if ENABLE_DEBUG
                 ::printf("Ignored unknown param %s in defaults file %s\n",
                          pname, filename);
                 hal.console->printf(
                          "Ignored unknown param %s in defaults file %s\n",
                          pname, filename);
+#endif
             }
             continue;
         }
@@ -2316,11 +2321,13 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
+#if ENABLE_DEBUG
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
                          "Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
+#endif
             }
             continue;
         }
@@ -2372,7 +2379,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     // of a set of the first element of a AP_Vector3f. This happens as the ap->save() call can't
     // distinguish between a vector and scalar save. It means that setting first element of a vector
     // via MAVLink results in sending all 3 elements to the GCS
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     const Vector3f &v = ((AP_Vector3f *)this)->get();
     char name2[AP_MAX_NAME_SIZE+1];
     strncpy(name2, name, AP_MAX_NAME_SIZE);
@@ -2385,7 +2392,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.z);
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED
 }
 
 /*
@@ -2476,7 +2483,7 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
             char *buf = nullptr;
             if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
-                AP_BoardConfig::config_error(buf);
+                AP_BoardConfig::config_error("%s", buf);
             }
         }
     }

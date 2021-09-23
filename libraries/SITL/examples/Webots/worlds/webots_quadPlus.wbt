@@ -1,33 +1,17 @@
-#VRML_SIM R2020a utf8
+#VRML_SIM R2021b utf8
 WorldInfo {
-  gravity 0 -9.80665 0
+  title "ArduPilot Webots Simulator"
+  gravity 9.80665
   physics "sitl_physics_env"
   basicTimeStep 1
   FPS 15
   optimalThreadCount 4
+  coordinateSystem "NUE"
   randomSeed 52
 }
-Robot {
-  translation -1.949999999999999 0.23391237384410402 0
-  rotation 0 0 1 2.533555103014215e-15
-  children [
-    Emitter {
-      type "serial"
-      channel 1
-    }
-  ]
-  name "supervisor_sync"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-  }
-  controller "ardupilot_SITL_Supervisor"
-  supervisor TRUE
-}
 Viewpoint {
-  orientation 0.9997978097496996 0.017446300161270606 0.009998311376764756 5.242214502651711
-  position -0.10961792118984595 8.021071573852062 4.261928842800047
+  orientation -0.5970464555560485 -0.7963994022827472 -0.0963510350315054 0.3998584260381905
+  position -5.109140421817085 5.5744493754094595 15.933129307498696
   follow "quad_plus_sitl"
   followType "Mounted Shot"
 }
@@ -65,15 +49,8 @@ Solid {
   name "solid(1)"
 }
 DEF DEF_VEHICLE Robot {
-  translation -0.027601 0.674307 0.005031
-  rotation -0.012461000916064287 0.999885073506054 -0.008635000634797779 -0.22761130717958622
+  translation -0.027601 0.6742971933499999 0.005031
   children [
-    Receiver {
-      name "receiver_main"
-      type "serial"
-      channel 1
-      bufferSize 32
-    }
     Emitter {
       name "emitter_plugin"
       description "commuicates with physics plugin"
@@ -99,6 +76,7 @@ DEF DEF_VEHICLE Robot {
     }
     GPS {
       name "gps1"
+      type "laser"
     }
     Accelerometer {
       name "accelerometer1"
@@ -114,17 +92,16 @@ DEF DEF_VEHICLE Robot {
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.01 0
               device RotationalMotor {
                 name "motor3"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 5000
               }
               fastHelix Solid {
                 children [
@@ -136,7 +113,7 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -147,12 +124,12 @@ DEF DEF_VEHICLE Robot {
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -160,7 +137,7 @@ DEF DEF_VEHICLE Robot {
             }
           ]
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -180,17 +157,16 @@ DEF DEF_VEHICLE Robot {
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.01 0
               device RotationalMotor {
                 name "motor2"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 5000
               }
               fastHelix Solid {
                 children [
@@ -202,23 +178,23 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
               }
               slowHelix Solid {
-                rotation 0 -1 0 5.370767303526115
+                rotation 0 1 0 1.1667874781290464
                 children [
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -227,7 +203,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(2)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -244,17 +220,16 @@ DEF DEF_VEHICLE Robot {
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 -1 0
-              thrustConstants -12.2583125 0
-              torqueConstants 18 0
+              thrustConstants -1.01 0
               device RotationalMotor {
                 name "motor1"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 5000
               }
               fastHelix Solid {
                 children [
@@ -266,23 +241,23 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
               }
               slowHelix Solid {
-                rotation 0 1 0 5.486397909883531
+                rotation 0 1 0 1.1667874781290464
                 children [
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -291,7 +266,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(1)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -309,17 +284,16 @@ DEF DEF_VEHICLE Robot {
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
-          translation 0 0.35 0
+          translation 0 0.2 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
               shaftAxis 0 1 0
-              thrustConstants 12.2583125 0
-              torqueConstants 18 0
+              thrustConstants 1.01 0
               device RotationalMotor {
                 name "motor4"
                 controlPID 10.001 0 0
-                maxVelocity 1000
+                maxVelocity 5000
               }
               fastHelix Solid {
                 children [
@@ -331,23 +305,23 @@ DEF DEF_VEHICLE Robot {
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
               }
               slowHelix Solid {
-                rotation 0 -1 0 5.350616673324008
+                rotation 0 1 0 1.1667874781290464
                 children [
                   Shape {
                     appearance Appearance {
                       material Material {
-                        diffuseColor 1 0 0.1
+                        diffuseColor 0.960784 0.47451 0
                       }
                     }
                     geometry Cylinder {
                       height 0.002
-                      radius 0.02
+                      radius 0.1
                     }
                   }
                 ]
@@ -356,7 +330,7 @@ DEF DEF_VEHICLE Robot {
           ]
           name "solid(3)"
           physics Physics {
-            mass 0.25
+            mass 0.05
           }
         }
         Shape {
@@ -376,14 +350,19 @@ DEF DEF_VEHICLE Robot {
   }
   physics Physics {
     density -1
-    mass 1.5
+    mass 1
     centerOfMass [
       0 0 0
     ]
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5599 -df 0.01"
+  controllerArgs [
+    "-p"
+    "5599"
+    "-df"
+    "0.01"
+  ]
   customData "1"
 }
 DirectionalLight {
@@ -398,9 +377,15 @@ HouseWithGarage {
 }
 AdvertisingBoard {
   translation 0 2.35 -5.71
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
 AdvertisingBoard {
   translation 84.03999999999999 2.35 -5.81
   rotation 0 1 0 -1.5707963071795863
   name "advertising board(1)"
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }

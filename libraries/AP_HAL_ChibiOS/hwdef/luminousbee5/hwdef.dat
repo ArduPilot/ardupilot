@@ -209,10 +209,6 @@ define HAL_BATT_CURR_SCALE 17.0
 define HAL_SERIAL5_PROTOCOL SerialProtocol_MAVLink
 define HAL_SERIAL5_BAUD 921600
 
-# 6 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 6
-
-
 # two IMUs
 #IMU Invensense SPI:icm20608 ROTATION_YAW_180
 IMU BMI088       SPI:bmi088_a SPI:bmi088_g ROTATION_ROLL_180_YAW_90

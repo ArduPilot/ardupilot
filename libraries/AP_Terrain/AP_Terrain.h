@@ -62,7 +62,7 @@
 // we allow for a 2cm discrepancy in the grid corners. This is to
 // account for different rounding in terrain DAT file generators using
 // different programming languages
-#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= 2)
+#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= unsigned(margin.get()*100))
 
 #if TERRAIN_DEBUG
 #include <assert.h>
@@ -352,6 +352,7 @@ private:
 
     // parameters
     AP_Int8  enable;
+    AP_Float margin;
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
 

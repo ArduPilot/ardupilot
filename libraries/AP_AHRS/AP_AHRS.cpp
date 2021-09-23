@@ -30,6 +30,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -51,8 +52,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     AP_GROUPINFO("GPS_GAIN",  2, AP_AHRS, gps_gain, 1.0f),
 
     // @Param: GPS_USE
-    // @DisplayName: AHRS DCM use GPS for navigation
-    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS whenever it is available. A value of 2 means to use GPS for height as well as position in DCM.
+    // @DisplayName: AHRS use GPS for DCM navigation and position-down
+    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS according to its own parameters. A value of 2 means to use GPS for height as well as position - both in DCM estimation and when determining altitude-above-home.
     // @Values: 0:Disabled,1:Use GPS for DCM position,2:Use GPS for DCM position and height
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, float(GPSUse::Enable)),
@@ -191,6 +192,11 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
 #endif
     _dcm_matrix.identity();
+
+    // initialise the controller-to-autopilot-body trim state:
+    _last_trim = _trim.get();
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
+    _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
 // init sets up INS board orientation
@@ -220,6 +226,20 @@ void AP_AHRS::init()
 #if HAL_NMEA_OUTPUT_ENABLED
     _nmea_out = AP_NMEA_Output::probe();
 #endif
+}
+
+// updates matrices responsible for rotating vectors from vehicle body
+// frame to autopilot body frame from _trim variables
+void AP_AHRS::update_trim_rotation_matrices()
+{
+    if (_last_trim == _trim.get()) {
+        // nothing to do
+        return;
+    }
+
+    _last_trim = _trim.get();
+    _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
+    _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -268,6 +288,11 @@ void AP_AHRS::reset_gyro_drift(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
+    if (!skip_ins_update) {
+        // tell the IMU to grab some data
+        AP::ins().update();
+    }
+
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
@@ -281,7 +306,13 @@ void AP_AHRS::update(bool skip_ins_update)
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
 
-    update_DCM(skip_ins_update);
+    // update autopilot-body-to-vehicle-body from _trim parameters:
+    update_trim_rotation_matrices();
+
+    update_DCM();
+
+    // update takeoff/touchdown flags
+    update_flags();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     update_SITL();
@@ -323,7 +354,7 @@ void AP_AHRS::update(bool skip_ins_update)
 
     if (_view != nullptr) {
         // update optional alternative attitude view
-        _view->update(skip_ins_update);
+        _view->update();
     }
 
     // update AOA and SSA
@@ -369,7 +400,7 @@ void AP_AHRS::update(bool skip_ins_update)
     }
 }
 
-void AP_AHRS::update_DCM(bool skip_ins_update)
+void AP_AHRS::update_DCM()
 {
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
@@ -379,10 +410,17 @@ void AP_AHRS::update_DCM(bool skip_ins_update)
     yaw = _dcm_attitude.z;
     update_cd_values();
 
-    AP_AHRS_DCM::update(skip_ins_update);
+    AP_AHRS_DCM::_update();
 
     // keep DCM attitude available for get_secondary_attitude()
     _dcm_attitude = {roll, pitch, yaw};
+}
+
+void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
+{
+    AP_Notify::flags.gps_fusion = status.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+    AP_Notify::flags.gps_glitching = status.flags.gps_glitching;
+    AP_Notify::flags.have_pos_abs = status.flags.horiz_pos_abs;
 }
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -432,7 +470,6 @@ void AP_AHRS::update_EKF2(void)
             _gyro_drift = -_gyro_drift;
 
             // calculate corrected gyro estimate for get_gyro()
-            _gyro_estimate.zero();
             if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
@@ -458,9 +495,7 @@ void AP_AHRS::update_EKF2(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF2.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
@@ -512,7 +547,6 @@ void AP_AHRS::update_EKF3(void)
             _gyro_drift = -_gyro_drift;
 
             // calculate corrected gyro estimate for get_gyro()
-            _gyro_estimate.zero();
             if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
@@ -540,9 +574,7 @@ void AP_AHRS::update_EKF3(void)
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(-1,filt_state);
-            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
-            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
-            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
+            update_notify_from_filter_status(filt_state);
         }
     }
 }
@@ -782,10 +814,22 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
     bool ret = false;
     if (airspeed_sensor_enabled()) {
         airspeed_ret = AP::airspeed()->get_airspeed();
+
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            // constrain the airspeed by the ground speed
+            // and AHRS_WIND_MAX
+            const float gnd_speed = AP::gps().ground_speed();
+            float true_airspeed = airspeed_ret * get_EAS2TAS();
+            true_airspeed = constrain_float(true_airspeed,
+                                            gnd_speed - _wind_max,
+                                            gnd_speed + _wind_max);
+            airspeed_ret = true_airspeed / get_EAS2TAS();
+        }
+
         return true;
     }
 
-    if (!_flags.wind_estimation) {
+    if (!get_wind_estimation_enabled()) {
         return false;
     }
 
@@ -799,16 +843,11 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
-#if HAL_NAVEKF3_AVAILABLE
-        if (EKF3.getWind(-1,wind_vel)) {
-             ret = true;
-        } else {
-            ret = false;
+        if (!_sitl) {
+            return false;
         }
-#else
-        ret = false;
-#endif
-        break;
+        airspeed_ret = _sitl->state.airspeed;
+        return true;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1309,8 +1348,14 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 bool AP_AHRS::get_vert_pos_rate(float &velocity) const
 {
     switch (active_EKF_type()) {
-    case EKFType::NONE:
-        return false;
+    case EKFType::NONE: {
+        Vector3f velned;
+        if (!AP_AHRS_DCM::get_velocity_NED(velned)) {
+            return false;
+        }
+        velocity = velned.z;
+        return true;
+    }
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1386,7 +1431,7 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_NED_origin(vec);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1479,7 +1524,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_NE_origin(posNE);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1549,7 +1594,7 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_relative_position_D_origin(posD);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
@@ -1603,7 +1648,13 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !get_origin(originLLH)) {
-        AP_AHRS_DCM::get_relative_position_D_home(posD);
+        const auto &gps = AP::gps();
+        if (_gps_use == GPSUse::EnableWithHeight &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            posD = (get_home().alt - gps.location().alt) * 0.01;
+        } else {
+            posD = -AP::baro().get_altitude();
+        }
         return;
     }
 
@@ -1715,17 +1766,15 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
     }
 
     /*
-      fixed wing and rover when in fly_forward mode will fall back to
-      DCM if the EKF doesn't have GPS. This is the safest option as
-      DCM is very robust. Note that we also check the filter status
-      when fly_forward is false and we are disarmed. This is to ensure
-      that the arming checks do wait for good GPS position on fixed
-      wing and rover
+      fixed wing and rover will fall back to DCM if the EKF doesn't
+      have GPS. This is the safest option as DCM is very robust. Note
+      that we also check the filter status when fly_forward is false
+      and we are disarmed. This is to ensure that the arming checks do
+      wait for good GPS position on fixed wing and rover
      */
     if (ret != EKFType::NONE &&
-        (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-         _vehicle_class == AHRS_VEHICLE_GROUND) &&
-        (_flags.fly_forward || !hal.util->get_soft_armed())) {
+        (_vehicle_class == VehicleClass::FIXED_WING ||
+         _vehicle_class == VehicleClass::GROUND)) {
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
@@ -1858,8 +1907,8 @@ bool AP_AHRS::healthy(void) const
         if (!ret) {
             return false;
         }
-        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        if ((_vehicle_class == VehicleClass::FIXED_WING ||
+                _vehicle_class == VehicleClass::GROUND) &&
                 active_EKF_type() != EKFType::TWO) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
@@ -1875,8 +1924,8 @@ bool AP_AHRS::healthy(void) const
         if (!ret) {
             return false;
         }
-        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+        if ((_vehicle_class == VehicleClass::FIXED_WING ||
+                _vehicle_class == VehicleClass::GROUND) &&
                 active_EKF_type() != EKFType::THREE) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
@@ -2073,11 +2122,14 @@ void AP_AHRS::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 #endif
 }
 
-// get speed limit
-void AP_AHRS::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+// get speed limit and XY navigation gain scale factor
+void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
+        // lower gains in VTOL controllers when flying on DCM
+        ekfGndSpdLimit = 50.0;
+        ekfNavVelGainScaler = 0.5;
         break;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -2101,10 +2153,25 @@ void AP_AHRS::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        // no limits
+        // no limit on gains, large vel limit
+        ekfGndSpdLimit = 400;
+        ekfNavVelGainScaler = 1;
         break;
 #endif
     }
+}
+
+/*
+  get gain factor for Z controllers
+ */
+float AP_AHRS::getControlScaleZ(void) const
+{
+    if (active_EKF_type() == EKFType::NONE) {
+        // when flying on DCM lower gains by 4x to cope with the high
+        // lag
+        return 0.25;
+    }
+    return 1;
 }
 
 // get compass offset estimates
@@ -2253,11 +2320,11 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
         // Check vs DCM yaw if this vehicle could use DCM in flight
         // and if not using an external yaw source (DCM does not support external yaw sources)
-        bool using_external_yaw = false;
+        bool using_noncompass_for_yaw = false;
 #if HAL_NAVEKF3_AVAILABLE
-        using_external_yaw = ekf_type() == EKFType::THREE && EKF3.using_external_yaw();
+        using_noncompass_for_yaw = (ekf_type() == EKFType::THREE) && EKF3.using_noncompass_for_yaw();
 #endif
-        if (!always_use_EKF() && !using_external_yaw) {
+        if (!always_use_EKF() && !using_noncompass_for_yaw) {
             Vector3f angle_diff;
             primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
@@ -2275,7 +2342,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2306,7 +2373,7 @@ uint32_t AP_AHRS::getLastYawResetAngle(float &yawAng)
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2337,7 +2404,7 @@ uint32_t AP_AHRS::getLastPosNorthEastReset(Vector2f &pos)
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
 
     case EKFType::NONE:
         return 0;
@@ -2369,7 +2436,7 @@ uint32_t AP_AHRS::getLastVelNorthEastReset(Vector2f &vel) const
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
         return 0;
 
@@ -2500,7 +2567,7 @@ bool AP_AHRS::get_origin(Location &ret) const
 {
     switch (ekf_type()) {
     case EKFType::NONE:
-        return false;
+        return AP_AHRS_DCM::get_origin_fallback(ret);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -2598,38 +2665,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.setTerrainHgtStable(stable);
 #endif
-}
-
-// get_location - updates the provided location with the latest calculated location
-//  returns true on success (i.e. the EKF knows it's latest position), false on failure
-bool AP_AHRS::get_location(struct Location &loc) const
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        // We are not using an EKF so no data
-        return false;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.getLLH(loc);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.getLLH(loc);
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SIM:
-        return get_position(loc);
-#endif
-#if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL:
-        return get_position(loc);
-#endif
-    }
-
-    return false;
 }
 
 // return the innovations for the primariy EKF
@@ -2775,15 +2810,6 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
     }
 
     return false;
-}
-
-bool AP_AHRS::getGpsGlitchStatus() const
-{
-    nav_filter_status ekf_status {};
-    if (!get_filter_status(ekf_status)) {
-        return false;
-    }
-    return ekf_status.flags.gps_glitching;
 }
 
 //get the index of the active airspeed sensor, wrt the primary core
@@ -2971,8 +2997,8 @@ void AP_AHRS::Log_Write()
 #endif
 }
 
-// check whether compass can be bypassed for arming check in case when external navigation data is available 
-bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
+// check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+bool AP_AHRS::using_noncompass_for_yaw(void) const
 {
     switch (active_EKF_type()) {
 #if HAL_NAVEKF2_AVAILABLE
@@ -2982,7 +3008,7 @@ bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
     case EKFType::NONE:
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.using_external_yaw();
+        return EKF3.using_noncompass_for_yaw();
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SIM:
@@ -2991,6 +3017,31 @@ bool AP_AHRS::is_ext_nav_used_for_yaw(void) const
     case EKFType::EXTERNAL:
 #endif
         return false; 
+    }
+    // since there is no default case above, this is unreachable
+    return false;
+}
+
+// check if external nav is providing yaw
+bool AP_AHRS::using_extnav_for_yaw(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.isExtNavUsedForYaw();
+#endif
+    case EKFType::NONE:
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_extnav_for_yaw();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SIM:
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return false;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -3007,6 +3058,13 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 #endif
 }
 
+/*
+  get the current view's rotation, or ROTATION_NONE
+ */
+enum Rotation AP_AHRS::get_view_rotation(void) const
+{
+    return _view?_view->get_rotation():ROTATION_NONE;
+}
 
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;

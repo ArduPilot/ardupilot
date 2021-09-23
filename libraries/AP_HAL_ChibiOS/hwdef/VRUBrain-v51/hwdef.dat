@@ -171,9 +171,6 @@ define HAL_BATT_CURR_SCALE 17.0
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# 12 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 14
-
 # save some flash
 define GENERATOR_ENABLED 0
 define AC_OAPATHPLANNER_ENABLED 0

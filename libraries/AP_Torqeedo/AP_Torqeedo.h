@@ -24,6 +24,7 @@
 #if HAL_TORQEEDO_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 
 #define TORQEEDO_MESSAGE_LEN_MAX    30  // messages are no more than 30 bytes
 
@@ -41,6 +42,13 @@ public:
     // consume incoming messages from motor, reply with latest motor speed
     // runs in background thread
     void thread_main();
+
+    // returns true if communicating with the motor
+    bool healthy();
+
+    // run pre-arm check.  returns false on failure and fills in failure_msg
+    // any failure_msg returned will not include a prefix
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -60,13 +68,32 @@ private:
         WAITING_FOR_FOOTER,
     };
 
+    // TYPE parameter values
+    enum class ConnectionType : uint8_t {
+        TYPE_DISABLED = 0,
+        TYPE_TILLER = 1,
+        TYPE_MOTOR = 2
+    };
+
+    // OPTIONS parameter values
+    enum options {
+        LOG             = 1<<0,
+        DEBUG_TO_GCS    = 1<<1,
+    };
+
     // initialise serial port and gpio pins (run from background thread)
     // returns true on success
     bool init_internals();
 
+    // returns true if the driver is enabled
+    bool enabled() const;
+
     // process a single byte received on serial port
     // return true if a this driver should send a set-motor-speed message
     bool parse_byte(uint8_t b);
+
+    // returns true if it is safe to send a message
+    bool safe_to_send() const { return (_send_delay_us == 0); }
 
     // set pin to enable sending commands to motor
     void send_start();
@@ -81,17 +108,27 @@ private:
     // value is taken directly from SRV_Channel
     void send_motor_speed_cmd();
 
+    // output logging and debug messages (if required)
+    void log_and_debug();
+
     // parameters
-    AP_Int8 _enable;        // 1 if torqeedo feature is enabled
+    AP_Enum<ConnectionType> _type;      // connector type used (0:disabled, 1:tiller connector, 2: motor connector)
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to motor
+    AP_Int16 _options;      // options bitmask
 
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
     bool _initialised;              // true once driver has been initialised
+    bool _send_motor_speed;         // true if motor speed should be sent at next opportunity
     int16_t _motor_speed;           // desired motor speed (set from within update method)
-    uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent
+    uint32_t _last_send_motor_ms;   // system time (in millis) last motor speed command was sent (used for health reporting)
+    uint32_t _last_send_motor_us;   // system time (in micros) last motor speed command was sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;        // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
+
+    // health reporting
+    HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_ms
+    uint32_t _last_debug_ms;        // system time (in millis) that debug was last output
 
     // message parsing members
     ParseState _parse_state;        // current state of parsing
@@ -99,6 +136,7 @@ private:
     uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
     uint8_t _received_buff[TORQEEDO_MESSAGE_LEN_MAX];   // characters received
     uint8_t _received_buff_len;     // number of characters received
+    uint32_t _last_received_ms;     // system time (in millis) that a message was successfully parsed (for health reporting)
 
     static AP_Torqeedo *_singleton;
 };

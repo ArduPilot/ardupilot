@@ -21,6 +21,7 @@ RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 # mapping for board names to brand name and manufacturer
 brand_map = {
     'Pixhawk4' : ('Pixhawk 4', 'Holybro'),
+    'Pixhawk4-bdshot' : ('Pixhawk 4', 'Holybro'),
     'Pix32v5' :  ('Pix32 v5', 'Holybro'),
     'Durandal' : ('Durandal', 'Holybro'),
     'Durandal-bdshot' : ('Durandal', 'Holybro'),
@@ -37,7 +38,9 @@ brand_map = {
     'CubeSolo' : ('CubeSolo', '3DR'),
     'CubeGreen-solo' : ('CubeGreen Solo', 'Hex/ProfiCNC'),
     'CUAVv5' : ('CUAVv5', 'CUAV'),
+    'CUAVv5-bdshot' : ('CUAVv5', 'CUAV'),
     'CUAVv5Nano' : ('CUAVv5 Nano', 'CUAV'),
+    'CUAVv5Nano-bdshot' : ('CUAVv5 Nano', 'CUAV'),
     'CUAV-Nora' : ('CUAV Nora', 'CUAV'),
     'CUAV-X7' : ('CUAV X7', 'CUAV'),
     'CUAV-X7-bdshot' : ('CUAV X7', 'CUAV'),
@@ -74,6 +77,8 @@ brand_map = {
     'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
     'BeastF7' : ('Beast F7 45A AIO', 'iFlight'),
     'MambaF405US-I2C' : ('Diatone Mamba Basic F405 MK3/MK3.5', 'Diatone'),
+    "FlywooF745" : ('Flywoo Goku GN 745 AIO', 'Flywoo'),
+    "FlywooF745Nano" : ('Flywoo Goku Hex F745', 'Flywoo'),
 }
 
 class Firmware():

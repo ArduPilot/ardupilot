@@ -118,7 +118,7 @@ void CompassLearn::update(void)
         // @Field: Yaw: best learnt yaw
         // @Field: WVar: error of best learn yaw
         // @Field: N: number of samples used
-        AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+        AP::logger().WriteStreaming("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
                                                (double)best_offsets.y,

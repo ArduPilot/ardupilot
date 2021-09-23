@@ -295,19 +295,18 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
     const AP_OSD_ParamSetting& setting = params[number-1];
     AP_Param* p = setting._param;
 
-    if (p->is_read_only()) {
+    if (p == nullptr || p->is_read_only()) {
         return;
     }
 
     _requires_save |= 1 << (number-1);
 
-    float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
-    int32_t incr_int = int32_t(roundf(incr));
-    int32_t max_int = int32_t(roundf(setting._param_max));
-    int32_t min_int = int32_t(roundf(setting._param_min));
+    const float incr = setting._param_incr * ((ev == Event::MENU_DOWN) ? -1.0f : 1.0f);
+    const int32_t incr_int = int32_t(roundf(incr));
+    const int32_t max_int = int32_t(roundf(setting._param_max));
+    const int32_t min_int = int32_t(roundf(setting._param_min));
 
-    if (p != nullptr) {
-        switch (setting._param_type) {
+    switch (setting._param_type) {
         // there is no way to validate the ranges, so as a rough guess prevent
         // integer types going below -1;
         case AP_PARAM_INT8: {
@@ -334,8 +333,8 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
         case AP_PARAM_NONE:
         case AP_PARAM_GROUP:
             break;
-        }
     }
+
 }
 
 // modify which parameter is configured for the given selection
@@ -569,7 +568,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     }
 }
 
-#if HAL_WITH_OSD_BITMAP
+#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
 void AP_OSD_ParamScreen::draw(void)
 {
     if (!enabled || !backend) {
@@ -629,6 +628,7 @@ void AP_OSD_ParamScreen::save_parameters()
 }
 
 // handle OSD configuration messages
+#if HAL_GCS_ENABLED
 void AP_OSD_ParamScreen::handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link)
 {
     // request out of range - return an error
@@ -667,5 +667,6 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_SUCCESS,
         buf, param._type, param._param_min, param._param_max, param._param_incr);
 }
+#endif
 
 #endif // OSD_PARAM_ENABLED

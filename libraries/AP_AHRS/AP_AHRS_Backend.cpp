@@ -36,16 +36,18 @@ Vector3f AP_AHRS_Backend::get_gyro_latest(void) const
 }
 
 // set_trim
-void AP_AHRS_Backend::set_trim(const Vector3f &new_trim)
+void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
-    Vector3f trim;
-    trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    const Vector3f trim {
+        constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.z, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT))
+    };
     _trim.set_and_save(trim);
 }
 
 // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-void AP_AHRS_Backend::add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom)
+void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom)
 {
     Vector3f trim = _trim.get();
 
@@ -77,7 +79,7 @@ void AP_AHRS::update_orientation()
 }
 
 // return a ground speed estimate in m/s
-Vector2f AP_AHRS_Backend::groundspeed_vector(void)
+Vector2f AP_AHRS_DCM::groundspeed_vector(void)
 {
     // Generate estimate of ground speed vector using air data system
     Vector2f gndVelADS;
@@ -194,12 +196,6 @@ void AP_AHRS_Backend::calc_trig(const Matrix3f &rot,
 //      should be called after _dcm_matrix is updated
 void AP_AHRS_Backend::update_trig(void)
 {
-    if (_last_trim != _trim.get()) {
-        _last_trim = _trim.get();
-        _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
-        _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
-    }
-
     calc_trig(get_rotation_body_to_ned(),
               _cos_roll, _cos_pitch, _cos_yaw,
               _sin_roll, _sin_pitch, _sin_yaw);
@@ -331,28 +327,28 @@ Vector3f AP_AHRS_Backend::get_vibration(void) const
     return AP::ins().get_vibration_levels();
 }
 
-void AP_AHRS_Backend::set_takeoff_expected(bool b)
+void AP_AHRS::set_takeoff_expected(bool b)
 {
-    _flags.takeoff_expected = b;
+    takeoff_expected = b;
     takeoff_expected_start_ms = AP_HAL::millis();
 }
 
-void AP_AHRS_Backend::set_touchdown_expected(bool b)
+void AP_AHRS::set_touchdown_expected(bool b)
 {
-    _flags.touchdown_expected = b;
+    touchdown_expected = b;
     touchdown_expected_start_ms = AP_HAL::millis();
 }
 
 /*
   update takeoff/touchdown flags
  */
-void AP_AHRS_Backend::update_flags(void)
+void AP_AHRS::update_flags(void)
 {
     const uint32_t timeout_ms = 1000;
-    if (_flags.takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
-        _flags.takeoff_expected = false;
+    if (takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
+        takeoff_expected = false;
     }
-    if (_flags.touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
-        _flags.touchdown_expected = false;
+    if (touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
+        touchdown_expected = false;
     }
 }
