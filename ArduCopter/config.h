@@ -331,6 +331,18 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Loiter_POI mode - allows vehicle to hold global position and auto yaw control
+#if (MODE_AUTO_ENABLED == DISABLED) || (MODE_LOITER_ENABLED == DISABLED)
+# ifndef MODE_LOITER_POI_ENABLED
+#  define MODE_LOITER_POI_ENABLED DISABLED
+# endif
+#else
+# ifndef MODE_LOITER_POI_ENABLED
+#  define MODE_LOITER_POI_ENABLED ENABLED
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
@@ -557,6 +569,13 @@
 #endif
 #ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
  # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Loiter_POI parameter defaults
+//
+#ifndef LOITERPOI_DIST_DEFAULT
+ # define LOITERPOI_DIST_DEFAULT  3.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
