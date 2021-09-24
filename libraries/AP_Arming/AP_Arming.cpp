@@ -1206,7 +1206,7 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
 
 bool AP_Arming::generator_checks(bool display_failure) const
 {
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     const AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return true;
