@@ -35,6 +35,9 @@ public:
     // Use generator mavlink message
     virtual void send_generator_status(const GCS_MAVLINK &channel) {}
 
+    // handle GENERATOR_STATUS etc
+    virtual void handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg) {}
+
 protected:
 
     // Update frontend

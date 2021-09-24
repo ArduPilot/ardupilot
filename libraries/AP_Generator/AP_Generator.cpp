@@ -20,6 +20,7 @@
 #include "AP_Generator_IE_650_800.h"
 #include "AP_Generator_IE_2400.h"
 #include "AP_Generator_RichenPower.h"
+#include "AP_Generator_MAVLink.h"
 
 const AP_Param::GroupInfo AP_Generator::var_info[] = {
 
@@ -67,7 +68,13 @@ void AP_Generator::init()
         case Type::RICHENPOWER:
             _driver_ptr = new AP_Generator_RichenPower(*this);
             break;
+
+#if HAL_GENERATOR_MAVLINK_ENABLED
+        case Type::MAVLINK:
+            _driver_ptr = new AP_Generator_MAVLink(*this);
+            break;
     }
+#endif
 
     if (_driver_ptr != nullptr) {
         _driver_ptr->init();
@@ -98,6 +105,17 @@ void AP_Generator::send_generator_status(const GCS_MAVLINK &channel)
         return;
     }
     _driver_ptr->send_generator_status(channel);
+}
+
+void AP_Generator::handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg)
+{
+    // just pass to mavlink backend for now:
+#if HAL_GENERATOR_MAVLINK_ENABLED
+    if (_driver_ptr == nullptr) {
+        return;
+    }
+    ((AP_Generator_MAVLink*)_driver_ptr)->handle_mavlink_msg(channel, msg);
+#endif
 }
 
 // Tell backend to perform arming checks

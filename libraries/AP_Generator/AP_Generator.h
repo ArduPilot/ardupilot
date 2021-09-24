@@ -8,6 +8,11 @@
 
 #if HAL_GENERATOR_ENABLED
 
+#ifndef HAL_GENERATOR_MAVLINK_ENABLED
+#define HAL_GENERATOR_MAVLINK_ENABLED HAL_GENERATOR_ENABLED
+#endif
+
+
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -64,6 +69,8 @@ public:
 
     void send_generator_status(const GCS_MAVLINK &channel);
 
+    void handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg);
+
     // Parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -80,6 +87,9 @@ private:
         IE_650_800 = 1,
         IE_2400 = 2,
         RICHENPOWER = 3,
+#if HAL_GENERATOR_MAVLINK_ENABLED
+        MAVLINK = 4,
+#endif
     };
 
     // Helper to get param and cast to GenType
