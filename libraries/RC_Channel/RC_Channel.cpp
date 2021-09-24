@@ -779,7 +779,7 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     servorelayevents->do_set_relay(relay, val);
 }
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 {
     AP_Generator *generator = AP::generator();
@@ -967,7 +967,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         do_aux_function_avoid_adsb(ch_flag);
         break;
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     case AUX_FUNC::GENERATOR:
         do_aux_function_generator(ch_flag);
         break;
