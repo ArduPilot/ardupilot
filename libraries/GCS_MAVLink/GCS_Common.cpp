@@ -4807,7 +4807,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 
 void GCS_MAVLINK::send_generator_status() const
 {
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return;
