@@ -35,6 +35,10 @@ public:
     // Use generator mavlink message
     virtual void send_generator_status(const GCS_MAVLINK &channel) {}
 
+    virtual const struct AP_Param::GroupInfo *get_var_info() const {
+        return nullptr;
+    }
+
 protected:
 
     // Update frontend
@@ -46,6 +50,7 @@ protected:
     float _fuel_remain_pct; // Decimal from 0 to 1
     float _consumed_mah;
     uint16_t _rpm;
+    float _fuel_remain_l = -1;  // -1 means unused
 
     AP_Generator& _frontend;
 
