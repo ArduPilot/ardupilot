@@ -339,7 +339,7 @@ protected:
     AP_MSP msp;
 #endif
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     AP_Generator generator;
 #endif
 
