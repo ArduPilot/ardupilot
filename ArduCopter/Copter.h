@@ -763,6 +763,7 @@ private:
     void heli_set_autorotation(bool autotrotation);
 #endif
     void update_collective_low_flag(int16_t throttle_control);
+    float get_pilot_desired_throttle() const;
     // inertia.cpp
     void read_inertia();
 
