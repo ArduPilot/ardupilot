@@ -324,6 +324,17 @@ void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 }
 
+// set_desired_throttle
+void AP_MotorsHeli_Dual::set_desired_throttle(float desired_throttle)
+{
+    // constrain and set desired throttle
+    // -1.0f is allowed because it indicates invalid pilot throttle or invalid flightmode
+    _main_rotor.set_desired_throttle(constrain_float(desired_throttle, -1.0f, 1.0f));
+
+    // indicates pilot desires using transmitter throttle in manual throttle modes
+    _main_rotor.use_pilot_desired_throttle(using_pilot_throttle());
+}
+
 // set_rotor_rpm - used for governor with speed sensor
 void AP_MotorsHeli_Dual::set_rpm(float rotor_rpm)
 {

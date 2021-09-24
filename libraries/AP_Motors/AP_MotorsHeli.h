@@ -93,6 +93,9 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
 
+    // set_desired_throttle - sets target throttle as a number from 0 ~ 1
+    virtual void set_desired_throttle(float desired_throttle) = 0;
+
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
     virtual float get_desired_rotor_speed() const = 0;
 
@@ -154,10 +157,14 @@ public:
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
+        USE_PILOT_THROTTLE              = (1<<1),   // 2
     };
 
     // use leaking integrator management scheme
     bool using_leaky_integrator() const { return heli_option(HeliOption::USE_LEAKY_I); }
+    
+    // use pilot desired throttle
+    bool using_pilot_throttle() const { return heli_option(HeliOption::USE_PILOT_THROTTLE); }
     
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

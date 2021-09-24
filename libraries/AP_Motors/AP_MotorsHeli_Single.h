@@ -61,6 +61,9 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
 
+    // set_desired_throttle - sets target throttle as a number from 0 ~ 1 with -1 signifying invalid
+    void set_desired_throttle(float desired_throttle) override;
+
     // set_rpm - for rotor speed governor
     void set_rpm(float rotor_rpm) override;
 
