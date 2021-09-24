@@ -4,6 +4,8 @@
 #include "AP_Arming.h"
 #include "Plane.h"
 
+#include "qautotune.h"
+
 constexpr uint32_t AP_ARMING_DELAY_MS = 2000; // delay from arming to start of motor spoolup
 
 const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
@@ -72,6 +74,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && !plane.quadplane.available()) {
         check_failed(display_failure, "Quadplane enabled but not running");
         ret = false;
@@ -99,6 +102,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
             return false;
         }
     }
+#endif
 
     if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
         check_failed(display_failure, "No mission loaded");
@@ -116,11 +120,13 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled() && ((plane.quadplane.options & QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO) != 0) &&
-            !plane.control_mode->is_vtol_mode() && (plane.control_mode != &plane.mode_auto)) {
+            !plane.control_mode->is_vtol_mode() && (plane.control_mode != &plane.mode_auto) && (plane.control_mode != &plane.mode_guided)) {
         check_failed(display_failure,"not in Q mode");
         ret = false;
     }
+#endif
 
     if (plane.g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM){
        int16_t trim = plane.channel_throttle->get_radio_trim();
@@ -203,20 +209,15 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 void AP_Arming_Plane::change_arm_state(void)
 {
     update_soft_armed();
+#if HAL_QUADPLANE_ENABLED
     plane.quadplane.set_armed(hal.util->get_soft_armed());
+#endif
 }
 
 bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_checks)
 {
     if (!AP_Arming::arm(method, do_arming_checks)) {
         return false;
-    }
-
-    if ((method == Method::AUXSWITCH) && (plane.quadplane.options & QuadPlane::OPTION_AIRMODE)) {
-        // if no airmode switch assigned, honour the QuadPlane option bit:
-        if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
-            plane.quadplane.air_mode = AirMode::ON;
-        }
     }
 
     change_arm_state();
@@ -260,9 +261,11 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     plane.throttle_suppressed = plane.control_mode->does_auto_throttle();
 
     // if no airmode switch assigned, ensure airmode is off:
+#if HAL_QUADPLANE_ENABLED
     if ((plane.quadplane.air_mode == AirMode::ON) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) {
         plane.quadplane.air_mode = AirMode::OFF;
     }
+#endif
 
     //only log if disarming was successful
     change_arm_state();
@@ -283,8 +286,15 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
 void AP_Arming_Plane::update_soft_armed()
 {
-    hal.util->set_soft_armed((plane.quadplane.motor_test.running || is_armed()) &&
-                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    bool _armed = is_armed();
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.motor_test.running){
+        _armed = true;
+    }
+#endif
+    _armed = _armed && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+
+    hal.util->set_soft_armed(_armed);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
 
     // update delay_arming oneshot

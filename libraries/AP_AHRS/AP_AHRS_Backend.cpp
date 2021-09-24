@@ -38,9 +38,11 @@ Vector3f AP_AHRS_Backend::get_gyro_latest(void) const
 // set_trim
 void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
-    Vector3f trim;
-    trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
-    trim.y = constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
+    const Vector3f trim {
+        constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.y, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT)),
+        constrain_float(new_trim.z, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT))
+    };
     _trim.set_and_save(trim);
 }
 

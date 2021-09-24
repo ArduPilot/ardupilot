@@ -67,6 +67,10 @@ extern const AP_HAL::HAL& hal;
 
 #define GYRO_INIT_MAX_DIFF_DPS 0.1f
 
+#ifndef HAL_INS_TRIM_LIMIT_DEG
+#define HAL_INS_TRIM_LIMIT_DEG 10
+#endif
+
 // Class level parameters
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // 0 was PRODUCT_ID
@@ -1099,19 +1103,59 @@ void AP_InertialSensor::periodic()
   _calculate_trim - calculates the x and y trim angles. The
   accel_sample must be correctly scaled, offset and oriented for the
   board
+
+  Note that this only changes 2 axes of the trim vector. When in
+  ROTATION_NONE view we can calculate the x and y trim. When in
+  ROTATION_PITCH_90 for tailsitters we can calculate y and z. This
+  allows users to trim for both flight orientations by doing two trim
+  operations, one at each orientation
+
+  When doing a full accel cal we pass in a trim vector that has been
+  zeroed so the 3rd non-observable axis is reset
 */
-bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
+bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &trim)
 {
-    trim_pitch = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
-    trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
-    if (fabsf(trim_roll) > radians(10) ||
-        fabsf(trim_pitch) > radians(10)) {
+    // allow multiple rotations, this allows us to cope with tailsitters
+    const enum Rotation rotations[] = {ROTATION_NONE,
+#ifndef HAL_BUILD_AP_PERIPH
+                                       AP::ahrs().get_view_rotation()
+#endif
+    };
+    bool good_trim = false;
+    Vector3f newtrim;
+    for (const auto r : rotations) {
+        newtrim = trim;
+        switch (r) {
+        case ROTATION_NONE:
+            newtrim.y = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
+            newtrim.x = atan2f(-accel_sample.y, -accel_sample.z);
+            break;
+
+        case ROTATION_PITCH_90: {
+            newtrim.y = atan2f(accel_sample.z, norm(accel_sample.y, -accel_sample.x));
+            newtrim.z = atan2f(-accel_sample.y, accel_sample.x);
+            break;
+        }
+        default:
+            // unsupported
+            continue;
+        }
+        if (fabsf(newtrim.x) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
+            fabsf(newtrim.y) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
+            fabsf(newtrim.z) <= radians(HAL_INS_TRIM_LIMIT_DEG)) {
+            good_trim = true;
+            break;
+        }
+    }
+    if (!good_trim) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "trim over maximum of 10 degrees");
         return false;
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim OK: roll=%.2f pitch=%.2f",
-                  (double)degrees(trim_roll),
-                  (double)degrees(trim_pitch));
+    trim = newtrim;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim OK: roll=%.2f pitch=%.2f yaw=%.2f",
+                  (double)degrees(trim.x),
+                  (double)degrees(trim.y),
+                  (double)degrees(trim.z));
     return true;
 }
 
@@ -1199,7 +1243,7 @@ bool AP_InertialSensor::get_accel_health_all(void) const
   calculate the trim_roll and trim_pitch. This is used for redoing the
   trim without needing a full accel cal
  */
-bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
+bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
 {
     Vector3f level_sample;
 
@@ -1227,21 +1271,18 @@ bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
         samp = get_accel(0);
         level_sample += samp;
         if (!get_accel_health(0)) {
-            goto failed;
+            return false;
         }
         hal.scheduler->delay(update_dt_milliseconds);
         num_samples++;
     }
     level_sample /= num_samples;
 
-    if (!_calculate_trim(level_sample, trim_roll, trim_pitch)) {
-        goto failed;
+    if (!_calculate_trim(level_sample, trim_rad)) {
+        return false;
     }
 
     return true;
-
-failed:
-    return false;
 }
 
 /*
@@ -1956,8 +1997,8 @@ void AP_InertialSensor::_acal_save_calibrations()
             // The first level step of accel cal will be taken as gnd truth,
             // i.e. trim will be set as per the output of primary accel from the level step
             get_primary_accel_cal_sample_avg(0,aligned_sample);
-            _trim_pitch = atan2f(aligned_sample.x, norm(aligned_sample.y, aligned_sample.z));
-            _trim_roll = atan2f(-aligned_sample.y, -aligned_sample.z);
+            _trim_rad.zero();
+            _calculate_trim(aligned_sample, _trim_rad);
             _new_trim = true;
             break;
         case 2:
@@ -1969,8 +2010,9 @@ void AP_InertialSensor::_acal_save_calibrations()
                 float dot = (misaligned_sample*aligned_sample);
                 Quaternion q(safe_sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
                 q.normalize();
-                _trim_roll = q.get_euler_roll();
-                _trim_pitch = q.get_euler_pitch();
+                _trim_rad.x = q.get_euler_roll();
+                _trim_rad.y = q.get_euler_pitch();
+                _trim_rad.z = 0;
                 _new_trim = true;
             }
             break;
@@ -1979,9 +2021,10 @@ void AP_InertialSensor::_acal_save_calibrations()
             /* no break */
     }
 
-    if (fabsf(_trim_roll) > radians(10) ||
-        fabsf(_trim_pitch) > radians(10)) {
-        hal.console->printf("ERR: Trim over maximum of 10 degrees!!");
+    if (fabsf(_trim_rad.x) > radians(HAL_INS_TRIM_LIMIT_DEG) ||
+        fabsf(_trim_rad.y) > radians(HAL_INS_TRIM_LIMIT_DEG) ||
+        fabsf(_trim_rad.z) > radians(HAL_INS_TRIM_LIMIT_DEG)) {
+        hal.console->printf("ERR: Trim over maximum of %.1f degrees!!", float(HAL_INS_TRIM_LIMIT_DEG));
         _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers
     }
 
@@ -1999,11 +2042,10 @@ void AP_InertialSensor::_acal_event_failure()
 /*
     Returns true if new valid trim values are available and passes them to reference vars
 */
-bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
+bool AP_InertialSensor::get_new_trim(Vector3f &trim_rad)
 {
     if (_new_trim) {
-        trim_roll = _trim_roll;
-        trim_pitch = _trim_pitch;
+        trim_rad = _trim_rad;
         _new_trim = false;
         return true;
     }
@@ -2059,6 +2101,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
+#if HAL_GCS_ENABLED
 MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
@@ -2218,6 +2261,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 
     return result;
 }
+#endif
 
 /*
   see if gyro calibration should be performed

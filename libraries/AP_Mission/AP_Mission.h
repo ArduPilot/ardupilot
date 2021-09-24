@@ -577,9 +577,11 @@ public:
 
     /*
       return true if MIS_OPTIONS is set to allow continue of mission
-      logic after a land. If this is false then after a landing is
-      complete the vehicle should disarm and mission logic should stop
+      logic after a land and the next waypoint is a takeoff. If this
+      is false then after a landing is complete the vehicle should 
+      disarm and mission logic should stop
      */
+    bool continue_after_land_check_for_takeoff(void);
     bool continue_after_land(void) const {
         return (_options.get() & AP_MISSION_MASK_CONTINUE_AFTER_LAND) != 0;
     }
@@ -675,6 +677,9 @@ private:
 
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
+
+    /// check if the next nav command is a takeoff, skipping delays
+    bool is_takeoff_next(uint16_t start_index);
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started

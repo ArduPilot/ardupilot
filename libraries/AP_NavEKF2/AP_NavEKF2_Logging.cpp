@@ -169,7 +169,7 @@ void NavEKF2_core::Log_Write_NKF5(uint64_t time_us) const
         normInnov : (uint8_t)(MIN(100*MAX(flowTestRatio[0],flowTestRatio[1]),255)),  // normalised innovation variance ratio for optical flow observations fused by the main nav filter
         FIX : (int16_t)(1000*innovOptFlow[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*innovOptFlow[1]),  // optical flow LOS rate vector innovations from the main nav filter
-        AFI : (int16_t)(1000*norm(auxFlowObsInnov.x,auxFlowObsInnov.y)),  // optical flow LOS rate innovation from terrain offset estimator
+        AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
         HAGL : (int16_t)(100*(terrainState - stateStruct.position.z)),  // height above ground level
         offset : (int16_t)(100*terrainState),  // // estimated vertical position of the terrain relative to the nav filter zero datum
         RI : (int16_t)(100*innovRng),  // range finder innovations

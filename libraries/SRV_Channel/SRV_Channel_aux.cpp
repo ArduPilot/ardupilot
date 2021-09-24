@@ -403,24 +403,6 @@ SRV_Channels::set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV
 }
 
 /*
-  setup safety value for an auxiliary function type to a Limit
- */
-void
-SRV_Channels::set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit)
-{
-    if (!function_assigned(function)) {
-        return;
-    }
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        const SRV_Channel &c = channels[i];
-        if (c.function.get() == function) {
-            uint16_t pwm = c.get_limit_pwm(limit);
-            hal.rcout->set_safety_pwm(1U<<c.ch_num, pwm);
-        }
-    }
-}
-
-/*
   set radio output value for an auxiliary function type to a Limit
  */
 void
@@ -581,12 +563,12 @@ void SRV_Channels::set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t functio
     }
 }
 
-// set the trim for a function channel to min output
-void SRV_Channels::set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function)
+// set the trim for a function channel to min output of the channel honnoring reverse unless ignore_reversed is true
+void SRV_Channels::set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function, bool ignore_reversed)
 {
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
-            channels[i].servo_trim.set(channels[i].get_reversed()?channels[i].servo_max:channels[i].servo_min);
+            channels[i].servo_trim.set((channels[i].get_reversed() && !ignore_reversed)?channels[i].servo_max:channels[i].servo_min);
         }
     }
 }

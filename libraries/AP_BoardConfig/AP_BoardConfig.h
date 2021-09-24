@@ -64,11 +64,14 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // notify user of a fatal startup error related to available sensors. 
-    static void config_error(const char *reason, ...);
+    static void config_error(const char *reason, ...) FMT_PRINTF(1, 2) NORETURN;
+
+    // notify user of a non-fatal startup error related to allocation failures.
+    static void allocation_error(const char *reason, ...) FMT_PRINTF(1, 2) NORETURN;
 
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
-    static bool in_config_error(void) { return _in_sensor_config_error; }
+    static bool in_config_error(void) { return _in_error_loop; }
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
@@ -236,7 +239,10 @@ private:
     void board_setup_sbus(void);
     void board_setup(void);
 
-    static bool _in_sensor_config_error;
+    // common method to throw errors
+    static void throw_error(const char *err_str, const char *fmt, va_list arg) NORETURN;
+
+    static bool _in_error_loop;
 
 #if HAL_HAVE_IMU_HEATER
     struct {

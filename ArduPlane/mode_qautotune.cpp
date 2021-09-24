@@ -1,6 +1,10 @@
 #include "mode.h"
 #include "Plane.h"
 
+#include "qautotune.h"
+
+#if QAUTOTUNE_ENABLED
+
 bool ModeQAutotune::_enter()
 {
 #if QAUTOTUNE_ENABLED
@@ -29,3 +33,4 @@ void ModeQAutotune::_exit()
 #endif
 }
 
+#endif

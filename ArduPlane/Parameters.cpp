@@ -147,13 +147,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
 
-    // @Param: AUTO_FBW_STEER
-    // @DisplayName: Use FBWA steering in AUTO
-    // @Description: When enabled this option gives FBWA navigation and steering in AUTO mode. This can be used to allow manual stabilised piloting with waypoint logic for triggering payloads. With this enabled the pilot has the same control over the plane as in FBWA mode, and the normal AUTO navigation is completely disabled. THIS OPTION IS NOT RECOMMENDED FOR NORMAL USE.
-    // @Values: 0:Disabled,42:Enabled
-    // @User: Advanced
-    GSCALAR(auto_fbw_steer,          "AUTO_FBW_STEER",   0),
-
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
     // @Description: Minimum GPS ground speed in m/s used by the speed check that un-suppresses throttle in auto-takeoff. This can be be used for catapult launches where you want the motor to engage only after the plane leaves the catapult, but it is preferable to use the TKOFF_THR_MINACC and TKOFF_THR_DELAY parameters for catapult launches due to the errors associated with GPS measurements. For hand launches with a pusher prop it is strongly advised that this parameter be set to a value no less than 4 m/s to provide additional protection against premature motor start. Note that the GPS velocity will lag the real velocity by about 0.5 seconds. The ground speed check is delayed by the TKOFF_THR_DELAY parameter.
@@ -836,20 +829,24 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Plane),
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     // @Group: Q_
     // @Path: quadplane.cpp
     GOBJECT(quadplane,           "Q_", QuadPlane),
+#endif
 
     // @Group: TUNE_
     // @Path: tuning.cpp,../libraries/AP_Tuning/AP_Tuning.cpp
     GOBJECT(tuning,           "TUNE_", AP_Tuning_Plane),
-    
+
+#if HAL_QUADPLANE_ENABLED
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     { AP_PARAM_GROUP, "Q_A_", Parameters::k_param_q_attitude_control,
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
-    
+#endif
+
     // @Group: RLL
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
     GOBJECT(rollController,         "RLL",   AP_RollController),
@@ -1403,11 +1400,13 @@ void Plane::load_parameters(void)
 
     // possibly convert elevon and vtail mixers
     convert_mixers();
-    
+
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
         // quadplanes needs a higher loop rate
         AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
     }
+#endif
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 

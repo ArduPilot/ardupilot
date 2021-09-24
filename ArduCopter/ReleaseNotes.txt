@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-rc2 15-Sep-2021
+Changes from 4.1.0-rc1
+1) Enhancements
+    a) Guided mode supports using SCurves and OA for position control
+2) Bug Fixes
+    a) Serial port auto detection of flow control fix
+------------------------------------------------------------------
 Copter 4.1.0-rc1 10-Sep-2021
 Changes from 4.1.0-beta8
 1) Enhancements
@@ -9,15 +16,16 @@ Changes from 4.1.0-beta8
 2) Bug Fixes
     a) Airmode fix if throttle held at zero for long time
     b) Auto mode SCurve jerk time calculation fix (prevents jerk from being set too high)
-    c) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
-    d) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
-    e) IMU semaphore fix to avoid occasional corruption
-    f) QioTek Zealot F427 GPIO pin fix
-    g) Replay/DAL RMGH log message format fix
-    h) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
-    i) Surface tracking fix to reduce lag and overshoot
-    j) WPNAV_SPEED change with ch6 tuning knob feature gets divide-by-zero protection
-    k) WPNAV_SPEED_DN handles negative values
+    c) CRSF frame timeout increased to reduce RC failsafes
+    d) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    e) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    f) IMU semaphore fix to avoid occasional corruption
+    g) QioTek Zealot F427 GPIO pin fix
+    h) Replay/DAL RMGH log message format fix
+    i) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+    j) Surface tracking fix to reduce lag and overshoot
+    k) WPNAV_SPEED change with ch6 tuning knob feature gets divide-by-zero protection
+    l) WPNAV_SPEED_DN handles negative values
 ------------------------------------------------------------------
 Copter 4.1.0-beta8 28-Aug-2021
 Changes from 4.1.0-beta7

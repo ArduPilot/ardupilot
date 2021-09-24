@@ -158,7 +158,7 @@ uint8_t AP_MSP_Telem_Backend::calc_cell_count(const float battery_voltage)
     return floorf((battery_voltage / CELLFULL) + 1);
 }
 
-float AP_MSP_Telem_Backend::get_vspeed_ms(void)
+float AP_MSP_Telem_Backend::get_vspeed_ms(void) const
 {
     {
         // release semaphore as soon as possible
@@ -254,7 +254,7 @@ void AP_MSP_Telem_Backend::update_airspeed(airspeed_state_t &airspeed_state)
     MSP OSDs can display up to MSP_TXT_VISIBLE_CHARS chars (UTF8 characters are supported)
     We display the flight mode string either with or without wind state
 */
-void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wind_enabled)
+void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t size, bool wind_enabled)
 {
 #if OSD_ENABLED
     AP_OSD *osd = AP::osd();
@@ -267,7 +267,7 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
         return;
     }
     // clear
-    memset(flight_mode_str, 0, MSP_TXT_BUFFER_SIZE);
+    memset(flight_mode_str, 0, size);
 
     if (wind_enabled) {
         /*
@@ -282,7 +282,12 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
         }
         bool invert_wind = false;
 #if OSD_ENABLED
-        invert_wind = osd->screen[0].check_option(AP_OSD::OPTION_INVERTED_WIND);
+        AP_MSP *msp = AP::msp();
+        if (msp == nullptr) {
+            return;
+        }
+
+        invert_wind = osd->screen[msp->_msp_status.current_screen].check_option(AP_OSD::OPTION_INVERTED_WIND);
 #endif
         if (invert_wind) {
             v = -v;
@@ -299,9 +304,9 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
             const int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - ahrs.yaw_sensor);
             const int32_t interval = 36000 / ARRAY_SIZE(arrows);
             uint8_t arrow = arrows[((angle + interval / 2) / interval) % ARRAY_SIZE(arrows)];
-            snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
+            snprintf(flight_mode_str, size, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
         } else {
-            snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s ---%s", notify->get_flight_mode_str(), unit);
+            snprintf(flight_mode_str, size, "%s ---%s", notify->get_flight_mode_str(), unit);
         }
     } else {
         /*
@@ -311,17 +316,11 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
                 MANU [S]
                 MANU [SS]
         */
-#ifndef HAL_NO_GCS
-        const bool simple_mode = gcs().simple_input_active();
-        const bool supersimple_mode = gcs().supersimple_input_active();
-        const char* simple_mode_str = simple_mode ? " [S]" : (supersimple_mode ? " [SS]" : "");
-
-        char buffer[MSP_TXT_BUFFER_SIZE] {};
-        // flightmode
-        const uint8_t used = snprintf(buffer, ARRAY_SIZE(buffer), "%s%s", notify->get_flight_mode_str(), simple_mode_str);
-        // left pad
-        uint8_t left_padded_len = MSP_TXT_VISIBLE_CHARS - (MSP_TXT_VISIBLE_CHARS - used)/2;
-        snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%*s", left_padded_len, buffer);
+#if HAL_GCS_ENABLED
+        const char* simple_mode_str = gcs().simple_input_active() ? " [S]" : (gcs().supersimple_input_active() ? " [SS]" : "");
+        snprintf(flight_mode_str, size, "%s%s", notify->get_flight_mode_str(), simple_mode_str);
+#else
+        snprintf(flight_mode_str, size, "%s", notify->get_flight_mode_str());
 #endif
     }
 }
@@ -576,6 +575,44 @@ void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_mess
 #endif
 }
 
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_api_version(sbuf_t *dst)
+{
+    const struct {
+        uint8_t proto;
+        uint8_t major;
+        uint8_t minor;
+    } api_version  {
+        proto : MSP_PROTOCOL_VERSION,
+        major : API_VERSION_MAJOR,
+        minor : API_VERSION_MINOR
+    };
+
+    sbuf_write_data(dst, &api_version, sizeof(api_version));
+    return MSP_RESULT_ACK;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_fc_version(sbuf_t *dst)
+{
+    const struct {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+    } fc_version {
+        major : FC_VERSION_MAJOR,
+        minor : FC_VERSION_MINOR,
+        patch : FC_VERSION_PATCH_LEVEL
+    };
+
+    sbuf_write_data(dst, &fc_version, sizeof(fc_version));
+    return MSP_RESULT_ACK;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_fc_variant(sbuf_t *dst)
+{
+    sbuf_write_data(dst, "ARDU", FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
+    return MSP_RESULT_ACK;
+}
+
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
 {
 #if OSD_ENABLED
@@ -590,7 +627,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_raw_gps(sbuf_t *dst)
     // handle airspeed override
     bool airspeed_en = false;
 #if OSD_ENABLED
-    airspeed_en = osd->screen[0].aspeed.enabled;
+    AP_MSP *msp = AP::msp();
+    if (msp == nullptr) {
+        return MSP_RESULT_ERROR;
+    }
+
+    airspeed_en = osd->screen[msp->_msp_status.current_screen].aspeed.enabled;
 #endif
     if (airspeed_en) {
         airspeed_state_t airspeed_state;
@@ -608,24 +650,23 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_comp_gps(sbuf_t *dst)
     update_home_pos(home_state);
 
     // no need to apply yaw compensation, the DJI air unit will do it for us :-)
-    int32_t home_angle_deg = home_state.home_bearing_cd * 0.01;
+    uint16_t angle_deg = home_state.home_bearing_cd * 0.01;
     if (home_state.home_distance_m < 2) {
         //avoid fast rotating arrow at small distances
-        home_angle_deg = 0;
+        angle_deg = 0;
     }
 
-    struct PACKED {
+    const struct PACKED {
         uint16_t dist_home_m;
         uint16_t home_angle_deg;
         uint8_t toggle_gps;
-    } p;
+    } gps {
+        dist_home_m : uint16_t(constrain_int32(home_state.home_distance_m, 0, 0xFFFF)),
+        home_angle_deg : angle_deg,
+        toggle_gps : 1
+    };
 
-    p.dist_home_m = home_state.home_distance_m;
-    p.home_angle_deg = home_angle_deg;
-    p.toggle_gps = 1;
-
-    sbuf_write_data(dst, &p, sizeof(p));
-
+    sbuf_write_data(dst, &gps, sizeof(gps));
     return MSP_RESULT_ACK;
 }
 
@@ -699,9 +740,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_name(sbuf_t *dst)
             bool wind_en = false;
             char flight_mode_str[MSP_TXT_BUFFER_SIZE];
 #if OSD_ENABLED
-            wind_en = osd->screen[0].wind.enabled;
+            wind_en = osd->screen[msp->_msp_status.current_screen].wind.enabled;
 #endif
-            update_flight_mode_str(flight_mode_str, wind_en);
+            update_flight_mode_str(flight_mode_str, ARRAY_SIZE(flight_mode_str), wind_en);
             sbuf_write_data(dst, flight_mode_str, ARRAY_SIZE(flight_mode_str));  // rendered as up to MSP_TXT_VISIBLE_CHARS chars with UTF8 support
         }
     }
@@ -710,25 +751,26 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_name(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_status(sbuf_t *dst)
 {
-    const uint32_t mode_bitmask = get_osd_flight_mode_bitmask();
-    sbuf_write_u16(dst, 0);                     // task delta time
-    sbuf_write_u16(dst, 0);                     // I2C error count
-    sbuf_write_u16(dst, 0);                     // sensor status
-    sbuf_write_data(dst, &mode_bitmask, 4);     // unconditional part of flags, first 32 bits
-    sbuf_write_u8(dst, 0);
 
-    sbuf_write_u16(dst, constrain_int16(0, 0, 100));  //system load
-    sbuf_write_u16(dst, 0);                     // gyro cycle time
+    struct PACKED {
+        uint16_t task_delta_time;
+        uint16_t i2c_error_count;
+        uint16_t sensor_status;
+        uint32_t flight_mode_flags;
+        uint8_t pid_profile;
+        uint16_t system_load;
+        uint16_t gyro_cycle_time;
+        uint8_t box_mode_flags;
+        uint8_t arming_disable_flags_count;
+        uint32_t arming_disable_flags;
+        uint8_t extra_flags;
+    } status {};
 
-    // Cap BoxModeFlags to 32 bits
-    sbuf_write_u8(dst, 0);
+    status.flight_mode_flags = get_osd_flight_mode_bitmask();
+    status.arming_disable_flags_count = 1;
+    status.arming_disable_flags = !AP::notify().flags.armed;
 
-    // Write arming disable flags
-    sbuf_write_u8(dst, 1);
-    sbuf_write_u32(dst, !AP::notify().flags.armed);
-
-    // Extra flags
-    sbuf_write_u8(dst, 0);
+    sbuf_write_data(dst, &status, sizeof(status));
     return MSP_RESULT_ACK;
 }
 
@@ -744,25 +786,40 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
     if (msp == nullptr) {
         return MSP_RESULT_ERROR;
     }
-    sbuf_write_u8(dst, OSD_FLAGS_OSD_FEATURE);                      // flags
-    sbuf_write_u8(dst, 0);                                          // video system
+    struct PACKED {
+        uint8_t flags;
+        uint8_t video_system;
+        uint8_t units;
+        uint8_t rssi_alarm;
+        uint16_t capacity_alarm;
+        uint8_t unused_0;
+        uint8_t item_count;
+        uint16_t alt_alarm;
+        uint16_t items_position[OSD_ITEM_COUNT];
+        uint8_t stats_items_count;
+        uint16_t stats_items[OSD_STAT_COUNT] ;
+        uint8_t timers_count;
+        uint16_t timers[OSD_TIMER_COUNT];
+        uint16_t enabled_warnings_old;
+        uint8_t warnings_count_new;
+        uint32_t enabled_warnings_new;
+        uint8_t available_profiles;
+        uint8_t selected_profile;
+        uint8_t osd_stick_overlay;
+    } osd_config {};
+
     // Configuration
-    uint8_t units = OSD_UNIT_METRIC;
+    osd_config.units = OSD_UNIT_METRIC;
 #if OSD_ENABLED
-    units = osd->units == AP_OSD::UNITS_METRIC ? OSD_UNIT_METRIC : OSD_UNIT_IMPERIAL;
+    osd_config.units = osd->units == AP_OSD::UNITS_METRIC ? OSD_UNIT_METRIC : OSD_UNIT_IMPERIAL;
 #endif
-
-    sbuf_write_u8(dst, units);                                 // units
     // Alarms
-    sbuf_write_u8(dst, msp->_osd_config.rssi_alarm);                 // rssi alarm
-    sbuf_write_u16(dst, msp->_osd_config.cap_alarm);                 // capacity alarm
+    osd_config.rssi_alarm = msp->_osd_config.rssi_alarm;
+    osd_config.capacity_alarm = msp->_osd_config.cap_alarm;
+    osd_config.alt_alarm = msp->_osd_config.alt_alarm;
     // Reuse old timer alarm (U16) as OSD_ITEM_COUNT
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, OSD_ITEM_COUNT);                             // osd items count
-
-    sbuf_write_u16(dst, msp->_osd_config.alt_alarm);                 // altitude alarm
-
-    // element position and visibility
+    osd_config.item_count = OSD_ITEM_COUNT;
+    // Element position and visibility
     uint16_t pos = 0;   // default is hide this element
     for (uint8_t i = 0; i < OSD_ITEM_COUNT; i++) {
         pos = 0;    // 0 is hide this item
@@ -774,43 +831,27 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
                 }
             }
         }
-        sbuf_write_u16(dst, pos);
+        osd_config.items_position[i] = pos;
     }
-
-    // post flight statistics
-    sbuf_write_u8(dst, OSD_STAT_COUNT);                         // stats items count
-    for (uint8_t i = 0; i < OSD_STAT_COUNT; i++ ) {
-        sbuf_write_u16(dst, 0);                                 // stats not supported
-    }
-
-    // timers
-    sbuf_write_u8(dst, OSD_TIMER_COUNT);                      // timers
-    for (uint8_t i = 0; i < OSD_TIMER_COUNT; i++) {
-        // no timer support
-        sbuf_write_u16(dst, 0);
-    }
-
+    // Post flight statistics
+    osd_config.stats_items_count = OSD_STAT_COUNT;             // stats items count
+    // Timers
+    osd_config.timers_count = OSD_TIMER_COUNT;                      // timers
     // Enabled warnings
     // API < 1.41
     // Send low word first for backwards compatibility
-    sbuf_write_u16(dst, (uint16_t)(msp->_osd_config.enabled_warnings & 0xFFFF)); // Enabled warnings
+    osd_config.enabled_warnings_old = (uint16_t)(msp->_osd_config.enabled_warnings & 0xFFFF);
     // API >= 1.41
     // Send the warnings count and 32bit enabled warnings flags.
     // Add currently active OSD profile (0 indicates OSD profiles not available).
     // Add OSD stick overlay mode (0 indicates OSD stick overlay not available).
-    sbuf_write_u8(dst, OSD_WARNING_COUNT);            // warning count
-    sbuf_write_u32(dst, msp->_osd_config.enabled_warnings);  // enabled warning
-
+    osd_config.warnings_count_new = OSD_WARNING_COUNT;
+    osd_config.enabled_warnings_new = msp->_osd_config.enabled_warnings;
     // If the feature is not available there is only 1 profile and it's always selected
-    sbuf_write_u8(dst, 1);    // available profiles
-    sbuf_write_u8(dst, 1);    // selected profile
+    osd_config.available_profiles = 1;
+    osd_config.selected_profile = 1;
 
-    sbuf_write_u8(dst, 0);    // OSD stick overlay
-
-    // API >= 1.43
-    // Add the camera frame element width/height
-    //sbuf_write_u8(dst, osdConfig()->camera_frame_width);
-    //sbuf_write_u8(dst, osdConfig()->camera_frame_height);
+    sbuf_write_data(dst, &osd_config, sizeof(osd_config));
     return MSP_RESULT_ACK;
 }
 
@@ -819,15 +860,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    struct PACKED {
+    const struct PACKED {
         int16_t roll;
         int16_t pitch;
         int16_t yaw;
-    } attitude;
-
-    attitude.roll = ahrs.roll_sensor * 0.1;     // centidegress to decidegrees
-    attitude.pitch = ahrs.pitch_sensor * 0.1;   // centidegress to decidegrees
-    attitude.yaw = ahrs.yaw_sensor * 0.01;      // centidegress to degrees
+    } attitude {
+        roll : int16_t(ahrs.roll_sensor * 0.1),     // centidegress to decidegrees
+        pitch : int16_t(ahrs.pitch_sensor * 0.1),   // centidegress to decidegrees
+        yaw : int16_t(ahrs.yaw_sensor * 0.01)       // centidegress to degrees
+    };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));
     return MSP_RESULT_ACK;
@@ -838,35 +879,38 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_altitude(sbuf_t *dst)
     home_state_t home_state;
     update_home_pos(home_state);
 
-    sbuf_write_u32(dst, home_state.rel_altitude_cm);                // relative altitude cm
-    sbuf_write_u16(dst, int16_t(get_vspeed_ms() * 100));            // climb rate cm/s
+    const struct PACKED {
+        int32_t rel_altitude_cm;    // relative altitude cm
+        int16_t vspeed_cms;         // climb rate cm/s
+    } altitude {
+        rel_altitude_cm : home_state.rel_altitude_cm,
+        vspeed_cms : int16_t(get_vspeed_ms() * 100)
+    };
+
+    sbuf_write_data(dst, &altitude, sizeof(altitude));
     return MSP_RESULT_ACK;
 }
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_analog(sbuf_t *dst)
 {
-    AP_RSSI* rssi = AP::rssi();
-    if (rssi == nullptr) {
-        return MSP_RESULT_ERROR;
-    }
     battery_state_t battery_state;
     update_battery_state(battery_state);
 
-    struct PACKED {
+    float rssi;
+    const struct PACKED {
         uint8_t voltage_dv;
         uint16_t mah;
         uint16_t rssi;
         int16_t current_ca;
         uint16_t voltage_cv;
-    } battery;
-
-    battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);            // battery voltage V to dV
-    battery.mah = constrain_int32(battery_state.batt_consumed_mah, 0, 0xFFFF);                  // milliamp hours drawn from battery
-    battery.rssi = rssi->enabled() ? rssi->read_receiver_rssi() * 1023 : 0;                     // rssi 0-1 to 0-1023
-    battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);  // current A to cA (0.01 steps, range is -320A to 320A)
-    battery.voltage_cv = constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF);          // battery voltage in 0.01V steps
-
-    sbuf_write_data(dst, &battery, sizeof(battery));
+    } analog {
+        voltage_dv : (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255),                   // battery voltage V to dV
+        mah : (uint16_t)constrain_int32(battery_state.batt_consumed_mah, 0, 0xFFFF),                        // milliamp hours drawn from battery
+        rssi : uint16_t(get_rssi(rssi) ? constrain_float(rssi,0,1) * 1023 : 0),                             // rssi 0-1 to 0-1023)
+        current_ca : (int16_t)constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF),         // current A to cA (0.01 steps, range is -320A to 320A)
+        voltage_cv : (uint16_t)constrain_int32(battery_state.batt_voltage_v * 100,0,0xFFFF)                 // battery voltage in 0.01V steps
+    };
+    sbuf_write_data(dst, &analog, sizeof(analog));
     return MSP_RESULT_ACK;
 }
 
@@ -879,7 +923,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
     battery_state_t battery_state;
     update_battery_state(battery_state);
 
-    struct PACKED {
+    const struct PACKED {
         uint8_t cellcount;
         uint16_t capacity_mah;
         uint8_t voltage_dv;
@@ -887,15 +931,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_battery_state(sbuf_t *dst
         int16_t current_ca;
         uint8_t state;
         uint16_t voltage_cv;
-    } battery;
-
-    battery.cellcount = constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255);    // cell count 0 indicates battery not detected.
-    battery.capacity_mah = battery_state.batt_capacity_mah;                                                                          // in mAh
-    battery.voltage_dv = constrain_int16(battery_state.batt_voltage_v * 10, 0, 255);                                        // battery voltage V to dV
-    battery.mah = MIN(battery_state.batt_consumed_mah, 0xFFFF);                                                             // milliamp hours drawn from battery
-    battery.current_ca = constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF);                              // current A to cA (0.01 steps, range is -320A to 320A)
-    battery.state = battery_state.batt_state;                                                                               // BATTERY: OK=0, CRITICAL=2
-    battery.voltage_cv = constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF);                                    // battery voltage in 0.01V steps
+    } battery {
+        cellcount : (uint8_t)constrain_int16((msp->_cellcount > 0 ? msp->_cellcount : battery_state.batt_cellcount), 0, 255),   // cell count 0 indicates battery not detected.
+        capacity_mah : (uint16_t)battery_state.batt_capacity_mah,                                                               // in mAh
+        voltage_dv : (uint8_t)constrain_int16(battery_state.batt_voltage_v * 10, 0, 255),                                       // battery voltage V to dV
+        mah : (uint16_t)MIN(battery_state.batt_consumed_mah, 0xFFFF),                                                           // milliamp hours drawn from battery
+        current_ca : (int16_t)constrain_int32(battery_state.batt_current_a * 100, -0x8000, 0x7FFF),                             // current A to cA (0.01 steps, range is -320A to 320A)
+        state : (uint8_t)battery_state.batt_state,                                                                              // BATTERY: OK=0, CRITICAL=2
+        voltage_cv : (uint16_t)constrain_int32(battery_state.batt_voltage_v * 100, 0, 0x7FFF)                                   // battery voltage in 0.01V steps
+    };
 
     sbuf_write_data(dst, &battery, sizeof(battery));
     return MSP_RESULT_ACK;
@@ -906,16 +950,24 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_esc_sensor_data(sbuf_t *d
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem& telem = AP::esc_telem();
     if (telem.get_last_telem_data_ms(0)) {
-        const uint8_t num_motors = telem.get_num_active_escs();
-        sbuf_write_u8(dst, num_motors);
-        for (uint8_t i = 0; i < num_motors; i++) {
+        struct PACKED {
+            uint8_t num_motors;
+            struct PACKED {
+                uint8_t temp;
+                uint16_t rpm;
+            } data[ESC_TELEM_MAX_ESCS];
+        } esc_sensor {};
+
+        esc_sensor.num_motors = telem.get_num_active_escs();
+        for (uint8_t i = 0; i < esc_sensor.num_motors; i++) {
             int16_t temp = 0;
             float rpm = 0.0f;
-            telem.get_rpm(i, rpm);
-            telem.get_temperature(i, temp);
-            sbuf_write_u8(dst, uint8_t(temp / 100));        // deg
-            sbuf_write_u16(dst, uint16_t(rpm * 0.1));
+            IGNORE_RETURN(telem.get_rpm(i, rpm));
+            IGNORE_RETURN(telem.get_temperature(i, temp));
+            esc_sensor.data[i].temp = uint8_t(temp * 0.01f);
+            esc_sensor.data[i].rpm = uint16_t(rpm * 0.1f);
         }
+        sbuf_write_data(dst, &esc_sensor, 1 + 3*esc_sensor.num_motors);
     }
 #endif
     return MSP_RESULT_ACK;
@@ -929,7 +981,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
         const time_t time_sec = time_usec / 1000000;
         localtime_tm = *gmtime(&time_sec);
     }
-    struct PACKED {
+    const struct PACKED {
         uint16_t year;
         uint8_t mon;
         uint8_t mday;
@@ -937,15 +989,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
         uint8_t min;
         uint8_t sec;
         uint16_t millis;
-    } rtc;
-
-    rtc.year = localtime_tm.tm_year + 1900;   // tm_year is relative to year 1900
-    rtc.mon = localtime_tm.tm_mon + 1;        // MSP requires [1-12] months
-    rtc.mday = localtime_tm.tm_mday;
-    rtc.hour = localtime_tm.tm_hour;
-    rtc.min = localtime_tm.tm_min;
-    rtc.sec = localtime_tm.tm_sec;
-    rtc.millis = (time_usec / 1000U) % 1000U;
+    } rtc {
+        year : uint16_t(localtime_tm.tm_year + 1900),   // tm_year is relative to year 1900
+        mon : uint8_t(localtime_tm.tm_mon + 1),        // MSP requires [1-12] months
+        mday : uint8_t(localtime_tm.tm_mday),
+        hour : uint8_t(localtime_tm.tm_hour),
+        min : uint8_t(localtime_tm.tm_min),
+        sec : uint8_t(localtime_tm.tm_sec),
+        millis : uint16_t((time_usec / 1000U) % 1000U)
+    };
 
     sbuf_write_data(dst, &rtc, sizeof(rtc));
     return MSP_RESULT_ACK;
@@ -960,18 +1012,19 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     uint16_t values[16] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
-    struct PACKED {
+    const struct PACKED {
         uint16_t a;
         uint16_t e;
         uint16_t r;
         uint16_t t;
-    } rc;
-    // send only 4 channels, MSP order is AERT
-    // note: rcmap channels start at 1
-    rc.a = values[rcmap->roll()-1];       // A
-    rc.e = values[rcmap->pitch()-1];      // E
-    rc.r = values[rcmap->yaw()-1];        // R
-    rc.t = values[rcmap->throttle()-1];   // T
+    } rc {
+        // send only 4 channels, MSP order is AERT
+        // note: rcmap channels start at 1
+        a : values[rcmap->roll()-1],       // A
+        e : values[rcmap->pitch()-1],      // E
+        r : values[rcmap->yaw()-1],        // R
+        t : values[rcmap->throttle()-1]    // T
+    };
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
@@ -981,11 +1034,22 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_board_info(sbuf_t *dst)
 {
     const AP_FWVersion &fwver = AP::fwversion();
 
+    struct PACKED {
+        uint16_t hw_revision;
+        uint8_t aio_flags;
+        uint8_t capabilities;
+        uint8_t fw_string_len;
+    } fw_info {};
+
+#if HAL_WITH_OSD_BITMAP
+    fw_info.aio_flags = 2; // 2 == FC with MAX7456
+#else
+    fw_info.aio_flags = 0; // 0 == FC without MAX7456
+#endif
+    fw_info.fw_string_len = strlen(fwver.fw_string);
+
     sbuf_write_data(dst, "ARDU", BOARD_IDENTIFIER_LENGTH);
-    sbuf_write_u16(dst, 0);
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, 0);
-    sbuf_write_u8(dst, strlen(fwver.fw_string));
+    sbuf_write_data(dst, &fw_info, sizeof(fw_info));
     sbuf_write_data(dst, fwver.fw_string, strlen(fwver.fw_string));
     return MSP_RESULT_ACK;
 }
@@ -1034,6 +1098,7 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
     BIT_CLEAR(osd_hidden_items_bitmask, OSD_AVG_CELL_VOLTAGE);
     BIT_CLEAR(osd_hidden_items_bitmask, OSD_MAIN_BATT_VOLTAGE);
     BIT_CLEAR(osd_hidden_items_bitmask, OSD_RTC_DATETIME);
+    BIT_CLEAR(osd_hidden_items_bitmask, OSD_RSSI_VALUE);
 
     if (msp->_msp_status.flashing_on) {
         // flash satcount when no 3D Fix
@@ -1052,7 +1117,7 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
         // flash airspeed if there's no estimate
         bool airspeed_en = false;
 #if OSD_ENABLED
-        airspeed_en = osd->screen[0].aspeed.enabled;
+        airspeed_en = osd->screen[msp->_msp_status.current_screen].aspeed.enabled;
 #endif
         if (airspeed_en) {
             airspeed_state_t airspeed_state;
@@ -1075,6 +1140,19 @@ void AP_MSP_Telem_Backend::hide_osd_items(void)
         if (!AP::rtc().get_utc_usec(time_usec)) {
             BIT_SET(osd_hidden_items_bitmask, OSD_RTC_DATETIME);
         }
+        // flash rssi if disabled
+        float rssi;
+        if (!get_rssi(rssi)) {
+            BIT_SET(osd_hidden_items_bitmask, OSD_RSSI_VALUE);
+        }
+    }
+    // disable flashing for min/max items
+    if (displaying_stats_screen()) {
+        BIT_CLEAR(osd_hidden_items_bitmask, OSD_HOME_DIST);
+        BIT_CLEAR(osd_hidden_items_bitmask, OSD_GPS_SPEED);
+        BIT_CLEAR(osd_hidden_items_bitmask, OSD_CRAFT_NAME);
+        BIT_CLEAR(osd_hidden_items_bitmask, OSD_MAIN_BATT_VOLTAGE);
+        BIT_CLEAR(osd_hidden_items_bitmask, OSD_RSSI_VALUE);
     }
 }
 
@@ -1117,10 +1195,7 @@ void AP_MSP_Telem_Backend::msp_displayport_draw_screen()
 
 void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string)
 {
-    int len = strlen(string);
-    if (len >= OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH) {
-        len = OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH;
-    }
+    const uint8_t len = strnlen(string, OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH);
 
     struct PACKED {
         uint8_t sub_cmd;
@@ -1141,4 +1216,33 @@ void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row
     msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, &packet, 4 + len, false);
 }
 #endif //HAL_WITH_MSP_DISPLAYPORT
+bool AP_MSP_Telem_Backend::displaying_stats_screen() const
+{
+#if OSD_ENABLED
+    AP_OSD *osd = AP::osd();
+    if (osd == nullptr) {
+        return false;
+    }
+    AP_MSP *msp = AP::msp();
+    if (msp == nullptr) {
+        return false;
+    }
+    return osd->screen[msp->_msp_status.current_screen].stat.enabled;
+#else
+    return false;
+#endif
+}
+
+bool AP_MSP_Telem_Backend::get_rssi(float &rssi) const
+{
+    AP_RSSI* ap_rssi = AP::rssi();
+    if (ap_rssi == nullptr) {
+        return false;
+    }
+    if (!ap_rssi->enabled()) {
+        return false;
+    }
+    rssi =  ap_rssi->read_receiver_rssi(); // range is [0-1]
+    return true;
+}
 #endif //HAL_MSP_ENABLED

@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQLoiter::_enter()
 {
     // initialise loiter
@@ -120,3 +122,4 @@ void ModeQLoiter::run()
     quadplane.run_z_controller();
 }
 
+#endif

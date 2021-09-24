@@ -10,6 +10,7 @@ bool ModeGuided::_enter()
     */
     plane.guided_WP_loc = plane.current_loc;
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.guided_mode_enabled()) {
         /*
           if using Q_GUIDED_MODE then project forward by the stopping distance
@@ -17,6 +18,8 @@ bool ModeGuided::_enter()
         plane.guided_WP_loc.offset_bearing(degrees(plane.ahrs.groundspeed_vector().angle()),
                                            plane.quadplane.stopping_distance());
     }
+#endif
+
     plane.set_guided_WP();
 
     const int32_t targetAngle = plane.g.hm_target_angle;
@@ -35,10 +38,13 @@ bool ModeGuided::_enter()
 
 void ModeGuided::update()
 {
+#if HAL_QUADPLANE_ENABLED
     if (plane.auto_state.vtol_loiter && plane.quadplane.available()) {
         plane.quadplane.guided_update();
-    } else {
-        uint32_t now = AP_HAL::millis();
+        return;
+    }
+#endif
+    uint32_t now = AP_HAL::millis();
 
         int32_t diff = currentBearing - wrap_360_cd(plane.ahrs.yaw_sensor);
         bool shouldRoll = abs(diff) > plane.g.hm_deg_eps;
@@ -76,7 +82,7 @@ void ModeGuided::update()
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();
-    }
+
 }
 
 void ModeGuided::navigate()

@@ -39,7 +39,9 @@
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -474,7 +476,9 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
     }
 
     _is_udp = true;
+#if HAL_GCS_ENABLED
     _packetise = true;
+#endif
     _connected = true;
 }
 
@@ -698,9 +702,11 @@ void UARTDriver::_timer_tick(void)
     if (_packetise) {
         uint16_t n = _writebuffer.available();
         n = MIN(n, max_bytes);
+#if HAL_GCS_ENABLED
         if (n > 0) {
             n = mavlink_packetise(_writebuffer, n);
         }
+#endif
         if (n > 0) {
             // keep as a single UDP packet
             uint8_t tmpbuf[n];

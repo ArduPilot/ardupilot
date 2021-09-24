@@ -138,7 +138,7 @@ public:
         AVOID_ADSB =          38, // enable AP_Avoidance library
         PRECISION_LOITER =    39, // enable precision loiter
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
-        ARMDISARM =           41, // arm or disarm vehicle
+        ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
         INVERTED  =           43, // enable inverted flight
         WINCH_ENABLE =        44, // winch enable/disable
@@ -214,6 +214,8 @@ public:
         CRUISE =             150,  ///CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
+        ARMDISARM =          153, // arm or disarm vehicle
+        ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -291,7 +293,7 @@ protected:
     // virtual function to be overridden my subclasses
     virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
-    virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
+    void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
@@ -424,6 +426,7 @@ public:
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
     RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
+    void convert_options(const RC_Channel::aux_func_t old_option, const RC_Channel::aux_func_t new_option);
 
     void init_aux_all();
     void read_aux_all();
@@ -477,7 +480,7 @@ public:
         return _options & uint32_t(Option::LOG_DATA);
     }
     
-    bool arming_check_throttle() const {
+    virtual bool arming_check_throttle() const {
         return _options & uint32_t(Option::ARMING_CHECK_THROTTLE);
     }
 

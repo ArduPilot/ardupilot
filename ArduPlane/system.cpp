@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#include "qautotune.h"
+
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
@@ -33,6 +35,11 @@ void Plane::init_ardupilot()
     pitchController.convert_pid();
 
     // initialise rc channels including setting mode
+#if HAL_QUADPLANE_ENABLED
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && (quadplane.options & QuadPlane::OPTION_AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
+#else
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
+#endif
     rc().init();
 
     relay.init();
@@ -111,7 +118,9 @@ void Plane::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+#if HAL_QUADPLANE_ENABLED
     quadplane.setup();
+#endif
 
     AP_Param::reload_defaults_file(true);
     
@@ -212,6 +221,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return true;
     }
 
+#if HAL_QUADPLANE_ENABLED
     if (new_mode.is_vtol_mode() && !plane.quadplane.available()) {
         // dont try and switch to a Q mode if quadplane is not enabled and initalized
         gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
@@ -232,7 +242,19 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         }
         return false;
     }
-#endif
+#endif  // !QAUTOTUNE_ENABLED
+
+#else
+    if (new_mode.is_vtol_mode()) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        gcs().send_text(MAV_SEVERITY_INFO,"HAL_QUADPLANE_ENABLED=0");
+        // make sad noise
+        if (reason != ModeReason::INITIALISED) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        return false;
+    }
+#endif  // HAL_QUADPLANE_ENABLED
 
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
@@ -424,9 +446,11 @@ bool Plane::should_log(uint32_t mask)
  */
 int8_t Plane::throttle_percentage(void)
 {
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() && !quadplane.tailsitter.in_vtol_transition()) {
         return quadplane.throttle_percentage();
     }
+#endif
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (!have_reverse_thrust()) {
         return constrain_int16(throttle, 0, 100);
@@ -451,9 +475,11 @@ void Plane::update_dynamic_notch()
     switch (ins.get_gyro_harmonic_notch_tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
+#if HAL_QUADPLANE_ENABLED
             if (quadplane.available()) {
                 ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(quadplane.motors->get_throttle_out() / ref)));
             }
+#endif
             break;
 
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
@@ -477,8 +503,10 @@ void Plane::update_dynamic_notch()
                 }
                 if (num_notches > 0) {
                     ins.update_harmonic_notch_frequencies_hz(num_notches, notches);
+#if HAL_QUADPLANE_ENABLED
                 } else if (quadplane.available()) {    // throttle fallback
                     ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(quadplane.motors->get_throttle_out() / ref)));
+#endif
                 } else {
                     ins.update_harmonic_notch_freq_hz(ref_freq);
                 }

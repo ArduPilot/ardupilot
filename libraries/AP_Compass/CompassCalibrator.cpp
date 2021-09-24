@@ -64,6 +64,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #define FIELD_RADIUS_MIN 150
 #define FIELD_RADIUS_MAX 950

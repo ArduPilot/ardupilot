@@ -345,7 +345,7 @@ singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
 include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
-singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE_ENABLED
 singleton QuadPlane method in_vtol_mode boolean
 singleton QuadPlane method in_assisted_flight boolean
 

@@ -1324,15 +1324,15 @@ void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
     float amps;
     if (!AP::battery().current_amps(amps, instance)) {
-        osd->avg_current_a = 0;
+        osd->_stats.avg_current_a = 0;
     }
     //filter current and display with autoranging for low values
-    osd->avg_current_a= osd->avg_current_a + (amps - osd->avg_current_a) * 0.33;
-    if (osd->avg_current_a < 10.0) {
-        backend->write(x, y, false, "%2.2f%c", osd->avg_current_a, SYMBOL(SYM_AMP));
+    osd->_stats.avg_current_a= osd->_stats.avg_current_a + (amps - osd->_stats.avg_current_a) * 0.33;
+    if (osd->_stats.avg_current_a < 10.0) {
+        backend->write(x, y, false, "%2.2f%c", osd->_stats.avg_current_a, SYMBOL(SYM_AMP));
     }
     else {
-        backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYMBOL(SYM_AMP));
+        backend->write(x, y, false, "%2.1f%c", osd->_stats.avg_current_a, SYMBOL(SYM_AMP));
     }
 }
 
@@ -1807,19 +1807,19 @@ void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
 {
     backend->write(x+2, y, false, "%c%c%c", 0x4d,0x41,0x58);
     backend->write(x, y+1, false, "%c",SYMBOL(SYM_GSPD));
-    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->max_speed_mps), u_icon(SPEED));
-    backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYMBOL(SYM_AMP));
-    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
+    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->_stats.max_speed_mps), u_icon(SPEED));
+    backend->write(x, y+2, false, "%5.1f%c", (double)osd->_stats.max_current_a, SYM_AMP);
+    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->_stats.max_alt_m), u_icon(ALTITUDE));
     backend->write(x, y+4, false, "%c", SYMBOL(SYM_HOME));
-    draw_distance(x+1, y+4, osd->max_dist_m);
+    draw_distance(x+1, y+4, osd->_stats.max_dist_m);
     backend->write(x, y+5, false, "%c", SYMBOL(SYM_DIST));
-    draw_distance(x+1, y+5, osd->last_distance_m);
+    draw_distance(x+1, y+5, osd->_stats.last_distance_m);
 }
 
 void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%c", SYMBOL(SYM_DIST));
-    draw_distance(x+1, y, osd->last_distance_m);
+    draw_distance(x+1, y, osd->_stats.last_distance_m);
 }
 
 void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)

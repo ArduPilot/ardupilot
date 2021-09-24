@@ -101,12 +101,6 @@ public:
     virtual void     read_last_sent(uint16_t* period_us, uint8_t len) { read(period_us, len); };
 
     /*
-      set PWM to send to a set of channels when the safety switch is
-      in the safe state
-     */
-    virtual void     set_safety_pwm(uint32_t chmask, uint16_t period_us) {}
-
-    /*
       set PWM to send to a set of channels if the FMU firmware dies
      */
     virtual void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) {}

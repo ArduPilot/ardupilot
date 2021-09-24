@@ -76,6 +76,9 @@ protected:
         return (_osd.options & option) != 0;
     }
 
+    uint8_t convert_to_decimal_packed_characters(char* buff, uint8_t size);
+    virtual uint8_t format_string_for_osd(char* dst, uint8_t size, bool decimal_packed, const char *fmt, va_list ap);
+
     // load a font from sdcard or ROMFS
     FileData *load_font_data(uint8_t font_num);
 

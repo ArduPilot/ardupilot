@@ -359,7 +359,6 @@ private:
     void update_compass(void);
     void compass_save(void);
     void update_wheel_encoder();
-    void accel_cal_update(void);
     void read_rangefinders(void);
     void read_airspeed();
     void rpm_update(void);

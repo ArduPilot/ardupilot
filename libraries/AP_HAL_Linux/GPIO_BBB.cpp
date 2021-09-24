@@ -17,6 +17,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#define LOW             0
+#define HIGH            1
+
 using namespace Linux;
 
 GPIO_BBB::GPIO_BBB()

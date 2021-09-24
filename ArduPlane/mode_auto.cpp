@@ -3,11 +3,15 @@
 
 bool ModeAuto::_enter()
 {
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
     } else {
         plane.auto_state.vtol_mode = false;
     }
+#else
+    plane.auto_state.vtol_mode = false;
+#endif
     plane.next_WP_loc = plane.prev_WP_loc = plane.current_loc;
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
@@ -32,9 +36,13 @@ void ModeAuto::_exit()
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
 
-        if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
-            !plane.quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))
-        {
+        bool restart = plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND;
+#if HAL_QUADPLANE_ENABLED
+        if (plane.quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id)) {
+            restart = false;
+        }
+#endif
+        if (restart) {
             plane.landing.restart_landing_sequence();
         }
     }
@@ -53,9 +61,14 @@ void ModeAuto::update()
 
     uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
 
+#if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.in_vtol_auto()) {
         plane.quadplane.control_auto();
-    } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
+        return;
+    }
+#endif
+
+    if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();

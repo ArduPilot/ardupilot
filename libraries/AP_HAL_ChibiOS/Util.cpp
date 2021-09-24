@@ -227,11 +227,15 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
-#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
-#else
+#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
+#if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#endif // HAL_GCS_ENABLED
+#endif // ifndef HAL_BOOT_LOADER_BUILD
+
+#ifndef Debug
+#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
 #endif
 
 Util::FlashBootloader Util::flash_bootloader()
@@ -531,7 +535,7 @@ void Util::apply_persistent_params(void) const
         if (eq) {
             *eq = 0;
             const char *pname = p;
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, NULL);
             if (AP_Param::set_default_by_name(pname, value)) {
                 count++;
                 /*

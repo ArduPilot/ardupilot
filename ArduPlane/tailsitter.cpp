@@ -20,6 +20,8 @@
 #include "tailsitter.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
     // @Param: ENABLE
@@ -150,6 +152,13 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
     { "Q_TRANS_DECEL",    6 },
+    { "Q_A_ACCEL_P_MAX",    30000},
+    { "Q_A_ACCEL_R_MAX",    30000},
+    { "Q_P_POSXY_P",        0.5},
+    { "Q_P_VELXY_P",        1.0},
+    { "Q_P_VELXY_I",        0.5},
+    { "Q_P_VELXY_D",        0.25},
+    
 };
 
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
@@ -160,7 +169,7 @@ Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):qu
 void Tailsitter::setup()
 {
     // Set tailsitter enable flag based on old heuristics
-    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tilt.tilt_type != QuadPlane::TILT_TYPE_BICOPTER))) {
+    if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
         enable.set_and_save(1);
     }
 
@@ -275,7 +284,7 @@ void Tailsitter::output(void)
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
                 // remove scaling from surface speed scaling and apply throttle scaling
-                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.tilt_throttle_scaling() / plane.get_speed_scaler());
+                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
                 // thrust vectoring in fixed wing flight
                 float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
                 float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
@@ -365,7 +374,7 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
-    bool tilt_lim = (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX);
+    bool tilt_lim = _is_vectored && ((labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX));
     bool roll_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) == SERVO_MAX;
     bool pitch_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) == SERVO_MAX;
     bool yaw_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) == SERVO_MAX;
@@ -633,3 +642,5 @@ void Tailsitter::speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
+
+#endif  // HAL_QUADPLANE_ENABLED
