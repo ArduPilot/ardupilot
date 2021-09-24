@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_650_800.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 extern const AP_HAL::HAL& hal;
 

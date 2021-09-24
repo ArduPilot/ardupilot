@@ -2,7 +2,7 @@
 
 #include "AP_Generator.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 class AP_Generator_Backend
 {
