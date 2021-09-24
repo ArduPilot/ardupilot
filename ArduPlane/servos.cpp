@@ -913,7 +913,7 @@ void Plane::set_servos(void)
 
     uint8_t override_pct;
     if (g2.ice_control.throttle_override(override_pct)) {
-        // the ICE controller wants to override the throttle for starting
+        // the ICE controller wants to override the throttle for starting, idle, or redline
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
 
