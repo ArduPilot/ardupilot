@@ -14,7 +14,7 @@
  */
 #include "AP_Generator_Backend.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 // Base class consructor
 AP_Generator_Backend::AP_Generator_Backend(AP_Generator& frontend) :

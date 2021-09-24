@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_2400.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 
