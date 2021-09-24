@@ -88,11 +88,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
             }
 
             // set the wind state variances to the measurement uncertainty
-            for (uint8_t index=22; index<=23; index++) {
-                zeroCols(P, 22, 23);
-                zeroRows(P, 22, 23);
-                P[index][index] = trueAirspeedVariance;
-            }
+            zeroCols(P, 22, 23);
+            zeroRows(P, 22, 23);
+            P[22][22] = P[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
@@ -346,12 +344,12 @@ void NavEKF3_core::setAidingMode()
                 posTimeout = true;
                 velTimeout = true;
                 tasTimeout = true;
-                gpsNotAvailable = true;
+                gpsIsInUse = false;
              } else if (posAidLossCritical) {
                 // if the loss of position is critical, declare all sources of position aiding as being timed out
                 posTimeout = true;
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
-                gpsNotAvailable = true;
+                gpsIsInUse = false;
 
             }
             break;

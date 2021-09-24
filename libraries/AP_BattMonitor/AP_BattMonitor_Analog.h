@@ -51,6 +51,13 @@
  # define AP_BATT_VOLTDIVIDER_DEFAULT       11.3f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR)
+ # define AP_BATT_VOLT_PIN                  5
+ # define AP_BATT_CURR_PIN                  4
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       11.0f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  37.8788f
+ # define AP_BATT_CURR_AMP_OFFSET_DEFAULT   0.330f
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE)
  # define AP_BATT_VOLT_PIN                  3
  # define AP_BATT_CURR_PIN                  2
@@ -73,6 +80,11 @@
  # define AP_BATT_CURR_PIN                  -1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+#endif
+
+// This is 0 for the majority of the power modules.
+#ifndef AP_BATT_CURR_AMP_OFFSET_DEFAULT
+ #define AP_BATT_CURR_AMP_OFFSET_DEFAULT 0.0f
 #endif
 
 // Other values normally set directly by mission planner

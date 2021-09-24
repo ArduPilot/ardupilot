@@ -361,8 +361,6 @@ private:
     // landing_detector.cpp
     void update_land_and_crash_detectors();
     void update_land_detector();
-    void set_land_complete(bool b);
-    void set_land_complete_maybe(bool b);
 
     // landing_gear.cpp
     void landinggear_update();
@@ -429,7 +427,6 @@ private:
     bool rangefinder_up_ok();
     void rpm_update();
     void update_optical_flow(void);
-    void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
 

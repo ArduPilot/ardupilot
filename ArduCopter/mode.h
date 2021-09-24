@@ -90,7 +90,7 @@ public:
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
+    float get_pilot_desired_yaw_rate(float yaw_in);
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
@@ -315,7 +315,9 @@ protected:
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
 
-    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+    // get_pilot_desired_angle_rates - transform pilot's normalised roll pitch and yaw input into a desired lean angle rates
+    // inputs are -1 to 1 and the function returns desired angle rates in centi-degrees-per-second
+    void get_pilot_desired_angle_rates(float roll_in, float pitch_in, float yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
 
     float throttle_hover() const override;
 
@@ -895,6 +897,7 @@ public:
     bool set_attitude_target_provides_thrust() const;
     bool stabilizing_pos_xy() const;
     bool stabilizing_vel_xy() const;
+    bool use_wpnav_for_position_control() const;
 
     void limit_clear();
     void limit_init_time_and_pos();
@@ -908,6 +911,7 @@ public:
     enum class SubMode {
         TakeOff,
         WP,
+        Pos,
         PosVelAccel,
         VelAccel,
         Accel,
@@ -943,7 +947,12 @@ private:
         SetAttitudeTarget_ThrustAsThrust = (1U << 3),
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
+        WPNavUsedForPosControl = (1U << 6),
     };
+
+    // wp controller
+    void wp_control_start();
+    void wp_control_run();
 
     void pva_control_start();
     void pos_control_start();
@@ -955,7 +964,6 @@ private:
     void accel_control_run();
     void velaccel_control_run();
     void posvelaccel_control_run();
-    void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
     // controls which controller is run (pos or vel):

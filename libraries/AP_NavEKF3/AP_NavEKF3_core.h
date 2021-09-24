@@ -1053,7 +1053,7 @@ private:
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
-    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     struct Location EKF_origin;     // LLH origin of the NED axis system, internal only
     struct Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
@@ -1091,6 +1091,7 @@ private:
     Vector3F delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
     Vector3F velErrintegral;        // integral of output predictor NED velocity tracking error (m)
     Vector3F posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
+    ftype badImuVelErrIntegral;     // integral of output predictor D velocity tracking error when bad IMU data is detected (m)
     ftype innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system

@@ -1,10 +1,13 @@
 #include "GPIO.h"
 
 #include <AP_HAL/AP_HAL.h>
-#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
-#define GCS_SEND_TEXT(severity, format, args...)
-#else
+
+#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
+#endif
+
+#ifndef GCS_SEND_TEXT
+#define GCS_SEND_TEXT(severity, format, args...)
 #endif
 
 extern const AP_HAL::HAL& hal;

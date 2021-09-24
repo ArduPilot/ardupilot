@@ -140,6 +140,8 @@ public:
         return get_wp_distance_to_destination() < _wp_radius_cm;
     }
 
+    float get_wp_radius_cm() const { return _wp_radius_cm; }
+
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     virtual bool update_wpnav();
 

@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQAcro::_enter()
 {
     quadplane.throttle_wait = false;
@@ -59,3 +61,5 @@ void ModeQAcro::run()
         attitude_control->set_throttle_out(throttle_out, false, 10.0f);
     }
 }
+
+#endif

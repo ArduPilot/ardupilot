@@ -1174,7 +1174,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
             if (breach_dist > deadzone) {
                 // this vector will help us decide how much we have to back away horizontally and vertically
                 const Vector3f margin_vector = vector_to_obstacle.normalized() * breach_dist;
-                const float xy_back_dist = norm(margin_vector.x, margin_vector.y);
+                const float xy_back_dist = margin_vector.xy().length();
                 const float z_back_dist = margin_vector.z;
                 calc_backup_velocity_3D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, xy_back_dist, vector_to_obstacle, kP_z, accel_cmss_z, z_back_dist, min_back_vel_z, max_back_vel_z, dt);
             }

@@ -20,8 +20,6 @@
 #define LED_BLUE        48
 #define LED_SAFETY      61
 #define SAFETY_SWITCH   116
-#define LOW             0
-#define HIGH            1
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \

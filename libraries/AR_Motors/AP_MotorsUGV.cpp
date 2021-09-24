@@ -145,21 +145,10 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
-    }
-
-    if (_disarm_disable_pwm) {
-        // throttle channels output zero pwm (i.e. no signal)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
-    } else {
-        // throttle channels output trim values (because rovers will go backwards if set to MIN)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::TRIM);
+        // ignore servo revese flag, it is used by the relay
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft, true);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight, true);
     }
 
     // stop sending pwm if main CPU fails
@@ -803,20 +792,30 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         const float scaled_steering = steering / 4500.0f;
         const float scaled_lateral = lateral / 100.0f;
 
-        float thr_str_ltr_out;
+        float thr_str_ltr_out[AP_MOTORS_NUM_MOTORS_MAX];
         float thr_str_ltr_max = 1;
-        for (uint8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-            thr_str_ltr_out = (scaled_throttle * _throttle_factor[i]) +
+        for (uint8_t i=0; i<_motors_num; i++) {
+            // Each motor outputs throttle + steering + lateral
+            thr_str_ltr_out[i] = (scaled_throttle * _throttle_factor[i]) +
                               (scaled_steering * _steering_factor[i]) +
                               (scaled_lateral * _lateral_factor[i]);
-            if (fabsf(thr_str_ltr_out) > thr_str_ltr_max) {
-                thr_str_ltr_max = fabsf(thr_str_ltr_out);
+            // record the largest output above 1
+            if (fabsf(thr_str_ltr_out[i]) > thr_str_ltr_max) {
+                thr_str_ltr_max = fabsf(thr_str_ltr_out[i]);
             }
-
-            float output_vectored = (thr_str_ltr_out / thr_str_ltr_max);
-
+        }
+        // Scale all outputs back evenly such that the lagest fits
+        const float output_scale = 1 / thr_str_ltr_max;
+        for (uint8_t i=0; i<_motors_num; i++) {
             // send output for each motor
-            output_throttle(SRV_Channels::get_motor_function(i), 100.0f * output_vectored);
+            output_throttle(SRV_Channels::get_motor_function(i), thr_str_ltr_out[i] * 100.0f * output_scale);
+        }
+        if (output_scale < 1.0) {
+            // cant tell which command resulted in the scale back, so limit all
+            limit.steer_left = true;
+            limit.steer_right = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
         }
     } else {
         // handle disarmed case

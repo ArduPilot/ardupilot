@@ -104,14 +104,14 @@ void Copter::tuning()
         wp_nav->set_speed_xy(tuning_value);
         break;
 
-    // Acro roll pitch gain
-    case TUNING_ACRO_RP_KP:
-        g.acro_rp_p = tuning_value;
+    // Acro roll pitch rates
+    case TUNING_ACRO_RP_RATE:
+        g2.acro_rp_rate = tuning_value;
         break;
 
-    // Acro yaw gain
-    case TUNING_ACRO_YAW_KP:
-        g.acro_yaw_p = tuning_value;
+    // Acro yaw rate
+    case TUNING_ACRO_YAW_RATE:
+        g2.acro_y_rate = tuning_value;
         break;
 
 #if FRAME_CONFIG == HELI_FRAME

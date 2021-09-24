@@ -291,13 +291,18 @@ jump_to_app()
 #elif defined(STM32G4)
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
+#elif defined(STM32L4)
+    rccDisableAPB1R1(~0);
+    rccDisableAPB1R2(~0);
 #else
     rccDisableAPB1(~0);
 #endif
     rccDisableAPB2(~0);
 #if HAL_USE_SERIAL_USB == TRUE    
     rccResetOTG_FS();
+#if defined(rccResetOTG_HS)
     rccResetOTG_HS();
+#endif
 #endif
     
     // disable all interrupt sources

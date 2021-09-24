@@ -339,8 +339,8 @@ public:
         //
         // 220: PI/D Controllers
         //
-        k_param_acro_rp_p = 221,
-        k_param_axis_lock_p,    // remove
+        k_param_acro_rp_p = 221,    // remove
+        k_param_axis_lock_p,        // remove
         k_param_pid_rate_roll,      // remove
         k_param_pid_rate_pitch,     // remove
         k_param_pid_rate_yaw,       // remove
@@ -394,7 +394,7 @@ public:
     AP_Float        pilot_takeoff_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
-    AP_Int16        rtl_altitude;
+    AP_Int32        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
     AP_Int16        rtl_alt_final;
@@ -460,13 +460,17 @@ public:
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro parameters
-    AP_Float                acro_rp_p;
-    AP_Float                acro_yaw_p;
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
+#endif
+
+#if MODE_ACRO_ENABLED == ENABLED
+    // Acro parameters
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
+#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -650,6 +654,15 @@ public:
 #if MODE_GUIDED_ENABLED == ENABLED
     AP_Float guided_timeout;
 #endif
+
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+    // Acro parameters
+    AP_Float                acro_rp_rate;
+    AP_Float                acro_y_rate;
+#endif
+
+    AP_Float                pilot_y_rate;
+    AP_Float                pilot_y_expo;
 };
 
 extern const AP_Param::Info        var_info[];

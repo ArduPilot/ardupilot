@@ -243,14 +243,6 @@ void AP_IOMCU::thread_main(void)
             last_safety_option_check_ms = now;
         }
 
-        // update safety pwm
-        if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
-            uint8_t set = pwm_out.safety_pwm_set;
-            if (write_registers(PAGE_SAFETY_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
-                pwm_out.safety_pwm_sent = set;
-            }
-        }
-
         // update failsafe pwm
         if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
             uint8_t set = pwm_out.failsafe_pwm_set;
@@ -850,25 +842,6 @@ bool AP_IOMCU::check_crc(void)
     AP_ROMFS::free(fw);
     fw = nullptr;
     return false;
-}
-
-/*
-  set the pwm to use when safety is on
- */
-void AP_IOMCU::set_safety_pwm(uint16_t chmask, uint16_t period_us)
-{
-    bool changed = false;
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
-        if (chmask & (1U<<i)) {
-            if (pwm_out.safety_pwm[i] != period_us) {
-                pwm_out.safety_pwm[i] = period_us;
-                changed = true;
-            }
-        }
-    }
-    if (changed) {
-        pwm_out.safety_pwm_set++;
-    }
 }
 
 /*

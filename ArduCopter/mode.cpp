@@ -635,7 +635,7 @@ void Mode::land_run_horizontal_control()
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -674,10 +674,10 @@ void Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
+        const float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        float thrust_vector_max = sinf(radians(attitude_limit_cd / 100.0f)) * GRAVITY_MSS * 100.0f;
-        float thrust_vector_mag = norm(thrust_vector.x, thrust_vector.y);
+        const float thrust_vector_max = sinf(radians(attitude_limit_cd / 100.0f)) * GRAVITY_MSS * 100.0f;
+        const float thrust_vector_mag = thrust_vector.xy().length();
         if (thrust_vector_mag > thrust_vector_max) {
             float ratio = thrust_vector_max / thrust_vector_mag;
             thrust_vector.x *= ratio;
@@ -918,32 +918,15 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
+float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 {
     // throttle failsafe check
     if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
         return 0.0f;
     }
 
-    // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, -0.5f, 1.0f);
-
-    // calculate yaw rate request
-    float yaw_request;
-    if (is_zero(g2.acro_y_expo)) {
-        yaw_request = stick_angle * g.acro_yaw_p;
-    } else {
-        // expo variables
-        float y_in, y_in3, y_out;
-
-        // yaw expo
-        y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
-        y_in3 = y_in*y_in*y_in;
-        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
-        yaw_request = ROLL_PITCH_YAW_INPUT_MAX * y_out * g.acro_yaw_p;
-    }
     // convert pilot input to the desired yaw rate
-    return yaw_request;
+    return g2.pilot_y_rate * 100.0 * input_expo(yaw_in, g2.pilot_y_expo);
 }
 
 // pass-through functions to reduce code churn on conversion;

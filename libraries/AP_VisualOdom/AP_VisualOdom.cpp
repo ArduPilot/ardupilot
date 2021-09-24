@@ -156,6 +156,7 @@ bool AP_VisualOdom::healthy() const
     return _driver->healthy();
 }
 
+#if HAL_GCS_ENABLED
 // consume vision_position_delta mavlink messages
 void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
 {
@@ -169,6 +170,7 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
         _driver->handle_vision_position_delta_msg(msg);
     }
 }
+#endif
 
 // general purpose method to consume position estimate data and send to EKF
 // distances in meters, roll, pitch and yaw are in radians

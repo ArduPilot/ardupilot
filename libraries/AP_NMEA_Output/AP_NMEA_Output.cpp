@@ -138,7 +138,7 @@ void AP_NMEA_Output::update()
 
     // get speed
     Vector2f speed = ahrs.groundspeed_vector();
-    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
 
     // format RMC message

@@ -175,7 +175,7 @@ bool AP_GPS_Backend::should_log() const
 
 void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     const uint8_t instance = state.instance;
     // send status
     switch (instance) {

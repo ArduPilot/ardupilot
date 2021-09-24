@@ -16,7 +16,7 @@
 #include "GCS_MAVLink.h"
 #include "AP_Periph.h"
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU
@@ -75,4 +75,4 @@ MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_lon
 #endif
 }
 
-#endif // #ifndef HAL_NO_GCS
+#endif // #if HAL_GCS_ENABLED

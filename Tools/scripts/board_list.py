@@ -121,4 +121,5 @@ AP_PERIPH_BOARDS = ["f103-GPS",
                     "FreeflyRTK",
                     "HolybroGPS",
                     "BirdCANdy",
+                    "Hitec-Airspeed",
                     ]

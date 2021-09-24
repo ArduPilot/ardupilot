@@ -94,11 +94,6 @@ public:
         uint16_t pwm[IOMCU_MAX_CHANNELS];
     } reg_failsafe_pwm;
 
-    // PAGE_SAFETY_PWM
-    struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
-    } reg_safety_pwm;
-
     // output rates
     struct {
         uint16_t freq;

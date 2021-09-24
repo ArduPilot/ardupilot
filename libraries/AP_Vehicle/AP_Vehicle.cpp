@@ -242,6 +242,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+    SCHED_TASK(accel_cal_update,      10,    100),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -428,6 +429,36 @@ void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 }
 
 #endif
+
+#ifndef HAL_CAL_ALWAYS_REBOOT
+// allow for forced reboot after accelcal
+#define HAL_CAL_ALWAYS_REBOOT 0
+#endif
+
+/*
+  update accel cal
+ */
+void AP_Vehicle::accel_cal_update()
+{
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
+    // check if new trim values, and set them
+    Vector3f trim_rad;
+    if (ins.get_new_trim(trim_rad)) {
+        ahrs.set_trim(trim_rad);
+    }
+
+#if HAL_CAL_ALWAYS_REBOOT
+    if (ins.accel_cal_requires_reboot() &&
+        !hal.util->get_soft_armed()) {
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
+    }
+#endif
+}
+
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

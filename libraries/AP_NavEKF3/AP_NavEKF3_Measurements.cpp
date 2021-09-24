@@ -692,8 +692,8 @@ void NavEKF3_core::readGpsData()
             gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
         }
         storedGPS.push(gpsDataNew);
-        // declare GPS available for use
-        gpsNotAvailable = false;
+        // declare GPS in use
+        gpsIsInUse = true;
     }
 }
 
@@ -789,7 +789,7 @@ void NavEKF3_core::correctEkfOriginHeight()
     } else if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const ftype maxTerrGrad = 0.25;
-        ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
+        ekfOriginHgtVar += sq(maxTerrGrad * stateStruct.velocity.xy().length() * deltaTime);
     } else {
         // by definition our height source is absolute so cannot run this filter
         return;

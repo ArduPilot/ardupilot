@@ -76,7 +76,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
-    || gpsNotAvailable 
+    || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));

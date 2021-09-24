@@ -26,7 +26,7 @@ FLASH_SIZE_KB 2048
 # env AP_PERIPH 1
 
 # define HAL_BUILD_AP_PERIPH
-# define HAL_NO_GCS
+# define HAL_GCS_ENABLED 0
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 128
