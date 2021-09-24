@@ -20,6 +20,9 @@
 #include "AP_Generator_IE_650_800.h"
 #include "AP_Generator_IE_2400.h"
 #include "AP_Generator_RichenPower.h"
+#include "AP_Generator_Loweheiser.h"
+
+const AP_Param::GroupInfo *AP_Generator::backend_var_info;
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -39,6 +42,8 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @Bitmask: 0:Suppress Maintenance-Required Warnings
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
+
+    AP_SUBGROUPVARPTR(_driver_ptr, "", 3, AP_Generator, backend_var_info),
 
     AP_GROUPEND
 };
@@ -82,10 +87,29 @@ void AP_Generator::init()
             _driver_ptr = new AP_Generator_RichenPower(*this);
             break;
 #endif
+
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+        case Type::LOWEHEISER:
+            _driver_ptr = new AP_Generator_Loweheiser(*this);
+            break;
+#endif
     }
 
     if (_driver_ptr != nullptr) {
         _driver_ptr->init();
+        _driver_type = type();
+    }
+
+    // if the backend has some local parameters then make those
+    // available in the tree
+    if (_driver_ptr) {
+        backend_var_info = _driver_ptr->get_var_info();
+        if (backend_var_info) {
+            AP_Param::load_object_from_eeprom(_driver_ptr, backend_var_info);
+
+            // param count could have changed
+            AP_Param::invalidate_count();
+        }
     }
 }
 
@@ -106,8 +130,25 @@ enum AP_Generator::Type AP_Generator::type() const
     return (Type)_type.get();
 }
 
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+AP_Generator_Loweheiser *AP_Generator::get_loweheiser()
+{
+    if (_driver_type != Type::LOWEHEISER) {
+        return nullptr;
+    }
+    return (AP_Generator_Loweheiser*)_driver_ptr;
+}
+#endif
+
+bool AP_Generator::reset_consumed_energy() {
+    if (_driver_ptr == nullptr) {
+        return false;
+    }
+    return _driver_ptr->reset_consumed_energy();
+}
+
 // Pass through to backend
-void AP_Generator::send_generator_status(const GCS_MAVLINK &channel)
+void AP_Generator::send_generator_status(const class GCS_MAVLINK &channel)
 {
     if (_driver_ptr == nullptr) {
         return;
