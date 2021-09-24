@@ -2,7 +2,7 @@
 
 #include "AP_Generator_Backend.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
