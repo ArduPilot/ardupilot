@@ -3630,12 +3630,29 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_landing_target(msg);
         break;
 
+#if HAL_GENERATOR_MAVLINK_ENABLED
+    case MAVLINK_MSG_ID_GENERATOR_STATUS:
+        handle_generator_message(msg);
+        break;
+#endif
+
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
         break;
     }
 
 }
+
+#if HAL_GENERATOR_MAVLINK_ENABLED
+void GCS_MAVLINK::handle_generator_message(const mavlink_message_t &msg)
+{
+    AP_Generator *generator = AP::generator();
+    if (generator == nullptr) {
+        return;
+    }
+    generator->handle_mavlink_msg(*this, msg);
+}
+#endif
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
 {
