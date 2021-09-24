@@ -220,6 +220,12 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         vicon = new SITL::Vicon();
         return vicon;
+    } else if (streq(name, "loweheiser")) {
+        if (loweheiser != nullptr) {
+            AP_HAL::panic("Only one loweheiser at a time");
+        }
+        loweheiser = new SITL::Loweheiser();
+        return loweheiser;
     } else if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
@@ -543,6 +549,9 @@ void SITL_State::_fdm_input_local(void)
                       sitl_model->get_position_relhome(),
                       sitl_model->get_velocity_ef(),
                       attitude);
+    }
+    if (loweheiser != nullptr) {
+        loweheiser->update();
     }
     if (benewake_tf02 != nullptr) {
         benewake_tf02->update(sitl_model->rangefinder_range());

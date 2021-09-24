@@ -28,6 +28,7 @@
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
@@ -215,6 +216,9 @@ private:
 
     // simulated vicon system:
     SITL::Vicon *vicon;
+
+    // simulated loweheuser generator/efi composite
+    SITL::Loweheiser *loweheiser;
 
     // simulated Benewake tf02 rangefinder:
     SITL::RF_Benewake_TF02 *benewake_tf02;
