@@ -1857,15 +1857,14 @@ class AutoTest(ABC):
                 # blank line
                 continue
             if state == state_outside:
-                if ("#define LOG_BASE_STRUCTURES" in line or
+                if ("#define LOG_COMMON_STRUCTURES" in line or
                         re.match("#define LOG_STRUCTURE_FROM_.*", line)):
                     #                    self.progress("Moving inside")
                     state = state_inside
                 continue
             if state == state_inside:
                 if linestate == linestate_none:
-                    allowed_list = ['LOG_SBP_STRUCTURES',
-                                    'LOG_STRUCTURE_FROM_']
+                    allowed_list = ['LOG_STRUCTURE_FROM_']
 
                     allowed = False
                     for a in allowed_list:
