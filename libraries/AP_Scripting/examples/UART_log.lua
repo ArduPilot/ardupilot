@@ -98,7 +98,7 @@ function update()
 
             -- care must be taken when selecting a name, must be less than four characters and not clash with an existing log type
             -- format characters specify the type of variable to be logged, see AP_Logger/README.md
-            -- not all format types are supported by scripting only: i, L, e, f, n, M, B, I, E, and N
+            -- not all format types are supported by scripting only: i, L, e, f, n, M, B, I, E, N, and Z
             -- Note that Lua automatically adds a timestamp in micro seconds
             logger.write('SCR','Sensor1, Sensor2, Sensor3','fff',table.unpack(log_data))
 
