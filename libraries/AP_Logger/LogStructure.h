@@ -506,59 +506,6 @@ struct PACKED log_RPM {
     float rpm2;
 };
 
-struct PACKED log_SbpLLH {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t tow;
-    int32_t  lat;
-    int32_t  lon;
-    int32_t  alt;
-    uint8_t  n_sats;
-    uint8_t  flags;
-};
-
-struct PACKED log_SbpHealth {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t crc_error_counter;
-    uint32_t last_injected_data_ms;
-    uint32_t last_iar_num_hypotheses;
-};
-
-struct PACKED log_SbpRAWH {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t msg_type;
-    uint16_t sender_id;
-    uint8_t index;
-    uint8_t pages;
-    uint8_t msg_len;
-    uint8_t res;
-    uint8_t data[48];
-};
-
-struct PACKED log_SbpRAWM {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t msg_type;
-    uint16_t sender_id;
-    uint8_t index;
-    uint8_t pages;
-    uint8_t msg_len;
-    uint8_t res;
-    uint8_t data[104];
-};
-
-struct PACKED log_SbpEvent {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t wn;
-    uint32_t tow;
-    int32_t ns_residual;
-    uint8_t level;
-    uint8_t quality;
-};
-
 struct PACKED log_Rally {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1237,7 +1184,7 @@ struct PACKED log_PSCD {
 // @Field: AD: Acceleration Down
 
 // messages for all boards
-#define LOG_BASE_STRUCTURES \
+#define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },    \
     { LOG_UNIT_MSG, sizeof(log_Unit), \
@@ -1351,36 +1298,6 @@ LOG_STRUCTURE_FROM_VISUALODOM \
         "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
 LOG_STRUCTURE_FROM_AIS \
 
-// @LoggerMessage: SBPH
-// @Description: Swift Health Data
-// @Field: TimeUS: Time since system startup
-// @Field: CrcError: Number of packet CRC errors on serial connection
-// @Field: LastInject: Timestamp of last raw data injection to GPS
-// @Field: IARhyp: Current number of integer ambiguity hypotheses
-
-// @LoggerMessage: SBRH
-// @Description: Swift Raw Message Data
-// @Field: TimeUS: Time since system startup
-// @Field: msg_flag: Swift message type
-// @Field: 1: Sender ID
-// @Field: 2: index; always 1
-// @Field: 3: pages; number of pages received
-// @Field: 4: msg length; number of bytes received
-// @Field: 5: unused; always zero
-// @Field: 6: data received from device
-
-#define LOG_SBP_STRUCTURES \
-    { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
-      "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" , true }, \
-    { LOG_MSG_SBPRAWH, sizeof(log_SbpRAWH), \
-      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" , true }, \
-    { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
-      "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" , true }, \
-    { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
-      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
-
-#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_SBP_STRUCTURES
-
 // message types 0 to 63 reserved for vehicle specific use
 
 // message types for common messages
@@ -1404,10 +1321,8 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_CAMERA,
     LOG_TERRAIN_MSG,
     LOG_CSRV_MSG,
-    LOG_ARSP_MSG,
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
-    LOG_MAG_MSG,
 
     LOG_IDS_FROM_GPS,
 
@@ -1427,21 +1342,14 @@ enum LogMessages : uint8_t {
     LOG_PIDN_MSG,
     LOG_PIDE_MSG,
     LOG_DSTL_MSG,
+    LOG_MAG_MSG,
+    LOG_ARSP_MSG,
     LOG_RPM_MSG,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
-
-    LOG_MSG_SBPHEALTH,
-    LOG_MSG_SBPLLH,
-    LOG_MSG_SBPBASELINE,
-    LOG_MSG_SBPTRACKING1,
-    LOG_MSG_SBPTRACKING2,
-    LOG_MSG_SBPRAWH,
-    LOG_MSG_SBPRAWM,
-    LOG_MSG_SBPEVENT,
 
     LOG_RALLY_MSG,
     LOG_IDS_FROM_VISUALODOM,
