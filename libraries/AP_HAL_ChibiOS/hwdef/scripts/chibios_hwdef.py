@@ -2376,6 +2376,13 @@ def add_apperiph_defaults(f):
 #ifndef HAL_RALLY_ENABLED
 #define HAL_RALLY_ENABLED 0
 #endif
+
+#ifndef HAL_GPS_MTK_ENABLED
+#define HAL_GPS_MTK_ENABLED 0
+#endif
+#ifndef HAL_GPS_MTK19_ENABLED
+#define HAL_GPS_MTK19_ENABLED 0
+#endif
 ''')
             
 
