@@ -1830,6 +1830,8 @@ class AutoTest(ABC):
             for f in files:
                 if f == 'LogStructure.h':
                     ret.append(os.path.join(root, f))
+                if f == 'LogStructure_SBP.h':
+                    ret.append(os.path.join(root, f))
         return ret
 
     def all_log_format_ids(self):
