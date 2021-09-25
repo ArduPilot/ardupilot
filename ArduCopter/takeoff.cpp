@@ -41,9 +41,7 @@ bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         return false;
     }
 
-    if (!do_user_takeoff_start(takeoff_alt_cm)) {
-        return false;
-    }
+    (void)do_user_takeoff_start(takeoff_alt_cm);
 
     copter.set_auto_armed(true);
     return true;
