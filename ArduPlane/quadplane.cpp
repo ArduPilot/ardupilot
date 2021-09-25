@@ -755,8 +755,6 @@ void QuadPlane::run_esc_calibration(void)
  */
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
-    check_attitude_relax();
-
     bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition();
     bool use_multicopter_eulers = false;
 
@@ -887,19 +885,6 @@ void QuadPlane::relax_attitude_control()
     // disable roll and yaw control for vectored tailsitters
     // if not a vectored tailsitter completely disable attitude control
     attitude_control->relax_attitude_controllers(tailsitter._is_vectored);
-}
-
-/*
-  check if we should relax the attitude controllers
-
-  We relax them whenever we will be using them after a period of
-  inactivity
- */
-void QuadPlane::check_attitude_relax(void)
-{
-    if (AP_HAL::millis() - last_att_control_ms > 100) {
-        relax_attitude_control();
-    }
 }
 
 /*
@@ -1587,7 +1572,6 @@ void QuadPlane::update_transition(void)
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
         plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
-        check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
@@ -1859,12 +1843,6 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
-    const uint32_t now = AP_HAL::millis();
-    if (run_rate_controller) {
-        attitude_control->rate_controller_run();
-        last_att_control_ms = now;
-    }
-
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
@@ -1903,9 +1881,19 @@ void QuadPlane::motors_output(bool run_rate_controller)
         return;
     }
 
+    const uint32_t now = AP_HAL::millis();
+    if (run_rate_controller) {
+        if (now - last_att_control_ms > 100) {
+            // relax if have been inactive
+            relax_attitude_control();
+        }
+        attitude_control->rate_controller_run();
+        last_att_control_ms = now;
+    }
+
     // see if motors should be shut down
     update_throttle_suppression();
-    
+
     motors->output();
 
     // remember when motors were last active for throttle suppression
@@ -2150,8 +2138,6 @@ void QuadPlane::vtol_position_controller(void)
 
     // target speed when we reach position2 threshold
     const float position2_target_speed = 2.0;
-
-    check_attitude_relax();
 
     // horizontal position control
     switch (poscontrol.get_state()) {
@@ -2634,8 +2620,6 @@ void QuadPlane::takeoff_controller(void)
     /*
       for takeoff we use the position controller
     */
-    check_attitude_relax();
-
     setup_target_position();
 
     // set position controller desired velocity and acceleration to zero
@@ -2684,8 +2668,6 @@ void QuadPlane::takeoff_controller(void)
 void QuadPlane::waypoint_controller(void)
 {
     setup_target_position();
-
-    check_attitude_relax();
 
     /*
       this is full copter control of auto flight

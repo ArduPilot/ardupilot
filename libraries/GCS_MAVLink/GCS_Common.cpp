@@ -1705,6 +1705,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 
 void GCS_MAVLINK::send_raw_imu()
 {
+#if HAL_INS_ENABLED
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
 
@@ -1731,10 +1732,12 @@ void GCS_MAVLINK::send_raw_imu()
         mag.z,
         0,  // we use SCALED_IMU and SCALED_IMU2 for other IMUs
         int16_t(ins.get_temperature(0)*100));
+#endif
 }
 
 void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature))
 {
+#if HAL_INS_ENABLED
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
 
@@ -1770,6 +1773,7 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
         mag.y,
         mag.z,
         int16_t(ins.get_temperature(instance)*100));
+#endif
 }
 
 
@@ -2394,6 +2398,7 @@ void GCS_MAVLINK::send_local_position() const
  */
 void GCS_MAVLINK::send_vibration() const
 {
+#if HAL_INS_ENABLED
     const AP_InertialSensor &ins = AP::ins();
 
     Vector3f vibration = ins.get_vibration_levels();
@@ -2407,6 +2412,7 @@ void GCS_MAVLINK::send_vibration() const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
+#endif
 }
 
 void GCS_MAVLINK::send_named_float(const char *name, float value) const
@@ -3209,10 +3215,12 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
+#if HAL_INS_ENABLED
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
         accelcal->handleMessage(msg);
     }
+#endif
 }
 
 // allow override of RC channel values for complete GCS
@@ -3285,11 +3293,15 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
  */
 MAV_RESULT GCS_MAVLINK::handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet)
 {
+#if COMPASS_CAL_ENABLED
     Compass &compass = AP::compass();
     return compass.mag_cal_fixed_yaw(packet.param1,
                                      uint8_t(packet.param2),
                                      packet.param3,
                                      packet.param4);
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
@@ -3653,12 +3665,14 @@ void GCS_MAVLINK::send_banner()
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
 
+#if HAL_INS_ENABLED
     // output any fast sampling status messages
     for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
         if (AP::ins().get_output_banner(i, banner_msg, sizeof(banner_msg))) {
             send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
         }
     }
+#endif
 }
 
 
@@ -3724,12 +3738,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
 
 bool GCS_MAVLINK::calibrate_gyros()
 {
+#if HAL_INS_ENABLED
     AP::ins().init_gyro();
     if (!AP::ins().gyro_calibrated_ok_all()) {
         return false;
     }
     AP::ahrs().reset_gyro_drift();
     return true;
+#else
+    return false;
+#endif
 }
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
@@ -3749,6 +3767,8 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
+    MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
+
     EXPECT_DELAY_MS(30000);
     if (is_equal(packet.param1,1.0f)) {
         if (!calibrate_gyros()) {
@@ -3761,6 +3781,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         return _handle_command_preflight_calibration_baro();
     }
 
+#if HAL_INS_ENABLED
     if (is_equal(packet.param5,1.0f)) {
         // start with gyro calibration
         if (!calibrate_gyros()) {
@@ -3795,12 +3816,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
       compass to be written as valid. This is useful when reloading
       parameters after a full parameter erase
      */
-    MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
     if (is_equal(packet.param5,76.0f)) {
         // force existing accel calibration to be accepted as valid
         AP::ins().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
     }
+#endif
 
     if (is_equal(packet.param2,76.0f)) {
         // force existing compass calibration to be accepted as valid
@@ -3930,7 +3951,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_
 
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
+#if COMPASS_CAL_ENABLED
     return AP::compass().handle_mag_cal_command(packet);
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
@@ -4050,11 +4075,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
 {
+#if HAL_INS_ENABLED
     if (AP::ins().get_acal() == nullptr ||
         !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packet)
@@ -4921,12 +4950,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = try_send_mission_message(id);
         break;
 
+#if COMPASS_CAL_ENABLED
     case MSG_MAG_CAL_PROGRESS:
         ret = AP::compass().send_mag_cal_progress(*this);
         break;
     case MSG_MAG_CAL_REPORT:
         ret = AP::compass().send_mag_cal_report(*this);
         break;
+#endif
 
     case MSG_BATTERY_STATUS:
         send_battery_status();

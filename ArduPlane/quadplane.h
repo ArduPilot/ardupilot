@@ -233,7 +233,6 @@ private:
     // use multicopter rate controller
     void multicopter_attitude_rate_update(float yaw_rate_cds);
 
-    void check_attitude_relax(void);
     float get_pilot_throttle(void);
     void control_hover(void);
     void relax_attitude_control();
