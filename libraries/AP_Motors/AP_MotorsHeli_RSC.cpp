@@ -170,7 +170,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Param: AROT_PCT
     // @DisplayName: Autorotation Throttle Percentage for External Governor
     // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
@@ -179,7 +178,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
-#endif
 
     AP_GROUPEND
 };
