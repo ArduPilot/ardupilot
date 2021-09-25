@@ -70,6 +70,10 @@ extern const AP_HAL::HAL &hal;
 // baudrates to try to detect GPSes with
 const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U, 460800U};
 
+#ifndef MTK_SET_BINARY
+#define MTK_SET_BINARY
+#endif
+
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY_230400 MTK_SET_BINARY SIRF_SET_BINARY;
@@ -700,18 +704,20 @@ void AP_GPS::detect_instance(uint8_t instance)
             }
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
-#ifndef HAL_BUILD_AP_PERIPH
-#if !HAL_MINIMIZE_FEATURES
+#if HAL_GPS_MTK19_ENABLED
         // we drop the MTK drivers when building a small build as they are so rarely used
         // and are surprisingly large
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
             new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
+#endif  // HAL_GPS_MTK19_ENABLED
+#if HAL_GPS_MTK_ENABLED
         } else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                    AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
             new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
         }
-#endif
+#endif  // HAL_GPS_MTK_ENABLED
+#ifndef HAL_BUILD_AP_PERIPH
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
@@ -725,7 +731,7 @@ void AP_GPS::detect_instance(uint8_t instance)
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
             new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
-#endif
+#endif  // HAL_BUILD_AP_PERIPH
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);

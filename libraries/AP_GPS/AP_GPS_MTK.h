@@ -24,6 +24,9 @@
 #pragma once
 
 #include "AP_GPS.h"
+
+#if HAL_GPS_MTK_ENABLED
+
 #include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
@@ -81,3 +84,5 @@ private:
 
     static const char _initialisation_blob[];
 };
+
+#endif  // HAL_GPS_MTK_ENABLED

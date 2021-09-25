@@ -22,6 +22,9 @@
 #pragma once
 
 #include "AP_GPS.h"
+
+#if HAL_GPS_MTK19_ENABLED
+
 #include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
@@ -82,3 +85,5 @@ private:
         diyd_mtk_msg msg;
     } _buffer;
 };
+
+# endif  // HAL_GPS_MTK19_ENABLED

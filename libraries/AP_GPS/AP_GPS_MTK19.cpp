@@ -25,6 +25,8 @@
 #include "AP_GPS_MTK.h"
 #include "AP_GPS_MTK19.h"
 
+#if HAL_GPS_MTK19_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_MTK19::AP_GPS_MTK19(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -232,3 +234,6 @@ restart:
 	}
     return false;
 }
+
+
+#endif  // HAL_GPS_MTK19_ENABLED

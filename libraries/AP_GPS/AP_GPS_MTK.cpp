@@ -20,8 +20,9 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include "AP_GPS.h"
 #include "AP_GPS_MTK.h"
+
+#if HAL_GPS_MTK_ENABLED
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -216,3 +217,5 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
 	}
     return false;
 }
+
+#endif
