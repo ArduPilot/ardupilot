@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "LogStructure_SBP.h"
 
 #define LOG_IDS_FROM_GPS                        \
     LOG_GPS_MSG,                                \
@@ -9,7 +10,8 @@
     LOG_GPS_RAWH_MSG,                           \
     LOG_GPS_RAWS_MSG,                           \
     LOG_GPS_UBX1_MSG,                           \
-    LOG_GPS_UBX2_MSG
+    LOG_GPS_UBX2_MSG,                           \
+    LOG_IDS_FROM_GPS_SBP
 
 
 // @LoggerMessage: GPS
@@ -208,4 +210,5 @@ struct PACKED log_GPS_RAWS {
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
-      "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true },
+      "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
+    LOG_STRUCTURE_FROM_GPS_SBP,
