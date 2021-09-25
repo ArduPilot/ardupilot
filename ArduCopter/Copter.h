@@ -759,9 +759,7 @@ private:
     float get_pilot_desired_rotor_speed() const;
     void heli_update_rotor_speed_targets();
     void heli_update_autorotation();
-#if MODE_AUTOROTATE_ENABLED == ENABLED
     void heli_set_autorotation(bool autotrotation);
-#endif
     void update_collective_low_flag(int16_t throttle_control);
     float get_pilot_desired_throttle() const;
     // inertia.cpp
