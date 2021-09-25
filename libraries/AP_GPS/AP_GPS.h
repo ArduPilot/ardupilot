@@ -79,6 +79,7 @@ class AP_GPS
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_UAVCAN;
+    friend class AP_GPS_UAVCANARD;
 
 public:
     AP_GPS();

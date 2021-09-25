@@ -43,6 +43,8 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include "AP_GPS_UAVCAN.h"
+#elif defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PERIPH_ENABLE_GPS_IN)
+#include "AP_GPS_UAVCANARD.h"
 #endif
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -580,6 +582,10 @@ void AP_GPS::detect_instance(uint8_t instance)
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = AP_GPS_UAVCAN::probe(*this, state[instance]);
+        goto found_gps;
+#elif defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PERIPH_ENABLE_GPS_IN)
+        dstate->auto_detected_baud = false; // specified, not detected
+        new_gps = new AP_GPS_UAVCANARD(*this, state[instance]);
         goto found_gps;
 #endif
         return; // We don't do anything here if UAVCAN is not supported
