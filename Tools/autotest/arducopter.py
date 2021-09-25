@@ -7891,6 +7891,11 @@ class AutoTestCopter(AutoTest):
                  "Change speed (down) during misison",
                  self.WPNAV_SPEED_DN),
 
+
+            Test("GPSTypes",
+                 "Test simulated GPS types",
+                 self.GPSTypes),
+
             Test("LogUpload",
                  "Log upload",
                  self.log_upload),

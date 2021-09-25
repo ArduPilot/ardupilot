@@ -10720,6 +10720,31 @@ switch value'''
         self.reboot_sitl()
         self.delay_sim_time(2)  # we update orientation on a timer
 
+    def GPSTypes(self):
+        '''check each simulated GPS works'''
+        self.reboot_sitl()
+        orig = self.poll_home_position(timeout=60)
+        sim_gps = [
+            # (0, "NONE"),
+            (1, "UBLOX"),
+            #            (2, "MTK"),   # broken
+            (3, "MTK16"),
+            (4, "MTK19"),
+            #            (5, "NMEA"),  # broken
+            (6, "SBP"),
+            #            (7, "SBP2"),  # broken
+            #            (8, "NOVA"),  # broken
+            #            (9, "FILE"),
+        ]
+        for (sim_gps_type, name) in sim_gps:
+            self.start_subtest("Checking GPS type %s" % name)
+            self.set_parameter("SIM_GPS_TYPE", sim_gps_type)
+            self.reboot_sitl()
+            n = self.poll_home_position(timeout=120)
+            distance = self.get_distance_int(orig, n)
+            if distance > 1:
+                raise NotAchievedException("gps type %u misbehaving" % name)
+
     def tests(self):
         return [
             Test("PIDTuning",
