@@ -38,6 +38,10 @@
 #define OSD_PARAM_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+#ifndef HAL_OSD_SIDEBAR_ENABLE
+#define HAL_OSD_SIDEBAR_ENABLE !HAL_MINIMIZE_FEATURES
+#endif
+
 class AP_OSD_Backend;
 class AP_MSP;
 
@@ -223,7 +227,9 @@ private:
     void draw_home(uint8_t x, uint8_t y);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
+#ifdef HAL_OSD_SIDEBAR_ENABLE
     void draw_sidebars(uint8_t x, uint8_t y);
+#endif
     void draw_compass(uint8_t x, uint8_t y);
     void draw_wind(uint8_t x, uint8_t y);
     void draw_aspeed(uint8_t x, uint8_t y);

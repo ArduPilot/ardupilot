@@ -715,7 +715,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
-    
+
+#if HAL_OSD_SIDEBAR_ENABLE || HAL_MSP_ENABLED
     // @Param: SIDEBARS_EN
     // @DisplayName: SIDEBARS_EN
     // @Description: Displays artificial horizon side bars
@@ -731,6 +732,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
 #if HAL_MSP_ENABLED
     // @Param: CRSSHAIR_EN
@@ -1399,7 +1401,6 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 //Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
-    x = 2; //messages get rendered across a whole row. User param x is ignored.
     AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
@@ -1443,9 +1444,6 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 
                 //trim invisible part
                 buffer[end_position] = 0;
-            } else if (len < message_visible_width) {
-                //for short messages, start writing closer to the middle to center the text
-                x += (message_visible_width - len)/2;
             }
 
             backend->write(x, y, buffer + start_position);
@@ -1589,6 +1587,8 @@ void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
 }
 
+#if HAL_OSD_SIDEBAR_ENABLE
+
 void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
 {
     const int8_t total_sectors = 18;
@@ -1651,6 +1651,8 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
         alt_symbol_index = (alt_symbol_index + 12) % 18;
     }
 }
+
+#endif // HAL_OSD_SIDEBAR_ENABLE
 
 //Thanks to betaflight/inav for simple and clean compass visual design
 void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
@@ -2151,7 +2153,10 @@ void AP_OSD_Screen::draw(void)
     //Note: draw order should be optimized.
     //Big and less important items should be drawn first,
     //so they will not overwrite more important ones.
+#if HAL_OSD_SIDEBAR_ENABLE
     DRAW_SETTING(sidebars);
+#endif
+
     DRAW_SETTING(message);
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
