@@ -38,3 +38,14 @@ uint32_t RF_NMEA::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t bufle
     ret += snprintf((char*)&buffer[ret], buflen-ret, "*%02X\r\n", checksum);
     return ret;
 }
+
+uint32_t RF_NMEA::packet_for_temperature(float temperature, uint8_t *buffer, uint8_t buflen)
+{
+    ssize_t ret = snprintf((char*)buffer, buflen, "$SMMTW,%f %f", temperature, 0.01);
+    uint8_t checksum = 0;
+    for (uint8_t i=1; i<ret; i++) { // 1 because the initial $ is skipped
+        checksum ^= buffer[i];
+    }
+    ret += snprintf((char*)&buffer[ret], buflen-ret, "*%02X\r\n", checksum);
+    return ret;
+}
