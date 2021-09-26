@@ -109,8 +109,12 @@ public:
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_AUTO  = 1,
         GPS_TYPE_UBLOX = 2,
+#if HAL_GPS_MTK_ENABLED
         GPS_TYPE_MTK   = 3,
+#endif
+#if HAL_GPS_MTK19_ENABLED
         GPS_TYPE_MTK19 = 4,
+#endif
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
@@ -626,8 +630,12 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
+#if HAL_GPS_MTK_ENABLED
         struct MTK_detect_state mtk_detect_state;
+#endif
+#if HAL_GPS_MTK19_ENABLED
         struct MTK19_detect_state mtk19_detect_state;
+#endif
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;

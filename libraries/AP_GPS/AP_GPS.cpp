@@ -26,8 +26,12 @@
 #include "AP_GPS_NOVA.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
+#if HAL_GPS_MTK_ENABLED
 #include "AP_GPS_MTK.h"
+#endif
+#if HAL_GPS_MTK19_ENABLED
 #include "AP_GPS_MTK19.h"
+#endif
 #include "AP_GPS_NMEA.h"
 #include "AP_GPS_SBF.h"
 #include "AP_GPS_SBP.h"
