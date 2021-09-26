@@ -178,7 +178,9 @@ AP_ADSB::AP_ADSB()
     _singleton = this;
 
 #ifdef ADSB_STATIC_CALLSIGN
-    strncpy(&out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, sizeof(out_state.cfg.callsign));
+    memset(&out_state.cfg.callsign, 0, sizeof(out_state.cfg.callsign));
+    strncpy(out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, MIN(MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1, strlen(ADSB_STATIC_CALLSIGN)));
+    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
 #endif
 }
 
@@ -365,15 +367,15 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = now;
 
     } else if ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) &&
-                (out_state.cfg.ICAO_id == 0 || out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param)) {
+                ((out_state.cfg.ICAO_id == 0 && !_my_loc.is_zero()) || (out_state.cfg.ICAO_id_param != 0 && out_state.cfg.ICAO_id_param_prev != out_state.cfg.ICAO_id_param))) {
 
         // if param changed then regenerate. This allows the param to be changed back to zero to trigger a re-generate
-        if (out_state.cfg.ICAO_id_param == 0) {
-            out_state.cfg.ICAO_id = genICAO(_my_loc);
-        } else {
+        if (out_state.cfg.ICAO_id_param != 0) {
             out_state.cfg.ICAO_id = out_state.cfg.ICAO_id_param;
+            out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
+        } else { // if (!_my_loc.is_zero()) {
+            out_state.cfg.ICAO_id = genICAO(_my_loc);
         }
-        out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
 
 #ifndef ADSB_STATIC_CALLSIGN
         if (!out_state.cfg.was_set_externally) {
