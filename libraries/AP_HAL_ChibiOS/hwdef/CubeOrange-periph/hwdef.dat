@@ -27,6 +27,11 @@ define HAL_PERIPH_ENABLE_NOTIFY
 
 define HAL_INS_ENABLED 1
 define HAL_PERIPH_ENABLE_GPS_IN
+define HAL_PERIPH_ENABLE_ADSB
+
+# ADS-B Out via Ping200X
+define HAL_PERIPH_ENABLE_ADSB_OUT
+define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0 # requires heavy build
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
