@@ -391,7 +391,7 @@ void Plane::set_servos_manual_passthrough(void)
 void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const
 {
     // return if not enabled, or setup incorrectly
-    if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
+    if (!is_positive(g2.fwd_thr_batt_voltage_min) || g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max) {
         return;
     }
 
