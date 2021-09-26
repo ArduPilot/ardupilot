@@ -10751,6 +10751,24 @@ switch value'''
             if distance > 1:
                 raise NotAchievedException("gps type %u misbehaving" % name)
 
+    def MAVFTP(self):
+        '''ensure MAVProxy can do MAVFTP to ardupilot'''
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list\n")
+            mavproxy.expect(" D libraries")  # one line from the ftp list output
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is not None:
+            raise ex
+
     def tests(self):
         return [
             Test("PIDTuning",

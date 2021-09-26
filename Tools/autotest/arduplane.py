@@ -3298,6 +3298,10 @@ class AutoTestPlane(AutoTest):
              "Switch to DCM mid-flight",
              self.ForcedDCM),
 
+            ("MAVFTP",
+             "Test MAVProxy can talk FTP to autopilot",
+             self.MAVFTP),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
