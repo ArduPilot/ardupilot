@@ -3297,6 +3297,12 @@ class AutoTest(ABC):
     def load_sample_mission(self):
         self.load_mission(self.sample_mission_filename())
 
+    def load_generic_mission(self, filename, strict=True):
+        return self.load_mission_from_filepath(
+            os.path.join(testdir, "Generic_Missions"),
+            filename,
+            strict=strict)
+
     def load_mission(self, filename, strict=True):
         return self.load_mission_from_filepath(
             self.current_test_name_directory,
