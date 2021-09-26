@@ -148,12 +148,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if defined(HAL_PERIPH_ENABLE_GPS) || defined(HAL_PERIPH_ENABLE_GPS_IN)
     // GPS driver
     // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
+#endif
 
+#ifdef HAL_PERIPH_ENABLE_GPS
     // @Param: GPS_PORT
     // @DisplayName: GPS Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to GPS.

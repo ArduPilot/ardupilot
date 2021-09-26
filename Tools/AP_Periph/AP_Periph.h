@@ -17,6 +17,12 @@
 #include "hwing_esc.h"
 #include <AP_CANManager/AP_CANManager.h>
 
+#include <uavcan/equipment/gnss/Fix.h>
+#include <uavcan/equipment/gnss/Fix2.h>
+#include <uavcan/equipment/gnss/Auxiliary.h>
+#include <ardupilot/gnss/Heading.h>
+#include <ardupilot/gnss/Status.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANIface.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -107,11 +113,27 @@ public:
 
     AP_SerialManager serial_manager;
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if defined(HAL_PERIPH_ENABLE_GPS) || defined(HAL_PERIPH_ENABLE_GPS_IN)
     AP_GPS gps;
-#if HAL_NUM_CAN_IFACES >= 2
-    int8_t gps_mb_can_port = -1;
-#endif
+    #ifdef HAL_PERIPH_ENABLE_GPS
+        #if HAL_NUM_CAN_IFACES >= 2
+        int8_t gps_mb_can_port = -1;
+        #endif
+        uint32_t gps_last_update_ms;
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_GPS_IN
+    struct AP_Periph_GPS_In {
+        void uavcan_handle_fix(const uavcan_equipment_gnss_Fix &msg);
+        void uavcan_handle_fix2(const uavcan_equipment_gnss_Fix2 &msg);
+        void uavcan_handle_aux(const uavcan_equipment_gnss_Auxiliary &msg);
+        void uavcan_handle_heading(const ardupilot_gnss_Heading &msg);
+        void uavcan_handle_status(const ardupilot_gnss_Status &msg);
+        bool seen_fix2;
+        bool seen_aux;
+        bool seen_message;
+        AP_GPS::GPS_State interim_state;
+    } gps_in;
+    #endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
@@ -228,7 +250,6 @@ public:
     static const AP_Param::Info var_info[];
 
     uint32_t last_mag_update_ms;
-    uint32_t last_gps_update_ms;
     uint32_t last_baro_update_ms;
     uint32_t last_airspeed_update_ms;
 
