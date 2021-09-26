@@ -155,17 +155,9 @@ void AP_Logger_File::periodic_1Hz()
             // we register the IO timer callback
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AP_Logger: stuck thread (%s)", last_io_operation);
         }
-        if (io_thread_warning_decimation_counter++ > 57) {
+        if (io_thread_warning_decimation_counter++ > 30) {
             io_thread_warning_decimation_counter = 0;
         }
-        // If you try to close the file here then it will almost
-        // certainly block.  Since this is the main thread, this is
-        // likely to cause a crash.
-
-        // semaphore_write_fd not taken here as if the io thread is
-        // dead it may not release lock...
-        _write_fd = -1;
-        _initialised = false;
     }
 
     if (rate_limiter == nullptr && _front._params.file_ratemax > 0) {
@@ -899,13 +891,13 @@ void AP_Logger_File::flush(void)
 
 void AP_Logger_File::io_timer(void)
 {
+    uint32_t tnow = AP_HAL::millis();
+    _io_timer_heartbeat = tnow;
+
     if (start_new_log_pending) {
         start_new_log();
         start_new_log_pending = false;
     }
-
-    uint32_t tnow = AP_HAL::millis();
-    _io_timer_heartbeat = tnow;
 
     if (erase.log_num != 0) {
         // continue erase
@@ -1016,12 +1008,12 @@ void AP_Logger_File::io_timer(void)
 bool AP_Logger_File::io_thread_alive() const
 {
     if (!hal.scheduler->is_system_initialized()) {
-        // the system has long pauses during initialisation
-        return false;
+        // the system has long pauses during initialisation, assume still OK
+        return true;
     }
     // if the io thread hasn't had a heartbeat in a while then it is
-    // considered dead. Three seconds is enough time for a sdcard remount.
-    uint32_t timeout_ms = 3000;
+    // considered dead. Five seconds is enough time for a sdcard remount.
+    uint32_t timeout_ms = 5000;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
     // the IO thread is working with hardware - writing to a physical
     // disk.  Unfortunately these hardware devices do not obey our
