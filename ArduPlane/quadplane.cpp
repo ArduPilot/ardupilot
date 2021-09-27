@@ -2802,11 +2802,10 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
         return false;
     }
     attitude_control->reset_rate_controller_I_terms();
-    
+
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
-    poscontrol.set_state(QPOS_POSITION1);
 
     // initialise the position controller
     pos_control->init_xy_controller();
