@@ -1,5 +1,17 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-rc3 27-Sep-2021
+Changes from 4.1.0-rc2
+1) Enhancements
+    a) Guided mode supports yaw control during takeoff
+    b) MatekH743 supports icm42605 IMU 
+2) Bug Fixes
+    a) CSRF fix to avoid intermittent loss of telemetry
+    b) EKF3 fix to init of wind speed variance
+    c) Guided mode fix to yaw change after takeoff completes
+    d) Guided mode uses GUID_OPTIONS to ignore pilot yaw during takeoff
+    e) Lightware SF45b jumpy readings fixed by using lower update rate
+------------------------------------------------------------------
 Copter 4.1.0-rc2 15-Sep-2021
 Changes from 4.1.0-rc1
 1) Enhancements
