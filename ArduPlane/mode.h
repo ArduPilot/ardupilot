@@ -287,6 +287,9 @@ public:
     const char *name() const override { return "Loiter to QLAND"; }
     const char *name4() const override { return "L2QL"; }
 
+    // handle a guided target request from GCS
+    bool handle_guided_request(Location target_loc) override;
+
 protected:
     bool _enter() override;
 
