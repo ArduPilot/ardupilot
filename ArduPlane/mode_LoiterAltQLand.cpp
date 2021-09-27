@@ -37,9 +37,29 @@ void ModeLoiterAltQLand::navigate()
 void ModeLoiterAltQLand::switch_qland()
 {
     ftype dist;
-    if (!plane.current_loc.get_alt_distance(plane.next_WP_loc, dist) || is_negative(dist)) {
+    if ((!plane.current_loc.get_alt_distance(plane.next_WP_loc, dist) || is_negative(dist)) && plane.nav_controller->reached_loiter_target()) {
         plane.set_mode(plane.mode_qland, ModeReason::LOITER_ALT_REACHED_QLAND);
     }
+}
+
+bool ModeLoiterAltQLand::handle_guided_request(Location target_loc)
+{
+    plane.guided_WP_loc = target_loc;
+
+    // setup altitude
+#if AP_TERRAIN_AVAILABLE
+    if (plane.terrain_enabled_in_mode(Mode::Number::QLAND)) {
+        plane.guided_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        plane.guided_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_HOME);
+    }
+#else
+    plane.guided_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_HOME);
+#endif
+
+    plane.set_guided_WP();
+
+    return true;
 }
 
 #endif
