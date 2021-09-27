@@ -203,13 +203,20 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {
 #if HAL_QUADPLANE_ENABLED
+        case Failsafe_Action_Loiter_alt_QLand:
+            if (quadplane.available()) {
+                plane.set_mode(mode_lotier_qland, ModeReason::BATTERY_FAILSAFE);
+                break;
+            }
+            FALLTHROUGH;
+
         case Failsafe_Action_QLand:
             if (quadplane.available()) {
                 plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
-#endif
+#endif // HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Land: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED
