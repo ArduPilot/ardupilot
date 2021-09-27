@@ -29,6 +29,7 @@ import antennatracker
 import quadplane
 import balancebot
 import sailboat
+import helicopter
 
 import examples
 from pysim import util
@@ -383,7 +384,7 @@ tester_class_map = {
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
-    "test.Helicopter": arducopter.AutoTestHeli,
+    "test.Helicopter": helicopter.AutoTestHelicopter,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
