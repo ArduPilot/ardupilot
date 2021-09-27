@@ -28,6 +28,14 @@
 #define STM32_LSEDRV                (3U << 3U)
 #endif
 
+// option for half clock speed for lower MCU temperature
+#ifndef HAL_MCU_HALF_CLOCK
+#define HAL_MCU_HALF_CLOCK 0
+#elif HAL_MCU_HALF_CLOCK == 1
+#undef HAL_EXPECTED_SYSCLOCK
+#define HAL_EXPECTED_SYSCLOCK 200000000
+#endif
+
 /*
  * STM32H7xx drivers configuration.
  * The following settings override the default settings present in
@@ -205,6 +213,11 @@
 #define STM32_PLL3_DIVQ_VALUE               5
 #define STM32_PLL3_DIVR_VALUE               8
 #endif // clock selection
+
+#if HAL_MCU_HALF_CLOCK
+#undef STM32_PLL1_DIVP_VALUE
+#define STM32_PLL1_DIVP_VALUE 4
+#endif
 
 /*
  * PLLs static settings.
