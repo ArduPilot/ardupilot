@@ -217,22 +217,39 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     return ret;
 }
 
+/*
+  this pulses the clock for n bytes. The data is ignored.
+ */
 bool SPIDevice::clock_pulse(uint32_t n)
 {
+    msg_t msg;
+    const uint32_t timeout_us = 20000U + n * 32U;
     if (!cs_forced) {
         //special mode to init sdcard without cs asserted
         bus.semaphore.take_blocking();
         acquire_bus(true, true);
-        spiIgnore(spi_devices[device_desc.bus].driver, n);
+        osalSysLock();
+        spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+        osalSysUnlock();
+        if (msg == MSG_TIMEOUT) {
+            spiAbort(spi_devices[device_desc.bus].driver);
+        }
         acquire_bus(false, true);
         bus.semaphore.give();
     } else {
         if (!bus.semaphore.check_owner()) {
             return false;
         }
-        spiIgnore(spi_devices[device_desc.bus].driver, n);
+        osalSysLock();
+        spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+        osalSysUnlock();
+        if (msg == MSG_TIMEOUT) {
+            spiAbort(spi_devices[device_desc.bus].driver);
+        }
     }
-    return true;
+    return msg != MSG_TIMEOUT;
 }
 
 uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
