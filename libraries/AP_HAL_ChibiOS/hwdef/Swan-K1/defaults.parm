@@ -40,8 +40,11 @@ ARSPD_FBW_MAX  25
 ARSPD_FBW_MIN  8
 ARSPD_RATIO    1.9
 LIM_ROLL_CD    4000
+
+# the HWing can become unstable at high speeds. Limit pitch angle
+# to prevent overspeed
 LIM_PITCH_MAX  4500
-LIM_PITCH_MIN  -3000
+LIM_PITCH_MIN  -1500
 
 # setup left 3-pos switch for QHOVER, QLOITER and FBWA
 FLTMODE1 18
@@ -102,6 +105,9 @@ Q_M_THST_HOVER        0.45
 Q_M_BAT_VOLT_MAX   16.8
 Q_M_BAT_VOLT_MIN   13.2
 Q_TAILSIT_RAT_VT 30
+Q_A_RATE_Y_MAX 100
+Q_A_RATE_R_MAX 100
+Q_A_RATE_P_MAX 100
 
 Q_WP_ACCEL 250
 Q_WP_ACCEL_Z 300
