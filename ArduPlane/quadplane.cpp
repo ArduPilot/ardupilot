@@ -2091,6 +2091,17 @@ void QuadPlane::poscontrol_init_approach(void)
 }
 
 /*
+  log the QPOS message
+ */
+void QuadPlane::log_QPOS(void)
+{
+    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist", "QBf",
+                                AP_HAL::micros64(),
+                                poscontrol.get_state(),
+                                plane.auto_state.wp_distance);
+}
+
+/*
   change position control state
  */
 void QuadPlane::PosControlState::set_state(enum position_control_state s)
@@ -2116,6 +2127,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             // reset throttle descent control
             qp.thr_ctrl_land = false;
         }
+        qp.log_QPOS();
     }
     state = s;
     last_state_change_ms = AP_HAL::millis();
@@ -2551,10 +2563,7 @@ void QuadPlane::vtol_position_controller(void)
     if (now_ms - poscontrol.last_log_ms >= 40) {
         // log poscontrol at 25Hz
         poscontrol.last_log_ms = now_ms;
-        AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist", "QBf",
-                           AP_HAL::micros64(),
-                           poscontrol.get_state(),
-                           plane.auto_state.wp_distance);
+        log_QPOS();
     }
 }
 
