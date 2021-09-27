@@ -42,3 +42,18 @@ void ModeGuided::navigate()
     // Zero indicates to use WP_LOITER_RAD
     plane.update_loiter(0);
 }
+
+bool ModeGuided::handle_guided_request(Location target_loc)
+{
+    plane.guided_WP_loc = target_loc;
+
+    // add home alt if needed
+    if (plane.guided_WP_loc.relative_alt) {
+        plane.guided_WP_loc.alt += plane.home.alt;
+        plane.guided_WP_loc.relative_alt = 0;
+    }
+
+    plane.set_guided_WP();
+
+    return true;
+}
