@@ -1129,7 +1129,10 @@ private:
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_QLand     = 4,
 #endif
-        Failsafe_Action_Parachute = 5
+        Failsafe_Action_Parachute = 5,
+#if HAL_QUADPLANE_ENABLED
+        Failsafe_Action_Loiter_alt_QLand = 6,
+#endif
     };
 
     // list of priorities, highest priority first
