@@ -118,7 +118,10 @@ public:
 
     // method for mode specific target altitude profiles
     virtual bool update_target_altitude() { return false; }
-    
+
+    // handle a guided target request from GCS
+    virtual bool handle_guided_request(Location target_loc) { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -219,6 +222,9 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    // handle a guided target request from GCS
+    bool handle_guided_request(Location target_loc) override;
 
 protected:
 

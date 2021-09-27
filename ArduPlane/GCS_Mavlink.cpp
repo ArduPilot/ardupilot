@@ -604,20 +604,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
  */
 bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    if (plane.control_mode != &plane.mode_guided) {
-        // only accept position updates when in GUIDED mode
-        return false;
-    }
-    plane.guided_WP_loc = cmd.content.location;
-    
-    // add home alt if needed
-    if (plane.guided_WP_loc.relative_alt) {
-        plane.guided_WP_loc.alt += plane.home.alt;
-        plane.guided_WP_loc.relative_alt = 0;
-    }
-
-    plane.set_guided_WP();
-    return true;
+    return plane.control_mode->handle_guided_request(cmd.content.location);
 }
 
 /*
