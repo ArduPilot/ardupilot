@@ -31,6 +31,7 @@
 #define APM_BUILD_AP_DAL_Standalone 10
 #define APM_BUILD_AP_Bootloader  11
 #define APM_BUILD_Blimp      12
+#define APM_BUILD_Heli       13
 
 #ifndef APM_BUILD_DIRECTORY
 #define APM_BUILD_DIRECTORY APM_BUILD_UNKNOWN
@@ -41,3 +42,8 @@
   build systems that don't support it
  */
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
+
+/*
+  Copter and heli share a lot of code. This macro makes it easier to check for both
+*/
+#define APM_BUILD_COPTER_OR_HELI() (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Heli))
