@@ -134,6 +134,7 @@ AP_HW_BirdCANdy                      1044
 AP_HW_SKYSTARSF405DJI                1045
 AP_HW_HITEC_AIRSPEED                 1046
 AP_HW_NucleoL496                     1047
+AP_HW_KakuteH7                       1048
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
