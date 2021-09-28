@@ -611,7 +611,7 @@ Vector3f AP_AHRS_DCM::ra_delayed(uint8_t instance, const Vector3f &ra)
  */
 bool AP_AHRS_DCM::should_correct_centrifugal() const
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Blimp)
+#if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Blimp)
     return hal.util->get_soft_armed();
 #endif
 
