@@ -163,9 +163,6 @@ private:
     void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance);
     void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
     void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
-    void _update_gps_mtk(const struct gps_data *d, uint8_t instance);
-    void _update_gps_mtk16(const struct gps_data *d, uint8_t instance);
-    void _update_gps_mtk19(const struct gps_data *d, uint8_t instance);
     uint8_t _gps_nmea_checksum(const char *s);
     void _gps_nmea_printf(uint8_t instance, const char *fmt, ...);
     void _update_gps_nmea(const struct gps_data *d, uint8_t instance);
