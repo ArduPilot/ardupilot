@@ -52,7 +52,7 @@
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+  #if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -441,7 +441,7 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
         // check compass learning is on or offsets have been set
-#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter) && !APM_BUILD_TYPE(APM_BUILD_Blimp)
+#if !APM_BUILD_COPTER_OR_HELI() && !APM_BUILD_TYPE(APM_BUILD_Blimp)
         // check compass offsets have been set if learning is off
         // copter and blimp always require configured compasses
         if (!_compass.learn_offsets_enabled())
@@ -947,7 +947,7 @@ bool AP_Arming::can_checks(bool report)
             switch (AP::can().get_driver_type(i)) {
                 case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                     AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                     if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "KDECAN: %s", fail_msg);
@@ -1222,7 +1222,7 @@ bool AP_Arming::generator_checks(bool display_failure) const
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if !APM_BUILD_COPTER_OR_HELI()
     if (armed || require == (uint8_t)Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
