@@ -10754,9 +10754,6 @@ switch value'''
         sim_gps = [
             # (0, "NONE"),
             (1, "UBLOX"),
-            #            (2, "MTK"),   # broken
-            (3, "MTK16"),
-            (4, "MTK19"),
             #            (5, "NMEA"),  # broken
             (6, "SBP"),
             #            (7, "SBP2"),  # broken
