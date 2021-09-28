@@ -1,3 +1,56 @@
+Release 4.1.0 stable 28th September 2021
+----------------------------------------
+
+This is the first stable release of the 4.1.x series for fixed
+wing. This is a major release, with a lot of changes over the 4.0.9
+release.
+
+The changes since the last beta (4.1.0beta8) are:
+
+ - fixed a wind speed initialiation bug that affects planes with no
+   airspeed sensor and no compass
+ - added support for icm42605 on MatekH743
+
+There have in total been over 9000 patches applied since the last
+major release (the 4.0.9 stable release), so listing all of them is
+not practical, but a few of the highlights are:
+
+ - USB log download speeds improved on F7 and H7 based boards
+ - Large improvements in EKF stability and support for very long distance flights
+ - new boards QiotekZealotF427, MatekF765-SE, MambaF405v2, KakuteF4Mini, FlywooF745, FlywooF745Nano, BeastF7 and BeastH7
+ - massive improvements to lua scripting, with greatly expanded API
+ - External AHRS support (VectorNav)
+ - support for EKF3 affinity for better sensor redundancy
+ - big improvements to GPS moving baseline yaw support
+ - new fixed wing PID system
+ - major fixed wing autotune update giving much better tuning
+ - added MAN_EXPO_* parameters for input expos in MANUAL, TRAINING and ACRO modes
+ - added ONESHOT_MASK for oneshot output on control surfaces
+ - dupport for bi-directional dshot on many boards
+ - added PiccoloCAN servo support
+ - new quadplane landing approach system, with airbraking
+ - greatly improved tiltrotor support with much improved transition stability
+ - new unified ESC telemetry system for CAN, DShot and serial ESC telemetry
+ - temperature calibration for IMUs, including factory calibration support
+ - much improved notch filtering support, including double-notch and realtime FFT based notch filtering
+ - much faster parameter download and mission upload/down using MAVFTP
+ - switched to new EKF3 as default state estimator with many new features
+
+The 4.1.0 includes contributions from over 240 developers and changes
+over 300 thousand lines of code across 2800 files. It has been a
+mammoth effort from the whole community to bring this new version of
+ArduPilot which pushes the best open flight controller to whole new
+levels. A big thank you to everyone who contributed, includding the
+developers, testers and documenters. You should all be very proud of
+this release!
+
+We are already starting work on 4.2.x, and will of course continue to
+do point releases to the 4.1.x series to keep everyone up to date with
+the latest fixes.
+
+Happy flying, and thanks for choosing ArduPilot!
+
+
 Release 4.1.0beta8 15th September 2021
 --------------------------------------
 
