@@ -138,6 +138,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     // get initial alt for WP_NAVALT_MIN
     auto_takeoff_set_start_alt();
 
+    // record takeoff has not completed
+    takeoff_complete = false;
+
     return true;
 }
 
@@ -629,14 +632,12 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
 void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
-    if (wp_nav->reached_wp_destination()) {
+    if (!takeoff_complete && wp_nav->reached_wp_destination()) {
+        takeoff_complete = true;
 #if LANDING_GEAR_ENABLED == ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
 #endif
-
-        // change to velocity control after take off.
-        init(true);
     }
 }
 

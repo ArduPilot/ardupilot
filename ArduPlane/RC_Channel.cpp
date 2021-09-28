@@ -163,6 +163,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::ARMDISARM_AIRMODE:
 #endif
+    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
         break;
 
     case AUX_FUNC::SOARING:
@@ -346,6 +347,13 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         }
         break;
 #endif
+
+    case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.trim_radio();
+        }
+        break;
+
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

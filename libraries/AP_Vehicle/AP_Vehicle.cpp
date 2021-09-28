@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(frsky_parameters, "FRSKY_", 6, AP_Vehicle, AP_Frsky_Parameters),
 #endif
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     // @Group: GEN_
     // @Path: ../AP_Generator/AP_Generator.cpp
     AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
@@ -171,7 +171,7 @@ void AP_Vehicle::setup()
 
     send_watchdog_reset_statustext();
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     generator.init();
 #endif
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
@@ -236,7 +236,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_WITH_ESC_TELEM
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                   10,  50),
 #endif
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50),
 #endif
 #if OSD_ENABLED

@@ -96,7 +96,7 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, extra_args=[]):
+def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, sitl_32bit=False, extra_args=[]):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
@@ -108,6 +108,8 @@ def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage
         cmd_configure.append('--ekf-single')
     if postype_single:
         cmd_configure.append('--postype-single')
+    if sitl_32bit:
+        cmd_configure.append('--sitl-32bit')
     if j is not None:
         cmd_configure.extend(['-j', str(j)])
     pieces = [shlex.split(x) for x in extra_args]
@@ -121,8 +123,7 @@ def waf_clean():
 
 
 def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, coverage=False,
-               ekf_single=False, postype_single=False, extra_configure_args=[]):
-    """Build desktop SITL."""
+               ekf_single=False, postype_single=False, sitl_32bit=False, extra_configure_args=[]):
 
     # first configure
     if configure:
@@ -133,6 +134,7 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
+                      sitl_32bit=sitl_32bit,
                       extra_args=extra_configure_args)
 
     # then clean
@@ -148,7 +150,7 @@ def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, conf
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
-                   ekf_single=False, postype_single=False,
+                   ekf_single=False, postype_single=False, sitl_32bit=False,
                    extra_configure_args=[]):
     # first configure
     if configure:
@@ -159,6 +161,7 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
+                      sitl_32bit=sitl_32bit,
                       extra_args=extra_configure_args)
 
     # then clean
@@ -184,7 +187,8 @@ def build_replay(board, j=None, debug=False, clean=False):
     return True
 
 def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
-                ekf_single=False, postype_single=False, extra_configure_args=[]):
+                ekf_single=False, postype_single=False, sitl_32bit=False, extra_configure_args=[]):
+
     # first configure
     if configure:
         waf_configure(board,
@@ -194,6 +198,7 @@ def build_tests(board, j=None, debug=False, clean=False, configure=True, math_ch
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
+                      sitl_32bit=sitl_32bit,
                       extra_args=extra_configure_args)
 
     # then clean

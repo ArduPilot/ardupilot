@@ -766,6 +766,11 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
 
 bool Plane::terrain_enabled_in_current_mode() const
 {
+    return terrain_enabled_in_mode(control_mode->mode_number());
+}
+
+bool Plane::terrain_enabled_in_mode(Mode::Number num) const
+{
     // Global enable
     if ((g.terrain_follow.get() & int32_t(terrain_bitmask::ALL)) != 0) {
         return true;
@@ -773,7 +778,7 @@ bool Plane::terrain_enabled_in_current_mode() const
 
     // Specific enable
     for (const struct TerrainLookupTable entry : Terrain_lookup) {
-        if (entry.mode_num == control_mode->mode_number()) {
+        if (entry.mode_num == num) {
             if ((g.terrain_follow.get() & int32_t(entry.bitmask)) != 0) {
                 return true;
             }

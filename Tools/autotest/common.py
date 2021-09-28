@@ -1220,7 +1220,8 @@ class AutoTest(ABC):
                  force_ahrs_type=None,
                  replay=False,
                  sup_binaries=[],
-                 reset_after_every_test=False):
+                 reset_after_every_test=False,
+                 sitl_32bit=False):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1244,6 +1245,7 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        self.sitl_32bit = sitl_32bit
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -1828,6 +1830,8 @@ class AutoTest(ABC):
             for f in files:
                 if f == 'LogStructure.h':
                     ret.append(os.path.join(root, f))
+                if f == 'LogStructure_SBP.h':
+                    ret.append(os.path.join(root, f))
         return ret
 
     def all_log_format_ids(self):
@@ -1855,15 +1859,14 @@ class AutoTest(ABC):
                 # blank line
                 continue
             if state == state_outside:
-                if ("#define LOG_BASE_STRUCTURES" in line or
+                if ("#define LOG_COMMON_STRUCTURES" in line or
                         re.match("#define LOG_STRUCTURE_FROM_.*", line)):
                     #                    self.progress("Moving inside")
                     state = state_inside
                 continue
             if state == state_inside:
                 if linestate == linestate_none:
-                    allowed_list = ['LOG_SBP_STRUCTURES',
-                                    'LOG_STRUCTURE_FROM_']
+                    allowed_list = ['LOG_STRUCTURE_FROM_']
 
                     allowed = False
                     for a in allowed_list:
@@ -3296,6 +3299,12 @@ class AutoTest(ABC):
 
     def load_sample_mission(self):
         self.load_mission(self.sample_mission_filename())
+
+    def load_generic_mission(self, filename, strict=True):
+        return self.load_mission_from_filepath(
+            os.path.join(testdir, "Generic_Missions"),
+            filename,
+            strict=strict)
 
     def load_mission(self, filename, strict=True):
         return self.load_mission_from_filepath(
@@ -10719,6 +10728,49 @@ switch value'''
         self.context_pop()
         self.reboot_sitl()
         self.delay_sim_time(2)  # we update orientation on a timer
+
+    def GPSTypes(self):
+        '''check each simulated GPS works'''
+        self.reboot_sitl()
+        orig = self.poll_home_position(timeout=60)
+        sim_gps = [
+            # (0, "NONE"),
+            (1, "UBLOX"),
+            #            (2, "MTK"),   # broken
+            (3, "MTK16"),
+            (4, "MTK19"),
+            #            (5, "NMEA"),  # broken
+            (6, "SBP"),
+            #            (7, "SBP2"),  # broken
+            #            (8, "NOVA"),  # broken
+            #            (9, "FILE"),
+        ]
+        for (sim_gps_type, name) in sim_gps:
+            self.start_subtest("Checking GPS type %s" % name)
+            self.set_parameter("SIM_GPS_TYPE", sim_gps_type)
+            self.reboot_sitl()
+            n = self.poll_home_position(timeout=120)
+            distance = self.get_distance_int(orig, n)
+            if distance > 1:
+                raise NotAchievedException("gps type %u misbehaving" % name)
+
+    def MAVFTP(self):
+        '''ensure MAVProxy can do MAVFTP to ardupilot'''
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list\n")
+            mavproxy.expect(" D libraries")  # one line from the ftp list output
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is not None:
+            raise ex
 
     def tests(self):
         return [

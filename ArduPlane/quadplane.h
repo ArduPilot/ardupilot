@@ -52,6 +52,7 @@ public:
     friend class ModeQStabilize;
     friend class ModeQAutotune;
     friend class ModeQAcro;
+    friend class ModeLoiterAltQLand;
     
     QuadPlane(AP_AHRS &_ahrs);
 
@@ -249,6 +250,7 @@ private:
     bool should_relax(void);
     void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
+    void log_QPOS(void);
     float landing_descent_rate_cms(float height_above_ground);
     
     // setup correct aux channels for frame class

@@ -211,6 +211,12 @@ void GCS_MAVLINK::send_mcu_status(void)
 }
 #endif
 
+// returns the battery remaining percentage if valid, -1 otherwise
+int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
+    uint8_t percentage;
+    return AP::battery().capacity_remaining_pct(percentage, instance) ? MIN(percentage, INT8_MAX) : -1;
+}
+
 void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
@@ -256,6 +262,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     }
 
     float current, consumed_mah, consumed_wh;
+    const int8_t percentage = battery_remaining_pct(instance);
+    
     if (battery.current_amps(current, instance)) {
          current = constrain_float(current * 100,-INT16_MAX,INT16_MAX);
     } else {
@@ -269,8 +277,6 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     } else {
         consumed_wh = -1;
     }
-    uint8_t _percentage = -1;
-    const int8_t percentage = battery.capacity_remaining_pct(_percentage, instance) ? _percentage : -1;
 
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
@@ -873,6 +879,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_EFI_STATUS,            MSG_EFI_STATUS},
         { MAVLINK_MSG_ID_GENERATOR_STATUS,      MSG_GENERATOR_STATUS},
         { MAVLINK_MSG_ID_WINCH_STATUS,          MSG_WINCH_STATUS},
+        { MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4,  MSG_ESC_TELEMETRY},
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
@@ -4671,10 +4678,10 @@ void GCS_MAVLINK::send_sys_status()
 
     const AP_BattMonitor &battery = AP::battery();
     float battery_current;
-    uint8_t battery_remaining = -1;
+    int8_t battery_remaining = -1;
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        IGNORE_RETURN(battery.capacity_remaining_pct(battery_remaining));
+        battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;
@@ -4836,7 +4843,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 
 void GCS_MAVLINK::send_generator_status() const
 {
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
     AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return;
@@ -5574,10 +5581,10 @@ void GCS_MAVLINK::send_high_latency() const
 
     const AP_BattMonitor &battery = AP::battery();
     float battery_current;
-    uint8_t battery_remaining = -1;
+    int8_t battery_remaining = -1;
 
     if (battery.healthy() && battery.current_amps(battery_current)) {
-        IGNORE_RETURN(battery.capacity_remaining_pct(battery_remaining));
+        battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
         battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
     } else {
         battery_current = -1;

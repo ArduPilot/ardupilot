@@ -29,6 +29,7 @@ import antennatracker
 import quadplane
 import balancebot
 import sailboat
+import helicopter
 
 import examples
 from pysim import util
@@ -143,7 +144,7 @@ def build_examples(**kwargs):
 
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux']:
+    for target in ['linux', 'sitl']:
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -163,20 +164,22 @@ def run_unit_test(test):
 
 def run_unit_tests():
     """Run all unit tests files."""
-    binary_dir = util.reltopdir(os.path.join('build',
-                                             'linux',
-                                             'tests',
-                                             ))
-    tests = glob.glob("%s/*" % binary_dir)
     success = True
     fail_list = []
-    for test in tests:
-        try:
-            run_unit_test(test)
-        except subprocess.CalledProcessError:
-            print("Exception running (%s)" % test)
-            fail_list.append(os.path.basename(test))
-            success = False
+    for target in ['linux', 'sitl']:
+        binary_dir = util.reltopdir(os.path.join('build',
+                                                 target,
+                                                 'tests',
+                                                 ))
+        tests = glob.glob("%s/*" % binary_dir)
+        for test in tests:
+            try:
+                run_unit_test(test)
+            except subprocess.CalledProcessError:
+                print("Exception running (%s)" % test)
+                fail_list.append(target + '/' + os.path.basename(test))
+                success = False
+
     print("Failing tests:")
     for failure in fail_list:
         print("  %s" % failure)
@@ -383,7 +386,7 @@ tester_class_map = {
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
-    "test.Helicopter": arducopter.AutoTestHeli,
+    "test.Helicopter": helicopter.AutoTestHelicopter,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
@@ -434,6 +437,7 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
+        "sitl_32bit" : opts.sitl_32bit,
     }
 
     if opts.Werror:
@@ -937,6 +941,11 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
+    group_build.add_option("--sitl-32bit",
+                           default=False,
+                           action='store_true',
+                           dest="sitl_32bit",
+                           help="compile sitl using 32-bit")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")

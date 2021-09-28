@@ -244,6 +244,16 @@ ftype Location::get_distance(const struct Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
+// return the altitude difference in meters taking into account alt frame.
+bool Location::get_alt_distance(const struct Location &loc2, ftype &distance) const
+{
+    int32_t alt1, alt2;
+    if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
+        return false;
+    }
+    distance = (alt1 - alt2) * 0.01;
+    return true;
+}
 
 /*
   return the distance in meters in North/East plane as a N/E vector
@@ -255,7 +265,7 @@ Vector2f Location::get_distance_NE(const Location &loc2) const
                     diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2));
 }
 
-// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2, NOT CONSIDERING ALT FRAME!
 Vector3f Location::get_distance_NED(const Location &loc2) const
 {
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,

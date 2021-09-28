@@ -609,8 +609,21 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
 
+        if cfg.options.sitl_32bit:
+            # 32bit platform flags
+            env.CXXFLAGS += [
+                '-m32',
+            ]
+            env.CFLAGS += [
+                '-m32',
+            ]
+            env.LDFLAGS += [
+                '-m32',
+            ]
+
     def get_name(self):
         return self.__class__.__name__
+
 
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):

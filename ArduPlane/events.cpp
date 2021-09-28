@@ -68,6 +68,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::LOITER_ALT_QLAND:
+#endif
     case Mode::Number::THERMAL:
         if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
             failsafe.saved_mode_number = control_mode->mode_number();
@@ -112,6 +115,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::TRAINING:
     case Mode::Number::CIRCLE:
     case Mode::Number::LOITER:
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::LOITER_ALT_QLAND:
+#endif
     case Mode::Number::THERMAL:
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
@@ -197,13 +203,20 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {
 #if HAL_QUADPLANE_ENABLED
+        case Failsafe_Action_Loiter_alt_QLand:
+            if (quadplane.available()) {
+                plane.set_mode(mode_lotier_qland, ModeReason::BATTERY_FAILSAFE);
+                break;
+            }
+            FALLTHROUGH;
+
         case Failsafe_Action_QLand:
             if (quadplane.available()) {
                 plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
-#endif
+#endif // HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Land: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED

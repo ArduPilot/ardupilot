@@ -166,6 +166,7 @@ public:
     friend class ModeQAutotune;
     friend class ModeTakeoff;
     friend class ModeThermal;
+    friend class ModeLoiterAltQLand;
 
     Plane(void);
 
@@ -299,6 +300,10 @@ private:
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
+#if HAL_QUADPLANE_ENABLED
+    ModeLoiterAltQLand mode_lotier_qland;
+#endif
+
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
@@ -797,6 +802,7 @@ private:
     bool terrain_disabled();
 #if AP_TERRAIN_AVAILABLE
     bool terrain_enabled_in_current_mode() const;
+    bool terrain_enabled_in_mode(Mode::Number num) const;
     enum class terrain_bitmask {
         ALL             = 1U << 0,
         FLY_BY_WIRE_B   = 1U << 1,
@@ -1023,7 +1029,7 @@ private:
     void read_radio();
     int16_t rudder_input(void);
     void control_failsafe();
-    bool trim_radio();
+    void trim_radio();
     bool rc_throttle_value_ok(void) const;
     bool rc_failsafe_active(void) const;
 
@@ -1123,7 +1129,10 @@ private:
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_QLand     = 4,
 #endif
-        Failsafe_Action_Parachute = 5
+        Failsafe_Action_Parachute = 5,
+#if HAL_QUADPLANE_ENABLED
+        Failsafe_Action_Loiter_alt_QLand = 6,
+#endif
     };
 
     // list of priorities, highest priority first

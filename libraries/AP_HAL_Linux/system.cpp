@@ -21,7 +21,7 @@ void init()
     clock_gettime(CLOCK_MONOTONIC, &state.start_time);
 }
 
-void panic(const char *errormsg, ...)
+void WEAK panic(const char *errormsg, ...)
 {
     va_list ap;
 
