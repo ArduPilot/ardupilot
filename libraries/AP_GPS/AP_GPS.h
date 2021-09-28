@@ -67,8 +67,6 @@ class AP_GPS
     friend class AP_GPS_MAV;
     friend class AP_GPS_MSP;
     friend class AP_GPS_ExternalAHRS;
-    friend class AP_GPS_MTK;
-    friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
     friend class AP_GPS_PX4;
@@ -101,8 +99,8 @@ public:
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_AUTO  = 1,
         GPS_TYPE_UBLOX = 2,
-        GPS_TYPE_MTK   = 3,
-        GPS_TYPE_MTK19 = 4,
+        // GPS_TYPE_MTK   = 3,  // driver removed
+        // GPS_TYPE_MTK19 = 4,  // driver removed
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
@@ -618,8 +616,6 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-        struct MTK_detect_state mtk_detect_state;
-        struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
