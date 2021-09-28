@@ -43,7 +43,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     HAL_STORAGE_SIZE}
 };
 
-#elif !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#elif !APM_BUILD_COPTER_OR_HELI()
 
 /*
   layout for fixed wing and rovers
