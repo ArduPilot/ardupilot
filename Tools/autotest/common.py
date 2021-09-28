@@ -64,9 +64,14 @@ class MAV_POS_TARGET_TYPE_MASK(enum.IntEnum):
 
 
 MAV_FRAMES_TO_TEST = [
+    # mavutil.mavlink.MAV_FRAME_GLOBAL,                 # Disable equivalent frames
     mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,    # Disable equivalent frames
     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-    mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,     # Disable equivalent frames
+
+    # FIXME Disable Terrain frame testing as there is a large differential between Vehicle terrain data and MAVProxy Module
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
 ]
 
 # get location of scripts
