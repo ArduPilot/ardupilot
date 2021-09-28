@@ -131,9 +131,6 @@ public:
     enum GPSType {
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_UBLOX = 1,
-        GPS_TYPE_MTK   = 2,
-        GPS_TYPE_MTK16 = 3,
-        GPS_TYPE_MTK19 = 4,
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SBP   = 6,
         GPS_TYPE_FILE  = 7,
