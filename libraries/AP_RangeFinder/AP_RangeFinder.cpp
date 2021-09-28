@@ -225,7 +225,7 @@ void RangeFinder::convert_params(void) {
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     info.old_key = 71;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#elif APM_BUILD_COPTER_OR_HELI()
     info.old_key = 53;
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
     info.old_key = 35;
