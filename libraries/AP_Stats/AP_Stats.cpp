@@ -52,6 +52,7 @@ AP_Stats::AP_Stats(void)
 
 void AP_Stats::copy_variables_from_parameters()
 {
+    bootcount = params.bootcount;
     flttime = params.flttime;
     runtime = params.runtime;
     reset = params.reset;
@@ -69,6 +70,7 @@ void AP_Stats::init()
 
 void AP_Stats::flush()
 {
+    params.bootcount.set_and_save_ifchanged(bootcount);
     params.flttime.set_and_save_ifchanged(flttime);
     params.runtime.set_and_save_ifchanged(runtime);
 }

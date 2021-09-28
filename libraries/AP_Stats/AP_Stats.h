@@ -15,6 +15,7 @@ public:
     // these variables are periodically written into the actual
     // parameters.  If you add a variable here, make sure to update
     // init() to set initial values from the parameters!
+    uint32_t bootcount; // total boot count
     uint32_t flttime; // seconds in flight (or driving)
     uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
     uint32_t reset;   // last time AP_Stats parameters were reset (in seconds since AP_Stats Jan 1st 2016)
