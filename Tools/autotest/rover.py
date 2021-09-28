@@ -1137,51 +1137,42 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
-    def test_camera_mission_items(self):
-        self.context_push()
-        ex = None
-        try:
-            self.load_mission("rover-camera-mission.txt")
-            self.wait_ready_to_arm()
-            self.change_mode("AUTO")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            prev_cf = None
-            while True:
-                cf = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True)
-                if prev_cf is None:
-                    prev_cf = cf
-                    continue
-                dist_travelled = self.get_distance_int(prev_cf, cf)
+    def CameraMission(self):
+        self.load_mission("rover-camera-mission.txt")
+        self.wait_ready_to_arm()
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        prev_cf = None
+        while True:
+            cf = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True)
+            if prev_cf is None:
                 prev_cf = cf
-                mc = self.mav.messages.get("MISSION_CURRENT", None)
-                if mc is None:
-                    continue
-                elif mc.seq == 2:
-                    expected_distance = 2
-                elif mc.seq == 4:
-                    expected_distance = 5
-                elif mc.seq == 5:
-                    break
-                else:
-                    continue
-                self.progress("Expected distance %f got %f" %
-                              (expected_distance, dist_travelled))
-                error = abs(expected_distance - dist_travelled)
-                # Rover moves at ~5m/s; we appear to do something at
-                # 5Hz, so we do see over a meter of error!
-                max_error = 1.5
-                if error > max_error:
-                    raise NotAchievedException("Camera distance error: %f (%f)" %
-                                               (error, max_error))
+                continue
+            dist_travelled = self.get_distance_int(prev_cf, cf)
+            prev_cf = cf
+            mc = self.mav.messages.get("MISSION_CURRENT", None)
+            if mc is None:
+                continue
+            elif mc.seq == 2:
+                expected_distance = 2
+            elif mc.seq == 4:
+                expected_distance = 5
+            elif mc.seq == 5:
+                break
+            else:
+                continue
+            self.progress("Expected distance %f got %f" %
+                          (expected_distance, dist_travelled))
+            error = abs(expected_distance - dist_travelled)
+            # Rover moves at ~5m/s; we appear to do something at
+            # 5Hz, so we do see over a meter of error!
+            max_error = 1.5
+            if error > max_error:
+                raise NotAchievedException("Camera distance error: %f (%f)" %
+                                           (error, max_error))
 
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        if ex is not None:
-            raise ex
+        self.disarm_vehicle()
 
     def test_do_set_mode_via_command_long(self):
         self.do_set_mode_via_command_long("HOLD")
@@ -5757,7 +5748,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("CameraMission",
              "Test Camera Mission Items",
-             self.test_camera_mission_items),
+             self.CameraMission),
 
             # Gripper test
             ("Gripper",
