@@ -50,6 +50,9 @@ bool ModeAuto::init(bool ignore_checks)
         // clear guided limits
         copter.mode_guided.limit_clear();
 
+        // reset flag indicating if pilot has applied roll or pitch inputs during landing
+        copter.ap.land_repo_active = false;
+
 #if PRECISION_LANDING == ENABLED
         // initialise precland state machine
         copter.precland_statemachine.init();
