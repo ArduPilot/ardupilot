@@ -74,14 +74,14 @@ public:
     }
     
     /*
-      get servo rail voltage
+      get servo rail voltage adc counts
      */
-    float get_vservo(void) const { return reg_status.vservo * 0.001; }
+    uint16_t get_vservo_adc_count(void) const { return reg_status.vservo; }
 
     /*
-      get rssi voltage
+      get rssi voltage adc counts
      */
-    float get_vrssi(void) const { return reg_status.vrssi * 0.001; }
+    uint16_t get_vrssi_adc_count(void) const { return reg_status.vrssi; }
 
     // set target for IMU heater
     void set_heater_duty_cycle(uint8_t duty_cycle);
