@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_OLC/AP_OLC.h>
 #include <AP_MSP/msp.h>
+#include <AP_Baro/AP_Baro.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED !HAL_MINIMIZE_FEATURES
@@ -176,7 +177,9 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+#if BARO_MAX_INSTANCES > 1
     AP_OSD_Setting btemp{false, 0, 0};
+#endif
     AP_OSD_Setting hdop{false, 0, 0};
     AP_OSD_Setting waypoint{false, 0, 0};
     AP_OSD_Setting xtrack_error{false, 0, 0};
@@ -252,7 +255,9 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+#if BARO_MAX_INSTANCES > 1
     void draw_btemp(uint8_t x, uint8_t y);
+#endif
     void draw_hdop(uint8_t x, uint8_t y);
     void draw_waypoint(uint8_t x, uint8_t y);
     void draw_xtrack_error(uint8_t x, uint8_t y);
