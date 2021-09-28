@@ -53,7 +53,18 @@ public:
       create a new thread
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
-    
+
+    /*
+      create a new task (may create a thread, may run on main loop)
+     */
+    bool task_create(
+        AP_HAL::MemberProc proc_init,
+        AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority) override;
+
 private:
     class SchedulerThread : public PeriodicThread {
     public:

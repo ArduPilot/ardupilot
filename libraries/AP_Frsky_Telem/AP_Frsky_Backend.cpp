@@ -15,8 +15,9 @@ bool AP_Frsky_Backend::init()
 
 bool AP_Frsky_Backend::init_serial_port()
 {
-    if (!hal.scheduler->thread_create(
-            FUNCTOR_BIND_MEMBER(&AP_Frsky_Backend::loop, void),
+    if (!hal.scheduler->task_create(
+            FUNCTOR_BIND_MEMBER(&AP_Frsky_Backend::thread_init, void),
+            FUNCTOR_BIND_MEMBER(&AP_Frsky_Backend::thread_loop_body, uint32_t),
             "FrSky",
             1024,
             AP_HAL::Scheduler::PRIORITY_RCIN,
@@ -31,15 +32,16 @@ bool AP_Frsky_Backend::init_serial_port()
 /*
   thread to loop handling bytes
  */
-void AP_Frsky_Backend::loop(void)
+void AP_Frsky_Backend::thread_init(void)
 {
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
     _port->begin(initial_baud(), 0, 0);
+}
 
-    while (true) {
-        hal.scheduler->delay(1);
+uint32_t AP_Frsky_Backend::thread_loop_body()
+{
         send();
-    }
+        return 1000;
 }
 
 /*

@@ -19,6 +19,8 @@
 #include "UARTDriver.h"
 #include "Util.h"
 
+#include "Task.h"
+
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -404,6 +406,41 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
 
     if (!thread->start(name, SCHED_FIFO, thread_priority)) {
         delete thread;
+        return false;
+    }
+
+    return true;
+}
+
+/*
+  create a new task
+*/
+bool Scheduler::task_create(
+    AP_HAL::MemberProc proc_init,
+    AP_HAL::Scheduler::TaskBodyMemberProc proc_body,
+    const char *name,
+    uint32_t stack_size,
+    priority_base base,
+    int8_t priority)
+{
+    Task *task = new Task{(Thread::task_t)proc_init, (Task::task_body_t)proc_body};
+    if (!task) {
+        return false;
+    }
+
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+    // Add 256k to HAL-independent requested stack size
+    task->set_stack_size(256 * 1024 + stack_size);
+
+    /*
+     * We should probably store the thread handlers and join() when exiting,
+     * but let's the thread manage itself for now.
+     */
+    task->set_auto_free(true);
+
+    if (!task->start(name, SCHED_FIFO, thread_priority)) {
+        delete task;
         return false;
     }
 

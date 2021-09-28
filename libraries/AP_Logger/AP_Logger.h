@@ -548,7 +548,11 @@ private:
     bool _io_thread_started;
 
     void start_io_thread(void);
-    void io_thread();
+    void io_task_init();
+    uint32_t io_task_body();
+    struct {
+        uint32_t last_run_us;
+    } taskstate;
 
     /* support for retrieving logs via mavlink: */
 
