@@ -873,6 +873,22 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+        self.wait_ready_to_arm()
+
+        original_alt = self.get_altitude()
+
+        takeoff_alt = 30
+        self.takeoff(takeoff_alt)
+        self.set_rc(12, 2000)
+        self.delay_sim_time(1)
+        self.set_rc(12, 1000)
+        x = self.mav.messages.get("CAMERA_FEEDBACK", None)
+        if abs(x.alt_rel - takeoff_alt) > 10:
+            raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
+        if abs(x.alt_msl - (original_alt+30)) > 10:
+            raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
+        self.fly_home_land_and_disarm()
+
     def test_throttle_failsafe(self):
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
