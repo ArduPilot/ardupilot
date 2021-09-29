@@ -162,7 +162,7 @@ struct page_mixing {
     uint8_t pad; // pad to even size
 };
 
-struct page_GPIO {
+struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t channel_mask;
     uint8_t output_mask;
 };
