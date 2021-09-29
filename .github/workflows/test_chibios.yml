@@ -38,6 +38,12 @@ jobs:
         exclude:
           - gcc: 10
             toolchain: chibios-clang
+          - gcc: 6
+            config: fmuv2-plane
+          - gcc: 6
+            config: revo-mini
+          - gcc: 6
+            config: MatekF405-Wing
 
     steps:
       # git checkout the PR
