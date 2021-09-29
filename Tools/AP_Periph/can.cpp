@@ -2109,6 +2109,25 @@ void AP_Periph_FW::can_baro_update(void)
                         &buffer[0],
                         total_size);
     }
+
+#ifdef HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
+    if (g.baro_uplink_sec > 0) {
+        const uint32_t now_ms = AP_HAL::native_millis();
+        if (now_ms - baro_uplink_last_ms >= (g.baro_uplink_sec * 1000UL)) {
+            baro_uplink_last_ms = now_ms;
+            baro.update_calibration();
+
+            for (uint8_t i=0; i<MIN(BARO_MAX_INSTANCES,3); i++) {
+                if (!baro.healthy(i) || baro.get_ground_pressure(i) <= 0) {
+                    continue;
+                }
+                const char* param_names[6] = {"GND_ABS_PRESS", "GND_ABS_PRESS2", "GND_ABS_PRESS3", "BARO_ABS_PRESS", "BARO_ABS_PRESS2", "BARO_ABS_PRESS3" };
+                const uint8_t name_idx = (g.baro_uplink_name == 0) ? i : i + 3;
+                gcs().send_param_set_message(param_names[name_idx], baro.get_ground_pressure(i), g.baro_uplink_id);
+            }
+        }
+    }
+#endif // HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
 #endif // HAL_PERIPH_ENABLE_BARO
 }
 

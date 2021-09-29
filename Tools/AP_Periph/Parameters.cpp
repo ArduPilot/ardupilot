@@ -198,6 +198,31 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
     GSCALAR(baro_enable, "BARO_ENABLE", 1),
+
+#ifdef HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
+    // @Param: BARO_UPLINK_SEC
+    // @DisplayName: Barometer Uplink Seconds Interval
+    // @Description: Barometer base-station uplink update interval in seconds. At this interval, it will set a remote system's ground pressure with it's own ground pressure.
+    // @Range: 0 1000
+    // @Units: s
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(baro_uplink_sec, "BARO_UPLINK_SEC", 0),
+
+    // @Param: BARO_UPLINK_ID
+    // @DisplayName: Barometer Uplink SYSID
+    // @Description: Barometer base-station uplink update target MAVLink SYSID
+    // @Range: 0 255
+    // @User: Advanced
+    GSCALAR(baro_uplink_id, "BARO_UPLINK_ID", 1),
+
+    // @Param: BARO_UPLINK_NAME
+    // @DisplayName: Barometer Uplink Param Name
+    // @Description: Barometer base-station uplink update param names to update.
+    // @Values: 0:GND_ABS_PRESS, 1:BARO_ABS_PRESS
+    // @User: Advanced
+    GSCALAR(baro_uplink_name, "BARO_UPLINK_NAME", 0), // 0 for "GND_xxxx", 1 for "BARO_xxxxx"
+#endif // HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
 #endif
 
 #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY

@@ -50,6 +50,9 @@
 #error "Battery MPPT PacketDigital driver requires at least two CAN Ports"
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK) && !defined(HAL_PERIPH_ENABLE_BARO)
+#error "HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK needs HAL_PERIPH_ENABLE_BARO"
+#endif
 
 #include "Parameters.h"
 
@@ -120,6 +123,9 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
+    #ifdef HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
+    uint32_t baro_uplink_last_ms;
+    #endif
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY

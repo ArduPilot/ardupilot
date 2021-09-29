@@ -49,6 +49,9 @@ public:
         k_param_sysid_this_mav,
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
+        k_param_baro_uplink_sec,
+        k_param_baro_uplink_id,
+        k_param_baro_uplink_name,
     };
 
     AP_Int16 format_version;
@@ -67,6 +70,11 @@ public:
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Int8 baro_enable;
+#ifdef HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
+    AP_Int16 baro_uplink_sec;
+    AP_Int32 baro_uplink_id;
+    AP_Int8 baro_uplink_name;
+#endif
 #endif
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     AP_Int8 flash_bootloader;
