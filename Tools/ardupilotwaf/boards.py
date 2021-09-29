@@ -270,9 +270,7 @@ class Board:
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
             '-Wuninitialized',
-            '-Wmaybe-uninitialized',
             '-Warray-bounds',
-            '-Wduplicated-cond',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -315,6 +313,8 @@ class Board:
             if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
+                    '-Wmaybe-uninitialized',
+                    '-Wduplicated-cond',
                 ]
 
         if cfg.options.Werror:
