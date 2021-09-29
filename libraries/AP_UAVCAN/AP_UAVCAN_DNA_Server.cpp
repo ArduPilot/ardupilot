@@ -279,7 +279,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
     //Setup publisher for this driver index
     allocation_pub[driver_index] = new uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>(*_node);
     if (allocation_pub[driver_index] == nullptr) {
-        return false;
+        AP_BoardConfig::allocation_error("AP_UAVCAN_DNA: allocation_pub[%d]", driver_index);
     }
 
     int res = allocation_pub[driver_index]->init(uavcan::TransferPriority::Default);
@@ -291,7 +291,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
     //Setup GetNodeInfo Client
     getNodeInfo_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::GetNodeInfo>(*_node);
     if (getNodeInfo_client[driver_index] == nullptr) {
-        return false;
+        AP_BoardConfig::allocation_error("AP_UAVCAN_DNA: getNodeInfo_client[%d]", driver_index);
     }
 
     res = getNodeInfo_client[driver_index]->init();
