@@ -216,8 +216,8 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // range finder last update (used for DPTH logging)
-    uint32_t rangefinder_last_reading_ms;
+    // range finder last update for each instance (used for DPTH logging)
+    uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
