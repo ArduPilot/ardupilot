@@ -6924,6 +6924,42 @@ class AutoTestCopter(AutoTest):
         if not ok:
             raise NotAchievedException("check_replay failed")
 
+    def DefaultIntervalsFromFiles(self):
+        ex = None
+        intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
+        self.progress("Using filepath (%s)" % intervals_filepath)
+        try:
+            with open(intervals_filepath, "w") as f:
+                f.write("""30 50
+28 100
+29 200
+""")
+
+            # other tests may have explicitly set rates, so wipe parameters:
+            def custom_stream_rate_setter():
+                for stream in mavutil.mavlink.MAV_DATA_STREAM_EXTRA3, mavutil.mavlink.MAV_DATA_STREAM_RC_CHANNELS:
+                    self.set_streamrate(5, stream=stream)
+
+            self.customise_SITL_commandline(
+                [],
+                wipe=True,
+                set_streamrate_callback=custom_stream_rate_setter,
+            )
+
+            self.assert_message_rate_hz("ATTITUDE", 20)
+            self.assert_message_rate_hz("SCALED_PRESSURE", 5)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        os.unlink(intervals_filepath)
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def BaroDrivers(self):
         sensors = [
             ("MS5611", 2),
@@ -7919,6 +7955,9 @@ class AutoTestCopter(AutoTest):
                  "Change speed (down) during misison",
                  self.WPNAV_SPEED_DN),
 
+            ("DefaultIntervalsFromFiles",
+             "Test setting default mavlink message intervals from files",
+             self.DefaultIntervalsFromFiles),
 
             Test("GPSTypes",
                  "Test simulated GPS types",
