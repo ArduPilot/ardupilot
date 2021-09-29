@@ -102,4 +102,24 @@ TEST(ObjectBufferTest, SetSize)
     EXPECT_TRUE(x.is_empty());
 }
 
+TEST(ObjectBufferTest, PeekTest)
+{
+    ByteBuffer bb(128);
+    uint8_t seven[7] {1,2,3,4,5,6,7};
+    for (uint8_t i=0; i<100; i++) {
+        bb.write(seven, 7);
+        ByteBuffer::IoVec vec[2];
+        uint8_t nvec = bb.peekiovec(vec, 7);
+        uint32_t got = 0;
+        if (nvec > 0) {
+            got += vec[0].len;
+        }
+        if (nvec > 1) {
+            got += vec[1].len;
+        }
+        EXPECT_EQ(got, 7U);
+        bb.advance(7);
+    }
+}
+
 AP_GTEST_MAIN()
