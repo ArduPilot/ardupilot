@@ -2136,6 +2136,13 @@ void GCS::send_mission_item_reached_message(uint16_t mission_index)
     }
 }
 
+void GCS::send_param_set_message(const char* name, const float value, const uint8_t target_system)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        chan(i)->send_param_set(name, value, target_system);
+    }
+}
+
 void GCS::setup_console()
 {
     AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, 0);
@@ -4644,6 +4651,13 @@ void GCS_MAVLINK::send_hwstatus()
         chan,
         hal.analogin->board_voltage()*1000,
         0);
+}
+
+void GCS_MAVLINK::send_param_set(const char* name, const float value, const uint8_t target_system)
+{
+    mavlink_msg_param_set_send(
+        chan,
+        target_system, MAV_COMP_ID_AUTOPILOT1, name, value, MAV_PARAM_TYPE_REAL32);
 }
 
 void GCS_MAVLINK::send_rpm() const

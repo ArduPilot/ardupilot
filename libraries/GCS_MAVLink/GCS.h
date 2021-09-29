@@ -533,6 +533,7 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(const mavlink_message_t &msg);
+    void send_param_set(const char* name, const float value, const uint8_t target_system = 0);
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
@@ -964,6 +965,7 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
+    void send_param_set_message(const char* name, const float value, const uint8_t target_system = 0);
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
