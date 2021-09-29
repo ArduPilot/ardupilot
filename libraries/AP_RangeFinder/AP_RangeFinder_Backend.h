@@ -61,7 +61,7 @@ public:
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) { return false; }
+    virtual bool get_temp(float &temp) const { return false; }
 
 protected:
 
