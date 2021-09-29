@@ -4866,35 +4866,45 @@ void GCS_MAVLINK::send_water_depth() const
     }
 
     RangeFinder *rangefinder = RangeFinder::get_singleton();
-    if (rangefinder == nullptr || !rangefinder->has_data_orient(ROTATION_PITCH_270)) {
-        // no rangefinder or not facing downwards
-        return;
-    }
 
-    const bool sensor_healthy = (rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good);
+    if (rangefinder == nullptr || !rangefinder->has_orientation(ROTATION_PITCH_270)){
+        return;
+    } 
 
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
     Location loc;
     IGNORE_RETURN(ahrs.get_position(loc));
 
-    // get temperature
-    float temp_C = 0.0f;
-    IGNORE_RETURN(rangefinder->get_temp(ROTATION_PITCH_270, temp_C));
+    for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
+        
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
 
-    mavlink_msg_water_depth_send(
-        chan,
-        AP_HAL::millis(),   // time since system boot TODO: take time of measurement
-        0,                  // sensor id always zero
-        sensor_healthy,     // sensor healthy
-        loc.lat,            // latitude of vehicle
-        loc.lng,            // longitude of vehicle
-        loc.alt * 0.01f,    // altitude of vehicle (MSL)
-        ahrs.get_roll(),    // roll in radians
-        ahrs.get_pitch(),   // pitch in radians
-        ahrs.get_yaw(),     // yaw in radians
-        rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f,    // distance in meters
-        temp_C);            // temperature in degC
+        // get temperature
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            temp_C = 0.0f;
+        }
+
+        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
+
+        mavlink_msg_water_depth_send(
+            chan,
+            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            i,                  // rangefinder instance
+            sensor_healthy,     // sensor healthy
+            loc.lat,            // latitude of vehicle
+            loc.lng,            // longitude of vehicle
+            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            ahrs.get_roll(),    // roll in radians
+            ahrs.get_pitch(),   // pitch in radians
+            ahrs.get_yaw(),     // yaw in radians
+            s->distance_cm() * 0.01f,    // distance in meters
+            temp_C);            // temperature in degC
+    }
 #endif
 }
 
