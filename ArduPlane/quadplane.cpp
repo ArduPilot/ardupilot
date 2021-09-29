@@ -2304,17 +2304,9 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_POSITION1: {
         setup_target_position();
 
-        if (tailsitter.enabled()) {
-            if (tailsitter.in_vtol_transition()) {
-                break;
-            }
-            poscontrol.set_state(QPOS_POSITION2);
-            poscontrol.pilot_correction_done = false;
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
-                                    (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
+        if (tailsitter.enabled() && tailsitter.in_vtol_transition()) {
             break;
         }
-
 
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
@@ -2534,6 +2526,12 @@ void QuadPlane::vtol_position_controller(void)
 #endif
             float zero = 0;
             float target_z = target_altitude_cm;
+            pos_control->input_pos_vel_accel_z(target_z, zero, 0);
+        } else if (plane.control_mode == &plane.mode_qrtl) {
+            Location loc2 = loc;
+            loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+            float target_z = loc2.alt;
+            float zero = 0;
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else {
             set_climb_rate_cms(0, false);
