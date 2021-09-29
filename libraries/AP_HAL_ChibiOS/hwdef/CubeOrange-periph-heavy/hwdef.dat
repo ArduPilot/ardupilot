@@ -26,8 +26,10 @@ define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 define COMPASS_CAL_ENABLED 1
+define HAL_PERIPH_ENABLE_BARO_OFFSET_UPLINK
 
 define HAL_INS_ENABLED 1
+define HAL_GCS_ENABLED 1
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
