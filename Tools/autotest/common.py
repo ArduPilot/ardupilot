@@ -1676,7 +1676,7 @@ class AutoTest(ABC):
         self.progress("Calling initialise-after-reboot")
         self.initialise_after_reboot_sitl()
 
-    def set_streamrate(self, streamrate, timeout=20):
+    def set_streamrate(self, streamrate, timeout=20, stream=mavutil.mavlink.MAV_DATA_STREAM_ALL):
         '''set MAV_DATA_STREAM_ALL; timeout is wallclock time'''
         tstart = time.time()
         while True:
@@ -1685,7 +1685,7 @@ class AutoTest(ABC):
             self.mav.mav.request_data_stream_send(
                 1,
                 1,
-                mavutil.mavlink.MAV_DATA_STREAM_ALL,
+                stream,
                 streamrate,
                 1)
             m = self.mav.recv_match(type='SYSTEM_TIME',
@@ -2146,7 +2146,12 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
-    def customise_SITL_commandline(self, customisations, model=None, defaults_filepath=None, wipe=False):
+    def customise_SITL_commandline(self,
+                                   customisations,
+                                   model=None,
+                                   defaults_filepath=None,
+                                   wipe=False,
+                                   set_streamrate_callback=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.stop_SITL()
@@ -2166,7 +2171,10 @@ class AutoTest(ABC):
             except IOError:
                 pass
             break
-        self.set_streamrate(self.sitl_streamrate())
+        if set_streamrate_callback is not None:
+            set_streamrate_callback()
+        else:
+            self.set_streamrate(self.sitl_streamrate())
         m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=15)
         if m is None:
             raise NotAchievedException("No RC_CHANNELS message after restarting SITL")
