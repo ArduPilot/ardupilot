@@ -452,6 +452,24 @@ def configure(cfg):
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
 
+    if cfg.env.AP_PERIPH:
+        src = cfg.srcnode.ant_glob('modules/pyuavcan/uavcan/dsdl_files/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
+        src = ' '.join([s.abspath() for s in src])
+        cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
+                            cfg.srcnode.make_node('Tools/canard_dsdlc/canard_dsdlc.py').abspath(),
+                            cfg.bldnode.make_node(cfg.variant + '/modules/libcanard/dsdlc_generated').abspath(),
+                            src)
+        cfg.start_msg('Generating DSDL C bindings')
+        ret = subprocess.run(cmd, shell=True, capture_output=True)
+        if ret.returncode != 0:
+            cfg.end_msg('failed', color='RED')
+            print('Failed to run: ', cmd)
+            print(ret.stdout.decode('utf-8'))
+            print(ret.stderr.decode('utf-8'))
+            raise RuntimeError('Failed to generate DSDL C bindings')
+        else:
+            cfg.end_msg('OK')
+
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
 
@@ -550,7 +568,7 @@ def _build_dynamic_sources(bld):
             ],
             )
 
-    if bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES:
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
             features='uavcangen',
             source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
