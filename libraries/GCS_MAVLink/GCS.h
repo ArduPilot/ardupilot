@@ -593,7 +593,7 @@ protected:
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
-    virtual int8_t high_latency_air_temperature() const { return 0; }
+    int8_t high_latency_air_temperature() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     static constexpr const float magic_force_arm_value = 2989.0f;
