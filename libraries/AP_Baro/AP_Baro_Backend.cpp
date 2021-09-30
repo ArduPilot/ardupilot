@@ -97,11 +97,10 @@ bool AP_Baro_Backend::pressure_ok(float press)
     } else {
         const float d = fabsf(_mean_pressure - press) / (_mean_pressure + press);  // diff divide by mean value in percent ( with the * 200.0f on later line)
         float koeff = FILTER_KOEF;
-
-        if (d * 200.0f > range) {  // check the difference from mean value outside allowed range
-            // printf("\nBaro pressure error: mean %f got %f\n", (double)_mean_pressure, (double)press );
+        if (d  > (range * 0.000005f)) {  // check the difference from mean value outside allowed range
+            //printf("\nBaro pressure error: mean %f got %f\n", (double)_mean_pressure, (double)press );
             ret = false;
-            koeff /= (d * 10.0f);  // 2.5 and more, so one bad sample never change mean more than 4%
+            koeff *= (d * 10.0f);  // 2.5 and more, so one bad sample never change mean more than 4%
             _error_count++;
         }
         _mean_pressure = _mean_pressure * (1 - koeff) + press * koeff; // complimentary filter 1/k
