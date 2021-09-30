@@ -342,7 +342,7 @@ class Board:
                 '-Wl,--gc-sections',
             ]
 
-        if self.with_can:
+        if self.with_can and not cfg.env.AP_PERIPH:
             env.AP_LIBRARIES += [
                 'AP_UAVCAN',
                 'modules/uavcan/libuavcan/src/**/*.cpp'
