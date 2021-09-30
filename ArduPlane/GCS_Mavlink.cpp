@@ -1404,18 +1404,6 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
     // need to convert -180->180 to 0->360/2
     return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
 }
-
-int8_t GCS_MAVLINK_Plane::high_latency_air_temperature() const
-{
-    // return units are degC
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    float air_temperature;
-    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
-        return air_temperature;
-    }
-
-    return INT8_MIN;
-}
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
 MAV_VTOL_STATE GCS_MAVLINK_Plane::vtol_state() const
