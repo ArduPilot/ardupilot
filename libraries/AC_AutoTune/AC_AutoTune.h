@@ -373,7 +373,7 @@ protected:
     float    command_out;
     float    test_tgt_rate_filt;                    // filtered target rate
     float    filt_target_rate;
-    bool     ff_up_first_iter   : 1;       //true on first iteration of ff up testing
+    bool     ff_up_first_iter;                      //true on first iteration of ff up testing
     float    test_gain[20];                             // gain of output to input
     float    test_freq[20];
     float    test_phase[20];
