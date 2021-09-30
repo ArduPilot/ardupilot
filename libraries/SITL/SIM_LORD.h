@@ -1,20 +1,12 @@
-//
-// Created by asa on 9/23/21.
-//
+// Created by Asa Davis and Davis Schenkenberger on 23rd September 21.
 
 //usage:
 //PARAMS:
-//  AHRS_EKF_TYPE = 11
-//  EAHRS_TYPE = 2
-//  SERIAL4_PROTOCOL = 36
-//  SERIAL4_BAUD = 115
-//  sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:LORD
-
-//debugging:
-//echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
-//sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:LORD
-//then just attach to process and set breakpoints in AP_InertialSensor_SITL to look at raw stat variables
-
+// param set AHRS_EKF_TYPE 11
+// param set EAHRS_TYPE 2
+// param set SERIAL4_PROTOCOL 36
+// param set SERIAL4_BAUD 115
+// sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:LORD
 #pragma once
 
 #include "SIM_Aircraft.h"
@@ -62,3 +54,4 @@ private:
 };
 
 }
+
