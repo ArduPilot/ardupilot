@@ -31,9 +31,18 @@
 #ifndef GPS_MAX_RECEIVERS
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #endif
-#ifndef GPS_MAX_INSTANCES
+#if !defined(GPS_MAX_INSTANCES)
+#if GPS_MAX_RECEIVERS > 1
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
+#else
+#define GPS_MAX_INSTANCES 1
+#endif // GPS_MAX_RECEIVERS > 1
+#endif // GPS_MAX_INSTANCES
+
+#if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
+#error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
 #endif
+
 #if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
@@ -559,7 +568,7 @@ protected:
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if GPS_MAX_RECEIVERS > 1 && HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     AP_Int32 _node_id[GPS_MAX_RECEIVERS];
     AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
 #endif
