@@ -39,6 +39,7 @@ except ImportError:
     def sp_run(*popenargs, **kwargs):
         input = kwargs.pop("input", None)
         check = kwargs.pop("handle", False)
+        kwargs.pop("capture_output", True)
         if input is not None:
             if 'stdin' in kwargs:
                 raise ValueError('stdin and input arguments may not both be used.')
