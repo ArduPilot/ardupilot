@@ -830,6 +830,12 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 
     // move current_node_idx to node with lowest distance
     while (find_closest_node_idx(current_node_idx)) {
+        node_index dest_node;
+        // See if this next "closest" node is actually the destination
+        if (find_node_from_id({AP_OAVisGraph::OATYPE_DESTINATION,0}, dest_node) && current_node_idx == dest_node) {
+            // We have discovered destination.. Don't bother with the rest of the graph
+            break;
+        }
         // update distances to all neighbours of current node
         update_visible_node_distances(current_node_idx);
 
