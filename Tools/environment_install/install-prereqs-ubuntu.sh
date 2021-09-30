@@ -123,9 +123,9 @@ fi
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
     # use fixed version for package that drop python2 support
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 geocoder configparser==5.0.0 click==7.1.2 decorator==4.4.2"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 geocoder empy configparser==5.0.0 click==7.1.2 decorator==4.4.2"
 else
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy"
 fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
