@@ -5985,4 +5985,16 @@ void GCS_MAVLINK::send_high_latency2() const
         0, // Field for custom payload.
         0); // Field for custom payload.
 }
+
+int8_t GCS_MAVLINK::high_latency_air_temperature() const
+{
+    // return units are degC
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    float air_temperature;
+    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
+        return air_temperature;
+    }
+
+    return INT8_MIN;
+}
 #endif // HAL_HIGH_LATENCY2_ENABLED
