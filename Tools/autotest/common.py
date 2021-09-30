@@ -2484,6 +2484,17 @@ class AutoTest(ABC):
         if (m.failure_flags & mavutil.mavlink.HL_FAILURE_FLAG_GPS) == 0:
             raise NotAchievedException("Expected GPS to be failed")
 
+        self.start_subtest("HIGH_LATENCY2 location")
+        self.set_parameter("SIM_GPS_TYPE", 1)
+        self.delay_sim_time(10)
+        m = self.poll_message("HIGH_LATENCY2")
+        mavutil.dump_message_verbose(sys.stdout, m)
+        loc = mavutil.location(m.latitude, m.longitude, m.altitude, 0)
+        dist = self.get_distance_accurate(loc, self.sim_location_int())
+
+        if dist > 1:
+            raise NotAchievedException("Bad location from HIGH_LATENCY2")
+
     def test_log_download(self):
         if self.is_tracker():
             # tracker starts armed, which is annoying
