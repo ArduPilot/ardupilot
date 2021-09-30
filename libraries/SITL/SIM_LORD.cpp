@@ -89,42 +89,42 @@ void LORD::send_imu_packet(void)
         start_us = tv.tv_usec * 1000;
     }
 
-    packet.header[0] = 0x75;
-    packet.header[1] = 0x65;
-    packet.header[2] = 0x80;
+    packet.header[0] = 0x75; // Sync One
+    packet.header[1] = 0x65; // Sync Two
+    packet.header[2] = 0x80; // INS Descriptor
 
     // Add ambient pressure field
-    packet.payload[packet.payload_size++] = 0x06;
-    packet.payload[packet.payload_size++] = 0x17;
+    packet.payload[packet.payload_size++] = 0x06; // Ambient Pressure Field Size
+    packet.payload[packet.payload_size++] = 0x17; // Descriptor
     float sigma, delta, theta;
     AP_Baro::SimpleAtmosphere(fdm.altitude * 0.001f, sigma, delta, theta);
     put_float(packet, SSL_AIR_PRESSURE * delta * 0.001 + rand_float() * 0.1);
 
     // Add scaled magnetometer field
-    packet.payload[packet.payload_size++] = 0x0E;
-    packet.payload[packet.payload_size++] = 0x06;
+    packet.payload[packet.payload_size++] = 0x0E; // Scaled Magnetometer Field Size
+    packet.payload[packet.payload_size++] = 0x06; // Descriptor
     put_float(packet, fdm.bodyMagField.x*0.001);
     put_float(packet, fdm.bodyMagField.y*0.001);
     put_float(packet, fdm.bodyMagField.z*0.001);
 
-    // Add scaled acceletometer field
-    packet.payload[packet.payload_size++] = 0x0E;
-    packet.payload[packet.payload_size++] = 0x04;
+    // Add scaled accelerometer field
+    packet.payload[packet.payload_size++] = 0x0E; // Scaled Accelerometer Field Size
+    packet.payload[packet.payload_size++] = 0x04; // Descriptor
     put_float(packet, fdm.xAccel / GRAVITY_MSS);
     put_float(packet, fdm.yAccel / GRAVITY_MSS);
     put_float(packet, fdm.zAccel / GRAVITY_MSS);
 
     // Add scaled gyro field
     const float gyro_noise = 0.05;
-    packet.payload[packet.payload_size++] = 0x0E;
-    packet.payload[packet.payload_size++] = 0x05;
+    packet.payload[packet.payload_size++] = 0x0E; // Scaled Gyro Field Size
+    packet.payload[packet.payload_size++] = 0x05; // Descriptor
     put_float(packet, radians(fdm.rollRate + rand_float() * gyro_noise));
     put_float(packet, radians(fdm.pitchRate + rand_float() * gyro_noise));
     put_float(packet, radians(fdm.yawRate + rand_float() * gyro_noise));
 
     // Add CF Quaternion field
-    packet.payload[packet.payload_size++] = 0x12;
-    packet.payload[packet.payload_size++] = 0x0A;
+    packet.payload[packet.payload_size++] = 0x12; // CF Quaternion Field Size
+    packet.payload[packet.payload_size++] = 0x0A; // Descriptor
     put_float(packet, fdm.quaternion.q1);
     put_float(packet, fdm.quaternion.q2);
     put_float(packet, fdm.quaternion.q3);
@@ -144,39 +144,39 @@ void LORD::send_gnss_packet(void)
     struct timeval tv;
     simulation_timeval(&tv);
 
-    packet.header[0] = 0x75;
-    packet.header[1] = 0x65;
-    packet.header[2] = 0x81;
+    packet.header[0] = 0x75; // Sync One
+    packet.header[1] = 0x65; // Sync Two
+    packet.header[2] = 0x81; // GNSS Descriptor
 
-    // Add ambient GPS Time
-    packet.payload[packet.payload_size++] = 0x0E;
-    packet.payload[packet.payload_size++] = 0x09;
+    // Add GPS Time
+    packet.payload[packet.payload_size++] = 0x0E; // GPS Time Field Size
+    packet.payload[packet.payload_size++] = 0x09; // Descriptor
     put_double(packet, (double) tv.tv_sec);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0);
 
     // Add GNSS Fix Information
-    packet.payload[packet.payload_size++] =  0x08;
-    packet.payload[packet.payload_size++] = 0x0B;
+    packet.payload[packet.payload_size++] =  0x08; // GNSS Fix Field Size
+    packet.payload[packet.payload_size++] = 0x0B; // Descriptor
     packet.payload[packet.payload_size++] = 0x00; // Fix type
     packet.payload[packet.payload_size++] = 19; // Sat count
     put_int(packet, 0); // Fix flags
     put_int(packet, 0); // Valid flags
 
     // Add GNSS LLH position
-    packet.payload[packet.payload_size++] = 0x2C;
-    packet.payload[packet.payload_size++] = 0x03;
+    packet.payload[packet.payload_size++] = 0x2C; // GNSS LLH Field Size
+    packet.payload[packet.payload_size++] = 0x03; // Descriptor
     put_double(packet, fdm.latitude);
     put_double(packet, fdm.longitude);
     put_double(packet, 0);   // Height above ellipsoid - unused
     put_double(packet, fdm.altitude);
     put_float(packet, 0.5f); // Horizontal accuracy
     put_float(packet, 0.5f); // Vertical accuracy
-    put_int(packet, 31);       // Valid flags
+    put_int(packet, 31); // Valid flags
 
     // Add DOP Data
-    packet.payload[packet.payload_size++] = 0x20;
-    packet.payload[packet.payload_size++] = 0x07;
+    packet.payload[packet.payload_size++] = 0x20; // DOP Field Size
+    packet.payload[packet.payload_size++] = 0x07; // Descriptor
     put_float(packet, 0); // GDOP
     put_float(packet, 0); // PDOP
     put_float(packet, 0); // HDOP
@@ -187,17 +187,17 @@ void LORD::send_gnss_packet(void)
     put_int(packet, 127);
 
     // Add GNSS NED velocity
-    packet.payload[packet.payload_size++] = 0x24;
-    packet.payload[packet.payload_size++] = 0x05;
+    packet.payload[packet.payload_size++] = 0x24; // GNSS NED Velocity Field Size
+    packet.payload[packet.payload_size++] = 0x05; // Descriptor
     put_float(packet, fdm.speedN);
     put_float(packet, fdm.speedE);
     put_float(packet, fdm.speedD);
-    put_float(packet, 0);       //speed - unused
-    put_float(packet, 0);       //ground speed - unused
-    put_float(packet, 0);       //heading - unused
-    put_float(packet, 0.25f);   //speed accuracy
-    put_float(packet, 0);       //heading accuracy - unused
-    put_int(packet, 31);        //valid flags
+    put_float(packet, 0); //speed - unused
+    put_float(packet, 0); //ground speed - unused
+    put_float(packet, 0); //heading - unused
+    put_float(packet, 0.25f); //speed accuracy
+    put_float(packet, 0); //heading accuracy - unused
+    put_int(packet, 31); //valid flags
 
     packet.header[3] = packet.payload_size;
 
@@ -213,39 +213,39 @@ void LORD::send_filter_packet(void)
     struct timeval tv;
     simulation_timeval(&tv);
 
-    packet.header[0] = 0x75;
-    packet.header[1] = 0x65;
-    packet.header[2] = 0x82;
+    packet.header[0] = 0x75; // Sync One
+    packet.header[1] = 0x65; // Sync Two
+    packet.header[2] = 0x82; // Filter Descriptor
 
-    // Add ambient Filter Time
-    packet.payload[packet.payload_size++] = 0x0E;
-    packet.payload[packet.payload_size++] = 0x11;
+    // Add Filter Time
+    packet.payload[packet.payload_size++] = 0x0E; // Filter Time Field Size
+    packet.payload[packet.payload_size++] = 0x11; // Descriptor
     put_double(packet, (double) tv.tv_usec / 1e6);
     put_int(packet, tv.tv_usec / (AP_MSEC_PER_WEEK * 1000000ULL));
     put_int(packet, 0x0001);
 
     // Add GNSS Filter velocity
-    packet.payload[packet.payload_size++] = 0x10;
-    packet.payload[packet.payload_size++] = 0x02;
+    packet.payload[packet.payload_size++] = 0x10; // GNSS Velocity Field Size
+    packet.payload[packet.payload_size++] = 0x02; // Descriptor
     put_float(packet, fdm.speedN);
     put_float(packet, fdm.speedE);
     put_float(packet, fdm.speedD);
     put_int(packet, 0x0001);
 
-
     // Add Filter LLH position
-    packet.payload[packet.payload_size++] = 0x1C;
-    packet.payload[packet.payload_size++] = 0x01;
+    packet.payload[packet.payload_size++] = 0x1C; // Filter LLH Field Size
+    packet.payload[packet.payload_size++] = 0x01; // Descriptor
     put_double(packet, fdm.latitude);
     put_double(packet, fdm.longitude);
-    put_double(packet, 0);   // Height above ellipsoid - unused
-    put_int(packet, 0x0001);       // Valid flags
+    put_double(packet, 0); // Height above ellipsoid - unused
+    put_int(packet, 0x0001); // Valid flags
 
-    packet.payload[packet.payload_size++] = 0x08;
-    packet.payload[packet.payload_size++] = 0x10;
-    put_int(packet, 0x02); // Filter state
-    put_int(packet, 0x03); // Dynamics mode
-    put_int(packet, 0); // Filter flags
+    // Add Filter State
+    packet.payload[packet.payload_size++] = 0x08; // Filter State Field Size
+    packet.payload[packet.payload_size++] = 0x10; // Descriptor
+    put_int(packet, 0x02); // Filter state (Running, Solution Valid)
+    put_int(packet, 0x03); // Dynamics mode (Airborne)
+    put_int(packet, 0); // Filter flags (None, no warnings)
 
     packet.header[3] = packet.payload_size;
 
@@ -304,3 +304,4 @@ void LORD::put_int(LORD_Packet &packet, uint16_t t)
     put_be16_ptr(&packet.payload[packet.payload_size], t);
     packet.payload_size += sizeof(uint16_t);
 }
+
