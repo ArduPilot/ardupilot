@@ -5778,8 +5778,6 @@ void GCS_MAVLINK::send_high_latency2() const
     Location global_position_current;
     UNUSED_RESULT(ahrs.get_position(global_position_current));
 
-    Location cur = AP::gps().location();
-
     const AP_BattMonitor &battery = AP::battery();
     float battery_current = -1;
     int8_t battery_remaining = -1;
@@ -5831,8 +5829,8 @@ void GCS_MAVLINK::send_high_latency2() const
         gcs().frame_type(), // Type of the MAV (quadrotor, helicopter, etc.)
         MAV_AUTOPILOT_ARDUPILOTMEGA, // Autopilot type / class. Use MAV_AUTOPILOT_INVALID for components that are not flight controllers.
         gcs().custom_mode(), // A bitfield for use for autopilot-specific flags (2 byte version).
-        cur.lat, // [degE7] Latitude
-        cur.lng, // [degE7] Longitude
+        global_position_current.lat, // [degE7] Latitude
+        global_position_current.lng, // [degE7] Longitude
         global_position_current.alt * 0.01f, // [m] Altitude above mean sea level
         high_latency_target_altitude(), // [m] Altitude setpoint
         (((uint16_t)ahrs.yaw_sensor / 100) % 360) / 2, // [deg/2] Heading
