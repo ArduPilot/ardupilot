@@ -783,9 +783,7 @@ static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
 static void handle_notify_state(CanardInstance* ins, CanardRxTransfer* transfer)
 {
     ardupilot_indication_NotifyState msg;
-    uint8_t arraybuf[ARDUPILOT_INDICATION_NOTIFYSTATE_MAX_SIZE];
-    uint8_t *arraybuf_ptr = arraybuf;
-    if (ardupilot_indication_NotifyState_decode(transfer, transfer->payload_len, &msg, &arraybuf_ptr) < 0) {
+    if (ardupilot_indication_NotifyState_decode(transfer, &msg)) {
         return;
     }
     if (msg.aux_data.len == 2 && msg.aux_data_type == ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES) {
