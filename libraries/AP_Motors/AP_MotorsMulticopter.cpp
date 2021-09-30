@@ -352,7 +352,8 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
     return constrain_float(throttle_ratio * battery_scale, 0.0f, 1.0f);
 }
 
-// inverse of above
+// inverse of above, tested with AP_Motors/examples/expo_inverse_test
+// used to calculate equivelent motor throttle level to direct ouput, used in tailsitter transtions
 float AP_MotorsMulticopter::remove_thrust_curve_and_volt_scaling(float throttle) const
 {
     float battery_scale = 1.0;
@@ -440,7 +441,8 @@ float AP_MotorsMulticopter::thrust_to_actuator(float thrust_in) const
     return _spin_min + (_spin_max - _spin_min) * apply_thrust_curve_and_volt_scaling(thrust_in);
 }
 
-// inverse of above
+// inverse of above, tested with AP_Motors/examples/expo_inverse_test
+// used to calculate equivelent motor throttle level to direct ouput, used in tailsitter transtions
 float AP_MotorsMulticopter::actuator_to_thrust(float actuator) const
 {
     actuator = (actuator - _spin_min) /  (_spin_max - _spin_min);
