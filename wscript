@@ -663,6 +663,8 @@ def _build_post_funs(bld):
 
 def _load_pre_build(bld):
     '''allow for a pre_build() function in build modules'''
+    if bld.cmd == 'clean':
+        return
     brd = bld.get_board()
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
