@@ -61,9 +61,6 @@ public:
         axes_completed = 0;
     }
 
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-
 protected:
 
     // axis that can be tuned

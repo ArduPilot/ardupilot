@@ -46,42 +46,48 @@
 #define AUTOTUNE_SEQ_BITMASK_MAX_GAIN        8
 
 const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
-    AP_NESTEDGROUPINFO(AC_AutoTune, 0),
+
+    // @Param: AXES
+    // @DisplayName: Autotune axis bitmask
+    // @Description: 1-byte bitmap of axes to autotune
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Standard
+    AP_GROUPINFO("AXES", 1, AC_AutoTune_Heli, axis_bitmask,  7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
     // @Param: SEQ
     // @DisplayName: AutoTune Sequence Bitmask
     // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D Only,4:Angle P Only,8:Max Gain Only,3:VFF and Rate D (incl max gain),5:VFF and Angle P,13:VFF max gain and angle P
     // @Bitmask: 0:VFF,1:Rate D,2:Angle P,3:Max Gain Only
     // @User: Standard
-    AP_GROUPINFO("SEQ", 1, AC_AutoTune_Heli, seq_bitmask,  5),
+    AP_GROUPINFO("SEQ", 2, AC_AutoTune_Heli, seq_bitmask,  5),
 
     // @Param: MIN_FRQ
     // @DisplayName: AutoTune minimum sweep frequency
     // @Description: Defines the start frequency for sweeps and dwells
     // @Range: 10 30
     // @User: Standard
-    AP_GROUPINFO("MIN_FRQ", 2, AC_AutoTune_Heli, min_sweep_freq,  10.0f),
+    AP_GROUPINFO("MIN_FRQ", 3, AC_AutoTune_Heli, min_sweep_freq,  10.0f),
 
     // @Param: MAX_FRQ
     // @DisplayName: AutoTune maximum sweep frequency
     // @Description: Defines the end frequency for sweeps and dwells
     // @Range: 50 120
     // @User: Standard
-    AP_GROUPINFO("MAX_FRQ", 3, AC_AutoTune_Heli, max_sweep_freq,  70.0f),
+    AP_GROUPINFO("MAX_FRQ", 4, AC_AutoTune_Heli, max_sweep_freq,  70.0f),
 
     // @Param: MAX_GN
     // @DisplayName: AutoTune maximum response gain
     // @Description: Defines the response gain (output/input) to tune
     // @Range: 1 2.5
     // @User: Standard
-    AP_GROUPINFO("MAX_GN", 4, AC_AutoTune_Heli, max_resp_gain,  1.4f),
+    AP_GROUPINFO("MAX_GN", 5, AC_AutoTune_Heli, max_resp_gain,  1.4f),
 
     // @Param: VELXY_P
     // @DisplayName: AutoTune velocity xy P gain
     // @Description: Velocity xy P gain used to hold position during Max Gain, Rate P, and Rate D frequency sweeps
     // @Range: 0 1
     // @User: Standard
-    AP_GROUPINFO("VELXY_P", 5, AC_AutoTune_Heli, vel_hold_gain,  0.1f),
+    AP_GROUPINFO("VELXY_P", 6, AC_AutoTune_Heli, vel_hold_gain,  0.1f),
 
     AP_GROUPEND
 };
