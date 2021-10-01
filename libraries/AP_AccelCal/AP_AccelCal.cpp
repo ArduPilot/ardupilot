@@ -325,6 +325,13 @@ void AP_AccelCal::update_status() {
     }
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
+        if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
+            _status = ACCEL_CAL_NOT_STARTED;    // we haven't started if all the calibrators haven't
+            return;
+        }
+    }
+
+    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         if (cal->get_status() == ACCEL_CAL_FAILED) {
             _status = ACCEL_CAL_FAILED;         //fail if even one of the calibration has
             return;
@@ -345,12 +352,6 @@ void AP_AccelCal::update_status() {
         }
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
-            _status = ACCEL_CAL_NOT_STARTED;    // we haven't started if all the calibrators haven't
-            return;
-        }
-    }
 
     _status = ACCEL_CAL_SUCCESS;    // we have succeeded calibration if all the calibrators have
     return;
