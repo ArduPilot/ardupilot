@@ -2787,7 +2787,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             StorageAccess param_storage{StorageManager::StorageParam};
             uint8_t zeros[40] {};
             param_storage.write_block(0, zeros, sizeof(zeros));
-            return MAV_RESULT_FAILED;
+            return MAV_RESULT_ACCEPTED;
         }
         if (is_equal(packet.param4, 97.0f)) {
             // create a really long loop
