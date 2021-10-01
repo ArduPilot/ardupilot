@@ -787,13 +787,31 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
     // scan through all nodes looking for closest
     for (node_index i=0; i<_short_path_data_numpoints; i++) {
         const ShortPathNode &node = _short_path_data[i];
-        if (!node.visited && (node.distance_cm < lowest_dist)) {
+        if (node.visited || is_equal(_short_path_data[i].distance_cm, FLT_MAX)) {
+            // if node is already visited OR cannot be reached yet, we can't use it
+            continue;
+        }
+        // figure out the pos of this node
+        Vector2f node_pos;
+        float dist_with_heuristics = FLT_MAX;
+        if (convert_node_to_point(node.id, node_pos)) {
+            // heuristics is is simple Euclidean distance from the node to the destination
+            // This should be admissible, therefore optimal path is guaranteed
+            const float heuristics = (node_pos-_path_destination).length();
+            dist_with_heuristics = node.distance_cm + heuristics;
+        } else {
+            // shouldn't happen
+            return false;
+        }
+        if (dist_with_heuristics < lowest_dist) {
+            // for NOW, this is the closest node
             lowest_idx = i;
-            lowest_dist = node.distance_cm;
+            lowest_dist = dist_with_heuristics;
         }
     }
 
     if (lowest_dist < FLT_MAX) {
+        // found the closest node
         node_idx = lowest_idx;
         return true;
     }
@@ -807,18 +825,17 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
     // convert origin and destination to offsets from EKF origin
-    Vector2f origin_NE, destination_NE;
-    if (!origin.get_vector_xy_from_origin_NE(origin_NE) || !destination.get_vector_xy_from_origin_NE(destination_NE)) {
+    if (!origin.get_vector_xy_from_origin_NE(_path_source) || !destination.get_vector_xy_from_origin_NE(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }
 
     // create visgraphs of origin and destination to fence points
-    if (!update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, origin_NE, true, destination_NE)) {
+    if (!update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, _path_source, true, _path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
-    if (!update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, destination_NE)) {
+    if (!update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, _path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
@@ -903,11 +920,8 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
             }
         }
     }
-    // update source and destination for by get_shortest_path_point
-    if (success) {
-        _path_source = origin_NE;
-        _path_destination = destination_NE;
-    } else {
+    // report error incase path not found
+    if (!success) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
     }
 
@@ -924,6 +938,12 @@ bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
     // get id from path
     AP_OAVisGraph::OAItemID id = _path[_path_numpoints - point_num - 1];
 
+    return convert_node_to_point(id, pos);
+}
+
+// find the position of a node as an offset (in cm) from the ekf origin
+bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vector2f& pos) const
+{
     // convert id to a position offset from EKF origin
     switch (id.id_type) {
     case AP_OAVisGraph::OATYPE_SOURCE:
