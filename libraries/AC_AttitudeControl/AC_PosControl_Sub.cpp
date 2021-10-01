@@ -43,7 +43,7 @@ void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool fo
     shape_vel_accel(vel, accel,
         _vel_desired.z, _accel_desired.z,
         -accel_z_cms, accel_z_cms,
-        _jerk_xy_max, _dt, limit_output);
+        _jerk_max_xy_cmsss, _dt, limit_output);
 
     update_vel_accel(vel, accel, _dt, _limit_vector.z);
 }
