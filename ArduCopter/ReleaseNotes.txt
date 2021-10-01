@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.0-rc4 01-Oct-2021
+Changes from 4.1.0-rc3
+1) Position controller PSC/Z logging changed to PSCN/E/D and includes "desired"
+2) Bug Fixes
+    a) Position Controller init fix (could cause unexpected movement after entering Guided)
+    b) Serial8 parameter description fixed 
+------------------------------------------------------------------
 Copter 4.1.0-rc3 27-Sep-2021
 Changes from 4.1.0-rc2
 1) Enhancements
