@@ -84,22 +84,9 @@
 
 // second table of user settable parameters for quadplanes, this
 // allows us to go beyond the 64 parameter limit
-const AP_Param::GroupInfo AC_AutoTune::var_info[] = {
-    // @Param: AXES
-    // @DisplayName: Autotune axis bitmask
-    // @Description: 1-byte bitmap of axes to autotune
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
-    // @User: Standard
-    AP_GROUPINFO("AXES", 1, AC_AutoTune, axis_bitmask,  7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
-
-// Indices 2 and 3 where AGGR and MIN_D.  These were moved to the Multi SubClass
-
-    AP_GROUPEND
-};
 
 AC_AutoTune::AC_AutoTune()
 {
-    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // autotune_init - should be called when autotune mode is selected

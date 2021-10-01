@@ -37,21 +37,27 @@
 #include "AC_AutoTune_Multi.h"
 
 const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
-    AP_NESTEDGROUPINFO(AC_AutoTune, 0),
+
+    // @Param: AXES
+    // @DisplayName: Autotune axis bitmask
+    // @Description: 1-byte bitmap of axes to autotune
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Standard
+    AP_GROUPINFO("AXES", 1, AC_AutoTune_Multi, axis_bitmask,  7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
     // @Param: AGGR
     // @DisplayName: Autotune aggressiveness
     // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
     // @Range: 0.05 0.10
     // @User: Standard
-    AP_GROUPINFO("AGGR", 1, AC_AutoTune_Multi, aggressiveness, 0.1f),
+    AP_GROUPINFO("AGGR", 2, AC_AutoTune_Multi, aggressiveness, 0.1f),
 
     // @Param: MIN_D
     // @DisplayName: AutoTune minimum D
     // @Description: Defines the minimum D gain
     // @Range: 0.001 0.006
     // @User: Standard
-    AP_GROUPINFO("MIN_D", 2, AC_AutoTune_Multi, min_d,  0.001f),
+    AP_GROUPINFO("MIN_D", 3, AC_AutoTune_Multi, min_d,  0.001f),
 
     AP_GROUPEND
 };
