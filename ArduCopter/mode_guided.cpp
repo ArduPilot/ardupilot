@@ -161,7 +161,7 @@ void ModeGuided::wp_control_start()
     wp_nav->set_wp_destination(stopping_point, false);
 
     // initialise yaw
-    auto_yaw.set_mode_to_default(false);
+    auto_yaw.set_mode_to_default();
 }
 
 // run guided mode's waypoint navigation controller
@@ -222,7 +222,7 @@ void ModeGuided::pva_control_start()
     pos_control->init_xy_controller();
 
     // initialise yaw
-    auto_yaw.set_mode_to_default(false);
+    auto_yaw.set_mode_to_default();
 
     // initialise terrain alt
     guided_pos_terrain_alt = false;

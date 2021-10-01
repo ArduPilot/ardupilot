@@ -298,7 +298,7 @@ void ModeAuto::wp_start(const Location& dest_loc)
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
+        auto_yaw.set_mode_to_default();
     }
 }
 
@@ -382,7 +382,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
         if (auto_yaw.mode() != AUTO_YAW_ROI) {
             if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
-                auto_yaw.set_mode_to_default(false);
+                auto_yaw.set_mode_to_default();
             } else {
                 // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
                 auto_yaw.set_mode(AUTO_YAW_HOLD);
@@ -1228,7 +1228,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
+        auto_yaw.set_mode_to_default();
     }
 }
 
@@ -1431,7 +1431,7 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
+        auto_yaw.set_mode_to_default();
     }
 }
 
