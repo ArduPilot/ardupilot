@@ -44,6 +44,9 @@ jobs:
             config: revo-mini
           - gcc: 6
             config: MatekF405-Wing
+        include:
+          - config: stm32h7
+            toolchain: chibios-py2
 
     steps:
       # git checkout the PR
