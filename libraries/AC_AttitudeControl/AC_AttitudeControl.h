@@ -106,10 +106,10 @@ public:
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max.set_and_save(accel_yaw_max); }
 
     // get the roll angular velocity limit in radians/s
-    float get_ang_vel_roll_max_rads() const { return _ang_vel_roll_max; }
+    float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max); }
 
     // get the pitch angular velocity limit in radians/s
-    float get_ang_vel_pitch_max_rads() const { return _ang_vel_pitch_max; }
+    float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max); }
 
     // get the yaw slew limit
     float get_slew_yaw_cds() const { return _slew_yaw; }
