@@ -14,10 +14,10 @@ from common import NotAchievedException, AutoTestTimeoutException
 from pymavlink import mavutil
 from pysim import vehicleinfo
 
-SITL_START_LOCATION_AVC = mavutil.location(40.072842, -105.230575, 1586, 0)
-
 
 class AutoTestHelicopter(AutoTestCopter):
+
+    sitl_start_loc = mavutil.location(40.072842, -105.230575, 1586, 0)     # Sparkfun AVC Location
 
     def vehicleinfo_key(self):
         return 'Helicopter'
@@ -29,7 +29,7 @@ class AutoTestHelicopter(AutoTestCopter):
         return "heli"
 
     def sitl_start_location(self):
-        return SITL_START_LOCATION_AVC
+        return self.sitl_start_loc
 
     def default_speedup(self):
         '''Heli seems to be race-free'''
@@ -355,6 +355,77 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
+    def fly_mission(self, filename, strict=True):
+        num_wp = self.load_mission(filename, strict=strict)
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(8, 2000)    # Raise rotor speed
+        self.delay_sim_time(20)
+        self.change_mode("AUTO")
+        self.set_rc(3, 1500)
+
+        self.wait_waypoint(1, num_wp-1)
+        self.wait_disarmed()
+        self.set_rc(8, 1000)    # Lower rotor speed
+
+    # FIXME move this & plane's version to common
+    def test_airspeed_drivers(self, timeout=600):
+
+        # set the start location to CMAC to use same test script as other vehicles
+        self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
+        self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
+                                         % (-35.362881, 149.165222, 582.000000, 90.0)])
+
+        # insert listener to compare airspeeds:
+        airspeed = [None, None]
+
+        def check_airspeeds(mav, m):
+            m_type = m.get_type()
+            if (m_type == 'NAMED_VALUE_FLOAT' and
+                    m.name == 'AS2'):
+                airspeed[1] = m.value
+            elif m_type == 'VFR_HUD':
+                airspeed[0] = m.airspeed
+            else:
+                return
+            if airspeed[0] is None or airspeed[1] is None:
+                return
+            delta = abs(airspeed[0] - airspeed[1])
+            if delta > 3:
+                raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
+
+        # Copter's airspeed sensors are off by default
+        self.set_parameter("ARSPD_TYPE", 2)     # Analog airspeed driver
+        self.set_parameter("ARSPD_PIN", 1)      # Analog airspeed driver pin for SITL
+        self.reboot_sitl()
+
+        airspeed_sensors = [
+            ("MS5525", 3, 1),
+            ("DLVR", 7, 2),
+        ]
+        for (name, t, bus) in airspeed_sensors:
+            self.context_push()
+            if bus is not None:
+                self.set_parameter("ARSPD2_BUS", bus)
+            self.set_parameter("ARSPD2_TYPE", t)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            self.install_message_hook_context(check_airspeeds)
+            self.fly_mission("ap1.txt", strict=False)
+
+            if airspeed[0] is None:
+                raise NotAchievedException("Never saw an airspeed1")
+            if airspeed[1] is None:
+                raise NotAchievedException("Never saw an airspeed2")
+            self.context_pop()
+            if not self.current_onboard_log_contains_message("ARSP"):
+                raise NotAchievedException("Expected ARSP log message")
+
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = AutoTest.tests(self)
@@ -388,6 +459,10 @@ class AutoTestHelicopter(AutoTestCopter):
             ("LogUpload",
              "Log upload",
              self.log_upload),
+
+            ("AirspeedDrivers",
+             "Test AirSpeed drivers",
+             self.test_airspeed_drivers),
         ])
         return ret
 
