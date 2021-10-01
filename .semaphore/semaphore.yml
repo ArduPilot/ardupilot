@@ -19,7 +19,7 @@ global_job_config:
       - git submodule update --init --recursive --depth 1 --no-single-branch
       - virtualenv --python=python2.7 --system-site-packages python2-env
       - VIRTUAL_ENV_DISABLE_PROMPT=1 source python2-env/bin/activate
-      - sudo apt-get update && sudo apt-get install --no-install-recommends -y lsb-release software-properties-common && sudo apt purge -y gcc g++
+      - sudo apt-get install --no-install-recommends -y lsb-release software-properties-common && sudo apt purge -y gcc g++
       - export SKIP_AP_EXT_ENV=1
       - export SKIP_AP_GRAPHIC_ENV=1 
       - export SKIP_AP_COV_ENV=1 
