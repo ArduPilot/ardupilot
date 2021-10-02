@@ -112,12 +112,20 @@ AP_GPS_SBF::read(void)
                                 }
                                 break;
                             case Config_State::SSO:
-                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
-                                             (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)gps._com_port[state.instance]) == -1) {
-                                    config_string = nullptr;
-                                }
-                                break;
+                                if (get_type() == AP_GPS::GPS_TYPE_SBF) {
+                                    if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                                 (int)GPS_SBF_STREAM_NUMBER,
+                                                 (int)gps._com_port[state.instance]) == -1) {
+                                        config_string = nullptr;
+                                    }
+                                } else {
+                                    if (asprintf(&config_string, "sso,Stream%d,COM%d,BaseVectorGeod+PVTGeodetic+VelCovGeodetic+DOP+ReceiverStatus+AttEuler+AttCovEuler,msec100\n",
+                                                 (int)GPS_SBF_STREAM_NUMBER,
+                                                 (int)gps._com_port[state.instance]) == -1) {
+                                        config_string = nullptr;
+                                    }
+                                 }
+                                 break;
                             case Config_State::Blob:
                                 if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
@@ -172,7 +180,10 @@ AP_GPS_SBF::read(void)
             }
         }
     }
-
+    uint32_t now = AP_HAL::millis();
+    if (now - state.gps_yaw_time_ms > 500) {
+        state.have_gps_yaw = false;
+    }
     return ret;
 }
 
@@ -497,6 +508,33 @@ AP_GPS_SBF::process_message(void)
         }
         break;
     }
+
+    case AttEuler:
+    {
+        const msg5938 &temp = sbf_msg.data.msg5938u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+
+        if (!(temp.Aux1Error || temp.Aux2Error) && temp.Mode && (temp.Heading > -200000)) {
+            state.have_gps_yaw = true;
+            state.gps_yaw_configured = true;
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw_accuracy = true;
+            state.gps_yaw_time_ms = AP_HAL::millis();
+        }
+        break;
+    }
+
+    case AttCovEuler:
+    {
+        const msg5939 &temp = sbf_msg.data.msg5939u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+        if (!(temp.Aux1Error || temp.Aux2Error)) {
+            state.gps_yaw_accuracy = (float)(sqrt(temp.Cov_HeadHead));
+        }
+        break;
+    }
+
+
     case BaseVectorGeod:
     {
 #pragma GCC diagnostic push

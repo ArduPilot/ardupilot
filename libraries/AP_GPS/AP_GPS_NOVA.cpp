@@ -67,7 +67,7 @@ AP_GPS_NOVA::read(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+    if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
         const char *init_str = _initialisation_blob[_init_blob_index];
 
         if (now > _init_blob_time) {
@@ -75,6 +75,27 @@ AP_GPS_NOVA::read(void)
             _init_blob_time = now + 200;
             _init_blob_index++;
         }
+    } else if (_init_blob_index == ARRAY_SIZE(_initialisation_blob)) {
+        if (now > _init_blob_time) {
+            switch (get_type())
+            {
+                case AP_GPS::GPS_TYPE_NOVA:
+                    break;
+                case AP_GPS::GPS_TYPE_NOVA_DUAL:
+                    port->write((const uint8_t *)nova_heading_init_blob, strlen(nova_heading_init_blob));
+                    break;
+                case AP_GPS::GPS_TYPE_UNICORE_DUAL:
+                    port->write((const uint8_t *)unicore_heading_init_blob, strlen(unicore_heading_init_blob));
+                    break;
+                default:
+                    break;
+            }
+            _init_blob_index++;
+        }
+    }
+
+    if (now - state.gps_yaw_time_ms > 500) {
+        state.have_gps_yaw = false;
     }
 
     bool ret = false;
@@ -170,8 +191,8 @@ AP_GPS_NOVA::parse(uint8_t temp)
             nova_msg.crc += (uint32_t) (temp << 24);
             nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
-            uint32_t crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.headerlength, (uint8_t *)&nova_msg.header.data, (uint32_t)0);
-            crc = CalculateBlockCRC32((uint32_t)nova_msg.header.nova_headeru.messagelength, (uint8_t *)&nova_msg.data, crc);
+            uint32_t crc = crc_crc32((uint32_t)0, (uint8_t *)&nova_msg.header.data, (uint32_t)nova_msg.header.nova_headeru.headerlength);
+            crc = crc_crc32(crc, (uint8_t *)&nova_msg.data, (uint32_t)nova_msg.header.nova_headeru.messagelength);
 
             if (nova_msg.crc == crc)
             {
@@ -257,6 +278,42 @@ AP_GPS_NOVA::process_message(void)
         _new_position = true;
     }
 
+    // 971 for unicore 2042 for novatel
+    if(messageid == 971 || messageid == 2042)
+    {
+        const nova_heading &headingu = nova_msg.data.headingu;
+        if (headingu.solstat == 0) {// have a solution
+            switch (headingu.postype)
+            {
+                case 16:
+                case 17: // psrdiff
+                case 18: // waas
+                case 20: // omnistar
+                case 68: // ppp_converg
+                case 69: // ppp
+                case 32: // l1 float
+                case 33: // iono float
+                case 34: // narrow float
+                case 48: // l1 int
+                case 50: // narrow int
+                {
+                    state.have_gps_yaw = true;
+                    state.gps_yaw_configured = true;
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw = (float)(headingu.heading);
+                    state.gps_yaw_accuracy = (float)(headingu.hdgstddev);
+                    state.gps_yaw_time_ms = AP_HAL::millis();
+                    break;
+                }
+                case 0: // NONE
+                case 1: // FIXEDPOS
+                case 2: // FIXEDHEIGHT
+                default:
+                    break;
+            }
+        }
+    }
+
     if (messageid == 99) // bestvel
     {
         const bestvel &bestvelu = nova_msg.data.bestvelu;
@@ -290,26 +347,3 @@ AP_GPS_NOVA::process_message(void)
     return false;
 }
 
-#define CRC32_POLYNOMIAL 0xEDB88320L
-uint32_t AP_GPS_NOVA::CRC32Value(uint32_t icrc)
-{
-    int i;
-    uint32_t crc = icrc;
-    for ( i = 8 ; i > 0; i-- )
-    {
-        if ( crc & 1 )
-            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-        else
-            crc >>= 1;
-    }
-    return crc;
-}
-
-uint32_t AP_GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
-{
-    while ( length-- != 0 )
-    {
-        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
-    }
-    return( crc );
-}

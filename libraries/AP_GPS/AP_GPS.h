@@ -128,6 +128,9 @@ public:
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+        GPS_TYPE_NOVA_DUAL = 24,
+        GPS_TYPE_UNICORE_DUAL = 25,
+        GPS_TYPE_SBF_DUAL = 26,
     };
 
     /// GPS status codes

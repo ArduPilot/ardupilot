@@ -107,7 +107,9 @@ private:
         PVTGeodetic = 4007,
         ReceiverStatus = 4014,
         BaseVectorGeod = 4028,
-        VelCovGeodetic = 5908
+        VelCovGeodetic = 5908,
+        AttEuler       = 5938,
+        AttCovEuler    = 5939,
     };
 
     struct PACKED msg4007 // PVTGeodetic
@@ -215,12 +217,51 @@ private:
         float Cov_VuDt;
     };
 
+    struct PACKED msg5938
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t  NrSV;
+        uint8_t Aux1Error : 2;
+        uint8_t Aux2Error : 2;
+        uint8_t ErrorReservedBit : 3;
+        uint8_t AttitudeRequest : 1;
+        uint16_t Mode;
+        uint16_t Reserved;
+        float Heading;
+        float Pitch;
+        float Roll;
+        float PitchDot;
+        float RollDot;
+        float HeadingDot;
+    };
+
+    struct PACKED msg5939
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint16_t Reserved;
+        uint8_t Aux1Error : 2;
+        uint8_t Aux2Error : 2;
+        uint8_t ErrorReservedBit : 3;
+        uint8_t AttitudeRequest : 1;
+        float Cov_HeadHead;
+        float Cov_PitchPitch;
+        float Cov_RollRoll;
+        float Cov_HeadPitch;
+        float Cov_HeadRoll;
+        float Cov_PitchRoll;
+    };
+
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
         msg4014 msg4014u;
         msg4028 msg4028u;
         msg5908 msg5908u;
+        msg5938 msg5938u;
+        msg5939 msg5939u;
         uint8_t bytes[256];
     };
 
