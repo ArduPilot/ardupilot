@@ -259,7 +259,12 @@ void panic(const char *errormsg, ...)
 
 uint32_t micros()
 {
+#if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
+    // special case optimisation for 32 bit timers
+    return st_lld_get_counter();
+#else
     return hrt_micros32();
+#endif
 }
 
 uint32_t millis()
