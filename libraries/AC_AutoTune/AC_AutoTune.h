@@ -174,9 +174,6 @@ protected:
     // returns true if max tested accel is used for parameter
     virtual bool set_accel_to_max_test_value() = 0;
 
-    // returns true if pilot is allowed to make inputs during test
-    virtual bool allow_pilot_rp_input() = 0;
-
     // get minimum rate P (for any axis)
     virtual float get_rp_min() const = 0;
 
