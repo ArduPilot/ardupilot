@@ -281,11 +281,7 @@ void AC_AutoTune::run()
     // get pilot desired climb rate
     const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
-    bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
-    // allow pilots to make inputs less than 5 deg in pitch and roll
-    if (allow_pilot_rp_input() && !pilot_override && fabsf(target_roll_cd) < 500 && fabsf(target_pitch_cd) < 500) {
-        zero_rp_input = true;
-    }
+    const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
 
     const uint32_t now = AP_HAL::millis();
     if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
@@ -319,7 +315,7 @@ void AC_AutoTune::run()
             last_pilot_override_warning = now;
         }
     }
-    if (zero_rp_input && !allow_pilot_rp_input()) {
+    if (zero_rp_input) {
         // pilot input on throttle and yaw will still use position hold if enabled
         get_poshold_attitude(target_roll_cd, target_pitch_cd, desired_yaw_cd);
     }
@@ -1951,6 +1947,7 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
     static float filt_command_reading;
     static float filt_gyro_reading;
     static float filt_tgt_rate_reading;
+    static Vector2f filt_att_fdbk_from_velxy_cd;
 
     const float alpha = calc_lowpass_alpha_dt(0.0025f, 0.2f * start_frq);
 
@@ -1962,6 +1959,13 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
     float cycle_time_ms = 0;
     if (!is_zero(dwell_freq)) {
         cycle_time_ms = 1000.0f * 6.28f / dwell_freq;
+    }
+
+    // body frame calculation of velocity
+    Vector3f velocity_ned, velocity_bf;
+    if (ahrs_view->get_velocity_NED(velocity_ned)) {
+        velocity_bf.x = velocity_ned.x * ahrs_view->cos_yaw() + velocity_ned.y * ahrs_view->sin_yaw();
+        velocity_bf.y = -velocity_ned.x * ahrs_view->sin_yaw() + velocity_ned.y * ahrs_view->cos_yaw();
     }
 
     if (settle_time == 0) {
@@ -1976,26 +1980,28 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
                 dwell_freq = waveform_freq_rads;
             }
         }
+        filt_att_fdbk_from_velxy_cd.x += alpha * (-5730.0f * vel_hold_gain * velocity_bf.y - filt_att_fdbk_from_velxy_cd.x);
+        filt_att_fdbk_from_velxy_cd.y += alpha * (5730.0f * vel_hold_gain * velocity_bf.x - filt_att_fdbk_from_velxy_cd.y);
+        filt_att_fdbk_from_velxy_cd.x = constrain_float(filt_att_fdbk_from_velxy_cd.x, -2000.0f, 2000.0f);
+        filt_att_fdbk_from_velxy_cd.y = constrain_float(filt_att_fdbk_from_velxy_cd.y, -2000.0f, 2000.0f);
     } else {
         target_angle_cd = 0.0f;
         trim_yaw_tgt_reading = (float)attitude_control->get_att_target_euler_cd().z;
         trim_yaw_heading_reading = (float)ahrs_view->yaw_sensor;
         settle_time--;
         dwell_start_time_ms = now;
+        filt_att_fdbk_from_velxy_cd = Vector2f(0.0f,0.0f);
     }
-
-    float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
-    get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     switch (axis) {
     case ROLL:
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd + target_angle_cd, target_pitch_cd, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + filt_att_fdbk_from_velxy_cd.x, filt_att_fdbk_from_velxy_cd.y, 0.0f);
         command_reading = motors->get_roll();
         tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
         gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
         break;
     case PITCH:
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd + target_angle_cd, 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(filt_att_fdbk_from_velxy_cd.x, target_angle_cd + filt_att_fdbk_from_velxy_cd.y, 0.0f);
         command_reading = motors->get_pitch();
         tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
         gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
@@ -2004,7 +2010,7 @@ void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &d
         command_reading = motors->get_yaw();
         tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
         gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
-        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll_cd, target_pitch_cd, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
+        attitude_control->input_euler_angle_roll_pitch_yaw(filt_att_fdbk_from_velxy_cd.x, filt_att_fdbk_from_velxy_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
         break;
     }
 

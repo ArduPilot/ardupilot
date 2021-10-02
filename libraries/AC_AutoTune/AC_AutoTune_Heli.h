@@ -99,16 +99,6 @@ protected:
     // returns true if max tested accel is used for parameter
     bool set_accel_to_max_test_value() override { return false; }
 
-    // returns true if pilot is allowed to make inputs during test
-    bool allow_pilot_rp_input() override
-    {
-        if (!use_poshold && tune_type == SP_UP) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
 
