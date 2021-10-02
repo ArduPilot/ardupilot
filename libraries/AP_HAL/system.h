@@ -10,7 +10,7 @@ namespace AP_HAL {
 
 void init();
 
-void panic(const char *errormsg, ...) FMT_PRINTF(1, 2) NORETURN;
+void WEAK panic(const char *errormsg, ...) FMT_PRINTF(1, 2) NORETURN;
 
 uint16_t micros16();
 uint32_t micros();
