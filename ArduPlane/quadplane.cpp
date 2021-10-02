@@ -2079,11 +2079,12 @@ void QuadPlane::run_xy_controller(void)
  */
 void QuadPlane::poscontrol_init_approach(void)
 {
+    const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
     if ((options & OPTION_DISABLE_APPROACH) != 0) {
         // go straight to QPOS_POSITION1
         poscontrol.set_state(QPOS_POSITION1);
+        gcs().send_text(MAV_SEVERITY_INFO,"VTOL Position1 d=%.1f", dist);
     } else if (poscontrol.get_state() != QPOS_APPROACH) {
-        const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
         gcs().send_text(MAV_SEVERITY_INFO,"VTOL approach d=%.1f", dist);
         poscontrol.set_state(QPOS_APPROACH);
         poscontrol.thrust_loss_start_ms = 0;
