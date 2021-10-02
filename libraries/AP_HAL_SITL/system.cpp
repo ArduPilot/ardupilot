@@ -25,7 +25,11 @@ void init()
     gettimeofday(&state.start_time, nullptr);
 }
 
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+void panic(const char *errormsg, ...)
+#else
 void WEAK panic(const char *errormsg, ...)
+#endif
 {
     va_list ap;
 
