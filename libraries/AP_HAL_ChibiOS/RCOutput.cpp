@@ -1382,7 +1382,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             pwm = constrain_int16(pwm, 1000, 2000);
-            uint16_t value = 2 * (pwm - 1000);
+            uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
             if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
