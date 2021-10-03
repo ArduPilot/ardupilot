@@ -414,12 +414,7 @@ void AP_SerialManager::init()
         auto *uart = hal.serial(i);
 
         if (uart != nullptr) {
-
-            // see if special options have been requested
-            if (state[i].protocol != SerialProtocol_None) {
-                set_options(i);
-            }
-
+            set_options(i);
             switch (state[i].protocol) {
                 case SerialProtocol_None:
                     break;
