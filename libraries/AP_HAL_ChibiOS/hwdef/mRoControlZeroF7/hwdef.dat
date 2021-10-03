@@ -133,11 +133,11 @@ PF9 SPI5_MOSI SPI5
 
 # GPIOs
 # This defines general purpose outputs, mapped to GPIO
-# numbers 1 thru 4 for users.
-PG9  EXTERN_GPIO1 GPIO(1)
-PG13 EXTERN_GPIO2 GPIO(2)
-PG12 EXTERN_GPIO3 GPIO(3)
-PG14 EXTERN_GPIO4 GPIO(4)
+# numbers 3 thru 6 for users.
+PG9  EXTERN_GPIO1 OUTPUT GPIO(3)
+PG13 EXTERN_GPIO2 OUTPUT GPIO(4)
+PG12 EXTERN_GPIO3 OUTPUT GPIO(5)
+PG14 EXTERN_GPIO4 OUTPUT GPIO(6)
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
