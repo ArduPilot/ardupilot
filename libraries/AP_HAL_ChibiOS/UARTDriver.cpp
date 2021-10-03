@@ -1349,13 +1349,13 @@ void UARTDriver::_tx_timer_tick(void)
  */
 void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 {
-    if (arts_line == 0 || sdef.is_usb) {
+    if (sdef.is_usb) {
         // no hw flow control available
         return;
     }
 #if HAL_USE_SERIAL == TRUE
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
-    _flow_control = flowcontrol;
+    _flow_control = (arts_line == 0) ? FLOW_CONTROL_DISABLE : flowcontrol;
     if (!is_initialized()) {
         // not ready yet, we just set variable for when we call begin
         return;
@@ -1364,8 +1364,10 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 
     case FLOW_CONTROL_DISABLE:
         // force RTS active when flow disabled
-        palSetLineMode(arts_line, 1);
-        palClearLine(arts_line);
+        if (arts_line != 0) {
+            palSetLineMode(arts_line, 1);
+            palClearLine(arts_line);
+        }
         _rts_is_active = true;
         // disable hardware CTS support
         chSysLock();
@@ -1603,7 +1605,6 @@ bool UARTDriver::set_options(uint16_t options)
     uint32_t cr3 = sd->usart->CR3;
     bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
 
-#ifdef HAL_PIN_ALT_CONFIG
     /*
       allow for RX, TX, RTS and CTS pins to be remapped via BRD_ALT_CONFIG
      */
@@ -1611,12 +1612,9 @@ bool UARTDriver::set_options(uint16_t options)
     atx_line = GPIO::resolve_alt_config(sdef.tx_line, PERIPH_TYPE::UART_TX, sdef.instance);
     arts_line = GPIO::resolve_alt_config(sdef.rts_line, PERIPH_TYPE::OTHER, sdef.instance);
     acts_line = GPIO::resolve_alt_config(sdef.cts_line, PERIPH_TYPE::OTHER, sdef.instance);
-#else
-    arx_line = sdef.rx_line;
-    atx_line = sdef.tx_line;
-    arts_line = sdef.rts_line;
-    acts_line = sdef.cts_line;
-#endif
+
+    // Check flow control, might have to disable if RTS line is gone
+    set_flow_control(_flow_control);
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
     // F7 has built-in support for inversion in all uarts
