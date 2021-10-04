@@ -25,6 +25,7 @@ enum accel_cal_status_t {
     ACCEL_CAL_SUCCESS=3,
     ACCEL_CAL_FAILED=4
 };
+#define ACCELCAL_NUM_STATES 5
 
 enum accel_cal_fit_type_t {
     ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID=0,
