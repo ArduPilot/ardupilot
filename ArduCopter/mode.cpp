@@ -925,13 +925,6 @@ float Mode::get_pilot_desired_yaw_rate(float yaw_in)
         return 0.0f;
     }
 
-#if FRAME_CONFIG != HELI_FRAME
-    // ignore pilot input if we aren't taking off yet
-    if (copter.ap.land_complete) {
-        return 0.0f;
-    }
-#endif
-
     // convert pilot input to the desired yaw rate
     return g2.pilot_y_rate * 100.0 * input_expo(yaw_in, g2.pilot_y_expo);
 }
