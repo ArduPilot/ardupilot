@@ -11,11 +11,12 @@
 
 
 extern const AP_HAL::HAL &hal;
+uint8_t AP_MCP9600::readFlag = 0;
 
 AP_MCP9600::AP_MCP9600():address(DEFAULT_IIC_ADDR),temperature(0),
         lastReadValue(0),time(0){}
 
-AP_MCP9600::AP_MCP9600(uint16_t add, char type){ //default shall only in declare in header not here
+AP_MCP9600::AP_MCP9600(uint16_t add, char type){
     this->address=add;
     this->setThermoConfig(type);
     this->temperature=0;
@@ -27,6 +28,8 @@ AP_MCP9600::~AP_MCP9600(){
 
 /**
  * 
+ * !!CAUTION!!
+ * 
  * @return true if init successful, false otherwise
  */
 bool AP_MCP9600::init(){
@@ -34,14 +37,14 @@ bool AP_MCP9600::init(){
     
     uint8_t bus =1; //the bus number equals 1 by default
     device = hal.i2c_mgr->get_device(bus, this->address);
+
     if(!device){
         result = false;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Init is failed");
     } else {
-        WITH_SEMAPHORE(device->get_semaphore());
-        device->set_retries(2);
-        device->set_speed(AP_HAL::Device::SPEED_HIGH);
-        //update every 50ms, setting the timer and updated time, //TODO make it in the task of system
+        //WITH_SEMAPHORE(device->get_semaphore());
+        this->device->set_speed(AP_HAL::Device::SPEED_HIGH);
+        //update every 50ms, setting the timer and updated time,
         //device->register_periodic_callback((50*AP_USEC_PER_MSEC),FUNCTOR_BIND_MEMBER(&MCP9600::timer,void));/*This returns a nullpointer and hence make the connecting failed*/
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Init is finished");
     }
@@ -49,63 +52,90 @@ bool AP_MCP9600::init(){
 }
 
 /**
- * @brief to write a value to a register
+ * @brief to write a value to a register !!Caution!!
  * @param reg the written register
  * @param value the content to be written
  * @return true if writing is successful, false otherwise
  */
 bool AP_MCP9600::writeByte(uint8_t reg, uint8_t val){
     bool result = false;
-    result = this->device->write_register(reg,val);
+    /**
+     * deactive read flag and connect it to the address
+     * to active write condition
+     * */
+    readFlag = 0;
+    uint8_t writeAddress = (DEFAULT_IIC_ADDR<<1)|readFlag;
+    this->device->set_address(writeAddress);
+    uint8_t data[2]={reg,val};
+    result = this->device->transfer(data,sizeof(data),nullptr,0);
+    return result;
+}
+
+/**
+ * @Brief reading a 1 Byte-long register !!Caution!!
+ * @param reg the to be read register
+ * @param length the length of register in byte
+ * @return
+ */
+bool AP_MCP9600::readByte(uint8_t reg){
+    bool result = false;
+    uint8_t temp1;
+    /**
+     * active read flag and connect it to the address
+     * to active read condition
+     * */
+    readFlag = 1;
+    uint8_t readAddress = (DEFAULT_IIC_ADDR<<1)|readFlag;
+    this->device->set_address(readAddress);
+    result = device->transfer(&reg,sizeof(reg),&temp1,sizeof(temp1));
+    this->lastReadValue = temp1;
+    return result;
+}
+
+/**
+ * !!CAUTION!!
+ * */
+bool AP_MCP9600::readDoubleByte(uint8_t reg){
+    bool result = false;
+    uint8_t temp1[2];
+    /**
+     * active read flag and connect it to the address
+     * to active read condition
+     * */
+    readFlag = 1;
+    uint8_t readAddress = (DEFAULT_IIC_ADDR<<1)|readFlag;
+    this->device->set_address(readAddress);
+    result = device->transfer(&reg,sizeof(reg),temp1,sizeof(temp1));
+    this->lastReadValue = (temp1[1]<<8)|temp1[0];
+    return result;
+}
+
+/**
+ * !!CAUTION!!
+ * */
+bool AP_MCP9600::readTripleByte(uint8_t reg){
+    bool result = false;
+    uint8_t temp1[3];
+    /**
+     * active read flag and connect it to the address
+     * to active read condition
+     * */
+    readFlag = 1;
+    uint8_t readAddress = (DEFAULT_IIC_ADDR<<1)|readFlag;
+    this->device->set_address(readAddress);
+    result = device->transfer(&reg,sizeof(reg),temp1,sizeof(temp1));
+    this->lastReadValue = (temp1[2]<<16)|(temp1[1]<<8)|temp1[0];
     return result;
 }
 
 /**
  * 
- * @param reg
- * @param length
- * @return
- */
-bool AP_MCP9600::readByte(unsigned char reg, char length){
-    bool result=false;
-    if(length == 8){
-        uint8_t temp;
-        result = device->read_registers(reg, &temp, length);
-        this->lastReadValue = temp; //save it to memory-attribute of class
-    } else if(length == 16) {
-        uint8_t temp[2];
-        result = device->transfer(&reg,1,temp,length);
-        //TODO check this again to know, if it is big or little endian
-        //here is little endian
-        /*
-         * save it to memory-attribute of class
-         */
-        this->lastReadValue = (temp[1]<<8)|(temp[0]);
-    } else{
-        uint8_t temp[3];
-        result = device->transfer(&reg,1,temp,length);
-        this->lastReadValue = (temp[2]<<16)|(temp[1]<<8)|(temp[0]);
-    }
-    return result;
-}
-
-/**
- * @brief 20Hz timer, update every 50ms
- * //TODO if not ok use TSYS01 sensor timer function again
+ * //TODO to implement
  */
 void AP_MCP9600::update(){
-    //if(this->time==0){
-        //if not record begin the record
-        //this->recordTime();
-    //}
-    float temp;
-    bool updated = this->checkDataUpdate();
-    if(updated){
-        this->readHotJunction(&temp);
-        //this->recordTime();
-    }
 }
 
+//TODO let it there not implement
 void AP_MCP9600::recordTime(){
     bool test = this->readADC();//test if the sensor is active or not
     if(test){
@@ -115,33 +145,25 @@ void AP_MCP9600::recordTime(){
 }
 
 /**
- * //TODO consider to delete this because it can only use once
- * @param address
- */
-void AP_MCP9600::setAddress(uint8_t add){
-    this->address = add;
-}
-
-/**
  * @brief return the temperature of measured point (hot junction is the 
  * measured point), the result will be stored in temperature-attribute of class
  * @param value
  * @return 
  */
-bool AP_MCP9600::readHotJunction(float *value){
+bool AP_MCP9600::readHotJunction(){
     bool result=false;
-    result = this->readByte(HOT_JUNCTION_TEMP_REG,16);
+    //result = this->readByte(HOT_JUNCTION_TEMP_REG,2);//see you anytime anywhere
+    result = this->readDoubleByte(HOT_JUNCTION_TEMP_REG);
     if(result){
         if(lastReadValue&0x8000){
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0-4096.0;
         }
         else{
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0;
         }
     }
-    this->temperature=*value;
     return result;
 }
 
@@ -150,16 +172,17 @@ bool AP_MCP9600::readHotJunction(float *value){
  * @param value
  * @return 
  */
-bool AP_MCP9600::readColdJunction(float *value){
+bool AP_MCP9600::readColdJunction(){
     bool result = false;
-    result = this->readByte(COLD_JUNCTION_TEMP_REG,16);
+    //result = this->readByte(COLD_JUNCTION_TEMP_REG,2);
+    result = this->readDoubleByte(COLD_JUNCTION_TEMP_REG);
     if(result){
         if(lastReadValue&0x8000){
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0-4096.0;
         }
         else{
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0;
         }
     }
@@ -171,16 +194,17 @@ bool AP_MCP9600::readColdJunction(float *value){
  * @param value used for external output
  * @return true if success, false otherwise
  */
-bool AP_MCP9600::readJunctionsDifferent(float *value){
+bool AP_MCP9600::readJunctionsDifferent(){
     bool result = false;
-    result = this->readByte(JUNCTION_TEMP_DELTA_REG,16);
+    //result = this->readByte(JUNCTION_TEMP_DELTA_REG,2);
+    result = this->readDoubleByte(JUNCTION_TEMP_DELTA_REG);
     if(result){
         if(lastReadValue&0x8000){
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0-4096.0;
         }
         else{
-            *value = ((float)(lastReadValue>>8))*16.0
+            this->temperature = ((float)(lastReadValue>>8))*16.0
                     +((float)(lastReadValue&0x00ff))/16.0;
         }
     }
@@ -194,7 +218,8 @@ bool AP_MCP9600::readJunctionsDifferent(float *value){
  */
 bool AP_MCP9600::readADC(){
     bool result = false;
-    result = this->readByte(RAW_ADC_DATA_REG,24);
+    //result = this->readByte(RAW_ADC_DATA_REG,3);
+    result = this->readTripleByte(RAW_ADC_DATA_REG);
     return result;
 }
 
@@ -204,7 +229,7 @@ bool AP_MCP9600::readADC(){
  */
 bool AP_MCP9600::readStatus(){
     bool result = false;
-    result = this->readByte(STAT_REG,8);
+    result = this->readByte(STAT_REG);
     return result;
 }
 
@@ -225,7 +250,7 @@ bool AP_MCP9600::setThermoConfig(uint8_t setValue){
  */
 bool AP_MCP9600::readThermoConfig(){
     bool result = false;
-    result = this->readByte(THERM_SENS_CFG_REG,8);
+    result = this->readByte(THERM_SENS_CFG_REG);
     return result;
 }
 
@@ -237,40 +262,34 @@ bool AP_MCP9600::readThermoConfig(){
 bool AP_MCP9600::setThermoType(char type){
     bool result = false;
     uint8_t setByte=0;
+    this->thermoType=type;
     switch(type){
     case 'k':
-        setByte = THER_TYPE_K;
-        this->thermoType=type;
+        setByte = 0<<4;
         break;
     case 'j':
-        setByte=THER_TYPE_J;
-        this->thermoType=type;
+        setByte = 1<<4;
         break;
     case 't':
-        setByte=THER_TYPE_T;
-        this->thermoType=type;
+        setByte = 2<<4;
         break;
     case 'n':
-        setByte=THER_TYPE_N;
-        this->thermoType=type;
+        setByte = 3<<4;
         break;
     case 's':
-        setByte=THER_TYPE_S;
-        this->thermoType=type;
+        setByte = 4<<4;
         break;
     case 'e':
-        setByte=THER_TYPE_E;
-        this->thermoType=type;
+        setByte = 5<<4;
         break;
     case 'b':
-        setByte=THER_TYPE_B;
-        this->thermoType=type;
+        setByte = 6<<4;
         break;
     case 'r':
-        setByte=THER_TYPE_R;
-        this->thermoType=type;
+        setByte = 7<<4;
         break;
     default:
+        setByte = 0<<4;
         this->thermoType='k';
         break;
     };
@@ -315,7 +334,8 @@ bool AP_MCP9600::setDeviceConfig(uint8_t setValue){
  */
 bool AP_MCP9600::readDeviveConfig(){
     bool result = false;
-    result = this->readByte(DEVICE_CFG_REG,16);
+    //result = this->readByte(DEVICE_CFG_REG,2);
+    result = this->readByte(DEVICE_CFG_REG);
     return result;
 }
 
@@ -328,7 +348,7 @@ bool AP_MCP9600::setShutdownMode(uint8_t setValue){
     bool result = false; 
     uint8_t setByte=0xfc;
     setValue = setValue%4;//caution: for setValue = 3 it has no effect
-    this->readByte(DEVICE_CFG_REG,8);//save the value of other bits
+    this->readByte(DEVICE_CFG_REG);//save the value of other bits
     setByte &= (uint8_t)(this->lastReadValue);//delete the old value
     setByte |= setValue;
     result = this->writeByte(DEVICE_CFG_REG,setByte);
@@ -345,7 +365,7 @@ bool AP_MCP9600::setBurstModeSamp(uint8_t setValue){
     bool result = false;
     uint8_t resolution=0; //the value of resolution
     uint8_t setByte=~((1<<2)|(1<<3)|(1<<4));//make the mask to reset bit 2.-4.
-    this->readByte(DEVICE_CFG_REG,8);//save the value of other bits
+    this->readByte(DEVICE_CFG_REG);//save the value of other bits
     setByte &= (uint8_t)(this->lastReadValue);//delete the old value of bit 2-4
     switch(setValue){
     case 1:
@@ -390,7 +410,7 @@ bool AP_MCP9600::setBurstModeSamp(uint8_t setValue){
 bool AP_MCP9600::setADCMeasureResolution(uint8_t setValue){
     bool result = false;
     uint8_t setByte=0;
-    this->readByte(DEVICE_CFG_REG,8);//save the value of other bits
+    this->readByte(DEVICE_CFG_REG);//save the value of other bits
     setByte = this->lastReadValue&0x9f;//delete the old value
     switch(setValue){
     case 18:
@@ -420,7 +440,7 @@ bool AP_MCP9600::setADCMeasureResolution(uint8_t setValue){
 bool AP_MCP9600::setColdJunctionResolution(uint8_t setValue){
     bool result=false;
     uint8_t setByte = (uint8_t)(~(1<<7));
-    this->readByte(DEVICE_CFG_REG,8);//save the value of other bits
+    this->readByte(DEVICE_CFG_REG);//save the value of other bits
     //delete the old value and setting the new
     setByte &= this->lastReadValue;
     setByte |=setValue;
@@ -476,16 +496,16 @@ bool AP_MCP9600::readAlertConfig(uint8_t alertChannel){
     bool result = false;
     switch(alertChannel){
     case 1:
-        result = this->readByte(ALERT1_CFG_REG,8);
+        result = this->readByte(ALERT1_CFG_REG);
         break;
     case 2:
-        result = this->readByte(ALERT2_CFG_REG,8);
+        result = this->readByte(ALERT2_CFG_REG);
         break;
     case 3:
-        result = this->readByte(ALERT3_CFG_REG,8);
+        result = this->readByte(ALERT3_CFG_REG);
         break;
     case 0:
-        result = this->readByte(ALERT4_CFG_REG,8);
+        result = this->readByte(ALERT4_CFG_REG);
         break;
     default:
         break;
@@ -521,7 +541,7 @@ bool AP_MCP9600::clearInterruptFlag(uint8_t alertChannel){
     default:
         break;
     }
-    this->readByte(addressOfChannel,8); //stored the values of remaining bits
+    this->readByte(addressOfChannel); //stored the values of remaining bits
     clearMask |= this->lastReadValue;
     result = this->writeByte(addressOfChannel,clearMask);
     return result;

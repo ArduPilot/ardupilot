@@ -210,6 +210,11 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+    checkInit = mcp.init();
+    //checkWrite = mcp.writeByte(0x5,(1<<4));
+    checkWrite = mcp.setThermoConfig(0);
+    checkRead = mcp.readThermoConfig();
+    regContent = mcp.getLastReg();
 }
 
 

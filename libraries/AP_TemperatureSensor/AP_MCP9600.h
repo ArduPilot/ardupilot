@@ -13,40 +13,40 @@
 #pragma once
 
 //Register pointer list
-#define HOT_JUNCTION_TEMP_REG          0X0 //Thermocouple Hot-Junction
-#define JUNCTION_TEMP_DELTA_REG        0X1 //Junctions Temperature Delta
-#define COLD_JUNCTION_TEMP_REG         0X2 //Cold-Junction Temperature
-#define RAW_ADC_DATA_REG               0X3 //Raw ADC Data register
-#define STAT_REG                       0X4 //STATUS
-#define THERM_SENS_CFG_REG             0X5 //Thermocouple Sensor Configuration
-#define DEVICE_CFG_REG                 0X6 //Device Configuration
+#define HOT_JUNCTION_TEMP_REG          0b00000000 //Thermocouple Hot-Junction
+#define JUNCTION_TEMP_DELTA_REG        0b00000001 //Junctions Temperature Delta
+#define COLD_JUNCTION_TEMP_REG         0b00000010 //Cold-Junction Temperature
+#define RAW_ADC_DATA_REG               0b00000011 //Raw ADC Data register
+#define STAT_REG                       0b00000100 //STATUS
+#define THERM_SENS_CFG_REG             0b00000101 //Thermocouple Sensor Configuration
+#define DEVICE_CFG_REG                 0b00000110 //Device Configuration
 
-#define ALERT1_CFG_REG                 0X8 //Alert 1 Configuration
-#define ALERT2_CFG_REG                 0X9 //Alert 2 Configuration
-#define ALERT3_CFG_REG                 0XA //Alert 3 Configuration
-#define ALERT4_CFG_REG                 0XB //Alert 4 Configuration
-#define ALERT1_HYS_REG                 0XC //Alert 1 Hysteresis
-#define ALERT2_HYS_REG                 0XD //Alert 2 Hysteresis
-#define ALERT3_HYS_REG                 0XE //Alert 3 Hysteresis
-#define ALERT4_HYS_REG                 0XF //Alert 4 Hysteresis
+#define ALERT1_CFG_REG                 0b00001000 //Alert 1 Configuration
+#define ALERT2_CFG_REG                 0b00001001 //Alert 2 Configuration
+#define ALERT3_CFG_REG                 0b00001010 //Alert 3 Configuration
+#define ALERT4_CFG_REG                 0b00001011 //Alert 4 Configuration
+#define ALERT1_HYS_REG                 0b00001100 //Alert 1 Hysteresis
+#define ALERT2_HYS_REG                 0b00001101 //Alert 2 Hysteresis
+#define ALERT3_HYS_REG                 0b00001110 //Alert 3 Hysteresis
+#define ALERT4_HYS_REG                 0b00001111 //Alert 4 Hysteresis
 
-#define TEMP_ALERT1_LIMIT_REG          0X10 //Temperature Alert 1 Limit
-#define TEMP_ALERT2_LIMIT_REG          0X11 //Temperature Alert 2 Limit
-#define TEMP_ALERT3_LIMIT_REG          0X12 //Temperature Alert 3 Limit
-#define TEMP_ALERT4_LIMIT_REG          0X13 //Temperature Alert 4 Limit
+#define TEMP_ALERT1_LIMIT_REG          0b00010000 //Temperature Alert 1 Limit
+#define TEMP_ALERT2_LIMIT_REG          0b00010001 //Temperature Alert 2 Limit
+#define TEMP_ALERT3_LIMIT_REG          0b00010010 //Temperature Alert 3 Limit
+#define TEMP_ALERT4_LIMIT_REG          0b00010011  //Temperature Alert 4 Limit
 
-#define VERSION_ID_REG                 0x20 //Device ID/Revision
+#define VERSION_ID_REG                 0b00100000 //Device ID/Revision
 
 //Thermocouple Sensor Configuration register
 //set thermo-type
-#define THER_TYPE_K                    0X0<<4
-#define THER_TYPE_J                    0X1<<4
-#define THER_TYPE_T                    0X2<<4
-#define THER_TYPE_N                    0X3<<4
-#define THER_TYPE_S                    0X4<<4
-#define THER_TYPE_E                    0X5<<4
-#define THER_TYPE_B                    0X6<<4
-#define THER_TYPE_R                    0X7<<4
+#define THER_TYPE_K                    0
+#define THER_TYPE_J                    16
+#define THER_TYPE_T                    32
+#define THER_TYPE_N                    48
+#define THER_TYPE_S                    64
+#define THER_TYPE_E                    80
+#define THER_TYPE_B                    96
+#define THER_TYPE_R                    112
 
 //device configuration register see table 5-1 page 23 data sheet
 
@@ -99,7 +99,7 @@
 #define ALERT_NUN_4                     4
 
 //I2C address. Distinct for each I2C device, change here
-#define DEFAULT_IIC_ADDR                0X67 //set as 0x67, TODO check again,
+#define DEFAULT_IIC_ADDR                0X60 //set as 0x60 as default after checking
 
 //resolution of temperature?, TODO not finish here
 #define RESOLUTION_0_5_DEGREE           0
@@ -111,8 +111,9 @@
 #include<AP_HAL/Device.h>
 #include<AP_HAL/I2CDevice.h>
 #include<AP_HAL/utility/OwnPtr.h>
-#include <GCS_MAVLink/GCS.h>
+#include<GCS_MAVLink/GCS.h>
 #include<stdint.h>
+#include<AP_Common/missing/byteswap.h>
 
 class AP_MCP9600{
 private:
@@ -122,23 +123,27 @@ private:
     unsigned char thermoType;//K,J,T,N,S,E,B,R thermocouple, default as K
     uint32_t time;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> device;
-    bool readByte(unsigned char reg, char length);//ok
-    bool writeByte(uint8_t reg,uint8_t val);//ok
+    bool readByte(uint8_t reg);//ok
+    bool readDoubleByte(uint8_t reg);//ok
+    bool readTripleByte(uint8_t reg);//ok
+    
     void recordTime();//ok
 
 public:
+    static uint8_t readFlag;
     AP_MCP9600();
     AP_MCP9600(uint16_t, char);//no default, to avoid overload ambigous class error
     virtual ~AP_MCP9600();
+    bool writeByte(uint8_t reg,uint8_t val);//ok
     bool init();
     void setAddress(uint8_t add);/*consider delete this, because there is not have 
                             * a real function to change the device address in
                             * the device class
                             */
     //For registers of temperature and ADC
-    bool readHotJunction(float *value);//ok
-    bool readColdJunction(float *value);//ok
-    bool readJunctionsDifferent(float *value);//ok
+    bool readHotJunction();//ok
+    bool readColdJunction();//ok
+    bool readJunctionsDifferent();//ok
     bool readADC();//ok
     //Status Register
     bool readStatus();//ok

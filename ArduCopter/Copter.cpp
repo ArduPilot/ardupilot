@@ -585,7 +585,14 @@ void Copter::one_hz_loop()
     gcs().send_text(MAV_SEVERITY_CRITICAL, "writing in reg is %s", checkWrite ? "success":"failed");//NEW
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Reading in reg is %s", checkRead ? "success":"failed");//NEW
     gcs().send_text(MAV_SEVERITY_CRITICAL, "The content is %lu", regContent);//NEW
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "The temperature is %.5f", regContent);//NEW
+    int n = 1;
+    // little endian if true
+    if(*(char *)&n == 1) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "little endian");//NEW
+    } else {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "big endian");//NEW
+    }
+    //gcs().send_text(MAV_SEVERITY_CRITICAL, "The temperature is %.5f", regContent);//NEW
 }
 
 void Copter::init_simple_bearing()
