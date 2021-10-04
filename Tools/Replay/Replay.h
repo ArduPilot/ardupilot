@@ -46,7 +46,7 @@ public:
     virtual uint8_t get_mode() const override { return 0; }
 
     AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed;
+
     AP_Int32 unused; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
