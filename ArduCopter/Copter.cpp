@@ -205,6 +205,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100),
 #endif
+    SCHED_TASK(mcpUpdate, 10, 75),
 };
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -580,6 +581,11 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "init is %s", checkInit ? "success":"failed");//NEW
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "writing in reg is %s", checkWrite ? "success":"failed");//NEW
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Reading in reg is %s", checkRead ? "success":"failed");//NEW
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "The content is %lu", regContent);//NEW
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "The temperature is %.5f", regContent);//NEW
 }
 
 void Copter::init_simple_bearing()
@@ -697,6 +703,10 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
     xtrack_error = flightmode->crosstrack_error() * 0.01;
     return true;
+}
+
+void Copter::mcpUpdate(){
+    mcp.update();
 }
 
 /*

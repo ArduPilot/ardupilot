@@ -68,6 +68,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
+#include<AP_TemperatureSensor/AP_MCP9600.h> //to measure the temperature of battery NEW
 
 // Configuration
 #include "defines.h"
@@ -246,6 +247,15 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
+
+    //sensor to measure the temperature of battery
+    AP_MCP9600 mcp;
+    float mcpTemp;
+    bool checkInit;
+    bool checkWrite;
+    bool checkRead;
+    uint32_t regContent;
+    void mcpUpdate();
 
     struct RangeFinderState {
         bool enabled:1;
