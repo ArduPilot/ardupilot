@@ -121,7 +121,13 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder"
+if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+    # use fixed version for package that drop python2 support
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 geocoder configparser==5.0.0 click==7.1.2 decorator==4.4.2"
+else
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder"
+fi
+
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
@@ -222,6 +228,11 @@ fi
 
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
+# Update Pip and Setuptools on old distro
+if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+    # use fixed version for package that drop python2 support
+    $PIP install --user -U pip==20.3 setuptools==44.0.0
+fi
 $PIP install --user -U $PYTHON_PKGS
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
