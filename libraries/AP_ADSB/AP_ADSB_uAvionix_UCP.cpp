@@ -209,6 +209,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.ctrl.x_bit = _frontend.tx_status.x_bit;
             run_state.first_packet_Tx_Status_recieved = true;
         }
+        gcs().send_message(MSG_UAVIONIX_ADSB_OUT_STATUS);
         break;
 
 #endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
@@ -243,8 +244,9 @@ const char* AP_ADSB_uAvionix_UCP::get_hardware_name(const uint8_t hwId)
 void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
 {
     GDL90_TRANSPONDER_CONTROL_MSG msg {};
+    memset(&msg, 0, sizeof(msg));
     msg.messageId = GDL90_ID_TRANSPONDER_CONTROL;
-    msg.version = 1;
+    msg.version = GDL90_TRANSPONDER_CONTROL_VERSION;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // when using the simulator, always declare we're on the ground to help
@@ -289,6 +291,10 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     msg.emergencyState = gcs_lost_comms ? ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_UAS_LOST_LINK : ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_NONE;
 #else
     msg.emergencyState = ADSB_EMERGENCY_STATUS::ADSB_EMERGENCY_NONE;
+#endif
+
+#if GDL90_TRANSPONDER_CONTROL_VERSION == 2
+    msg.x_bit = 0;
 #endif
 
     memcpy(msg.callsign, _frontend.out_state.ctrl.callsign, sizeof(msg.callsign));
