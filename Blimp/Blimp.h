@@ -42,7 +42,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <Filter/Filter.h>             // Filter library
-#include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
