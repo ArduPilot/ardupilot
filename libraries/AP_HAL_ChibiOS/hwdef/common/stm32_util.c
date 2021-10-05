@@ -216,6 +216,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
     while (n--) {
 #if defined(STM32F1)
+        (void)idx;
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
 #elif defined(STM32G4)
@@ -242,6 +243,7 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 #endif
     while (n--) {
 #if defined(STM32F1)
+        (void)idx;
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         dr[n/2] =   (*v) & 0xFFFF;
         dr[n/2+1] = (*v) >> 16;
@@ -275,11 +277,17 @@ void set_fast_reboot(enum rtc_boot_magic v)
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
+    (void)idx;
+    (void)v;
+    (void)n;
 }
 
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
+    (void)idx;
+    (void)v;
+    (void)n;
 }
 #endif // NO_FASTBOOT
 
