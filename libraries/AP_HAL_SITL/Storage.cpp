@@ -23,7 +23,7 @@
 
 using namespace HALSITL;
 
-extern const AP_HAL::HAL& hal;
+extern HAL_SITL& hal;
 
 /*
   emulate flash sector sizes
@@ -56,7 +56,7 @@ void Storage::_storage_open(void)
     _dirty_mask.clearall();
 
 #if STORAGE_USE_FLASH
-    if (((HAL_SITL&)hal).get_storage_flash_enabled()) {
+    if (hal.get_storage_flash_enabled()) {
         // load from storage backend
         _flash_load();
         _initialisedType = StorageBackend::Flash;
@@ -65,7 +65,7 @@ void Storage::_storage_open(void)
 #endif // STORAGE_USE_FLASH
 
 #if STORAGE_USE_POSIX
-    if (((HAL_SITL&)hal).get_storage_posix_enabled()) {
+    if (hal.get_storage_posix_enabled()) {
         // if we have failed filesystem init don't try again (this is
         // initialised to zero in the constructor)
         if (log_fd == -1) {
@@ -168,7 +168,7 @@ void Storage::_timer_tick(void)
     }
 
 #if STORAGE_USE_POSIX
-    if (((HAL_SITL&)hal).get_storage_posix_enabled()) {
+    if (hal.get_storage_posix_enabled()) {
         if (log_fd != -1) {
             const off_t offset = STORAGE_LINE_SIZE*i;
             if (lseek(log_fd, offset, SEEK_SET) != offset) {
@@ -184,7 +184,7 @@ void Storage::_timer_tick(void)
 #endif
 
 #if STORAGE_USE_FLASH
-    if (((HAL_SITL&)hal).get_storage_flash_enabled()) {
+    if (hal.get_storage_flash_enabled()) {
         // save to storage backend
         _flash_write(i);
         return;
