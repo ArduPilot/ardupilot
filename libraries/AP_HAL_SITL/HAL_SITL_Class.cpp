@@ -31,6 +31,8 @@
 
 using namespace HALSITL;
 
+HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL();
+
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);

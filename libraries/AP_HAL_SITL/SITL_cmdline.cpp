@@ -44,7 +44,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-extern const AP_HAL::HAL& hal;
+extern HAL_SITL& hal;
 
 using namespace HALSITL;
 using namespace SITL;
@@ -556,8 +556,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         AP::sitl()->start_time_UTC = start_time_UTC;
     }
 
-    ((HAL_SITL&)hal).set_storage_posix_enabled(storage_posix_enabled);
-    ((HAL_SITL&)hal).set_storage_flash_enabled(storage_flash_enabled);
+    hal.set_storage_posix_enabled(storage_posix_enabled);
+    hal.set_storage_flash_enabled(storage_flash_enabled);
 
     if (erase_all_storage) {
         AP_Param::erase_all();
