@@ -16,6 +16,7 @@
 /tmp/*
 # Exclude all bins but allow font bins
 *.bin
+!*_bl.bin
 !font*.bin
 *.d
 *.dfu
