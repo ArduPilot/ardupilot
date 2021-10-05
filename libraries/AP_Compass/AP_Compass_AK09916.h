@@ -82,6 +82,7 @@ private:
     uint8_t _compass_instance;
     bool _initialized;
     enum Rotation _rotation;
+    enum AP_Compass_Backend::DevTypes _devtype;
 };
 
 
