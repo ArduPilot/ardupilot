@@ -264,6 +264,20 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
+    // airspeed
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed && airspeed->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        if (airspeed->use()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
+        if (airspeed->all_healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
+    }
+#endif
+
 #if HAL_VISUALODOM_ENABLED
     const AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom && visual_odom->enabled()) {

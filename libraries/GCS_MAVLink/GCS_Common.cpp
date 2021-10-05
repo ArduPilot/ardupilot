@@ -1827,6 +1827,7 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     }
 
     float press_diff = 0; // pascal
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr &&
         airspeed->enabled(instance)) {
@@ -1841,6 +1842,7 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
         }
         have_data = true;
     }
+#endif
 
     if (!have_data) {
         return;
@@ -2731,10 +2733,13 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 
 float GCS_MAVLINK::vfr_hud_airspeed() const
 {
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr && airspeed->healthy()) {
         return airspeed->get_airspeed();
     }
+#endif
+
     // because most vehicles don't have airspeed sensors, we return a
     // different sort of speed estimate in the relevant field for
     // comparison's sake.
@@ -3873,10 +3878,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
     AP::baro().update_calibration();
     gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr) {
         airspeed->calibrate(false);
     }
+#endif
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -5988,12 +5995,14 @@ void GCS_MAVLINK::send_high_latency2() const
 
 int8_t GCS_MAVLINK::high_latency_air_temperature() const
 {
+#if AP_AIRSPEED_ENABLED
     // return units are degC
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     float air_temperature;
     if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
         return air_temperature;
     }
+#endif
 
     return INT8_MIN;
 }
