@@ -5,12 +5,28 @@ set -x
 CWD=$(pwd)
 OPT="/opt"
 
-BASE_PKGS="base-devel ccache git gsfonts tk wget"
-SITL_PKGS="python2-pip python-pip wxpython opencv python2-numpy python2-scipy"
+ASSUME_YES=false
+QUIET=false
+sep="##############################################"
+
+OPTIND=1  # Reset in case getopts has been used previously in the shell.
+while getopts "yq" opt; do
+    case "$opt" in
+        \?)
+            exit 1
+            ;;
+        y)  ASSUME_YES=true
+            ;;
+        q)  QUIET=true
+            ;;
+    esac
+done
+
+BASE_PKGS="base-devel ccache git gsfonts tk wget gcc"
+SITL_PKGS="python-pip python-setuptools python-wheel wxpython opencv python-numpy python-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses"
 
-PYTHON2_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing geocoder"
-PYTHON3_PKGS="pyserial empy geocoder"
+PYTHON_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing geocoder pyserial empy"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -21,20 +37,23 @@ ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
-function prompt_user() {
-      read -p "$1"
-      if [[ $REPLY =~ ^[Yy]$ ]]; then
-          return 0
-      else
-          return 1
-      fi
+function maybe_prompt_user() {
+    if $ASSUME_YES; then
+        return 0
+    else
+        read -p "$1"
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
 }
 
 sudo usermod -a -G uucp $USER
 
 sudo pacman -Sy --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
-pip2 -q install --user -U $PYTHON2_PKGS
-pip3 -q install --user -U $PYTHON3_PKGS
+pip3 -q install --user -U $PYTHON_PKGS
 
 (
     cd /usr/lib/ccache
@@ -57,7 +76,7 @@ fi
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 if ! grep -Fxq "$exportline" ~/.bashrc ; then
-    if prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
+    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
         echo "$exportline" >> ~/.bashrc
         . ~/.bashrc
     else
@@ -67,7 +86,7 @@ fi
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
-    if prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
+    if maybe_prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
         echo "$exportline2" >> ~/.bashrc
         . ~/.bashrc
     else
