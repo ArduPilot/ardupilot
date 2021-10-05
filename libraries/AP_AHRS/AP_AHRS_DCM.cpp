@@ -1235,6 +1235,4 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
 
 void AP_AHRS_DCM::send_ekf_status_report(mavlink_channel_t chan) const
 {
-    // send zero status report
-    mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
 }
