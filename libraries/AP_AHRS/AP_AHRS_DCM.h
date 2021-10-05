@@ -267,4 +267,8 @@ private:
     Vector2f _lp; // ground vector low-pass filter
     Vector2f _hp; // ground vector high-pass filter
     Vector2f _lastGndVelADS; // previous HPF input
+
+    // pre-calculated trig cache:
+    float _sin_yaw;
+    float _cos_yaw;
 };

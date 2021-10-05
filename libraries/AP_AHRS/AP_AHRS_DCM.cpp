@@ -101,6 +101,10 @@ AP_AHRS_DCM::update()
     _body_dcm_matrix = _dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
+    // pre-calculate some trig for CPU purposes:
+    _cos_yaw = cosf(yaw);
+    _sin_yaw = sinf(yaw);
+
     backup_attitude();
 
     // remember the last origin for fallback support
@@ -230,6 +234,10 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         _dcm_matrix.from_euler(roll, pitch, 0);
 
     }
+
+    // pre-calculate some trig for CPU purposes:
+    _cos_yaw = cosf(yaw);
+    _sin_yaw = sinf(yaw);
 
     _last_startup_ms = AP_HAL::millis();
 }
