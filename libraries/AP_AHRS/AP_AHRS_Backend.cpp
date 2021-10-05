@@ -89,7 +89,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     if (gotAirspeed) {
         const Vector3f wind = wind_estimate();
         const Vector2f wind2d(wind.x, wind.y);
-        const Vector2f airspeed_vector{cosf(yaw) * airspeed, sinf(yaw) * airspeed};
+        const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
         gndVelADS = airspeed_vector + wind2d;
     }
 
@@ -132,7 +132,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         // we have a rough airspeed, and we have a yaw. For
         // dead-reckoning purposes we can create a estimated
         // groundspeed vector
-        Vector2f ret(cosf(yaw), sinf(yaw));
+        Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
         const Vector3f wind = wind_estimate();
