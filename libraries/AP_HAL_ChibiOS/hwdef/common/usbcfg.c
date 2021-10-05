@@ -244,8 +244,11 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 #if HAL_USE_SERIAL_USB
 uint32_t get_usb_baud(uint16_t endpoint_id)
 {
-    if(endpoint_id == 0)
-        return *((uint32_t*)linecoding.dwDTERate);
+    if (endpoint_id == 0) {
+        uint32_t rate;
+        memcpy(&rate, &linecoding.dwDTERate[0], sizeof(rate));
+        return rate;
+    }
     return 0;
 }
 #endif
