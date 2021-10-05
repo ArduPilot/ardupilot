@@ -307,8 +307,10 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 uint32_t get_usb_baud(uint16_t endpoint_id)
 {
   for (uint8_t i = 0; i < ARRAY_SIZE(linecoding); i++) {
-    if(endpoint_id == ep_index[i])
-        return *((uint32_t*)linecoding[i].dwDTERate);
+      if (endpoint_id == ep_index[i]) {
+          uint32_t rate;
+          memcpy(&rate, &linecoding[i].dwDTERate[0], sizeof(rate));
+      }
   }
   return 0;
 }
