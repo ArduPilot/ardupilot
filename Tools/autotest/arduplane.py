@@ -3084,6 +3084,24 @@ class AutoTestPlane(AutoTest):
 
         self.fly_mission("ap-circuit.txt", mission_timeout=1200)
 
+    def DCMFallback(self):
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(50)
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("EK3_POS_I_GATE", 25)
+        self.set_parameter("SIM_GPS_HZ", 1)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.fly_home_land_and_disarm()
+
     def ForcedDCM(self):
 
         self.wait_ready_to_arm()
@@ -3313,6 +3331,10 @@ class AutoTestPlane(AutoTest):
             ("ForcedDCM",
              "Switch to DCM mid-flight",
              self.ForcedDCM),
+
+            ("DCMFallback",
+             "Really annoy the EKF and force fallback",
+             self.DCMFallback),
 
             ("MAVFTP",
              "Test MAVProxy can talk FTP to autopilot",
