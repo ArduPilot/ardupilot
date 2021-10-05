@@ -1391,6 +1391,9 @@ def write_UART_config(f):
                 (devnames[idx], devnames[idx]))
 
     if 'IOMCU_UART' in config:
+        if not 'io_firmware.bin' in romfs:
+            error("Need io_firmware.bin in ROMFS for IOMCU")
+
         f.write('#define HAL_WITH_IO_MCU 1\n')
         idx = len(uart_list)
         f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
