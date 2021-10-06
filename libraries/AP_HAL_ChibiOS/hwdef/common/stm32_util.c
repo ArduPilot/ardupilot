@@ -472,7 +472,7 @@ uint32_t stack_free(void *stack_base)
 }
 #endif
 
-#ifdef RNG
+#if HAL_USE_HW_RNG && defined(RNG)
 static bool stm32_rand_generate(uint32_t *val)
 {
     uint32_t error_bits = 0;
@@ -540,4 +540,4 @@ unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int
     return i;
 }
 
-#endif // #ifdef RNG
+#endif // #if HAL_USE_HW_RNG && defined(RNG)

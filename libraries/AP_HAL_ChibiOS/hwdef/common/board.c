@@ -255,7 +255,7 @@ void __late_init(void) {
   /*
    * Initialize RNG
    */
-#ifdef RNG
+#if HAL_USE_HW_RNG && defined(RNG)
   rccEnableAHB2(RCC_AHB2ENR_RNGEN, 0);
   RNG->CR |= RNG_CR_IE;
   RNG->CR |= RNG_CR_RNGEN;
