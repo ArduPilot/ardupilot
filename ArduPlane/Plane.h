@@ -117,10 +117,6 @@
 #endif
 #include "AP_Arming.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 /*
   main APM:Plane class
  */
@@ -211,10 +207,6 @@ private:
     AP_PitchController pitchController{aparm};
     AP_YawController yawController{aparm};
     AP_SteerController steerController{};
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
 
     // Training mode
     bool training_manual_roll;  // user has manual roll control
