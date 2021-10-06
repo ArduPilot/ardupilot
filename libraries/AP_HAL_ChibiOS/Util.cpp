@@ -610,7 +610,7 @@ void Util::uart_info(ExpandingString &str)
  */
 bool Util::get_random_vals(uint8_t* data, size_t size)
 {
-#ifdef RNG
+#if HAL_USE_HW_RNG && defined(RNG)
     size_t true_random_vals = stm32_rand_generate_nonblocking(data, size);
     if (true_random_vals == size) {
         return true;
@@ -638,7 +638,7 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
  */
 bool Util::get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us)
 {
-#ifdef RNG
+#if HAL_USE_HW_RNG && defined(RNG)
     if (stm32_rand_generate_blocking(data, size, timeout_us)) {
         return true;
     } else {
