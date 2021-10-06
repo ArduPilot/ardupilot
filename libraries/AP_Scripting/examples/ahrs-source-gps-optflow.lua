@@ -16,7 +16,7 @@
 --     EK3_SRC2_VELZ  = 0 (None)
 --     EK3_SRC2_POSZ  = 1 (Baro)
 --     EK3_SRC2_YAW   = 1 (Compass)
---     EK3_OPTIONS    = 0 (Do not fuse all velocities)
+--     EK3_SRC_OPTIONS    = 0 (Do not fuse all velocities)
 --
 -- SCR_USER1 holds the threshold (in meters) for rangefinder altitude (around 15 is a good choice)
 --     if rangefinder distance >= SCR_USER1, source1 (GPS) will be used
