@@ -72,11 +72,6 @@
 
 #include "Parameters.h"
 
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 #include "mode.h"
 
 class Blimp : public AP_Vehicle
@@ -121,10 +116,6 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
 
     // Arming/Disarming management class
     AP_Arming_Blimp arming;
