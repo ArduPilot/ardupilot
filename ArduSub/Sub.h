@@ -110,10 +110,6 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 class Sub : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Sub;
@@ -162,10 +158,6 @@ private:
 
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
 #endif
 
     // Mission library
