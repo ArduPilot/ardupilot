@@ -121,5 +121,29 @@ private:
     void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
 
     uint8_t method; //0: determine freq, 1: use max gain method, 2: use phase 180 method
+    // updating rate FF variables
+    bool first_dir_complete;
+    float first_dir_rff;
+
+    // updating max gain variables
+    bool found_max_p;
+    bool found_max_d;
+    bool find_middle;
+
+    // updating angle P up variables
+    float phase_max;
+    float sp_prev_gain;
+    bool find_peak;
+
+    // updating angle P up yaw
+    uint8_t sp_prev_good_frq_cnt;
+
+    // updating rate P up
+    uint8_t rp_prev_good_frq_cnt;
+    float rp_prev_gain;
+
+    // updating rate D up
+    uint8_t rd_prev_good_frq_cnt;
+    float rd_prev_gain;
 
 };
