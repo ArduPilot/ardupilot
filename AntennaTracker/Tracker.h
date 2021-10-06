@@ -58,10 +58,6 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 #include "mode.h"
 
 class Tracker : public AP_Vehicle {
@@ -85,10 +81,6 @@ private:
 
     AP_Logger logger;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
-    
     /**
        antenna control channels
     */
