@@ -170,10 +170,6 @@
 #include "avoidance_adsb.h"
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 #include "mode.h"
 
 class Copter : public AP_Vehicle {
@@ -304,10 +300,6 @@ private:
 
     // Inertial Navigation EKF - different viewpoint
     AP_AHRS_View *ahrs_view;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
 
     // Arming/Disarming management class
     AP_Arming_Copter arming;
