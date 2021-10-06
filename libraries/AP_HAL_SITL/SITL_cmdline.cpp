@@ -361,9 +361,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             cmdline_param.push_back(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
-        case 'r':
-            _framerate = (unsigned)atoi(gopt.optarg);
-            break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
             break;
@@ -571,14 +568,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (strcmp(SKETCH, "ArduCopter") == 0) {
         _vehicle = ArduCopter;
-        if (_framerate == 0) {
-            _framerate = 200;
-        }
     } else if (strcmp(SKETCH, "Rover") == 0) {
         _vehicle = Rover;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
     } else if (strcmp(SKETCH, "ArduSub") == 0) {
@@ -593,9 +584,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
     } else {
         _vehicle = ArduPlane;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
     }
 
     _sitl_setup(home_str);

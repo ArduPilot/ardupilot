@@ -191,7 +191,6 @@ private:
 
     // internal state
     enum vehicle_type _vehicle;
-    uint16_t _framerate;
     uint8_t _instance;
     uint16_t _base_port;
     pid_t _parent_pid;
