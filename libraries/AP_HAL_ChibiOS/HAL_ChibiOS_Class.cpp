@@ -33,7 +33,9 @@
 #include <AP_Logger/AP_Logger.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
+#if HAL_ENABLE_NETWORKING
+#include "lwipthread.h"
+#endif
 #include <hwdef.h>
 
 #ifndef HAL_NO_UARTDRIVER
@@ -295,6 +297,10 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 #if HAL_USE_SERIAL_USB == TRUE
     usb_initialise();
+#endif
+
+#if HAL_ENABLE_NETWORKING
+    lwipInit(NULL);
 #endif
 
 #ifdef HAL_STDOUT_SERIAL
