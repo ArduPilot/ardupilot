@@ -106,3 +106,17 @@ jobs:
           cd pr/
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
+
+      - name: elf_diff compare with Master
+        shell: bash
+        run: |
+          python3 -m pip install -U weasyprint elf_diff
+          python3 -m elf_diff --bin_prefix=arm-none-eabi- $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+          tar cf multipage_pair_report.tar multipage_pair_report
+
+      - name: Archive elf_diff output
+        uses: actions/upload-artifact@v2
+        with:
+           name: elf_diff
+           path: multipage_pair_report.tar
+           retention-days: 14
