@@ -97,6 +97,7 @@ AUTOBUILD_BOARDS = ["fmuv2",
                     "MambaF405US-I2C",
                     "Swan-K1",
                     "obal",
+                    "modalai_fc-v1",
                     # SITL targets
                     "SITL_x86_64_linux_gnu",
                     "SITL_arm_linux_gnueabihf",
