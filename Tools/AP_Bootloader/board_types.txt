@@ -20,19 +20,29 @@ TARGET_HW_PX4_PIO_V3                   13
 TARGET_HW_PX4_AEROCORE_V1              98
 TARGET_HW_TAP_V1                       64
 TARGET_HW_CRAZYFLIE                    12
+TARGET_HW_CRAZYFLIE21                  14
 TARGET_HW_OMNIBUSF4SD                  42
 TARGET_HW_AUAV_X2V1                    33
 TARGET_HW_AEROFC_V1                    65
+TARGET_TAP_V2                          66
 TARGET_HW_CUBE_F4                       9
 TARGET_HW_AV_V1                        29
 TARGET_HW_KAKUTEF7                    123
+TARGET_HW_SMARTAP_AIRLINK              55
 TARGET_HW_SMARTAP_PRO                  32
 TARGET_HW_MODALAI_FC_V1             41775
+TARGET_HW_MODALAI_FC_V2             41776
 TARGET_HW_HOLYBRO_PIX32_V5             78
+TARGET_HW_HOLYBRO_CAN_GPS              79
 TARGET_HW_FMUK66_V3                    28
 TARGET_HW_AV_X_V1                      29
 TARGET_HW_FMUK66_E                     30
 TARGET_HW_FMURT1062-V1                 31
+TARGET_HW_ARK_CAN_FLOW                 80
+TARGET_HW_ARK_CAN_GPS                  81
+TARGET_HW_ARK_CAN_RTK_GPS              82
+TARGET_HW_FF_RTK_CAN_GPS               85
+TARGET_HW_ATL_MANTIS_EDU               97
 
 
 Reserved  PX4 [BL] FMU v5X.x           51
@@ -40,6 +50,8 @@ Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
  
 Reserved "GUMSTIX [BL] FMU v6"         54
+Reserved "ARK CAN FLOW"                80
+Reserved "NXP ucans32k146"             34
 
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
