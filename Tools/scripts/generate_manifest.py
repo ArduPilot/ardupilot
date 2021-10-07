@@ -79,6 +79,7 @@ brand_map = {
     'MambaF405US-I2C' : ('Diatone Mamba Basic F405 MK3/MK3.5', 'Diatone'),
     "FlywooF745" : ('Flywoo Goku GN 745 AIO', 'Flywoo'),
     "FlywooF745Nano" : ('Flywoo Goku Hex F745', 'Flywoo'),
+    "modalai_fc-v1" : ('ModalAI FlightCore v1', 'ModalAI'),
 }
 
 class Firmware():
