@@ -30,7 +30,7 @@ f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
 f1_vtypes = ['CRL', 'CRH', 'ODR']
 f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
-af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI']
+af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'ETH']
 
 default_gpio = ['INPUT', 'FLOATING']
 
@@ -732,6 +732,20 @@ def write_mcu_config(f):
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+    if 'ETH1' in bytype:
+        f.write('// Configure for Ethernet support\n')
+        f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
+        f.write('#define HAL_USE_MAC                         TRUE\n')
+        f.write('#define MAC_USE_EVENTS                      TRUE\n')
+        f.write('#define STM32_NOCACHE_SRAM3                 TRUE\n')
+        f.write('#define HAL_ENABLE_NETWORKING               TRUE\n')
+        build_flags.append('USE_LWIP=yes')
+        env_vars['WITH_NETWORKING'] = "1"
+    else:
+        f.write('#define HAL_ENABLE_NETWORKING               FALSE\n')
+        build_flags.append('USE_LWIP=no')
+        env_vars['WITH_NETWORKING'] = "0"
+
     defines = get_mcu_config('DEFINES', False)
     if defines is not None:
         for d in defines.keys():
@@ -960,6 +974,13 @@ def write_ldscript(fname):
         instruction_ram_base = instruction_ram[0]
         instruction_ram_length = instruction_ram[1]
 
+    ethernet_ram = get_mcu_config('ETHERNET_RAM', False)
+    if ethernet_ram is None and env_vars['WITH_NETWORKING']:
+        raise Exception("No ethernet ram defined in mcu config")
+    elif env_vars['WITH_NETWORKING']:
+        ethernet_ram_base = ethernet_ram[0]
+        ethernet_ram_length = ethernet_ram[1]
+
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
     else:
@@ -1004,6 +1025,16 @@ INCLUDE common_extf.ld
 ''' % (ext_flash_base, ext_flash_length,
        instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len))
+    if env_vars['WITH_NETWORKING']:
+        f.write('''
+/* Ethernet RAM */
+MEMORY
+{
+    eth_ram : org = 0x%08x, len = %uK
+}
+INCLUDE common_eth.ld
+''' % (ethernet_ram_base, ethernet_ram_length))
+    f.close()
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
@@ -2241,7 +2272,7 @@ def valid_type(ptype, label):
     '''check type of a pin line is valid'''
     patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
                 'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
-                'SDMMC\d+', 'SDIO', 'QUADSPI\d' ]
+                'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'ETH\d' ]
     matches = False
     for p in patterns:
         if re.match(p, ptype):

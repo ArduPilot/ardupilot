@@ -54,6 +54,10 @@ ifeq ($(USE_FATFS),yes)
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
+ifeq ($(USE_LWIP),yes)
+include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
+endif
+
 #
 # Build global options
 ##############################################################################
@@ -125,6 +129,10 @@ CSRC += $(HWDEF)/common/stubs.c \
        $(HWDEF)/common/stm32_util.c \
        $(HWDEF)/common/bouncebuffer.c \
        $(HWDEF)/common/watchdog.c
+
+ifeq ($(USE_LWIP),yes)
+CSRC += $(CHIBIOS)/os/various/evtimer.c
+endif
 
 #	   $(TESTSRC) \
 #	   test.c
