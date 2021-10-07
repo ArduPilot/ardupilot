@@ -627,7 +627,16 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
     }
     return true;
 #else
-    return false;
+    size_t true_random_vals = 0;
+    while(true_random_vals < size) {
+        uint16_t val = get_random16();
+        memcpy(&data[true_random_vals], &val, sizeof(uint16_t));
+        true_random_vals+=sizeof(uint16_t);
+    }
+    if (size % 2) {
+        data[size-1] = get_random16() & 0xFF;
+    }
+    return true;
 #endif
 }
 

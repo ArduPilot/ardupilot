@@ -135,6 +135,8 @@ uint32_t stack_free(void *stack_base);
 #if HAL_USE_HW_RNG && defined(RNG)
 bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
 #endif
 
 // allow stack view code to show free ISR stack
