@@ -78,7 +78,7 @@
 #include "GCS_Sub.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #endif
 
@@ -175,7 +175,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)};
 
     // Optical flow sensor
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     OpticalFlow optflow;
 #endif
 

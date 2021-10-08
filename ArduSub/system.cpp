@@ -85,7 +85,7 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
 #endif
@@ -231,7 +231,7 @@ bool Sub::optflow_position_ok()
 
     // return immediately if neither optflow nor visual odometry is enabled
     bool enabled = false;
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     if (optflow.enabled()) {
         enabled = true;
     }

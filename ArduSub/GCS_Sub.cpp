@@ -56,7 +56,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
 
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     const OpticalFlow *optflow = AP::opticalflow();
     if (optflow && optflow->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;

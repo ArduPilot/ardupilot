@@ -599,7 +599,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
 #endif
 
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     // @Group: FLOW
     // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
     GOBJECT(optflow,   "FLOW", OpticalFlow),
