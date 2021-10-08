@@ -6,12 +6,13 @@ AnalogSource_ADS1115::AnalogSource_ADS1115(int16_t pin):
 {
 }
 
-void AnalogSource_ADS1115::set_pin(uint8_t pin)
+bool AnalogSource_ADS1115::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
-        return;
+        return true;
     }
     _pin = pin;
+    return true;
 }
 
 float AnalogSource_ADS1115::read_average()

@@ -15,9 +15,12 @@
 /*
   AP_Periph can support
  */
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_Periph.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 #include <canard.h>
 #include <uavcan/protocol/dynamic_node_id/Allocation.h>
 #include <uavcan/protocol/NodeStatus.h>
@@ -40,6 +43,7 @@
 #include <uavcan/equipment/esc/Status.h>
 #include <uavcan/equipment/safety/ArmingStatus.h>
 #include <ardupilot/indication/SafetyState.h>
+#include <ardupilot/indication/NotifyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
 #include <ardupilot/gnss/Status.h>
@@ -52,6 +56,7 @@
 #include <uavcan/equipment/esc/RawCommand.h>
 #include <uavcan/equipment/actuator/ArrayCommand.h>
 #include <uavcan/equipment/actuator/Command.h>
+#pragma GCC diagnostic pop
 #include <stdio.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
@@ -683,7 +688,9 @@ static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     periph.notify.handle_rgb(red, green, blue);
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
     periph.rcout_has_new_data_to_update = true;
+#endif // HAL_PERIPH_ENABLE_RC_OUT
 #endif // HAL_PERIPH_ENABLE_NOTIFY
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
@@ -844,6 +851,25 @@ static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
     }
 }
 #endif // HAL_PERIPH_ENABLE_RC_OUT
+
+#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+static void handle_notify_state(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    ardupilot_indication_NotifyState msg;
+    uint8_t arraybuf[ARDUPILOT_INDICATION_NOTIFYSTATE_MAX_SIZE];
+    uint8_t *arraybuf_ptr = arraybuf;
+    if (ardupilot_indication_NotifyState_decode(transfer, transfer->payload_len, &msg, &arraybuf_ptr) < 0) {
+        return;
+    }
+    if (msg.aux_data.len == 2 && msg.aux_data_type == ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES) {
+        uint16_t tmp = 0;
+        memcpy(&tmp, msg.aux_data.data, sizeof(tmp));
+        periph.yaw_earth = radians((float)tmp * 0.01f);
+    }
+    periph.vehicle_state = msg.vehicle_state;
+    periph.last_vehicle_state = AP_HAL::millis();
+}
+#endif // HAL_PERIPH_ENABLE_NOTIFY
 
 #ifdef HAL_GPIO_PIN_SAFE_LED
 /*
@@ -1008,6 +1034,12 @@ static void onTransferReceived(CanardInstance* ins,
         handle_act_command(ins, transfer);
         break;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+    case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
+        handle_notify_state(ins, transfer);
+        break;
+#endif
     }
 }
 
@@ -1093,6 +1125,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     
     case UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE;
+        return true;
+#endif
+#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+    case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
+        *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
         return true;
 #endif
     default:

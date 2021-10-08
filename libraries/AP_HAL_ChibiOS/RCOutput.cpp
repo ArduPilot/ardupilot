@@ -1382,7 +1382,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             pwm = constrain_int16(pwm, 1000, 2000);
-            uint16_t value = 2 * (pwm - 1000);
+            uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
             if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
@@ -1727,7 +1727,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
  */
 void RCOutput::serial_bit_irq(void)
 {
-    uint32_t now = AP_HAL::micros();
+    uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
 
@@ -1746,7 +1746,7 @@ void RCOutput::serial_bit_irq(void)
             irq.bitmask = 0;
         }
     } else {
-        systime_t dt = now - irq.byte_start_tick;
+        uint16_t dt = now - irq.byte_start_tick;
         uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
         if (bitnum > 10) {
@@ -2015,22 +2015,6 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
         iomcu.set_failsafe_pwm(chmask, period_us);
     }
 #endif
-}
-
-/*
-  true when the output mode is of type dshot
-*/
-bool RCOutput::is_dshot_protocol(const enum output_mode mode)
-{
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        return false;
-    }
 }
 
 /*

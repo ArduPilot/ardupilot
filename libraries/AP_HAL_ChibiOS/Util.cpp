@@ -603,3 +603,48 @@ void Util::uart_info(ExpandingString &str)
 #endif
 #endif // HAL_NO_UARTDRIVER
 }
+
+/**
+ * This method will generate random values with set size. It will fall back to AP_Math's get_random16()
+ * if True RNG fails or enough entropy is not present.
+ */
+bool Util::get_random_vals(uint8_t* data, size_t size)
+{
+#if HAL_USE_HW_RNG && defined(RNG)
+    size_t true_random_vals = stm32_rand_generate_nonblocking(data, size);
+    if (true_random_vals == size) {
+        return true;
+    } else {
+        if (!(true_random_vals % 2)) {
+            data[true_random_vals] = (uint8_t)(get_random16() & 0xFF);
+            true_random_vals++;
+        }
+        while(true_random_vals < size) {
+            uint16_t val = get_random16();
+            memcpy(&data[true_random_vals], &val, sizeof(uint16_t));
+            true_random_vals+=sizeof(uint16_t);
+        }
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+/**
+ * This method will generate true random values with set size. This method will block for set amount
+ * of true random numbers to be generated, the timeout specifies the maximum amount of time to wait
+ * for the call to finish.
+ */
+bool Util::get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us)
+{
+#if HAL_USE_HW_RNG && defined(RNG)
+    if (stm32_rand_generate_blocking(data, size, timeout_us)) {
+        return true;
+    } else {
+        return false;
+    }
+#else
+    return false;
+#endif
+}

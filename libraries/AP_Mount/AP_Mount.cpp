@@ -618,19 +618,9 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
     }
 
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] == nullptr) {
-            continue;
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_global_position_int(msg.sysid, packet);
         }
-        struct mount_state &_state = state[instance];
-        if (_state._target_sysid != msg.sysid) {
-            continue;
-        }
-        _state._target_sysid_location.lat = packet.lat;
-        _state._target_sysid_location.lng = packet.lon;
-        // global_position_int.alt is *UP*, so is location.
-        _state._target_sysid_location.set_alt_cm(packet.alt*0.1,
-                                                 Location::AltFrame::ABSOLUTE);
-        _state._target_sysid_location_set = true;
     }
 }
 
@@ -665,7 +655,7 @@ void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 /// Return mount status information
 void AP_Mount::send_mount_status(mavlink_channel_t chan)
 {
-    // call send_mount_status for  each instance
+    // call send_mount_status for each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_mount_status(chan);

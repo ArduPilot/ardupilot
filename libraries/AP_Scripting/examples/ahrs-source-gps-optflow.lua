@@ -69,35 +69,35 @@ function update()
   local rc_function_source = rc:find_channel_for_option(90)
   local rc_function_auto = rc:find_channel_for_option(300)
   if not rc_function_source or  not rc_function_auto then
-    gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
 
   -- check rangefinder distance threshold has been set
   local rangefinder_thresh_dist = scr_user1_param:get()     -- SCR_USER1 holds rangefinder threshold
   if (rangefinder_thresh_dist <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER1 to rangefinder threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER1 to rangefinder threshold")
     return update, 1000
   end
 
   -- check GPS speed accuracy threshold has been set
   local gps_speedaccuracy_thresh = scr_user2_param:get()    -- SCR_USER2 holds GPS speed accuracy threshold
   if (gps_speedaccuracy_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER2 to GPS speed accuracy threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER2 to GPS speed accuracy threshold")
     return update, 1000
   end
 
   -- check optical flow quality threshold has been set
   local opticalflow_quality_thresh = scr_user3_param:get()  -- SCR_USER3 holds opticalflow quality
   if (opticalflow_quality_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER3 to OpticalFlow quality threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER3 to OpticalFlow quality threshold")
     return update, 1000
   end
 
   -- check optical flow innovation threshold has been set
   local opticalflow_innov_thresh = scr_user4_param:get()    -- SCR_USER4 holds opticalflow innovation
   if (opticalflow_innov_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER4 to OpticalFlow innovation threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER4 to OpticalFlow innovation threshold")
     return update, 1000
   end
 

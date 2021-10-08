@@ -35,6 +35,7 @@ enum class PERIPH_TYPE : uint8_t {
     I2C_SDA,
     I2C_SCL,
     OTHER,
+    GPIO,
 };
 
 class ChibiOS::GPIO : public AP_HAL::GPIO {

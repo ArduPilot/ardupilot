@@ -155,7 +155,6 @@ private:
     ///			in using these strings
     //@{
     static const char _SiRF_init_string[];         ///< init string for SiRF units
-    static const char _MTK_init_string[];                  ///< init string for MediaTek units
     static const char _ublox_init_string[];        ///< init string for ublox units
     //@}
 

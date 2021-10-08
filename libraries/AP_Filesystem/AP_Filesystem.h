@@ -89,6 +89,9 @@ public:
     // unmount filesystem for reboot
     void unmount(void);
 
+    // returns null-terminated string; cr or lf terminates line
+    bool fgets(char *buf, uint8_t buflen, int fd);
+
     /*
       load a full file. Use delete to free the data
      */

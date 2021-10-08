@@ -270,9 +270,7 @@ class Board:
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
             '-Wuninitialized',
-            '-Wmaybe-uninitialized',
             '-Warray-bounds',
-            '-Wduplicated-cond',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -315,6 +313,8 @@ class Board:
             if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
+                    '-Wmaybe-uninitialized',
+                    '-Wduplicated-cond',
                 ]
 
         if cfg.options.Werror:
@@ -591,9 +591,6 @@ class sitl(Board):
             if not cfg.check_SFML_Audio(env):
                 cfg.fatal("Failed to find SFML Audio libraries")
             env.CXXFLAGS += ['-DWITH_SITL_TONEALARM']
-
-        if cfg.options.sitl_flash_storage:
-            env.CXXFLAGS += ['-DSTORAGE_USE_FLASH=1']
 
         if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [

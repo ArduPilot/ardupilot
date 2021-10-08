@@ -9,7 +9,7 @@ class AP_HAL::AnalogSource {
 public:
     virtual float read_average() = 0;
     virtual float read_latest() = 0;
-    virtual void set_pin(uint8_t p) = 0;
+    virtual bool set_pin(uint8_t p) WARN_IF_UNUSED = 0;
 
     // return a voltage from 0.0 to 5.0V, scaled
     // against a reference voltage

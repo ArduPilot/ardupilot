@@ -232,6 +232,9 @@ private:
     // SafetyState
     void safety_state_send();
 
+    // send notify vehicle state
+    void notify_state_send();
+
     // send GNSS injection
     void rtcm_stream_send();
 
@@ -262,6 +265,7 @@ private:
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;
     AP_Int16 _options;
+    AP_Int16 _notify_state_hz;
 
     uavcan::Node<0> *_node;
 
@@ -318,6 +322,9 @@ private:
 
     // safety status send state
     uint32_t _last_safety_state_ms;
+
+    // notify vehicle state
+    uint32_t _last_notify_state_ms;
 
     // incoming button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);

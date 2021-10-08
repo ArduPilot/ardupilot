@@ -50,7 +50,7 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
 }
 
 // get temperature reading
-bool AP_RangeFinder_NMEA::get_temp(float &temp)
+bool AP_RangeFinder_NMEA::get_temp(float &temp) const
 {
     uint32_t now_ms = AP_HAL::millis();
     if ((_temp_readtime_ms == 0) || ((now_ms - _temp_readtime_ms) > read_timeout_ms())) {

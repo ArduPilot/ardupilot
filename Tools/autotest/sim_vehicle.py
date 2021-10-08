@@ -320,9 +320,6 @@ def do_build(opts, frame_options):
     if opts.tonealarm:
         cmd_configure.append("--enable-sfml-audio")
 
-    if opts.flash_storage:
-        cmd_configure.append("--sitl-flash-storage")
-
     if opts.math_check_indexes:
         cmd_configure.append("--enable-math-check-indexes")
 
@@ -671,6 +668,9 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 sys.exit(1)
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
+    if opts.flash_storage:
+        cmd.append("--set-storage-flash-enabled 1")
+        cmd.append("--set-storage-posix-enabled 0")
     if opts.add_param_file:
         for file in opts.add_param_file:
             if not os.path.isfile(file):

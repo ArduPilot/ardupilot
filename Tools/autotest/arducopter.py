@@ -6924,6 +6924,42 @@ class AutoTestCopter(AutoTest):
         if not ok:
             raise NotAchievedException("check_replay failed")
 
+    def DefaultIntervalsFromFiles(self):
+        ex = None
+        intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
+        self.progress("Using filepath (%s)" % intervals_filepath)
+        try:
+            with open(intervals_filepath, "w") as f:
+                f.write("""30 50
+28 100
+29 200
+""")
+
+            # other tests may have explicitly set rates, so wipe parameters:
+            def custom_stream_rate_setter():
+                for stream in mavutil.mavlink.MAV_DATA_STREAM_EXTRA3, mavutil.mavlink.MAV_DATA_STREAM_RC_CHANNELS:
+                    self.set_streamrate(5, stream=stream)
+
+            self.customise_SITL_commandline(
+                [],
+                wipe=True,
+                set_streamrate_callback=custom_stream_rate_setter,
+            )
+
+            self.assert_message_rate_hz("ATTITUDE", 20)
+            self.assert_message_rate_hz("SCALED_PRESSURE", 5)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        os.unlink(intervals_filepath)
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def BaroDrivers(self):
         sensors = [
             ("MS5611", 2),
@@ -7276,6 +7312,31 @@ class AutoTestCopter(AutoTest):
         items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
 
         self.upload_simple_relhome_mission(items)
+
+    def RefindGPS(self):
+        # https://github.com/ArduPilot/ardupilot/issues/14236
+        self.progress("arm the vehicle and takeoff in Guided")
+        self.takeoff(20, mode='GUIDED')
+        self.progress("fly 50m North (or whatever)")
+        old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        self.fly_guided_move_global_relative_alt(50, 0, 20)
+        self.set_parameter('GPS_TYPE', 0)
+        self.drain_mav()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30 and self.mode_is('LAND'):
+                self.progress("Bug not reproduced")
+                break
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+            self.progress("Received (%s)" % str(m))
+            if m is None:
+                raise NotAchievedException("No GLOBAL_POSITION_INT?!")
+            pos_delta = self.get_distance_int(old_pos, m)
+            self.progress("Distance: %f" % pos_delta)
+            if pos_delta < 5:
+                raise NotAchievedException("Bug reproduced - returned to near origin")
+        self.set_parameter('GPS_TYPE', 1)
+        self.do_RTL()
 
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
@@ -7804,6 +7865,10 @@ class AutoTestCopter(AutoTest):
                  self.fly_esc_telemetry_notches,
                  attempts=8),
 
+            Test("RefindGPS",
+                 "Refind the GPS and attempt to RTL rather than continue to land",
+                 self.RefindGPS),
+
             Test("GyroFFT",
                  "Fly Gyro FFT",
                  self.fly_gyro_fft,
@@ -7890,6 +7955,9 @@ class AutoTestCopter(AutoTest):
                  "Change speed (down) during misison",
                  self.WPNAV_SPEED_DN),
 
+            ("DefaultIntervalsFromFiles",
+             "Test setting default mavlink message intervals from files",
+             self.DefaultIntervalsFromFiles),
 
             Test("GPSTypes",
                  "Test simulated GPS types",
