@@ -1,3 +1,20 @@
+Release 4.1.1 stable 8th October 2021
+-------------------------------------
+
+This is the a minor bugfix release in the 4.1.x stable series. Changes
+are:
+
+ - fixed IMU orientation on QiotekZealotF427 controller
+ - fixed lua scripting bug in logging of strings
+ - fixed an initialisation bug in the attitude controller for quadplanes
+ - added desired values to PSC quadplane pos control logging
+ - prevent entry into CRSF parameter mode while armed
+ - added bootloader to build for MatekF765-SE
+
+Thanks to all the users who have been reporting back on flights with
+4.1.0, and happy flying!
+
+
 Release 4.1.0 stable 28th September 2021
 ----------------------------------------
 
