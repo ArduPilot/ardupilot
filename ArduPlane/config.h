@@ -37,8 +37,8 @@
 // Optical flow sensor support
 //
 
-#ifndef OPTFLOW
- # define OPTFLOW ENABLED
+#ifndef OPTICAL_FLOW
+ # define OPTICAL_FLOW ENABLED
 #endif
 
 
