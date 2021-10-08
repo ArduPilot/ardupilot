@@ -1924,6 +1924,40 @@ void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
     }
 }
 
+// move all parameters from a class to a new location
+// is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
+                                    const struct AP_Param::GroupInfo *group_info,
+                                    uint16_t old_index, uint16_t old_top_element, bool is_top_level)
+{
+    const uint8_t group_shift = is_top_level ? 0 : 6;
+
+    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+        struct ConversionInfo info;
+        info.old_key = param_key;
+        info.type = (ap_var_type)group_info[i].type;
+        info.new_name = nullptr;
+        info.old_group_element = (uint16_t(group_info[i].idx)<<group_shift) + old_index;
+
+        uint8_t old_value[type_size(info.type)];
+        AP_Param *ap = (AP_Param *)&old_value[0];
+        
+        if (!AP_Param::find_old_parameter(&info, ap)) {
+            // the parameter wasn't set in the old eeprom
+            continue;
+        }
+
+        AP_Param *ap2 = (AP_Param *)(group_info[i].offset + (uint8_t *)object_pointer);
+        memcpy(ap2, ap, sizeof(old_value));
+        // and save
+        ap2->save();
+    }
+
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
+}
+
 /*
  convert width of a parameter, allowing update to wider scalar values
  without changing the parameter indexes
