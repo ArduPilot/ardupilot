@@ -444,6 +444,12 @@ public:
     static void         convert_parent_class(uint8_t param_key, void *object_pointer,
                                              const struct AP_Param::GroupInfo *group_info);
 
+    // move all parameters from a class to a new location
+    // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+    static void         convert_class(uint16_t param_key, void *object_pointer,
+                                        const struct AP_Param::GroupInfo *group_info,
+                                        uint16_t old_index, uint16_t old_top_element, bool is_top_level);
+
     /*
       fetch a parameter value based on the index within a group. This
       is used to find the old value of a parameter that has been
