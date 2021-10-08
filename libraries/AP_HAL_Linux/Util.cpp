@@ -306,7 +306,7 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
     return true;
 }
 
-bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set)  const
+bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set) const
 {
     unsigned long cpu1, cpu2;
     char *endptr, sep;
@@ -316,7 +316,6 @@ bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set)  const
     do {
         cpu1 = strtoul(str, &endptr, 10);
         if (str == endptr) {
-            fprintf(stderr, "Invalid option for cpu-affinity: %s missing cpu number\n", str);
             return false;
         }
 
@@ -328,13 +327,11 @@ bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set)  const
         }
 
         if (sep != '-') {
-            fprintf(stderr, "Invalid option for cpu-affinity: %s did you means separator - e.g. 1-3\n", str);
             return false;
         }
 
         cpu2 = strtoul(str, &endptr, 10);
         if (str == endptr) {
-            fprintf(stderr, "Invalid option for cpu-affinity: %s missing end cpu number\n", str);
             return false;
         }
 
