@@ -17,7 +17,9 @@
 /// @file	GlitchFilter.cpp
 /// @brief	A class to implement a complementry filter to smooth analog glitches.
 
+#include <stdio.h>
 
+#include <iostream>
 #include "GlitchFilter.h"
 
 GlitchFilter::GlitchFilter()
@@ -25,8 +27,14 @@ GlitchFilter::GlitchFilter()
     
 }
 
-void GlitchFilter::init(float filter_koef) { 
+void GlitchFilter::init(const float filter_koef, const float scaling, const float penalty) { 
+    
     _filter_koef = filter_koef;
+    _scaling = scaling;
+
+    if (_penalty < 1.0f) penalty = 1.0f;
+    _penalty = penalty;
+
     reset();
 }
 
@@ -35,26 +43,32 @@ void GlitchFilter::reset(void) {
     _error_count = 0;
 }
 
+
+uint32_t GlitchFilter::get_error_count() {
+    return _error_count;
+}
+
 bool GlitchFilter::is_glitch(const float filter_range, const float value)
 {
     if (isinf(value) || isnan(value)) {
-        return false;
+        return true;
     }
 
-    if (isinf(filter_range) || isnan(filter_range) || (filter_range < 0)) {
-        return false;
-    }
-
-    bool ret = true;
+    
+    bool ret = false;
 
     if (is_zero(_mean_value)) {
         _mean_value = value;
     } else {
-        const float d = fabsf(_mean_value - value) / (_mean_value + value);  
+        // percentage of difference from mean = delta change / mean;
+        const float diff_without_scaling = 200 * fabsf(_mean_value - value) / (_mean_value + value); // diff divide by mean value in percent 
+        const float diff = _scaling * diff_without_scaling;  
         float koeff = _filter_koef;
-        if (d  > (filter_range * 0.000005f)) {  // check the difference from mean value outside allowed range
-            ret = false;
-            koeff *= (d * 10.0f);  // reduce koeff so bad sample does not change _mean_value much.
+        
+              
+        if (diff  > (filter_range)) {  // check the difference from mean value outside allowed range
+            ret = true;
+            koeff /= (diff * _penalty);  // reduce koeff so bad sample does not change _mean_value much.
             _error_count++;
         }
         _mean_value = _mean_value * (1 - koeff) + value * koeff; // complimentary filter 1/k
