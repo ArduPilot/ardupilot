@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <utility>
 
-#if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
+#if !HAL_MINIMIZE_FEATURES && OPTICAL_FLOW == ENABLED
 
 /*
   implement FLOWHOLD mode, for position hold using optical flow
@@ -509,4 +509,4 @@ void ModeFlowHold::update_height_estimate(void)
     last_ins_height = ins_height;
 }
 
-#endif // OPTFLOW == ENABLED
+#endif // OPTICAL_FLOW == ENABLED

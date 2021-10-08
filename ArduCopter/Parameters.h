@@ -574,7 +574,7 @@ public:
     ToyMode toy_mode;
 #endif
 
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_flowhold_ptr;
 #endif

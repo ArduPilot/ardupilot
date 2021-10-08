@@ -770,7 +770,7 @@ private:
 };
 
 
-#if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
+#if !HAL_MINIMIZE_FEATURES && OPTICAL_FLOW == ENABLED
 /*
   class to support FLOWHOLD mode, which is a position hold mode using
   optical flow directly, avoiding the need for a rangefinder
@@ -856,7 +856,7 @@ private:
     // last time there was significant stick input
     uint32_t last_stick_input_ms;
 };
-#endif // OPTFLOW
+#endif // OPTICAL_FLOW
 
 
 class ModeGuided : public Mode {

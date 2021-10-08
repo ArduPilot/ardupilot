@@ -139,7 +139,7 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
         case Mode::Number::FLOWHOLD:
             ret = (Mode *)g2.mode_flowhold_ptr;
             break;

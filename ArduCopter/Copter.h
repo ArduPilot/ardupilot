@@ -124,7 +124,7 @@
 #if AP_TERRAIN_AVAILABLE
  # include <AP_Terrain/AP_Terrain.h>
 #endif
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
  # include <AP_OpticalFlow/AP_OpticalFlow.h>
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
@@ -313,7 +313,7 @@ private:
     AP_Arming_Copter arming;
 
     // Optical flow sensor
-#if OPTFLOW == ENABLED
+#if OPTICAL_FLOW == ENABLED
     OpticalFlow optflow;
 #endif
 
@@ -980,7 +980,7 @@ private:
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ModeSmartRTL mode_smartrtl;
 #endif
-#if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
+#if !HAL_MINIMIZE_FEATURES && OPTICAL_FLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
 #if MODE_ZIGZAG_ENABLED == ENABLED
