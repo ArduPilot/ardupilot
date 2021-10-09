@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: POS_X
     // @DisplayName:  X position offset
-    // @Description: X position of the rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
+    // @Description: X position of the rangefinder in body frame. Positive X is forward of the origin(vehicle center of gravity). Use the zero range datum point if supplied.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -107,7 +107,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: POS_Y
     // @DisplayName: Y position offset
-    // @Description: Y position of the rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
+    // @Description: Y position of the rangefinder in body frame. Positive Y is to the right of the origin(vehicle center of gravity). Use the zero range datum point if supplied.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: POS_Z
     // @DisplayName: Z position offset
-    // @Description: Z position of the rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
+    // @Description: Z position of the rangefinder in body frame. Positive Z is down from the origin(vehicle center of gravity). Use the zero range datum point if supplied.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
