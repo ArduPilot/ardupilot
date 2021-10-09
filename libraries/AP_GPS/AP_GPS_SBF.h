@@ -240,7 +240,7 @@ private:
     {
         uint32_t TOW;
         uint16_t WNc;
-        uint16_t Reserved;
+        uint8_t Reserved;
         uint8_t Aux1Error : 2;
         uint8_t Aux2Error : 2;
         uint8_t ErrorReservedBit : 3;
