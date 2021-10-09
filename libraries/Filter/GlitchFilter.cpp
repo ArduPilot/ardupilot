@@ -17,9 +17,7 @@
 /// @file	GlitchFilter.cpp
 /// @brief	A class to implement a complementry filter to smooth analog glitches.
 
-#include <stdio.h>
 
-#include <iostream>
 #include "GlitchFilter.h"
 
 GlitchFilter::GlitchFilter()
