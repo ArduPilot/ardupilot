@@ -37,6 +37,15 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
             slewrate = landing.get_throttle_slewrate();
         }
     }
+    if (g.takeoff_throttle_slewrate != 0 &&
+        (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
+         flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL)) {
+        // for VTOL we use takeoff slewrate, which helps with transition
+        slewrate = g.takeoff_throttle_slewrate;
+    }
+    if (g.takeoff_throttle_slewrate != 0 && quadplane.in_transition()) {
+        slewrate = g.takeoff_throttle_slewrate;
+    }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
         SRV_Channels::limit_slew_rate(func, slewrate, G_Dt);
