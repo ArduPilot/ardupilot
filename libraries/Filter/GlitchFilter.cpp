@@ -27,7 +27,7 @@ GlitchFilter::GlitchFilter()
     
 }
 
-void GlitchFilter::init(const float filter_koef, const float scaling, const float penalty) { 
+void GlitchFilter::init(const float filter_koef, const float scaling, float penalty) { 
     
     _filter_koef = filter_koef;
     _scaling = scaling;

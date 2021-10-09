@@ -31,7 +31,7 @@ public:
     CLASS_NO_COPY(GlitchFilter);
 
 
-    void init(const float filter_koef, const float scaling, const float penalty);
+    void init(const float filter_koef, const float scaling, float penalty);
     
     void reset(void);
 
