@@ -17,18 +17,6 @@
    The strategy for roll/pitch autotune is to give the user a AUTOTUNE
    flight mode which behaves just like FBWA, but does automatic
    tuning.
-
-   While the user is flying in AUTOTUNE the gains are saved every 10
-   seconds, but the saved gains are not the current gains, instead it
-   saves the gains from 10s ago. When the user exits AUTOTUNE the
-   gains are restored from 10s ago.
-
-   This allows the user to fly as much as they want in AUTOTUNE mode,
-   and if they are ever unhappy they just exit the mode. If they stay
-   in AUTOTUNE for more than 10s then their gains will have changed.
-
-   Using this approach users don't need any special switches, they
-   just need to be able to enter and exit AUTOTUNE mode
 */
 
 #include "AP_AutoTune.h"
@@ -39,9 +27,6 @@
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
-
-// time in milliseconds between autotune saves
-#define AUTOTUNE_SAVE_PERIOD 10000U
 
 // step size for changing FF gains, percentage
 #define AUTOTUNE_INCREASE_FF_STEP 12
@@ -106,11 +91,8 @@ void AP_AutoTune::start(void)
 {
     running = true;
     state = ATState::IDLE;
-    uint32_t now = AP_HAL::millis();
 
-    last_save_ms = now;
-
-    current = restore = last_save = get_gains(current);
+    current = restore = last_save = get_gains();
 
     // do first update of rmax and tau now
     update_rmax();
@@ -118,8 +100,6 @@ void AP_AutoTune::start(void)
     dt = AP::scheduler().get_loop_period_s();
 
     rpid.kIMAX().set(constrain_float(rpid.kIMAX(), AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX));
-
-    next_save = current;
 
     // use 0.75Hz filters on the actuator, rate and target to reduce impact of noise
     actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 0.75);
@@ -159,14 +139,11 @@ void AP_AutoTune::stop(void)
 {
     if (running) {
         running = false;
-        if (is_positive(D_limit)) {
-            restore.D = MIN(restore.D, D_limit);
+        if (is_positive(D_limit) && is_positive(P_limit)) {
+            save_gains();
+        } else {
+            restore_gains();
         }
-        if (is_positive(P_limit)) {
-            restore.P = MIN(restore.P, P_limit);
-        }
-        save_gains(restore);
-        current = restore;
     }
 }
 
@@ -178,7 +155,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
     if (!running) {
         return;
     }
-    check_save();
+
     // see what state we are in
     ATState new_state = state;
     const float desired_rate = target_filter.apply(pinfo.target);
@@ -400,10 +377,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
         if (done_count < 3) {
             if (++done_count == 3) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s: Finished", type==AUTOTUNE_ROLL?"Roll":"Pitch");
-                next_save.P = P;
-                next_save.D = D;
-                restore.P = P;
-                restore.D = D;
+                save_gains();
             }
         }
     }
@@ -451,60 +425,20 @@ void AP_AutoTune::state_change(ATState new_state)
 }
 
 /*
-  see if we should save new values
+  save a float if it has changed
  */
-void AP_AutoTune::check_save(void)
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float old_value)
 {
-    if (AP_HAL::millis() - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
-        return;
-    }
-
-    // save the next_save values, which are the autotune value from
-    // the last save period. This means the pilot has
-    // AUTOTUNE_SAVE_PERIOD milliseconds to decide they don't like the
-    // gains and switch out of autotune
-    ATGains tmp = get_gains(current);
-
-    save_gains(next_save);
-    last_save = next_save;
-
-    // restore our current gains
-    set_gains(tmp);
-
-    // if the pilot exits autotune they get these saved values
-    restore = next_save;
-
-    // the next values to save will be the ones we are flying now
-    next_save = tmp;
-    if (is_positive(D_limit)) {
-        next_save.D = MIN(next_save.D, D_limit);
-    }
-    if (is_positive(P_limit)) {
-        next_save.P = MIN(next_save.P, P_limit);
-    }
-    last_save_ms = AP_HAL::millis();
-}
-
-/*
-  set a float and save a float if it has changed by more than
-  0.1%. This reduces the number of insignificant EEPROM writes
- */
-void AP_AutoTune::save_float_if_changed(AP_Float &v, float value)
-{
-    float old_value = v.get();
-    v.set(value);
-    if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
+    if (!is_equal(old_value, v.get())) {
         v.save();
     }
 }
 
 /*
-  set a int16 and save if changed
+  save a int16_t if it has changed
  */
-void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value)
+void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t old_value)
 {
-    int16_t old_value = v.get();
-    v.set(value);
     if (old_value != v.get()) {
         v.save();
     }
@@ -514,10 +448,9 @@ void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value)
 /*
   save a set of gains
  */
-void AP_AutoTune::save_gains(const ATGains &v)
+void AP_AutoTune::save_gains(void)
 {
-    ATGains tmp = current;
-    current = last_save;
+    const auto &v = last_save;
     save_float_if_changed(current.tau, v.tau);
     save_int16_if_changed(current.rmax_pos, v.rmax_pos);
     save_int16_if_changed(current.rmax_neg, v.rmax_neg);
@@ -529,16 +462,15 @@ void AP_AutoTune::save_gains(const ATGains &v)
     save_float_if_changed(rpid.filt_T_hz(), v.flt_T);
     save_float_if_changed(rpid.filt_E_hz(), v.flt_E);
     save_float_if_changed(rpid.filt_D_hz(), v.flt_D);
-    last_save = get_gains(current);
-    current = tmp;
+    last_save = get_gains();
 }
 
 /*
   get gains with PID components
  */
-AP_AutoTune::ATGains AP_AutoTune::get_gains(const ATGains &v)
+AP_AutoTune::ATGains AP_AutoTune::get_gains(void)
 {
-    ATGains ret = v;
+    ATGains ret = current;
     ret.FF = rpid.ff();
     ret.P = rpid.kP();
     ret.I = rpid.kI();
@@ -553,17 +485,17 @@ AP_AutoTune::ATGains AP_AutoTune::get_gains(const ATGains &v)
 /*
   set gains with PID components
  */
-void AP_AutoTune::set_gains(const ATGains &v)
+void AP_AutoTune::restore_gains(void)
 {
-    current = v;
-    rpid.ff().set(v.FF);
-    rpid.kP().set(v.P);
-    rpid.kI().set(v.I);
-    rpid.kD().set(v.D);
-    rpid.kIMAX().set(v.IMAX);
-    rpid.filt_T_hz().set(v.flt_T);
-    rpid.filt_E_hz().set(v.flt_E);
-    rpid.filt_D_hz().set(v.flt_D);
+    current = restore;
+    rpid.ff().set(restore.FF);
+    rpid.kP().set(restore.P);
+    rpid.kI().set(restore.I);
+    rpid.kD().set(restore.D);
+    rpid.kIMAX().set(restore.IMAX);
+    rpid.filt_T_hz().set(restore.flt_T);
+    rpid.filt_E_hz().set(restore.flt_E);
+    rpid.filt_D_hz().set(restore.flt_D);
 }
 
 /*
