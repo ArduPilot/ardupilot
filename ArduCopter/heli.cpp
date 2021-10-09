@@ -5,7 +5,7 @@
 #if FRAME_CONFIG == HELI_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN
- #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 5m/s for 2 seconds
+ #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      250     // we are in "dynamic flight" when the speed is over 2.5m/s for 2 seconds
 #endif
 
 // counter to control dynamic flight profile
