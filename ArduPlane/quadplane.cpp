@@ -2850,25 +2850,27 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
-        /*
-          limit the pitch down with an expanding envelope. This
-          prevents the velocity controller demanding nose down during
-          the initial slowdown if the target velocity curve is higher
-          than the actual velocity curve (for a high drag
-          aircraft). Nose down will cause a lot of downforce on the
-          wings which will draw a lot of current and also cause the
-          aircraft to lose altitude rapidly.pitch limit varies also with speed
-          to prevent inability to progress to position if moving from a loiter
-          to landing
-         */
-        float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
-                                               poscontrol.time_since_state_start_ms(),
-                                               0, 5000);
-        if (plane.nav_pitch_cd < minlimit_cd) {
-            plane.nav_pitch_cd = minlimit_cd;
-            // tell the pos controller we have limited the pitch to
-            // stop integrator buildup
-            pos_control->set_externally_limited_xy();
+        if (!is_tailsitter()) {
+            /*
+              limit the pitch down with an expanding envelope. This
+              prevents the velocity controller demanding nose down during
+              the initial slowdown if the target velocity curve is higher
+              than the actual velocity curve (for a high drag
+              aircraft). Nose down will cause a lot of downforce on the
+              wings which will draw a lot of current and also cause the
+              aircraft to lose altitude rapidly.pitch limit varies also with speed
+              to prevent inability to progress to position if moving from a loiter
+              to landing
+            */
+            float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                                   poscontrol.time_since_state_start_ms(),
+                                                   0, 5000);
+            if (plane.nav_pitch_cd < minlimit_cd) {
+                plane.nav_pitch_cd = minlimit_cd;
+                // tell the pos controller we have limited the pitch to
+                // stop integrator buildup
+                pos_control->set_externally_limited_xy();
+            }
         }
 
         // call attitude controller
