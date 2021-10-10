@@ -63,10 +63,20 @@ AP_RCProtocol::~AP_RCProtocol()
     }
 }
 
+bool AP_RCProtocol::should_search(uint32_t now_ms) const
+{
+#ifndef IOMCU_FW
+    if (_detected_protocol != AP_RCProtocol::NONE && !rc().allow_rc_protocol_switching()) {
+        return false;
+    }
+#endif
+    return (now_ms - _last_input_ms >= 200);
+}
+
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
-    bool searching = (now - _last_input_ms >= 200);
+    bool searching = should_search(now);
 
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
@@ -150,7 +160,7 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
 bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
-    bool searching = (now - _last_input_ms >= 200);
+    bool searching = should_search(now);
 
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
@@ -234,7 +244,7 @@ void AP_RCProtocol::check_added_uart(void)
         return;
     }
     uint32_t now = AP_HAL::millis();
-    bool searching = (now - _last_input_ms >= 200);
+    bool searching = should_search(now);
     if (!searching && !_detected_with_bytes) {
         // not using this uart
         return;

@@ -49,6 +49,7 @@ public:
     {
         return _valid_serial_prot;
     }
+    bool should_search(uint32_t now_ms) const;
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
     bool process_byte(uint8_t byte, uint32_t baudrate);
