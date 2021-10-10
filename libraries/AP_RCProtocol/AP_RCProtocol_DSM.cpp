@@ -353,6 +353,11 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
  */
 void AP_RCProtocol_DSM::start_bind(void)
 {
+#if defined(HAL_GPIO_SPEKTRUM_RC) && HAL_GPIO_SPEKTRUM_RC
+    if (!hal.gpio->get_mode(HAL_GPIO_SPEKTRUM_RC, bind_mode_saved)) {
+        return;
+    }
+#endif
     bind_state = BIND_STATE1;
 }
 
@@ -408,6 +413,7 @@ void AP_RCProtocol_DSM::update(void)
         if (now - bind_last_ms > 50) {
             hal.gpio->pinMode(HAL_GPIO_SPEKTRUM_RC, 0);
             bind_state = BIND_STATE_NONE;
+            hal.gpio->set_mode(HAL_GPIO_SPEKTRUM_RC, bind_mode_saved);
         }
         break;
     }
