@@ -347,7 +347,7 @@ void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
 void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 {
 #if MODE_AUTO_ENABLED == ENABLED
-    if (copter.mode_auto.jump_to_landing_sequence_auto_RTL(reason)) {
+    if (set_mode(Mode::Number::AUTO_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
     }
