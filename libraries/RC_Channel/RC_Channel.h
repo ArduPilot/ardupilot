@@ -477,7 +477,9 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::SUPPRESS_CRSF_MESSAGE));
     }
 
-
+    bool allow_rc_protocol_switching() const {
+        return _options & uint32_t(Option::ALLOW_RC_SWITCHING);
+    }
 
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
@@ -537,6 +539,7 @@ protected:
         ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
         CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
         SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
+        ALLOW_RC_SWITCHING      = (1U << 10), // allow switching RC protocols
     };
 
     void new_override_received() {
