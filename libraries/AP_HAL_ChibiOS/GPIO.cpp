@@ -57,8 +57,9 @@ static struct gpio_entry {
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
-        if (pin_num == _gpio_tab[i].pin_num) {
-            if (check_enabled && !_gpio_tab[i].enabled) {
+        const auto &t = _gpio_tab[i];
+        if (pin_num == t.pin_num) {
+            if (check_enabled && t.pwm_num != 0 && !t.enabled) {
                 return NULL;
             }
             return &_gpio_tab[i];
@@ -507,6 +508,28 @@ bool GPIO::valid_pin(uint8_t pin) const
 #endif
     return gpio_by_pin_num(pin) != nullptr;
 }
+
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+
+// allow for save and restore of pin settings
+bool GPIO::get_mode(uint8_t pin, uint32_t &mode)
+{
+    auto *p = gpio_by_pin_num(pin);
+    if (!p) {
+        return false;
+    }
+    mode = uint32_t(palReadLineMode(p->pal_line));
+    return true;
+}
+
+void GPIO::set_mode(uint8_t pin, uint32_t mode)
+{
+    auto *p = gpio_by_pin_num(pin);
+    if (p) {
+        palSetLineMode(p->pal_line, ioline_t(mode));
+    }
+}
+#endif
 
 #ifndef IOMCU_FW
 /*
