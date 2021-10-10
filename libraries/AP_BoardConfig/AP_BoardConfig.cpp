@@ -396,7 +396,9 @@ void AP_BoardConfig::allocation_error(const char *fmt, ...)
 {
     va_list arg_list;
     va_start(arg_list, fmt);
-    throw_error("Allocation Error", fmt, arg_list);
+    char newfmt[64] {};
+    snprintf(newfmt, sizeof(newfmt), "Unable to allocate %s", fmt);
+    throw_error("Allocation Error", newfmt, arg_list);
     va_end(arg_list);
 }
 
