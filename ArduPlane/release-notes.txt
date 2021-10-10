@@ -1,3 +1,9 @@
+Release 4.1.2beta1 10th October 2021
+------------------------------------
+
+This is beta update to test a fix to the AUTOTUNE code which can lead
+to bad gains being saved. We will release 4.1.2 stable shortly
+
 Release 4.1.1 stable 8th October 2021
 -------------------------------------
 
