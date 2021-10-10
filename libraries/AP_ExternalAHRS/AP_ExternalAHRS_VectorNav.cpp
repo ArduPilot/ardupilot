@@ -121,7 +121,7 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     last_pkt2 = new VN_packet2;
 
     if (!pktbuf || !last_pkt1 || !last_pkt2) {
-        AP_BoardConfig::allocation_error("Failed to allocate ExternalAHRS");
+        AP_BoardConfig::allocation_error("ExternalAHRS");
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_VectorNav::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
