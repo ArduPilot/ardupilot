@@ -57,7 +57,7 @@ PB11 USART3_RX USART3
 
 # -------RCIN-------------
 # Soft Serial for serial RC & PPM
-PC7 TIM8_CH2 TIM8 RCIN FLOAT LOW
+PC7 TIM8_CH2 TIM8 RCIN PULLDOWN LOW
 PC6 SBUS_INVERT OUTPUT
 
 # -------ADC-------------
