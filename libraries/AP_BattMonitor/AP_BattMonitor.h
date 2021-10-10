@@ -47,6 +47,7 @@ class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_MPPT_PacketDigital;
 class AP_BattMonitor_INA231;
+class AP_BattMonitor_LTC2946;
 
 class AP_BattMonitor
 {
@@ -64,6 +65,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_Generator;
     friend class AP_BattMonitor_MPPT_PacketDigital;
     friend class AP_BattMonitor_INA231;
+    friend class AP_BattMonitor_LTC2946;
 
 public:
 
@@ -96,6 +98,7 @@ public:
         Rotoye                     = 19,
         MPPT_PacketDigital         = 20,
         INA231                     = 21,
+        LTC2946                    = 22,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
