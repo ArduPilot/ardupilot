@@ -199,7 +199,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("Failed to allocate uavcan %d\n\r", i + 1);
+                AP_BoardConfig::allocation_error("uavcan %d", i + 1);
                 continue;
             }
 
@@ -210,7 +210,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._kdecan = new AP_KDECAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("Failed to allocate KDECAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("KDECAN %d", drv_num + 1);
                 continue;
             }
 
@@ -220,7 +220,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = new AP_ToshibaCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("Failed to allocate ToshibaCAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("ToshibaCAN %d", drv_num + 1);
                 continue;
             }
         } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
@@ -228,7 +228,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("Failed to allocate PiccoloCAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("PiccoloCAN %d", drv_num + 1);
                 continue;
             }
 
@@ -239,7 +239,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._testcan = new CANTester;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("Failed to allocate CANTester %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("CANTester %d", drv_num + 1);
                 continue;
             }
             AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);
