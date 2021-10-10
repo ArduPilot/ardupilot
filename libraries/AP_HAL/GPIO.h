@@ -55,6 +55,10 @@ public:
     virtual void    toggle(uint8_t pin) = 0;
     virtual bool    valid_pin(uint8_t pin) const { return true; }
 
+    // allow for save and restore of pin settings
+    virtual bool    get_mode(uint8_t pin, uint32_t &mode) { return false; }
+    virtual void    set_mode(uint8_t pin, uint32_t mode) {}
+
     /* Alternative interface: */
     virtual AP_HAL::DigitalSource* channel(uint16_t n) = 0;
 
