@@ -2415,15 +2415,23 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
                 prev_loc = temp_cmd.content.location;
 
                 // single point dist calc
-                rejoin_distance = prev_loc.get_distance(current_loc);;
+                rejoin_distance = prev_loc.get_distance_NED_alt_frame(current_loc).length();
                 rejoin_index = temp_cmd.index;
 
             } else {
                 // Calculate the distance to rejoin
-                Vector2f mission_vector = prev_loc.get_distance_NE(temp_cmd.content.location);
-                Vector2f pos = prev_loc.get_distance_NE(current_loc);
+                Vector3f mission_vector = prev_loc.get_distance_NED_alt_frame(temp_cmd.content.location);
+                Vector3f pos = prev_loc.get_distance_NED_alt_frame(current_loc);
 
-                float disttemp = Vector2f::closest_distance_between_line_and_point(Vector2f(0,0),mission_vector,pos);
+                // project pos vector on to mission vector
+                Vector3f p = pos.projected(mission_vector);
+
+                // constrain to mission line
+                p.x = constrain_float(p.x, MIN(0,mission_vector.x), MAX(0,mission_vector.x));
+                p.y = constrain_float(p.y, MIN(0,mission_vector.y), MAX(0,mission_vector.y));
+                p.z = constrain_float(p.z, MIN(0,mission_vector.z), MAX(0,mission_vector.z));
+
+                float disttemp = (p - pos).length();
 
                 // store wp location as previous
                 prev_loc = temp_cmd.content.location;
