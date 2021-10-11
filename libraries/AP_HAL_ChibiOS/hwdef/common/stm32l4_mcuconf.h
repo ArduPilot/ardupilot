@@ -260,7 +260,9 @@
  * ST driver system settings.
  */
 #define STM32_ST_IRQ_PRIORITY               8
+#ifndef STM32_ST_USE_TIMER
 #define STM32_ST_USE_TIMER                  2
+#endif
 
 /*
  * TRNG driver system settings.
