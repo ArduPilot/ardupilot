@@ -79,7 +79,22 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RC_SPEED", 21, QuadPlane, rc_speed, 490),
 
+    // @Param: THR_MIN_PWM
+    // @DisplayName: Minimum PWM output
+    // @Description: This is the minimum PWM output for the quad motors
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
     // 22: THR_MIN_PWM
+
+    // @Param: THR_MAX_PWM
+    // @DisplayName: Maximum PWM output
+    // @Description: This is the maximum PWM output for the quad motors
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
     // 23: THR_MAX_PWM
 
     // @Param: ASSIST_SPEED
