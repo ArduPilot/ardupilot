@@ -42,11 +42,12 @@ end
 function update()
 
   -- check switches are configured
+  -- at least one switch must be set
   -- source selection from RCx_FUNCTION = 90 (EKF Source Select)
   -- auto source from RCx_FUNCTION = 300 (Scripting1)
   local rc_function_source = rc:find_channel_for_option(90)
   local rc_function_auto = rc:find_channel_for_option(300)
-  if (rc_function_source == nil) or (rc_function_auto == nil) then
+  if (rc_function_source == nil) and (rc_function_auto == nil) then
     gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
@@ -140,31 +141,33 @@ function update()
   end
 
   -- read auto source switch position from RCx_FUNCTION = 300 (Scripting1)
-  local sw_auto_pos = rc_function_auto:get_aux_switch_pos()
-  if sw_auto_pos ~= sw_auto_pos_prev  then       -- check for changes in source auto switch position
-    sw_auto_pos_prev = sw_auto_pos               -- record new switch position so we can detect changes
-    if sw_auto_pos == 0 then                     -- pilot has pulled switch low
-      auto_switch = false                        -- disable auto switching of source
-      if sw_source_pos ~= source_prev then       -- check if source will change
-        source_prev = sw_source_pos              -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(0, "Auto source disabled, switched to Source " .. string.format("%d", source_prev+1))
-      else
-        gcs:send_text(0, "Auto source disabled, already Source " .. string.format("%d", source_prev+1))
+  if rc_function_auto then
+    local sw_auto_pos = rc_function_auto:get_aux_switch_pos()
+    if sw_auto_pos ~= sw_auto_pos_prev  then       -- check for changes in source auto switch position
+      sw_auto_pos_prev = sw_auto_pos               -- record new switch position so we can detect changes
+      if sw_auto_pos == 0 then                     -- pilot has pulled switch low
+        auto_switch = false                        -- disable auto switching of source
+        if sw_source_pos ~= source_prev then       -- check if source will change
+          source_prev = sw_source_pos              -- record pilot's selected source
+          ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
+          gcs:send_text(0, "Auto source disabled, switched to Source " .. string.format("%d", source_prev+1))
+        else
+          gcs:send_text(0, "Auto source disabled, already Source " .. string.format("%d", source_prev+1))
+        end
+      elseif sw_auto_pos == 2 then                 -- pilot has pulled switch high
+        auto_switch = true                         -- enable auto switching of source
+        if auto_source < 0 then
+          gcs:send_text(0, "Auto source enabled, undecided, Source " .. string.format("%d", source_prev+1))
+        elseif auto_source ~= source_prev then     -- check if source will change
+          source_prev = auto_source                -- record pilot's selected source
+          ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
+          gcs:send_text(0, "Auto source enabled, switched to Source " .. string.format("%d", source_prev+1))
+        else
+          gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
+        end
       end
-    elseif sw_auto_pos == 2 then                 -- pilot has pulled switch high
-      auto_switch = true                         -- enable auto switching of source
-      if auto_source < 0 then
-        gcs:send_text(0, "Auto source enabled, undecided, Source " .. string.format("%d", source_prev+1))
-      elseif auto_source ~= source_prev then     -- check if source will change
-        source_prev = auto_source                -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(0, "Auto source enabled, switched to Source " .. string.format("%d", source_prev+1))
-      else
-        gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
-      end
+      play_source_tune(source_prev)
     end
-    play_source_tune(source_prev)
   end
 
   -- auto switching
