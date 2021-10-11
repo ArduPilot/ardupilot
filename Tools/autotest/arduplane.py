@@ -10,6 +10,7 @@ from __future__ import print_function
 import math
 import os
 import signal
+import sys
 import time
 
 from pymavlink import quaternion
@@ -3166,6 +3167,24 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def MegaSquirt(self):
+        self.assert_not_receiving_message('EFI_STATUS')
+        self.set_parameters({
+            'SIM_EFI_TYPE': 1,
+            'EFI_TYPE': 1,
+            'SERIAL5_PROTOCOL': 24,
+        })
+        self.customise_SITL_commandline(["--uartF=sim:megasquirt"])
+        self.delay_sim_time(5)
+        m = self.assert_receive_message('EFI_STATUS')
+        mavutil.dump_message_verbose(sys.stdout, m)
+        if m.throttle_out != 0:
+            raise NotAchievedException("Expected zero throttle")
+        if m.health != 1:
+            raise NotAchievedException("Not healthy")
+        if m.intake_manifold_temperature < 20:
+            raise NotAchievedException("Bad intake manifold temperature")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3394,6 +3413,10 @@ class AutoTestPlane(AutoTest):
             ("AUTOTUNE",
              "Test AutoTune mode",
              self.AUTOTUNE),
+
+            ("MegaSquirt",
+             "Test MegaSquirt EFI",
+             self.MegaSquirt),
 
             ("LogUpload",
              "Log upload",
