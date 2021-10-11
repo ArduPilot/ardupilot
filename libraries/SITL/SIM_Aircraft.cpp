@@ -536,6 +536,7 @@ float Aircraft::rangefinder_range() const
 }
 
 
+// potentially replace this with a call to AP_HAL::Util::get_hw_rtc
 uint64_t Aircraft::get_wall_time_us() const
 {
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
@@ -549,10 +550,12 @@ uint64_t Aircraft::get_wall_time_us() const
     last_ret_us += (uint64_t)((now - tPrev)*1000UL);
     tPrev = now;
     return last_ret_us;
-#else
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return uint64_t(ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL);
+#else
+    return AP_HAL::micros64();
 #endif
 }
 
