@@ -104,15 +104,19 @@ void Copter::tuning()
         wp_nav->set_speed_xy(tuning_value);
         break;
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro roll pitch rates
     case TUNING_ACRO_RP_RATE:
         g2.acro_rp_rate = tuning_value;
         break;
+#endif
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
     // Acro yaw rate
     case TUNING_ACRO_YAW_RATE:
         g2.acro_y_rate = tuning_value;
         break;
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:

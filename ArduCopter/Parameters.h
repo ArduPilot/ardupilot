@@ -658,6 +658,9 @@ public:
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro parameters
     AP_Float                acro_rp_rate;
+#endif
+
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
     AP_Float                acro_y_rate;
 #endif
 
