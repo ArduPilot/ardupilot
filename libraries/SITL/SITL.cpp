@@ -79,7 +79,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
 #endif
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
+#if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
+#endif
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_info2),
     AP_GROUPEND
@@ -317,7 +319,8 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
     AP_GROUPEND
 };
-    
+
+#if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
@@ -358,6 +361,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
 
     AP_GROUPEND
 };
+#endif  // HAL_SIM_GPS_ENABLED
 
 // Mag SITL parameters
 const AP_Param::GroupInfo SIM::var_mag[] = {
