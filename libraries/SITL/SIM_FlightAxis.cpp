@@ -18,6 +18,8 @@
 
 #include "SIM_FlightAxis.h"
 
+#if HAL_SIM_FLIGHTAXIS_ENABLED
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -588,3 +590,5 @@ void FlightAxis::socket_creator(void)
         pthread_mutex_unlock(&sockmtx);
     }
 }
+
+#endif // HAL_SIM_FLIGHTAXIS_ENABLED

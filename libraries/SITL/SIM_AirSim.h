@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_AIRSIM_ENABLED
+#define HAL_SIM_AIRSIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_AIRSIM_ENABLED
+
 #include <AP_HAL/utility/Socket.h>
 #include "SIM_Aircraft.h"
 
@@ -150,3 +158,5 @@ private:
 };
 
 }
+
+#endif  // HAL_SIM_AIRSIM_ENABLED

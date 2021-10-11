@@ -18,6 +18,8 @@
 
 #include "SIM_Gazebo.h"
 
+#if HAL_SIM_GAZEBO_ENABLED
+
 #include <stdio.h>
 #include <errno.h>
 
@@ -171,3 +173,6 @@ void Gazebo::update(const struct sitl_input &input)
 }
 
 }  // namespace SITL
+
+
+#endif  // HAL_SIM_GAZEBO_ENABLED
