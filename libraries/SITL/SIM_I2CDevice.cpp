@@ -1,14 +1,14 @@
 #include "SIM_I2CDevice.h"
 #include <AP_HAL/utility/sparse-endian.h>
 
-void SITL::I2CRegisters::add_register(const char *name, uint8_t reg, int8_t mode)
+void SITL::I2CRegisters::add_register(const char *name, uint8_t reg, RegMode mode)
 {
     // ::fprintf(stderr, "Adding register %u (0x%02x) (%s)\n", reg, reg, name);
     regname[reg] = name;
-    if (mode == O_RDONLY || mode == O_RDWR) {
+    if (mode == RegMode::RDONLY || mode == RegMode::RDWR) {
         readable_registers.set((uint8_t)reg);
     }
-    if (mode == O_WRONLY || mode == O_RDWR) {
+    if (mode == RegMode::WRONLY || mode == RegMode::RDWR) {
         writable_registers.set((uint8_t)reg);
     }
 }
