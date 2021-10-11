@@ -74,7 +74,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
+#if AP_SIM_SHIP_ENABLED
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
+#endif
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
