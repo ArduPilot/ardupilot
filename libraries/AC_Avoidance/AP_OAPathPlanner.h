@@ -69,6 +69,7 @@ public:
     enum OARecoveryOptions {
         OA_OPTION_DISABLED = 0,
         OA_OPTION_WP_RESET = (1 << 0),
+        OA_OPTION_LOG_DIJKSTRA_POINTS = (1 << 1),
     };
 
     uint16_t get_options() const { return _options;}

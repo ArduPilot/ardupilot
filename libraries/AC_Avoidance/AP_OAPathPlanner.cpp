@@ -55,12 +55,13 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Path: AP_OADatabase.cpp
     AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
 
-    // @Param{Rover}: OPTIONS
+    // @Param: OPTIONS
     // @DisplayName: Options while recovering from Object Avoidance
     // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
-    // @Bitmask: 0: Reset the origin of the waypoint to the present location
+    // @Bitmask{Rover}: 0: Reset the origin of the waypoint to the present location, 1: log Dijkstra points
+    // @Bitmask{Copter}: 1: log Dijkstra points
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT, AP_PARAM_FRAME_ROVER),
+    AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
 
     // @Group: BR_
     // @Path: AP_OABendyRuler.cpp
@@ -93,12 +94,12 @@ void AP_OAPathPlanner::init()
         break;
     case OA_PATHPLAN_DIJKSTRA:
         if (_oadijkstra == nullptr) {
-            _oadijkstra = new AP_OADijkstra();
+            _oadijkstra = new AP_OADijkstra(_options);
         }
         break;
     case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
         if (_oadijkstra == nullptr) {
-            _oadijkstra = new AP_OADijkstra();
+            _oadijkstra = new AP_OADijkstra(_options);
         }
         if (_oabendyruler == nullptr) {
             _oabendyruler = new AP_OABendyRuler();
