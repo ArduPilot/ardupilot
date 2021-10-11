@@ -439,8 +439,6 @@ public:
         uint32_t send_counter;
     } led;
 
-    EFI_MegaSquirt efi_ms;
-
     AP_Int8 led_layout;
 
     // vicon parameters
