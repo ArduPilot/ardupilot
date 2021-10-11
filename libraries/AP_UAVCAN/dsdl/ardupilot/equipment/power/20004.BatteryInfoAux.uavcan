@@ -32,3 +32,5 @@ float16 max_current                 # [Ampere]
 float16 nominal_voltage             # [Volt]
 
 bool is_powering_off                # Power off event imminent indication, false if unknown
+
+uint8 battery_id                    # Identifies the battery within this vehicle, e.g. 0 - primary battery
