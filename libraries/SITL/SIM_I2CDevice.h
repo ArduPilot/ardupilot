@@ -14,11 +14,19 @@ class I2CRegEnum {
 
 class I2CRegisters {
 
+public:
+
+    enum class RegMode {
+        RDONLY = 11,
+        WRONLY = 22,
+        RDWR = 33,
+    };
+
 protected:
 
     virtual int rdwr(I2C::i2c_rdwr_ioctl_data *&data) = 0;
 
-    void add_register(const char *name, uint8_t reg, int8_t mode);
+    void add_register(const char *name, uint8_t reg, RegMode mode);
 
     const char *regname[256];
     Bitmask<256> writable_registers;
