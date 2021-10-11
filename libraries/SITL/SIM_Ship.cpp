@@ -17,6 +17,9 @@
 */
 
 #include "SIM_Ship.h"
+
+#if AP_SIM_SHIP_ENABLED
+
 #include "SITL.h"
 
 #include <stdio.h>
@@ -205,3 +208,5 @@ void ShipSim::send_report(void)
         mav_socket.send(buf, len);
     }
 }
+
+#endif

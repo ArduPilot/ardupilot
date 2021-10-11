@@ -626,9 +626,12 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
         // get speed of ground movement (for ship takeoff/landing)
         float yaw_rate = 0;
+#if AP_SIM_SHIP_ENABLED
         const Vector2f ship_movement = sitl->shipsim.get_ground_speed_adjustment(location, yaw_rate);
         const Vector3f gnd_movement(ship_movement.x, ship_movement.y, 0);
-
+#else
+        const Vector3f gnd_movement;
+#endif
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:
             break;
@@ -955,7 +958,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         fetteconewireesc->update(*this);
     }
 
+#if AP_SIM_SHIP_ENABLED
     sitl->shipsim.update();
+#endif
 
     // update IntelligentEnergy 2.4kW generator
     if (ie24) {

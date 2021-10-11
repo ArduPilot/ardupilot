@@ -400,7 +400,9 @@ public:
     Sprayer sprayer_sim;
 
     // simulated ship takeoffs
+#if AP_SIM_SHIP_ENABLED
     ShipSim shipsim;
+#endif
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
