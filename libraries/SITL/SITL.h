@@ -2,7 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -486,4 +486,4 @@ namespace AP {
     SITL::SIM *sitl();
 };
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_SIM_ENABLED
