@@ -136,6 +136,8 @@ public:
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
+        uint32_t    time_remaining;            // remaining battery time
+        bool        has_time_remaining;        // time_remaining is only valid if this is true
         const struct AP_Param::GroupInfo *var_info;
     };
 
@@ -176,6 +178,9 @@ public:
     /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
     virtual bool capacity_remaining_pct(uint8_t &percentage, uint8_t instance) const WARN_IF_UNUSED;
     bool capacity_remaining_pct(uint8_t &percentage) const WARN_IF_UNUSED { return capacity_remaining_pct(percentage, AP_BATT_PRIMARY_INSTANCE); }
+
+    /// time_remaining - returns remaining battery time
+    bool time_remaining(uint32_t &seconds, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
     /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
     int32_t pack_capacity_mah(uint8_t instance) const;
