@@ -67,9 +67,7 @@ void SITL_State::_sitl_setup(const char *home_str)
     _parent_pid = getppid();
 #endif
 
-#ifndef HIL_MODE
     _setup_fdm();
-#endif
     fprintf(stdout, "Starting SITL input\n");
 
     // find the barometer object if it exists
@@ -80,11 +78,9 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     if (_sitl != nullptr) {
         // setup some initial values
-#ifndef HIL_MODE
         _update_airspeed(0);
         _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
-#endif
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
         }
@@ -113,7 +109,6 @@ void SITL_State::_sitl_setup(const char *home_str)
 }
 
 
-#ifndef HIL_MODE
 /*
   setup a SITL FDM listening UDP port
  */
@@ -140,7 +135,6 @@ void SITL_State::_setup_fdm(void)
         exit(1);
     }
 }
-#endif
 
 
 /*
@@ -522,7 +516,6 @@ int SITL_State::sim_fd_write(const char *name)
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
-#ifndef HIL_MODE
 /*
   check for a SITL RC input packet
  */
@@ -763,7 +756,6 @@ void SITL_State::_fdm_input_local(void)
     _synthetic_clock_mode = true;
     _update_count++;
 }
-#endif
 
 /*
   create sitl_input structure for sending to FDM
