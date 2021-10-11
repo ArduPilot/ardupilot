@@ -14,6 +14,7 @@
  */
 
 #include "AP_OADijkstra.h"
+#include "AP_OAPathPlanner.h"
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -24,7 +25,8 @@
 #define OA_DIJKSTRA_ERROR_REPORTING_INTERVAL_MS         5000    // failure messages sent to GCS every 5 seconds
 
 /// Constructor
-AP_OADijkstra::AP_OADijkstra() :
+AP_OADijkstra::AP_OADijkstra(AP_Int16 &options) :
+        _options(options),
         _inclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
@@ -111,6 +113,19 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             report_error(error_id);
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
+        }
+        // reset logging count to restart logging updated graph
+        _log_num_points = 0;
+        _log_visgraph_version++;
+    }
+
+    // Log one visgraph point per loop
+    if (_polyfence_visgraph_ok && (_log_num_points < total_numpoints()) && (_options & AP_OAPathPlanner::OARecoveryOptions::OA_OPTION_LOG_DIJKSTRA_POINTS) ) {
+        Vector2f vis_point;
+        if (get_point(_log_num_points, vis_point)) {
+            Location log_location(Vector3f(vis_point.x, vis_point.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+            Write_Visgraph_point(_log_visgraph_version, _log_num_points, log_location.lat, log_location.lng);
+            _log_num_points++;
         }
     }
 
