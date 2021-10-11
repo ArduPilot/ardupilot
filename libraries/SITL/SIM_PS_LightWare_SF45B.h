@@ -43,6 +43,12 @@ rc 2 1450
 
 #include "SIM_PS_LightWare.h"
 
+#ifndef HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#define HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED HAL_SIM_PS_LIGHTWARE_ENABLED
+#endif
+
+#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+
 #include <AP_Math/crc.h>
 #include <AP_InternalError/AP_InternalError.h>
 
@@ -258,3 +264,5 @@ private:
 };
 
 };
+
+#endif  // HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
