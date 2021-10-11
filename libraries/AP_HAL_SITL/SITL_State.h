@@ -316,6 +316,9 @@ private:
     // simulated AIS stream
     SITL::AIS *ais;
 
+    // simulated EFI MegaSquirt device:
+    SITL::EFI_MegaSquirt *efi_ms;
+
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     

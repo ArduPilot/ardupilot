@@ -373,6 +373,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         gyus42v2 = new SITL::RF_GYUS42v2();
         return gyus42v2->fd();
+    } else if (streq(name, "megasquirt")) {
+        if (efi_ms != nullptr) {
+            AP_HAL::panic("Only one megasquirt at a time");
+        }
+        efi_ms = new SITL::EFI_MegaSquirt();
+        return efi_ms->fd();
     } else if (streq(name, "VectorNav")) {
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
@@ -502,6 +508,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No gyus42v2 created");
         }
         return gyus42v2->write_fd();
+    } else if (streq(name, "megasquirt")) {
+        if (efi_ms == nullptr) {
+            AP_HAL::panic("No megasquirt created");
+        }
+        return efi_ms->write_fd();
     } else if (streq(name, "VectorNav")) {
         if (vectornav == nullptr) {
             AP_HAL::panic("No VectorNav created");
@@ -702,6 +713,9 @@ void SITL_State::_fdm_input_local(void)
     if (gyus42v2 != nullptr) {
         gyus42v2->update(sitl_model->rangefinder_range());
     }
+    if (efi_ms != nullptr) {
+        efi_ms->update();
+    }
 
     if (frsky_d != nullptr) {
         frsky_d->update();
@@ -734,10 +748,6 @@ void SITL_State::_fdm_input_local(void)
 
     if (ais != nullptr) {
         ais->update();
-    }
-
-    if (_sitl) {
-        _sitl->efi_ms.update();
     }
 
     if (_sitl && _use_fg_view) {
