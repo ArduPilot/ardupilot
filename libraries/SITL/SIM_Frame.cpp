@@ -23,7 +23,10 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#if USE_PICOJSON
 #include "picojson.h"
+#endif
 
 using namespace SITL;
 
@@ -322,6 +325,7 @@ float Frame::get_air_density(float alt_amsl) const
     return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN(model.refTempC)));
 }
 
+#if USE_PICOJSON
 /*
   load frame specific parameters from a json file if available
  */
@@ -418,6 +422,7 @@ void Frame::load_frame_params(const char *model_json)
 
     ::printf("Loaded model params from %s\n", model_json);
 }
+#endif
 
 /*
   initialise the frame
@@ -427,11 +432,13 @@ void Frame::init(const char *frame_str, Battery *_battery)
     model = default_model;
     battery = _battery;
 
+#if USE_PICOJSON
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
     if (colon != nullptr && slen > 5 && strcmp(&frame_str[slen-5], ".json") == 0) {
         load_frame_params(colon+1);
     }
+#endif
     mass = model.mass;
 
     const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));
