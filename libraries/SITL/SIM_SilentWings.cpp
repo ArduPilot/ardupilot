@@ -18,6 +18,8 @@
 
 #include "SIM_SilentWings.h"
 
+#if HAL_SIM_SILENTWINGS_ENABLED
+
 #include <stdio.h>
 #include <errno.h>
 
@@ -318,3 +320,5 @@ void SilentWings::update(const struct sitl_input &input)
         report.frame_count = 0;
     }    
 }
+
+#endif  // HAL_SIM_SILENTWINGS_ENABLED
