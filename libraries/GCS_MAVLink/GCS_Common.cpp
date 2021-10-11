@@ -3037,6 +3037,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         break;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera->set_trigger_distance(packet.param1);
+        if (is_equal(packet.param3, 1.0f)) {
+            camera->take_picture();
+        }
         result = MAV_RESULT_ACCEPTED;
         break;
     default:
