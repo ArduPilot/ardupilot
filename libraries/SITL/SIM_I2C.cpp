@@ -49,7 +49,9 @@ public:
 };
 static IgnoredI2CDevice ignored;
 
+#if AP_SIM_TOSHIBALED_ENABLED
 static ToshibaLED toshibaled;
+#endif
 static MaxSonarI2CXL maxsonari2cxl;
 static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
@@ -70,7 +72,9 @@ struct i2c_device_at_address {
     { 0, 0x60, mcp9600 }, // 0x60 is low address
     { 0, 0x71, maxsonari2cxl_2 },
     { 1, 0x01, icm40609 },
+#if AP_SIM_TOSHIBALED_ENABLED
     { 1, 0x55, toshibaled },
+#endif
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
