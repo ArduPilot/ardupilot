@@ -2496,7 +2496,7 @@ class AutoTest(ABC):
         m = self.poll_message("HIGH_LATENCY2")
         mavutil.dump_message_verbose(sys.stdout, m)
         loc = mavutil.location(m.latitude, m.longitude, m.altitude, 0)
-        dist = self.get_distance_accurate(loc, self.sim_location_int())
+        dist = self.get_distance_int(loc, self.sim_location_int())
 
         if dist > 1:
             raise NotAchievedException("Bad location from HIGH_LATENCY2")
