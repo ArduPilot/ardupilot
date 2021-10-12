@@ -1418,11 +1418,11 @@ int8_t GCS_MAVLINK_Plane::high_latency_air_temperature() const
 {
     // return units are degC
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    float air_temperature = 0;
-    if (airspeed != nullptr &&
-        airspeed->enabled()) {
-            airspeed->get_temperature(air_temperature);
+    float air_temperature;
+    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
+        return air_temperature;
     }
-    return air_temperature;
+
+    return INT8_MIN;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
