@@ -48,7 +48,7 @@
 #endif
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
-// the number of GPS leap seconds
+// the number of GPS leap seconds - copied into SIM_GPS.cpp
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
