@@ -1290,15 +1290,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-#if HAL_ADSB_ENABLED    
-        plane.adsb.handle_message(chan, msg);
-#endif
-        break;
-
     default:
         handle_common_message(msg);
         break;
