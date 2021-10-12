@@ -270,7 +270,7 @@ void ModeGuided::posvelaccel_control_start()
 
 bool ModeGuided::is_taking_off() const
 {
-    return guided_mode == SubMode::TakeOff;
+    return guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
 // initialise guided mode's angle controller
