@@ -83,6 +83,9 @@ void CompassLearn::update(void)
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
 
+    if (!AP_Notify::flags.compass_cal_running) {
+        start_time_ms = AP_HAL::millis();
+    }
     AP_Notify::flags.compass_cal_running = true;
 
     if (sample_available) {
@@ -159,23 +162,38 @@ void CompassLearn::update(void)
                 }
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);
-            // setup so use can trigger it again
-            converged = false;
-            sample_available = false;
-            num_samples = 0;
-            have_earth_field = false;
-            for (auto &v : predicted_offsets) {
-                v.zero();
-            }
-            worst_error = 0;
-            best_error = 0;
-            best_yaw_deg = 0;
-            best_offsets.zero();
+            reset();
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
             AP_Notify::flags.compass_cal_running = false;
             AP_Notify::events.compass_cal_saved = true;
         }
+        if (AP_HAL::millis() - start_time_ms > 600U*1000U) {
+            compass.set_learn_type(Compass::LEARN_NONE, false);
+            reset();
+            gcs().send_text(MAV_SEVERITY_WARNING, "CompassLearn: Timeout");
+            AP_Notify::flags.compass_cal_running = false;
+            AP_Notify::events.compass_cal_saved = false;
+            return;
+        }
     }
+}
+
+/*
+ * Reset counter for new run
+ */
+void CompassLearn::reset()
+{
+    // setup so use can trigger it again
+    sample_available = false;
+    num_samples = 0;
+    have_earth_field = false;
+    for (auto &v : predicted_offsets) {
+        v.zero();
+    }
+    worst_error = 0;
+    best_error = 0;
+    best_yaw_deg = 0;
+    best_offsets.zero();
 }
 
 /*

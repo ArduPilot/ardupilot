@@ -53,7 +53,9 @@ private:
 
     // notification
     uint32_t last_learn_progress_sent_ms;
+    uint32_t start_time_ms;
 
+    void reset();
     void io_timer(void);
     void process_sample(const struct sample &s);
 };
