@@ -25,3 +25,6 @@
 [submodule "modules/pyuavcan"]
 	path = modules/pyuavcan
 	url = https://github.com/ArduPilot/pyuavcan
+[submodule "modules/canard_dsdlc"]
+	path = modules/canard_dsdlc
+	url =  https://github.com/ardupilot/canard_dsdlc
