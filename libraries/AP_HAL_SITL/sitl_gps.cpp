@@ -38,7 +38,7 @@ extern const AP_HAL::HAL& hal;
 // state of GPS emulation
 static struct gps_state {
     /* pipe emulating UBLOX GPS serial stream */
-    int gps_fd, client_fd, ext_fifo_fd;
+    int gps_fd, client_fd;
     uint32_t last_update; // milliseconds
 
     uint8_t next_index;
