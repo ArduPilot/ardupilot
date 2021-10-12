@@ -1,5 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.8 12-Oct-2021 (TradHeli only release)
+Changes from 4.0.7
+1) TradHeli landing detector fix
+2) Proximity sensor distance validity checked before pushing to object database
+------------------------------------------------------------------
 Copter 4.0.7 22-Feb-2021
 Changes from 4.0.7-rc1
 1) fixed build on Durandal board
