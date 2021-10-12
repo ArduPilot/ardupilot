@@ -495,9 +495,6 @@ def configure(cfg):
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
 
-    if cfg.env.AP_PERIPH:
-        generate_canard_dsdlc(cfg)
-
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
 
@@ -508,31 +505,21 @@ def configure(cfg):
 
     _collect_autoconfig_files(cfg)
 
-def generate_canard_dsdlc(cfg, in_configure=True):
-    if in_configure:
-        dsdlc_gen_path = cfg.bldnode.make_node(os.path.join(cfg.variant, 'modules/libcanard/dsdlc_generated')).abspath()
-    else:
-        dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
+def generate_canard_dsdlc(cfg):
+    dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
     src = cfg.srcnode.ant_glob('modules/pyuavcan/uavcan/dsdl_files/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
     src = ' '.join([s.abspath() for s in src])
     cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
-                        cfg.srcnode.make_node('Tools/canard_dsdlc/canard_dsdlc.py').abspath(),
+                        cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath(),
                         dsdlc_gen_path,
                         src)
-    if in_configure:
-        cfg.start_msg('Generating DSDL C bindings')
-    else:
-        print("Generating DSDLC for CANARD: " + cmd)
+    print("Generating DSDLC for CANARD: " + cmd)
     ret = subprocess.run(cmd, shell=True, capture_output=True)
     if ret.returncode != 0:
-        if in_configure:
-            cfg.end_msg('failed', color='RED')
         print('Failed to run: ', cmd)
         print(ret.stdout.decode('utf-8'))
         print(ret.stderr.decode('utf-8'))
         raise RuntimeError('Failed to generate DSDL C bindings')
-    elif in_configure:
-        cfg.end_msg('OK')
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -743,7 +730,7 @@ def _load_pre_build(bld):
         #check if canard dsdlc directory empty
         # check if directory exists
         if not os.path.exists(dsdlc_gen_path) or not os.listdir(dsdlc_gen_path):
-            generate_canard_dsdlc(bld, False)
+            generate_canard_dsdlc(bld)
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
 
