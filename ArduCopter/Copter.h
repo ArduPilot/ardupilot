@@ -285,9 +285,11 @@ private:
         };
         // set surface to track
         void set_surface(Surface new_surface);
+        // initialise surface tracking
+        void init(Surface surf) { surface = surf; }
 
     private:
-        Surface surface = Surface::GROUND;
+        Surface surface;
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
         bool valid_for_logging;     // true if target_alt_cm is valid for logging
