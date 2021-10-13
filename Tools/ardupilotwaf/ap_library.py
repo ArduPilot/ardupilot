@@ -139,7 +139,7 @@ def ap_library(bld, library, vehicle):
         kw.update(
             name=_vehicle_tgen_name(library, vehicle),
             source=source,
-            defines=ap.get_legacy_defines(vehicle),
+            defines=ap.get_legacy_defines(vehicle, bld),
             idx=_vehicle_index(vehicle),
         )
         bld.objects(**kw)

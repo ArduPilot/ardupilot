@@ -286,9 +286,7 @@ void Sub::guided_pos_control_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        // initialise velocity controller
-        pos_control.init_z_controller();
-        pos_control.init_xy_controller();
+        wp_nav.wp_and_spline_init();
         return;
     }
 

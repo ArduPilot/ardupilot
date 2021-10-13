@@ -99,7 +99,7 @@ public:
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wcast-align"
         T *el_array = (T *)chunk_ptrs[chunk_num];
-        #pragma pop
+        #pragma GCC diagnostic pop
         return el_array[chunk_index];
     }
 
@@ -111,7 +111,7 @@ public:
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wcast-align"
         const T *el_array = (const T *)chunk_ptrs[chunk_num];
-        #pragma pop
+        #pragma GCC diagnostic pop
         return el_array[chunk_index];
     }
 };

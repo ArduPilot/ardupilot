@@ -338,20 +338,38 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
 float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) const
 {
-    float throttle_ratio = thrust;
+    float battery_scale = 1.0;
+    if (is_positive(_batt_voltage_filt.get())) {
+        battery_scale = 1.0 / _batt_voltage_filt.get();
+    }
     // apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
     if (is_zero(thrust_curve_expo)) {
         // zero expo means linear, avoid floating point exception for small values
-        return _lift_max * thrust;
+        return _lift_max * thrust * battery_scale;
     }
-    if (is_positive(_batt_voltage_filt.get())) {
-        throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo * _batt_voltage_filt.get());
-    } else {
-        throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo);
-    }
+    float throttle_ratio = ((thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo) + 4.0f * thrust_curve_expo * _lift_max * thrust)) / (2.0f * thrust_curve_expo);
+    return constrain_float(throttle_ratio * battery_scale, 0.0f, 1.0f);
+}
 
-    return constrain_float(throttle_ratio, 0.0f, 1.0f);
+// inverse of above, tested with AP_Motors/examples/expo_inverse_test
+// used to calculate equivelent motor throttle level to direct ouput, used in tailsitter transtions
+float AP_MotorsMulticopter::remove_thrust_curve_and_volt_scaling(float throttle) const
+{
+    float battery_scale = 1.0;
+    if (is_positive(_batt_voltage_filt.get())) {
+        battery_scale = 1.0 / _batt_voltage_filt.get();
+    }
+    // apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
+    float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
+    if (is_zero(thrust_curve_expo)) {
+        // zero expo means linear, avoid floating point exception for small values
+        return  throttle / (_lift_max * battery_scale);
+    }
+    float thrust = ((throttle / battery_scale) * (2.0f * thrust_curve_expo)) - (thrust_curve_expo - 1.0f);
+    thrust = (thrust * thrust) - ((1.0f - thrust_curve_expo) * (1.0f - thrust_curve_expo));
+    thrust /=  4.0f * thrust_curve_expo * _lift_max;
+    return constrain_float(thrust, 0.0f, 1.0f);
 }
 
 // update_lift_max from battery voltage - used for voltage compensation
@@ -417,10 +435,18 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 }
 
 // converts desired thrust to linearized actuator output in a range of 0~1
-float AP_MotorsMulticopter::thrust_to_actuator(float thrust_in)
+float AP_MotorsMulticopter::thrust_to_actuator(float thrust_in) const
 {
     thrust_in = constrain_float(thrust_in, 0.0f, 1.0f);
     return _spin_min + (_spin_max - _spin_min) * apply_thrust_curve_and_volt_scaling(thrust_in);
+}
+
+// inverse of above, tested with AP_Motors/examples/expo_inverse_test
+// used to calculate equivelent motor throttle level to direct ouput, used in tailsitter transtions
+float AP_MotorsMulticopter::actuator_to_thrust(float actuator) const
+{
+    actuator = (actuator - _spin_min) /  (_spin_max - _spin_min);
+    return constrain_float(remove_thrust_curve_and_volt_scaling(actuator), 0.0f, 1.0f);
 }
 
 // adds slew rate limiting to actuator output

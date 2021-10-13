@@ -251,6 +251,16 @@ void __early_init(void) {
 void __late_init(void) {
   halInit();
   chSysInit();
+
+  /*
+   * Initialize RNG
+   */
+#if HAL_USE_HW_RNG && defined(RNG)
+  rccEnableAHB2(RCC_AHB2ENR_RNGEN, 0);
+  RNG->CR |= RNG_CR_IE;
+  RNG->CR |= RNG_CR_RNGEN;
+#endif
+
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();

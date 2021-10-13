@@ -199,18 +199,18 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::config_error("Failed to allocate uavcan %d\n\r", i + 1);
+                AP_BoardConfig::allocation_error("Failed to allocate uavcan %d\n\r", i + 1);
                 continue;
             }
 
             AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[drv_num], AP_UAVCAN::var_info);
         } else if (drv_type[drv_num] == Driver_Type_KDECAN) {
-#if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
+#if (APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
             // To be replaced with macro saying if KDECAN library is included
             _drivers[drv_num] = _drv_param[drv_num]._kdecan = new AP_KDECAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::config_error("Failed to allocate KDECAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("Failed to allocate KDECAN %d\n\r", drv_num + 1);
                 continue;
             }
 
@@ -220,7 +220,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = new AP_ToshibaCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::config_error("Failed to allocate ToshibaCAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("Failed to allocate ToshibaCAN %d\n\r", drv_num + 1);
                 continue;
             }
         } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
@@ -228,7 +228,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::config_error("Failed to allocate PiccoloCAN %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("Failed to allocate PiccoloCAN %d\n\r", drv_num + 1);
                 continue;
             }
 
@@ -239,7 +239,7 @@ void AP_CANManager::init()
             _drivers[drv_num] = _drv_param[drv_num]._testcan = new CANTester;
 
             if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::config_error("Failed to allocate CANTester %d\n\r", drv_num + 1);
+                AP_BoardConfig::allocation_error("Failed to allocate CANTester %d\n\r", drv_num + 1);
                 continue;
             }
             AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);

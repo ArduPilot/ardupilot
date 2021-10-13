@@ -33,7 +33,6 @@
 #include <AP_Common/Location.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_MSP/msp.h>
 #include <AP_OLC/AP_OLC.h>
@@ -603,6 +602,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
 
+#if BARO_MAX_INSTANCES > 1
     // @Param: BTEMP_EN
     // @DisplayName: BTEMP_EN
     // @Description: Displays temperature reported by secondary barometer
@@ -618,6 +618,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
     // @Param: ATEMP_EN
     // @DisplayName: ATEMP_EN
@@ -1961,12 +1962,14 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     }
 }
 
+#if BARO_MAX_INSTANCES > 1
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 {
     AP_Baro &barometer = AP::baro();
     float btmp = barometer.get_temperature(1);
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
 }
+#endif
 
 void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 {
@@ -2136,9 +2139,11 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
        return;
     }
     if (rangefinder->status_orient(ROTATION_PITCH_270) <= RangeFinder::Status::NoData) {
-        backend->write(x, y, false, "%cNO DATA", SYMBOL(SYM_RNGFD));
+        backend->write(x, y, false, "%c----%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
     } else {
-        backend->write(x, y, false, "%c%2.2f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, (rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f)), u_icon(DISTANCE));
+        const float distance = rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f;
+        const char *format = distance < 9.995 ? "%c %1.2f%c" : "%c%2.2f%c";
+        backend->write(x, y, false, format, SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
 
@@ -2193,7 +2198,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+#if BARO_MAX_INSTANCES > 1
     DRAW_SETTING(btemp);
+#endif
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);

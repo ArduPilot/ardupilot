@@ -639,6 +639,9 @@ void QuaternionT<T>::normalize(void)
         q2 *= quatMagInv;
         q3 *= quatMagInv;
         q4 *= quatMagInv;
+    } else {
+        // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
 }
 
@@ -721,6 +724,12 @@ QuaternionT<T> QuaternionT<T>::operator/(const QuaternionT<T> &v) const
     const T &quat1 = q2;
     const T &quat2 = q3;
     const T &quat3 = q4;
+
+    const T quatMag = length();
+    if (is_zero(quatMag)) {
+        // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     const T rquat0 = v.q1;
     const T rquat1 = v.q2;

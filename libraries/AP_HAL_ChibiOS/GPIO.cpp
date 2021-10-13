@@ -134,6 +134,17 @@ void GPIO::setup_alt_config(void)
     for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
         const struct alt_config &alt = alternate_config[i];
         if (alt_config == alt.alternate) {
+            if (alt.periph_type == PERIPH_TYPE::GPIO) {
+                // enable pin in GPIO table
+                for (uint8_t j=0; j<ARRAY_SIZE(_gpio_tab); j++) {
+                    struct gpio_entry *g = &_gpio_tab[j];
+                    if (g->pal_line == alt.line) {
+                        g->enabled = true;
+                        break;
+                    }
+                }
+                continue;
+            }
             const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
             const uint8_t odr = (alt.mode & PAL_STM32_HIGH)?1:0;
             palSetLineMode(alt.line, mode);

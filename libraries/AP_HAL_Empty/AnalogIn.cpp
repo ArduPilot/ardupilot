@@ -22,8 +22,9 @@ float AnalogSource::read_latest() {
     return _v;
 }
 
-void AnalogSource::set_pin(uint8_t p)
-{}
+bool AnalogSource::set_pin(uint8_t p) {
+    return true;
+}
 
 AnalogIn::AnalogIn()
 {}

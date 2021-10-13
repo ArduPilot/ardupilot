@@ -128,6 +128,15 @@ void stack_overflow(thread_t *tp);
  */
 uint32_t stack_free(void *stack_base);
 
+/**
+ * Generates a block of random values, returns total values generated
+ * if nonblocking, for blocking returns if successful or not
+ */
+#if HAL_USE_HW_RNG && defined(RNG)
+bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
+unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
+#endif
+
 // allow stack view code to show free ISR stack
 extern uint32_t __main_stack_base__;
 extern uint32_t __main_stack_end__;

@@ -2,6 +2,7 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL.h>
+#include "AP_HAL_SITL.h"
 
 #include <assert.h>
 #include <sys/types.h>
@@ -22,7 +23,7 @@
 
 using namespace HALSITL;
 
-extern const AP_HAL::HAL& hal;
+extern HAL_SITL& hal;
 
 /*
   emulate flash sector sizes
@@ -47,52 +48,59 @@ extern const AP_HAL::HAL& hal;
 
 void Storage::_storage_open(void)
 {
-    if (_initialised) {
+    if (_initialisedType != StorageBackend::None) {
+        // don't reinit
         return;
     }
 
-#if STORAGE_USE_POSIX
-    // if we have failed filesystem init don't try again
-    if (log_fd == -1) {
-        return;
-    }
-#endif
-        
     _dirty_mask.clearall();
 
 #if STORAGE_USE_FLASH
-    // load from storage backend
-    _flash_load();
-#elif STORAGE_USE_POSIX
-    log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT, 0644);
-    if (log_fd == -1) {
-        hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
+    if (hal.get_storage_flash_enabled()) {
+        // load from storage backend
+        _flash_load();
+        _initialisedType = StorageBackend::Flash;
         return;
     }
+#endif // STORAGE_USE_FLASH
 
-    fcntl(log_fd, F_SETFD, FD_CLOEXEC);
+#if STORAGE_USE_POSIX
+    if (hal.get_storage_posix_enabled()) {
+        // if we have failed filesystem init don't try again (this is
+        // initialised to zero in the constructor)
+        if (log_fd == -1) {
+            return;
+        }
 
-    int ret = read(log_fd, _buffer, HAL_STORAGE_SIZE);
-    if (ret < 0) {
-        hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
-        close(log_fd);
-        log_fd = -1;
+        log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT, 0644);
+        if (log_fd == -1) {
+            hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
+            return;
+        }
+
+        fcntl(log_fd, F_SETFD, FD_CLOEXEC);
+
+        int ret = read(log_fd, _buffer, HAL_STORAGE_SIZE);
+        if (ret < 0) {
+            hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
+            close(log_fd);
+            log_fd = -1;
+            return;
+        }
+        // pre-fill to full size
+        if (lseek(log_fd, ret, SEEK_SET) != ret ||
+            write(log_fd, &_buffer[ret], HAL_STORAGE_SIZE-ret) != HAL_STORAGE_SIZE-ret) {
+            hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
+            close(log_fd);
+            log_fd = -1;
+            return;
+        }
+        _initialisedType = StorageBackend::SDCard;  // AKA POSIX
         return;
     }
-    // pre-fill to full size
-    if (lseek(log_fd, ret, SEEK_SET) != ret ||
-        write(log_fd, &_buffer[ret], HAL_STORAGE_SIZE-ret) != HAL_STORAGE_SIZE-ret) {
-        hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
-        close(log_fd);
-        log_fd = -1;
-        return;        
-    }
-    using_filesystem = true;
-#else
-#error "No storage system enabled"
 #endif
 
-    _initialised = true;
+//    ::printf("No storage backend enabled");
 }
 
 /*
@@ -138,7 +146,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
 
 void Storage::_timer_tick(void)
 {
-    if (!_initialised) {
+    if (_initialisedType == StorageBackend::None) {
         return;
     }
     if (_dirty_mask.empty()) {
@@ -160,37 +168,40 @@ void Storage::_timer_tick(void)
     }
 
 #if STORAGE_USE_POSIX
-    if (using_filesystem && log_fd != -1) {
-        const off_t offset = STORAGE_LINE_SIZE*i;
-        if (lseek(log_fd, offset, SEEK_SET) != offset) {
+    if (hal.get_storage_posix_enabled()) {
+        if (log_fd != -1) {
+            const off_t offset = STORAGE_LINE_SIZE*i;
+            if (lseek(log_fd, offset, SEEK_SET) != offset) {
+                return;
+            }
+            if (write(log_fd, &_buffer[offset], STORAGE_LINE_SIZE) != STORAGE_LINE_SIZE) {
+                return;
+            }
+            _dirty_mask.clear(i);
             return;
         }
-        if (write(log_fd, &_buffer[offset], STORAGE_LINE_SIZE) != STORAGE_LINE_SIZE) {
-            return;
-        }
-        _dirty_mask.clear(i);
-        return;
-    } 
+    }
 #endif
-    
+
 #if STORAGE_USE_FLASH
-    // save to storage backend
-    _flash_write(i);
+    if (hal.get_storage_flash_enabled()) {
+        // save to storage backend
+        _flash_write(i);
+        return;
+    }
 #endif
 }
+
+#if STORAGE_USE_FLASH
 
 /*
   load all data from flash
  */
 void Storage::_flash_load(void)
 {
-#if STORAGE_USE_FLASH
     if (!_flash.init()) {
         AP_HAL::panic("unable to init flash storage");
     }
-#else
-    AP_HAL::panic("unable to init storage");
-#endif
 }
 
 /*
@@ -198,16 +209,13 @@ void Storage::_flash_load(void)
 */
 void Storage::_flash_write(uint16_t line)
 {
-#if STORAGE_USE_FLASH
     if (_flash.write(line*STORAGE_LINE_SIZE, STORAGE_LINE_SIZE)) {
         // mark the line clean
         _dirty_mask.clear(line);
     }
-#endif
 }
 
 
-#if STORAGE_USE_FLASH
 /*
   emulate writing to flash
  */
@@ -342,6 +350,7 @@ bool Storage::_flash_erase_ok(void)
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();
 }
+
 #endif // STORAGE_USE_FLASH
 
 /*
@@ -350,7 +359,10 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
-    return _initialised && AP_HAL::millis() - _last_empty_ms < 2000;
+    if (_initialisedType == StorageBackend::None) {
+        return false;
+    }
+    return AP_HAL::millis() - _last_empty_ms < 2000;
 }
 
 

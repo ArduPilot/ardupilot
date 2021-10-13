@@ -32,7 +32,7 @@ const float OA_BENDYRULER_LOOKAHEAD_STEP2_MIN = 2.0f;   // step2 checks at least
 const float OA_BENDYRULER_LOOKAHEAD_PAST_DEST = 2.0f;   // lookahead length will be at least this many meters past the destination
 const float OA_BENDYRULER_LOW_SPEED_SQUARED = (0.2f * 0.2f);    // when ground course is below this speed squared, vehicle's heading will be used
 
-#define VERTICAL_ENABLED APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define VERTICAL_ENABLED APM_BUILD_COPTER_OR_HELI()
 
 const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
 

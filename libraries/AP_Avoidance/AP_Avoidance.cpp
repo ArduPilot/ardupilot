@@ -19,7 +19,7 @@ extern const AP_HAL::HAL& hal;
     #define AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT        100
     #define AP_AVOIDANCE_RECOVERY_DEFAULT               RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER
     #define AP_AVOIDANCE_FAIL_ACTION_DEFAULT            MAV_COLLISION_ACTION_REPORT
-#else // APM_BUILD_TYPE(APM_BUILD_ArduCopter), Rover, Boat
+#else // APM_BUILD_TYPE(APM_BUILD_ArduCopter),Heli, Rover, Boat
     #define AP_AVOIDANCE_WARN_TIME_DEFAULT              30
     #define AP_AVOIDANCE_FAIL_TIME_DEFAULT              30
     #define AP_AVOIDANCE_WARN_DISTANCE_XY_DEFAULT       300

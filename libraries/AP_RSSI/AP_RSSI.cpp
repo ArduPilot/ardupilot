@@ -176,10 +176,9 @@ uint8_t AP_RSSI::read_receiver_rssi_uint8()
 // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
 float AP_RSSI::read_pin_rssi()
 {
-    if (!rssi_analog_source) {
+    if (!rssi_analog_source || !rssi_analog_source->set_pin(rssi_analog_pin)) {
         return 0;
     }
-    rssi_analog_source->set_pin(rssi_analog_pin);
     float current_analog_voltage = rssi_analog_source->voltage_average();
 
     return scale_and_constrain_float_rssi(current_analog_voltage, rssi_analog_pin_range_low, rssi_analog_pin_range_high);

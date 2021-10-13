@@ -135,6 +135,7 @@ include AP_Notify/AP_Notify.h
 singleton AP_Notify alias notify
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_Notify method handle_rgb_id void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AP_Proximity/AP_Proximity.h
 
@@ -349,8 +350,8 @@ singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE
 singleton QuadPlane method in_vtol_mode boolean
 singleton QuadPlane method in_assisted_flight boolean
 
-include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
+singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 singleton AP_MotorsMatrix alias MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
@@ -383,7 +384,7 @@ ap_object AP_HAL::I2CDevice method read_registers boolean uint8_t 0 UINT8_MAX &u
 ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
 
 
-ap_object AP_HAL::AnalogSource method set_pin void uint8_t 0 UINT8_MAX
+ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t 0 UINT8_MAX
 ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
@@ -404,14 +405,14 @@ singleton hal.analogin alias analog
 singleton hal.analogin literal
 singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
 
-include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
+singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 singleton AP_MotorsMatrix_Scripting_Dynamic alias Motors_dynamic
 singleton AP_MotorsMatrix_Scripting_Dynamic method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method add_motor void uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMatrix_Scripting_Dynamic::factor_table
 
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table alias motor_factor_table
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
@@ -438,3 +439,10 @@ userdata AP_HAL::CANFrame method isErrorFrame boolean
 ap_object ScriptingCANBuffer depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t 0U UINT32_MAX
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
+
+
+include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
+singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
+singleton AP_Periph_FW alias periph
+singleton AP_Periph_FW method get_yaw_earth float
+singleton AP_Periph_FW method get_vehicle_state uint32_t

@@ -7,6 +7,7 @@
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
+#include <AP_HAL_SITL/Storage.h>
 #include <AP_Logger/AP_Logger_SITL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -43,7 +44,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-extern const AP_HAL::HAL& hal;
+extern HAL_SITL& hal;
 
 using namespace HALSITL;
 using namespace SITL;
@@ -263,6 +264,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
         CMDLINE_SLAVE,
+#if STORAGE_USE_FLASH
+        CMDLINE_SET_STORAGE_FLASH_ENABLED,
+#endif
+#if STORAGE_USE_POSIX
+        CMDLINE_SET_STORAGE_POSIX_ENABLED,
+#endif
     };
 
     const struct GetOptLong::option options[] = {
@@ -311,6 +318,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
         {"slave",           true,   0, CMDLINE_SLAVE},
+#if STORAGE_USE_FLASH
+        {"set-storage-flash-enabled", true,   0, CMDLINE_SET_STORAGE_FLASH_ENABLED},
+#endif
+#if STORAGE_USE_POSIX
+        {"set-storage-posix-enabled", true,   0, CMDLINE_SET_STORAGE_POSIX_ENABLED},
+#endif
         {0, false, 0, 0}
     };
 
@@ -318,6 +331,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         model_str = "quad";
         HALSITL::UARTDriver::_console = true;
     }
+
+    // storage defaults are set here:
+    bool storage_posix_enabled = true;
+    bool storage_flash_enabled = false;
+    bool erase_all_storage = false;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
@@ -332,12 +350,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
-#if HAL_LOGGING_FILESYSTEM_ENABLED
-            AP_Param::erase_all();
-#endif
-#if HAL_LOGGING_SITL_ENABLED
-            unlink(AP_Logger_SITL::filename);
-#endif
+            erase_all_storage = true;
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);
@@ -347,9 +360,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
             cmdline_param.push_back(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
-            break;
-        case 'r':
-            _framerate = (unsigned)atoi(gopt.optarg);
             break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
@@ -463,6 +473,16 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
+#if STORAGE_USE_POSIX
+        case CMDLINE_SET_STORAGE_POSIX_ENABLED:
+            storage_posix_enabled = atoi(gopt.optarg);
+            break;
+#endif
+#if STORAGE_USE_FLASH
+        case CMDLINE_SET_STORAGE_FLASH_ENABLED:
+            storage_flash_enabled = atoi(gopt.optarg);
+            break;
+#endif
         case 'h':
             _usage();
             exit(0);
@@ -522,23 +542,34 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         exit(1);
     }
 
+    if (storage_posix_enabled && storage_flash_enabled) {
+        // this will change in the future!
+        printf("Only one of flash or posix storage may be selected");
+        exit(1);
+    }
+
     if (AP::sitl()) {
         // Set SITL start time.
         AP::sitl()->start_time_UTC = start_time_UTC;
+    }
+
+    hal.set_storage_posix_enabled(storage_posix_enabled);
+    hal.set_storage_flash_enabled(storage_flash_enabled);
+
+    if (erase_all_storage) {
+        AP_Param::erase_all();
+#if HAL_LOGGING_SITL_ENABLED
+        unlink(AP_Logger_SITL::filename);
+#endif
+        unlink("flash.dat");
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
 
     if (strcmp(SKETCH, "ArduCopter") == 0) {
         _vehicle = ArduCopter;
-        if (_framerate == 0) {
-            _framerate = 200;
-        }
     } else if (strcmp(SKETCH, "Rover") == 0) {
         _vehicle = Rover;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
     } else if (strcmp(SKETCH, "ArduSub") == 0) {
@@ -553,9 +584,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
     } else {
         _vehicle = ArduPlane;
-        if (_framerate == 0) {
-            _framerate = 50;
-        }
     }
 
     _sitl_setup(home_str);

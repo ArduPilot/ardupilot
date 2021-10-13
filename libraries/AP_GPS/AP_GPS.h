@@ -31,9 +31,18 @@
 #ifndef GPS_MAX_RECEIVERS
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #endif
-#ifndef GPS_MAX_INSTANCES
+#if !defined(GPS_MAX_INSTANCES)
+#if GPS_MAX_RECEIVERS > 1
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
+#else
+#define GPS_MAX_INSTANCES 1
+#endif // GPS_MAX_RECEIVERS > 1
+#endif // GPS_MAX_INSTANCES
+
+#if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
+#error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
 #endif
+
 #if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
@@ -67,8 +76,6 @@ class AP_GPS
     friend class AP_GPS_MAV;
     friend class AP_GPS_MSP;
     friend class AP_GPS_ExternalAHRS;
-    friend class AP_GPS_MTK;
-    friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
     friend class AP_GPS_PX4;
@@ -101,8 +108,8 @@ public:
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_AUTO  = 1,
         GPS_TYPE_UBLOX = 2,
-        GPS_TYPE_MTK   = 3,
-        GPS_TYPE_MTK19 = 4,
+        // GPS_TYPE_MTK   = 3,  // driver removed
+        // GPS_TYPE_MTK19 = 4,  // driver removed
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
@@ -561,7 +568,7 @@ protected:
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if GPS_MAX_RECEIVERS > 1 && HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     AP_Int32 _node_id[GPS_MAX_RECEIVERS];
     AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
 #endif
@@ -618,8 +625,6 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-        struct MTK_detect_state mtk_detect_state;
-        struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;

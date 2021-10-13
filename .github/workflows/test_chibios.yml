@@ -24,7 +24,11 @@ jobs:
             iofirmware,
             CubeOrange-bootloader,
             revo-bootloader,
-            stm32h7-debug
+            stm32h7-debug,
+            fmuv3,
+            revo-mini,
+            MatekF405-Wing,
+            configure-all
         ]
         toolchain: [
             chibios,  # GCC-6
@@ -34,6 +38,15 @@ jobs:
         exclude:
           - gcc: 10
             toolchain: chibios-clang
+          - gcc: 6
+            config: fmuv2-plane
+          - gcc: 6
+            config: revo-mini
+          - gcc: 6
+            config: MatekF405-Wing
+        include:
+          - config: stm32h7
+            toolchain: chibios-py2
 
     steps:
       # git checkout the PR
@@ -67,8 +80,8 @@ jobs:
         shell: bash
         run: |
           if [[ ${{ matrix.toolchain }} == "chibios-clang" ]]; then
-            export CC=clang-7
-            export CXX=clang++-7
+            export CC=clang
+            export CXX=clang++
           fi
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
           PATH="/github/home/.local/bin:$PATH"

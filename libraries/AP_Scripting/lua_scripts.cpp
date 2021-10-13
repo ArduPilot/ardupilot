@@ -15,7 +15,6 @@
 
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_Scripting.h"
 
 #include <AP_Scripting/lua_generated_bindings.h>
@@ -24,6 +23,9 @@ extern const AP_HAL::HAL& hal;
 
 bool lua_scripts::overtime;
 jmp_buf lua_scripts::panic_jmp;
+char *lua_scripts::error_msg_buf;
+uint8_t lua_scripts::print_error_count;
+uint32_t lua_scripts::last_print_ms;
 
 lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_level, struct AP_Scripting::terminal_s &_terminal)
     : _vm_steps(vm_steps),
@@ -42,10 +44,58 @@ void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
     luaL_error(L, "Exceeded CPU time");
 }
 
+void lua_scripts::print_error(MAV_SEVERITY severity) {
+    if (error_msg_buf == nullptr) {
+        return;
+    }
+    last_print_ms = AP_HAL::millis();
+    GCS_SEND_TEXT(severity, "Lua: %s", error_msg_buf);
+}
+
+void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) {
+    // reset buffer and print count
+    print_error_count = 0;
+    if (error_msg_buf) {
+        hal.util->heap_realloc(_heap, error_msg_buf, 0);
+        error_msg_buf = nullptr;
+    }
+
+    // generate va_list and create a copy
+    va_list arg_list, arg_list_copy;
+    va_start(arg_list, fmt);
+    va_copy(arg_list_copy, arg_list);
+
+    // dry run to work out the required length
+    int len = hal.util->vsnprintf(NULL, 0, fmt, arg_list_copy);
+
+    // finished with copy
+    va_end(arg_list_copy);
+
+    if (len <= 0) {
+        // nothing to print, something has gone wrong
+        va_end(arg_list);
+        return;
+    }
+
+    // allocate buffer on scripting heap
+    error_msg_buf = (char *)hal.util->heap_realloc(_heap, nullptr, len+1);
+    if (!error_msg_buf) {
+        // allocation failed
+        va_end(arg_list);
+        return;
+    }
+
+    // do actual print to buffer and clear va list
+    hal.util->vsnprintf(error_msg_buf, len+1, fmt, arg_list);
+    va_end(arg_list);
+
+    // print to cosole and GCS
+    hal.console->printf("Lua: %s\n", error_msg_buf);
+    print_error(severity);
+}
+
 int lua_scripts::atpanic(lua_State *L) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Panic: %s", lua_tostring(L, -1));
-    hal.console->printf("Lua: Panic: %s\n", lua_tostring(L, -1));
-    printf("Lua: Panic: %s\n", lua_tostring(L, -1));
+    set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Panic: %s", lua_tostring(L, -1));
     longjmp(panic_jmp, 1);
     return 0;
 }
@@ -54,20 +104,19 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     if (int error = luaL_loadfile(L, filename)) {
         switch (error) {
             case LUA_ERRSYNTAX:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Error: %s", lua_tostring(L, -1));
+                set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Error: %s", lua_tostring(L, -1));
                 lua_pop(L, lua_gettop(L));
                 return nullptr;
             case LUA_ERRMEM:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Insufficent memory loading %s", filename);
+                set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Insufficent memory loading %s", filename);
                 lua_pop(L, lua_gettop(L));
                 return nullptr;
             case LUA_ERRFILE:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Unable to load the file: %s", lua_tostring(L, -1));
-                hal.console->printf("Lua: File error: %s\n", lua_tostring(L, -1));
+                set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Unable to load the file: %s", lua_tostring(L, -1));
                 lua_pop(L, lua_gettop(L));
                 return nullptr;
             default:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Unknown error (%d) loading %s", error, filename);
+                set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Unknown error (%d) loading %s", error, filename);
                 lua_pop(L, lua_gettop(L));
                 return nullptr;
         }
@@ -76,7 +125,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     script_info *new_script = (script_info *)hal.util->heap_realloc(_heap, nullptr, sizeof(script_info));
     if (new_script == nullptr) {
         // No memory, shouldn't happen, we even attempted to do a GC
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Insufficent memory loading %s", filename);
+        set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "Insufficent memory loading %s", filename);
         lua_pop(L, 1); // we can't use the function we just loaded, so ditch it
         return nullptr;
     }
@@ -192,13 +241,11 @@ void lua_scripts::run_next_script(lua_State *L) {
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {
             // script has consumed an excessive amount of CPU time
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s exceeded time limit", script->name);
-            remove_script(L, script);
+            set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s exceeded time limit", script->name);
         } else {
-            hal.console->printf("Lua: Error: %s\n", lua_tostring(L, -1));
-            gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(L, -1));
-            remove_script(L, script);
+            set_and_print_new_error_message(MAV_SEVERITY_INFO, "%s", lua_tostring(L, -1));
         }
+        remove_script(L, script);
         lua_pop(L, 1);
         return;
     } else {
@@ -210,32 +257,32 @@ void lua_scripts::run_next_script(lua_State *L) {
                 break;
             case 2:
                 {
-                   // sanity check the return types
-                   if (lua_type(L, -1) != LUA_TNUMBER) {
-                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a delay (0x%d)", script->name, lua_type(L, -1));
-                       lua_pop(L, 2);
-                       remove_script(L, script);
-                       return;
-                   }
-                   if (lua_type(L, -2) != LUA_TFUNCTION) {
-                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a function (0x%d)", script->name, lua_type(L, -2));
-                       lua_pop(L, 2);
-                       remove_script(L, script);
-                       return;
-                   }
+                    // sanity check the return types
+                    if (lua_type(L, -1) != LUA_TNUMBER) {
+                        set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s did not return a delay (0x%d)", script->name, lua_type(L, -1));
+                        lua_pop(L, 2);
+                        remove_script(L, script);
+                        return;
+                    }
+                    if (lua_type(L, -2) != LUA_TFUNCTION) {
+                        set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s did not return a function (0x%d)", script->name, lua_type(L, -2));
+                        lua_pop(L, 2);
+                        remove_script(L, script);
+                        return;
+                    }
 
-                   // types match the expectations, go ahead and reschedule
-                   script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
-                   lua_pop(L, 1);
-                   int old_ref = script->lua_ref;
-                   script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-                   luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
-                   reschedule_script(script);
-                   break;
+                    // types match the expectations, go ahead and reschedule
+                    script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
+                    lua_pop(L, 1);
+                    int old_ref = script->lua_ref;
+                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+                    luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
+                    reschedule_script(script);
+                    break;
                 }
             default:
                 {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s returned bad result count (%d)", script->name, returned);
+                    set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s returned bad result count (%d)", script->name, returned);
                     remove_script(L, script);
                     // pop all the results we got that we didn't expect
                     lua_pop(L, returned);
@@ -441,5 +488,15 @@ void lua_scripts::run(void) {
             hal.scheduler->delay(1000);
         }
 
+        // re-print the latest error message every 10 seconds 10 times
+        const uint8_t error_prints = 10;
+        if ((print_error_count < error_prints) && (AP_HAL::millis() - last_print_ms > 10000)) {
+            print_error(MAV_SEVERITY_DEBUG);
+            print_error_count++;
+            if ((print_error_count >= error_prints) && (error_msg_buf != nullptr)) {
+                hal.util->heap_realloc(_heap, error_msg_buf, 0);
+                error_msg_buf = nullptr;
+            }
+        }
     }
 }

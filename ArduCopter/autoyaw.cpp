@@ -61,6 +61,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     // perform initialisation
     switch (_mode) {
 
+    case AUTO_YAW_HOLD:
+        break;
+
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called
         break;
@@ -81,6 +84,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
 
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
+        break;
+
+    case AUTO_YAW_ANGLE_RATE:
         break;
 
     case AUTO_YAW_RATE:

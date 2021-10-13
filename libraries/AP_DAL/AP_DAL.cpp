@@ -145,7 +145,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
     if (alloc_failed) {
-        AP_BoardConfig::config_error("Unable to allocate DAL backends");
+        AP_BoardConfig::allocation_error("Unable to allocate DAL backends");
     }
 }
 

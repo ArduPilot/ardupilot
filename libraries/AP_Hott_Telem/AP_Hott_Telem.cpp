@@ -128,9 +128,11 @@ void AP_Hott_Telem::send_EAM(void)
 
     const AP_Baro &baro = AP::baro();
     msg.temp1 = uint8_t(baro.get_temperature(0) + 20.5);
+#if BARO_MAX_INSTANCES > 1
     if (baro.healthy(1)) {
         msg.temp2 = uint8_t(baro.get_temperature(1) + 20.5);
     }
+#endif
 
     AP_AHRS &ahrs = AP::ahrs();
     float alt = 0;

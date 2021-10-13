@@ -253,7 +253,7 @@ configuration in order to save typing.
     g.add_option('--sitl-flash-storage',
         action='store_true',
         default=False,
-        help='Configure for building SITL with flash storage emulation.')
+        help='Use flash storage emulation.')
 
     g.add_option('--disable-ekf2',
         action='store_true',
@@ -663,6 +663,8 @@ def _build_post_funs(bld):
 
 def _load_pre_build(bld):
     '''allow for a pre_build() function in build modules'''
+    if bld.cmd == 'clean':
+        return
     brd = bld.get_board()
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    

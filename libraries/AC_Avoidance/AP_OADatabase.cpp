@@ -149,7 +149,7 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
     }
 
     // check if this obstacle needs to be rejected from DB because of low altitude near home
-    #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    #if APM_BUILD_COPTER_OR_HELI()
     if (!is_zero(_min_alt)) { 
         Vector2f current_pos;
         if (!AP::ahrs().get_relative_position_NE_home(current_pos)) {

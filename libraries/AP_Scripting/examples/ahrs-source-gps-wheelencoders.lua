@@ -40,21 +40,21 @@ function update()
   local rc_function_source = rc:find_channel_for_option(90)
   local rc_function_auto = rc:find_channel_for_option(300)
   if (rc_function_source == nil) or (rc_function_auto == nil) then
-    gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
+    gcs:send_text(0, "ahrs-source-gps-wheelencoders.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
 
   -- check GPS speed accuracy threshold has been set
   local gps_speedaccuracy_thresh = param:get('SCR_USER2')  -- SCR_USER2 holds GPS speed accuracy threshold
   if (gps_speedaccuracy_thresh == nil) or (gps_speedaccuracy_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER2 to GPS speed accuracy threshold")
+    gcs:send_text(0, "ahrs-source-gps-wheelencoders.lua: set SCR_USER2 to GPS speed accuracy threshold")
     return update, 1000
   end
 
   -- check GPS innovation threshold has been set
   local gps_innov_thresh = param:get('SCR_USER3')  -- SCR_USER3 holds GPS velocity innovation
   if (gps_innov_thresh == nil) or (gps_innov_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER3 to GPS innovation threshold")
+    gcs:send_text(0, "ahrs-source-gps-wheelencoders.lua: set SCR_USER3 to GPS innovation threshold")
     return update, 1000
   end
 
