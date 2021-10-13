@@ -10795,6 +10795,84 @@ switch value'''
             if distance > 1:
                 raise NotAchievedException("gps type %u misbehaving" % name)
 
+    def assert_gps_satellite_count(self, messagename, count):
+        m = self.assert_receive_message(messagename)
+        if m.satellites_visible != count:
+            raise NotAchievedException("Expected %u sats, got %u" %
+                                       (count, m.satellites_visible))
+
+    def MultipleGPS(self):
+        '''check ArduPilot behaviour across multiple GPS units'''
+        self.assert_message_rate_hz('GPS2_RAW', 0)
+
+        # we start sending GPS_TYPE2 - but it will never actually be
+        # filled in as _port[1] is only filled in in AP_GPS::init()
+        self.start_subtest("Get GPS2_RAW as soon as we're configured for a second GPS")
+        self.set_parameter("GPS_TYPE2", 1)
+        self.assert_message_rate_hz('GPS2_RAW', 5)
+
+        self.start_subtest("Ensure correct fix type when no connected GPS")
+        m = self.assert_receive_message("GPS2_RAW")
+        self.progress(self.dump_message_verbose(m))
+        if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_NO_GPS:
+            raise NotAchievedException("Incorrect fix type")
+
+        self.start_subtest("Ensure detection when sim gps connected")
+        self.set_parameter("SIM_GPS2_TYPE", 1)
+        self.set_parameter("SIM_GPS2_DISABLE", 0)
+        # a reboot is required after setting GPS_TYPE2.  We start
+        # sending GPS2_RAW out, once the parameter is set, but a
+        # reboot is required because _port[1] is only set in
+        # AP_GPS::init() at boot time, so it will never be detected.
+        self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
+        self.wait_statustext("GPS 1: detected as u-blox", check_context=True)
+        self.wait_statustext("GPS 2: detected as u-blox", check_context=True)
+        m = self.assert_receive_message("GPS2_RAW")
+        self.progress(self.dump_message_verbose(m))
+        # would be nice for it to take some time to get a fix....
+        if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_RTK_FIXED:
+            raise NotAchievedException("Incorrect fix type")
+
+        self.start_subtest("Check parameters are per-GPS")
+        self.assert_parameter_value("SIM_GPS_NUMSATS", 10)
+        self.assert_gps_satellite_count("GPS_RAW_INT", 10)
+        self.set_parameter("SIM_GPS_NUMSATS", 13)
+        self.assert_gps_satellite_count("GPS_RAW_INT", 13)
+
+        self.assert_parameter_value("SIM_GPS2_NUMSATS", 10)
+        self.assert_gps_satellite_count("GPS2_RAW", 10)
+        self.set_parameter("SIM_GPS2_NUMSATS", 12)
+        self.assert_gps_satellite_count("GPS2_RAW", 12)
+
+        self.start_subtest("check that GLOBAL_POSITION_INT fails over")
+        m = self.assert_receive_message("GLOBAL_POSITION_INT")
+        gpi_alt = m.alt
+        for msg in ["GPS_RAW_INT", "GPS2_RAW"]:
+            m = self.assert_receive_message(msg)
+            if abs(m.alt - gpi_alt) > 100:  # these are in mm
+                raise NotAchievedException("Alt (%s) discrepancy; %d vs %d" %
+                                           (msg, m.alt, gpi_alt))
+        introduced_error = 10  # in metres
+        self.set_parameter("SIM_GPS2_ALT_OFS", introduced_error)
+        m = self.assert_receive_message("GPS2_RAW")
+        if abs((m.alt-introduced_error*1000) - gpi_alt) > 100:
+            raise NotAchievedException("skewed Alt (%s) discrepancy; %d+%d vs %d" %
+                                       (msg, introduced_error*1000, m.alt, gpi_alt))
+        m = self.assert_receive_message("GLOBAL_POSITION_INT")
+        new_gpi_alt = m.alt
+        if abs(gpi_alt - new_gpi_alt) > 100:
+            raise NotAchievedException("alt moved unexpectedly")
+        self.progress("Killing first GPS")
+        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.delay_sim_time(1)
+        self.progress("Checking altitude now matches second GPS")
+        m = self.assert_receive_message("GLOBAL_POSITION_INT")
+        new_gpi_alt2 = m.alt
+        m = self.assert_receive_message("GPS2_RAW")
+        if abs(new_gpi_alt2 - m.alt) > 100:
+            raise NotAchievedException("Failover not detected")
+
     def MAVFTP(self):
         '''ensure MAVProxy can do MAVFTP to ardupilot'''
         mavproxy = self.start_mavproxy()
