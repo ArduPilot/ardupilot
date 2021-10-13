@@ -1103,6 +1103,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PILOT_Y_EXPO", 50, ParametersG2, pilot_y_expo, PILOT_Y_EXPO_DEFAULT),
 
+    // @Param: SURFTRAK_MODE
+    // @DisplayName: Surface Tracking Mode
+    // @Description: set which surface to track in surface tracking
+    // @Values: 0:Do not track, 1:Ground, 2:Ceiling
+    // @User: Advanced
+    AP_GROUPINFO("SURFTRAK_MODE", 51, ParametersG2, surftrak_mode, (uint8_t)Copter::SurfaceTracking::Surface::GROUND),
+
     AP_GROUPEND
 };
 
