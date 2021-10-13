@@ -121,6 +121,10 @@
 
 #endif // APM_BUILD_DIRECTORY
 
+#ifndef EK3_PRIMARY_DEFAULT
+#define EK3_PRIMARY_DEFAULT 0
+#endif
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
@@ -709,7 +713,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Range: 0 2
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, 0),
+    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, EK3_PRIMARY_DEFAULT),
     
     AP_GROUPEND
 };
