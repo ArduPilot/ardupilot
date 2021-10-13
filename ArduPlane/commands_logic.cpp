@@ -803,7 +803,7 @@ bool Plane::verify_continue_and_change_alt()
     else if (condition_value == 2 &&
              adjusted_altitude_cm() <= next_WP_loc.alt) {
         return true;
-    }    
+    }
     //don't care if we're climbing or descending
     else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
@@ -961,9 +961,13 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Plane::exit_mission_callback()
 {
-    if (control_mode == &mode_auto) {
+    if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
         set_mode(mode_rtl, ModeReason::MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
+    }
+    else {
+        set_mode(mode_guided, ModeReason::MISSION_END);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mission Diving");
     }
 }
 

@@ -46,43 +46,42 @@ void ModeGuided::update()
 #endif
     uint32_t now = AP_HAL::millis();
 
-        int32_t diff = currentBearing - wrap_360_cd(plane.ahrs.yaw_sensor);
-        bool shouldRoll = abs(diff) > plane.g.hm_deg_eps;
-        bool shouldPitch = plane.adjusted_relative_altitude_cm() * 0.01 > minAlt;
+    int32_t diff = currentBearing - wrap_360_cd(plane.ahrs.yaw_sensor);
+    bool shouldRoll = abs(diff) > plane.g.hm_deg_eps;
+    bool shouldPitch = plane.adjusted_relative_altitude_cm() * 0.01 > minAlt;
 
-        if (shouldRoll && shouldPitch && !stopRoll) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Hd: %f \n", diff * 0.01);
-            plane.guided_state.forced_rpy_cd.x = diff;
-            plane.guided_state.last_forced_rpy_ms.x = now;
+    if (shouldRoll && shouldPitch && !stopRoll) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Hd: %f \n", diff * 0.01);
+        plane.guided_state.forced_rpy_cd.x = diff;
+        plane.guided_state.last_forced_rpy_ms.x = now;
 
-            plane.guided_state.forced_rpy_cd.y = 1;
-            plane.guided_state.last_forced_rpy_ms.y = now;
-        }
-        else if (shouldPitch && !stopPitch) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Alt: %f \n", plane.adjusted_relative_altitude_cm() * 0.01 - minAlt);
-            stopRoll = true;
-            plane.guided_state.forced_rpy_cd.x = 1;
-            plane.guided_state.last_forced_rpy_ms.x = now;
+        plane.guided_state.forced_rpy_cd.y = 1;
+        plane.guided_state.last_forced_rpy_ms.y = now;
+    }
+    else if (shouldPitch && !stopPitch) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Tgt_Alt: %f \n", plane.adjusted_relative_altitude_cm() * 0.01 - minAlt);
+        stopRoll = true;
+        plane.guided_state.forced_rpy_cd.x = 1;
+        plane.guided_state.last_forced_rpy_ms.x = now;
 
-            plane.guided_state.forced_rpy_cd.y = plane.g.hm_attack_angle * 100;
-            plane.guided_state.last_forced_rpy_ms.y = now;
+        plane.guided_state.forced_rpy_cd.y = plane.g.hm_attack_angle * 100;
+        plane.guided_state.last_forced_rpy_ms.y = now;
 
-            plane.guided_state.forced_throttle = plane.g.hm_attack_thr;
-            plane.guided_state.last_forced_throttle_ms = now;
-        }
-        else {
-            stopPitch = true;
+        plane.guided_state.forced_throttle = plane.g.hm_attack_thr;
+        plane.guided_state.last_forced_throttle_ms = now;
+    }
+    else {
+        stopPitch = true;
 
-            plane.guided_state.last_forced_rpy_ms.zero();
-            plane.guided_state.last_forced_throttle_ms = 0;
+        plane.guided_state.last_forced_rpy_ms.zero();
+        plane.guided_state.last_forced_throttle_ms = 0;
 
-            plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
-        }
+        plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
+    }
 
-        plane.calc_nav_roll();
-        plane.calc_nav_pitch();
-        plane.calc_throttle();
-
+    plane.calc_nav_roll();
+    plane.calc_nav_pitch();
+    plane.calc_throttle();
 }
 
 void ModeGuided::navigate()
