@@ -633,6 +633,26 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 }
 
 /*
+ * handle incoming packet UAVIONIX_ADSB_OUT_CONTROL
+ * allows a GCS to set the contents of the control message sent by ardupilot to the transponder
+ */
+void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet)
+{
+    out_state.ctrl.baroCrossChecked = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_EXTERNAL_BARO_CROSSCHECKED;
+    out_state.ctrl.airGroundState = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_ON_GROUND;
+    out_state.ctrl.identActive = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_IDENT_BUTTON_ACTIVE;
+    out_state.ctrl.modeAEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_A_ENABLED;
+    out_state.ctrl.modeCEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_C_ENABLED;
+    out_state.ctrl.modeSEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_MODE_S_ENABLED;
+    out_state.ctrl.es1090TxEnabled = packet.state & UAVIONIX_ADSB_OUT_CONTROL_STATE::UAVIONIX_ADSB_OUT_CONTROL_STATE_1090ES_TX_ENABLED;
+    out_state.ctrl.externalBaroAltitude_mm = packet.baroAltMSL;
+    out_state.ctrl.squawkCode = packet.squawk;
+    out_state.ctrl.emergencyState = packet.emergencyStatus;
+    memcpy(out_state.ctrl.callsign, packet.flight_id, sizeof(out_state.ctrl.callsign));
+    out_state.ctrl.x_bit = packet.x_bit;
+}
+
+/*
  * this is a message from the transceiver reporting it's health. Using this packet
  * we determine which channel is on so we don't have to send out_state to all channels
  */
@@ -645,6 +665,19 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
     out_state.chan_last_ms = AP_HAL::millis();
     out_state.chan = chan;
     out_state.status = (UAVIONIX_ADSB_RF_HEALTH)packet.rfHealth;
+}
+
+/*
+ * send a periodic report of the ADSB out status
+ */
+void AP_ADSB::send_adsb_out_status(const mavlink_channel_t chan) const
+{
+    for (uint8_t i=0; i < ADSB_MAX_INSTANCES; i++) {
+        if (_type[i] == (int8_t)(AP_ADSB::Type::uAvionix_UCP)) {
+            mavlink_msg_uavionix_adsb_out_status_send_struct(chan, &out_state.tx_status);
+            return;
+        }
+    }
 }
 
 /*
@@ -727,31 +760,38 @@ bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-    case MAVLINK_MSG_ID_ADSB_VEHICLE: {
-        adsb_vehicle_t vehicle {};
-        mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
-        vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
-        handle_adsb_vehicle(vehicle);
-        break;
-    }
+        case MAVLINK_MSG_ID_ADSB_VEHICLE: {
+            adsb_vehicle_t vehicle {};
+            mavlink_msg_adsb_vehicle_decode(&msg, &vehicle.info);
+            vehicle.last_update_ms = AP_HAL::millis() - uint32_t(vehicle.info.tslc * 1000U);
+            handle_adsb_vehicle(vehicle);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
-        mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-        mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
-        handle_transceiver_report(chan, packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT: {
+            mavlink_uavionix_adsb_transceiver_health_report_t packet {};
+            mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
+            handle_transceiver_report(chan, packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
-        mavlink_uavionix_adsb_out_cfg_t packet {};
-        mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
-        handle_out_cfg(packet);
-        break;
-    }
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG: {
+            mavlink_uavionix_adsb_out_cfg_t packet {};
+            mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
+            handle_out_cfg(packet);
+            break;
+        }
 
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        // unhandled, this is an outbound packet only
-        break;
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+            // unhandled, this is an outbound packet only
+            break;
+
+        case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL: {
+            mavlink_uavionix_adsb_out_control_t packet {};            
+            mavlink_msg_uavionix_adsb_out_control_decode(&msg, &packet);
+            handle_out_control(packet);
+            break;
+        }
     }
 
 }

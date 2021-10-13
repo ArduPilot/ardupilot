@@ -85,6 +85,8 @@ private:
         uint32_t last_packet_GPS_ms;
         uint32_t last_packet_Transponder_Control_ms;
         uint32_t last_packet_Transponder_Status_ms;
+        uint32_t last_packet_Transponder_Heartbeat_ms;
+        uint32_t last_packet_Transponder_Ownship_ms;
     } run_state;
 
 };
