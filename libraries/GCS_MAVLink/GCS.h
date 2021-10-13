@@ -321,6 +321,7 @@ public:
 #if HAL_HIGH_LATENCY2_ENABLED
     void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+    void send_uavionix_adsb_out_status() const;
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {

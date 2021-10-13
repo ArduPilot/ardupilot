@@ -890,6 +890,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
+        { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3599,6 +3600,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL:
         handle_adsb_message(msg);
         break;
 
@@ -4280,22 +4282,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_BATTERY_RESET:
         result = handle_command_battery_reset(packet);
         break;
-
-    case MAV_CMD_DO_ADSB_OUT_IDENT:
+        
 #if HAL_ADSB_ENABLED
-        if (AP::ADSB() == nullptr) {
-            result = MAV_RESULT_UNSUPPORTED;
-        } else if (AP::ADSB()->ident_is_active()) {
-            result = MAV_RESULT_TEMPORARILY_REJECTED;
-        } else if (AP::ADSB()->ident_start()) {
+    case MAV_CMD_DO_ADSB_OUT_IDENT:
+        if ((AP::ADSB() != nullptr) && AP::ADSB()->ident_start()) {
             result = MAV_RESULT_ACCEPTED;
-        } else {
+        }
+        else {
             result = MAV_RESULT_FAILED;
         }
-#else
-        result = MAV_RESULT_UNSUPPORTED;
-#endif
         break;
+#endif
 
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
@@ -4936,6 +4933,16 @@ void GCS_MAVLINK::send_water_depth() const
 #endif
 }
 
+void GCS_MAVLINK::send_uavionix_adsb_out_status() const
+{
+#if HAL_ADSB_ENABLED
+    AP_ADSB *adsb = AP::ADSB();
+    if (adsb != nullptr) {
+        adsb->send_adsb_out_status(chan);
+    }
+#endif
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -5257,6 +5264,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif // HAL_HIGH_LATENCY2_ENABLED
         break;
 
+
+    case MSG_UAVIONIX_ADSB_OUT_STATUS:
+        CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
+        send_uavionix_adsb_out_status();
+        break;
 
     default:
         // try_send_message must always at some stage return true for
