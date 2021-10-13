@@ -2480,7 +2480,7 @@ class AutoTest(ABC):
         self.delay_sim_time(10)
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, False, False, False)
         m = self.poll_message("HIGH_LATENCY2")
-        mavutil.dump_message_verbose(sys.stdout, m)
+        self.progress(self.dump_message_verbose(m))
         if (m.failure_flags & mavutil.mavlink.HL_FAILURE_FLAG_GPS) == 0:
             raise NotAchievedException("Expected GPS to be failed")
 
@@ -2488,7 +2488,7 @@ class AutoTest(ABC):
         self.set_parameter("SIM_GPS_TYPE", 1)
         self.delay_sim_time(10)
         m = self.poll_message("HIGH_LATENCY2")
-        mavutil.dump_message_verbose(sys.stdout, m)
+        self.progress(self.dump_message_verbose(m))
         loc = mavutil.location(m.latitude, m.longitude, m.altitude, 0)
         dist = self.get_distance_accurate(loc, self.sim_location_int())
 
@@ -5616,7 +5616,7 @@ class AutoTest(ABC):
         if m is None:
             raise NotAchievedException("Did not receive SYS_STATUS")
         if verbose:
-            self.progress("Status: %s" % str(mavutil.dump_message_verbose(sys.stdout, m)))
+            self.progress("Status: %s" % str(self.dump_message_verbose(m)))
         reported_present = m.onboard_control_sensors_present & sensor
         reported_enabled = m.onboard_control_sensors_enabled & sensor
         reported_healthy = m.onboard_control_sensors_health & sensor
