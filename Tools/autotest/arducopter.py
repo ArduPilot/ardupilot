@@ -7953,6 +7953,10 @@ class AutoTestCopter(AutoTest):
                  "Test simulated GPS types",
                  self.GPSTypes),
 
+            Test("MultipleGPS",
+                 "Test multi-GPS behaviour",
+                 self.MultipleGPS),
+
             Test("LogUpload",
                  "Log upload",
                  self.log_upload),
