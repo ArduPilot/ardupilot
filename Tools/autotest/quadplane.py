@@ -861,6 +861,23 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_disarmed(timeout=300)
 
+    def VTOLNavDelay(self):
+        self.load_mission("way.txt")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        # self.wait_waypoint(2, 2)  # we don't send relevant message for this
+        self.wait_statustext("2 Delay")
+        self.wait_statustext("Delaying .* sec", regex=True)
+        tstart = self.get_sim_time()
+        self.wait_waypoint(3, 3)
+        tstop = self.get_sim_time()
+        delta = tstop - tstart
+        self.progress("delta-time=%f" % delta)
+        if delta < 100:
+            raise NotAchievedException("Seemed to ignore pause at top")
+        self.wait_disarmed(timeout=200)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -911,6 +928,10 @@ class AutoTestQuadPlane(AutoTest):
             ("ICEngineMission",
              "Test ICE Engine Mission support",
              self.ICEngineMission),
+
+            ("VTOLNavDelay",
+             "Test delay after taking off vertically in a mission",
+             self.VTOLNavDelay),
 
             ("LogUpload",
              "Log upload",
