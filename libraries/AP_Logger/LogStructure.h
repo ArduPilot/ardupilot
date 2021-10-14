@@ -478,6 +478,15 @@ struct PACKED log_ARSP {
     uint8_t primary;
 };
 
+struct PACKED log_HYGRO {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    int16_t temperature;
+    uint16_t   humidity;
+    uint8_t primary;
+};
+
 struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint64_t timestamp;
@@ -869,6 +878,14 @@ struct PACKED log_PSCZ {
 // @Field: FmtType: numeric reference to associated FMT message
 // @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
 // @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
+
+// @LoggerMessage: HYGRO
+// @Description: Hygrometer sensor data
+// @Field: TimeUS: Time since system startup
+// @Field: I: Hygrometer sensor instance number
+// @Field: Temp: Current temperature
+// @Field: Humi: Current humidity
+// @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: LGR
 // @Description: Landing gear information
@@ -1330,7 +1347,10 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000", true }, \
     { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
       "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002", true }, \
-LOG_STRUCTURE_FROM_AIS \
+LOG_STRUCTURE_FROM_AIS, \
+    { LOG_HYGRO_MSG, sizeof(log_HYGRO), \
+      "HYGR", "QBcCB", "TimeUS,I,Temp,Humi,Pri", "s#O%-", "F-BB-", true } \
+
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -1391,6 +1411,8 @@ enum LogMessages : uint8_t {
     LOG_MAG_MSG,
 
     LOG_IDS_FROM_GPS,
+
+    LOG_HYGRO_MSG,
 
     // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_MODE_MSG,
