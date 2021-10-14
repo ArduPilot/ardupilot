@@ -1110,9 +1110,18 @@ void UARTDriver::write_pending_bytes(void)
             // remaining queue space
             uint32_t space = qSpaceI(&((SerialDriver*)sdef.serial)->oqueue);
             uint32_t used = SERIAL_BUFFERS_SIZE - space;
+
+#if !defined(USART_CR1_FIFOEN)
             // threshold is 8 for the GCS_Common code to unstick SiK radios, which
             // sends 6 bytes with flow control disabled
             const uint8_t threshold = 8;
+#else
+            // account for TX FIFO buffer
+            uint8_t threshold = 12;
+            if (_last_options & OPTION_NOFIFO) {
+                threshold = 8;
+            }
+#endif
             if (_total_written > used && _total_written - used > threshold) {
                 _flow_control = FLOW_CONTROL_ENABLE;
                 return;
