@@ -61,6 +61,9 @@ private:
     float vfr_hud_airspeed() const override;
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_climbrate() const override;
+    int16_t hygrometer_temp() const override;
+    uint16_t hygrometer_humi() const override;
+    uint8_t hygrometer_id() const override;
     
 #if HAL_HIGH_LATENCY2_ENABLED
     int16_t high_latency_target_altitude() const override;

@@ -65,3 +65,8 @@ void Plane::rpm_update(void)
         }
     }
 }
+
+void Plane::update_hygrometer(void)
+{
+    hygrometer.update_hygrometer_log(1);
+}
