@@ -1595,3 +1595,12 @@ void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
         }
     }
 }
+
+// get a yaw estimator instance
+const EKFGSF_yaw *NavEKF2::get_yawEstimator(void) const
+{
+    if (core) {
+        return core[primary].get_yawEstimator();
+    }
+    return nullptr;
+}
