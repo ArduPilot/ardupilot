@@ -421,6 +421,9 @@ public:
     // returns true when the state estimates are significantly degraded by vibration
     bool isVibrationAffected() const { return badIMUdata; }
 
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;

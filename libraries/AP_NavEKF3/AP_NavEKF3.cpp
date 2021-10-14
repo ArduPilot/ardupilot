@@ -2015,3 +2015,12 @@ bool NavEKF3::isVibrationAffected(int8_t instance) const
     }
     return false;
 }
+
+// get a yaw estimator instance
+const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
+{
+    if (core) {
+        return core[primary].get_yawEstimator();
+    }
+    return nullptr;
+}
