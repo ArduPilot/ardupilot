@@ -3132,6 +3132,31 @@ enum Rotation AP_AHRS::get_view_rotation(void) const
     return _view?_view->get_rotation():ROTATION_NONE;
 }
 
+// check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.get_yawEstimator();
+#endif
+    case EKFType::NONE:
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.get_yawEstimator();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SIM:
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return nullptr;
+    }
+    // since there is no default case above, this is unreachable
+    return nullptr;
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 

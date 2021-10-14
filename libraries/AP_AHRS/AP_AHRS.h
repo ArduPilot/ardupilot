@@ -53,6 +53,9 @@ class AP_AHRS_View;
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 
+// fwd declare GSF estimator
+class EKFGSF_yaw;
+
 class AP_AHRS {
     friend class AP_AHRS_View;
 public:
@@ -593,6 +596,9 @@ public:
 
     // get the view's rotation, or ROTATION_NONE
     enum Rotation get_view_rotation(void) const;
+
+    // get access to an EKFGSF_yaw estimator
+    const EKFGSF_yaw *get_yaw_estimator(void) const;
 
 private:
 
