@@ -483,7 +483,7 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
   This assumes that the compass is correctly scaled in milliGauss
 */
 MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                      float lat_deg, float lon_deg)
+                                      float lat_deg, float lon_deg, bool force_use)
 {
     _reset_compass_id();
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
@@ -526,7 +526,7 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             // skip this compass
             continue;
         }
-        if (!use_for_yaw(i)) {
+        if (!force_use && !use_for_yaw(i)) {
             continue;
         }
         if (!healthy(i)) {
