@@ -478,6 +478,16 @@ struct PACKED log_ARSP {
     uint8_t primary;
 };
 
+struct PACKED log_HYGRO {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    int16_t temperature;
+    uint16_t   humidity;
+    uint8_t primary;
+};
+
+
 struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint64_t timestamp;
@@ -870,6 +880,14 @@ struct PACKED log_STAK {
 // @Field: flags: compact representation of some stage of the channel
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
+
+// @LoggerMessage: HYGRO
+// @Description: Hygrometer sensor data
+// @Field: TimeUS: Time since system startup
+// @Field: I: Hygrometer sensor instance number
+// @Field: Temp: Current temperature
+// @Field: Humi: Current humidity
+// @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: MAVC
 // @Description: MAVLink command we have just executed
@@ -1318,7 +1336,9 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
     { LOG_STAK_MSG, sizeof(log_STAK), \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
-LOG_STRUCTURE_FROM_AIS \
+LOG_STRUCTURE_FROM_AIS, \
+    { LOG_HYGRO_MSG, sizeof(log_HYGRO), \
+      "HYGR", "QBcCB", "TimeUS,I,Temp,Humi,Pri", "s#O%-", "F-BB-", true } \
 
 // message types 0 to 63 reserved for vehicle specific use
 
@@ -1396,6 +1416,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_PRECLAND,
     LOG_IDS_FROM_AIS,
     LOG_STAK_MSG,
+    LOG_HYGRO_MSG,
 
     _LOG_LAST_MSG_
 };
