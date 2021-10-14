@@ -1108,7 +1108,7 @@ void GPS::update()
 
         // add in some GPS lag
         _gps_data[next_index++] = d;
-        if (next_index >= delay+1) {
+        if (next_index >= delay) {
             next_index = 0;
         }
 
