@@ -168,6 +168,10 @@ protected:
 
     bool fence_checks(bool report);
 
+#if HAL_HAVE_IMU_HEATER
+    bool heater_min_temperature_checks(bool report);
+#endif
+
     bool camera_checks(bool display_failure);
 
     bool osd_checks(bool display_failure) const;
