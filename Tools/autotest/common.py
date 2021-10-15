@@ -3180,6 +3180,21 @@ class AutoTest(ABC):
         if not temp_ok:
             raise NotAchievedException("target temperature")
 
+    def assert_message_field_values(self, m, fieldvalues, verbose=True):
+        for (fieldname, value) in fieldvalues.items():
+            got = getattr(m, fieldname)
+            if got != value:
+                raise NotAchievedException("Expected %s.%s to be %s, got %s" %
+                                           (m.get_type(), fieldname, value, got))
+            if verbose:
+                self.progress("%s.%s has expected value %s" %
+                              (m.get_type(), fieldname, value))
+
+    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False):
+        m = self.assert_receive_message(message, verbose=verbose, very_verbose=very_verbose)
+        self.assert_message_field_values(m, fieldvalues, verbose=verbose)
+        return m
+
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
         self.set_parameter("LOG_DISARMED", 0)
@@ -3524,10 +3539,12 @@ class AutoTest(ABC):
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
 
-    def assert_receive_message(self, type, timeout=1, verbose=False):
+    def assert_receive_message(self, type, timeout=1, verbose=False, very_verbose=False):
         m = self.mav.recv_match(type=type, blocking=True, timeout=timeout)
         if verbose:
             self.progress("Received (%s)" % str(m))
+        if very_verbose:
+            self.progress(self.dump_message_verbose(m))
         if m is None:
             raise NotAchievedException("Did not get %s" % type)
         return m
