@@ -390,22 +390,22 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
+    }
 
 #if HAL_GYROFFT_ENABLED
-        // gyros are healthy so check the FFT
-        if ((checks_to_perform & ARMING_CHECK_ALL) ||
-            (checks_to_perform & ARMING_CHECK_FFT)) {
-            // Check that the noise analyser works
-            AP_GyroFFT *fft = AP::fft();
+    // gyros are healthy so check the FFT
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_FFT)) {
+        // Check that the noise analyser works
+        AP_GyroFFT *fft = AP::fft();
 
-            char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-            if (fft != nullptr && !fft->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                check_failed(ARMING_CHECK_INS, report, "%s", fail_msg);
-                return false;
-            }
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        if (fft != nullptr && !fft->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+            check_failed(ARMING_CHECK_INS, report, "%s", fail_msg);
+            return false;
         }
-#endif
     }
+#endif
 
     return true;
 }
