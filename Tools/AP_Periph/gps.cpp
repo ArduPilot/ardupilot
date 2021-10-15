@@ -295,8 +295,8 @@ void AP_Periph_FW::send_relposheading_msg() {
     float relative_down_pos;
     float reported_heading_acc;
     uint32_t curr_timestamp = 0;
-    gps.get_RelPosHeading(curr_timestamp, reported_heading, relative_distance, relative_down_pos, reported_heading_acc);
-    if (last_relposheading_ms == curr_timestamp) {
+    if (!gps.get_RelPosHeading(curr_timestamp, reported_heading, relative_distance, relative_down_pos, reported_heading_acc) ||
+        last_relposheading_ms == curr_timestamp) {
         return;
     }
     last_relposheading_ms = curr_timestamp;

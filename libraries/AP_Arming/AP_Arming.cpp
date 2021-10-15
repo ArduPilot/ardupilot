@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Arming_config.h"
+
+#if AP_ARMING_ENABLED
+
 #include "AP_Arming.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -2042,3 +2046,5 @@ AP_Arming &arming()
 };
 
 #pragma GCC diagnostic pop
+
+#endif  // AP_ARMING_ENABLED

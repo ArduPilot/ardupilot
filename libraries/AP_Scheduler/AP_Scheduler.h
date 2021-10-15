@@ -22,6 +22,8 @@
 
 #include "AP_Scheduler_config.h"
 
+#if AP_SCHEDULER_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Util.h>
@@ -268,3 +270,5 @@ private:
 namespace AP {
     AP_Scheduler &scheduler();
 };
+
+#endif  // AP_SCHEDULER_ENABLED

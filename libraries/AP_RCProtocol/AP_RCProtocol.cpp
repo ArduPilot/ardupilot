@@ -38,6 +38,7 @@
 #include "AP_RCProtocol_Joystick_SFML.h"
 #include "AP_RCProtocol_UDP.h"
 #include "AP_RCProtocol_FDM.h"
+#include "AP_RCProtocol_Radio.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -110,7 +111,9 @@ void AP_RCProtocol::init()
     UDP_backend->set_fdm_backend(FDM_backend);
 #endif  // AP_RCPROTOCOL_UDP_ENABLED
 #endif  // AP_RCPROTOCOL_FDM_ENABLED
-
+#if AP_RCPROTOCOL_RADIO_ENABLED
+    backend[AP_RCProtocol::RADIO] = new AP_RCProtocol_Radio(*this);
+#endif
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -473,6 +476,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_FDM_ENABLED
         AP_RCProtocol::FDM,
 #endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+        AP_RCProtocol::RADIO,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -620,6 +626,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_FDM_ENABLED
     case FDM:
         return "FDM";
+#endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+    case RADIO:
+        return "Radio";
 #endif
     case NONE:
         break;

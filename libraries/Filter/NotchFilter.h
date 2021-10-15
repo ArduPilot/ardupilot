@@ -49,9 +49,7 @@ public:
     }
 
     // return the frequency to log for the notch
-    float logging_frequency(void) const {
-        return initialised?_center_freq_hz:0;
-    }
+    float logging_frequency(void) const;
 
 protected:
 

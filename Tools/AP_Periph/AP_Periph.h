@@ -12,6 +12,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_KDECAN/AP_KDECAN.h>
@@ -88,6 +89,10 @@
     #ifdef HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY
         #error "You cannot use HAL_PERIPH_ENABLE_NOTIFY and HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY at the same time. Notify already includes it. Set param OUTx_FUNCTION=120"
     #endif
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_RPM_STREAM) && !defined(HAL_PERIPH_ENABLE_RPM)
+    #error "HAL_PERIPH_ENABLE_RPM_STREAM requires HAL_PERIPH_ENABLE_RPM"
 #endif
 
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
@@ -168,7 +173,9 @@ public:
     void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     void can_rangefinder_update();
+#endif
     void can_battery_update();
     void can_battery_send_cells(uint8_t instance);
     void can_proximity_update();
@@ -226,7 +233,12 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RPM
     AP_RPM rpm_sensor;
     uint32_t rpm_last_update_ms;
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    void rpm_sensor_send();
+    uint32_t rpm_last_send_ms;
+    uint8_t rpm_last_sent_index;
 #endif
+#endif // HAL_PERIPH_ENABLE_RPM
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     void handle_battery_failsafe(const char* type_str, const int8_t action) { }
@@ -279,7 +291,8 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
-    uint32_t last_sample_ms;
+    uint32_t last_rangefinder_update_ms;
+    uint32_t last_rangefinder_sample_ms[RANGEFINDER_MAX_INSTANCES];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PROXIMITY
@@ -451,7 +464,16 @@ public:
     bool debug_option_is_set(const DebugOptions option) const {
         return (uint8_t(g.debug.get()) & (1U<<uint8_t(option))) != 0;
     }
-    
+
+    enum class PeriphOptions {
+        PROBE_CONTINUOUS = 1U<<0,
+    };
+
+    // check if a periph option is set
+    bool option_is_set(const PeriphOptions opt) const {
+        return (uint32_t(g.options.get()) & uint32_t(opt)) != 0;
+    }
+
     // show stack as DEBUG msgs
     void show_stack_free();
 

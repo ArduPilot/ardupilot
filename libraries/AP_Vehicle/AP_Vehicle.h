@@ -127,10 +127,10 @@ public:
     // parameters for example.
     void notify_no_such_mode(uint8_t mode_number);
 
+#if AP_SCHEDULER_ENABLED
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
-#if AP_SCHEDULER_ENABLED
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
 #endif
 
@@ -310,8 +310,10 @@ protected:
     AP_CANManager can_mgr;
 #endif
 
+#if AP_SCHEDULER_ENABLED
     // main loop scheduler
     AP_Scheduler scheduler;
+#endif
 
     // IMU variables
     // Integration time; time last loop took to run
@@ -461,7 +463,9 @@ protected:
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
+#if AP_SCHEDULER_ENABLED
     static const struct AP_Scheduler::Task scheduler_tasks[];
+#endif
 
 #if OSD_ENABLED
     void publish_osd_info();
@@ -495,8 +499,10 @@ protected:
 
 private:
 
+#if AP_SCHEDULER_ENABLED
     // delay() callback that processing MAVLink packets
     static void scheduler_delay_callback();
+#endif
 
     // if there's been a watchdog reset, notify the world via a
     // statustext:

@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:Not Used,2:GPIO,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask,6:Generator
+    // @Values: 0:None,1:Not Used,2:GPIO,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask,6:Generator,7:DroneCAN
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RPM_Params, type, 0, AP_PARAM_FLAG_ENABLE),
     // Note, 1 was previously for type = PWM. This has been removed from docs to make setup less confusing for users.
@@ -76,6 +76,17 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("ESC_INDEX", 8, AP_RPM_Params, esc_telem_outbound_index, 0),
+#endif
+
+#if AP_RPM_DRONECAN_ENABLED || defined(HAL_PERIPH_ENABLE_RPM_STREAM)
+    // @Param: DC_ID
+    // @DisplayName: DroneCAN Sensor ID
+    // @Description: DroneCAN sensor ID to assign to this backend
+    // @Description{AP_Periph}: DroneCAN sensor ID to send as on AP-Periph -1 disables
+    // @Range: -1 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DC_ID", 9, AP_RPM_Params, dronecan_sensor_id, -1),
 #endif
 
     AP_GROUPEND

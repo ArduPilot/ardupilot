@@ -51,7 +51,9 @@
 #define TERRAIN_GRID_BLOCK_SIZE_Y (TERRAIN_GRID_MAVLINK_SIZE*TERRAIN_GRID_BLOCK_MUL_Y)
 
 // number of grid_blocks in the LRU memory cache
+#ifndef TERRAIN_GRID_BLOCK_CACHE_SIZE
 #define TERRAIN_GRID_BLOCK_CACHE_SIZE 12
+#endif
 
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
@@ -371,6 +373,7 @@ private:
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
     AP_Float offset_max;
+    AP_Int16 config_cache_size;
 
     enum class Options {
         DisableDownload = (1U<<0),

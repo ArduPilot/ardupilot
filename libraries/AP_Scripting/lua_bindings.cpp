@@ -682,6 +682,12 @@ int lua_get_CAN_device(lua_State *L) {
         }
     }
 
+    if (!scripting->_CAN_dev->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting
+        // Return nil
+        return 0;
+    }
+
     new_ScriptingCANBuffer(L);
     *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = scripting->_CAN_dev->add_buffer(buffer_len);
 
@@ -705,6 +711,12 @@ int lua_get_CAN_device2(lua_State *L) {
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
+    }
+
+    if (!scripting->_CAN_dev2->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting 2
+        // Return nil
+        return 0;
     }
 
     new_ScriptingCANBuffer(L);

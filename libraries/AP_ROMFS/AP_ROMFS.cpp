@@ -45,10 +45,9 @@ const AP_ROMFS::embedded_file *AP_ROMFS::find_file(const char *name)
 }
 
 /*
-  find a compressed file and uncompress it. Space for decompressed data comes
-  from malloc. Caller must be careful to free the resulting data after use. The
-  file data buffer is guaranteed to contain at least one null (though it may be
-  at buf[size]).
+  Find the named file and return its decompressed data and size. Caller must
+  call AP_ROMFS::free() on the return value after use to free it. The data is
+  guaranteed to be null-terminated such that it can be treated as a string.
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
@@ -61,19 +60,17 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     size = f->decompressed_size;
     return f->contents;
 #else
+    // add one byte for null termination; ArduPilot's malloc will zero it.
     uint8_t *decompressed_data = (uint8_t *)malloc(f->decompressed_size+1);
     if (!decompressed_data) {
         return nullptr;
     }
 
     if (f->decompressed_size == 0) {
-        // empty file
+        // empty file, avoid decompression problems
         size = 0;
         return decompressed_data;
     }
-
-    // explicitly null-terminate the data
-    decompressed_data[f->decompressed_size] = 0;
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
     if (!d) {
@@ -106,7 +103,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 #endif
 }
 
-// free returned data
+// free decompressed file data
 void AP_ROMFS::free(const uint8_t *data)
 {
 #ifndef HAL_ROMFS_UNCOMPRESSED

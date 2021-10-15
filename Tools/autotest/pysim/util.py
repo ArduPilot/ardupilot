@@ -542,6 +542,9 @@ def start_SITL(binary,
 
     cmd.extend(customisations)
 
+    if "--defaults" in customisations:
+        raise ValueError("--defaults must be passed in via defaults_filepath keyword argument, not as part of customisation list")  # noqa
+
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)

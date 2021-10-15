@@ -69,14 +69,17 @@ void SPIUARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 * it's sage to update speed
                 */
             _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+            high_speed_set = true;
             debug("Set higher SPI-frequency");
         } else {
             _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+            high_speed_set = false;
             debug("Set lower SPI-frequency");
         }
         break;
     default:
         _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+        high_speed_set = false;
         debug("Set lower SPI-frequency");
         debug("%s: wrong baudrate (%u) for SPI-driven device. setting default speed", __func__, b);
         break;

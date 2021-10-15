@@ -273,6 +273,12 @@ AP_HW_MicoAir405Mini                 1161
 AP_HW_BlitzH7Pro                     1162
 AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
+AP_HW_MicoAir743                     1166
+AP_HW_BlitzH7Wing                    1168
+AP_HW_SDMODELH7V2                    1167
+
+AP_HW_JHEMCUF405WING                 1169
+AP_HW_MatekG474                      1170
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -290,6 +296,12 @@ AP_HW_VIMDRONES_PERIPH               1407
 AP_HW_PIXHAWK6X_PERIPH               1408
 AP_HW_CUBERED_PERIPH                 1409
 AP_HW_RadiolinkPIX6                  1410
+
+AP_HW_JHEMCU-H743HD                  1411
+
+AP_HW_LongbowF405                    1422
+
+AP_HW_MountainEagleH743              1444
 
 AP_HW_SakuraRC-H743                  2714
 
@@ -319,6 +331,9 @@ AP_HW_Holybro-UM982-G4               5402
 AP_HW_Holybro-UM960-H7               5403
 AP_HW_Holybro-PERIPH-H7              5404
 
+#IDs 5501-5599 reserved for MATEKSYS
+AP_HW_MATEKH743SE                    5501
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
@@ -326,3 +341,6 @@ AP_HW_Holybro-PERIPH-H7              5404
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+
+# do not allocate board IDs above 10,000 for non-ODID boards.
+# do not allocate board IDs above 19,999 in this file.

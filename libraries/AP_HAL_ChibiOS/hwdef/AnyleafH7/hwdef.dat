@@ -111,6 +111,14 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
 BARO DPS310 I2C:0:0x77
 
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 5 # MSP Displayport
+define HAL_LOGGING_DATAFLASH_ENABLED 1

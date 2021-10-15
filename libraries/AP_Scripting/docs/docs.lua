@@ -77,7 +77,7 @@ i2c = {}
 ---@param address integer -- device address 0 to 128
 ---@param clock? uint32_t_ud -- optional bus clock, default 400000
 ---@param smbus? boolean -- optional sumbus flag, default false
----@return AP_HAL__I2CDevice_ud
+---@return AP_HAL__I2CDevice_ud|nil
 function i2c:get_device(bus, address, clock, smbus) end
 
 -- EFI state structure
@@ -337,21 +337,21 @@ function efi:get_state() end
 
 -- desc
 ---@param instance integer
----@return AP_EFI_Backend_ud
+---@return AP_EFI_Backend_ud|nil
 function efi:get_backend(instance) end
 
 -- CAN bus interaction
 ---@class CAN
 CAN = {}
 
--- get a CAN bus device handler first scripting driver
+-- get a CAN bus device handler first scripting driver, will return nil if no driver with protocol Scripting is configured
 ---@param buffer_len uint32_t_ud -- buffer length 1 to 25
----@return ScriptingCANBuffer_ud
+---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device(buffer_len) end
 
--- get a CAN bus device handler second scripting driver
+-- get a CAN bus device handler second scripting driver, will return nil if no driver with protocol Scripting2 is configured
 ---@param buffer_len uint32_t_ud -- buffer length 1 to 25
----@return ScriptingCANBuffer_ud
+---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device2(buffer_len) end
 
 -- Auto generated binding
@@ -456,8 +456,10 @@ function motor_factor_table_ud:roll(index, value) end
 ---@class SocketAPM_ud
 local SocketAPM_ud = {}
 
--- desc
-function Socket(param1) end
+-- Get a new socket
+---@param datagram boolean
+---@return SocketAPM_ud
+function Socket(datagram) end
 
 -- return true if a socket is connected
 ---@return boolean
@@ -494,11 +496,12 @@ function SocketAPM_ud:connect(IP_address, port) end
 --[[ accept new incoming sockets, returning a new socket.
      Must be used on a stream socket in listen state
 --]]
-function SocketAPM_ud:accept(param1) end
+---@return SocketAPM_ud|nil
+function SocketAPM_ud:accept() end
 
 -- receive data from a socket
----@param length
----@return data
+---@param length integer
+---@return string|nil
 function SocketAPM_ud:recv(length) end
 
 -- check for available input
@@ -523,6 +526,8 @@ function SocketAPM_ud:close() end
    this also "closes" the socket and the file from the point of view of lua
    the underlying socket and file are both closed on end of file
 --]]
+---@param filehandle string
+---@return boolean -- success
 function SocketAPM_ud:sendfile(filehandle) end
 
 -- enable SO_REUSEADDR on a socket
@@ -1506,7 +1511,7 @@ function ins:gyros_consistent(threshold) end
 function ins:get_gyro_health(instance) end
 
 -- Check if the accelerometers are consistent
----@param threshold float -- the threshold allowed before returning false
+---@param threshold number -- the threshold allowed before returning false
 ---@return boolean
 function ins:accels_consistent(threshold) end
 
@@ -1553,7 +1558,7 @@ function Motors_dynamic:init(expected_num_motors) end
 analog = {}
 
 -- desc
----@return AP_HAL__AnalogSource_ud
+---@return AP_HAL__AnalogSource_ud|nil
 function analog:channel() end
 
 
@@ -1696,11 +1701,11 @@ function sub:get_and_clear_button_count(index) end
 function sub:rangefinder_alt_ok() end
 
 -- SURFTRAK mode: return the rangefinder target in cm
----@return float
+---@return number
 function sub:get_rangefinder_target_cm() end
 
 -- SURFTRAK mode: set the rangefinder target in cm, return true if successful
----@param new_target_cm float
+---@param new_target_cm number
 ---@return boolean
 function sub:set_rangefinder_target_cm(new_target_cm) end
 
@@ -1844,7 +1849,7 @@ function mission:get_last_jump_tag() end
 function mission:jump_to_landing_sequence() end
 
 -- Jump to the landing abort sequence
--- @return boolean
+---@return boolean
 function mission:jump_to_abort_landing_sequence() end
 
 -- desc
@@ -1927,7 +1932,7 @@ esc_telem = {}
 function esc_telem:update_telem_data(instance, telemdata, data_mask) end
 
 -- desc
----@param param1 integer
+---@param instance integer
 ---@return uint32_t_ud|nil
 function esc_telem:get_usage_seconds(instance) end
 
@@ -2024,7 +2029,7 @@ serial = {}
 -- For instance = 0, returns first such UART, second for instance = 1, and so on.
 -- If such an instance is not found, returns nil.
 ---@param instance integer -- the 0-based index of the UART instance to return.
----@return AP_HAL__UARTDriver_ud -- the requested UART instance available for scripting, or nil if none.
+---@return AP_HAL__UARTDriver_ud|nil -- the requested UART instance available for scripting, or nil if none.
 function serial:find_serial(instance) end
 
 
@@ -2034,7 +2039,7 @@ rc = {}
 
 -- desc
 ---@param chan_num integer
----@return RC_Channel_ud
+---@return RC_Channel_ud|nil
 function rc:get_channel(chan_num) end
 
 -- desc
@@ -2057,7 +2062,7 @@ function rc:run_aux_function(aux_fun, ch_flag) end
 
 -- desc
 ---@param aux_fun integer
----@return RC_Channel_ud
+---@return RC_Channel_ud|nil
 function rc:find_channel_for_option(aux_fun) end
 
 -- desc
@@ -2367,10 +2372,12 @@ function vehicle:set_target_throttle_rate_rpy(param1, param2, param3, param4) en
 function vehicle:nav_script_time_done(param1) end
 
 -- desc
----@return integer|nil
----@return integer|nil
----@return number|nil
----@return number|nil
+---@return integer|nil -- id
+---@return integer|nil -- cmd
+---@return number|nil -- arg1
+---@return number|nil -- arg2
+---@return integer|nil -- arg3
+---@return integer|nil -- arg4
 function vehicle:nav_script_time() end
 
 -- desc
@@ -2574,27 +2581,27 @@ local RangeFinder_State_ud = {}
 function RangeFinder_State() end
 
 -- get system time (ms) of last successful update from sensor
----@return number
+---@return uint32_t_ud
 function RangeFinder_State_ud:last_reading() end
 
 -- set system time (ms) of last successful update from sensor
----@param value number
+---@param value uint32_t_ud
 function RangeFinder_State_ud:last_reading(value) end
 
 -- get sensor status
----@return number
+---@return integer
 function RangeFinder_State_ud:status() end
 
 -- set sensor status
----@param value number
+---@param value integer
 function RangeFinder_State_ud:status(value) end
 
 -- get number of consecutive valid readings (max out at 10)
----@return number
+---@return integer
 function RangeFinder_State_ud:range_valid_count() end
 
 -- set number of consecutive valid readings (max out at 10)
----@param value number
+---@param value integer
 function RangeFinder_State_ud:range_valid_count(value) end
 
 -- get distance in meters
@@ -2606,19 +2613,19 @@ function RangeFinder_State_ud:distance() end
 function RangeFinder_State_ud:distance(value) end
 
 -- get measurement quality in percent 0-100, -1 -> quality is unknown
----@return number
+---@return integer
 function RangeFinder_State_ud:signal_quality() end
 
 -- set measurement quality in percent 0-100, -1 -> quality is unknown
----@param value number
+---@param value integer
 function RangeFinder_State_ud:signal_quality(value) end
 
 -- get voltage in millivolts, if applicable, otherwise 0
----@return number
+---@return integer
 function RangeFinder_State_ud:voltage() end
 
 -- set voltage in millivolts, if applicable, otherwise 0
----@param value number
+---@param value integer
 function RangeFinder_State_ud:voltage(value) end
 
 
@@ -2662,7 +2669,7 @@ rangefinder = {}
 
 -- get backend based on rangefinder instance provided
 ---@param rangefinder_instance integer
----@return AP_RangeFinder_Backend_ud
+---@return AP_RangeFinder_Backend_ud|nil
 function rangefinder:get_backend(rangefinder_instance) end
 
 -- desc
@@ -2752,7 +2759,7 @@ proximity = {}
 
 -- get backend based on proximity instance provided
 ---@param instance integer
----@return AP_Proximity_Backend_ud
+---@return AP_Proximity_Backend_ud|nil
 function proximity:get_backend(instance) end
 
 -- desc
@@ -3322,11 +3329,15 @@ function scripting:restart_all() end
 
 -- desc
 ---@param directoryname string
----@return table -- table of filenames
+---@return table|nil -- table of filenames
+---@return string|nil -- error string if fails
 function dirlist(directoryname) end
 
 --desc
 ---@param filename string
+---@return boolean|nil -- true on success
+---@return nil|string -- error string
+---@return integer -- error number
 function remove(filename) end
 
 -- desc
@@ -3340,6 +3351,7 @@ function mavlink:init(num_rx_msgid, msg_queue_length) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
 ---@param msg_id number
+---@return boolean -- false if id has been registered already
 function mavlink:register_rx_msgid(msg_id) end
 
 -- receives mavlink message marked for receive using mavlink:register_rx_msgid
@@ -3353,10 +3365,12 @@ function mavlink:receive_chan() end
 ---@param chan integer
 ---@param msgid integer
 ---@param message string
+---@return boolean -- success
 function mavlink:send_chan(chan, msgid, message) end
 
 -- Block a given MAV_CMD from being procceced by ArduPilot
 ---@param comand_id integer
+---@return boolean
 function mavlink:block_command(comand_id) end
 
 -- Geofence library
@@ -3413,8 +3427,8 @@ rtc = {}
 -- return a time since 1970 in seconds from GMT date elements
 ---@param year integer -- 20xx
 ---@param month integer -- 0-11
----@param day  integer -- 1-31
----@param hour  integer -- 0-23
+---@param day integer -- 1-31
+---@param hour integer -- 0-23
 ---@param min integer -- 0-60
 ---@param sec integer -- 0-60
 ---@return uint32_t_ud
@@ -3445,10 +3459,11 @@ function fs:stat(param1) end
 function fs:format() end
 
 -- Get the current status of a format. 0=NOT_STARTED, 1=PENDING, 2=IN_PROGRESS, 3=SUCCESS, 4=FAILURE
----@return number
+---@return integer
 function fs:get_format_status() end
 
 -- Get crc32 checksum of a file with given name
+---@param file_name string
 ---@return uint32_t_ud|nil
 function fs:crc32(file_name) end
 
