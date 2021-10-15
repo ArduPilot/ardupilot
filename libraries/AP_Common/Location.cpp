@@ -300,7 +300,7 @@ Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
         alt1 = 0, alt2 = 0;
     }
     return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
                     (alt1 - alt2) * 0.01f);
 }
 
