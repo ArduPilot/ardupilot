@@ -841,6 +841,26 @@ bool AP_Arming::board_voltage_checks(bool report)
     return true;
 }
 
+#if HAL_HAVE_IMU_HEATER
+bool AP_Arming::heater_min_temperature_checks(bool report)
+{
+    if (checks_to_perform & ARMING_CHECK_ALL) {
+        AP_BoardConfig *board = AP::boardConfig();
+        if (board) {
+            float temperature;
+            int8_t min_temperature;
+            if (board->get_board_heater_temperature(temperature) &&
+                board->get_board_heater_arming_temperature(min_temperature) &&
+                (temperature < min_temperature)) {
+                check_failed(ARMING_CHECK_SYSTEM, report, "heater temp low (%0.1f < %i)", temperature, min_temperature);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+#endif // HAL_HAVE_IMU_HEATER
+
 /*
   check base system operations
  */
@@ -1231,6 +1251,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 
     return hardware_safety_check(report)
+#if HAL_HAVE_IMU_HEATER
+        &  heater_min_temperature_checks(report)
+#endif
         &  barometer_checks(report)
         &  ins_checks(report)
         &  compass_checks(report)
