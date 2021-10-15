@@ -66,14 +66,14 @@ void AP_BoardConfig::set_imu_temp(float current)
 
     heater.last_update_ms = now;
 
-    float avg = heater.sum / heater.count;
+    heater.temperature = heater.sum / heater.count;
     heater.sum = 0;
     heater.count = 0;
 
     if (target < 0) {
         heater.output = 0;
     } else {
-        heater.output = heater.pi_controller.update(avg, target, dt);
+        heater.output = heater.pi_controller.update(heater.temperature, target, dt);
         heater.output = constrain_float(heater.output, 0, 100);
     }
 
@@ -88,7 +88,7 @@ void AP_BoardConfig::set_imu_temp(float current)
 // @Field: Out: Controller output to heating element
         AP::logger().WriteStreaming("HEAT", "TimeUS,Temp,Targ,P,I,Out", "Qfbfff",
                            AP_HAL::micros64(),
-                           avg, target,
+                           heater.temperature, target,
                            heater.pi_controller.get_P(),
                            heater.pi_controller.get_I(),
                            heater.output);
@@ -109,6 +109,26 @@ void AP_BoardConfig::set_imu_temp(float current)
         }
     }
 #endif
+}
+
+// getter for current temperature, return false if heater disabled
+bool AP_BoardConfig::get_board_heater_temperature(float &temperature) const
+{
+    if (heater.imu_target_temperature == -1) {
+        return false; // heater disabled
+    }
+    temperature = heater.temperature;
+    return true;
+}
+
+// getter for min arming temperature, return false if heater disabled or min check disabled
+bool AP_BoardConfig::get_board_heater_arming_temperature(int8_t &temperature) const
+{
+    if ((heater.imu_target_temperature == -1) || (heater.imu_arming_temperature_margin_low == 0)) {
+        return false; // heater or temperature check disabled
+    }
+    temperature = heater.imu_target_temperature - heater.imu_arming_temperature_margin_low;
+    return true;
 }
 
 #endif // HAL_HAVE_IMU_HEATER

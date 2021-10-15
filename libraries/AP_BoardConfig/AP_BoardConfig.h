@@ -204,6 +204,10 @@ public:
     float get_heater_duty_cycle(void) const {
         return heater.output;
     }
+
+    // getters for current temperature and min arming temperature, return false if heater disabled
+    bool get_board_heater_temperature(float &temperature) const;
+    bool get_board_heater_arming_temperature(int8_t &temperature) const;
 #endif
 
 private:
@@ -255,6 +259,8 @@ private:
         float sum;
         float output;
         uint32_t last_log_ms;
+        float temperature;
+        AP_Int8 imu_arming_temperature_margin_low;
     } heater;
 #endif
 
