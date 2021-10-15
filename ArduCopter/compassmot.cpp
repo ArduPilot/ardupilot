@@ -160,6 +160,9 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
+        // record maximum throttle
+        throttle_pct_max = MAX(throttle_pct_max, throttle_pct);
+
         if (!battery.current_amps(current)) {
             current = 0;
         }
@@ -211,9 +214,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
                     interference_pct[i] = motor_compensation[i].length() * (current_amps_max/throttle_pct_max) / (float)arming.compass_magfield_expected() * 100.0f;
                 }
             }
-
-            // record maximum throttle
-            throttle_pct_max = MAX(throttle_pct_max, throttle_pct);
         }
 
         if (AP_HAL::millis() - last_send_time > 500) {
