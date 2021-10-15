@@ -38,7 +38,8 @@ private:
         SONAR_UNKNOWN = 0,
         SONAR_DBT,
         SONAR_DPT,
-        SONAR_MTW   // mean water temperature
+        SONAR_MTW,  // mean water temperature
+        SONAR_HDED, // hondex custom sonar message
     };
 
     // get a distance reading
