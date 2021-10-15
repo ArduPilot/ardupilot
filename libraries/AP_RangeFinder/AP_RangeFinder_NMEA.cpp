@@ -124,7 +124,7 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         }
         const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _checksum) {
-            if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT) && !is_negative(_distance_m)) {
+            if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT || _sentence_type == SONAR_HDED) && !is_negative(_distance_m)) {
                 // return true if distance is valid
                 return true;
             }
@@ -155,6 +155,8 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
             _sentence_type = SONAR_DPT;
         } else if (strcmp(term_type, "MTW") == 0) {
             _sentence_type = SONAR_MTW;
+        } else if (strcmp(term_type, "ED") == 0) {
+            _sentence_type = SONAR_HDED;
         } else {
             _sentence_type = SONAR_UNKNOWN;
         }
@@ -175,6 +177,11 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         // parse MTW (mean water temperature) messages
         if (_term_number == 1) {
             _temp_unvalidated = strtof(_term, NULL);
+        }
+    } else if (_sentence_type == SONAR_HDED) {
+        // parse HDED (Hondex custom message)
+        if (_term_number == 4) {
+            _distance_m = strtof(_term, NULL);
         }
     }
 
