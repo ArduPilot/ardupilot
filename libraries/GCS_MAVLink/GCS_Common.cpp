@@ -1651,7 +1651,7 @@ void GCS_MAVLINK::log_mavlink_stats()
 /*
   send the SYSTEM_TIME message
  */
-void GCS_MAVLINK::send_system_time()
+void GCS_MAVLINK::send_system_time() const
 {
     uint64_t time_unix = 0;
     AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
