@@ -2160,9 +2160,7 @@ bool AP_Mission::is_best_land_sequence(void)
     // is a distance travelled minimization problem.  Look forward in
     // mission to evaluate the shortest remaining distance to land.
 
-    // go through the mission for the nearest DO_LAND_START first as this is the most probable route
-    // to a landing with the minimum number of WP.
-    uint16_t do_land_start_index = get_landing_sequence_start();
+    uint16_t do_land_start_index = get_shortest_landing_sequence_start();
     if (do_land_start_index == 0) {
         // then no DO_LAND_START commands are in mission and normal failsafe behaviour should be maintained
         return false;
