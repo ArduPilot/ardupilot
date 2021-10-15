@@ -2037,6 +2037,66 @@ bool AP_Mission::jump_to_landing_sequence(void)
     return false;
 }
 
+/*
+   find the shortest distance to landing via DO_LAND_START and
+   return its index.  Returns 0 if no appropriate DO_LAND_START point can
+   be found.
+*/
+uint16_t AP_Mission::get_shortest_landing_sequence_start()
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return 0;
+    }
+
+    uint16_t landing_start_index = 0;
+    float min_distance = -1;
+
+    // Go through mission looking for shortest distance to landing
+    for (uint16_t i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_LAND_START) {
+            float tmp_distance;
+            if (!distance_to_landing(i, tmp_distance, current_loc)){
+                continue;
+            }
+            if (min_distance < 0 || tmp_distance < min_distance) {
+                min_distance = tmp_distance;
+                landing_start_index = i;
+            }
+        }
+    }
+    return landing_start_index;
+}
+
+
+/*
+   find the landing sequence starting point (DO_LAND_START) that will result in the shortest distance to a landing
+   defaults to closest if distance to landing calculation fails
+ */
+bool AP_Mission::jump_to_shortest_landing_sequence(void)
+{
+    uint16_t landing_start_index = get_shortest_landing_sequence_start();
+    if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
+
+        // if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Shortest Landing sequence start");
+        _flags.in_landing_sequence = true;
+        return true;
+    }
+
+    // failed to do shortest distance calculation, default to closest
+    return jump_to_landing_sequence();
+}
+
+
 // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
 bool AP_Mission::jump_to_abort_landing_sequence(void)
 {

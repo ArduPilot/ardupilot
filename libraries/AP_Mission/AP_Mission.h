@@ -534,10 +534,18 @@ public:
     // be found.
     uint16_t get_landing_sequence_start();
 
+    // find the shortest distance to landing via DO_LAND_START and
+    // return its index.  Returns 0 if no appropriate DO_LAND_START point can
+    // be found.
+    uint16_t get_shortest_landing_sequence_start();
+
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // switch to that mission item.  Returns false if no DO_LAND_START
     // available.
     bool jump_to_landing_sequence(void);
+
+    // find the landing sequence starting point (DO_LAND_START) that will result in the shortest distance to a landing
+    bool jump_to_shortest_landing_sequence(void);
 
     // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
     bool jump_to_abort_landing_sequence(void);
