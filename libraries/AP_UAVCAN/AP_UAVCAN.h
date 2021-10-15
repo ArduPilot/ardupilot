@@ -72,6 +72,11 @@ class ParamExecuteOpcodeCb;
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH
 #define DISABLE_W_CAST_FUNCTION_TYPE_POP
 #endif
+#if defined(__GNUC__) && (__GNUC__ >= 11)
+#define DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID (void*)
+#else
+#define DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID
+#endif
 
 /*
     Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
@@ -84,7 +89,7 @@ class ParamExecuteOpcodeCb;
             ClassName_() : RegistryBinder() {} \
             DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
             ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
-                RegistryBinder(uc, (Registry)ffunc) {} \
+                RegistryBinder(uc, (Registry)DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID ffunc) {} \
             DISABLE_W_CAST_FUNCTION_TYPE_POP \
     }
 
@@ -95,7 +100,7 @@ class ParamExecuteOpcodeCb;
             ClassName_() : ClientCallRegistryBinder() {} \
             DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
             ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
-                ClientCallRegistryBinder(uc, (ClientCallRegistry)ffunc) {} \
+                ClientCallRegistryBinder(uc, (ClientCallRegistry)DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID ffunc) {} \
             DISABLE_W_CAST_FUNCTION_TYPE_POP \
     }
 
