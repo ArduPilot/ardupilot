@@ -1,3 +1,36 @@
+Release 4.1.2beta2 16th October 2021
+------------------------------------
+
+This is beta update with minor fixes:
+
+ - added EK3_PRIMARY parameter, to allow for selection of other than
+   the first IMU as initial EK3 lane
+
+ - added ESC_TELEMETRY_1_to_4 to list of mavlink message selections
+
+ - fixed burst read ftp error causing bad ftp param download
+
+ - fixed H7 FIFO issue with RTSCTS flow control on UARTs
+
+ - apply takeoff throttle slew limit in TAKEOFF mode and forward
+   transition in quadplanes
+
+ - reset target mission airspeed on disarm
+
+ - added RC_OPTION bit to enable multi-receiver systems
+
+ - don't apply fixed wing pitch limit to tailsitters when hovering
+
+ - fixed turn rate coordination when inverted in fixed wing flight
+
+Of these fixes the only one that is not backwards compatible is the
+new RC_OPTION bit which needs to be set if you have multiple RC
+receivers on your aircraft and want to fail over to a backup receiver
+while in flight. You will need to set the new RC_OPTION to enable that
+for the 4.1.2 release and later.
+
+Happy flying!
+
 Release 4.1.2beta1 10th October 2021
 ------------------------------------
 
