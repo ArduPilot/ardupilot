@@ -107,9 +107,9 @@ public:
     // return distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
-    // return desired location (used in Guided, Auto, RTL, etc)
-    // return true on success, false if there is no valid destination
-    virtual bool get_desired_location(Location& destination) const WARN_IF_UNUSED { return false; }
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration (used in Guided, Auto, RTL, etc)
+    // return true on success, false if getting the info. failed
+    virtual bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const { return false; }
 
     // set desired location (used in Guided, Auto)
     //   next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
@@ -261,7 +261,7 @@ public:
     float get_distance_to_destination() const override;
 
     // get or set desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED;
     bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override WARN_IF_UNUSED;
     bool reached_destination() const override;
 
@@ -390,8 +390,10 @@ public:
     // set desired speed in m/s
     bool set_desired_speed(float speed) override;
 
-    // get or set desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED;
+
+    // set desired location
     bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override WARN_IF_UNUSED;
 
     // set desired heading and speed
@@ -490,8 +492,8 @@ public:
     float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float crosstrack_error() const override { return 0.0f; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED;
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -545,7 +547,7 @@ public:
     bool allows_arming() const override { return false; }
 
     // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED;
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -579,8 +581,8 @@ public:
     // do not allow arming from this mode
     bool allows_arming() const override { return false; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED;
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -672,8 +674,8 @@ public:
     float nav_bearing() const override { return wp_bearing(); }
     float crosstrack_error() const override { return 0.0f; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED { return false; }
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override WARN_IF_UNUSED { return false; }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;

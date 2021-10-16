@@ -20,7 +20,7 @@ protected:
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
-    void send_position_target_global_int() override;
+    bool get_target_info(Position_Target_Info &target) const override;
 
     bool persist_streamrates() const override { return true; }
 

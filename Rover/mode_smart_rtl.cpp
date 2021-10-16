@@ -95,15 +95,16 @@ void ModeSmartRTL::update()
     }
 }
 
-// get desired location
-bool ModeSmartRTL::get_desired_location(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeSmartRTL::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     switch (smart_rtl_state) {
     case SmartRTL_WaitForPathCleanup:
         return false;
     case SmartRTL_PathFollow:
         if (g2.wp_nav.is_destination_valid()) {
-            destination = g2.wp_nav.get_destination();
+            target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+            target.loc = g2.wp_nav.get_oa_destination();
             return true;
         }
         return false;
