@@ -1,9 +1,20 @@
 #include "SIM_I2CDevice.h"
 #include <AP_HAL/utility/sparse-endian.h>
 
+#ifndef HAL_DEBUG_I2DEVICE
+#define HAL_DEBUG_I2DEVICE 0
+#endif
+
+#if HAL_DEBUG_I2DEVICE
+#include <GCS_MAVLink/GCS.h>
+#define DEBUG(fmt, args ...)  do { if (get_debug()) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+#else
+#define DEBUG(fmt, args ...)
+#endif
+
 void SITL::I2CRegisters::add_register(const char *name, uint8_t reg, RegMode mode)
 {
-    // ::fprintf(stderr, "Adding register %u (0x%02x) (%s)\n", reg, reg, name);
+    DEBUG("Adding register %u (0x%02x) (%s)", reg, reg, name);
     regname[reg] = name;
     if (mode == RegMode::RDONLY || mode == RegMode::RDWR) {
         readable_registers.set((uint8_t)reg);
@@ -18,7 +29,8 @@ void SITL::I2CRegisters_16Bit::set_register(uint8_t reg, uint16_t value)
     if (regname[reg] == nullptr) {
         AP_HAL::panic("Setting un-named register %u", reg);
     }
-    // ::fprintf(stderr, "Setting %u (0x%02x) (%s) to 0x%02x (%c)\n", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value, value);
+    DEBUG("Setting %u (0x%02x) (%s) to 0x%02x", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value);
+
     word[reg] = htobe16(value);
 }
 
@@ -27,7 +39,7 @@ void SITL::I2CRegisters_16Bit::set_register(uint8_t reg, int16_t value)
     if (regname[reg] == nullptr) {
         AP_HAL::panic("Setting un-named register %u", reg);
     }
-    // ::fprintf(stderr, "Setting %s (%u) to 0x%02x (%c)\n", regname[reg], (unsigned)reg, (signed)value, value);
+    DEBUG("Setting %s (%u) to 0x%02x", regname[reg], (unsigned)reg, (signed)value);
     word[reg] = htobe16(value);
 }
 
@@ -84,7 +96,7 @@ void SITL::I2CRegisters_8Bit::set_register(uint8_t reg, uint8_t value)
     if (regname[reg] == nullptr) {
         AP_HAL::panic("Setting un-named register %u", reg);
     }
-    // ::fprintf(stderr, "Setting %u (0x%02x) (%s) to 0x%02x (%c)\n", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value, value);
+    DEBUG("Setting %u (0x%02x) (%s) to 0x%02x (%c)", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value, value);
     byte[reg] = value;
 }
 
@@ -93,7 +105,7 @@ void SITL::I2CRegisters_8Bit::set_register(uint8_t reg, int8_t value)
     if (regname[reg] == nullptr) {
         AP_HAL::panic("Setting un-named register %u", reg);
     }
-    // ::fprintf(stderr, "Setting %s (%u) to 0x%02x (%c)\n", regname[reg], (unsigned)reg, (signed)value, value);
+    DEBUG("Setting %s (%u) to 0x%02x (%c)", regname[reg], (unsigned)reg, (signed)value, value);
     byte[reg] = value;
 }
 
@@ -183,4 +195,124 @@ int SITL::I2CCommandResponseDevice::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
     cmd_take_reading_received_ms = now;
 
     return 0;
+}
+
+
+void SITL::I2CRegisters_ConfigurableLength::add_register(const char *name, uint8_t reg, uint8_t len, RegMode mode)
+{
+    SITL::I2CRegisters::add_register(name, reg, mode);
+    if (len > 4) {
+        AP_HAL::panic("Only up to 4 bytes");
+    }
+    reg_data_len[reg] = len;
+}
+
+void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, uint16_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    DEBUG("Setting %u (0x%02x) (%s) to 0x%02x", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value);
+
+    if (reg_data_len[reg] != 2) {
+        AP_HAL::panic("Invalid set_register len");
+    }
+    reg_data[reg] = htobe16(value);
+}
+
+void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, int16_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    DEBUG("Setting %s (%u) to 0x%02x", regname[reg], (unsigned)reg, (signed)value);
+
+    if (reg_data_len[reg] != 2) {
+        AP_HAL::panic("Invalid set_register len");
+    }
+    reg_data[reg] = htobe16(value);
+}
+
+void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, uint8_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    DEBUG("Setting %u (0x%02x) (%s) to 0x%02x (%c)", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value, value);
+    if (reg_data_len[reg] != 1) {
+        AP_HAL::panic("Invalid set_register len");
+    }
+    reg_data[reg] = value;
+}
+
+void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, int8_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    DEBUG("Setting %s (%u) to 0x%02x (%c)", regname[reg], (unsigned)reg, (signed)value, value);
+    if (reg_data_len[reg] != 1) {
+        AP_HAL::panic("Invalid set_register len");
+    }
+    reg_data[reg] = value;
+}
+
+int SITL::I2CRegisters_ConfigurableLength::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
+{
+    if (data->nmsgs == 2) {
+        // data read request
+        if (data->msgs[0].flags != 0) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        if (data->msgs[1].flags != I2C_M_RD) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        const uint8_t reg_addr = data->msgs[0].buf[0];
+        if (data->msgs[1].len != reg_data_len[reg_addr]) {
+            AP_HAL::panic("Invalid rdwr len");
+        }
+        if (!readable_registers.get(reg_addr)) {
+            // ::printf("Register 0x%02x is not readable!\n", reg_addr);
+            return -1;
+        }
+        const uint32_t register_value = reg_data[reg_addr];
+        if (data->msgs[1].len == 1) {
+            data->msgs[1].buf[0] = register_value >> 24;
+        } else if (data->msgs[1].len == 2) {
+            const uint16_t v = htobe16(register_value & 0xffff);
+            memcpy(&(data->msgs[1].buf[0]), &v, 2);
+        } else {
+            AP_HAL::panic("Bad length"); // FIXME
+        }
+        data->msgs[1].len = reg_data_len[reg_addr];
+        return 0;
+    }
+
+    if (data->nmsgs == 1) {
+        // data write request
+        if (data->msgs[0].flags != 0) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        // FIXME: handle multi-register writes
+        const uint8_t reg_addr = data->msgs[0].buf[0];
+        if (!writable_registers.get(reg_addr)) {
+            AP_HAL::panic("Register 0x%02x is not writable!", reg_addr);
+        }
+        const uint8_t data_msg_len = data->msgs[0].len - 1;
+        if (data_msg_len != reg_data_len[reg_addr]) {
+            AP_HAL::panic("Invalid rdwr len");
+        }
+        memcpy((uint8_t*)&reg_data[reg_addr], &data->msgs[0].buf[1], data_msg_len);
+        return 0;
+    }
+
+    return -1;
+};
+
+void SITL::I2CRegisters_ConfigurableLength::get_reg_value(uint8_t reg, uint8_t &value) const
+{
+    if (reg_data_len[reg] != 1) {
+	    AP_HAL::panic("Invalid reg_reg_value len");
+    }
+    value = reg_data[reg];
 }
