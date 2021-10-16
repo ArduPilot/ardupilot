@@ -66,11 +66,13 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _fd = _sitlState->gps_pipe(0);
+        _fd = _sitlState->sim_fd("gps:1", "");
+        _fd_write = _sitlState->sim_fd_write("gps:1");
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _fd = _sitlState->gps_pipe(1);
+        _fd = _sitlState->sim_fd("gps:2", "");
+        _fd_write = _sitlState->sim_fd_write("gps:2");
     } else {
         /* parse type:args:flags string for path. 
            For example:

@@ -46,6 +46,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_LORD.h>
 #include <SITL/SIM_AIS.h>
+#include <SITL/SIM_GPS.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -76,7 +77,6 @@ public:
         Blimp
     };
 
-    int gps_pipe(uint8_t index);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -145,42 +145,7 @@ private:
     void _update_rangefinder(float range_value);
     void _set_signal_handlers(void) const;
 
-    struct gps_data {
-        double latitude;
-        double longitude;
-        float altitude;
-        double speedN;
-        double speedE;
-        double speedD;
-        double yaw;
-        bool have_lock;
-    };
-
-#define MAX_GPS_DELAY 100
-    gps_data _gps_data[2][MAX_GPS_DELAY];
-
-    bool _gps_has_basestation_position;
-    gps_data _gps_basestation_data;
-    void _gps_write(const uint8_t *p, uint16_t size, uint8_t instance);
-    void _gps_send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size, uint8_t instance);
-    void _update_gps_ubx(const struct gps_data *d, uint8_t instance);
-    uint8_t _gps_nmea_checksum(const char *s);
-    void _gps_nmea_printf(uint8_t instance, const char *fmt, ...);
-    void _update_gps_nmea(const struct gps_data *d, uint8_t instance);
-    void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload, uint8_t instance);
-    void _update_gps_sbp(const struct gps_data *d, uint8_t instance);
-    void _update_gps_sbp2(const struct gps_data *d, uint8_t instance);
-    void _update_gps_file(uint8_t instance);
-    void _update_gps_nova(const struct gps_data *d, uint8_t instance);
-    void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen, uint8_t instance);
-    uint32_t CRC32Value(uint32_t icrc);
-    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
-
-    void _update_gps(double latitude, double longitude, float altitude,
-                     double speedN, double speedE, double speedD,
-                     double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
-    void _update_gps_instance(SITL::SIM::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     bool _read_rc_sitl_input();
     void _fdm_input_local(void);
@@ -330,6 +295,9 @@ private:
 
     const char *_home_str;
     char *_gps_fifo[2];
+
+    // simulated GPS devices
+    SITL::GPS *gps[2];  // constrained by # of parameter sets
 };
 
 #endif // defined(HAL_BUILD_AP_PERIPH)

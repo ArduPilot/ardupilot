@@ -29,7 +29,6 @@ class HALSITL::SITL_State {
     friend class HALSITL::GPIO;
 public:
     void init(int argc, char * const argv[]);
-    int gps_pipe(uint8_t index);
 
     // create a file descriptor attached to a virtual device; type of
     // device is given by name parameter
