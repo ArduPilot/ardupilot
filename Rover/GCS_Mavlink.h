@@ -21,6 +21,7 @@ protected:
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 
     bool get_target_info(Position_Target_Info &target) const override;
+    bool get_target_local_info(Position_Target_Info &target) const override;
 
     bool persist_streamrates() const override { return true; }
 

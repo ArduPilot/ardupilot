@@ -74,6 +74,15 @@ bool GCS_MAVLINK_Rover::get_target_info(Position_Target_Info &target) const
     return rover.control_mode->get_target_info(target);
 }
 
+bool GCS_MAVLINK_Rover::get_target_local_info(Position_Target_Info &target) const
+{
+    // exit if vehicle is not in Guided mode
+    if (!rover.control_mode->in_guided_mode()) {
+        return false;
+    }
+    return rover.mode_guided.get_target_info(target);
+}
+
 void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
     if (!rover.control_mode->is_autopilot_mode()) {
