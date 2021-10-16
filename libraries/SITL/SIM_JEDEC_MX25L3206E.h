@@ -2,6 +2,12 @@
 
 #include "SIM_JEDEC.h"
 
+#ifndef AP_SIM_JEDEC_MX25L3206E_ENABLED
+#define AP_SIM_JEDEC_MX25L3206E_ENABLED AP_SIM_JEDEC_ENABLED
+#endif
+
+#if AP_SIM_JEDEC_MX25L3206E_ENABLED
+
 namespace SITL {
 
 class JEDEC_MX25L3206E : public JEDEC
@@ -24,3 +30,5 @@ private:
 };
 
 }
+
+#endif  // AP_SIM_JEDEC_MX25L3206E_ENABLED
