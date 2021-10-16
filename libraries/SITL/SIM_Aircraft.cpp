@@ -16,12 +16,13 @@
   parent class for aircraft simulators
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SIM_Aircraft.h"
 
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
-
 
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
 #include <windows.h>

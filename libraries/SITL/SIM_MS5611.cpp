@@ -1,3 +1,5 @@
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SIM_MS5611.h"
 
 #include <SITL/SITL.h>
