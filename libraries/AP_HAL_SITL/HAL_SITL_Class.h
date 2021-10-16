@@ -35,6 +35,8 @@ public:
     }
     bool get_wipe_storage() const { return wipe_storage; }
 
+    uint8_t get_instance() const;
+
 private:
     HALSITL::SITL_State *_sitl_state;
 
