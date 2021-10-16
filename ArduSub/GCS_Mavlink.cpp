@@ -100,6 +100,19 @@ bool GCS_MAVLINK_Sub::get_target_info(Position_Target_Info &target) const
     return false;
 }
 
+bool GCS_MAVLINK_Sub::get_target_local_info(Position_Target_Info &target) const
+{
+#if NAV_GUIDED == ENABLED
+        // exit if vehicle is not in Guided mode or Auto-Guided mode
+        if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
+            return false;
+        }
+        return sub.guided_get_target_info(target);
+#else
+    return false;
+#endif
+}
+
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
     const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();

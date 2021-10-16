@@ -25,6 +25,7 @@ protected:
 
     // position target info. message helper
     bool get_target_info(Position_Target_Info &target) const override;
+    bool get_target_local_info(Position_Target_Info &target) const override;
 
     // override sending of scaled_pressure3 to send on-board temperature:
     void send_scaled_pressure3() override;
