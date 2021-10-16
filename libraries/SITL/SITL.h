@@ -24,6 +24,7 @@
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
+#include "SIM_GPS.h"
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
 namespace SITL {
@@ -129,16 +130,6 @@ public:
         SITL_RCFail_Throttle950 = 2,
     };
 
-    enum GPSType {
-        GPS_TYPE_NONE  = 0,
-        GPS_TYPE_UBLOX = 1,
-        GPS_TYPE_NMEA  = 5,
-        GPS_TYPE_SBP   = 6,
-        GPS_TYPE_FILE  = 7,
-        GPS_TYPE_NOVA  = 8,
-        GPS_TYPE_SBP2   = 9,
-    };
-
     enum GPSHeading {
         GPS_HEADING_NONE = 0,
         GPS_HEADING_HDT  = 1,
@@ -196,7 +187,7 @@ public:
     AP_Int16 gps_alt_offset[2]; // gps alt error
     AP_Int8  gps_disable[2]; // disable simulated GPS
     AP_Int8  gps_delay[2];   // delay in samples
-    AP_Int8  gps_type[2]; // see enum GPSType
+    AP_Int8  gps_type[2]; // see enum SITL::GPS::Type
     AP_Float gps_byteloss[2];// byte loss as a percent
     AP_Int8  gps_numsats[2]; // number of visible satellites
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
