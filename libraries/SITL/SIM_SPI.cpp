@@ -21,6 +21,8 @@
 #include <SITL/SITL.h>
 
 #include "SIM_SPI.h"
+#include "SIM_SPIDevice.h"
+
 #include "SIM_RAMTRON_FM25V02.h"
 #include "SIM_JEDEC_MX25L3206E.h"
 
@@ -28,16 +30,24 @@
 
 using namespace SITL;
 
+#if AP_SIM_RAMTRON_FM25V02_ENABLED
 static RAMTRON_FM25V02 ramtron_FM25V02;  // 32kB 2-byte-addressing
+#endif
+#if AP_SIM_JEDEC_MX25L3206E_ENABLED
 static JEDEC_MX25L3206E jedec_MX25L3206E;
+#endif
 
 struct spi_device_at_cs_pin {
     uint8_t bus;
     uint8_t cs_pin;
     SPIDevice &device;
 } spi_devices[] {
+#if AP_SIM_RAMTRON_FM25V02_ENABLED
     { 0, 0, ramtron_FM25V02 },
+#endif
+#if AP_SIM_JEDEC_MX25L3206E_ENABLED
     { 1, 0, jedec_MX25L3206E },
+#endif
 };
 
 void SPI::init()

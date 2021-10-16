@@ -1,5 +1,13 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_SIM_JEDEC_ENABLED
+#define AP_SIM_JEDEC_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if AP_SIM_JEDEC_ENABLED
+
 #include "SIM_SPIDevice.h"
 
 namespace SITL {
@@ -46,3 +54,5 @@ private:
 };
 
 }
+
+#endif  // AP_SIM_JEDEC_ENABLED
