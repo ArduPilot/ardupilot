@@ -232,6 +232,8 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             // a lot of autotest timeouts are based on receiving system time
             gcs_chan.send_system_time();
+            // autotesting of compassmot wants to see RC channels message
+            gcs_chan.send_rc_channels();
 #endif
         }
     }
