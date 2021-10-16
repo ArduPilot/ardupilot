@@ -1,5 +1,17 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.1-rc1 16-Oct-2021
+Changes from 4.1.0 
+1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
+2) ESC telemetry sent during compassmot
+3) TradHeli landing detector improvement
+4) Bug Fixes
+    a) Auto/Guided mode fix to EXTENDED_SYS_STATE message's "landed state" field after takeoff
+    b) MAVFTP init fix (could cause slow parameter download)
+    c) Scripting fix when logging strings
+    d) Serial flow control fix (affected at least Lightware LW20 serial lidar)
+    e) QiotekZealotF427 IMU (ICM42605) orientation fixed
+------------------------------------------------------------------
 Copter 4.1.0 08-Oct-2021 / 4.1.0-rc4 01-Oct-2021
 Changes from 4.1.0-rc3
 1) Position controller PSC/Z logging changed to PSCN/E/D and includes "desired"
