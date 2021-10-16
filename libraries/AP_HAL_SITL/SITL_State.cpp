@@ -79,7 +79,6 @@ void SITL_State::_sitl_setup(const char *home_str)
     if (_sitl != nullptr) {
         // setup some initial values
         _update_airspeed(0);
-        _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
@@ -164,17 +163,12 @@ void SITL_State::_fdm_input_step(void)
     _scheduler->sitl_begin_atomic();
 
     if (_update_count == 0 && _sitl != nullptr) {
-        _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         HALSITL::Scheduler::timer_event();
         _scheduler->sitl_end_atomic();
         return;
     }
 
     if (_sitl != nullptr) {
-        _update_gps(_sitl->state.latitude, _sitl->state.longitude,
-                    _sitl->state.altitude,
-                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
-                    _sitl->state.yawDeg, true);
         _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder(_sitl->state.range);
 
@@ -397,6 +391,17 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         ais = new SITL::AIS();
         return ais->fd();
+    } else if (strncmp(name, "gps", 3) == 0) {
+        const char *p = strchr(name, ':');
+        if (p == nullptr) {
+            AP_HAL::panic("Need a GPS number (e.g. sim:gps:1)");
+        }
+        uint8_t x = atoi(p+1);
+        if (x <= 0 || x > ARRAY_SIZE(gps)) {
+            AP_HAL::panic("Bad GPS number %u", x);
+        }
+        gps[x-1] = new SITL::GPS(x-1);
+        return gps[x-1]->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -534,6 +539,16 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No AIS created");
         }
         return ais->write_fd();
+    } else if (strncmp(name, "gps", 3) == 0) {
+        const char *p = strchr(name, ':');
+        if (p == nullptr) {
+            AP_HAL::panic("Need a GPS number (e.g. sim:gps:1)");
+        }
+        const uint8_t x = atoi(p+1);
+        if (x <= 0 || x > ARRAY_SIZE(gps)) {
+            AP_HAL::panic("Bad GPS number %u", x);
+        }
+        return gps[x-1]->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -762,6 +777,11 @@ void SITL_State::_fdm_input_local(void)
 
     if (ais != nullptr) {
         ais->update();
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(gps); i++) {
+        if (gps[i] != nullptr) {
+            gps[i]->update();
+        }
     }
 
     if (_sitl && _use_fg_view) {

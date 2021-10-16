@@ -180,6 +180,11 @@ static void fill_stack_nan(void)
     fill_nanf(stk, ARRAY_SIZE(stk));
 }
 
+uint8_t HAL_SITL::get_instance() const
+{
+    return _sitl_state->get_instance();
+}
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
