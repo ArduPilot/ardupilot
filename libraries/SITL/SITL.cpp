@@ -17,6 +17,8 @@
     SITL.cpp - software in the loop state
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SITL.h"
 
 #if AP_SIM_ENABLED

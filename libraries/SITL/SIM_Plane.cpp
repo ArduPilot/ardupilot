@@ -17,6 +17,8 @@
   just enough to be able to debug control logic for new frame types
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SIM_Plane.h"
 
 #include <stdio.h>
