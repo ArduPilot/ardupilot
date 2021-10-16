@@ -105,67 +105,15 @@ bool GCS_MAVLINK_Copter::get_target_info(Position_Target_Info &target) const
     return copter.flightmode->get_target_info(target);
 }
 
-void GCS_MAVLINK_Copter::send_position_target_local_ned()
+bool GCS_MAVLINK_Copter::get_target_local_info(Position_Target_Info &target) const
 {
 #if MODE_GUIDED_ENABLED == ENABLED
     if (!copter.flightmode->in_guided_mode()) {
-        return;
+        return false;
     }
-
-    const ModeGuided::SubMode guided_mode = copter.mode_guided.submode();
-    Vector3f target_pos;
-    Vector3f target_vel;
-    Vector3f target_accel;
-    uint16_t type_mask = 0;
-
-    switch (guided_mode) {
-    case ModeGuided::SubMode::Angle:
-        // we don't have a local target when in angle mode
-        return;
-    case ModeGuided::SubMode::TakeOff:
-    case ModeGuided::SubMode::WP:
-    case ModeGuided::SubMode::Pos:
-        type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                    POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                    POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position
-        target_pos = copter.mode_guided.get_target_pos().tofloat() * 0.01; // convert to metres
-        break;
-    case ModeGuided::SubMode::PosVelAccel:
-        type_mask = POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except position, velocity & acceleration
-        target_pos = copter.mode_guided.get_target_pos().tofloat() * 0.01; // convert to metres
-        target_vel = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
-        break;
-    case ModeGuided::SubMode::VelAccel:
-        type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
-                    POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_vel = copter.mode_guided.get_target_vel() * 0.01f; // convert to metres/s
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
-        break;
-    case ModeGuided::SubMode::Accel:
-        type_mask = POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
-                    POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                    POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
-        target_accel = copter.mode_guided.get_target_accel() * 0.01f; // convert to metres/s/s
-        break;
-    }
-
-    mavlink_msg_position_target_local_ned_send(
-        chan,
-        AP_HAL::millis(), // time boot ms
-        MAV_FRAME_LOCAL_NED, 
-        type_mask,
-        target_pos.x,   // x in metres
-        target_pos.y,   // y in metres
-        -target_pos.z,  // z in metres NED frame
-        target_vel.x,   // vx in m/s
-        target_vel.y,   // vy in m/s
-        -target_vel.z,  // vz in m/s NED frame
-        target_accel.x, // afx in m/s/s
-        target_accel.y, // afy in m/s/s
-        -target_accel.z,// afz in m/s/s NED frame
-        0.0f, // yaw
-        0.0f); // yaw_rate
+    return copter.mode_guided.get_target_info(target);
+#else
+    return false;
 #endif
 }
 
