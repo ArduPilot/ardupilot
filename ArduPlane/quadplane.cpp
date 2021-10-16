@@ -2007,7 +2007,7 @@ bool QuadPlane::in_vtol_mode(void) const
         return true;
     }
     if (in_vtol_auto()) {
-        if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
+        if (plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
             return true;
         }
     }
@@ -2140,9 +2140,14 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
 /*
   main landing controller. Used for landing and RTL.
  */
-void QuadPlane::vtol_position_controller(void)
+void QuadPlane::vtol_position_controller(bool enter_wp_nav)
 {
     if (!setup()) {
+        return;
+    }
+
+    if (enter_wp_nav && ((poscontrol.get_state() >= QPOS_POSITION2) || (poscontrol.get_state() == QPOS_NONE))) {
+        waypoint_controller();
         return;
     }
 
@@ -2718,30 +2723,37 @@ void QuadPlane::control_auto(void)
         }
     }
 
+    const uint32_t now = millis();
     uint16_t id = plane.mission.get_current_nav_cmd().id;
+    bool enter_wp_nav = true;
     switch (id) {
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
         if (is_vtol_takeoff(id)) {
             takeoff_controller();
+            last_vtol_auto_mode_ms = now;
         }
-        break;
+        return;
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
-        if (is_vtol_land(id)) {
-            vtol_position_controller();
+        if (!is_vtol_land(id)) {
+            return;
         }
-        break;
-    case MAV_CMD_NAV_LOITER_UNLIM:
-    case MAV_CMD_NAV_LOITER_TIME:
-    case MAV_CMD_NAV_LOITER_TURNS:
-    case MAV_CMD_NAV_LOITER_TO_ALT:
-        vtol_position_controller();
+        enter_wp_nav = false;
         break;
     default:
-        waypoint_controller();
         break;
     }
+
+    // max is a dirty hack because some VTOL modes pretend not to be, VTOL Takeoff for example
+    if ((now - MAX(last_vtol_mode_ms, last_vtol_auto_mode_ms)> 1000)) {
+        // entering VTOL in auto for the first time, do neat transtion
+        poscontrol_init_approach();
+    }
+    last_vtol_auto_mode_ms = now;
+
+    vtol_position_controller(enter_wp_nav);
+
 }
 
 /*

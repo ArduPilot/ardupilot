@@ -67,7 +67,7 @@ public:
     void control_auto(void);
     bool setup(void);
 
-    void vtol_position_controller(void);
+    void vtol_position_controller(bool enter_wp_nav = false);
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
@@ -484,6 +484,9 @@ private:
 
     // time when we were last in a vtol control mode
     uint32_t last_vtol_mode_ms;
+
+    // tine when we were last in VTOL auto control
+    uint32_t last_vtol_auto_mode_ms;
 
     // throttle scailing for vectored motors in FW flighy
     float FW_vector_throttle_scaling(void);
