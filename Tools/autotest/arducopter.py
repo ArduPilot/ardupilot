@@ -5286,6 +5286,14 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         self.set_parameter("GPS_TYPE", 2)
         self.set_parameter("SIM_GPS_DISABLE", 1)
+        # if there is no GPS at all then we must direct EK3 to not use
+        # it at all.  Otherwise it will never initialise, as it wants
+        # to calculate the lag and size its delay buffers accordingly.
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELZ": 0,
+            "EK3_SRC1_VELXY": 0,
+        })
         self.reboot_sitl()
 
         # check for expected EKF flags
