@@ -1846,7 +1846,12 @@ def write_GPIO_config(f):
             if gpio is None:
                 continue
             if gpio in gpioset:
-                error("Duplicate GPIO value %u" % gpio)
+                # check existing entry
+                existing_gpio = [item for item in gpios if item[0] == gpio]
+                if (existing_gpio[0][4].label == p.label) and (existing_gpio[0][3] == p.pin) and (existing_gpio[0][2] == p.port):
+                    # alt item is identical to exiting, do not add again
+                    continue
+                error("Duplicate GPIO value %u, %s != %s" % (gpio, p, existing_gpio[0][4]))
             pwm = p.extra_value('PWM', type=int, default=0)
             if pwm != 0:
                 error("PWM not supported for alt config: %s" % p)
