@@ -1,5 +1,7 @@
 #include "SIM_RAMTRON.h"
 
+#if AP_SIM_RAMTRON_ENABLED
+
 #include <errno.h>
 #include <unistd.h>
 
@@ -7,7 +9,7 @@
 
 using namespace SITL;
 
-extern HAL_SITL& hal;
+extern const HAL_SITL& hal_sitl;
 
 void RAMTRON::open_storage_fd()
 {
@@ -16,7 +18,7 @@ void RAMTRON::open_storage_fd()
     }
     const char *filepath = filename();
     uint32_t flags = O_RDWR|O_CREAT;
-    if (hal.get_wipe_storage()) {
+    if (hal_sitl.get_wipe_storage()) {
         flags |= O_TRUNC;
     }
     storage_fd = open(filepath, flags, 0644);
@@ -109,3 +111,5 @@ int RAMTRON::rdwr(uint8_t count, SPI::spi_ioc_transfer *&tfrs)
     }
     return 0;
 }
+
+#endif  // AP_SIM_RAMTRON_ENABLED

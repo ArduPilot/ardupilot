@@ -1,5 +1,7 @@
 #include "SIM_JEDEC.h"
 
+#if AP_SIM_JEDEC_ENABLED
+
 #include <errno.h>
 #include <unistd.h>
 
@@ -7,7 +9,7 @@
 
 using namespace SITL;
 
-extern HAL_SITL& hal;
+extern const HAL_SITL& hal_sitl;
 
 void JEDEC::open_storage_fd()
 {
@@ -15,7 +17,7 @@ void JEDEC::open_storage_fd()
         AP_HAL::panic("Should not have been called");
     }
     const char *filepath = filename();
-    if (hal.get_wipe_storage()) {
+    if (hal_sitl.get_wipe_storage()) {
         unlink(filepath);
     }
     storage_fd = open(filepath, O_RDWR|O_CREAT, 0644);
@@ -190,3 +192,5 @@ int JEDEC::rdwr(uint8_t count, SPI::spi_ioc_transfer *&tfrs)
     }
     return 0;
 }
+
+#endif // AP_SIM_JEDEC_ENABLED
