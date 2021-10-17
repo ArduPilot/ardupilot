@@ -2,6 +2,20 @@
 # encoding: utf-8
 
 import fnmatch
+import sys
+
+try:
+    import em
+except ImportError:
+    print("you need to install empy with 'python -m pip install empy'")
+    sys.exit(1)
+
+try:
+    import pexpect
+except ImportError:
+    print("you need to install pexpect with 'python -m pip install pexpect'")
+    sys.exit(1)
+    
 
 def build(bld):
     targets = bld.ap_periph_boards()
