@@ -106,7 +106,6 @@ define IO_THD_WA_SIZE      512
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -124,9 +123,6 @@ define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define RANGEFINDER_MAX_INSTANCES 1
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
