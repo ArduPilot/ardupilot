@@ -73,6 +73,7 @@ struct generator_state {
 FILE *description;
 FILE *header;
 FILE *source;
+FILE *docs;
 
 static struct generator_state state;
 static struct header * headers;
@@ -2076,13 +2077,175 @@ void emit_not_supported_helper(void) {
   fprintf(source, "}\n\n");
 }
 
+void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
+  switch (type.type) {
+    case TYPE_BOOLEAN:
+      fprintf(docs, "%s boolean%s", prefix, suffix);
+      break;
+    case TYPE_FLOAT:
+      fprintf(docs, "%s number%s", prefix, suffix);
+      break;
+    case TYPE_INT8_T:
+    case TYPE_INT16_T:
+    case TYPE_INT32_T:
+    case TYPE_UINT8_T:
+    case TYPE_UINT16_T:
+    case TYPE_ENUM:
+      fprintf(docs, "%s integer%s", prefix, suffix);
+      break;
+    case TYPE_STRING:
+      fprintf(docs, "%s string%s", prefix, suffix);
+      break;
+    case TYPE_UINT32_T:
+      fprintf(docs, "%s uint32_t%s", prefix, suffix);
+      break;
+    case TYPE_USERDATA: {
+      // userdata may have alias
+      struct userdata *data = parsed_userdata;
+      int found = 0;
+      while (data) {
+        if (strcmp(type.data.ud.sanatized_name, data->sanatized_name) == 0) {
+          found = 1;
+          break;
+        }
+        data = data->next;
+      }
+      if (found == 0) {
+        error(ERROR_GENERAL, "Could not find userdata %s", type.data.ud.sanatized_name);
+      }
+      fprintf(docs, "%s %s%s", prefix, data->alias ? data->alias : data->sanatized_name, suffix);
+      break;
+    }
+    case TYPE_AP_OBJECT:
+      fprintf(docs, "%s %s%s", prefix, type.data.ud.sanatized_name, suffix);
+      break;
+    case TYPE_NONE:
+    case TYPE_LITERAL:
+      break;
+  }
+}
+
+void emit_docs(struct userdata *node, int emit_creation) {
+  while(node) {
+    fprintf(docs, "-- desc\n");
+    fprintf(docs, "---@class %s\n", node->alias ? node->alias : node->sanatized_name);
+
+    // enums
+    if (node->enums != NULL) {
+      struct userdata_enum *ud_enum = node->enums;
+      while (ud_enum != NULL) {
+        fprintf(docs, "---@field %s number\n", ud_enum->name);
+        ud_enum = ud_enum->next;
+      }
+    }
+
+    if (emit_creation) {
+      // creation function
+      fprintf(docs, "---@return %s\n", node->alias ? node->alias : node->sanatized_name);
+      fprintf(docs, "function %s() end\n\n", node->alias ? node->alias : node->sanatized_name);
+    } else {
+      // global
+      fprintf(docs, "%s = {}\n\n", node->alias ? node->alias : node->sanatized_name);
+    }
+
+
+    // fields
+    if (node->fields != NULL) {
+      struct userdata_field *field = node->fields;
+      while(field) {
+          if (field->array_len == NULL) {
+            // single value feild
+            if (field->access_flags & ACCESS_FLAG_READ) {
+              fprintf(docs, "-- get field\n");
+              emit_docs_type(field->type, "---@return", "\n");
+              fprintf(docs, "function %s:%s() end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+            }
+            if (field->access_flags & ACCESS_FLAG_WRITE) {
+              fprintf(docs, "-- set field\n");
+              emit_docs_type(field->type, "---@param value", "\n");
+              fprintf(docs, "function %s:%s(value) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+            }
+          } else {
+            // array feild
+            if (field->access_flags & ACCESS_FLAG_READ) {
+              fprintf(docs, "-- get array field\n");
+              fprintf(docs, "---@param index integer\n");
+              emit_docs_type(field->type, "---@return", "\n");
+              fprintf(docs, "function %s:%s(index) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+            }
+            if (field->access_flags & ACCESS_FLAG_WRITE) {
+              fprintf(docs, "-- set array field\n");
+              fprintf(docs, "---@param index integer\n");
+              emit_docs_type(field->type, "---@param value", "\n");
+              fprintf(docs, "function %s:%s(index, value) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+            }
+          }
+        field = field->next;
+      }
+    }
+
+    // methods
+    struct method *method = node->methods;
+    while(method) {
+      fprintf(docs, "-- desc\n");
+
+      struct argument *arg = method->arguments;
+      int count = 1;
+      // input arguments
+      while (arg != NULL) {
+        if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
+          char *param_name = (char *)allocate(20);
+          sprintf(param_name, "---@param param%i", count);
+          emit_docs_type(arg->type, param_name, "\n");
+          free(param_name);
+          count++;
+        }
+        arg = arg->next;
+      }
+
+      // return type
+      if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
+        emit_docs_type(method->return_type, "---@return", "\n");
+      }
+
+      arg = method->arguments;
+      // nulable and refences returns
+      while (arg != NULL) {
+        if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
+          if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
+            emit_docs_type(arg->type, "---@return", "|nil\n");
+          } else {
+            emit_docs_type(arg->type, "---@return", "\n");
+          }
+        }
+        arg = arg->next;
+      }
+
+      // function name
+      fprintf(docs, "function %s:%s(", node->alias ? node->alias : node->sanatized_name, method->alias ? method->alias : method->name);
+      for (int i = 1; i < count; ++i) {
+        fprintf(docs, "param%i", i);
+        if (i < count-1) {
+          fprintf(docs, ", ");
+        }
+      }
+      fprintf(docs, ") end\n\n");
+      method = method->next;
+    }
+    fprintf(docs, "\n");
+    node = node->next;
+  }
+}
+
+
 char * output_path = NULL;
+char * docs_path = NULL;
 
 int main(int argc, char **argv) {
   state.line_num = -1;
 
   int c;
-  while ((c = getopt(argc, argv, "i:o:")) != -1) {
+  while ((c = getopt(argc, argv, "i:o:d:")) != -1) {
     switch (c) {
       case 'i':
         if (description != NULL) {
@@ -2100,6 +2263,13 @@ int main(int argc, char **argv) {
         }
         output_path = optarg;
         trace(TRACE_GENERAL, "Loading an output path of %s", output_path);
+        break;
+      case 'd':
+        if (docs_path != NULL) {
+          error(ERROR_GENERAL, "An docs path was already selected.");
+        }
+        docs_path = optarg;
+        trace(TRACE_GENERAL, "Loading an docs path of %s", docs_path);
         break;
     }
   }
@@ -2215,6 +2385,29 @@ int main(int argc, char **argv) {
 
   fclose(header);
   header = NULL;
+
+  if (docs_path == NULL) {
+    // no docs to generate, all done
+    return 0;
+  }
+
+  docs = fopen(docs_path, "w");
+  if (docs == NULL) {
+    error(ERROR_GENERAL, "Unable to open the output docs file: %s", docs_path);
+  }
+
+  fprintf(docs, "-- ArduPilot lua scripting documentation in EmmyLua Annotations\n");
+  fprintf(docs, "-- This file should be auto generated and then manual edited\n");
+  fprintf(docs, "-- generate with --scripting-docs, eg  ./waf copter --scripting-docs\n");
+  fprintf(docs, "-- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations\n\n");
+
+  emit_docs(parsed_userdata, TRUE);
+
+  emit_docs(parsed_ap_objects, FALSE);
+
+  emit_docs(parsed_singletons, FALSE);
+
+  fclose(docs);
 
   return 0;
 }
