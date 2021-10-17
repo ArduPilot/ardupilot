@@ -2147,6 +2147,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Waiting for thermal")
         self.wait_mode('THERMAL', timeout=600)
 
+        self.set_parameter("SOAR_VSPEED", 0.6)
+
         # Wait to climb to SOAR_ALT_MAX
         self.progress("Waiting for climb to max altitude")
         alt_max = self.get_parameter('SOAR_ALT_MAX')
