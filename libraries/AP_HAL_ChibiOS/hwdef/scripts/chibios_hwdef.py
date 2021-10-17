@@ -619,6 +619,14 @@ def get_mcu_config(name, required=False):
     return lib.mcu[name]
 
 
+def get_ram_reserve_start():
+    '''get amount of memory to reserve for bootloader comms'''
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    if ram_reserve_start == 0 and int(env_vars.get('AP_PERIPH',0)) == 1:
+        ram_reserve_start = 256
+    return ram_reserve_start
+
+
 def make_line(label):
     '''return a line for a label'''
     if label in bylabel:
@@ -827,7 +835,7 @@ def write_mcu_config(f):
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
     f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     if ram_reserve_start > 0:
         f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
@@ -902,6 +910,8 @@ def write_mcu_config(f):
 #define HAL_USE_PWM FALSE
 #define HAL_NO_UARTDRIVER
 #define CH_CFG_USE_DYNAMIC FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
 ''')
         else:
             f.write('''
@@ -929,6 +939,11 @@ def write_mcu_config(f):
 #define CH_CFG_USE_MUTEXES FALSE
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
+#define HAL_USE_RTC FALSE
+#define DISABLE_SERIAL_ESC_COMM TRUE
+#define NO_DATAFLASH TRUE
 ''')
         if not env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('''
@@ -980,7 +995,7 @@ def write_ldscript(fname):
     ram0_len = ram_map[0][1] * 1024
 
     # possibly reserve some memory for app/bootloader comms
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     ram0_start += ram_reserve_start
     ram0_len -= ram_reserve_start
     ext_flash_length = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
@@ -2433,6 +2448,11 @@ def add_apperiph_defaults(f):
     if env_vars.get('AP_PERIPH',0) == 0:
         # not AP_Periph
         return
+
+    if not args.bootloader:
+        # use the app descriptor needed by MissionPlanner for CAN upload
+        env_vars['APP_DESCRIPTOR'] = 'MissionPlanner'
+
     print("Setting up as AP_Periph")
     f.write('''
 #ifndef HAL_SCHEDULER_ENABLED
@@ -2458,6 +2478,14 @@ def add_apperiph_defaults(f):
 #endif
 #ifndef HAL_RALLY_ENABLED
 #define HAL_RALLY_ENABLED 0
+#endif
+#ifndef HAL_CAN_DEFAULT_NODE_ID
+#define HAL_CAN_DEFAULT_NODE_ID 0
+#endif
+#define PERIPH_FW TRUE
+#define HAL_BUILD_AP_PERIPH
+#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
+#define HAL_WATCHDOG_ENABLED_DEFAULT true
 #endif
 ''')
             
