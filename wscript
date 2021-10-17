@@ -216,6 +216,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables and sets up ONVIF camera control")
 
+    g.add_option('--scripting-docs', action='store_true',
+                 default=False,
+                 help="enable generation of scripting documentation")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
