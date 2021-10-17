@@ -536,28 +536,32 @@ analog = {}
 function analog:channel() end
 
 
--- desc
+-- Control of general purpose input/output pins
 ---@class gpio
 gpio = {}
 
--- desc
----@param param1 integer
----@param param2 integer
-function gpio:pinMode(param1, param2) end
+-- set GPIO pin mode
+---@param pin_number integer
+---@param mode integer
+---| '0' # input
+---| '1' # output
+function gpio:pinMode(pin_number, mode) end
 
--- desc
----@param param1 integer
-function gpio:toggle(param1) end
+-- toggle GPIO output
+---@param pin_number integer
+function gpio:toggle(pin_number) end
 
--- desc
----@param param1 integer
----@param param2 integer
-function gpio:write(param1, param2) end
+-- write GPIO output
+---@param pin_number integer
+---@param value integer
+---| '0' # low
+---| '1' # high
+function gpio:write(pin_number, value) end
 
--- desc
----@param param1 integer
----@return boolean
-function gpio:read(param1) end
+-- read GPIO input
+---@param pin_number integer
+---@return boolean -- pin state
+function gpio:read(pin_number) end
 
 
 -- desc
