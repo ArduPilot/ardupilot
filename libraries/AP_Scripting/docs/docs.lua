@@ -1124,27 +1124,36 @@ function onvif:set_absolutemove(param1, param2, param3) end
 function onvif:start(param1, param2, param3) end
 
 
--- desc
+-- MAVLink interaction with ground control station
 ---@class gcs
 gcs = {}
 
--- desc
----@param param1 string
----@param param2 number
-function gcs:send_named_float(param1, param2) end
+-- send named float value using NAMED_VALUE_FLOAT message
+---@param name string -- up to 10 chars long
+---@param value number -- value to send
+function gcs:send_named_float(name, value) end
 
--- desc
----@param param1 integer
----@param param2 uint32_t
----@param param3 integer
+-- set message interval for a given serial port and message id
+---@param port_num integer -- serial port number
+---@param msg_id uint32_t -- MAVLink message id
+---@param interval_us integer -- interval in micro seconds
 ---@return integer
-function gcs:set_message_interval(param1, param2, param3) end
+---| '0' # Accepted
+---| '4' # Failed
+function gcs:set_message_interval(port_num, msg_id, interval_us) end
 
--- desc
----@param param1 integer
----@param param2 string
-function gcs:send_text(param1, param2) end
-
+-- send text with severity level
+---@param severity integer
+---| '0' # Emergency: System is unusable. This is a "panic" condition.
+---| '1' # Alert: Action should be taken immediately. Indicates error in non-critical systems.
+---| '2' # Critical: Action must be taken immediately. Indicates failure in a primary system.
+---| '3' # Error: Indicates an error in secondary/redundant systems.
+---| '4' # Warning: Indicates about a possible future error if this is not resolved within a given timeframe. Example would be a low battery warning.
+---| '5' # Notice: An unusual event has occurred, though not an error condition. This should be investigated for the root cause.
+---| '6' # Info: Normal operational messages. Useful for logging. No action is required for these messages.
+---| '7' # Debug: Useful non-operational messages that can assist in debugging. These should not occur during normal operation.
+---@param text string
+function gcs:send_text(severity, text) end
 
 -- desc
 ---@class relay
