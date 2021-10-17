@@ -123,6 +123,7 @@ private:
         int32_t         roll_sensor;
         int32_t         pitch_sensor;
         int32_t         yaw_sensor;
+        uint32_t        camera_trigger_logged;  // ID sequence number
     } feedback;
     void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us);
 
