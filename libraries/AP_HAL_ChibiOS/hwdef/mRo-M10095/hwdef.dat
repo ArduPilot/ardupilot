@@ -62,8 +62,6 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 2048
 
-define PERIPH_FW TRUE
-
 define HAL_USE_ADC TRUE
 
 define STM32_ADC_USE_ADC1 TRUE
@@ -90,15 +88,7 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
-
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
-
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

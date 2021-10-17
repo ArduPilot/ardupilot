@@ -25,14 +25,10 @@ APJ_BOARD_ID 1402
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define PERIPH_FW TRUE
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_SUPPORT_RCOUT_SERIAL 0
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1
@@ -55,12 +51,9 @@ define HAL_USE_ADC TRUE
 define STM32_ADC_USE_ADC1 TRUE
 define HAL_DISABLE_ADC_DRIVER FALSE
 
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.Pixracer_periph"
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 env DISABLE_SCRIPTING 1
 

@@ -83,7 +83,6 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 # want to stay in the bootloader
 PB6 STAY_IN_BOOTLOADER INPUT FLOATING
 
-# reserve 256 bytes for comms between app and bootloader
 
 # Add CS pins to ensure they are high in bootloader
 PB0 MAG_CS CS

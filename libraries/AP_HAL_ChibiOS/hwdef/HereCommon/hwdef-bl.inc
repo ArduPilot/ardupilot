@@ -12,7 +12,6 @@ env AP_PERIPH 1
 
 FLASH_SIZE_KB 2048
 
-# reserve 256 bytes for comms between app and bootloader
 
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
