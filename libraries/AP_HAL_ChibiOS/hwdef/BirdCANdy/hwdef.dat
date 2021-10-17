@@ -21,7 +21,6 @@ env AP_PERIPH 1
 STM32_ST_USE_TIMER 5
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -90,7 +89,6 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 
 define HAL_DISABLE_LOOP_DELAY
 
@@ -101,8 +99,6 @@ PB2 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
 
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.birdcandy"
 
@@ -112,7 +108,6 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 768
 
@@ -133,8 +128,4 @@ define HAL_PERIPH_NEOPIXEL_COUNT 8
 define HAL_PERIPH_NEOPIXEL_CHAN 0
 define AP_PERIPH_LED_BRIGHT_DEFAULT 50
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256

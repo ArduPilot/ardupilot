@@ -25,7 +25,6 @@ FLASH_SIZE_KB 2048
 # setup build for a peripheral firmware
 # env AP_PERIPH 1
 
-# define HAL_BUILD_AP_PERIPH
 # define HAL_GCS_ENABLED 0
 
 # bootloader is installed at zero offset
@@ -57,8 +56,6 @@ SERIAL_ORDER USART1
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # no ADC driver
 define HAL_USE_ADC FALSE
@@ -83,8 +80,6 @@ PF6 QUADSPI_BK1_IO3 QUADSPI1
 PG6 QUADSPI_BK1_NCS QUADSPI1
 PB2 QUADSPI_CLK QUADSPI1
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.cubepilot.H757"
 

@@ -14,9 +14,7 @@ APJ_BOARD_ID 1013
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define PERIPH_FW TRUE
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
@@ -27,10 +25,7 @@ define HAL_PERIPH_ENABLE_RANGEFINDER
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_BATTERY
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-define HAL_CAN_DEFAULT_NODE_ID 0
 define CAN_APP_NODE_NAME "org.ardupilot.MatekH743-periph"
 
 # single GPS, compass and RF for peripherals
@@ -56,8 +51,6 @@ define HAL_USE_RTC FALSE
 define NO_DATAFLASH TRUE
 define HAL_NO_RCIN_THREAD
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 env DISABLE_SCRIPTING 1
 

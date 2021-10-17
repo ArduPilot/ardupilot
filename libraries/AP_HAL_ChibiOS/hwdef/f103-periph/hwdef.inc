@@ -17,7 +17,6 @@ APJ_BOARD_ID 1000
 env AP_PERIPH 1
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -76,7 +75,6 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 
 # MAIN_STACK is stack of initial thread and ISRs
 MAIN_STACK 0x200
@@ -108,7 +106,6 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -127,11 +124,7 @@ define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define HAL_WITH_DSP FALSE
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
