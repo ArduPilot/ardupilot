@@ -344,7 +344,8 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
         feedback.roll_sensor*1e-2f,
         feedback.pitch_sensor*1e-2f,
         feedback.yaw_sensor*1e-2f,
-        0.0f, CAMERA_FEEDBACK_PHOTO, _camera_trigger_logged);
+        0.0f, CAMERA_FEEDBACK_PHOTO,
+        feedback.camera_trigger_logged);
 }
 
 
@@ -508,6 +509,7 @@ void AP_Camera::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     feedback.roll_sensor = ahrs.roll_sensor;
     feedback.pitch_sensor = ahrs.pitch_sensor;
     feedback.yaw_sensor = ahrs.yaw_sensor;
+    feedback.camera_trigger_logged = _camera_trigger_logged;
 
     gcs().send_message(MSG_CAMERA_FEEDBACK);
 }
