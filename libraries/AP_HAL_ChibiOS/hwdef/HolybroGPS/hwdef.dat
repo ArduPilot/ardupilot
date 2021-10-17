@@ -20,7 +20,6 @@ env AP_PERIPH 1
 STM32_ST_USE_TIMER 5
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -125,7 +124,6 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 
 define HAL_DISABLE_LOOP_DELAY
 
@@ -139,8 +137,6 @@ PB12 CAN2_RX CAN2
 PB13 CAN2_TX CAN2
 PA4 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.HolybroGPS"
 
@@ -149,7 +145,6 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 768
 
@@ -174,8 +169,4 @@ define HAL_PERIPH_GPS_PORT_DEFAULT 1
 # enable NCP5623 on 2nd I2C bus
 define BUILD_DEFAULT_LED_TYPE 128
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256

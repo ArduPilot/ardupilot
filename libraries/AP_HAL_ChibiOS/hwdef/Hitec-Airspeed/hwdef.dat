@@ -17,7 +17,6 @@ APJ_BOARD_ID 1046
 env AP_PERIPH 1
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -57,7 +56,6 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 512
 
-define PERIPH_FW TRUE
 
 # stack for fast interrupts
 define PORT_INT_REQUIRED_STACK 64
@@ -92,7 +90,6 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 0x200
 define STORAGE_THD_WA_SIZE 512
@@ -100,18 +97,12 @@ define IO_THD_WA_SIZE      512
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 128
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.Hitec-Airspeed"
 

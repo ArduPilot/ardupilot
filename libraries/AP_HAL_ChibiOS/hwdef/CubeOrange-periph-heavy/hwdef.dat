@@ -14,9 +14,7 @@ APJ_BOARD_ID 1400
 env AP_PERIPH 1
 env AP_PERIPH_HEAVY 1
 
-define PERIPH_FW TRUE
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_PERIPH_ENABLE_BATTERY
 define HAL_PERIPH_ENABLE_BATTERY_MPPT_PACKETDIGITAL
@@ -29,8 +27,6 @@ define COMPASS_CAL_ENABLED 1
 
 define HAL_INS_ENABLED 1
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # single GPS and compass for peripherals
 define GPS_MAX_RECEIVERS 1
@@ -49,12 +45,9 @@ define HAL_NO_RCIN_THREAD
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.CubeOrange-periph"
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 env DISABLE_SCRIPTING 1
 

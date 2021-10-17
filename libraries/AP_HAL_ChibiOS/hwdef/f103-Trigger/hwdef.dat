@@ -5,8 +5,6 @@ include ../f103-periph/hwdef.inc
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_trigger"
 
