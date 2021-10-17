@@ -514,7 +514,7 @@ def generate_canard_dsdlc(cfg):
                         dsdlc_gen_path,
                         src)
     print("Generating DSDLC for CANARD: " + cmd)
-    ret = subprocess.run(cmd, shell=True, capture_output=True)
+    ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if ret.returncode != 0:
         print('Failed to run: ', cmd)
         print(ret.stdout.decode('utf-8'))
