@@ -512,9 +512,13 @@ def configure(cfg):
 def generate_canard_dsdlc(cfg):
     dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
     src = cfg.srcnode.ant_glob('modules/pyuavcan/uavcan/dsdl_files/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
+    dsdlc_path = cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath()
+    if not os.path.exists(dsdlc_path):
+        print("Please update submodules with: git submodule update --recursive --init")
+        sys.exit(1)
     src = ' '.join([s.abspath() for s in src])
     cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
-                        cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath(),
+                        dsdlc_path,
                         dsdlc_gen_path,
                         src)
     print("Generating DSDLC for CANARD: " + cmd)
