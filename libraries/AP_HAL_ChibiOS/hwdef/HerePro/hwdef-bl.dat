@@ -57,16 +57,8 @@ PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
-
-###########################
-define PERIPH_FW TRUE
-
 define USB_USE_WAIT TRUE
 define HAL_USE_USB_MSD TRUE
-
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 2048
 
@@ -81,9 +73,6 @@ define HAL_COMPASS_MAX_SENSORS 1
 # GPS+MAG
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # Add MAVLink
 env FORCE_MAVLINK_INCLUDE 1
@@ -153,11 +142,7 @@ PH13 VDD_33V_SENS INPUT
 # This defines some input pins, currently unused.
 PB2 BOOT1 INPUT
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 # passthrough CAN1
 define HAL_DEFAULT_CPORT 1
