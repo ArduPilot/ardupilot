@@ -124,4 +124,5 @@ AP_PERIPH_BOARDS = ["f103-GPS",
                     "HolybroGPS",
                     "BirdCANdy",
                     "Hitec-Airspeed",
+                    "Sierra-L431",
                     ]
