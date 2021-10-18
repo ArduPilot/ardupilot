@@ -14,21 +14,21 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_uLanding.h"
+#include "AP_RangeFinder_USD1_Serial.h"
 #include <ctype.h>
 
-#define ULANDING_HDR 254   // Header Byte from uLanding (0xFE)
-#define ULANDING_HDR_V0 72 // Header Byte for beta V0 of uLanding (0x48)
+#define USD1_HDR 254   // Header Byte from USD1_Serial (0xFE)
+#define USD1_HDR_V0 72 // Header Byte for beta V0 of USD1_Serial (0x48)
 
 extern const AP_HAL::HAL& hal;
 
 /*
-   detect uLanding Firmware Version
+   detect USD1_Serial Firmware Version
 */
-bool AP_RangeFinder_uLanding::detect_version(void)
+bool AP_RangeFinder_USD1_Serial::detect_version(void)
 {
     if (_version_known) {
-        // return true if we've already detected the uLanding version
+        // return true if we've already detected the USD1_Serial version
         return true;
     } else if (uart == nullptr) {
         return false;
@@ -38,18 +38,18 @@ bool AP_RangeFinder_uLanding::detect_version(void)
     uint8_t byte1 = 0;
     uint8_t count = 0;
 
-    // read any available data from uLanding
+    // read any available data from USD1_Serial
     int16_t nbytes = uart->available();
 
     while (nbytes-- > 0) {
         uint8_t c = uart->read();
         
-        if (((c == ULANDING_HDR_V0) || (c == ULANDING_HDR)) && !hdr_found) {
+        if (((c == USD1_HDR_V0) || (c == USD1_HDR)) && !hdr_found) {
             byte1 = c;
             hdr_found = true;
             count++;
         } else if (hdr_found) {
-            if (byte1 == ULANDING_HDR_V0) {
+            if (byte1 == USD1_HDR_V0) {
                 if (++count < 4) {
                     /* need to collect 4 bytes to check for recurring
                      * header byte in the old 3-byte data format
@@ -57,9 +57,9 @@ bool AP_RangeFinder_uLanding::detect_version(void)
                     continue;
                 } else {
                     if (c == byte1) {
-                        // if header byte is recurring, set uLanding Version
+                        // if header byte is recurring, set USD1_Serial Version
                         _version = 0;
-                        _header = ULANDING_HDR_V0;
+                        _header = USD1_HDR_V0;
                         _version_known = true;
                         return true;
                     } else {
@@ -72,12 +72,12 @@ bool AP_RangeFinder_uLanding::detect_version(void)
                     }
                 }
             } else {
-                if ((c & 0x80) || (c == ULANDING_HDR_V0)) {
-                    /* Though unlikely, it is possible we could find ULANDING_HDR
+                if ((c & 0x80) || (c == USD1_HDR_V0)) {
+                    /* Though unlikely, it is possible we could find USD1_HDR
                      * in a data byte from the old 3-byte format. In this case,
                      * either the next byte is another data byte (which by default
                      * is of the form 0x1xxxxxxx), or the next byte is the old 
-                     * header byte (ULANDING_HDR_V0). In this case, start the search
+                     * header byte (USD1_HDR_V0). In this case, start the search
                      * again for a header byte.
                      */
                     count = 0;
@@ -88,7 +88,7 @@ bool AP_RangeFinder_uLanding::detect_version(void)
                      * is the version number
                      */
                     _version = c;
-                    _header = ULANDING_HDR;
+                    _header = USD1_HDR;
                     _version_known = true;
                     return true;
                 }
@@ -97,14 +97,14 @@ bool AP_RangeFinder_uLanding::detect_version(void)
     }
 
     /* return false if we've gone through all available data
-     * and haven't detected a uLanding firmware version
+     * and haven't detected a USD1_Serial firmware version
      */
     return false;
 }
 
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_uLanding::get_reading(float &reading_m)
+bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -112,11 +112,11 @@ bool AP_RangeFinder_uLanding::get_reading(float &reading_m)
 
     
     if (!detect_version()) {
-        // return false if uLanding version check failed
+        // return false if USD1_Serial version check failed
         return false;
     }
 
-    // read any available lines from the uLanding
+    // read any available lines from the USD1_Serial
     float sum = 0;
     uint16_t count = 0;
     bool hdr_found = false;
@@ -142,7 +142,7 @@ bool AP_RangeFinder_uLanding::get_reading(float &reading_m)
                  */
                 continue;
             } else {
-                if (_version == 0 && _header != ULANDING_HDR) {
+                if (_version == 0 && _header != USD1_HDR) {
                     // parse data for Firmware Version #0
                     sum += (_linebuf[2]&0x7F)*128 + (_linebuf[1]&0x7F);
                     count++;
@@ -165,10 +165,10 @@ bool AP_RangeFinder_uLanding::get_reading(float &reading_m)
         return false;
     }
 
-    reading_m = (sum * 0.01f) / count;
+    reading_m = (sum * 0.01) / count;
 
-    if (_version == 0 && _header != ULANDING_HDR) {
-        reading_m *= 2.5f;
+    if (_version == 0 && _header != USD1_HDR) {
+        reading_m *= 2.5;
     }
 
     return true;
