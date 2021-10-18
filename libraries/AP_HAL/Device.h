@@ -165,6 +165,34 @@ public:
     }
 
     /**
+     * @brief use to read a 16-bit-long register without using the pointer
+     * @CAUTION: this function is used specifically for sensor mcp9600 and for 
+     * binding to Lua script and do not show if the reading success or not
+     * @param first_reg the register to be read
+     * @return the value of the to be read register
+     * */
+    uint16_t read_register16(uint8_t first_reg){
+        uint8_t result[2];
+        transfer(&first_reg,1,result,sizeof(result));
+        /* because of the big endian read/write in the sensor 
+         the ms-byte will be written in result[0] and ls-byte in result[1]*/
+        return (result[1])|(result[0]<<8);
+    }
+
+    /**
+     * @brief use to read a 8-bit-long register without using the pointer
+     * @CAUTION: this function is used specifically for sensor mcp9600 and for 
+     * binding to Lua script and do not show if the reading success or not
+     * @param first_reg the register to be read
+     * @return the value of the to be read register
+     * */
+    uint8_t read_register8(uint8_t first_reg){
+        uint8_t result;
+        transfer(&first_reg,1,&result,sizeof(result));
+        return result;
+    }
+
+    /**
      * Wrapper function over #transfer_bank() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.
      *
