@@ -32,7 +32,6 @@
 #define TORQEEDO_SEND_MOTOR_PARAM_REQUEST_INTERVAL_MS   400 // motor param requested every 0.4sec if connected to motor
 #define TORQEEDO_BATT_TIMEOUT_MS    5000    // battery info timeouts after 5 seconds
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
-#define TORQEEDO_ERROR_REPORT_INTERVAL_MIN_MS   1000    // errors reported to user at no more than once per second
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
 
 extern const AP_HAL::HAL& hal;
@@ -81,8 +80,8 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     AP_GROUPINFO("POWER", 5, AP_Torqeedo, _motor_power, 100),
 
     // @Param: SLEW_TIME
-    // @DisplayName: Torqeedo Slew Time
-    // @Description: Torqeedo slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  A value of zero disables the limit
+    // @DisplayName: Torqeedo Throttle Slew Time
+    // @Description: Torqeedo slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  Higher values cause a slower response, lower values cause a faster response.  A value of zero disables the limit
     // @Units: s
     // @Range: 0 5
     // @Increment: 0.1
@@ -287,17 +286,13 @@ void AP_Torqeedo::report_error_codes()
 {
     // skip reporting if we have already reported status very recently
     const uint32_t now_ms = AP_HAL::millis();
-    const uint32_t diff_ms = now_ms - _last_error_report_ms;
-    if (diff_ms < TORQEEDO_ERROR_REPORT_INTERVAL_MIN_MS) {
-        return;
-    }
 
     // skip reporting if no changes in flags and already reported within 10 seconds
     const bool flags_changed = (_display_system_state_flags_prev.value != _display_system_state.flags.value) ||
                                (_display_system_state_master_error_code_prev != _display_system_state.master_error_code) ||
                                (_motor_status_prev.status_flags_value != _motor_status.status_flags_value) ||
                                (_motor_status_prev.error_flags_value != _motor_status.error_flags_value);
-    if (!flags_changed && (diff_ms < TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS)) {
+    if (!flags_changed && ((now_ms - _last_error_report_ms) < TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS)) {
         return;
     }
 
@@ -313,7 +308,7 @@ void AP_Torqeedo::report_error_codes()
         gcs().send_text(MAV_SEVERITY_CRITICAL, "%s batt nearly empty", msg_prefix);
     }
     if (_display_system_state.master_error_code > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s err:%d", msg_prefix, _display_system_state.master_error_code);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s err:%u", msg_prefix, _display_system_state.master_error_code);
     }
 
     // report motor status errors
@@ -452,7 +447,7 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
 // process message held in _received_buff
 void AP_Torqeedo::parse_message()
 {
-    // message address (e.g. target of message)
+    // message address (i.e. target of message)
     const MsgAddress msg_addr = (MsgAddress)_received_buff[0];
 
     // handle messages sent to "remote" (aka tiller)
@@ -492,11 +487,13 @@ void AP_Torqeedo::parse_message()
                 _display_system_state.last_update_ms = AP_HAL::millis();
 
                 // update esc telem sent to ground station
+                const uint8_t esc_temp = MAX(_display_system_state.temp_sw, _display_system_state.temp_rp);
+                const uint8_t motor_temp = MAX(_display_system_state.motor_pcb_temp, _display_system_state.motor_stator_temp);
                 update_esc_telem(_display_system_state.motor_rpm,
                         _display_system_state.motor_voltage,
                         _display_system_state.motor_current,
-                        MAX(_display_system_state.temp_sw, _display_system_state.temp_rp),                      // esc temp
-                        MAX(_display_system_state.motor_pcb_temp, _display_system_state.motor_stator_temp));    // motor temp
+                        esc_temp,
+                        motor_temp);
 
                 // log data
                 if ((_options & options::LOG) != 0) {
@@ -521,7 +518,7 @@ void AP_Torqeedo::parse_message()
                                        _display_system_state.motor_current,
                                        _display_system_state.motor_power,
                                        _display_system_state.motor_rpm,
-                                       MAX(_display_system_state.motor_pcb_temp, _display_system_state.motor_stator_temp),
+                                       motor_temp,
                                        _display_system_state.batt_charge_pct,
                                       _display_system_state.batt_voltage,
                                       _display_system_state.batt_current);
@@ -535,7 +532,7 @@ void AP_Torqeedo::parse_message()
                             (double)_display_system_state.motor_voltage,
                             (double)_display_system_state.motor_current,
                             (double)_display_system_state.motor_power,
-                            MAX(_display_system_state.motor_pcb_temp, _display_system_state.motor_stator_temp),
+                            (int)motor_temp,
                             (unsigned)_display_system_state.batt_charge_pct,
                             (double)_display_system_state.batt_voltage,
                             (double)_display_system_state.batt_current);
@@ -888,7 +885,7 @@ int16_t AP_Torqeedo::calc_motor_speed_limited(int16_t desired_motor_speed)
     const uint32_t now_ms = AP_HAL::millis();
 
     // update dir_limit flag for forward-reverse transition delay
-    const bool dir_delay_active = (_dir_delay > 0);
+    const bool dir_delay_active = is_positive(_dir_delay);
     if (!dir_delay_active) {
         // allow movement in either direction
         _dir_limit = 0;
