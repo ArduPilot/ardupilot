@@ -269,7 +269,7 @@ private:
         uint8_t master_error_code;      // error code (0=no error)
         float motor_voltage;            // motor voltage in volts
         float motor_current;            // motor current in amps
-        float motor_power;              // motor power in watts
+        uint16_t motor_power;           // motor power in watts
         int16_t motor_rpm;              // motor speed in rpm
         uint8_t motor_pcb_temp;         // motor pcb temp in C
         uint8_t motor_stator_temp;      // motor stator temp in C
