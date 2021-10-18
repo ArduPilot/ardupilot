@@ -398,7 +398,7 @@ void GCS_MAVLINK::send_rangefinder() const
     }
     mavlink_msg_rangefinder_send(
             chan,
-            s->distance_cm() * 0.01f,
+            s->distance(),
             s->voltage_mv() * 0.001f);
 }
 
@@ -4929,9 +4929,10 @@ void GCS_MAVLINK::send_water_depth() const
             ahrs.get_roll(),    // roll in radians
             ahrs.get_pitch(),   // pitch in radians
             ahrs.get_yaw(),     // yaw in radians
-            s->distance_cm() * 0.01f,    // distance in meters
+            s->distance(),    // distance in meters
             temp_C);            // temperature in degC
     }
+
 #endif
 }
 
