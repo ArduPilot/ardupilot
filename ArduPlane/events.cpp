@@ -35,6 +35,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         failsafe.saved_mode_set = true;
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
+            set_mode(mode_fbwb, reason);
         } else {
             set_mode(mode_circle, reason);
         }
@@ -183,12 +185,13 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     // We're back in radio contact
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
-
-    // re-read the switch so we can return to our preferred mode
-    // --------------------------------------------------------
-    if (control_mode == &mode_circle && failsafe.saved_mode_set) {
-        failsafe.saved_mode_set = false;
-        set_mode_by_number(failsafe.saved_mode_number, reason);
+    if(failsafe.saved_mode_set) { //we saved an entry mode..check that our fs mode has not been changed by GCS
+        if((control_mode == &mode_circle && g.fs_action_short == FS_ACTION_SHORT_CIRCLE) ||
+           (control_mode == &mode_fbwa && g.fs_action_short == FS_ACTION_SHORT_FBWA) ||
+           (control_mode == &mode_fbwb && g.fs_action_short == FS_ACTION_SHORT_FBWB)) {
+              failsafe.saved_mode_set = false;
+              set_mode_by_number(failsafe.saved_mode_number, reason); //mode has not been changed while in FS, return to entry mode
+        }
     }
 }
 
