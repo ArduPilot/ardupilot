@@ -15,7 +15,7 @@
  
 /*
    This driver supports communicating with Torqeedo motors that implement the "TQ Bus" protocol
-   which includes the Ultralight, Cruise 2.0 R, Cruise 4.0 R, Travel 503, Travel 1003 and CRuise 10kW
+   which includes the Ultralight, Cruise 2.0 R, Cruise 4.0 R, Travel 503, Travel 1003 and Cruise 10kW
 
    The autopilot should be connected either to the battery's tiller connector or directly to the motor
    as described on the ArduPilot wiki. https://ardupilot.org/rover/docs/common-torqeedo.html
