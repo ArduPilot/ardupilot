@@ -87,7 +87,7 @@ void AP_RangeFinder_HC_SR04::update(void)
     // check if pin has changed and configure interrupt handlers if required:
     if (!check_pins()) {
         // disabled (either by configuration or failure to attach interrupt)
-        state.distance_cm = 0.0f;
+        state.distance_m = 0.0f;
         return;
     }
 
@@ -98,27 +98,27 @@ void AP_RangeFinder_HC_SR04::update(void)
         // no reading; check for timeout:
         if (now - last_reading_ms > 1000) {
             // no reading for a second - something is broken
-            state.distance_cm = 0.0f;
+            state.distance_m = 0.0f;
         }
     } else {
         // gcs().send_text(MAV_SEVERITY_WARNING, "Pong!");
         // a new reading - convert time to distance
-        state.distance_cm = value_us * (1.0/58.0f);  // 58 is from datasheet, mult for performance
+        state.distance_m = (value_us * (1.0/58.0f)) * 0.01f;  // 58 is from datasheet, mult for performance
 
         // glitch remover: measurement is greater than .5m from last.
         // the SR-04 seeems to suffer from single-measurement glitches
         // which can be removed by a simple filter.
-        if (labs(int32_t(uint32_t(state.distance_cm) - last_distance_cm)) > 50) {
+        if (fabsf(state.distance_m - last_distance_m) > 0.5f) {
             // if greater for 5 readings then pass it as new height,
             // otherwise use last reading
             if (glitch_count++ > 4) {
-                 last_distance_cm = state.distance_cm;
+                 last_distance_m = state.distance_m;
             } else {
-                 state.distance_cm = last_distance_cm;
+                 state.distance_m = last_distance_m;
             }
         } else {
             // is not greater 0.5m, pass on and reset glitch counter
-            last_distance_cm = state.distance_cm;
+            last_distance_m = state.distance_m;
             glitch_count = 0;
         }
 

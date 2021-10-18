@@ -663,6 +663,15 @@ AP_RangeFinder_Backend *RangeFinder::find_instance(enum Rotation orientation) co
     return nullptr;
 }
 
+float RangeFinder::distance_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->distance();
+}
+
 uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
