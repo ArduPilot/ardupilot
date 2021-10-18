@@ -56,9 +56,9 @@ bool AP_RangeFinder_Backend::has_data() const {
 void AP_RangeFinder_Backend::update_status()
 {
     // check distance
-    if ((int16_t)state.distance_cm > max_distance_cm()) {
+    if (state.distance_m > max_distance_cm() * 0.01f) {
         set_status(RangeFinder::Status::OutOfRangeHigh);
-    } else if ((int16_t)state.distance_cm < min_distance_cm()) {
+    } else if (state.distance_m < min_distance_cm() * 0.01f) {
         set_status(RangeFinder::Status::OutOfRangeLow);
     } else {
         set_status(RangeFinder::Status::Good);

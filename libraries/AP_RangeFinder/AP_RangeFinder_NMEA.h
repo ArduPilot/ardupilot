@@ -43,7 +43,7 @@ private:
     };
 
     // get a distance reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(float &temp) const override;

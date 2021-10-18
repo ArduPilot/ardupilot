@@ -45,8 +45,8 @@ void AP_RangeFinder_BLPing::init_sensor()
     protocol.send_message(uart, PingProtocol::MessageId::CONTINUOUS_START, reinterpret_cast<uint8_t*>(&continuous_message), sizeof(continuous_message));
 }
 
-// distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
-bool AP_RangeFinder_BLPing::get_reading(uint16_t &reading_cm)
+// distance returned in reading_m, signal_ok is set to true if sensor reports a strong signal
+bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -73,7 +73,7 @@ bool AP_RangeFinder_BLPing::get_reading(uint16_t &reading_cm)
 
     if (averageStruct.count > 0) {
         // return average distance of readings
-        reading_cm = averageStruct.mean();
+        reading_m = averageStruct.mean() * 0.01f;
         return true;
     }
 

@@ -21,7 +21,7 @@
 extern const AP_HAL::HAL& hal;
 
 // return last value measured by sensor
-bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_NMEA::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -45,7 +45,7 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
     }
 
     // return average of all measurements
-    reading_cm = 100.0f * sum / count;
+    reading_m = sum / count;
     return true;
 }
 

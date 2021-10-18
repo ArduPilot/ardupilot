@@ -141,7 +141,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
     WITH_SEMAPHORE(_sem);
 
     if (accum.count > 0) {
-        state.distance_cm = accum.sum / accum.count;
+        state.distance_m = (accum.sum * 0.01f) / accum.count;
         state.last_reading_ms = AP_HAL::millis();
         accum.sum = 0;
         accum.count = 0;

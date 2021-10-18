@@ -23,7 +23,7 @@ protected:
 private:
 
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     // find signature byte in buffer starting at start, moving that
     // byte and following bytes to start of buffer.
