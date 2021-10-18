@@ -510,7 +510,7 @@ void AP_Torqeedo::parse_message()
                     // @Field: BPct: Battery charge percentage
                     // @Field: BVolt: Battery voltage
                     // @Field: BCur: Battery current
-                    AP::logger().Write("TRST", "TimeUS,F,Err,MVolt,MCur,Pow,RPM,MTemp,BPct,BVolt,BCur", "QHBfffhBBff",
+                    AP::logger().Write("TRST", "TimeUS,F,Err,MVolt,MCur,Pow,RPM,MTemp,BPct,BVolt,BCur", "QHBffHhBBff",
                                        AP_HAL::micros64(),
                                        _display_system_state.flags.value,
                                        _display_system_state.master_error_code,
@@ -526,12 +526,12 @@ void AP_Torqeedo::parse_message()
 
                 // send to GCS
                 if ((_options & options::DEBUG_TO_GCS) != 0) {
-                    gcs().send_text(MAV_SEVERITY_INFO,"TRST F:%u Err:%u MV:%4.1f MC:%4.1f P:%4.1f MT:%d B%%:%d BV:%4.1f BC:%4.1f",
+                    gcs().send_text(MAV_SEVERITY_INFO,"TRST F:%u Err:%u MV:%4.1f MC:%4.1f P:%u MT:%d B%%:%d BV:%4.1f BC:%4.1f",
                             (unsigned)_display_system_state.flags.value,
                             (unsigned)_display_system_state.master_error_code,
                             (double)_display_system_state.motor_voltage,
                             (double)_display_system_state.motor_current,
-                            (double)_display_system_state.motor_power,
+                            (unsigned)_display_system_state.motor_power,
                             (int)motor_temp,
                             (unsigned)_display_system_state.batt_charge_pct,
                             (double)_display_system_state.batt_voltage,
