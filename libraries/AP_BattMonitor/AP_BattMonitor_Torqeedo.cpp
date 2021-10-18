@@ -65,7 +65,6 @@ void AP_BattMonitor_Torqeedo::read(void)
 }
 
 // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
-// returns false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
 bool AP_BattMonitor_Torqeedo::capacity_remaining_pct(uint8_t &percentage) const
 {
     if (have_info) {
