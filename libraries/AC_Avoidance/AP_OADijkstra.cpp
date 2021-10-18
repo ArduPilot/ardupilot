@@ -123,7 +123,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     if (_polyfence_visgraph_ok && (_log_num_points < total_numpoints()) && (_options & AP_OAPathPlanner::OARecoveryOptions::OA_OPTION_LOG_DIJKSTRA_POINTS) ) {
         Vector2f vis_point;
         if (get_point(_log_num_points, vis_point)) {
-            Location log_location(Vector3f(vis_point.x, vis_point.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+            Location log_location(Vector3f{vis_point.x, vis_point.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
             Write_Visgraph_point(_log_visgraph_version, _log_num_points, log_location.lat, log_location.lng);
             _log_num_points++;
         }
@@ -155,7 +155,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         Vector2f origin_pos;
         if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
             // convert offset from ekf origin to Location
-            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+            Location temp_loc(Vector3f{origin_pos.x, origin_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
             // for first point use current loc as origin
@@ -163,7 +163,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
 
         // convert offset from ekf origin to Location
-        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+        Location temp_loc(Vector3f{dest_pos.x, dest_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
         destination_new = destination;
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
