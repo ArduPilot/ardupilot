@@ -81,7 +81,7 @@ void Rover::Log_Write_Depth()
                             i,
                             loc.lat,
                             loc.lng,
-                            (double)(s->distance_cm() * 0.01f),
+                            (double)(s->distance()),
                             temp_C);
     }
     // send water depth and temp to ground station
