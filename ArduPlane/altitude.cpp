@@ -643,7 +643,7 @@ void Plane::rangefinder_terrain_correction(float &height)
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f;
+    float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
     
     if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
