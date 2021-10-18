@@ -14,20 +14,19 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
-#include "AP_BattMonitor_Backend.h"
 
 #if HAL_TORQEEDO_ENABLED
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_BattMonitor_Backend.h"
 
 class AP_BattMonitor_Torqeedo: public AP_BattMonitor_Backend
 {
 public:
-    // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_Torqeedo(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
-        AP_BattMonitor_Backend(mon, mon_state, params)
-    {};
+
+    // inherit constructor
+    using AP_BattMonitor_Backend::AP_BattMonitor_Backend;
 
     // read the latest battery voltage
     void read() override;
@@ -39,7 +38,6 @@ public:
     bool has_temperature() const override { return have_info; };
 
     // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
-    // returns false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
     bool capacity_remaining_pct(uint8_t &percentage) const override WARN_IF_UNUSED;
 
 private:
