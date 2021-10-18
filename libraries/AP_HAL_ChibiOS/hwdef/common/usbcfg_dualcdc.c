@@ -310,6 +310,7 @@ uint32_t get_usb_baud(uint16_t endpoint_id)
       if (endpoint_id == ep_index[i]) {
           uint32_t rate;
           memcpy(&rate, &linecoding[i].dwDTERate[0], sizeof(rate));
+          return rate;
       }
   }
   return 0;

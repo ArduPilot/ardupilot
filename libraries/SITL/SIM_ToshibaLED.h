@@ -14,10 +14,10 @@ class ToshibaLED : public I2CDevice, protected I2CRegisters_8Bit
 {
 public:
     void init() override {
-        add_register("PWM0", ToshibaLEDDevReg::PWM0, O_WRONLY);
-        add_register("PWM1", ToshibaLEDDevReg::PWM1, O_WRONLY);
-        add_register("PWM2", ToshibaLEDDevReg::PWM2, O_WRONLY);
-        add_register("ENABLE", ToshibaLEDDevReg::ENABLE, O_WRONLY);
+        add_register("PWM0", ToshibaLEDDevReg::PWM0, I2CRegisters::RegMode::WRONLY);
+        add_register("PWM1", ToshibaLEDDevReg::PWM1, I2CRegisters::RegMode::WRONLY);
+        add_register("PWM2", ToshibaLEDDevReg::PWM2, I2CRegisters::RegMode::WRONLY);
+        add_register("ENABLE", ToshibaLEDDevReg::ENABLE, I2CRegisters::RegMode::WRONLY);
     }
 
     void update(const class Aircraft &aircraft) override;

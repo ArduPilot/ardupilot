@@ -923,7 +923,7 @@ public:
     void angle_control_start();
     void angle_control_run();
 
-    // return guided mode timeout in milliseconds.  Only used for velocity, acceleration and angle control
+    // return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rate control
     uint32_t get_timeout_ms() const;
 
     bool use_pilot_yaw() const override;

@@ -235,6 +235,7 @@ class generate_apj(Task.Task):
             "image_size": len(intf_img),
             "extf_image_size": len(extf_img),
             "flash_total": int(self.env.FLASH_TOTAL),
+            "image_maxsize": int(self.env.FLASH_TOTAL),
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
             "extflash_total": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024),
             "extflash_free": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024) - len(extf_img),

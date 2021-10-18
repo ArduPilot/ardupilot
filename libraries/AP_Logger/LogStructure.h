@@ -676,6 +676,17 @@ struct PACKED log_PSCD {
     float accel;
 };
 
+// thread stack usage
+struct PACKED log_STAK {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t thread_id;
+    uint8_t priority;
+    uint16_t stack_total;
+    uint16_t stack_free;
+    char name[16];
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1183,6 +1194,15 @@ struct PACKED log_PSCD {
 // @Field: TAD: Target acceleration Down
 // @Field: AD: Acceleration Down
 
+// @LoggerMessage: STAK
+// @Description: Stack information
+// @Field: TimeUS: Time since system startup
+// @Field: Id: thread ID
+// @Field: Pri: thread priority
+// @Field: Total: total stack
+// @Field: Free: free stack
+// @Field: Name: thread name
+
 // messages for all boards
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1290,12 +1310,14 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
-      { LOG_PSCN_MSG, sizeof(log_PSCN), \
-        "PSCN", "Qffffffff", "TimeUS,TPN,PN,DVN,TVN,VN,DAN,TAN,AN", "smmnnnooo", "F00000000" }, \
-      { LOG_PSCE_MSG, sizeof(log_PSCE), \
-        "PSCE", "Qffffffff", "TimeUS,TPE,PE,DVE,TVE,VE,DAE,TAE,AE", "smmnnnooo", "F00000000" }, \
-      { LOG_PSCD_MSG, sizeof(log_PSCD), \
-        "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
+    { LOG_PSCN_MSG, sizeof(log_PSCN), \
+      "PSCN", "Qffffffff", "TimeUS,TPN,PN,DVN,TVN,VN,DAN,TAN,AN", "smmnnnooo", "F00000000" }, \
+    { LOG_PSCE_MSG, sizeof(log_PSCE), \
+      "PSCE", "Qffffffff", "TimeUS,TPE,PE,DVE,TVE,VE,DAE,TAE,AE", "smmnnnooo", "F00000000" }, \
+    { LOG_PSCD_MSG, sizeof(log_PSCD), \
+      "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
+    { LOG_STAK_MSG, sizeof(log_STAK), \
+      "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
 LOG_STRUCTURE_FROM_AIS \
 
 // message types 0 to 63 reserved for vehicle specific use
@@ -1373,7 +1395,7 @@ enum LogMessages : uint8_t {
     LOG_RAW_PROXIMITY_MSG,
     LOG_IDS_FROM_PRECLAND,
     LOG_IDS_FROM_AIS,
-
+    LOG_STAK_MSG,
 
     _LOG_LAST_MSG_
 };

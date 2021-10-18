@@ -89,7 +89,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THR_MIN_PWM", 22, QuadPlane, thr_min_pwm, 1000),
+    // 22: THR_MIN_PWM
 
     // @Param: THR_MAX_PWM
     // @DisplayName: Maximum PWM output
@@ -98,7 +98,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THR_MAX_PWM", 23, QuadPlane, thr_max_pwm, 2000),
+    // 23: THR_MAX_PWM
 
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
@@ -507,6 +507,9 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 55,  AP_PARAM_FLOAT,  "Q_TILT_YAW_ANGLE" },
     { Parameters::k_param_quadplane, 1467,  AP_PARAM_FLOAT,  "Q_TILT_FIX_ANGLE" },
     { Parameters::k_param_quadplane, 1531,  AP_PARAM_FLOAT,  "Q_TILT_FIX_GAIN" },
+
+    { Parameters::k_param_quadplane, 22,  AP_PARAM_INT16, "Q_M_PWM_MIN" },
+    { Parameters::k_param_quadplane, 23,  AP_PARAM_INT16, "Q_M_PWM_MAX" },
 };
 
 
@@ -637,7 +640,7 @@ bool QuadPlane::setup(void)
     }
 
     if (!motors) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "motors");
+        AP_BoardConfig::allocation_error("motors");
     }
 
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
@@ -645,34 +648,34 @@ bool QuadPlane::setup(void)
     // create the attitude view used by the VTOL code
     ahrs_view = ahrs.create_view(tailsitter.enabled() ? ROTATION_PITCH_90 : ROTATION_NONE, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "ahrs_view");
+        AP_BoardConfig::allocation_error("ahrs_view");
     }
 
     attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "attitude_control");
+        AP_BoardConfig::allocation_error("attitude_control");
     }
 
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control, loop_delta_t);
     if (!pos_control) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "pos_control");
+        AP_BoardConfig::allocation_error("pos_control");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "wp_nav");
+        AP_BoardConfig::allocation_error("wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
-        AP_BoardConfig::allocation_error("Unable to allocate %s", "loiter_nav");
+        AP_BoardConfig::allocation_error("loiter_nav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
+    motors->update_throttle_range();
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
@@ -682,7 +685,7 @@ bool QuadPlane::setup(void)
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
         SRV_Channel::Aux_servo_function_t func = SRV_Channels::get_motor_function(i);
-        SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
+        SRV_Channels::set_failsafe_pwm(func, motors->get_pwm_output_min());
     }
 
     transition_state = TRANSITION_DONE;
@@ -2359,25 +2362,27 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
-        /*
-          limit the pitch down with an expanding envelope. This
-          prevents the velocity controller demanding nose down during
-          the initial slowdown if the target velocity curve is higher
-          than the actual velocity curve (for a high drag
-          aircraft). Nose down will cause a lot of downforce on the
-          wings which will draw a lot of current and also cause the
-          aircraft to lose altitude rapidly.pitch limit varies also with speed
-          to prevent inability to progress to position if moving from a loiter
-          to landing
-         */
-        float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
-                                               poscontrol.time_since_state_start_ms(),
-                                               0, 5000);
-        if (plane.nav_pitch_cd < minlimit_cd) {
-            plane.nav_pitch_cd = minlimit_cd;
-            // tell the pos controller we have limited the pitch to
-            // stop integrator buildup
-            pos_control->set_externally_limited_xy();
+        if (!tailsitter.enabled()) {
+            /*
+              limit the pitch down with an expanding envelope. This
+              prevents the velocity controller demanding nose down during
+              the initial slowdown if the target velocity curve is higher
+              than the actual velocity curve (for a high drag
+              aircraft). Nose down will cause a lot of downforce on the
+              wings which will draw a lot of current and also cause the
+              aircraft to lose altitude rapidly.pitch limit varies also with speed
+              to prevent inability to progress to position if moving from a loiter
+              to landing
+            */
+            float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                                   poscontrol.time_since_state_start_ms(),
+                                                   0, 5000);
+            if (plane.nav_pitch_cd < minlimit_cd) {
+                plane.nav_pitch_cd = minlimit_cd;
+                // tell the pos controller we have limited the pitch to
+                // stop integrator buildup
+                pos_control->set_externally_limited_xy();
+            }
         }
 
         // call attitude controller

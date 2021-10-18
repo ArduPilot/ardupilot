@@ -280,6 +280,10 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     } else {
         consumed_wh = -1;
     }
+    uint32_t time_remaining;
+    if (!battery.time_remaining(time_remaining, instance)) {
+        time_remaining = 0;
+    }
 
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
@@ -291,7 +295,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     percentage,
-                                    0, // time remaining, seconds (not provided)
+                                    time_remaining, // time remaining, seconds
                                     battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_volts_ext, // Cell 11..14 voltages
                                     0, // battery mode
@@ -3037,6 +3041,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         break;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera->set_trigger_distance(packet.param1);
+        if (is_equal(packet.param3, 1.0f)) {
+            camera->take_picture();
+        }
         result = MAV_RESULT_ACCEPTED;
         break;
     default:
@@ -3352,6 +3359,16 @@ void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 #endif
 }
 
+void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
+{
+#if HAL_ADSB_ENABLED
+    AP_ADSB *adsb = AP::ADSB();
+    if (adsb != nullptr) {
+        adsb->handle_message(chan, msg);
+    }
+#endif
+}
+
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
 #if OSD_PARAM_ENABLED
@@ -3572,6 +3589,13 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
+        break;
+
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
+    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+        handle_adsb_message(msg);
         break;
 
     case MAVLINK_MSG_ID_LANDING_TARGET:

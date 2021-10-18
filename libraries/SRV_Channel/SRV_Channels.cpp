@@ -223,6 +223,14 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
 
+    // @Param: _GPIO_MASK
+    // @DisplayName: Servo GPIO mask
+    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxillary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
+    
     AP_GROUPEND
 };
 
@@ -439,4 +447,19 @@ void SRV_Channels::zero_rc_outputs()
         hal.rcout->write(i, 0);
     }
     push();
+}
+
+/*
+  return true if a channel should be available as a GPIO
+ */
+bool SRV_Channels::is_GPIO(uint8_t channel)
+{
+    if (channel_function(channel) == SRV_Channel::k_GPIO) {
+        return true;
+    }
+    if (_singleton != nullptr && (_singleton->gpio_mask & (1U<<channel)) != 0) {
+        // user has set this channel in SERVO_GPIO_MASK
+        return true;
+    }
+    return false;
 }

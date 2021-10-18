@@ -213,6 +213,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Nucleo-L496
         $waf clean
         $waf AP_Periph
+        echo "Building Nucleo-L496 peripheral fw"
+        $waf configure --board Nucleo-L476
+        $waf clean
+        $waf AP_Periph
+        echo "Building Sierra-L431 peripheral fw"
+        $waf configure --board Sierra-L431
+        $waf clean
+        $waf AP_Periph
         echo "Building FreeflyRTK peripheral fw"
         $waf configure --board FreeflyRTK
         $waf clean

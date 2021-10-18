@@ -9,46 +9,46 @@ void SITL::SIM_BattMonitor_SMBus_Generic::init()
 {
     switch (cellcount()) {
     case 14:
-        add_register("Cell14", SMBusBattGenericDevReg::CELL14, O_RDONLY);
+        add_register("Cell14", SMBusBattGenericDevReg::CELL14, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 13:
-        add_register("Cell13", SMBusBattGenericDevReg::CELL13, O_RDONLY);
+        add_register("Cell13", SMBusBattGenericDevReg::CELL13, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 12:
-        add_register("Cell12", SMBusBattGenericDevReg::CELL12, O_RDONLY);
+        add_register("Cell12", SMBusBattGenericDevReg::CELL12, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 11:
-        add_register("Cell11", SMBusBattGenericDevReg::CELL11, O_RDONLY);
+        add_register("Cell11", SMBusBattGenericDevReg::CELL11, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 10:
-        add_register("Cell10", SMBusBattGenericDevReg::CELL10, O_RDONLY);
+        add_register("Cell10", SMBusBattGenericDevReg::CELL10, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 9:
-        add_register("Cell9", SMBusBattGenericDevReg::CELL9, O_RDONLY);
+        add_register("Cell9", SMBusBattGenericDevReg::CELL9, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 8:
-        add_register("Cell8", SMBusBattGenericDevReg::CELL8, O_RDONLY);
+        add_register("Cell8", SMBusBattGenericDevReg::CELL8, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 7:
-        add_register("Cell7", SMBusBattGenericDevReg::CELL7, O_RDONLY);
+        add_register("Cell7", SMBusBattGenericDevReg::CELL7, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 6:
-        add_register("Cell6", SMBusBattGenericDevReg::CELL6, O_RDONLY);
+        add_register("Cell6", SMBusBattGenericDevReg::CELL6, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 5:
-        add_register("Cell5", SMBusBattGenericDevReg::CELL5, O_RDONLY);
+        add_register("Cell5", SMBusBattGenericDevReg::CELL5, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 4:
-        add_register("Cell4", SMBusBattGenericDevReg::CELL4, O_RDONLY);
+        add_register("Cell4", SMBusBattGenericDevReg::CELL4, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 3:
-        add_register("Cell3", SMBusBattGenericDevReg::CELL3, O_RDONLY);
+        add_register("Cell3", SMBusBattGenericDevReg::CELL3, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 2:
-        add_register("Cell2", SMBusBattGenericDevReg::CELL2, O_RDONLY);
+        add_register("Cell2", SMBusBattGenericDevReg::CELL2, SITL::I2CRegisters::RegMode::RDONLY);
         FALLTHROUGH;
     case 1:
-        add_register("Cell1", SMBusBattGenericDevReg::CELL1, O_RDONLY);
+        add_register("Cell1", SMBusBattGenericDevReg::CELL1, SITL::I2CRegisters::RegMode::RDONLY);
         return;
     default:
         AP_HAL::panic("Bad cellcount %u", cellcount());

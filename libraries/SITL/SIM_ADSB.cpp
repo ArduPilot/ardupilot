@@ -17,6 +17,9 @@
 */
 
 #include "SIM_ADSB.h"
+
+#if HAL_SIM_ADSB_ENABLED
+
 #include "SITL.h"
 
 #include <stdio.h>
@@ -270,3 +273,5 @@ void ADSB::send_report(void)
 }
 
 } // namespace SITL
+
+#endif // HAL_SIM_ADSB_ENABLED

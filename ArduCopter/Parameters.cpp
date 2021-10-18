@@ -1060,7 +1060,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if MODE_GUIDED_ENABLED == ENABLED
     // @Param: GUID_TIMEOUT
     // @DisplayName: Guided mode timeout
-    // @Description: Guided mode timeout after which vehicle will stop or return to level if no updates are received from caller.  Only applicable during velocity, acceleration or angle control
+    // @Description: Guided mode timeout after which vehicle will stop or return to level if no updates are received from caller. Only applicable during any combination of velocity, acceleration, angle control, and/or angular rate control
     // @Units: s
     // @Range: 0.1 5
     // @User: Advanced
@@ -1075,7 +1075,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 1 1080
     // @User: Standard
     AP_GROUPINFO("ACRO_RP_RATE", 47, ParametersG2, acro_rp_rate, ACRO_RP_RATE_DEFAULT),
+#endif
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
     // @Param: ACRO_Y_RATE
     // @DisplayName: Acro Yaw Rate
     // @Description: Acro mode maximum yaw rate.  Higher value means faster rate of rotation

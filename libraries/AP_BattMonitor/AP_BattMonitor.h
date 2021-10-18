@@ -46,6 +46,8 @@ class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_MPPT_PacketDigital;
+class AP_BattMonitor_INA231;
+class AP_BattMonitor_LTC2946;
 
 class AP_BattMonitor
 {
@@ -62,6 +64,8 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
     friend class AP_BattMonitor_MPPT_PacketDigital;
+    friend class AP_BattMonitor_INA231;
+    friend class AP_BattMonitor_LTC2946;
 
 public:
 
@@ -93,6 +97,8 @@ public:
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
         MPPT_PacketDigital         = 20,
+        INA231                     = 21,
+        LTC2946                    = 22,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -130,6 +136,8 @@ public:
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
+        uint32_t    time_remaining;            // remaining battery time
+        bool        has_time_remaining;        // time_remaining is only valid if this is true
         const struct AP_Param::GroupInfo *var_info;
     };
 
@@ -170,6 +178,9 @@ public:
     /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
     virtual bool capacity_remaining_pct(uint8_t &percentage, uint8_t instance) const WARN_IF_UNUSED;
     bool capacity_remaining_pct(uint8_t &percentage) const WARN_IF_UNUSED { return capacity_remaining_pct(percentage, AP_BATT_PRIMARY_INSTANCE); }
+
+    /// time_remaining - returns remaining battery time
+    bool time_remaining(uint32_t &seconds, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
     /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
     int32_t pack_capacity_mah(uint8_t instance) const;

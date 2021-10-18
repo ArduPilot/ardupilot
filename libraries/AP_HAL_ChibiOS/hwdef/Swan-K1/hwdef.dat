@@ -21,7 +21,7 @@ undef UART8_RX
 undef AP_FEATURE_SBUS_OUT
 
 # RCInput on the PPM pin, for all protocols
-PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
+PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
 
 # setup for supplied power brick
 undef HAL_BATT_VOLT_SCALE

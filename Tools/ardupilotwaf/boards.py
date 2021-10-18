@@ -342,7 +342,7 @@ class Board:
                 '-Wl,--gc-sections',
             ]
 
-        if self.with_can:
+        if self.with_can and not cfg.env.AP_PERIPH:
             env.AP_LIBRARIES += [
                 'AP_UAVCAN',
                 'modules/uavcan/libuavcan/src/**/*.cpp'
@@ -512,6 +512,9 @@ class sitl(Board):
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
             HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
         )
+
+        cfg.define('HAL_WITH_SPI', 1)
+        cfg.define('HAL_WITH_RAMTRON', 1)
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)

@@ -21,6 +21,8 @@
 #include "AP_Math/AP_Math.h"
 #include <stdio.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 // table of user settable parameters
@@ -96,7 +98,7 @@ void Gripper_Servo::update(const struct sitl_input &input)
         jaw_gap = gap * (1.0f - position);
     }
     if (should_report()) {
-        ::fprintf(stderr, "position_demand=%f jaw_gap=%f load=%f\n", position_demand, jaw_gap, load_mass);
+        hal.console->printf("position_demand=%f jaw_gap=%f load=%f\n", position_demand, jaw_gap, load_mass);
         last_report_us = now;
         reported_position = position;
     }

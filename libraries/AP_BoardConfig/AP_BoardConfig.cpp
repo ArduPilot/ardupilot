@@ -32,7 +32,9 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#ifndef BOARD_SAFETY_ENABLE_DEFAULT
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
+#endif
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
@@ -394,7 +396,9 @@ void AP_BoardConfig::allocation_error(const char *fmt, ...)
 {
     va_list arg_list;
     va_start(arg_list, fmt);
-    throw_error("Allocation Error", fmt, arg_list);
+    char newfmt[64] {};
+    snprintf(newfmt, sizeof(newfmt), "Unable to allocate %s", fmt);
+    throw_error("Allocation Error", newfmt, arg_list);
     va_end(arg_list);
 }
 

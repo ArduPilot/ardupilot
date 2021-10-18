@@ -31,6 +31,7 @@ char keyword_attr_literal[] = "'literal";
 char keyword_attr_null[]    = "'Null";
 char keyword_attr_reference[]  = "'Ref";
 char keyword_attr_array[]      = "'array";
+char keyword_attr_no_range_check[] = "'skip_check";
 
 // type keywords
 char keyword_boolean[]  = "boolean";
@@ -145,6 +146,7 @@ enum type_flags {
   TYPE_FLAGS_NULLABLE = (1U << 1),
   TYPE_FLAGS_ENUM     = (1U << 2),
   TYPE_FLAGS_REFERNCE = (1U << 3),
+  TYPE_FLAGS_NO_RANGE_CHECK = (1U << 4),
 };
 
 struct type {
@@ -517,6 +519,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       type->flags |= TYPE_FLAGS_NULLABLE;
     } else if (strcmp(attribute, keyword_attr_reference) == 0) {
       type->flags |= TYPE_FLAGS_REFERNCE;
+    } else if (strcmp(attribute, keyword_attr_no_range_check) == 0) {
+      type->flags |= TYPE_FLAGS_NO_RANGE_CHECK;
     } else {
       error(ERROR_USERDATA, "Unknown attribute: %s", attribute);
     }
@@ -599,7 +603,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   }
 
   // add range checks, unless disabled or a nullable type
-  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
+  if (range_type != RANGE_CHECK_NONE && !(type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE | TYPE_FLAGS_NO_RANGE_CHECK))) {
     switch (type->type) {
       case TYPE_FLOAT:
       case TYPE_INT8_T:
@@ -1138,28 +1142,28 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
     switch (t.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "%sbool data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%sbool data_%d;\n", indentation, arg_number);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "%sfloat data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%sfloat data_%d;\n", indentation, arg_number);
         break;
       case TYPE_INT8_T:
-        fprintf(source, "%sint8_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%sint8_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_INT16_T:
-        fprintf(source, "%sint16_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%sint16_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_INT32_T:
-        fprintf(source, "%sint32_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%sint32_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_UINT8_T:
-        fprintf(source, "%suint8_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%suint8_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_UINT16_T:
-        fprintf(source, "%suint16_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%suint16_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%suint32_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_AP_OBJECT:
       case TYPE_NONE:
@@ -1169,7 +1173,7 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
         fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
         break;
       case TYPE_ENUM:
-        fprintf(source, "%suint32_t data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
         break;
       case TYPE_USERDATA:
         fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.ud.name, arg_number);
@@ -1704,9 +1708,8 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         arg = method->arguments;
         return_count = emit_references(arg,"        ");
         fprintf(source, "        return %d;\n", return_count);
-        fprintf(source, "    } else {\n");
-        fprintf(source, "        return 0;\n");
         fprintf(source, "    }\n");
+        fprintf(source, "    return 0;\n");
       } else {
         fprintf(source, "    lua_pushboolean(L, data);\n");
       }
@@ -2148,6 +2151,7 @@ int main(int argc, char **argv) {
 
   sanity_check_userdata();
 
+  fprintf(source, "#pragma GCC optimize(\"Os\")\n");
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
   fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
 

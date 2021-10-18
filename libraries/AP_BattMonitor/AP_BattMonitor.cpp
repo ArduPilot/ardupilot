@@ -14,6 +14,8 @@
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
 #include "AP_BattMonitor_MPPT_PacketDigital.h"
+#include "AP_BattMonitor_INA231.h"
+#include "AP_BattMonitor_LTC2946.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -295,6 +297,16 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_MPPT_PacketDigital(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
+#if HAL_BATTMON_INA231_ENABLED
+            case Type::INA231:
+                drivers[instance] = new AP_BattMonitor_INA231(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if HAL_BATTMON_LTC2946_ENABLED
+            case Type::LTC2946:
+                drivers[instance] = new AP_BattMonitor_LTC2946(*this, state[instance], _params[instance]);
+                break;
+#endif
             case Type::NONE:
             default:
                 break;
@@ -552,6 +564,16 @@ bool AP_BattMonitor::capacity_remaining_pct(uint8_t &percentage, uint8_t instanc
 {
     if (instance < _num_instances && drivers[instance] != nullptr) {
         return drivers[instance]->capacity_remaining_pct(percentage);
+    }
+    return false;
+}
+
+/// time_remaining - returns remaining battery time
+bool AP_BattMonitor::time_remaining(uint32_t &seconds, uint8_t instance) const
+{
+    if (instance < _num_instances && drivers[instance] != nullptr && state[instance].has_time_remaining) {
+        seconds = state[instance].time_remaining;
+        return true;
     }
     return false;
 }

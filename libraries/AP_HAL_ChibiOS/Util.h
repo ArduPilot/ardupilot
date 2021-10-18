@@ -132,4 +132,7 @@ private:
     // save/load key persistent parameters in bootloader sector
     bool get_persistent_params(ExpandingString &str) const;
 #endif
+
+    // log info on stack usage
+    void log_stack_info(void) override;
 };

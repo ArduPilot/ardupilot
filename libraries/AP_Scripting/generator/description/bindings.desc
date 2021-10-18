@@ -11,8 +11,8 @@ userdata Location field origin_alt boolean read write
 userdata Location field loiter_xtrack boolean read write
 
 userdata Location method get_distance float Location
-userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
-userdata Location method offset_bearing void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+userdata Location method offset void float'skip_check float'skip_check
+userdata Location method offset_bearing void float'skip_check float'skip_check
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
@@ -106,9 +106,9 @@ singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 
 include AP_Math/AP_Math.h
 
-userdata Vector3f field x float read write -FLT_MAX FLT_MAX
-userdata Vector3f field y float read write -FLT_MAX FLT_MAX
-userdata Vector3f field z float read write -FLT_MAX FLT_MAX
+userdata Vector3f field x float read write'skip_check
+userdata Vector3f field y float read write'skip_check
+userdata Vector3f field z float read write'skip_check
 userdata Vector3f method length float
 userdata Vector3f method normalize void
 userdata Vector3f method is_nan boolean
@@ -118,16 +118,16 @@ userdata Vector3f operator +
 userdata Vector3f operator -
 userdata Vector3f method dot float Vector3f
 userdata Vector3f method cross Vector3f Vector3f
-userdata Vector3f method scale Vector3f float -FLT_MAX FLT_MAX
+userdata Vector3f method scale Vector3f float'skip_check
 
-userdata Vector2f field x float read write -FLT_MAX FLT_MAX
-userdata Vector2f field y float read write -FLT_MAX FLT_MAX
+userdata Vector2f field x float read write'skip_check
+userdata Vector2f field y float read write'skip_check
 userdata Vector2f method length float
 userdata Vector2f method normalize void
 userdata Vector2f method is_nan boolean
 userdata Vector2f method is_inf boolean
 userdata Vector2f method is_zero boolean
-userdata Vector2f method rotate void float -FLT_MAX FLT_MAX
+userdata Vector2f method rotate void float'skip_check
 userdata Vector2f operator +
 userdata Vector2f operator -
 
@@ -183,13 +183,13 @@ include GCS_MAVLink/GCS.h
 singleton GCS alias gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
-singleton GCS method send_named_float void string float -FLT_MAX FLT_MAX
+singleton GCS method send_named_float void string float'skip_check
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
 singleton AP_ONVIF alias onvif
 singleton AP_ONVIF method start boolean string string string
-singleton AP_ONVIF method set_absolutemove boolean float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_check float'skip_check
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
@@ -205,14 +205,14 @@ singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
 singleton AP_Vehicle method get_target_location boolean Location'Null
-singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean boolean
+singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float'skip_check boolean boolean
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
-singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
-singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float -FLT_MAX FLT_MAX boolean
+singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
+singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
-singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
+singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
-singleton AP_Vehicle method set_circle_rate boolean float -FLT_MAX FLT_MAX
+singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
 singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
@@ -290,14 +290,14 @@ singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHAN
 include AP_Param/AP_Param.h
 singleton AP_Param alias param
 singleton AP_Param method get boolean string float'Null
-singleton AP_Param method set boolean string float -FLT_MAX FLT_MAX
-singleton AP_Param method set_and_save boolean string float -FLT_MAX FLT_MAX
+singleton AP_Param method set boolean string float'skip_check
+singleton AP_Param method set_and_save boolean string float'skip_check
 
 include AP_Scripting/AP_Scripting_helpers.h
 userdata Parameter method init boolean string
 userdata Parameter method get boolean float'Null
-userdata Parameter method set boolean float -FLT_MAX FLT_MAX
-userdata Parameter method set_and_save boolean float -FLT_MAX FLT_MAX
+userdata Parameter method set boolean float'skip_check
+userdata Parameter method set_and_save boolean float'skip_check
 
 
 include AP_Mission/AP_Mission.h
@@ -315,13 +315,13 @@ singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_missi
 singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 
-userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
-userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
-userdata mavlink_mission_item_int_t field param3 float read write -FLT_MAX FLT_MAX
-userdata mavlink_mission_item_int_t field param4 float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field param1 float read write'skip_check
+userdata mavlink_mission_item_int_t field param2 float read write'skip_check
+userdata mavlink_mission_item_int_t field param3 float read write'skip_check
+userdata mavlink_mission_item_int_t field param4 float read write'skip_check
 userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
 userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
-userdata mavlink_mission_item_int_t field z float read write -FLT_MAX FLT_MAX
+userdata mavlink_mission_item_int_t field z float read write'skip_check
 userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
 userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
 -- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
@@ -354,7 +354,7 @@ include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)|
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 singleton AP_MotorsMatrix alias MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
-singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
+singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
@@ -367,14 +367,14 @@ singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCop
 singleton AC_AttitudeControl_Multi_6DoF alias attitude_control
 singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
-singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'skip_check float'skip_check
 
 
 include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix_6DoF_Scripting alias Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
-singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
+singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 
 include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
@@ -414,10 +414,10 @@ singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMa
 
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table alias motor_factor_table
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float read write -FLT_MAX FLT_MAX
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
 
 include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor alias ins

@@ -28,6 +28,7 @@ void AP_Generator_IE_FuelCell::init()
         return;
     }
     _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0));
+    _health_warn_last_ms = AP_HAL::millis();
 }
 
 // Update fuelcell, expected to be called at 20hz

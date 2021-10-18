@@ -18,6 +18,8 @@
 
 #include "SIM_Webots.h"
 
+#if HAL_SIM_WEBOTS_ENABLED
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -567,3 +569,5 @@ void Webots::report_FPS(void)
     //     last_frame_count_s = state.timestamp;
     // }
 }
+
+#endif // HAL_SIM_WEBOTS_ENABLED

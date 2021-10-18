@@ -32,14 +32,13 @@ protected:
     int rdwr(I2C::i2c_rdwr_ioctl_data *&data) override;
 
     void set_block(uint8_t block, uint8_t *value, uint8_t valuelen);
-    void add_block(const char *name, uint8_t reg, int8_t mode);
+    void add_block(const char *name, uint8_t reg, I2CRegisters::RegMode mode);
 
     void set_block(uint8_t block, const char *value) {
         set_block(block, (uint8_t*)value, strlen(value));
     }
 
-
-    void add_register(const char *name, uint8_t reg, int8_t mode) {
+    void add_register(const char *name, uint8_t reg, I2CRegisters::RegMode mode) {
         I2CRegisters_16Bit::add_register(name, reg, mode);
     }
 

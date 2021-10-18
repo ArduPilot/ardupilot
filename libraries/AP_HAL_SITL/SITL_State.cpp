@@ -67,9 +67,7 @@ void SITL_State::_sitl_setup(const char *home_str)
     _parent_pid = getppid();
 #endif
 
-#ifndef HIL_MODE
     _setup_fdm();
-#endif
     fprintf(stdout, "Starting SITL input\n");
 
     // find the barometer object if it exists
@@ -80,11 +78,9 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     if (_sitl != nullptr) {
         // setup some initial values
-#ifndef HIL_MODE
         _update_airspeed(0);
         _update_gps(0, 0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
-#endif
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
         }
@@ -113,7 +109,6 @@ void SITL_State::_sitl_setup(const char *home_str)
 }
 
 
-#ifndef HIL_MODE
 /*
   setup a SITL FDM listening UDP port
  */
@@ -140,7 +135,6 @@ void SITL_State::_setup_fdm(void)
         exit(1);
     }
 }
-#endif
 
 
 /*
@@ -379,12 +373,24 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         gyus42v2 = new SITL::RF_GYUS42v2();
         return gyus42v2->fd();
+    } else if (streq(name, "megasquirt")) {
+        if (efi_ms != nullptr) {
+            AP_HAL::panic("Only one megasquirt at a time");
+        }
+        efi_ms = new SITL::EFI_MegaSquirt();
+        return efi_ms->fd();
     } else if (streq(name, "VectorNav")) {
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
         }
         vectornav = new SITL::VectorNav();
         return vectornav->fd();
+    } else if (streq(name, "LORD")) {
+        if (lord != nullptr) {
+            AP_HAL::panic("Only one LORD at a time");
+        }
+        lord = new SITL::LORD();
+        return lord->fd();
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
             AP_HAL::panic("Only one AIS at a time");
@@ -508,11 +514,21 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No gyus42v2 created");
         }
         return gyus42v2->write_fd();
+    } else if (streq(name, "megasquirt")) {
+        if (efi_ms == nullptr) {
+            AP_HAL::panic("No megasquirt created");
+        }
+        return efi_ms->write_fd();
     } else if (streq(name, "VectorNav")) {
         if (vectornav == nullptr) {
             AP_HAL::panic("No VectorNav created");
         }
         return vectornav->write_fd();
+    } else if (streq(name, "LORD")) {
+        if (lord == nullptr) {
+            AP_HAL::panic("No LORD created");
+        }
+        return lord->write_fd();
     } else if (streq(name, "AIS")) {
         if (ais == nullptr) {
             AP_HAL::panic("No AIS created");
@@ -522,7 +538,6 @@ int SITL_State::sim_fd_write(const char *name)
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
-#ifndef HIL_MODE
 /*
   check for a SITL RC input packet
  */
@@ -709,6 +724,9 @@ void SITL_State::_fdm_input_local(void)
     if (gyus42v2 != nullptr) {
         gyus42v2->update(sitl_model->rangefinder_range());
     }
+    if (efi_ms != nullptr) {
+        efi_ms->update();
+    }
 
     if (frsky_d != nullptr) {
         frsky_d->update();
@@ -739,12 +757,12 @@ void SITL_State::_fdm_input_local(void)
         vectornav->update();
     }
 
-    if (ais != nullptr) {
-        ais->update();
+    if (lord != nullptr) {
+        lord->update();
     }
 
-    if (_sitl) {
-        _sitl->efi_ms.update();
+    if (ais != nullptr) {
+        ais->update();
     }
 
     if (_sitl && _use_fg_view) {
@@ -763,7 +781,6 @@ void SITL_State::_fdm_input_local(void)
     _synthetic_clock_mode = true;
     _update_count++;
 }
-#endif
 
 /*
   create sitl_input structure for sending to FDM

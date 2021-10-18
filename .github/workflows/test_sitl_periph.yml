@@ -44,6 +44,11 @@ jobs:
           apt-get update
           apt-get install -y gcc-multilib g++-multilib
 
+      - name: run canard dsdlc generator test
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          python modules/canard_dsdlc/canard_dsdlc.py -O dsdlc_generated libraries/AP_UAVCAN/dsdl/ardupilot modules/pyuavcan/uavcan/dsdl_files/uavcan --run-test
+
       - name: build sitl_periph_gps
         shell: bash
         run: |

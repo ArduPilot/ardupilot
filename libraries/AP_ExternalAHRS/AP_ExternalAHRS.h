@@ -47,6 +47,7 @@ public:
     enum class DevType : uint8_t {
         None   = 0,
         VecNav = 1,
+        LORD = 2,
     };
 
     static AP_ExternalAHRS *get_singleton(void) {

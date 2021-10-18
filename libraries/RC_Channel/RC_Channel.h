@@ -91,6 +91,9 @@ public:
     // set and save trim if changed
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
 
+    // check if any of the trim/min/max param are configured in storage, this would indicate that the user has done a calibration at somepoint
+    bool       configured_in_storage() { return radio_min.configured_in_storage() || radio_max.configured_in_storage() || radio_trim.configured_in_storage(); }
+
     ChannelType get_type(void) const { return type_in; }
 
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
@@ -493,7 +496,9 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::SUPPRESS_CRSF_MESSAGE));
     }
 
-
+    bool multiple_receiver_support() const {
+        return _options & uint32_t(Option::MULTI_RECEIVER_SUPPORT);
+    }
 
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
@@ -553,6 +558,7 @@ protected:
         ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
         CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
         SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
+        MULTI_RECEIVER_SUPPORT  = (1U << 10), // allow multiple receivers
     };
 
     void new_override_received() {

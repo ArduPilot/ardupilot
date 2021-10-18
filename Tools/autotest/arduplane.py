@@ -10,6 +10,7 @@ from __future__ import print_function
 import math
 import os
 import signal
+import sys
 import time
 
 from pymavlink import quaternion
@@ -2295,11 +2296,11 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("WP_LOITER_RAD", default_rad)
         self.fly_home_land_and_disarm(240)
 
-    def fly_external_AHRS(self):
+    def fly_external_AHRS(self, sim, eahrs_type, mission):
         """Fly with external AHRS (VectorNav)"""
-        self.customise_SITL_commandline(["--uartE=sim:VectorNav"])
+        self.customise_SITL_commandline(["--uartE=sim:%s" % sim])
 
-        self.set_parameter("EAHRS_TYPE", 1)
+        self.set_parameter("EAHRS_TYPE", eahrs_type)
         self.set_parameter("SERIAL4_PROTOCOL", 36)
         self.set_parameter("SERIAL4_BAUD", 230400)
         self.set_parameter("GPS_TYPE", 21)
@@ -2313,7 +2314,13 @@ class AutoTestPlane(AutoTest):
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.fly_mission("ap1.txt")
+        self.fly_mission(mission)
+
+    def test_vectornav(self):
+        self.fly_external_AHRS("VectorNav", 1, "ap1.txt")
+
+    def test_lord(self):
+        self.fly_external_AHRS("LORD", 2, "ap1.txt")
 
     def get_accelvec(self, m):
         return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
@@ -3064,6 +3071,57 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def AUTOTUNE(self):
+        self.takeoff(100)
+        self.change_mode('AUTOTUNE')
+        self.context_collect('STATUSTEXT')
+        tstart = self.get_sim_time()
+        axis = "Roll"
+        rc_value = 1000
+        while True:
+            timeout = 600
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException("Did not complete within %u seconds" % timeout)
+            try:
+                m = self.wait_statustext("%s: Finished" % axis, check_context=True, timeout=0.1)
+                self.progress("Got %s" % str(m))
+                if axis == "Roll":
+                    axis = "Pitch"
+                elif axis == "Pitch":
+                    break
+                else:
+                    raise ValueError("Bug: %s" % axis)
+            except AutoTestTimeoutException:
+                pass
+            self.delay_sim_time(1)
+
+            if rc_value == 1000:
+                rc_value = 2000
+            elif rc_value == 2000:
+                rc_value = 1000
+            elif rc_value == 1000:
+                rc_value = 2000
+            else:
+                raise ValueError("Bug")
+
+            if axis == "Roll":
+                self.set_rc(1, rc_value)
+                self.set_rc(2, 1500)
+            elif axis == "Pitch":
+                self.set_rc(1, 1500)
+                self.set_rc(2, rc_value)
+            else:
+                raise ValueError("Bug")
+
+        tdelta = self.get_sim_time() - tstart
+        self.progress("Finished in %0.1f seconds" % (tdelta,))
+
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+
+        self.change_mode('FBWA')
+        self.fly_home_land_and_disarm(timeout=tdelta+240)
+
     def fly_landing_baro_drift(self):
 
         self.customise_SITL_commandline([], wipe=True)
@@ -3114,6 +3172,24 @@ class AutoTestPlane(AutoTest):
         self.context_stop_collecting('STATUSTEXT')
 
         self.fly_home_land_and_disarm()
+
+    def MegaSquirt(self):
+        self.assert_not_receiving_message('EFI_STATUS')
+        self.set_parameters({
+            'SIM_EFI_TYPE': 1,
+            'EFI_TYPE': 1,
+            'SERIAL5_PROTOCOL': 24,
+        })
+        self.customise_SITL_commandline(["--uartF=sim:megasquirt"])
+        self.delay_sim_time(5)
+        m = self.assert_receive_message('EFI_STATUS')
+        mavutil.dump_message_verbose(sys.stdout, m)
+        if m.throttle_out != 0:
+            raise NotAchievedException("Expected zero throttle")
+        if m.health != 1:
+            raise NotAchievedException("Not healthy")
+        if m.intake_manifold_temperature < 20:
+            raise NotAchievedException("Bad intake manifold temperature")
 
     def tests(self):
         '''return list of all tests'''
@@ -3268,9 +3344,13 @@ class AutoTestPlane(AutoTest):
              "Test terrain following in loiter",
              self.test_loiter_terrain),
 
-            ("ExternalAHRS",
-             "Test external AHRS support",
-             self.fly_external_AHRS),
+            ("VectorNavEAHRS",
+             "Test VectorNav EAHRS support",
+             self.test_vectornav),
+
+            ("LordEAHRS",
+             "Test LORD Microstrain EAHRS support",
+             self.test_lord),
 
             ("Deadreckoning",
              "Test deadreckoning support",
@@ -3340,9 +3420,21 @@ class AutoTestPlane(AutoTest):
              "Test MAVProxy can talk FTP to autopilot",
              self.MAVFTP),
 
+            ("AUTOTUNE",
+             "Test AutoTune mode",
+             self.AUTOTUNE),
+
+            ("MegaSquirt",
+             "Test MegaSquirt EFI",
+             self.MegaSquirt),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
+
+            ("HIGH_LATENCY2",
+             "Set sending of HIGH_LATENCY2",
+             self.HIGH_LATENCY2),
         ])
         return ret
 
