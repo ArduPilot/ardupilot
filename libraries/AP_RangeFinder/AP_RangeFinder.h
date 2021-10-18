@@ -65,7 +65,7 @@ public:
         LWSER  = 8,
         BEBOP  = 9,
         MAVLink = 10,
-        ULANDING= 11,
+        USD1_Serial = 11,
         LEDDARONE = 12,
         MBSER  = 13,
         TRI2C  = 14,

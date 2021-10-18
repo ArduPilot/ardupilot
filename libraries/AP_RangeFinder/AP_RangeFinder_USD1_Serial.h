@@ -3,7 +3,7 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend_Serial
+class AP_RangeFinder_USD1_Serial : public AP_RangeFinder_Backend_Serial
 {
 
 public:
@@ -25,7 +25,7 @@ protected:
     uint16_t tx_bufsize() const override { return 128; }
 
 private:
-    // detect uLanding Firmware Version
+    // detect USD1_Serial Firmware Version
     bool detect_version(void);
 
     // get a reading

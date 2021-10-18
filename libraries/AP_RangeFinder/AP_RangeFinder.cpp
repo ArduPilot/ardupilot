@@ -28,7 +28,7 @@
 #endif
 #include "AP_RangeFinder_MAVLink.h"
 #include "AP_RangeFinder_LeddarOne.h"
-#include "AP_RangeFinder_uLanding.h"
+#include "AP_RangeFinder_USD1_Serial.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
@@ -450,9 +450,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             _add_backend(new AP_RangeFinder_LeddarOne(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
-    case Type::ULANDING:
-        if (AP_RangeFinder_uLanding::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_uLanding(state[instance], params[instance]), instance, serial_instance++);
+    case Type::USD1_Serial:
+        if (AP_RangeFinder_USD1_Serial::detect(serial_instance)) {
+            _add_backend(new AP_RangeFinder_USD1_Serial(state[instance], params[instance]), instance, serial_instance++);
         }
         break;
     case Type::BEBOP:
