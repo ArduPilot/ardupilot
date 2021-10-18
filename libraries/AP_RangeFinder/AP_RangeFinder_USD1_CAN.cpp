@@ -17,24 +17,26 @@ AP_RangeFinder_USD1_CAN::AP_RangeFinder_USD1_CAN(RangeFinder::RangeFinder_State 
 void AP_RangeFinder_USD1_CAN::update(void)
 {
     WITH_SEMAPHORE(_sem);
-    if ((AP_HAL::millis() - _last_reading_ms) > 500) {
-        // if data is older than 500ms, report NoData
+    const uint32_t now = AP_HAL::millis();
+    if (_distance_count == 0 && now - state.last_reading_ms > 500) {
+        // no new data.
         set_status(RangeFinder::Status::NoData);
-    } else if (new_data) {
-        state.distance_m = _distance_cm * 0.01f;
-        state.last_reading_ms = _last_reading_ms;
+    } else if (_distance_count != 0) {
+        state.distance_m = _distance_sum / _distance_count;
+        state.last_reading_ms = AP_HAL::millis();
+        _distance_sum = 0;
+        _distance_count = 0;
         update_status();
-        new_data = false;
     }
 }
 
-// handler for incoming frames
+// handler for incoming frames. These come in at 100Hz
 void AP_RangeFinder_USD1_CAN::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(_sem);
-    _distance_cm = (frame.data[0]<<8) | frame.data[1];
-    _last_reading_ms = AP_HAL::millis();
-    new_data = true;
+    const uint16_t dist_cm = (frame.data[0]<<8) | frame.data[1];
+    _distance_sum += dist_cm * 0.01;
+    _distance_count++;
 }
 
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
