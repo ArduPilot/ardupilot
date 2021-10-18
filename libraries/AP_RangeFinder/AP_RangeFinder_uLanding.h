@@ -29,7 +29,7 @@ private:
     bool detect_version(void);
 
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     uint8_t  _linebuf[6];
     uint8_t  _linebuf_len;

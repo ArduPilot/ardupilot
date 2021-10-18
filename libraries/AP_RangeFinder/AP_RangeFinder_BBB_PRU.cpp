@@ -111,7 +111,7 @@ bool AP_RangeFinder_BBB_PRU::detect()
 void AP_RangeFinder_BBB_PRU::update(void)
 {
     state.status = (RangeFinder::Status)rangerpru->status;
-    state.distance_cm = rangerpru->distance;
+    state.distance_m = rangerpru->distance * 0.01f;
     state.last_reading_ms = AP_HAL::millis();
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE
