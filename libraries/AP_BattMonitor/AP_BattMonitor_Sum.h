@@ -21,7 +21,11 @@ public:
 
     void init(void) override {}
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
+
+    AP_Int16  _sum_mask;
     uint8_t _instance;
     bool _has_current;
 };
