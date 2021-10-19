@@ -59,7 +59,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
     // check throttle is at zero
     read_radio();
-    if (channel_throttle->get_control_in() != 0) {
+    if (!is_zero(channel_throttle->get_control_in())) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Throttle not zero");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
