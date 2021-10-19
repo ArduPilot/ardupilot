@@ -233,18 +233,79 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 /*
   disarm motors
  */
+bool AP_Arming_Plane::allow_disarm_if_is_flying(const AP_Arming::Method method) const
+{
+    if (method == AP_Arming::Method::RUDDER) {
+        // don't allow rudder-disarming in flight as normal control
+        // inputs might disarm the vehicle
+        return false;
+    }
+
+    if (!(plane.g2.flight_options & FlightOptions::DISALLOW_DISARM_ON_IS_FLYING)) {
+        // user is OK with disarming mid-flight
+        return true;
+    }
+
+    // plane is still considered flying on things like auto-disarm, so
+    // we need to whitelist a bunch of modes.  It is also assumed that
+    // things like parachite and AFS allows disarm regardless of the
+    // bit.
+    switch (method) {
+    case Method::RUDDER:
+    case Method::MAVLINK:
+    case Method::AUXSWITCH:
+        return false;
+    case Method::MOTORTEST:
+    case Method::SCRIPTING:
+    case Method::TERMINATION:
+    case Method::CPUFAILSAFE:
+    case Method::BATTERYFAILSAFE:
+    case Method::SOLOPAUSEWHENLANDED:
+    case Method::AFS:
+    case Method::ADSBCOLLISIONACTION:
+    case Method::PARACHUTE_RELEASE:
+    case Method::CRASH:
+    case Method::LANDED:
+    case Method::MISSIONEXIT:
+    case Method::FENCEBREACH:
+    case Method::RADIOFAILSAFE:
+    case Method::DISARMDELAY:
+    case Method::GCSFAILSAFE:
+    case Method::TERRRAINFAILSAFE:
+    case Method::FAILSAFE_ACTION_TERMINATE:
+    case Method::TERRAINFAILSAFE:
+    case Method::MOTORDETECTDONE:
+    case Method::BADFLOWOFCONTROL:
+    case Method::EKFFAILSAFE:
+    case Method::GCS_FAILSAFE_SURFACEFAILED:
+    case Method::GCS_FAILSAFE_HOLDFAILED:
+    case Method::TAKEOFFTIMEOUT:
+    case Method::AUTOLANDED:
+    case Method::PILOT_INPUT_FAILSAFE:
+    case Method::TOYMODELANDTHROTTLE:
+    case Method::TOYMODELANDFORCE:
+    case Method::LANDING:
+    case Method::UNKNOWN:
+        return true;
+    }
+
+    return true;
+}
+
 bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    if (do_disarm_checks &&
-        method == AP_Arming::Method::RUDDER) {
-        // don't allow rudder-disarming in flight:
-        if (plane.is_flying()) {
-            // obviously this could happen in-flight so we can't warn about it
+    if (do_disarm_checks) {
+        // option must be enabled:
+        if (method == AP_Arming::Method::RUDDER &&
+            get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
             return false;
         }
-        // option must be enabled:
-        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+        if (!allow_disarm_if_is_flying(method) && plane.is_flying()) {
+            // obviously this could happen in-flight so we can't warn about it
+            if (method != AP_Arming::Method::RUDDER) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Disarm: disabled while flying");
+            }
             return false;
         }
     }

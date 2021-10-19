@@ -39,4 +39,6 @@ private:
     // oneshot with duration AP_ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
     bool delay_arming;
+
+    bool allow_disarm_if_is_flying(const AP_Arming::Method method) const;
 };
