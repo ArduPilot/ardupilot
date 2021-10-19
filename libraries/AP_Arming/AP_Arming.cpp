@@ -628,7 +628,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                 if (c == nullptr) {
                     continue;
                 }
-                if (c->get_control_in() != 0) {
+                if (!is_zero(c->get_control_in())) {
                     if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
                         check_failed(ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", names[i], channels[i]);
                         check_passed = false;
@@ -641,7 +641,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         if (rc().arming_check_throttle()) {
             RC_Channel *c = rc().channel(rcmap->throttle() - 1);
             if (c != nullptr) {
-                if (c->get_control_in() != 0) {
+                if (!is_zero(c->get_control_in())) {
                     check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
                     check_passed = false;
                 }
