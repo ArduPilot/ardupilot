@@ -9,7 +9,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_GPS/AP_GPS.h>
+#include <AP_RTC/AP_RTC.h>
 #include "AP_Camera_SoloGimbal.h"
 
 // ------------------------------
@@ -106,6 +106,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:Default,1:BMMCC
     // @User: Standard
     AP_GROUPINFO("TYPE",  11, AP_Camera, _type, 0),
+
+    // @Param: TRIGG_GPSFIX
+    // @DisplayName: GPS status value
+    // @Description: Min GPS status value for allow camera triggering
+    // @Values: 0:NO_GPS,1:NO_FIX,2:GPS_OK_FIX_2D,3:GPS_OK_FIX_3D,4:GPS_OK_FIX_3D_DGPS,5:GPS_OK_FIX_3D_RTK_FLOAT,6:GPS_OK_FIX_3D_RTK_FIXED
+    // @User: Standard
+    AP_GROUPINFO("TRIGG_GPSFIX",  12, AP_Camera, _min_gps_fix, 0),
 
     AP_GROUPEND
 };
@@ -338,10 +345,13 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
         // as current_loc should never be in an altitude we can't
         // convert.
     }
+    
+    uint64_t time_usec = 0;
+    AP::rtc().get_utc_usec(time_usec);
 
     mavlink_msg_camera_feedback_send(
         chan,
-        AP::gps().time_epoch_usec(),
+        time_usec,
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
         altitude*1e-2f, altitude_rel*1e-2f,
@@ -357,7 +367,7 @@ void AP_Camera::update()
 {
     update_trigger();
 
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (AP::gps().status() < _min_gps_fix) {
         return;
     }
 
