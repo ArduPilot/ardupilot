@@ -5,27 +5,26 @@
  */
 #pragma once
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
-#include "AP_InertialNav.h"
 
-class AP_InertialNav_NavEKF : public AP_InertialNav
+class AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav_NavEKF(AP_AHRS &ahrs) :
-        AP_InertialNav(),
+    AP_InertialNav(AP_AHRS &ahrs) :
         _ahrs_ekf(ahrs)
         {}
 
     /**
        update internal state
     */
-    void        update(bool high_vibes = false) override;
+    void        update(bool high_vibes = false);
 
     /**
      * get_filter_status - returns filter status as a series of flags
      */
-    nav_filter_status get_filter_status() const override;
+    nav_filter_status get_filter_status() const;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
@@ -34,7 +33,7 @@ public:
      *
      * @return
      */
-    const Vector3f&    get_position() const override;
+    const Vector3f&    get_position() const;
 
     /**
      * get_velocity - returns the current velocity in cm/s
@@ -44,20 +43,20 @@ public:
      * 				.y : longitude velocity in cm/s
      * 				.z : vertical  velocity in cm/s
      */
-    const Vector3f&    get_velocity() const override;
+    const Vector3f&    get_velocity() const;
 
     /**
      * get_speed_xy - returns the current horizontal speed in cm/s
      *
      * @returns the current horizontal speed in cm/s
      */
-    float        get_speed_xy() const override;
+    float        get_speed_xy() const;
 
     /**
      * get_altitude - get latest altitude estimate in cm
      * @return
      */
-    float       get_altitude() const override;
+    float       get_altitude() const;
 
     /**
      * get_velocity_z - returns the current climbrate.
@@ -66,7 +65,7 @@ public:
      *
      * @return climbrate in cm/s
      */
-    float       get_velocity_z() const override;
+    float       get_velocity_z() const;
 
 private:
     Vector3f _relpos_cm;   // NEU
