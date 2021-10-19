@@ -1360,7 +1360,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     armed = false;
     _last_disarm_method = method;
 
-    Log_Write_Disarm(method); // should be able to pass through force here?
+    Log_Write_Disarm(!do_disarm_checks, method);  // Log_Write_Disarm takes "force"
 
     check_forced_logging(method);
 
@@ -1489,14 +1489,14 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
     AP::logger().Write_Event(LogEvent::ARMED);
 }
 
-void AP_Arming::Log_Write_Disarm(const AP_Arming::Method method)
+void AP_Arming::Log_Write_Disarm(const bool forced, const AP_Arming::Method method)
 {
     const struct log_Arm_Disarm pkt {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
         time_us                 : AP_HAL::micros64(),
         arm_state               : is_armed(),
         arm_checks              : 0,
-        forced                  : 0,
+        forced                  : forced,
         method                  : (uint8_t)method
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
