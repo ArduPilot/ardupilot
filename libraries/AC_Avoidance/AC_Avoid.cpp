@@ -104,6 +104,13 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BACKUP_DZ", 9, AC_Avoid, _backup_deadzone, 0.10f),
 
+    // @Param: AUTO_MODES
+    // @DisplayName: Simple Avoidance for Autonomous Modes
+    // @Description: This parameter enables/disables the use of Simple Avoidance in Autonomous modes(example: Auto, Guided)
+    // @Values: 0: Disable,1:Enable
+    // @User: Standard
+    AP_GROUPINFO_FRAME("AUTO_MODES", 10, AC_Avoid, _enable_autonomous_mode, 1, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+
     AP_GROUPEND
 };
 

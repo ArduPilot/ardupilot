@@ -599,7 +599,8 @@ bool AC_PosControl::is_active_xy() const
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
 ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
-void AC_PosControl::update_xy_controller()
+///     send avoid_enable parameter as true if the desired velocity should be simple avoidance limited
+void AC_PosControl::update_xy_controller(bool avoid_enable)
 {
     // check for ekf xy position reset
     handle_ekf_xy_reset();
@@ -636,6 +637,15 @@ void AC_PosControl::update_xy_controller()
     } else {
         _vehicle_horiz_vel = _inav.get_velocity().xy();
     }
+
+    if (avoid_enable) {
+        // check if the calculated target velocity breaches fence/proximity obstacles, and protect against it.
+        AC_Avoid *avoid = AP::ac_avoid();
+        if (avoid != nullptr) {
+            avoid->adjust_velocity(_vel_target.xy(), get_pos_xy_p().kP(), _accel_max_xy_cmss, _dt);
+        }
+    }
+
     Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, Vector2f(_limit_vector.x, _limit_vector.y));
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;

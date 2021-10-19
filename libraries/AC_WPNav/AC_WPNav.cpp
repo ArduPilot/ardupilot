@@ -596,7 +596,13 @@ bool AC_WPNav::update_wpnav()
         ret = false;
     }
 
-    _pos_control.update_xy_controller();
+    // check if avoidance is required
+    AC_Avoid *_avoid = AP::ac_avoid();
+    bool auto_modes_simple_avoidance = false;
+    if (_avoid != nullptr) {
+        auto_modes_simple_avoidance = _avoid->simple_avoidance_in_auto();
+    }
+    _pos_control.update_xy_controller(auto_modes_simple_avoidance);
 
     _wp_last_update = AP_HAL::millis();
 
