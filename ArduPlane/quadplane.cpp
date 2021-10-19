@@ -3199,7 +3199,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0;
     }
     const uint32_t tnow = millis();
-    if (plane.channel_rudder->get_control_in() != 0) {
+    if (!is_zero(plane.channel_rudder->get_control_in())) {
         weathervane.last_pilot_input_ms = tnow;
         weathervane.last_output = 0;
         return 0;

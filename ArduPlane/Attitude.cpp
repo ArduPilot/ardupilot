@@ -138,7 +138,7 @@ float Plane::stabilize_roll_get_roll_out(float speed_scaler)
 #endif
 
     bool disable_integrator = false;
-    if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && !is_zero(channel_roll->get_control_in())) {
         disable_integrator = true;
     }
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
@@ -187,7 +187,7 @@ float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
 
     int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
-    if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && !is_zero(channel_pitch->get_control_in())) {
         disable_integrator = true;
     }
     /* force landing pitch if:
@@ -315,7 +315,7 @@ void Plane::stabilize_yaw(float speed_scaler)
     } else {
         // otherwise use ground steering when no input control and we
         // are below the GROUND_STEER_ALT
-        steering_control.ground_steering = (channel_roll->get_control_in() == 0 && 
+        steering_control.ground_steering = (is_zero(channel_roll->get_control_in()) &&
                                             fabsf(relative_altitude) < g.ground_steer_alt);
         if (!landing.is_ground_steering_allowed()) {
             // don't use ground steering on landing approach
