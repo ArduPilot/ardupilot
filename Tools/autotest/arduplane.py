@@ -3812,6 +3812,22 @@ function'''
 
         self.fly_home_land_and_disarm(timeout=180)
 
+    def MidAirDisarmDisallowed(self):
+        self.takeoff(50)
+        disarmed = False
+        try:
+            self.disarm_vehicle()
+            disarmed = True
+        except ValueError as e:
+            self.progress("Got %s" % repr(e))
+            if "Expected MAV_RESULT_ACCEPTED got MAV_RESULT_FAILED" not in str(e):
+                raise e
+        if disarmed:
+            raise NotAchievedException("Disarmed when we shouldn't have")
+        # should still be able to force-disarm:
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4090,6 +4106,11 @@ function'''
             ("HIGH_LATENCY2",
              "Set sending of HIGH_LATENCY2",
              self.HIGH_LATENCY2),
+
+            ("MidAirDisarmDisallowed",
+             "Ensure mid-air disarm is not possible",
+             self.MidAirDisarmDisallowed),
+
         ])
         return ret
 
