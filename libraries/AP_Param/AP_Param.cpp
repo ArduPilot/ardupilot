@@ -1895,35 +1895,6 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
     flush();
 }
 
-/*
-  move old class variables for a class that was sub-classed to one that isn't
-  For example, used when the AP_MotorsTri class changed from having its own parameter table
-  plus a subgroup for AP_MotorsMulticopter to just inheriting the AP_MotorsMulticopter var_info
-
-  This does not handle nesting beyond the single level shift
-*/
-void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
-                                    const struct AP_Param::GroupInfo *group_info)
-{
-    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
-        struct ConversionInfo info;
-        info.old_key = param_key;
-        info.type = (ap_var_type)group_info[i].type;
-        info.new_name = nullptr;
-        info.old_group_element = uint16_t(group_info[i].idx)<<6;
-        uint8_t old_value[type_size(info.type)];
-        AP_Param *ap = (AP_Param *)&old_value[0];
-        
-        if (!AP_Param::find_old_parameter(&info, ap)) {
-            // the parameter wasn't set in the old eeprom
-            continue;
-        }
-
-        uint8_t *new_value = group_info[i].offset + (uint8_t *)object_pointer;
-        memcpy(new_value, old_value, sizeof(old_value));
-    }
-}
-
 // move all parameters from a class to a new location
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
