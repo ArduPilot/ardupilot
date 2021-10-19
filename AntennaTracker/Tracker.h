@@ -146,6 +146,13 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
+
+        // stashed values for logging purposes
+        float pidP_target;
+        float pidP_actual;
+        float pidY_target;
+        float pidY_actual;
+
     } nav_status;
 
     // setup the var_info table
