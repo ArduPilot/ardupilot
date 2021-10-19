@@ -107,6 +107,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ExternalAHRS',
     'AP_VideoTX',
     'AP_FETtecOneWire',
+    'AP_Torqeedo',
 ]
 
 def get_legacy_defines(sketch_name, bld):

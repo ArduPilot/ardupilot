@@ -16,6 +16,7 @@
 #include "AP_BattMonitor_MPPT_PacketDigital.h"
 #include "AP_BattMonitor_INA231.h"
 #include "AP_BattMonitor_LTC2946.h"
+#include "AP_BattMonitor_Torqeedo.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -305,6 +306,11 @@ AP_BattMonitor::init()
 #if HAL_BATTMON_LTC2946_ENABLED
             case Type::LTC2946:
                 drivers[instance] = new AP_BattMonitor_LTC2946(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if HAL_TORQEEDO_ENABLED
+            case Type::Torqeedo:
+                drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
                 break;
 #endif
             case Type::NONE:

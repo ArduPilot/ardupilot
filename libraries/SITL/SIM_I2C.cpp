@@ -27,6 +27,7 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
@@ -55,6 +56,7 @@ static Maxell maxell;
 static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
+static MCP9600 mcp9600;
 static ICM40609 icm40609;
 static MS5525 ms5525;
 static MS5611 ms5611;
@@ -65,6 +67,7 @@ struct i2c_device_at_address {
     I2CDevice &device;
 } i2c_devices[] {
     { 0, 0x70, maxsonari2cxl },
+    { 0, 0x60, mcp9600 }, // 0x60 is low address
     { 0, 0x71, maxsonari2cxl_2 },
     { 1, 0x01, icm40609 },
     { 1, 0x55, toshibaled },

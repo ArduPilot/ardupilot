@@ -47,6 +47,10 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
+#ifndef HAL_IMU_TEMP_MARGIN_LOW_DEFAULT
+#define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 0 // disabled
+#endif
+
 #ifndef BOARD_SAFETY_OPTION_DEFAULT
 #  define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
 #endif
@@ -305,6 +309,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("ALT_CONFIG", 22, AP_BoardConfig, _alt_config, 0),
 #endif // HAL_PIN_ALT_CONFIG
+
+#if HAL_HAVE_IMU_HEATER
+    // @Param: TEMPMGN_LOW
+    // @DisplayName: hearter temp lower margin
+    // @Description: Arming check will fail if IMU temp is more than this value lower than BRD_IMU_TARGTEMP, 0 disables
+    // @Range: 0 20
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("TEMPMGN_LOW", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
+#endif
 
     AP_GROUPEND
 };

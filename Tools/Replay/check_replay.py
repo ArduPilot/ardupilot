@@ -6,7 +6,7 @@ check that replay produced identical results
 
 from __future__ import print_function
 
-def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False):
+def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0):
     '''check replay log for matching output'''
     from pymavlink import mavutil
     progress("Processing log %s" % logfile)
@@ -59,9 +59,9 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
             v1 = getattr(m,f)
             v2 = getattr(mb,f)
             ok = v1 == v2
-            if not ok and args.accuracy > 0:
+            if not ok and accuracy > 0:
                 avg = (v1+v2)*0.5
-                margin = args.accuracy*0.01*avg
+                margin = accuracy*0.01*avg
                 if abs(v1-v2) <= abs(margin):
                     ok = True
             if not ok:
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     failed = False
     for filename in args.logs:
-        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose):
+        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose, accuracy=args.accuracy):
             failed = True
 
     if failed:
