@@ -2339,8 +2339,13 @@ void GCS_MAVLINK::send_autopilot_version() const
     char flight_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_FLIGHT_CUSTOM_VERSION_LEN]{};
     char middleware_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_MIDDLEWARE_CUSTOM_VERSION_LEN]{};
     char os_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_OS_CUSTOM_VERSION_LEN]{};
+#ifdef HAL_USB_VENDOR_ID
+    const uint16_t vendor_id { HAL_USB_VENDOR_ID };
+    const uint16_t product_id { HAL_USB_PRODUCT_ID };
+#else
     uint16_t vendor_id = 0;
     uint16_t product_id = 0;
+#endif
     uint64_t uid = 0;
     uint8_t  uid2[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_UID2_LEN] = {0};
 
