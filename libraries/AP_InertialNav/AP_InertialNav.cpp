@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
-#include "AP_InertialNav_NavEKF.h"
+#include "AP_InertialNav.h"
 
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
@@ -11,7 +11,7 @@
 /**
    update internal state
 */
-void AP_InertialNav_NavEKF::update(bool high_vibes)
+void AP_InertialNav::update(bool high_vibes)
 {
     // get the NE position relative to the local earth frame origin
     Vector2f posNE;
@@ -44,7 +44,7 @@ void AP_InertialNav_NavEKF::update(bool high_vibes)
 /**
  * get_filter_status : returns filter status as a series of flags
  */
-nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
+nav_filter_status AP_InertialNav::get_filter_status() const
 {
     nav_filter_status status;
     _ahrs_ekf.get_filter_status(status);
@@ -56,7 +56,7 @@ nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
  *
  * @return
  */
-const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
+const Vector3f &AP_InertialNav::get_position(void) const 
 {
     return _relpos_cm;
 }
@@ -69,7 +69,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
  * 				.y : longitude velocity in cm/s
  * 				.z : vertical  velocity in cm/s
  */
-const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
+const Vector3f &AP_InertialNav::get_velocity() const
 {
     return _velocity_cm;
 }
@@ -79,7 +79,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  *
  * @returns the current horizontal speed in cm/s
  */
-float AP_InertialNav_NavEKF::get_speed_xy() const
+float AP_InertialNav::get_speed_xy() const
 {
     return _velocity_cm.xy().length();
 }
@@ -88,7 +88,7 @@ float AP_InertialNav_NavEKF::get_speed_xy() const
  * get_altitude - get latest altitude estimate in cm
  * @return
  */
-float AP_InertialNav_NavEKF::get_altitude() const
+float AP_InertialNav::get_altitude() const
 {
     return _relpos_cm.z;
 }
@@ -100,7 +100,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
  *
  * @return climbrate in cm/s
  */
-float AP_InertialNav_NavEKF::get_velocity_z() const
+float AP_InertialNav::get_velocity_z() const
 {
     return _velocity_cm.z;
 }
