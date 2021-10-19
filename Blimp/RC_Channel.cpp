@@ -101,7 +101,7 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::SAVE_TRIM:
         if ((ch_flag == AuxSwitchPos::HIGH) &&
             (blimp.control_mode <= Mode::Number::MANUAL) &&
-            (blimp.channel_down->get_control_in() == 0)) {
+            is_zero(blimp.channel_down->get_control_in())) {
             blimp.save_trim();
         }
         break;
