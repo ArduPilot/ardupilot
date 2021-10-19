@@ -56,8 +56,8 @@ public:
     bool        within_min_dz() const;
 
     uint8_t     percent_input() const;
-    int16_t     pwm_to_range() const;
-    int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
+    float       pwm_to_range() const;
+    float       pwm_to_range_dz(uint16_t dead_zone) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -67,17 +67,17 @@ public:
     int16_t    get_radio_in() const { return radio_in;}
     void       set_radio_in(int16_t val) {radio_in = val;}
 
-    int16_t    get_control_in() const { return control_in;}
-    void       set_control_in(int16_t val) { control_in = val;}
+    float      get_control_in() const { return control_in;}
+    void       set_control_in(float val) { control_in = val;}
 
     void       clear_override();
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
     bool       has_override() const;
 
-    float    stick_mixing(const float servo_in);
+    float      stick_mixing(const float servo_in);
 
     // get control input with zero deadzone
-    int16_t    get_control_in_zero_dz(void) const;
+    float      get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
     void       set_radio_min(int16_t val) { radio_min = val;}
@@ -332,7 +332,7 @@ private:
     int16_t     radio_in;
 
     // value generated from PWM normalised to configured scale
-    int16_t    control_in;
+    float    control_in;
 
     AP_Int16    radio_min;
     AP_Int16    radio_trim;

@@ -218,7 +218,7 @@ int16_t RC_Channel::pwm_to_angle() const
   convert a pulse width modulation value to a value in the configured
   range, using the specified deadzone
  */
-int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
+float RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -229,7 +229,7 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
     int16_t radio_trim_low  = radio_min + _dead_zone;
 
     if (r_in > radio_trim_low) {
-        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        return (float)high_in * (r_in - radio_trim_low) / (radio_max - radio_trim_low);
     }
     return 0;
 }
@@ -238,13 +238,13 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
   convert a pulse width modulation value to a value in the configured
   range
  */
-int16_t RC_Channel::pwm_to_range() const
+float RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t RC_Channel::get_control_in_zero_dz(void) const
+float RC_Channel::get_control_in_zero_dz(void) const
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         return pwm_to_range_dz(0);
