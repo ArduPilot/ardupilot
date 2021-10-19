@@ -82,7 +82,7 @@ define PERIPH_FW TRUE
 MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0x600
+PROCESS_STACK 0xA00
 define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
