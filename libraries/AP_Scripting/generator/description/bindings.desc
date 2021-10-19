@@ -446,3 +446,16 @@ singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW alias periph
 singleton AP_Periph_FW method get_yaw_earth float
 singleton AP_Periph_FW method get_vehicle_state uint32_t
+
+
+include AP_OSD/AP_OSD_Backend.h depends defined(OSD_ENABLED) && OSD_ENABLED
+singleton AP_OSD_Backend depends defined(OSD_ENABLED) && OSD_ENABLED
+singleton AP_OSD_Backend alias OSD
+singleton AP_OSD_Backend get AP_OSD::get_singleton()->scripting_get_backend()
+singleton AP_OSD_Backend method write void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX string
+singleton AP_OSD_Backend method flush void
+singleton AP_OSD_Backend method clear void
+singleton AP_OSD_Backend method draw_screen void
+singleton AP_OSD_Backend method get_aspect_ratio_correction float
+singleton AP_OSD_Backend method get_screen uint8_t
+singleton AP_OSD_Backend method display_disabled boolean

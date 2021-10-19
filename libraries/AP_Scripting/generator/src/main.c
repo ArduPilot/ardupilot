@@ -24,6 +24,8 @@ char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
 char keyword_literal[]             = "literal";
+char keyword_get[]                 = "get";
+
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -374,6 +376,7 @@ struct userdata {
   uint32_t operations; // bitset of enum operation_types
   int flags; // flags from the userdata_flags enum
   char *dependency;
+  char *get_string; // custom string to get object pointer
 };
 
 static struct userdata *parsed_userdata;
@@ -922,6 +925,15 @@ void handle_singleton(void) {
       error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
     }
     string_copy(&(node->dependency), depends);
+  } else if (strcmp(type, keyword_get) == 0) {
+    if (node->get_string != NULL) {
+      error(ERROR_SINGLETON, "Singletons only support a single get");
+    }
+    char *get = strtok(NULL, "");
+    if (get == NULL) {
+      error(ERROR_DEPENDS, "Expected a get string for %s",node->name);
+    }
+    string_copy(&(node->get_string), get);
   } else if (strcmp(type, keyword_literal) == 0) {
     node->flags |= UD_FLAG_LITERAL;
   } else {
@@ -1505,7 +1517,11 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   if ((data->ud_type == UD_SINGLETON) && !(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
+      if (data->get_string == NULL) {
+        fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
+      } else {
+        fprintf(source, "    %s * ud = %s;\n", data->name, data->get_string);
+      }
       fprintf(source, "    if (ud == nullptr) {\n");
       fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", arg_count, access_name);
       fprintf(source, "    }\n\n");
