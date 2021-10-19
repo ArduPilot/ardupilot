@@ -181,7 +181,7 @@ void Rover::Log_Write_Sail()
 struct PACKED log_Steering {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t steering_in;
+    float steering_in;
     float steering_out;
     float desired_lat_accel;
     float lat_accel;
@@ -228,7 +228,7 @@ void Rover::Log_Write_Steering()
 struct PACKED log_Throttle {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t throttle_in;
+    float throttle_in;
     float throttle_out;
     float desired_speed;
     float speed;
@@ -297,7 +297,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: AccX: Acceleration
 
     { LOG_THR_MSG, sizeof(log_Throttle),
-      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccX", "s--nno", "F--000" },
+      "THR", "Qfffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccX", "s--nno", "F--000" },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
@@ -323,7 +323,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: TurnRate: Actual turn rate
     
     { LOG_STEERING_MSG, sizeof(log_Steering),
-      "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
+      "STER", "Qffffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
 
 // @LoggerMessage: GUID
 // @Description: Guided mode target information
