@@ -172,13 +172,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 
 #if HAL_HAVE_IMU_HEATER
-    // @Param: IMU_TARGTEMP
-    // @DisplayName: Target IMU temperature
-    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
+    // @Param: HEAT_TARG
+    // @DisplayName: Board heater temperature target
+    // @Description: Board heater target temperature for boards with controllable heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+    AP_GROUPINFO("HEAT_TARG", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -276,27 +276,27 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("BOOT_DELAY", 20, AP_BoardConfig, _boot_delay_ms, HAL_DEFAULT_BOOT_DELAY),
 
 #if HAL_HAVE_IMU_HEATER
-    // @Param: IMUHEAT_P
-    // @DisplayName: IMU Heater P gain
-    // @Description: IMU Heater P gain
+    // @Param: HEAT_P
+    // @DisplayName: Board Heater P gain
+    // @Description: Board Heater P gain
     // @Range: 1 500
     // @Increment: 1
     // @User: Advanced
 
-    // @Param: IMUHEAT_I
-    // @DisplayName: IMU Heater I gain
-    // @Description: IMU Heater integrator gain
+    // @Param: HEAT_I
+    // @DisplayName: Board Heater I gain
+    // @Description: Board Heater integrator gain
     // @Range: 0 1
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: IMUHEAT_IMAX
-    // @DisplayName: IMU Heater IMAX
-    // @Description: IMU Heater integrator maximum
+    // @Param: HEAT_IMAX
+    // @DisplayName: Board Heater IMAX
+    // @Description: Board Heater integrator maximum
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_SUBGROUPINFO(heater.pi_controller, "IMUHEAT_",  21, AP_BoardConfig, AC_PI),
+    AP_SUBGROUPINFO(heater.pi_controller, "HEAT_",  21, AP_BoardConfig, AC_PI),
 #endif
 
 #ifdef HAL_PIN_ALT_CONFIG
@@ -311,13 +311,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif // HAL_PIN_ALT_CONFIG
 
 #if HAL_HAVE_IMU_HEATER
-    // @Param: TEMPMGN_LOW
-    // @DisplayName: hearter temp lower margin
-    // @Description: Arming check will fail if IMU temp is more than this value lower than BRD_IMU_TARGTEMP, 0 disables
+    // @Param: HEAT_LOWMGN
+    // @DisplayName: Board heater temp lower margin
+    // @Description: Arming check will fail if temp is lower than this margin below BRD_HEAT_TARG. 0 disables the low temperature check
     // @Range: 0 20
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("TEMPMGN_LOW", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
+    AP_GROUPINFO("HEAT_LOWMGN", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
 #endif
 
     AP_GROUPEND
