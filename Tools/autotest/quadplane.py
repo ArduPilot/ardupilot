@@ -688,6 +688,45 @@ class AutoTestQuadPlane(AutoTest):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def FlightOptionsDisarm(self):
+        self.start_subtest("Basic arm in qloiter")
+        self.change_mode('QLOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("Ensure disarming in q-modes on ground works")
+        self.set_parameter("FLIGHT_OPTIONS", 1 << 11)
+        self.arm_vehicle()
+        self.disarm_vehicle()  # should be OK as we're not flying yet
+
+        self.start_subtest("Ensure no disarming mid-air with option set")
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(5, 50, relative=True)
+        self.set_rc(3, 1000)
+        disarmed = False
+        try:
+            self.disarm_vehicle()
+            disarmed = True
+        except ValueError as e:
+            self.progress("Got %s" % repr(e))
+            if "Expected MAV_RESULT_ACCEPTED got MAV_RESULT_FAILED" not in str(e):
+                raise e
+        if disarmed:
+            raise NotAchievedException("Disarmed when FLIGHT_OPTIONS says we shouldn't have")
+        self.change_mode('QLAND')
+        self.wait_disarmed()
+
+        self.start_subtest("Checking we can mid-air disarm in a q-mode without hte option set")
+        self.change_mode('QLOITER')
+        self.set_parameter("FLIGHT_OPTIONS", 0)
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(5, 50, relative=True)
+        self.disarm_vehicle()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -723,6 +762,9 @@ class AutoTestQuadPlane(AutoTest):
              "Test tailsitter support",
              self.tailsitter),
 
+            ("FlightOptionsDisarm",
+             "Check disarm behaviour in Q-mode",
+             self.FlightOptionsDisarm),
 
             ("LogUpload",
              "Log upload",

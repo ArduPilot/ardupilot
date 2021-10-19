@@ -3191,6 +3191,26 @@ class AutoTestPlane(AutoTest):
         if m.intake_manifold_temperature < 20:
             raise NotAchievedException("Bad intake manifold temperature")
 
+    def MidAirDisarmDisallowed(self):
+        self.takeoff(50)
+        self.disarm_vehicle()  # allowed via mavlink mid-air ordinarily
+        # mid-air re-arm...  Force required as EKF2 roll/pitch inconsistent
+        self.arm_vehicle(force=True)
+        self.set_parameter("FLIGHT_OPTIONS", 1 << 11)
+        disarmed = False
+        try:
+            self.disarm_vehicle()
+            disarmed = True
+        except ValueError as e:
+            self.progress("Got %s" % repr(e))
+            if "Expected MAV_RESULT_ACCEPTED got MAV_RESULT_FAILED" not in str(e):
+                raise e
+        if disarmed:
+            raise NotAchievedException("Disarmed when FLIGHT_OPTIONS says we shouldn't have")
+        # should still be able to force-disarm:
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3435,6 +3455,11 @@ class AutoTestPlane(AutoTest):
             ("HIGH_LATENCY2",
              "Set sending of HIGH_LATENCY2",
              self.HIGH_LATENCY2),
+
+            ("MidAirDisarmDisallowed",
+             "Ensure mid-air disarm is not possible",
+             self.MidAirDisarmDisallowed),
+
         ])
         return ret
 
