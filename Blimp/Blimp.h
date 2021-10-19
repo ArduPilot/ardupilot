@@ -44,7 +44,7 @@
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav_NavEKF.h>     // ArduPilot Mega inertial navigation library
+#include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_Arming/AP_Arming.h>
@@ -230,7 +230,7 @@ private:
     NotchFilterFloat vel_yaw_filter;
 
     // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
+    AP_InertialNav inertial_nav;
 
     // Vel & pos PIDs
     AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3, 0.02}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
