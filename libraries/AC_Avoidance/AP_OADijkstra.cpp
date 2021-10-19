@@ -620,7 +620,7 @@ bool AP_OADijkstra::create_fence_visgraph(AP_OADijkstra_Error &err_id)
                     if (!intersects_fence(start_seg, end_seg)) {
                         if (!_fence_visgraph.add_item({AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i},
                                                       {AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, j},
-                                                      (start_seg - end_seg).length())) {
+                                                      (start_seg - end_seg).length() * 0.01f)) {
                             // failure to add a point can only be caused by out-of-memory
                             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
                             return false;
@@ -654,7 +654,7 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
         if (get_point(i, seg_end)) {
             if (!intersects_fence(position, seg_end)) {
                 // line segment does not intersect with fences so add to visgraph
-                if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i}, (position - seg_end).length())) {
+                if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i}, (position - seg_end).length() * 0.01f)) {
                     return false;
                 }
             }
@@ -664,7 +664,7 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
     // add extra point to visibility graph if it doesn't intersect with polygon fence or exclusion polygons
     if (add_extra_position) {
         if (!intersects_fence(position, extra_position)) {
-            if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, (position - extra_position).length())) {
+            if (!visgraph.add_item(oaid, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, (position - extra_position).length() * 0.01f)) {
                 return false;
             }
         }
@@ -705,10 +705,10 @@ void AP_OADijkstra::update_visible_node_distances(node_index curr_node_idx)
                 node_index item_node_idx;
                 if (find_node_from_id(matching_id, item_node_idx)) {
                     // if current node's distance + distance to item is less than item's current distance, update item's distance
-                    const float dist_to_item_via_current_node = _short_path_data[curr_node_idx].distance_cm + item.distance_cm;
-                    if (dist_to_item_via_current_node < _short_path_data[item_node_idx].distance_cm) {
+                    const float dist_to_item_via_current_node = _short_path_data[curr_node_idx].distance + item.distance;
+                    if (dist_to_item_via_current_node < _short_path_data[item_node_idx].distance) {
                         // update item's distance and set "distance_from_idx" to current node's index
-                        _short_path_data[item_node_idx].distance_cm = dist_to_item_via_current_node;
+                        _short_path_data[item_node_idx].distance = dist_to_item_via_current_node;
                         _short_path_data[item_node_idx].distance_from_idx = curr_node_idx;
                     }
                 }
@@ -759,9 +759,9 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
     // scan through all nodes looking for closest
     for (node_index i=0; i<_short_path_data_numpoints; i++) {
         const ShortPathNode &node = _short_path_data[i];
-        if (!node.visited && (node.distance_cm < lowest_dist)) {
+        if (!node.visited && (node.distance < lowest_dist)) {
             lowest_idx = i;
-            lowest_dist = node.distance_cm;
+            lowest_dist = node.distance;
         }
     }
 
@@ -801,12 +801,12 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
         return false;
     }
 
-    // add origin and destination (node_type, id, visited, distance_from_idx, distance_cm) to short_path_data array
+    // add origin and destination (node_type, id, visited, distance_from_idx, distance_m) to short_path_data array
     _short_path_data[0] = {{AP_OAVisGraph::OATYPE_SOURCE, 0}, false, 0, 0};
     _short_path_data[1] = {{AP_OAVisGraph::OATYPE_DESTINATION, 0}, false, OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX, FLT_MAX};
     _short_path_data_numpoints = 2;
 
-    // add all inclusion and exclusion fence points to short_path_data array (node_type, id, visited, distance_from_idx, distance_cm)
+    // add all inclusion and exclusion fence points to short_path_data array (node_type, id, visited, distance_from_idx, distance_m)
     for (uint8_t i=0; i<total_numpoints(); i++) {
         _short_path_data[_short_path_data_numpoints++] = {{AP_OAVisGraph::OATYPE_INTERMEDIATE_POINT, i}, false, OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX, FLT_MAX};
     }
@@ -818,7 +818,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     for (uint16_t i = 0; i < _source_visgraph.num_items(); i++) {
         node_index node_idx;
         if (find_node_from_id(_source_visgraph[i].id2, node_idx)) {
-            _short_path_data[node_idx].distance_cm = _source_visgraph[i].distance_cm;
+            _short_path_data[node_idx].distance = _source_visgraph[i].distance;
             _short_path_data[node_idx].distance_from_idx = current_node_idx;
         } else {
             err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
@@ -858,7 +858,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
         }
         // fail if newest node has invalid distance_from_index
         if ((_short_path_data[nidx].distance_from_idx == OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX) ||
-            (_short_path_data[nidx].distance_cm >= FLT_MAX)) {
+            (_short_path_data[nidx].distance >= FLT_MAX)) {
             break;
         } else {
             // add node's id to path array
