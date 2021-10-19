@@ -322,7 +322,7 @@ AP_BattMonitor::init()
     if (drivers[instance] && state[instance].var_info) {
         Type type = get_type(instance);
         if((type == Type::ANALOG_VOLTAGE_AND_CURRENT) || (type == Type::ANALOG_VOLTAGE_ONLY) ||
-            (type == Type::FuelFlow) || (type == Type::FuelLevel_PWM)) {
+            (type == Type::FuelFlow) || (type == Type::FuelLevel_PWM) || (type == Type::Sum)) {
             backend_analog_var_info[instance] = state[instance].var_info;
             AP_Param::load_object_from_eeprom(drivers[instance], backend_analog_var_info[instance]);
         }
