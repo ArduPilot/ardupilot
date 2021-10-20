@@ -7328,6 +7328,23 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('GPS_TYPE', 1)
         self.do_RTL()
 
+    def GPSForYaw(self):
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.reboot_sitl()
+        ex = None
+        try:
+            self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+            m = self.assert_receive_message("GPS2_RAW")
+            self.progress(self.dump_message_verbose(m))
+            if m.yaw == 0:
+                raise NotAchievedException("Expected to get GPS-from-yaw")
+            self.wait_ready_to_arm()
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        if ex is not None:
+            raise ex
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -7944,6 +7961,10 @@ class AutoTestCopter(AutoTest):
             Test("WPNAV_SPEED_DN",
                  "Change speed (down) during misison",
                  self.WPNAV_SPEED_DN),
+
+            Test("GPSForYaw",
+                 "Moving baseline GPS yaw",
+                 self.GPSForYaw),
 
             ("DefaultIntervalsFromFiles",
              "Test setting default mavlink message intervals from files",
