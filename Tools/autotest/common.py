@@ -9385,13 +9385,15 @@ switch value'''
             self.drain_mav()
             self.delay_sim_time(0.5)
 
-    def wait_gps_fix_type_gte(self, fix_type, timeout=30):
+    def wait_gps_fix_type_gte(self, fix_type, timeout=30, message_type="GPS_RAW_INT", verbose=False):
         tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise AutoTestTimeoutException("Did not get good GPS lock")
-            m = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=0.1)
+            m = self.mav.recv_match(type=message_type, blocking=True, timeout=0.1)
+            if verbose:
+                self.progress("Received: %s" % str(m))
             if m is None:
                 continue
             if m.fix_type >= fix_type:
@@ -11097,3 +11099,8 @@ switch value'''
         for d in defaults_filepath:
             defaults_list.append(os.path.join(testdir, d))
         return defaults_list
+
+    def load_default_params_file(self, filename):
+        '''load a file from Tools/autotest/default_params'''
+        filepath = util.reltopdir(os.path.join("Tools", "autotest", "default_params", filename))
+        self.repeatedly_apply_parameter_file(filepath)
