@@ -851,6 +851,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             }
             break;
 
+#if AP_MOTORS_MAX_NUM_MOTORS > 6
         case MOTOR_FRAME_OCTA:
             _frame_class_string = "OCTA";
             _mav_type = MAV_TYPE_OCTOROTOR;
@@ -1105,6 +1106,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     break;
             }}
             break;
+#endif //AP_MOTORS_MAX_NUM_MOTORS
 
         case MOTOR_FRAME_Y6:
             _mav_type = MAV_TYPE_HEXAROTOR;
@@ -1154,6 +1156,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             }
             break;
 
+#if AP_MOTORS_MAX_NUM_MOTORS > 6
         case MOTOR_FRAME_DECA:
             _mav_type = MAV_TYPE_DECAROTOR;
             _frame_class_string = "DECA";
@@ -1198,7 +1201,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     break;
             }
             break;
-
+#endif //AP_MOTORS_MAX_NUM_MOTORS
         default:
             // matrix doesn't support the configured class
             _frame_class_string = "UNSUPPORTED";

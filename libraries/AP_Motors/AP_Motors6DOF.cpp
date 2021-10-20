@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @Values: 1:normal,-1:reverse
     // @User: Standard
     AP_GROUPINFO("6_DIRECTION", 6, AP_Motors6DOF, _motor_reverse[5], 1),
-
+#if AP_MOTORS_MAX_NUM_MOTORS > 6
     // @Param: 7_DIRECTION
     // @DisplayName: Motor normal or reverse
     // @Description: Used to change motor rotation directions without changing wires
@@ -117,6 +117,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @Values: 1:normal,-1:reverse
     // @User: Standard
     AP_GROUPINFO("12_DIRECTION", 13, AP_Motors6DOF, _motor_reverse[11], 1),
+#endif //AP_MOTORS_MAX_NUM_MOTORS
 
     AP_GROUPEND
 };
@@ -140,7 +141,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         add_motor_raw_6dof(AP_MOTORS_MOT_5,     0,              -1.0f,          0,              1.0f,               0,                  0,              5);
         add_motor_raw_6dof(AP_MOTORS_MOT_6,     -0.25f,         0,              0,              0,                  0,                  1.0f,           6);
         break;
-
+#if AP_MOTORS_MAX_NUM_MOTORS > 6
     case SUB_FRAME_VECTORED_6DOF_90DEG:
         _frame_class_string = "VECTORED_6DOF_90DEG";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     1.0f,           1.0f,           0,              1.0f,               0,                  0,              1);
@@ -164,7 +165,7 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         add_motor_raw_6dof(AP_MOTORS_MOT_7,     1.0f,           1.0f,           0,              -1.0f,              0,                  0,              7);
         add_motor_raw_6dof(AP_MOTORS_MOT_8,     -1.0f,          1.0f,           0,              -1.0f,              0,                  0,              8);
         break;
-
+#endif //AP_MOTORS_MAX_NUM_MOTORS
     case SUB_FRAME_VECTORED:
         _frame_class_string = "VECTORED";
         add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              0,              1.0f,           0,                  -1.0f,              1.0f,           1);

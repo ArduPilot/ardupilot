@@ -20,7 +20,10 @@
 #define AP_MOTORS_MOT_11 10U
 #define AP_MOTORS_MOT_12 11U
 
+#ifndef AP_MOTORS_MAX_NUM_MOTORS
 #define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+static_assert((AP_MOTORS_MAX_NUM_MOTORS == 6) || (AP_MOTORS_MAX_NUM_MOTORS == 12), "Only 6 or 12 motors supported");
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
