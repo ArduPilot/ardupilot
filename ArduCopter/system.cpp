@@ -433,10 +433,12 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_QUAD:
         case AP_Motors::MOTOR_FRAME_HEXA:
         case AP_Motors::MOTOR_FRAME_Y6:
+#if AP_MOTORS_MAX_NUM_MOTORS > 6
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
         case AP_Motors::MOTOR_FRAME_DECA:
+#endif // AP_MOTORS_MAX_NUM_MOTORS
         case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
         default:
             motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
