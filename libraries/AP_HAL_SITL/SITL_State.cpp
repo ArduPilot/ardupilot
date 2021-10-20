@@ -825,7 +825,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     float throttle = 0.0f;
 
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    for (i=0; i<SITL_NUM_CHANNELS; i++) {
+    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
         if (engine_fail & 1U<<i) {
             if (_vehicle != Rover) {
                 input.servos[i] = ((input.servos[i]-1000) * engine_mul) + 1000;
