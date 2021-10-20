@@ -260,13 +260,13 @@ public:
     void get_stopping_point_z_cm(postype_t &stopping_point) const;
 
     /// get_pos_error_cm - get position error vector between the current and target position
-    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position().topostype()).tofloat(); }
+    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position_neu_cm().topostype()).tofloat(); }
 
     /// get_pos_error_xy_cm - get the length of the position error vector in the xy plane
-    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position_xy().topostype(), _pos_target.xy()); }
+    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position_xy_cm().topostype(), _pos_target.xy()); }
 
     /// get_pos_error_z_cm - returns altitude error in cm
-    float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_altitude()); }
+    float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_position_z_up_cm()); }
 
 
     /// Velocity
