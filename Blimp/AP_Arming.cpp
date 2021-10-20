@@ -69,7 +69,7 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         nav_filter_status filt_status = blimp.inertial_nav.get_filter_status();
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
-            if (fabsf(blimp.inertial_nav.get_altitude() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(blimp.inertial_nav.get_position_z_up_cm() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(ARMING_CHECK_BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -364,7 +364,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         }
 
         // remember the height when we armed
-        blimp.arming_altitude_m = blimp.inertial_nav.get_altitude() * 0.01;
+        blimp.arming_altitude_m = blimp.inertial_nav.get_position_z_up_cm() * 0.01;
     }
 
     hal.util->set_soft_armed(true);
