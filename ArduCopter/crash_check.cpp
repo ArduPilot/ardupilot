@@ -317,20 +317,6 @@ void Copter::parachute_check()
     }
 }
 
-// parachute_release - trigger the release of the parachute, disarm the motors and notify the user
-void Copter::parachute_release()
-{
-    // disarm motors
-    arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
-
-    // release parachute
-    parachute.release();
-
-#if LANDING_GEAR_ENABLED == ENABLED
-    // deploy landing gear
-    landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
-#endif
-}
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
 //   checks if the vehicle is landed 
