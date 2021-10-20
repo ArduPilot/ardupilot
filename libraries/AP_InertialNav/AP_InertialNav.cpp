@@ -52,75 +52,73 @@ nav_filter_status AP_InertialNav::get_filter_status() const
 }
 
 /**
- * get_position - returns the current position relative to the home location in cm.
+ * get_position_neu_cm - returns the current position relative to the home location in cm.
  *
  * @return
  */
-const Vector3f &AP_InertialNav::get_position(void) const 
+const Vector3f &AP_InertialNav::get_position_neu_cm(void) const 
 {
     return _relpos_cm;
 }
 
 /**
- * get_position_xy - returns the current x-y position relative to the home location in cm.
+ * get_position_xy_cm - returns the current x-y position relative to the home location in cm.
  *
  * @return
  */
-const Vector2f &AP_InertialNav::get_position_xy() const
+const Vector2f &AP_InertialNav::get_position_xy_cm() const
 {
     return _relpos_cm.xy();
 }
 
 /**
- * get_velocity - returns the current velocity in cm/s
+ * get_position_z_up_cm - returns the current z position relative to the home location, frame z-axis up, in cm.
+ * @return
+ */
+float AP_InertialNav::get_position_z_up_cm() const
+{
+    return _relpos_cm.z;
+}
+
+/**
+ * get_velocity_neu_cms - returns the current velocity in cm/s
  *
  * @return velocity vector:
  *      		.x : latitude  velocity in cm/s
  * 				.y : longitude velocity in cm/s
  * 				.z : vertical  velocity in cm/s
  */
-const Vector3f &AP_InertialNav::get_velocity() const
+const Vector3f &AP_InertialNav::get_velocity_neu_cms() const
 {
     return _velocity_cm;
 }
 
 /**
- * get_velocity_xy - returns the current x-y velocity relative to the home location in cm.
+ * get_velocity_xy_cms - returns the current x-y velocity relative to the home location in cm.
  *
  * @return
  */
-const Vector2f &AP_InertialNav::get_velocity_xy() const
+const Vector2f &AP_InertialNav::get_velocity_xy_cms() const
 {
     return _velocity_cm.xy();
 }
 
 /**
- * get_speed_xy - returns the current horizontal speed in cm/s
+ * get_speed_xy_cms - returns the current horizontal speed in cm/s
  *
  * @returns the current horizontal speed in cm/s
  */
-float AP_InertialNav::get_speed_xy() const
+float AP_InertialNav::get_speed_xy_cms() const
 {
     return _velocity_cm.xy().length();
 }
 
 /**
- * get_altitude - get latest altitude estimate in cm
- * @return
- */
-float AP_InertialNav::get_altitude() const
-{
-    return _relpos_cm.z;
-}
-
-/**
- * get_velocity_z - returns the current climbrate.
+ * get_velocity_z_up_cms - returns the current z-axis velocity, frame z-axis up, in cm/s
  *
- * @see get_velocity().z
- *
- * @return climbrate in cm/s
+ * @return z-axis velocity, frame z-axis up, in cm/s
  */
-float AP_InertialNav::get_velocity_z() const
+float AP_InertialNav::get_velocity_z_up_cms() const
 {
     return _velocity_cm.z;
 }
