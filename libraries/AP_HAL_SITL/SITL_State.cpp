@@ -180,7 +180,7 @@ void SITL_State::_fdm_input_step(void)
 
         if (_sitl->adsb_plane_count >= 0 &&
             adsb == nullptr) {
-            adsb = new SITL::ADSB(_sitl->state, sitl_model->get_home());
+            adsb = new SITL::ADSB(_sitl->state, sitl_model->get_home(), get_instance());
         } else if (_sitl->adsb_plane_count == -1 &&
                    adsb != nullptr) {
             delete adsb;
