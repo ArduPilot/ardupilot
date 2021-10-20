@@ -104,7 +104,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: PILOT_STEER_TYPE
     // @DisplayName: Pilot input steering type
-    // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
+    // @Description: Pilot RC input interpretation
     // @Values: 0:Default,1:Two Paddles Input,2:Direction reversed when backing up,3:Direction unchanged when backing up
     // @User: Standard
     GSCALAR(pilot_steer_type, "PILOT_STEER_TYPE", 0),
