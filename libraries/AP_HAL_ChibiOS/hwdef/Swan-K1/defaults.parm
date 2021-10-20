@@ -14,6 +14,9 @@ SERVO3_FUNCTION 35
 SERVO4_FUNCTION 36
 Q_OPTIONS 128
 
+#Second IMU seems to give better results on this board
+EK3_PRIMARY 1
+
 # RC input is SBUS on serial4 TX pin
 SERIAL4_PROTOCOL 23
 SERIAL4_OPTIONS 8
