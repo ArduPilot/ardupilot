@@ -21,7 +21,7 @@ struct PACKED log_Control_Tuning {
     int16_t  target_climb_rate;
     int16_t  climb_rate;
     uint8_t  standby;
-}
+};
 
 // Write a control tuning packet
 void Copter::Log_Write_Control_Tuning()
@@ -63,6 +63,7 @@ void Copter::Log_Write_Control_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z()), // float -> int16_t
         standby             : standby_active
     };
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write an attitude packet
