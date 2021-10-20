@@ -3636,12 +3636,29 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if HAL_EFI_MAVLINK_ENABLED
+    case MAVLINK_MSG_ID_EFI_STATUS:
+        handle_efi_message(msg);
+        break;
+#endif
+
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
         break;
     }
 
 }
+
+#if HAL_EFI_MAVLINK_ENABLED
+void GCS_MAVLINK::handle_efi_message(const mavlink_message_t &msg)
+{
+    AP_EFI *efi = AP::EFI();
+    if (efi == nullptr) {
+        return;
+    }
+    efi->handle_mavlink_msg(*this, msg);
+}
+#endif
 
 #if HAL_GENERATOR_MAVLINK_ENABLED
 void GCS_MAVLINK::handle_generator_message(const mavlink_message_t &msg)
