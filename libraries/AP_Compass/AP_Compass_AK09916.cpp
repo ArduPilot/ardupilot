@@ -49,6 +49,7 @@ extern const AP_HAL::HAL &hal;
 
 #define ICM_WHOAMI_VAL      0xEA
 
+#define AK09915_Device_ID   0x10
 #define AK09916_Device_ID   0x09
 #define AK09918_Device_ID   0x0c
 #define AK09916_MILLIGAUSS_SCALE 10.0f
@@ -345,6 +346,9 @@ bool AP_Compass_AK09916::_check_id()
         /* Read AK09916's id */
         if (_bus->register_read(REG_DEVICE_ID, &deviceid)) {
             switch (deviceid) {
+            case AK09915_Device_ID:
+                _devtype = DEVTYPE_AK09915;
+                return true;
             case AK09916_Device_ID:
                 _devtype = DEVTYPE_AK09916;
                 return true;
