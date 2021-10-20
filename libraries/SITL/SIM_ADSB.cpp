@@ -117,8 +117,8 @@ void ADSB::send_report(void)
         // threading issue with non-blocking sockets and the initial wait on uartA
         return;
     }
-    if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port);
+    if (!mavlink.connected && mav_socket.connect(target_address, target_port_base + 10 * instance)) {
+        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port_base + 10 * instance);
         mavlink.connected = true;
     }
     if (!mavlink.connected) {
