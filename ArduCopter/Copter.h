@@ -914,6 +914,7 @@ private:
 
     bool get_standby() const override { return standby_active; }
 
+#if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;
 #else
