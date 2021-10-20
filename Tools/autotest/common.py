@@ -1382,7 +1382,8 @@ class AutoTest(ABC):
             return self.repeatedly_apply_parameter_file_mavproxy(filepath)
         parameters = mavparm.MAVParmDict()
 #        correct_parameters = set()
-        parameters.load(filepath)
+        if not parameters.load(filepath):
+            raise ValueError("Param load failed")
         param_dict = {}
         for p in parameters.keys():
             param_dict[p] = parameters[p]
