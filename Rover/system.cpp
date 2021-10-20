@@ -147,13 +147,6 @@ void Rover::startup_ground(void)
 {
     set_mode(mode_initializing, ModeReason::INITIALISED);
 
-    gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
-
-    #if(GROUND_START_DELAY > 0)
-        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
-        hal.scheduler->delay(GROUND_START_DELAY * 1000);
-    #endif
-
     // IMU ground start
     //------------------------
     //
