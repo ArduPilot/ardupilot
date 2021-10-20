@@ -108,7 +108,7 @@ void ModeFollow::run()
         // calculate vehicle heading
         switch (g2.follow.get_yaw_behave()) {
             case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
-                if (dist_vec.xy().length() > 1.0f) {
+                if (dist_vec.xy().length_squared() > 1.0) {
                     yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
                     use_yaw = true;
                 }
@@ -125,7 +125,7 @@ void ModeFollow::run()
             }
 
             case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
-                if (desired_velocity_neu_cms.xy().length() > 100.0f) {
+                if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
                     yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
                     use_yaw = true;
                 }
