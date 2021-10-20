@@ -31,6 +31,9 @@ public:
     // Update the state structure
     virtual void update() = 0;
 
+    virtual void handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg) {}
+
+
 protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();

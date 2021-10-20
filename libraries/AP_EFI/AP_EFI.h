@@ -25,7 +25,13 @@
 #define HAL_EFI_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
 #endif
 
+#ifndef HAL_EFI_MAVLINK_ENABLED
+#define HAL_EFI_MAVLINK_ENABLED (BOARD_FLASH_SIZE > 1024)
+#endif
+
 #if HAL_EFI_ENABLED
+
+
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
 
@@ -74,6 +80,9 @@ public:
         NONE       = 0,
         MegaSquirt = 1,
         NWPMU     = 2,
+#if HAL_EFI_MAVLINK_ENABLED
+        MAVLINK   = 3,
+#endif
     };
 
     static AP_EFI *get_singleton(void) {
@@ -82,6 +91,9 @@ public:
 
     // send EFI_STATUS
     void send_mavlink_status(mavlink_channel_t chan);
+
+    // handle EFI_STATUS message
+    void handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg);
 
 protected:
 

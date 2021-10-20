@@ -19,6 +19,7 @@
 
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_NWPMU.h"
+#include "AP_EFI_MAVLink.h"
 #include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -78,9 +79,14 @@ void AP_EFI::init(void)
         break;
     case Type::NWPMU:
 #if HAL_EFI_NWPWU_ENABLED
-        backend = new AP_EFI_NWPMU(*this);
+        backend = new AP_EFI_MAVLink(*this);
 #endif
         break;
+#if HAL_EFI_MAVLINK_ENABLED
+    case Type::MAVLINK:
+        backend = new AP_EFI_MAVLink(*this);
+        break;
+#endif
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Unknown EFI type");
         break;
@@ -231,6 +237,15 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         state.cylinder_status[0].injection_time_ms,
         0, 0, 0);
 }
+
+void AP_EFI::handle_mavlink_msg(const GCS_MAVLINK &channel, const mavlink_message_t &msg)
+{
+    if (backend == nullptr) {
+        return;
+    }
+    backend->handle_mavlink_msg(channel, msg);
+}
+
 
 namespace AP {
 AP_EFI *EFI()
