@@ -186,7 +186,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     circle_nav.get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -206,7 +206,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy().topostype(), circle_nav.get_center().xy());
+        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), circle_nav.get_center().xy());
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
