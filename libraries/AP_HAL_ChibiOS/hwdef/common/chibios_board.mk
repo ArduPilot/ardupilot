@@ -130,7 +130,8 @@ CSRC += $(HWDEF)/common/stubs.c \
 #	   test.c
 
 LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
-             $(CRASHCATCHER)/HexDump/src/HexDump.c
+             $(CRASHCATCHER)/HexDump/src/HexDump.c \
+             $(HWDEF)/common/crashcatcher.c
 
 LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
 
