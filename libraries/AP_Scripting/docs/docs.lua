@@ -3,6 +3,9 @@
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 
+-- set and get for felid types share function names
+---@diagnostic disable: duplicate-set-field
+
 -- manual bindings
 
 ---@class uint32_t_ud
