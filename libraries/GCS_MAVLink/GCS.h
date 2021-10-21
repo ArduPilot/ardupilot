@@ -578,7 +578,7 @@ protected:
 
     virtual float vfr_hud_climbrate() const;
     virtual float vfr_hud_airspeed() const;
-    virtual int16_t vfr_hud_throttle() const { return 0; }
+    virtual float vfr_hud_throttle() const { return 0; }
     virtual float vfr_hud_alt() const;
 
 #if HAL_HIGH_LATENCY2_ENABLED
@@ -1061,7 +1061,7 @@ public:
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
 
     // get the VFR_HUD throttle
-    int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0)->vfr_hud_throttle():0; }
+    float get_hud_throttle(void) const { return num_gcs()>0?chan(0)->vfr_hud_throttle():0; }
 
     // update uart pass-thru
     void update_passthru();
