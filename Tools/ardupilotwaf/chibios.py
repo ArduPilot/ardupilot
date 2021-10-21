@@ -410,6 +410,7 @@ def configure(cfg):
     kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
     env.CH_ROOT = srcpath('modules/ChibiOS')
+    env.CC_ROOT = srcpath('modules/CrashDebug/CrashCatcher')
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
@@ -424,6 +425,7 @@ def configure(cfg):
 
     # relative paths to pass to make, relative to directory that make is run from
     env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
+    env.CC_ROOT_REL = os.path.relpath(env.CC_ROOT, env.BUILDROOT)
     env.AP_HAL_REL = os.path.relpath(env.AP_HAL_ROOT, env.BUILDROOT)
     env.BUILDDIR_REL = os.path.relpath(env.BUILDDIR, env.BUILDROOT)
 
@@ -513,7 +515,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
@@ -529,10 +531,10 @@ def build(bld):
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+        rule="BUILDDIR='${BUILDDIR_REL}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
         group='dynamic_sources',
         source=common_src,
-        target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
+        target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
     )
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
@@ -547,6 +549,7 @@ def build(bld):
         bld.env.LIB += ['DSP']
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
+    bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
     # own code note that we also include functions that we deliberately don't
     # implement anywhere (the FILE* functions). This allows us to get link
