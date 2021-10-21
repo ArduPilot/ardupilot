@@ -61,20 +61,40 @@ function motor_factor_table() end
 ---@return number
 function motor_factor_table_ud:throttle(index) end
 
+-- set array field
+---@param index integer
+---@param value number
+function motor_factor_table_ud:throttle(index, value) end
+
 -- get array field
 ---@param index integer
 ---@return number
 function motor_factor_table_ud:yaw(index) end
+
+-- set array field
+---@param index integer
+---@param value number
+function motor_factor_table_ud:yaw(index, value) end
 
 -- get array field
 ---@param index integer
 ---@return number
 function motor_factor_table_ud:pitch(index) end
 
+-- set array field
+---@param index integer
+---@param value number
+function motor_factor_table_ud:pitch(index, value) end
+
 -- get array field
 ---@param index integer
 ---@return number
 function motor_factor_table_ud:roll(index) end
+
+-- set array field
+---@param index integer
+---@param value number
+function motor_factor_table_ud:roll(index, value) end
 
 
 -- desc
@@ -141,6 +161,10 @@ function mavlink_mission_item_int_t_ud:seq(value) end
 ---@return number
 function mavlink_mission_item_int_t_ud:z() end
 
+-- set field
+---@param value number
+function mavlink_mission_item_int_t_ud:z(value) end
+
 -- get field
 ---@return integer
 function mavlink_mission_item_int_t_ud:y() end
@@ -161,17 +185,33 @@ function mavlink_mission_item_int_t_ud:x(value) end
 ---@return number
 function mavlink_mission_item_int_t_ud:param4() end
 
+-- set field
+---@param value number
+function mavlink_mission_item_int_t_ud:param4(value) end
+
 -- get field
 ---@return number
 function mavlink_mission_item_int_t_ud:param3() end
+
+-- set field
+---@param value number
+function mavlink_mission_item_int_t_ud:param3(value) end
 
 -- get field
 ---@return number
 function mavlink_mission_item_int_t_ud:param2() end
 
+-- set field
+---@param value number
+function mavlink_mission_item_int_t_ud:param2(value) end
+
 -- get field
 ---@return number
 function mavlink_mission_item_int_t_ud:param1() end
+
+-- set field
+---@param value number
+function mavlink_mission_item_int_t_ud:param1(value) end
 
 
 -- desc
@@ -212,9 +252,17 @@ function Vector2f() end
 ---@return number
 function Vector2f_ud:y() end
 
+-- set field
+---@param value number
+function Vector2f_ud:y(value) end
+
 -- get field
 ---@return number
 function Vector2f_ud:x() end
+
+-- set field
+---@param value number
+function Vector2f_ud:x(value) end
 
 -- desc
 ---@param param1 number
@@ -251,13 +299,25 @@ function Vector3f() end
 ---@return number
 function Vector3f_ud:z() end
 
+-- set field
+---@param value number
+function Vector3f_ud:z(value) end
+
 -- get field
 ---@return number
 function Vector3f_ud:y() end
 
+-- set field
+---@param value number
+function Vector3f_ud:y(value) end
+
 -- get field
 ---@return number
 function Vector3f_ud:x() end
+
+-- set field
+---@param value number
+function Vector3f_ud:x(value) end
 
 -- desc
 ---@param param1 number
@@ -506,7 +566,7 @@ function RC_Channel_ud:norm_input() end
 periph = {}
 
 -- desc
----@return uint32_t
+---@return uint32_t_ud
 function periph:get_vehicle_state() end
 
 -- desc
@@ -788,7 +848,7 @@ esc_telem = {}
 
 -- desc
 ---@param param1 integer
----@return uint32_t|nil
+---@return uint32_t_ud|nil
 function esc_telem:get_usage_seconds(param1) end
 
 -- desc
@@ -1092,7 +1152,7 @@ function vehicle:start_takeoff(param1) end
 function vehicle:get_control_output(param1) end
 
 -- desc
----@return uint32_t
+---@return uint32_t_ud
 function vehicle:get_time_flying_ms() end
 
 -- desc
@@ -1151,7 +1211,7 @@ function gcs:send_named_float(name, value) end
 
 -- set message interval for a given serial port and message id
 ---@param port_num integer -- serial port number
----@param msg_id uint32_t -- MAVLink message id
+---@param msg_id uint32_t_ud -- MAVLink message id
 ---@param interval_us integer -- interval in micro seconds
 ---@return integer
 ---| '0' # Accepted
@@ -1352,12 +1412,12 @@ function gps:have_vertical_velocity(param1) end
 
 -- desc
 ---@param param1 integer
----@return uint32_t
+---@return uint32_t_ud
 function gps:last_message_time_ms(param1) end
 
 -- desc
 ---@param param1 integer
----@return uint32_t
+---@return uint32_t_ud
 function gps:last_fix_time_ms(param1) end
 
 -- desc
@@ -1372,7 +1432,7 @@ function gps:get_hdop(param1) end
 
 -- desc
 ---@param param1 integer
----@return uint32_t
+---@return uint32_t_ud
 function gps:time_week_ms(param1) end
 
 -- desc
