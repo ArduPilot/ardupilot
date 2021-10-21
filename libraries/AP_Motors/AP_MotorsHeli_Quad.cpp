@@ -147,10 +147,15 @@ void AP_MotorsHeli_Quad::calculate_scalars()
         _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
     }
 
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective_zero_thrst_deg = constrain_float(_collective_zero_thrst_deg, _collective_min_deg, _collective_max_deg);
 
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
+    // calculate collective zero thrust point as a number from 0 to 1
+    _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+
+    _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
+
+    // calculate collective land min point as a number from 0 to 1
+    _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -238,13 +243,13 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_mid_pct) {
-        collective_out = _collective_mid_pct;
+    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct) {
+        collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
     }
 
     // updates below mid collective flag
-    if (collective_out <= _collective_mid_pct) {
+    if (collective_out <= _collective_land_min_pct) {
         _heliflags.below_mid_collective = true;
     } else {
         _heliflags.below_mid_collective = false;
@@ -263,7 +268,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     _main_rotor.set_collective(fabsf(collective_out));
 
     // rescale collective for overhead calc
-    collective_out -= _collective_mid_pct;
+    collective_out -= _collective_zero_pct;
 
     // reserve some collective for attitude control
     collective_out *= collective_range;
@@ -304,7 +309,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         // scale output to 0 to 1
-        _out[i] += _collective_mid_pct;
+        _out[i] += _collective_zero_pct;
         // scale output to -1 to 1 for servo output
         _out[i] = _out[i] * 2.0f - 1.0f;
     }
