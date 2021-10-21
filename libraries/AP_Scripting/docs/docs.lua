@@ -4,485 +4,501 @@
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 
 -- desc
----@class CANFrame
----@return CANFrame
+---@class CANFrame_ud
+local CANFrame_ud = {}
+
+---@return CANFrame_ud
 function CANFrame() end
 
 -- get field
 ---@return integer
-function CANFrame:dlc() end
+function CANFrame_ud:dlc() end
 
 -- set field
 ---@param value integer
-function CANFrame:dlc(value) end
+function CANFrame_ud:dlc(value) end
 
--- get field
+-- get array field
 ---@param index integer
 ---@return integer
-function CANFrame:data(index) end
+function CANFrame_ud:data(index) end
 
--- set field
+-- set array field
 ---@param index integer
 ---@param value integer
-function CANFrame:data(index, value) end
+function CANFrame_ud:data(index, value) end
 
 -- get field
----@return uint32_t
-function CANFrame:id() end
+---@return uint32_t_ud
+function CANFrame_ud:id() end
 
 -- set field
----@param value uint32_t
-function CANFrame:id(value) end
+---@param value uint32_t_ud
+function CANFrame_ud:id(value) end
 
 -- desc
 ---@return boolean
-function CANFrame:isErrorFrame() end
+function CANFrame_ud:isErrorFrame() end
 
 -- desc
 ---@return boolean
-function CANFrame:isRemoteTransmissionRequest() end
+function CANFrame_ud:isRemoteTransmissionRequest() end
 
 -- desc
 ---@return boolean
-function CANFrame:isExtended() end
+function CANFrame_ud:isExtended() end
 
 
 -- desc
----@class motor_factor_table
----@return motor_factor_table
+---@class motor_factor_table_ud
+local motor_factor_table_ud = {}
+
+---@return motor_factor_table_ud
 function motor_factor_table() end
 
--- get field
+-- get array field
 ---@param index integer
 ---@return number
-function motor_factor_table:throttle(index) end
+function motor_factor_table_ud:throttle(index) end
 
--- get field
+-- get array field
 ---@param index integer
 ---@return number
-function motor_factor_table:yaw(index) end
+function motor_factor_table_ud:yaw(index) end
 
--- get field
+-- get array field
 ---@param index integer
 ---@return number
-function motor_factor_table:pitch(index) end
+function motor_factor_table_ud:pitch(index) end
 
--- get field
+-- get array field
 ---@param index integer
 ---@return number
-function motor_factor_table:roll(index) end
+function motor_factor_table_ud:roll(index) end
 
 
 -- desc
----@class PWMSource
----@return PWMSource
+---@class PWMSource_ud
+local PWMSource_ud = {}
+
+---@return PWMSource_ud
 function PWMSource() end
 
 -- desc
 ---@return integer
-function PWMSource:get_pwm_avg_us() end
+function PWMSource_ud:get_pwm_avg_us() end
 
 -- desc
 ---@return integer
-function PWMSource:get_pwm_us() end
+function PWMSource_ud:get_pwm_us() end
 
 -- desc
 ---@param param1 integer
 ---@return boolean
-function PWMSource:set_pin(param1) end
+function PWMSource_ud:set_pin(param1) end
 
 
 -- desc
----@class mavlink_mission_item_int_t
----@return mavlink_mission_item_int_t
+---@class mavlink_mission_item_int_t_ud
+local mavlink_mission_item_int_t_ud = {}
+
+---@return mavlink_mission_item_int_t_ud
 function mavlink_mission_item_int_t() end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:current() end
+function mavlink_mission_item_int_t_ud:current() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:current(value) end
+function mavlink_mission_item_int_t_ud:current(value) end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:frame() end
+function mavlink_mission_item_int_t_ud:frame() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:frame(value) end
+function mavlink_mission_item_int_t_ud:frame(value) end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:command() end
+function mavlink_mission_item_int_t_ud:command() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:command(value) end
+function mavlink_mission_item_int_t_ud:command(value) end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:seq() end
+function mavlink_mission_item_int_t_ud:seq() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:seq(value) end
+function mavlink_mission_item_int_t_ud:seq(value) end
 
 -- get field
 ---@return number
-function mavlink_mission_item_int_t:z() end
+function mavlink_mission_item_int_t_ud:z() end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:y() end
+function mavlink_mission_item_int_t_ud:y() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:y(value) end
+function mavlink_mission_item_int_t_ud:y(value) end
 
 -- get field
 ---@return integer
-function mavlink_mission_item_int_t:x() end
+function mavlink_mission_item_int_t_ud:x() end
 
 -- set field
 ---@param value integer
-function mavlink_mission_item_int_t:x(value) end
+function mavlink_mission_item_int_t_ud:x(value) end
 
 -- get field
 ---@return number
-function mavlink_mission_item_int_t:param4() end
+function mavlink_mission_item_int_t_ud:param4() end
 
 -- get field
 ---@return number
-function mavlink_mission_item_int_t:param3() end
+function mavlink_mission_item_int_t_ud:param3() end
 
 -- get field
 ---@return number
-function mavlink_mission_item_int_t:param2() end
+function mavlink_mission_item_int_t_ud:param2() end
 
 -- get field
 ---@return number
-function mavlink_mission_item_int_t:param1() end
+function mavlink_mission_item_int_t_ud:param1() end
 
 
 -- desc
----@class Parameter
----@return Parameter
+---@class Parameter_ud
+local Parameter_ud = {}
+
+---@return Parameter_ud
 function Parameter() end
 
 -- desc
 ---@param param1 number
 ---@return boolean
-function Parameter:set_and_save(param1) end
+function Parameter_ud:set_and_save(param1) end
 
 -- desc
 ---@param param1 number
 ---@return boolean
-function Parameter:set(param1) end
+function Parameter_ud:set(param1) end
 
 -- desc
 ---@return number|nil
-function Parameter:get() end
+function Parameter_ud:get() end
 
 -- desc
 ---@param param1 string
 ---@return boolean
-function Parameter:init(param1) end
+function Parameter_ud:init(param1) end
 
 
 -- desc
----@class Vector2f
----@return Vector2f
+---@class Vector2f_ud
+local Vector2f_ud = {}
+
+---@return Vector2f_ud
 function Vector2f() end
 
 -- get field
 ---@return number
-function Vector2f:y() end
+function Vector2f_ud:y() end
 
 -- get field
 ---@return number
-function Vector2f:x() end
+function Vector2f_ud:x() end
 
 -- desc
 ---@param param1 number
-function Vector2f:rotate(param1) end
+function Vector2f_ud:rotate(param1) end
 
 -- desc
 ---@return boolean
-function Vector2f:is_zero() end
+function Vector2f_ud:is_zero() end
 
 -- desc
 ---@return boolean
-function Vector2f:is_inf() end
+function Vector2f_ud:is_inf() end
 
 -- desc
 ---@return boolean
-function Vector2f:is_nan() end
+function Vector2f_ud:is_nan() end
 
 -- desc
-function Vector2f:normalize() end
+function Vector2f_ud:normalize() end
 
 -- desc
 ---@return number
-function Vector2f:length() end
+function Vector2f_ud:length() end
 
 
 -- desc
----@class Vector3f
----@return Vector3f
+---@class Vector3f_ud
+local Vector3f_ud = {}
+
+---@return Vector3f_ud
 function Vector3f() end
 
 -- get field
 ---@return number
-function Vector3f:z() end
+function Vector3f_ud:z() end
 
 -- get field
 ---@return number
-function Vector3f:y() end
+function Vector3f_ud:y() end
 
 -- get field
 ---@return number
-function Vector3f:x() end
+function Vector3f_ud:x() end
 
 -- desc
 ---@param param1 number
----@return Vector3f
-function Vector3f:scale(param1) end
+---@return Vector3f_ud
+function Vector3f_ud:scale(param1) end
 
 -- desc
----@param param1 Vector3f
----@return Vector3f
-function Vector3f:cross(param1) end
+---@param param1 Vector3f_ud
+---@return Vector3f_ud
+function Vector3f_ud:cross(param1) end
 
 -- desc
----@param param1 Vector3f
+---@param param1 Vector3f_ud
 ---@return number
-function Vector3f:dot(param1) end
+function Vector3f_ud:dot(param1) end
 
 -- desc
 ---@return boolean
-function Vector3f:is_zero() end
+function Vector3f_ud:is_zero() end
 
 -- desc
 ---@return boolean
-function Vector3f:is_inf() end
+function Vector3f_ud:is_inf() end
 
 -- desc
 ---@return boolean
-function Vector3f:is_nan() end
+function Vector3f_ud:is_nan() end
 
 -- desc
-function Vector3f:normalize() end
+function Vector3f_ud:normalize() end
 
 -- desc
 ---@return number
-function Vector3f:length() end
+function Vector3f_ud:length() end
 
 
 -- desc
----@class Location
----@return Location
+---@class Location_ud
+local Location_ud = {}
+
+---@return Location_ud
 function Location() end
 
 -- get field
 ---@return boolean
-function Location:loiter_xtrack() end
+function Location_ud:loiter_xtrack() end
 
 -- set field
 ---@param value boolean
-function Location:loiter_xtrack(value) end
+function Location_ud:loiter_xtrack(value) end
 
 -- get field
 ---@return boolean
-function Location:origin_alt() end
+function Location_ud:origin_alt() end
 
 -- set field
 ---@param value boolean
-function Location:origin_alt(value) end
+function Location_ud:origin_alt(value) end
 
 -- get field
 ---@return boolean
-function Location:terrain_alt() end
+function Location_ud:terrain_alt() end
 
 -- set field
 ---@param value boolean
-function Location:terrain_alt(value) end
+function Location_ud:terrain_alt(value) end
 
 -- get field
 ---@return boolean
-function Location:relative_alt() end
+function Location_ud:relative_alt() end
 
 -- set field
 ---@param value boolean
-function Location:relative_alt(value) end
+function Location_ud:relative_alt(value) end
 
 -- get field
 ---@return integer
-function Location:alt() end
+function Location_ud:alt() end
 
 -- set field
 ---@param value integer
-function Location:alt(value) end
+function Location_ud:alt(value) end
 
 -- get field
 ---@return integer
-function Location:lng() end
+function Location_ud:lng() end
 
 -- set field
 ---@param value integer
-function Location:lng(value) end
+function Location_ud:lng(value) end
 
 -- get field
 ---@return integer
-function Location:lat() end
+function Location_ud:lat() end
 
 -- set field
 ---@param value integer
-function Location:lat(value) end
+function Location_ud:lat(value) end
 
 -- desc
 ---@param param1 integer
 ---@return boolean
-function Location:change_alt_frame(param1) end
+function Location_ud:change_alt_frame(param1) end
 
 -- desc
----@param param1 Location
----@return Vector2f
-function Location:get_distance_NE(param1) end
+---@param param1 Location_ud
+---@return Vector2f_ud
+function Location_ud:get_distance_NE(param1) end
 
 -- desc
----@param param1 Location
----@return Vector3f
-function Location:get_distance_NED(param1) end
+---@param param1 Location_ud
+---@return Vector3f_ud
+function Location_ud:get_distance_NED(param1) end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@return number
-function Location:get_bearing(param1) end
+function Location_ud:get_bearing(param1) end
 
 -- desc
----@return Vector3f|nil
-function Location:get_vector_from_origin_NEU() end
+---@return Vector3f_ud|nil
+function Location_ud:get_vector_from_origin_NEU() end
 
 -- desc
 ---@param param1 number
 ---@param param2 number
-function Location:offset_bearing(param1, param2) end
+function Location_ud:offset_bearing(param1, param2) end
 
 -- desc
 ---@param param1 number
 ---@param param2 number
-function Location:offset(param1, param2) end
+function Location_ud:offset(param1, param2) end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@return number
-function Location:get_distance(param1) end
+function Location_ud:get_distance(param1) end
 
 
 -- desc
----@class ScriptingCANBuffer
-ScriptingCANBuffer = {}
+---@class ScriptingCANBuffer_ud
+local ScriptingCANBuffer_ud = {}
 
 -- desc
----@return CANFrame|nil
-function ScriptingCANBuffer:read_frame() end
+---@return CANFrame_ud|nil
+function ScriptingCANBuffer_ud:read_frame() end
 
 -- desc
----@param param1 CANFrame
----@param param2 uint32_t
+---@param param1 CANFrame_ud
+---@param param2 uint32_t_ud
 ---@return boolean
-function ScriptingCANBuffer:write_frame(param1, param2) end
+function ScriptingCANBuffer_ud:write_frame(param1, param2) end
 
 
 -- desc
----@class AP_HAL__AnalogSource
-AP_HAL__AnalogSource = {}
-
--- desc
----@return number
-function AP_HAL__AnalogSource:voltage_average_ratiometric() end
+---@class AP_HAL__AnalogSource_ud
+local AP_HAL__AnalogSource_ud = {}
 
 -- desc
 ---@return number
-function AP_HAL__AnalogSource:voltage_latest() end
+function AP_HAL__AnalogSource_ud:voltage_average_ratiometric() end
 
 -- desc
 ---@return number
-function AP_HAL__AnalogSource:voltage_average() end
+function AP_HAL__AnalogSource_ud:voltage_latest() end
+
+-- desc
+---@return number
+function AP_HAL__AnalogSource_ud:voltage_average() end
 
 -- desc
 ---@param param1 integer
 ---@return boolean
-function AP_HAL__AnalogSource:set_pin(param1) end
+function AP_HAL__AnalogSource_ud:set_pin(param1) end
 
 
 -- desc
----@class AP_HAL__I2CDevice
-AP_HAL__I2CDevice = {}
+---@class AP_HAL__I2CDevice_ud
+local AP_HAL__I2CDevice_ud = {}
 
 -- desc
 ---@param param1 integer
-function AP_HAL__I2CDevice:set_address(param1) end
+function AP_HAL__I2CDevice_ud:set_address(param1) end
 
 -- desc
 ---@param param1 integer
 ---@return integer|nil
-function AP_HAL__I2CDevice:read_registers(param1) end
+function AP_HAL__I2CDevice_ud:read_registers(param1) end
 
 -- desc
 ---@param param1 integer
 ---@param param2 integer
 ---@return boolean
-function AP_HAL__I2CDevice:write_register(param1, param2) end
+function AP_HAL__I2CDevice_ud:write_register(param1, param2) end
 
 -- desc
 ---@param param1 integer
-function AP_HAL__I2CDevice:set_retries(param1) end
+function AP_HAL__I2CDevice_ud:set_retries(param1) end
 
 
 -- desc
----@class AP_HAL__UARTDriver
-AP_HAL__UARTDriver = {}
-
--- desc
----@param param1 integer
-function AP_HAL__UARTDriver:set_flow_control(param1) end
-
--- desc
----@return uint32_t
-function AP_HAL__UARTDriver:available() end
+---@class AP_HAL__UARTDriver_ud
+local AP_HAL__UARTDriver_ud = {}
 
 -- desc
 ---@param param1 integer
----@return uint32_t
-function AP_HAL__UARTDriver:write(param1) end
+function AP_HAL__UARTDriver_ud:set_flow_control(param1) end
+
+-- desc
+---@return uint32_t_ud
+function AP_HAL__UARTDriver_ud:available() end
+
+-- desc
+---@param param1 integer
+---@return uint32_t_ud
+function AP_HAL__UARTDriver_ud:write(param1) end
 
 -- desc
 ---@return integer
-function AP_HAL__UARTDriver:read() end
+function AP_HAL__UARTDriver_ud:read() end
 
 -- desc
----@param param1 uint32_t
-function AP_HAL__UARTDriver:begin(param1) end
+---@param param1 uint32_t_ud
+function AP_HAL__UARTDriver_ud:begin(param1) end
 
 
 -- desc
----@class RC_Channel
-RC_Channel = {}
+---@class RC_Channel_ud
+local RC_Channel_ud = {}
 
 -- desc
 ---@return number
-function RC_Channel:norm_input_ignore_trim() end
+function RC_Channel_ud:norm_input_ignore_trim() end
 
 -- desc
 ---@return integer
-function RC_Channel:get_aux_switch_pos() end
+function RC_Channel_ud:get_aux_switch_pos() end
 
 -- desc
 ---@return number
-function RC_Channel:norm_input() end
+function RC_Channel_ud:norm_input() end
 
 
 -- desc
@@ -513,7 +529,7 @@ function ins:get_temperature(param1) end
 Motors_dynamic = {}
 
 -- desc
----@param param1 motor_factor_table
+---@param param1 motor_factor_table_ud
 function Motors_dynamic:load_factors(param1) end
 
 -- desc
@@ -532,7 +548,7 @@ function Motors_dynamic:init(param1) end
 analog = {}
 
 -- desc
----@return AP_HAL__AnalogSource
+---@return AP_HAL__AnalogSource_ud
 function analog:channel() end
 
 
@@ -705,13 +721,13 @@ function mission:clear() end
 
 -- desc
 ---@param param1 integer
----@param param2 mavlink_mission_item_int_t
+---@param param2 mavlink_mission_item_int_t_ud
 ---@return boolean
 function mission:set_item(param1, param2) end
 
 -- desc
 ---@param param1 integer
----@return mavlink_mission_item_int_t|nil
+---@return mavlink_mission_item_int_t_ud|nil
 function mission:get_item(param1) end
 
 -- desc
@@ -846,7 +862,7 @@ serial = {}
 
 -- desc
 ---@param param1 integer
----@return AP_HAL__UARTDriver
+---@return AP_HAL__UARTDriver_ud
 function serial:find_serial(param1) end
 
 
@@ -856,7 +872,7 @@ rc = {}
 
 -- desc
 ---@param param1 integer
----@return RC_Channel
+---@return RC_Channel_ud
 function rc:get_channel(param1) end
 
 -- desc
@@ -871,7 +887,7 @@ function rc:run_aux_function(param1, param2) end
 
 -- desc
 ---@param param1 integer
----@return RC_Channel
+---@return RC_Channel_ud
 function rc:find_channel_for_option(param1) end
 
 -- desc
@@ -901,7 +917,7 @@ function SRV_Channels:set_output_norm(param1, param2) end
 
 -- desc
 ---@param param1 integer
----@return integer
+---@return number
 function SRV_Channels:get_output_scaled(param1) end
 
 -- desc
@@ -911,7 +927,7 @@ function SRV_Channels:get_output_pwm(param1) end
 
 -- desc
 ---@param param1 integer
----@param param2 integer
+---@param param2 number
 function SRV_Channels:set_output_scaled(param1, param2) end
 
 -- desc
@@ -1012,13 +1028,13 @@ function vehicle:get_circle_radius() end
 function vehicle:set_target_angle_and_climbrate(param1, param2, param3, param4, param5, param6) end
 
 -- desc
----@param param1 Vector3f
+---@param param1 Vector3f_ud
 ---@return boolean
 function vehicle:set_target_velocity_NED(param1) end
 
 -- desc
----@param param1 Vector3f
----@param param2 Vector3f
+---@param param1 Vector3f_ud
+---@param param2 Vector3f_ud
 ---@param param3 boolean
 ---@param param4 number
 ---@param param5 boolean
@@ -1028,9 +1044,9 @@ function vehicle:set_target_velocity_NED(param1) end
 function vehicle:set_target_velaccel_NED(param1, param2, param3, param4, param5, param6, param7) end
 
 -- desc
----@param param1 Vector3f
----@param param2 Vector3f
----@param param3 Vector3f
+---@param param1 Vector3f_ud
+---@param param2 Vector3f_ud
+---@param param3 Vector3f_ud
 ---@param param4 boolean
 ---@param param5 number
 ---@param param6 boolean
@@ -1040,13 +1056,13 @@ function vehicle:set_target_velaccel_NED(param1, param2, param3, param4, param5,
 function vehicle:set_target_posvelaccel_NED(param1, param2, param3, param4, param5, param6, param7, param8) end
 
 -- desc
----@param param1 Vector3f
----@param param2 Vector3f
+---@param param1 Vector3f_ud
+---@param param2 Vector3f_ud
 ---@return boolean
 function vehicle:set_target_posvel_NED(param1, param2) end
 
 -- desc
----@param param1 Vector3f
+---@param param1 Vector3f_ud
 ---@param param2 boolean
 ---@param param3 number
 ---@param param4 boolean
@@ -1057,11 +1073,11 @@ function vehicle:set_target_posvel_NED(param1, param2) end
 function vehicle:set_target_pos_NED(param1, param2, param3, param4, param5, param6, param7) end
 
 -- desc
----@return Location|nil
+---@return Location_ud|nil
 function vehicle:get_target_location() end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@return boolean
 function vehicle:set_target_location(param1) end
 
@@ -1102,11 +1118,11 @@ function vehicle:set_mode(param1) end
 onvif = {}
 
 -- desc
----@return Vector2f
+---@return Vector2f_ud
 function onvif:get_pan_tilt_limit_max() end
 
 -- desc
----@return Vector2f
+---@return Vector2f_ud
 function onvif:get_pan_tilt_limit_min() end
 
 -- desc
@@ -1195,7 +1211,7 @@ function terrain:height_above_terrain(param1) end
 function terrain:height_terrain_difference_home(param1) end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@param param2 boolean
 ---@return number|nil
 function terrain:height_amsl(param1, param2) end
@@ -1215,7 +1231,7 @@ rangefinder = {}
 
 -- desc
 ---@param param1 integer
----@return Vector3f
+---@return Vector3f_ud
 function rangefinder:get_pos_offset_orient(param1) end
 
 -- desc
@@ -1326,7 +1342,7 @@ function gps:first_unconfigured_gps() end
 
 -- desc
 ---@param param1 integer
----@return Vector3f
+---@return Vector3f_ud
 function gps:get_antenna_offset(param1) end
 
 -- desc
@@ -1381,7 +1397,7 @@ function gps:ground_speed(param1) end
 
 -- desc
 ---@param param1 integer
----@return Vector3f
+---@return Vector3f_ud
 function gps:velocity(param1) end
 
 -- desc
@@ -1401,7 +1417,7 @@ function gps:speed_accuracy(param1) end
 
 -- desc
 ---@param param1 integer
----@return Location
+---@return Location_ud
 function gps:location(param1) end
 
 -- desc
@@ -1531,23 +1547,23 @@ ahrs = {}
 function ahrs:initialised() end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@return boolean
 function ahrs:set_origin(param1) end
 
 -- desc
----@return Location|nil
+---@return Location_ud|nil
 function ahrs:get_origin() end
 
 -- desc
----@param param1 Location
+---@param param1 Location_ud
 ---@return boolean
 function ahrs:set_home(param1) end
 
 -- desc
 ---@param param1 integer
----@return Vector3f|nil
----@return Vector3f|nil
+---@return Vector3f_ud|nil
+---@return Vector3f_ud|nil
 function ahrs:get_vel_innovations_and_variances_for_source(param1) end
 
 -- desc
@@ -1558,7 +1574,7 @@ function ahrs:set_posvelyaw_source_set(param1) end
 ---@return number|nil
 ---@return number|nil
 ---@return number|nil
----@return Vector3f|nil
+---@return Vector3f_ud|nil
 ---@return number|nil
 function ahrs:get_variances() end
 
@@ -1567,17 +1583,17 @@ function ahrs:get_variances() end
 function ahrs:get_EAS2TAS() end
 
 -- desc
----@param param1 Vector3f
----@return Vector3f
+---@param param1 Vector3f_ud
+---@return Vector3f_ud
 function ahrs:body_to_earth(param1) end
 
 -- desc
----@param param1 Vector3f
----@return Vector3f
+---@param param1 Vector3f_ud
+---@return Vector3f_ud
 function ahrs:earth_to_body(param1) end
 
 -- desc
----@return Vector3f
+---@return Vector3f_ud
 function ahrs:get_vibration() end
 
 -- desc
@@ -1593,23 +1609,23 @@ function ahrs:healthy() end
 function ahrs:home_is_set() end
 
 -- desc
----@return Vector3f|nil
+---@return Vector3f_ud|nil
 function ahrs:get_relative_position_NED_origin() end
 
 -- desc
----@return Vector3f|nil
+---@return Vector3f_ud|nil
 function ahrs:get_relative_position_NED_home() end
 
 -- desc
----@return Vector3f|nil
+---@return Vector3f_ud|nil
 function ahrs:get_velocity_NED() end
 
 -- desc
----@return Vector2f
+---@return Vector2f_ud
 function ahrs:groundspeed_vector() end
 
 -- desc
----@return Vector3f
+---@return Vector3f_ud
 function ahrs:wind_estimate() end
 
 -- desc
@@ -1617,19 +1633,19 @@ function ahrs:wind_estimate() end
 function ahrs:get_hagl() end
 
 -- desc
----@return Vector3f
+---@return Vector3f_ud
 function ahrs:get_accel() end
 
 -- desc
----@return Vector3f
+---@return Vector3f_ud
 function ahrs:get_gyro() end
 
 -- desc
----@return Location
+---@return Location_ud
 function ahrs:get_home() end
 
 -- desc
----@return Location|nil
+---@return Location_ud|nil
 function ahrs:get_position() end
 
 -- desc
