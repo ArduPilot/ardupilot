@@ -129,6 +129,11 @@ CSRC += $(HWDEF)/common/stubs.c \
 #	   $(TESTSRC) \
 #	   test.c
 
+LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
+             $(CRASHCATCHER)/HexDump/src/HexDump.c
+
+LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
+
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CPPSRC = $(sort $(ALLCPPSRC))
@@ -158,7 +163,8 @@ ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
-         $(ALLINC) $(HWDEF)/common
+         $(ALLINC) $(HWDEF)/common \
+          $(CRASHCATCHER)/include \
 
 #
 # Project, sources and paths
