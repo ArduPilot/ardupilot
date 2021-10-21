@@ -439,26 +439,28 @@ unsigned int parse_access_flags(struct type * type) {
       flags |= ACCESS_FLAG_READ;
     } else if (strcmp(state.token, keyword_write) == 0) {
       flags |= ACCESS_FLAG_WRITE;
-      switch (type->type) {
-        case TYPE_FLOAT:
-        case TYPE_INT8_T:
-        case TYPE_INT16_T:
-        case TYPE_INT32_T:
-        case TYPE_UINT8_T:
-        case TYPE_UINT16_T:
-        case TYPE_UINT32_T:
-        case TYPE_ENUM:
-          type->range = parse_range_check(type->type);
-          break;
-        case TYPE_AP_OBJECT:
-        case TYPE_USERDATA:
-        case TYPE_BOOLEAN:
-        case TYPE_STRING:
-        case TYPE_LITERAL:
-          // a range check is illogical
-          break;
-        case TYPE_NONE:
-          error(ERROR_INTERNAL, "Can't access a NONE type");
+      if ((type->flags & TYPE_FLAGS_NO_RANGE_CHECK) == 0) {
+        switch (type->type) {
+          case TYPE_FLOAT:
+          case TYPE_INT8_T:
+          case TYPE_INT16_T:
+          case TYPE_INT32_T:
+          case TYPE_UINT8_T:
+          case TYPE_UINT16_T:
+          case TYPE_UINT32_T:
+          case TYPE_ENUM:
+            type->range = parse_range_check(type->type);
+            break;
+          case TYPE_AP_OBJECT:
+          case TYPE_USERDATA:
+          case TYPE_BOOLEAN:
+          case TYPE_STRING:
+          case TYPE_LITERAL:
+            // a range check is illogical
+            break;
+          case TYPE_NONE:
+            error(ERROR_INTERNAL, "Can't access a NONE type");
+        }
       }
     } else {
       break;

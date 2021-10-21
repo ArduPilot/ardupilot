@@ -106,9 +106,9 @@ singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 
 include AP_Math/AP_Math.h
 
-userdata Vector3f field x float read write'skip_check
-userdata Vector3f field y float read write'skip_check
-userdata Vector3f field z float read write'skip_check
+userdata Vector3f field x float'skip_check read write
+userdata Vector3f field y float'skip_check read write
+userdata Vector3f field z float'skip_check read write
 userdata Vector3f method length float
 userdata Vector3f method normalize void
 userdata Vector3f method is_nan boolean
@@ -120,8 +120,8 @@ userdata Vector3f method dot float Vector3f
 userdata Vector3f method cross Vector3f Vector3f
 userdata Vector3f method scale Vector3f float'skip_check
 
-userdata Vector2f field x float read write'skip_check
-userdata Vector2f field y float read write'skip_check
+userdata Vector2f field x float'skip_check read write
+userdata Vector2f field y float'skip_check read write
 userdata Vector2f method length float
 userdata Vector2f method normalize void
 userdata Vector2f method is_nan boolean
@@ -315,13 +315,13 @@ singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_missi
 singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 
-userdata mavlink_mission_item_int_t field param1 float read write'skip_check
-userdata mavlink_mission_item_int_t field param2 float read write'skip_check
-userdata mavlink_mission_item_int_t field param3 float read write'skip_check
-userdata mavlink_mission_item_int_t field param4 float read write'skip_check
+userdata mavlink_mission_item_int_t field param1 float'skip_check read write
+userdata mavlink_mission_item_int_t field param2 float'skip_check read write
+userdata mavlink_mission_item_int_t field param3 float'skip_check read write
+userdata mavlink_mission_item_int_t field param4 float'skip_check read write
 userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
 userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
-userdata mavlink_mission_item_int_t field z float read write'skip_check
+userdata mavlink_mission_item_int_t field z float'skip_check read write
 userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
 userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
 -- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
@@ -414,10 +414,10 @@ singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMa
 
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table alias motor_factor_table
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float read write'skip_check
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 
 include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor alias ins
