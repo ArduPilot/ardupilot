@@ -87,9 +87,9 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         0);
 }
 
-int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
+float GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
-    return (int16_t)(sub.motors.get_throttle() * 100);
+    return sub.motors.get_throttle() * 100;
 }
 
 // Work around to get temperature sensor data out
