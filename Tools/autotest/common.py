@@ -4321,14 +4321,17 @@ class AutoTest(ABC):
             0,
             0)
 
-    def set_analog_rangefinder_parameters(self):
-        self.set_parameters({
+    def analog_rangefinder_parameters(self):
+        return {
             "RNGFND1_TYPE": 1,
             "RNGFND1_MIN_CM": 0,
             "RNGFND1_MAX_CM": 4000,
             "RNGFND1_SCALING": 12.12,
             "RNGFND1_PIN": 0,
-        })
+        }
+
+    def set_analog_rangefinder_parameters(self):
+        self.set_parameters(self.analog_rangefinder_parameters())
 
     def send_debug_trap(self, timeout=6000):
         self.progress("Sending trap to autopilot")
