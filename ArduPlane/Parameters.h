@@ -538,11 +538,6 @@ public:
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
 
-#if HAL_EFI_ENABLED
-    // EFI Engine Monitor
-    AP_EFI efi;
-#endif
-
 #if OFFBOARD_GUIDED == ENABLED
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
