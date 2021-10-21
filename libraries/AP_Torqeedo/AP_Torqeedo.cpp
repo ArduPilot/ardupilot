@@ -25,7 +25,9 @@
 
 #define TORQEEDO_SERIAL_BAUD        19200   // communication is always at 19200
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
-#define TORQEEDO_PACKET_FOOTER      0xAD    // communication packer footer
+#define TORQEEDO_PACKET_FOOTER      0xAD    // communication packet footer
+#define TORQEEDO_PACKET_ESCAPE      0xAE    // escape character for handling occurrences of header, footer and this escape bytes in original message
+#define TORQEEDO_PACKET_ESCAPE_MASK 0x80    // byte after ESCAPE character should be XOR'd with this value
 #define TORQEEDO_LOG_TRQD_INTERVAL_MS                   5000// log TRQD message at this interval in milliseconds
 #define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_MS           100 // motor speed sent at 10hz if connected to motor
 #define TORQEEDO_SEND_MOTOR_STATUS_REQUEST_INTERVAL_MS  400 // motor status requested every 0.4sec if connected to motor
@@ -404,6 +406,7 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
             _parse_state = ParseState::WAITING_FOR_FOOTER;
         }
         _received_buff_len = 0;
+        _parse_escape_received = false;
         break;
     case ParseState::WAITING_FOR_FOOTER:
         if (b == TORQEEDO_PACKET_FOOTER) {
@@ -429,6 +432,15 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
             }
             complete_msg_received = true;
         } else {
+            // escape character handling
+            if (_parse_escape_received) {
+                b ^= TORQEEDO_PACKET_ESCAPE_MASK;
+                _parse_escape_received = false;
+            } else if (b == TORQEEDO_PACKET_ESCAPE) {
+                // escape character received, record this and ignore this byte
+                _parse_escape_received = true;
+                break;
+            }
             // add to buffer
             _received_buff[_received_buff_len] = b;
             _received_buff_len++;
