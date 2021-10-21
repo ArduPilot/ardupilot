@@ -6817,9 +6817,6 @@ class AutoTestCopter(AutoTest):
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            'cwx': "missing defaults file",
-            'deca-cwx': 'missing defaults file',
-            'djix': "missing defaults file",
             'heli-compound': "wrong binary, different takeoff regime",
             'heli-dual': "wrong binary, different takeoff regime",
             'heli': "wrong binary, different takeoff regime",
