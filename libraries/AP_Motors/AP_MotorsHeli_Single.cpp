@@ -319,15 +319,20 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
 // calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_scalars()
 {
-    // range check collective min, max and mid
+    // range check collective min, max and zero
     if( _collective_min >= _collective_max ) {
         _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
         _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
     }
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+    _collective_zero_thrst_deg = constrain_float(_collective_zero_thrst_deg, _collective_min_deg, _collective_max_deg);
 
-    // calculate collective mid point as a number from 0 to 1
-    _collective_mid_pct = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min));
+    // calculate collective zero thrust point as a number from 0 to 1
+    _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+
+    _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
+
+    // calculate collective land min point as a number from 0 to 1
+    _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
 
     // configure swashplate and update scalars
     _swashplate.configure();
@@ -441,14 +446,14 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_mid_pct && !_heliflags.in_autorotation) {
-        collective_out = _collective_mid_pct;
+    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_heliflags.in_autorotation) {
+        collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
 
     }
 
     // updates below mid collective flag
-    if (collective_out <= _collective_mid_pct) {
+    if (collective_out <= _collective_land_min_pct) {
         _heliflags.below_mid_collective = true;
     } else {
         _heliflags.below_mid_collective = false;
@@ -466,7 +471,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             // the 4.5 scaling factor is to bring the values in line with previous releases
-            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_mid_pct) / 4.5f;
+            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_zero_pct) / 4.5f;
         }
     } else {
         yaw_offset = 0.0f;
