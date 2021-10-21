@@ -229,6 +229,7 @@ private:
 
     // message parsing members
     ParseState _parse_state;        // current state of parsing
+    bool _parse_escape_received;    // true if the escape character has been received so we must XOR the next byte
     uint32_t _parse_error_count;    // total number of parsing errors (for reporting)
     uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
     uint8_t _received_buff[TORQEEDO_MESSAGE_LEN_MAX];   // characters received
