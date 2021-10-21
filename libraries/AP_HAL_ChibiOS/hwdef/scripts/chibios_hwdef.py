@@ -827,11 +827,14 @@ def write_mcu_config(f):
     ram_map = get_ram_map()
     f.write('// memory regions\n')
     regions = []
+    cc_regions = []
     total_memory = 0
     for (address, size, flags) in ram_map:
         regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+        cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
         total_memory += size
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
+    f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
     f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
@@ -1441,6 +1444,19 @@ def write_UART_config(f):
     OTG2_index = None
     devlist = []
     have_rts_cts = False
+    crash_uart = None
+
+    # write config for CrashCatcher UART
+    if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+        crash_uart = uart_list[0]
+    elif not uart_list[2].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+        crash_uart = uart_list[2]
+
+    if crash_uart is not None:
+        f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
+        f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
+        f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
+        f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
     for dev in uart_list:
         if dev.startswith('UART'):
             n = int(dev[4:])
