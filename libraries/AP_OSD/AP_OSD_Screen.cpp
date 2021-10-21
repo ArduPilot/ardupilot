@@ -1585,7 +1585,7 @@ void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
 {
-    backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
+    backend->write(x, y, false, "%3ld%c", lrintf(gcs().get_hud_throttle()), SYMBOL(SYM_PCNT));
 }
 
 #if HAL_OSD_SIDEBAR_ENABLE
