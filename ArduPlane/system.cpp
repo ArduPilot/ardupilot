@@ -439,7 +439,7 @@ bool Plane::should_log(uint32_t mask)
 /*
   return throttle percentage from 0 to 100 for normal use and -100 to 100 when using reverse thrust
  */
-int8_t Plane::throttle_percentage(void)
+float Plane::throttle_percentage(void)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() && !quadplane.tailsitter.in_vtol_transition()) {
@@ -448,9 +448,9 @@ int8_t Plane::throttle_percentage(void)
 #endif
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (!have_reverse_thrust()) {
-        return constrain_int16(throttle, 0, 100);
+        return constrain_float(throttle, 0, 100);
     }
-    return constrain_int16(throttle, -100, 100);
+    return constrain_float(throttle, -100, 100);
 }
 
 // update the harmonic notch filter center frequency dynamically
