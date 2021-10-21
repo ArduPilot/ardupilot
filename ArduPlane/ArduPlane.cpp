@@ -113,9 +113,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
-#if HAL_EFI_ENABLED
-    SCHED_TASK(efi_update,             10,    200),
-#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -335,13 +332,6 @@ void Plane::compass_save()
          */
         compass.save_offsets();
     }
-}
-
-void Plane::efi_update(void)
-{
-#if HAL_EFI_ENABLED
-    g2.efi.update();
-#endif
 }
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
