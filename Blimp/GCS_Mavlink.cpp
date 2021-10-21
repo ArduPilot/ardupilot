@@ -88,12 +88,12 @@ float GCS_MAVLINK_Blimp::vfr_hud_airspeed() const
     return AP::gps().ground_speed();
 }
 
-int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
+float GCS_MAVLINK_Blimp::vfr_hud_throttle() const
 {
     if (blimp.motors == nullptr) {
         return 0;
     }
-    return (int16_t)(blimp.motors->get_throttle() * 100);
+    return blimp.motors->get_throttle() * 100;
 }
 
 /*
