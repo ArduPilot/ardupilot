@@ -3,6 +3,80 @@
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 
+-- manual bindings
+
+---@class uint32_t_ud
+local uint32_t_ud = {}
+
+-- create uint32_t_ud with optional value
+---@param value? number|integer
+---@return uint32_t_ud
+function uint32_t(value) end
+
+-- Convert to number
+---@return number
+function uint32_t_ud:tofloat() end
+
+-- Convert to integer
+---@return integer
+function uint32_t_ud:toint() end
+
+-- system time in milliseconds
+---@return uint32_t_ud -- milliseconds
+function millis() end
+
+-- system time in microseconds
+---@return uint32_t_ud -- microseconds
+function micros() end
+
+-- receive mission command from running mission
+---@return uint32_t_ud|nil -- command start time milliseconds
+---@return integer|nil -- command param 1
+---@return number|nil -- command param 2
+---@return number|nil -- command param 3
+---@return number|nil -- command param 4
+function mission_receive() end
+
+
+-- data flash logging to SD card
+---@class logger
+logger = {}
+
+-- write value to data flash log with given types and names, optional units and multipliers, timestamp will be automatically added
+---@param name string -- up to 4 characters
+---@param labels string -- comma separated value labels, up to 58 characters
+---@param format string -- type format string, see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Logger/README.md
+---@param units? string -- optional units string
+---@param multipliers? string -- optional multipliers string
+---@param data1 integer|number|uint32_t_ud|string -- data to be logged, type to match format string
+function logger:write(name, labels, format, units, multipliers, data1, ...) end
+
+
+-- i2c bus interaction
+---@class i2c
+i2c = {}
+
+-- get a i2c device handler
+---@param bus integer -- bus number
+---@param address integer -- device address 0 to 128
+---@param clock? uint32_t_ud -- optional bus clock, default 400000
+---@param smbus? boolean -- optional sumbus flag, default false
+---@return AP_HAL__I2CDevice_ud
+function i2c:get_device(bus, address, clock, smbus) end
+
+
+-- CAN bus interaction
+---@class CAN
+CAN = {}
+
+-- get a CAN bus device handler
+---@param buffer_len uint32_t_ud -- buffer length 1 to 25
+---@return ScriptingCANBuffer_ud
+function CAN:get_device(buffer_len) end
+
+
+-- Auto generated binding
+
 -- desc
 ---@class CANFrame_ud
 local CANFrame_ud = {}
