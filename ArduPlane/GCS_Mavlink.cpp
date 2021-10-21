@@ -253,7 +253,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
     return 0;
 }
 
-int16_t GCS_MAVLINK_Plane::vfr_hud_throttle() const
+float GCS_MAVLINK_Plane::vfr_hud_throttle() const
 {
     return plane.throttle_percentage();
 }
