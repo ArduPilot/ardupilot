@@ -8018,6 +8018,8 @@ class AutoTestCopter(AutoTest):
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
+            "GroundEffectCompensation_takeOffExpected": "Flapping",
+            "GroundEffectCompensation_touchDownExpected": "Flapping",
         }
 
 
