@@ -345,7 +345,6 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
-    bool trim_radio();
 
     // sensors.cpp
     void update_compass(void);
