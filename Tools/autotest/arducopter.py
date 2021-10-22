@@ -5952,15 +5952,16 @@ class AutoTestCopter(AutoTest):
         self.progress("Got generator speed and state")
 
     def test_richenpower(self):
-        self.set_parameter("SERIAL5_PROTOCOL", 30)
-        self.set_parameter("SIM_RICH_ENABLE", 1)
-        self.set_parameter("SERVO8_FUNCTION", 42)
-        self.set_parameter("SIM_RICH_CTRL", 8)
-        self.set_parameter("RC9_OPTION", 85)
-        self.set_parameter("LOG_DISARMED", 1)
-        self.set_parameter("BATT2_MONITOR", 17)
-        self.set_parameter("GEN_TYPE", 3)
-        self.reboot_sitl()
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 30,
+            "SIM_RICH_ENABLE": 1,
+            "SERVO8_FUNCTION": 42,
+            "SIM_RICH_CTRL": 8,
+            "RC9_OPTION": 85,
+            "LOG_DISARMED": 1,
+            "BATT2_MONITOR": 17,
+            "GEN_TYPE": 3,
+        })
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.customise_SITL_commandline(["--uartF=sim:richenpower"])
         self.wait_statustext("requested state is not RUN", timeout=60)
@@ -6024,13 +6025,14 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         ex = None
         try:
-            self.set_parameter("SERIAL5_PROTOCOL", 30)
-            self.set_parameter("SERIAL5_BAUD", 115200)
-            self.set_parameter("GEN_TYPE", 2)
-            self.set_parameter("BATT2_MONITOR", 17)
-            self.set_parameter("SIM_IE24_ENABLE", 1)
-            self.set_parameter("LOG_DISARMED", 1)
-
+            self.set_parameters({
+                "SERIAL5_PROTOCOL": 30,
+                "SERIAL5_BAUD": 115200,
+                "GEN_TYPE": 2,
+                "BATT2_MONITOR": 17,
+                "SIM_IE24_ENABLE": 1,
+                "LOG_DISARMED": 1,
+            })
             self.customise_SITL_commandline(["--uartF=sim:ie24"])
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -6062,6 +6064,57 @@ class AutoTestCopter(AutoTest):
 
         if ex is not None:
             raise ex
+
+    def Loweheiser(self):
+        '''the Loweheiser device sends in GENERATOR_STATUS and EFI_STATUS
+        messages'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL5_OPTIONS": 1024,
+            "GEN_TYPE": 4,
+            "EFI_TYPE": 3,
+            "SIM_EFI_TYPE": 2,
+            "BATT2_MONITOR": 17,  # generator
+        })
+
+        self.customise_SITL_commandline(["--uartF=sim:loweheiser"])
+
+        self.delay_sim_time(10)  # so we can actually receive messages...
+
+        self.start_subtest("Checking GENERATOR_STATUS")
+        self.set_message_rate_hz("GENERATOR_STATUS", 10)
+        m = self.assert_receive_message('GENERATOR_STATUS')
+        self.progress(self.dump_message_verbose(m))
+        if m.generator_speed != 1234:
+            # need to improve fidelity
+            raise NotAchievedException("Expected generator speed of 1234")
+        self.set_message_rate_hz("GENERATOR_STATUS", -1)
+
+        self.start_subtest("Checking EFI_STATUS")
+        self.set_message_rate_hz("EFI_STATUS", 10)
+        m = self.assert_receive_message('EFI_STATUS')
+        self.progress(self.dump_message_verbose(m))
+        want_intake_manifold_pressure = 12
+        if m.intake_manifold_pressure != want_intake_manifold_pressure:
+            raise NotAchievedException(
+                "Wanted intake_manifold_pressure %f got %f" %
+                (want_intake_manifold_pressure, m.intake_manifold_pressure))
+        self.set_message_rate_hz("EFI_STATUS", -1)
+
+        self.start_subtest("Checking BATTERY_STATUS")
+        m = self.mav.recv_match(
+            type="BATTERY_STATUS",
+            condition="BATTERY_STATUS.id==1",  # id is zero-indexed
+            timeout=1,
+            blocking=True
+        )
+        if m is None:
+            raise NotAchievedException("Did not receive BATTERY_STATUS")
+        self.progress(self.dump_message_verbose(m))
+        self.progress("Received battery status: %s" % str(m))
+        want_m_volt = 17000
+        if m.voltages[0] != want_m_volt:
+            raise NotAchievedException("Battery voltage not as expected (want=%f) got=(%f)" % (want_m_volt, m.voltages[0],))
 
     def test_aux_switch_options(self):
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
@@ -7838,6 +7891,10 @@ class AutoTestCopter(AutoTest):
             ("IE24",
              "Test IntelligentEnergy 2.4kWh generator",
              self.test_ie24),
+
+            ("Loweheiser",
+             "Test Loweheiser EFI/generator combo",
+             self.Loweheiser),
 
             ("LogUpload",
              "Log upload",
