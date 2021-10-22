@@ -154,21 +154,3 @@ void Rover::radio_failsafe_check(uint16_t pwm)
     }
     failsafe_trigger(FAILSAFE_EVENT_THROTTLE, "Radio", failed);
 }
-
-bool Rover::trim_radio()
-{
-    if (!rc().has_valid_input()) {
-        // can't trim without valid input
-        return false;
-    }
-
-    // Store control surface trim values
-    // ---------------------------------
-    if ((channel_steer->get_radio_in() > 1400) && (channel_steer->get_radio_in() < 1600)) {
-        channel_steer->set_and_save_radio_trim(channel_steer->get_radio_in());
-    } else {
-        return false;
-    }
-
-    return true;
-}
