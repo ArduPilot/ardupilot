@@ -303,7 +303,7 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         return nmea->fd();
 
     } else if (streq(name, "rf_mavlink")) {
-        if (wasp != nullptr) {
+        if (rf_mavlink != nullptr) {
             AP_HAL::panic("Only one rf_mavlink at a time");
         }
         rf_mavlink = new SITL::RF_MAVLink();
