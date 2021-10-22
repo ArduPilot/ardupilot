@@ -77,20 +77,21 @@ class CoverageRunner(object):
 
         self.progress("Initializing Coverage with current build")
         try:
-            result = subprocess.run(["lcov",
-                                     "--no-external",
-                                     "--initial",
-                                     "--capture",
-                                     "--exclude", root_dir + "/modules/uavcan/*",
-                                     "--exclude", root_dir + "/build/sitl/modules/*",
-                                     "--directory", root_dir,
-                                     "-o", self.INFO_FILE_BASE,
-                                     ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=True)
+            with open(self.LCOV_LOG, 'w') as log_file:
+                result = subprocess.check_call([
+                    "lcov",
+                    "--no-external",
+                    "--initial",
+                    "--capture",
+                    "--exclude", root_dir + "/modules/uavcan/*",
+                    "--exclude", root_dir + "/build/sitl/modules/*",
+                    "--directory", root_dir,
+                    "-o", self.INFO_FILE_BASE,
+                ], stdout=log_file, stderr=subprocess.STDOUT, text=True)
             if self.verbose:
                 print(*result.args)
-                print(result.stdout)
-            with open(self.LCOV_LOG, 'w') as log_file:
-                log_file.write(result.stdout)
+                with open(self.LCOV_LOG, 'r') as log_file:
+                    print(log_file.read())
         except subprocess.CalledProcessError as err:
             print("ERROR :")
             print(err.cmd)
@@ -120,23 +121,22 @@ class CoverageRunner(object):
         os.chdir(root_dir)
         waf_light = os.path.join(root_dir, "modules/waf/waf-light")
         self.progress("Removing previous build binaries")
-        subprocess.run([waf_light, "configure", "--debug"], check=True)
-        subprocess.run([waf_light, "clean"], check=True)
+        subprocess.check_call([waf_light, "configure", "--debug"])
+        subprocess.check_call([waf_light, "clean"])
 
         self.progress("Building examples and SITL binaries")
 
         try:
             if use_example:
-                subprocess.run([waf_light, "configure", "--board=linux", "--debug", "--coverage"], check=True)
-                subprocess.run([waf_light, "examples"], check=True)
-            subprocess.run(
+                subprocess.check_call([waf_light, "configure", "--board=linux", "--debug", "--coverage"])
+                subprocess.check_call([waf_light, "examples"])
+            subprocess.check_call(
                 [self.autotest,
                  "--debug",
                  "--coverage",
-                 "build.unit_tests"],
-                check=True)
-            subprocess.run([waf_light, "configure", "--debug", "--coverage"], check=True)
-            subprocess.run([waf_light], check=True)
+                 "build.unit_tests"])
+            subprocess.check_call([waf_light, "configure", "--debug", "--coverage"])
+            subprocess.check_call([waf_light])
         except subprocess.CalledProcessError as err:
             print("ERROR :")
             print(err.cmd)
@@ -155,32 +155,34 @@ class CoverageRunner(object):
 
         if use_example:
             self.progress("Running run.examples")
-            subprocess.run([self.autotest,
-                            "--timeout=" + str(TIMEOUT),
-                            "--debug",
-                            "--no-clean",
-                            "--speedup=" + str(SPEEDUP),
-                            "run.examples"
-                            ])
+            subprocess.check_call([
+                self.autotest,
+                "--timeout=" + str(TIMEOUT),
+                "--debug",
+                "--no-clean",
+                "--speedup=" + str(SPEEDUP),
+                "run.examples"
+            ])
         self.progress("Running run.unit_tests")
-        subprocess.run(
+        subprocess.check_call(
             [self.autotest,
              "--timeout=" + str(TIMEOUT),
              "--debug",
              "--no-clean",
              "run.unit_tests"])
-        subprocess.run(["reset"])
+        subprocess.check_call(["reset"])
         os.set_blocking(sys.stdout.fileno(), True)
         os.set_blocking(sys.stderr.fileno(), True)
         test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker"]
         for test in test_list:
             self.progress("Running test.%s" % test)
-            subprocess.run([self.autotest,
-                            "--timeout=" + str(TIMEOUT),
-                            "--debug",
-                            "--no-clean",
-                            "test.%s" % test,
-                            ])
+            subprocess.check_call([
+                self.autotest,
+                "--timeout=" + str(TIMEOUT),
+                "--debug",
+                "--no-clean",
+                "test.%s" % test,
+            ])
 
         # TODO add any other execution path/s we can to maximise the actually
         # used code, can we run other tests or things?  Replay, perhaps?
@@ -199,12 +201,13 @@ class CoverageRunner(object):
             with tempfile.NamedTemporaryFile(mode="w+") as tmp_file:
                 try:
                     self.progress("Capturing Coverage statistics")
-                    subprocess.run(["lcov",
-                                    "--no-external",
-                                    "--capture",
-                                    "--directory", root_dir,
-                                    "-o", self.INFO_FILE,
-                                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
+                    subprocess.check_call([
+                        "lcov",
+                        "--no-external",
+                        "--capture",
+                        "--directory", root_dir,
+                        "-o", self.INFO_FILE,
+                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True)
                     if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
@@ -213,10 +216,11 @@ class CoverageRunner(object):
                             log_file.write(line)
 
                     self.progress("Matching Coverage with binaries")
-                    subprocess.run(["lcov",
-                                    "--add-tracefile", self.INFO_FILE_BASE,
-                                    "--add-tracefile", self.INFO_FILE,
-                                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
+                    subprocess.check_call([
+                        "lcov",
+                        "--add-tracefile", self.INFO_FILE_BASE,
+                        "--add-tracefile", self.INFO_FILE,
+                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True)
                     if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
@@ -225,21 +229,22 @@ class CoverageRunner(object):
                             log_file.write(line)
                     # remove files we do not intentionally test:
                     self.progress("Removing unwanted coverage statistics")
-                    subprocess.run(["lcov",
-                                    "--remove", self.INFO_FILE,
-                                    ".waf*",
-                                    root_dir + "/modules/gtest/*",
-                                    root_dir + "/modules/uavcan/*",
-                                    root_dir + "/modules/libcanard/*",
-                                    root_dir + "/build/linux/libraries/*",
-                                    root_dir + "/build/sitl/libraries/*",
-                                    root_dir + "/build/sitl/modules/*",
-                                    root_dir + "/build/sitl_periph_gps/libraries/*",
-                                    root_dir + "/build/sitl_periph_gps/modules/*",
-                                    root_dir + "/libraries/*/examples/*",
-                                    root_dir + "/libraries/*/tests/*",
-                                    "-o", self.INFO_FILE
-                                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True, check=True)
+                    subprocess.check_call([
+                        "lcov",
+                        "--remove", self.INFO_FILE,
+                        ".waf*",
+                        root_dir + "/modules/gtest/*",
+                        root_dir + "/modules/uavcan/*",
+                        root_dir + "/modules/libcanard/*",
+                        root_dir + "/build/linux/libraries/*",
+                        root_dir + "/build/sitl/libraries/*",
+                        root_dir + "/build/sitl/modules/*",
+                        root_dir + "/build/sitl_periph_gps/libraries/*",
+                        root_dir + "/build/sitl_periph_gps/modules/*",
+                        root_dir + "/libraries/*/examples/*",
+                        root_dir + "/libraries/*/tests/*",
+                        "-o", self.INFO_FILE
+                    ], stdout=tmp_file, stderr=subprocess.STDOUT, text=True)
                     if self.verbose:
                         tmp_file.seek(0)
                         content = tmp_file.read().splitlines()
@@ -256,10 +261,11 @@ class CoverageRunner(object):
         with open(self.GENHTML_LOG, 'w+') as log_file:
             try:
                 self.progress("Generating HTML files")
-                subprocess.run(["genhtml", self.INFO_FILE,
-                                "-o", self.REPORT_DIR,
-                                "--demangle-cpp",
-                                ], stdout=log_file, stderr=subprocess.STDOUT, text=True, check=True)
+                subprocess.check_call([
+                    "genhtml", self.INFO_FILE,
+                    "-o", self.REPORT_DIR,
+                    "--demangle-cpp",
+                ], stdout=log_file, stderr=subprocess.STDOUT, text=True)
 
                 log_file.seek(0)
                 content = log_file.read().splitlines()
