@@ -511,7 +511,7 @@ def configure(cfg):
 
 def generate_canard_dsdlc(cfg):
     dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
-    src = cfg.srcnode.ant_glob('modules/pyuavcan/uavcan/dsdl_files/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
+    src = cfg.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
     dsdlc_path = cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath()
     if not os.path.exists(dsdlc_path):
         print("Please update submodules with: git submodule update --recursive --init")
