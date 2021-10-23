@@ -5,8 +5,9 @@
 Script to catch and give backtrace of a HardFault Crash
 
     Usage:
-        python crash_debugger.py --elf_file <elf_file> --ser-debug --ser_port <serial_port> --dump_filename <dump_filename>
-        python crash_debugger.py --elf_file <elf_file> --swd-debug --gdb_port <gdb_port> --dump_filename <dump_filename>
+        python crash_debugger.py <elf_file> --ser-debug --ser-port <serial_port> --dump-fileout <dump_fileout>
+        python crash_debugger.py <elf_file> --swd-debug --gdb-port <gdb_port> --dump-fileout <dump_fileout>
+        python crash_debugger.py <elf_file> --dump-debug --dump-fileout <dump_fileout>
     Copyright Siddharth Bharat Purohit, CubePilot Pty. Ltd. 2021
     based on http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html
     Released under GNU GPL version 3 or later
@@ -41,7 +42,7 @@ def serial_debug(args):
             # GDB is used to back trace the crash
             if b"Enable logging" in line.strip():
                 print("Crash detected, retrieving crash info, please be patient...")
-                dump_file = open(args.dump_filename, 'wb+')
+                dump_file = open(args.dump_fileout, 'wb+')
 
                 # We are now storing the stack dump into the file
                 ser.write("dump_crash_log".encode('utf-8')) # Send a newline to start the dump
@@ -129,7 +130,7 @@ def swd_debug(args):
             print("Crash detected, retrieving crash info, please be patient...")
             cmd = ['arm-none-eabi-gdb', '-nx', '--batch',
                     '-ex', 'target extended-remote {}'.format(args.gdb_port),
-                    '-ex', 'set logging file {}'.format(args.dump_filename),
+                    '-ex', 'set logging file {}'.format(args.dump_fileout),
                     '-x', os.path.join(dir_path, 'crash_dump.scr'),
                     args.elf_file]
             # We are now storing the stack dump into the file
@@ -163,17 +164,22 @@ if __name__ == '__main__':
     parser.add_argument('elf_file')
     parser.add_argument('--ser-debug', action='store_true', help='enable serial debug')
     parser.add_argument('--ser-port', help='serial port to use')
+    parser.add_argument('--dump-debug', action='store_true', help='generate stack trace from dump file')
+    parser.add_argument('--dump-filein', help='log file to use to generate stack trace')
     parser.add_argument('--swd-debug', action='store_true', help='enable swd debug')
     parser.add_argument('--gdb-port', default=':3333', help='set gdb port')
-    parser.add_argument('--dump-filename', help='openocd cpu cfg to use')
+    parser.add_argument('--dump-fileout', help='filename to dump crash dump')
 
     args = parser.parse_args()
 
-    if not args.ser_debug and not args.swd_debug:
+    if not args.ser_debug and not args.swd_debug and not args.dump_debug:
         parser.error('Must enable either --ser-debug or --swd-debug')
 
     if args.ser_debug and not args.ser_port:
         parser.error('--ser-debug requires --port')
+
+    if args.dump_debug and not args.dump_filein:
+        parser.error('--dump-debug requires --dump-filein')
 
     #get directory of the script
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -190,21 +196,24 @@ if __name__ == '__main__':
                 yield cursor
 
     spinner = spinning_cursor()
-    
-    caught_crash = False
+    dump_file = None
     if args.ser_debug:
-        if args.dump_filename is None:
-            args.dump_filename = "last_crash_dump_ser.txt"
-        caught_crash = serial_debug(args)
+        if args.dump_fileout is None:
+            args.dump_fileout = "last_crash_dump_ser.txt"
+        if (serial_debug(args)):
+            dump_file = args.dump_fileout
     elif args.swd_debug:
-        if args.dump_filename is None:
-            args.dump_filename = "last_crash_dump_gdb.txt"
-        caught_crash = swd_debug(args)
+        if args.dump_fileout is None:
+            args.dump_fileout = "last_crash_dump_gdb.txt"
+        if (swd_debug(args)):
+            dump_file = args.dump_fileout
+    elif args.dump_debug:
+        dump_file = args.dump_filein
 
-    if caught_crash:
+    if dump_file is not None:
         print(crashdebug_exe)
         print("Processing Crash Dump.\n")
-        process_cmd = "arm-none-eabi-gdb -nx --batch --quiet " + args.elf_file + "  -ex \"set target-charset ASCII\" -ex \"target remote | " + crashdebug_exe + " --elf " + args.elf_file + " --dump " + args.dump_filename + "\" -ex \"set print pretty on\" -ex \"bt full\" -ex \"quit\""
+        process_cmd = "arm-none-eabi-gdb -nx --batch --quiet " + args.elf_file + "  -ex \"set target-charset ASCII\" -ex \"target remote | " + crashdebug_exe + " --elf " + args.elf_file + " --dump " + dump_file + "\" -ex \"set print pretty on\" -ex \"bt full\" -ex \"quit\""
         print(process_cmd)
         # We can call GDB and CrashDebug using the command and print the results
         process = subprocess.Popen(process_cmd, shell=True, stdout=subprocess.PIPE)
