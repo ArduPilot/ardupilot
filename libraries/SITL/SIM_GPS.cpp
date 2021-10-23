@@ -412,7 +412,7 @@ void GPS::update_ubx(const struct gps_data *d)
         Vector3f gyro(radians(_sitl->state.rollRate),
                       radians(_sitl->state.pitchRate),
                       radians(_sitl->state.yawRate));
-        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw));
+        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw_deg));
         const float lag = (1.0/_sitl->gps_hertz[instance]) * delay;
         rot.rotate(gyro * (-lag));
         rel_antenna_pos = rot * rel_antenna_pos;
@@ -518,7 +518,8 @@ void GPS::update_nmea(const struct gps_data *d)
                      d->have_lock?_sitl->gps_numsats[instance]:3,
                      2.0,
                      d->altitude);
-    float speed_knots = norm(d->speedN, d->speedE) * M_PER_SEC_TO_KNOTS;
+    const float speed_mps = norm(d->speedN, d->speedE);
+    const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
 
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
@@ -543,10 +544,29 @@ void GPS::update_nmea(const struct gps_data *d)
                      dstring);
 
     if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
-        nmea_printf("$GPHDT,%.2f,T", d->yaw);
+        nmea_printf("$GPHDT,%.2f,T", d->yaw_deg);
     }
     else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_THS) {
-        nmea_printf("$GPTHS,%.2f,%c,T", d->yaw, d->have_lock ? 'A' : 'V');
+        nmea_printf("$GPTHS,%.2f,%c,T", d->yaw_deg, d->have_lock ? 'A' : 'V');
+    } else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_KSXT) {
+        // Unicore support
+        // $KSXT,20211016083433.00,116.31296102,39.95817066,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,*2D
+        nmea_printf("$KSXT,%04u%02u%02u%02u%02u%02u.%02u,%.8f,%.8f,%.4f,%.2f,%.2f,%.2f,%.2f,%.3f,%u,%u,%u,%u,,,,%.3f,%.3f,%.3f,,",
+                    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, unsigned(tv.tv_usec*1.e-4),
+                    d->longitude, d->latitude,
+                    d->altitude,
+                    wrap_360(d->yaw_deg),
+                    d->pitch_deg,
+                    heading,
+                    speed_mps,
+                    d->roll_deg,
+                    d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
+                    3, // fixed rtk yaw solution,
+                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->speedE * 3.6,
+                    d->speedN * 3.6,
+                    -d->speedD * 3.6);
     }
 }
 
@@ -1023,7 +1043,6 @@ void GPS::update()
     const double speedN = _sitl->state.speedN;
     const double speedE = _sitl->state.speedE;
     const double speedD = _sitl->state.speedD;
-    const double yaw = _sitl->state.yawDeg;
 
     if (AP_HAL::millis() < 20000) {
         // apply the init offsets for the first 20s. This allows for
@@ -1066,8 +1085,10 @@ void GPS::update()
 
         d.latitude = latitude;
         d.longitude = longitude;
-        d.yaw = yaw;
-    
+        d.yaw_deg = _sitl->state.yawDeg;
+        d.roll_deg = _sitl->state.rollDeg;
+        d.pitch_deg = _sitl->state.pitchDeg;
+
         // add an altitude error controlled by a slow sine wave
         d.altitude = altitude + _sitl->gps_noise[idx] * sinf(AP_HAL::millis() * 0.0005f) + _sitl->gps_alt_offset[idx];
 

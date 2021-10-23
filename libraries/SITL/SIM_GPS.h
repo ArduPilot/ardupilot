@@ -79,7 +79,9 @@ private:
         double speedN;
         double speedE;
         double speedD;
-        double yaw;
+        double yaw_deg;
+        double roll_deg;
+        double pitch_deg;
         bool have_lock;
     };
 #define MAX_GPS_DELAY 100
