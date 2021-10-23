@@ -135,4 +135,10 @@ private:
 
     // log info on stack usage
     void log_stack_info(void) override;
+
+#if defined(HAL_CRASH_DUMP_FLASHPAGE)
+    // get last crash dump
+    void last_crash_dump(ExpandingString &str) const override;
+#endif
+
 };
