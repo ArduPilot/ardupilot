@@ -130,8 +130,7 @@ CSRC += $(HWDEF)/common/stubs.c \
 #	   test.c
 
 LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
-             $(CRASHCATCHER)/HexDump/src/HexDump.c \
-             $(HWDEF)/common/crashcatcher.c
+             $(HWDEF)/common/crashdump.c
 
 LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
 
@@ -213,7 +212,8 @@ CPPWARN = -Wall -Wextra -Wundef -Werror
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
+UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\" \
+        -DHAL_MAX_STACK_FRAME_SIZE=$(HAL_MAX_STACK_FRAME_SIZE)
 
 ifeq ($(ENABLE_ASSERTS),yes)
  UDEFS += -DHAL_CHIBIOS_ENABLE_ASSERTS

@@ -483,3 +483,48 @@ char *strdup(const char *str)
     ret[len] = 0;
     return ret;
 }
+
+/*
+    is valid memory region
+ */
+bool is_address_in_memory(void *addr)
+{
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  return the start of memory region that contains the address
+ */
+void* get_addr_mem_region_start_addr(void *addr)
+{ 
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return memory_regions[i].address;
+        }
+    }
+    return 0;
+}
+
+/*
+  return the end of memory region that contains the address
+ */
+void* get_addr_mem_region_end_addr(void *addr)
+{ 
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        if (addr >= memory_regions[i].address &&
+            addr < (memory_regions[i].address + memory_regions[i].size)) {
+            return memory_regions[i].address + memory_regions[i].size;
+        }
+    }
+    return 0;
+}
