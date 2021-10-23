@@ -49,14 +49,6 @@ extern const AP_HAL::HAL& hal;
 extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
-typedef enum  {
-    Reset = 1,
-    NMI = 2,
-    HardFault = 3,
-    MemManage = 4,
-    BusFault = 5,
-    UsageFault = 6,
-} FaultType;
 
 /*
   save watchdog data for a hard fault
@@ -92,17 +84,6 @@ void *__dso_handle;
 
 void __cxa_pure_virtual(void);
 void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
-
-
-static bool initialised = false;
-
-#ifndef HAL_CRASH_SERIAL_PORT_BAUD
-#define HAL_CRASH_SERIAL_PORT_BAUD 921600
-#endif
-
-#if !defined(USART_ISR_RXNE)
-#define USART_ISR_RXNE                      USART_ISR_RXNE_RXFNE
-#endif
 
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
