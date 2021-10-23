@@ -23,31 +23,32 @@
 #include "stm32_util.h"
 #include "flash.h"
 
-static bool initialised = false;
+#if defined(HAL_CRASH_DUMP_FLASHPAGE) || defined(HAL_CRASH_SERIAL_PORT)
+CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
+static                       CrashCatcherInfo        g_info;
+#endif
+
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
 static bool do_flash_crash_dump = true;
 static void* dump_start_address;
 static void* dump_end_address;
-#endif
-static bool do_serial_crash_dump = false;
 
-#ifndef HAL_CRASH_SERIAL_PORT_BAUD
-#define HAL_CRASH_SERIAL_PORT_BAUD 921600
-#endif
-
-#if !defined(USART_ISR_RXNE)
-#define USART_ISR_RXNE                      USART_ISR_RXNE_RXFNE
-#endif
-
-CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
-static                       CrashCatcherInfo        g_info;
-
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
 static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo);
 static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void);
 static void CrashCatcher_DumpMemoryFlash(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount);
 #endif  // HAL_CRASH_DUMP_FLASHPAGE
 
+#if defined(HAL_CRASH_SERIAL_PORT)
+static bool uart_initialised = false;
+static bool do_serial_crash_dump = false;
+
+#ifndef HAL_CRASH_SERIAL_PORT_BAUD
+#define HAL_CRASH_SERIAL_PORT_BAUD 921600
+#endif // HAL_CRASH_SERIAL_PORT_BAUD
+
+#if !defined(USART_ISR_RXNE)
+#define USART_ISR_RXNE                      USART_ISR_RXNE_RXFNE
+#endif
 static void printString(const char* pString);
 static void waitForUserInput(void);
 static void dumpBytes(const uint8_t* pMemory, size_t elementCount);
@@ -58,6 +59,7 @@ static void dumpWords(const uint32_t* pMemory, size_t elementCount);
 static void CrashCatcher_DumpStartHex(const CrashCatcherInfo* pInfo);
 static CrashCatcherReturnCodes CrashCatcher_DumpEndHex(void);
 static void CrashCatcher_DumpMemoryHex(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount);
+#endif // HAL_CRASH_SERIAL_PORT
 
 uint32_t stm32_crash_dump_size(void)
 {
@@ -91,11 +93,16 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 
 void CrashCatcher_DumpMemory(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount)
 {
+    (void)pvMemory;
+    (void)elementSize;
+    (void)elementCount;
+#if defined(HAL_CRASH_SERIAL_PORT)
     if (do_serial_crash_dump) {
         CrashCatcher_DumpMemoryHex(pvMemory, elementSize, elementCount);
     }
+#endif
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
-    else if (do_flash_crash_dump) {
+    if (do_flash_crash_dump) {
         CrashCatcher_DumpMemoryFlash(pvMemory, elementSize, elementCount);
     }
 #endif
@@ -108,12 +115,13 @@ void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
     struct port_extctx* ctx = (struct port_extctx*)pInfo->sp;
     FaultType faultType = (FaultType)__get_IPSR();
     save_fault_watchdog(__LINE__, faultType, pInfo->sp, ctx->lr_thd);
-
+#if defined(HAL_CRASH_SERIAL_PORT)
     if (do_serial_crash_dump) {
         CrashCatcher_DumpStartHex(pInfo);
     }
+#endif
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
-    else if (do_flash_crash_dump) {
+    if (do_flash_crash_dump) {
         CrashCatcher_DumpStartFlash(pInfo);
     }
 #endif
@@ -121,16 +129,20 @@ void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
 
 CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
 {
+#if defined(HAL_CRASH_SERIAL_PORT)
     if (do_serial_crash_dump) {
         return CrashCatcher_DumpEndHex();
     }
+#endif
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
-    else if (do_flash_crash_dump) {
+    if (do_flash_crash_dump) {
         return CrashCatcher_DumpEndFlash();
     }
     do_flash_crash_dump = false;
 #endif
+#if defined(HAL_CRASH_SERIAL_PORT)
     do_serial_crash_dump = true;
+#endif
     return CRASH_CATCHER_TRY_AGAIN;
 }
 
@@ -286,6 +298,8 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#if defined(HAL_CRASH_SERIAL_PORT)
+
 static void CrashCatcher_DumpStartHex(const CrashCatcherInfo* pInfo)
 {
     g_info = *pInfo;
@@ -429,13 +443,13 @@ static void init_uarts(void)
 
     u->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
 
-    initialised = true;
+    uart_initialised = true;
 }
 
 int CrashCatcher_getc(void);
 int CrashCatcher_getc(void)
 {
-    if (!initialised) {
+    if (!uart_initialised) {
         init_uarts();
     }
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
@@ -465,7 +479,7 @@ int CrashCatcher_getc(void)
 void CrashCatcher_putc(int c);
 void CrashCatcher_putc(int c)
 {
-    if (!initialised) {
+    if (!uart_initialised) {
         init_uarts();
     }
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
@@ -483,3 +497,4 @@ void CrashCatcher_putc(int c)
         stm32_watchdog_pat();
     }
 }
+#endif // #if defined(HAL_CRASH_SERIAL_PORT)
