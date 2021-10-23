@@ -400,12 +400,32 @@ static void init_uarts(void)
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
     IRQ_DISABLE_HAL_CRASH_SERIAL_PORT();
     RCC_RESET_HAL_CRASH_SERIAL_PORT();
-    uint32_t fck = (uint32_t)(((HAL_CRASH_SERIAL_PORT_CLOCK + ((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD));
+
+    /* Baud rate setting.*/
+    uint32_t fck;
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+    fck = (uint32_t)(((HAL_CRASH_SERIAL_PORT_CLOCK + ((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD));
+#else
+#if STM32_HAS_USART6
+    if ((u == USART1) || (u == USART6))
+#else
+    if (u == USART1)
+#endif
+        fck = (STM32_PCLK2+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
+    else
+        fck = (STM32_PCLK1+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
+#endif //defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
 
     u->BRR = fck;
 
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
     /* Resetting eventual pending status flags.*/
     u->ICR = 0xFFFFFFFFU;
+#else
+  u->SR = 0;
+  (void)u->SR;  /* SR reset step 1.*/
+  (void)u->DR;  /* SR reset step 2.*/
+#endif
 
     u->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
 
@@ -423,8 +443,13 @@ int CrashCatcher_getc(void)
     static const char* wait_for_string = "dump_crash_log";
     uint8_t curr_off = 0;
     while (true) {
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
         while (!(USART_ISR_RXNE & u->ISR)) {}
         uint8_t c = u->RDR;
+#else
+        while (!(USART_SR_RXNE & u->SR)) {}
+        uint8_t c = u->DR;
+#endif
         if (c == wait_for_string[curr_off]) {
             curr_off++;
             if (curr_off == strlen(wait_for_string)) {
@@ -444,8 +469,16 @@ void CrashCatcher_putc(int c)
         init_uarts();
     }
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
     u->TDR = c & 0xFF;
+#else
+    u->DR = c & 0xFF;
+#endif
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
     while (!(USART_ISR_TC & u->ISR)) {
+#else
+    while (!(USART_SR_TC & u->SR)) {
+#endif
         // keep alive while dump is happening
         stm32_watchdog_pat();
     }
