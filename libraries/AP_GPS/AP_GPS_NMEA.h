@@ -74,6 +74,7 @@ private:
         _GPS_SENTENCE_HDT = 128,
         _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
+        _GPS_SENTENCE_KSXT = 170, // extension for Unicore, 21 fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -144,9 +145,10 @@ private:
     uint32_t _last_RMC_ms;
     uint32_t _last_GGA_ms;
     uint32_t _last_VTG_ms;
-    uint32_t _last_HDT_THS_ms;
-    uint32_t _last_PHD_12_ms;
-    uint32_t _last_PHD_26_ms;
+    uint32_t _last_yaw_ms;
+    uint32_t _last_vvelocity_ms;
+    uint32_t _last_vaccuracy_ms;
+    uint32_t _last_3D_velocity_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
@@ -178,6 +180,15 @@ private:
         uint32_t itow;
         int32_t fields[8];
     } _phd;
+
+    /*
+      The KSXT message is an extension from Unicore that gives 3D velocity and yaw
+      example: $KSXT,20211016083433.00,116.31296102,39.95817066,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,*2D
+     */
+    struct {
+        float fields[21];
+    } _ksxt;
+
 };
 
 #define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
