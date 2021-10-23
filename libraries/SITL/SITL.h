@@ -134,6 +134,7 @@ public:
         GPS_HEADING_NONE = 0,
         GPS_HEADING_HDT  = 1,
         GPS_HEADING_THS  = 2,
+        GPS_HEADING_KSXT = 3,
     };
 
     struct sitl_fdm state;
