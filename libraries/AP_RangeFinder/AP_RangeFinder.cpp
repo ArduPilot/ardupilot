@@ -413,15 +413,20 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                 }
             }
         break;
-    case Type::BenewakeTFminiPlus:
+    case Type::BenewakeTFminiPlus: {
+        uint8_t addr = TFMINI_ADDR_DEFAULT;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
         FOREACH_I2C(i) {
             if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
-                                                                        hal.i2c_mgr->get_device(i, params[instance].address)),
+                                                                        hal.i2c_mgr->get_device(i, addr)),
                     instance)) {
                 break;
             }
         }
         break;
+    }
     case Type::PX4_PWM:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifndef HAL_BUILD_AP_PERIPH
