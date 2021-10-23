@@ -46,6 +46,9 @@ static const SysFileList sysfs_file_list[] = {
 #if !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
     {"persistent.parm"},
 #endif
+#if defined(HAL_CRASH_DUMP_FLASHPAGE)
+    {"crash_dump.bin"},
+#endif
 };
 
 int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
@@ -127,6 +130,11 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
+#if defined(HAL_CRASH_DUMP_FLASHPAGE)
+    if (strcmp(fname, "crash_dump.bin") == 0) {
+        hal.util->last_crash_dump(*r.str);
+    }
+#endif
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
