@@ -765,6 +765,7 @@ def write_mcu_config(f):
     else:
         env_vars['PROCESS_STACK'] = "0x1C00"
 
+    f.write('#define HAL_PROCESS_STACK_SIZE %s\n' % env_vars['PROCESS_STACK'])
     # MAIN_STACK is location of initial stack on startup and is also the stack
     # used for slow interrupts. It needs to be big enough for maximum interrupt
     # nesting

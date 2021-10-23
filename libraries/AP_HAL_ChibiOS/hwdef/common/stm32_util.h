@@ -128,6 +128,17 @@ void stack_overflow(thread_t *tp);
  */
 uint32_t stack_free(void *stack_base);
 
+// returns true is address in memory region
+bool is_address_in_memory(void *addr);
+
+// return the start of memory region that contains the address
+void* get_addr_mem_region_start_addr(void *addr);
+// return the end of memory region that contains the address
+void* get_addr_mem_region_end_addr(void *addr);
+
+// return the size of crash dump
+uint32_t stm32_crash_dump_size(void);
+
 /**
  * Generates a block of random values, returns total values generated
  * if nonblocking, for blocking returns if successful or not
