@@ -719,3 +719,13 @@ void Util::last_crash_dump(ExpandingString &str) const
 #endif
 }
 #endif
+
+// set armed state
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+#ifdef HAL_GPIO_PIN_nARMED
+    palWriteLine(HAL_GPIO_PIN_nARMED, !b);
+#endif
+}
+
