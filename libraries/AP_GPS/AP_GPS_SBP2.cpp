@@ -62,7 +62,7 @@ do {                                                                        \
 
 
 AP_GPS_SBP2::AP_GPS_SBP2(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port) :
+                       AP_SerialDevice *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
     Debug("SBP Driver Initialized");

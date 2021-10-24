@@ -60,14 +60,14 @@ AP_MSP::AP_MSP()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-bool AP_MSP::init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_SerialManager::SerialProtocol protocol)
+bool AP_MSP::init_backend(uint8_t backend_idx, AP_SerialDevice *uart, AP_SerialDevice::Protocol protocol)
 {
-    if (protocol == AP_SerialManager::SerialProtocol_MSP) {
+    if (protocol == AP_SerialDevice::Protocol::MSP) {
         _backends[backend_idx] = new AP_MSP_Telem_Generic(uart);
-    } else if (protocol == AP_SerialManager::SerialProtocol_DJI_FPV) {
+    } else if (protocol == AP_SerialDevice::Protocol::DJI_FPV) {
         _backends[backend_idx] = new AP_MSP_Telem_DJI(uart);
 #if HAL_WITH_MSP_DISPLAYPORT
-    } else if (protocol == AP_SerialManager::SerialProtocol_MSP_DisplayPort) {
+    } else if (protocol == AP_SerialDevice::Protocol::MSP_DisplayPort) {
         _backends[backend_idx] = new AP_MSP_Telem_DisplayPort(uart);
 #endif
     } else {
@@ -86,13 +86,13 @@ bool AP_MSP::init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_Seri
 void AP_MSP::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    AP_HAL::UARTDriver *uart = nullptr;
+    AP_SerialDevice *uart = nullptr;
     uint8_t backends_using_msp_thread = 0;
     static const AP_SerialManager::SerialProtocol msp_protocols[] {
-        AP_SerialManager::SerialProtocol_DJI_FPV,
-        AP_SerialManager::SerialProtocol_MSP,
+        AP_SerialDevice::Protocol::DJI_FPV,
+        AP_SerialDevice::Protocol::MSP,
 #if HAL_WITH_MSP_DISPLAYPORT
-        AP_SerialManager::SerialProtocol_MSP_DisplayPort,
+        AP_SerialDevice::Protocol::MSP_DisplayPort,
 #endif
     };
 
@@ -219,7 +219,7 @@ void AP_MSP::loop(void)
     }
 }
 
-AP_MSP_Telem_Backend* AP_MSP::find_protocol(const AP_SerialManager::SerialProtocol protocol) const {
+AP_MSP_Telem_Backend* AP_MSP::find_protocol(const AP_SerialDevice::Protocol protocol) const {
     for (uint8_t i=0; i< _msp_status.backend_count; i++) {
         if (_backends[i] != nullptr && _backends[i]->get_serial_protocol() == protocol) {
             return _backends[i];

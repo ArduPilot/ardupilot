@@ -39,7 +39,7 @@ public:
 private:
     static AP_Hott_Telem *singleton;
 
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice_UART *uart;
 
     void loop(void);
     void send_EAM();

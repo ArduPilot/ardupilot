@@ -38,7 +38,7 @@ protected:
 
     uint8_t _instance;
 
-    AP_HAL::UARTDriver *_port;
+    class AP_SerialDevice *_port;
 
     // references
     AP_ADSB &_frontend;

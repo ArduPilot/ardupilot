@@ -28,10 +28,14 @@ AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial(AP_Proximity &_frontend
     AP_Proximity_Backend(_frontend, _state)
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
+    _uart = serial_manager.find_serial(AP_SerialDevice::Protocol::Lidar360, 0);
     if (_uart != nullptr) {
         // start uart with larger receive buffer
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), rxspace(), 0);
+        AP_SerialDevice_UART *dev_uart = _uart->get_serialdevice_uart();
+        if (dev_uart) {
+            dev_uart->set_bufsize_rx(rxspace());
+        }
+        _uart->begin();
     }
 }
 
@@ -39,7 +43,7 @@ AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial(AP_Proximity &_frontend
 // configured serial port
 bool AP_Proximity_Backend_Serial::detect()
 {
-    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
+    return AP::serialmanager().find_serial(AP_SerialDevice::Protocol::Lidar360, 0) != nullptr;
 }
 
 #endif // HAL_PROXIMITY_ENABLED

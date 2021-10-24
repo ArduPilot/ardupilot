@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_SerialDevice_UART;
+
 #ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
 #endif
@@ -11,7 +13,7 @@ class AP_Frsky_Backend
 {
 public:
 
-    AP_Frsky_Backend(AP_HAL::UARTDriver *port) :
+    AP_Frsky_Backend(AP_SerialDevice_UART *port) :
         _port(port) { }
 
     virtual ~AP_Frsky_Backend()  {}
@@ -52,7 +54,7 @@ public:
 
 protected:
 
-    AP_HAL::UARTDriver *_port;  // UART used to send data to FrSky receiver
+    AP_SerialDevice_UART *_port;  // UART used to send data to FrSky receiver
 
     virtual bool init_serial_port();
 

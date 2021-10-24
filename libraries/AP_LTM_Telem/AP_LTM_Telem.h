@@ -26,6 +26,8 @@ static const uint8_t LTM_GFRAME_SIZE = 18;
 static const uint8_t LTM_AFRAME_SIZE = 10;
 static const uint8_t LTM_SFRAME_SIZE = 11;
 
+class AP_SerialDevice;
+
 class AP_LTM_Telem {
 public:
     // Constructor
@@ -39,7 +41,7 @@ public:
     void init();
 
 private:
-    AP_HAL::UARTDriver *_port;              // UART
+    AP_SerialDevice *_port;              // UART
 
     uint8_t _ltm_scheduler;
     uint32_t _last_frame_ms;

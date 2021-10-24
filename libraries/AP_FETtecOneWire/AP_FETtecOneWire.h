@@ -103,7 +103,7 @@ public:
 
 private:
     static AP_FETtecOneWire *_singleton;
-    AP_HAL::UARTDriver *_uart;
+    AP_SerialDevice_UART *_uart;
 
     AP_Int32 _motor_mask_parameter;
     AP_Int32 _reverse_mask_parameter;

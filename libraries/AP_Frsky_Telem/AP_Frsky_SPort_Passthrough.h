@@ -20,7 +20,7 @@ class AP_Frsky_SPort_Passthrough : public AP_Frsky_SPort, public AP_RCTelemetry
 {
 public:
 
-    AP_Frsky_SPort_Passthrough(AP_HAL::UARTDriver *port, bool use_external_data, AP_Frsky_Parameters *&frsky_parameters) :
+    AP_Frsky_SPort_Passthrough(AP_SerialDevice_UART *port, bool use_external_data, AP_Frsky_Parameters *&frsky_parameters) :
         AP_Frsky_SPort(port),
         AP_RCTelemetry(WFQ_LAST_ITEM),
         _use_external_data(use_external_data),

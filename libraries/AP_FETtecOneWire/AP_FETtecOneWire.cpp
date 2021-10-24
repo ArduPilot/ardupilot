@@ -24,6 +24,8 @@
 #include "AP_FETtecOneWire.h"
 #if AP_FETTEC_ONEWIRE_ENABLED
 
+#include <AP_SerialManager/AP_SerialDevice_UART.h>
+
 extern const AP_HAL::HAL& hal;
 
 // Set to 0 when no ESC hardware is available and you want to test the UART send function
@@ -89,13 +91,14 @@ void AP_FETtecOneWire::init_uart()
         return;
     }
     const AP_SerialManager& serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FETtecOneWire, 0);
+    _uart = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::FETtecOneWire, 0);
     if (_uart == nullptr) {
         return; // no serial port available, so nothing to do here
     }
-    _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    _uart->set_unbuffered_writes(true);
-    _uart->set_blocking_writes(false);
+    AP_HAL::UARTDriver &d = _uart->get_uart();
+    d.set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    d.set_unbuffered_writes(true);
+    d.set_blocking_writes(false);
 
     uint32_t uart_baud { FULL_DUPLEX_BAUDRATE };
 #if HAL_AP_FETTEC_HALF_DUPLEX
@@ -108,7 +111,7 @@ void AP_FETtecOneWire::init_uart()
     }
 #endif
 
-    _uart->begin(uart_baud);
+    d.begin(uart_baud);
 }
 
 /// initialize the device driver: configure serial port, wake-up and configure ESCs

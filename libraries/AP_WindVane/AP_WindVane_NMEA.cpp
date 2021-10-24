@@ -26,9 +26,9 @@
 // init - performs any required initialization for this instance
 void AP_WindVane_NMEA::init(const AP_SerialManager& serial_manager)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_WindVane, 0);
+    uart = serial_manager.find_serial(AP_SerialDevice::Protocol::WindVane, 0);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_WindVane, 0));
+        uart->begin();
     }
 }
 

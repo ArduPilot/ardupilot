@@ -30,11 +30,19 @@ void AP_Generator_RichenPower::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
-    if (uart != nullptr) {
-        const uint32_t baud = serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0);
-        uart->begin(baud, 256, 256);
+    uart = serial_manager.find_serial(AP_SerialDevice::Protocol::Generator, 0);
+    if (uart == nullptr) {
+        return;
     }
+    {
+        AP_SerialDevice_UART *dev_uart = uart->get_serialdevice_uart();
+        if (dev_uart != nullptr) {
+            dev_uart->set_bufsize_rx(256);
+            dev_uart->set_bufsize_tx(256);
+        }
+    }
+
+    uart->begin();
 
     // Tell frontend what measurements are available for this generator
     _frontend._has_current = true;

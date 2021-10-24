@@ -36,7 +36,7 @@ class AP_MSP_Telem_Backend : AP_RCTelemetry
 {
 friend AP_MSP;
 public:
-    AP_MSP_Telem_Backend(AP_HAL::UARTDriver *uart);
+    AP_MSP_Telem_Backend(AP_SerialDevice *uart);
 
     typedef struct battery_state_s {
         float batt_current_a;
@@ -191,7 +191,7 @@ protected:
 
     virtual bool is_scheduler_enabled() const = 0;                            // only osd backends should allow a push type telemetry
     virtual bool use_msp_thread() const {return true;};                       // is this backend hanlded by the MSP thread?
-    virtual AP_SerialManager::SerialProtocol get_serial_protocol() const = 0;
+    virtual AP_SerialDevice::Protocol get_serial_protocol() const = 0;
     virtual bool displaying_stats_screen() const;
 
     // implementation specific MSP out command processing

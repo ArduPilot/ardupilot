@@ -16,8 +16,8 @@
 #define HAL_WITH_MSP_DISPLAYPORT  HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
 #endif
 
-#include <AP_HAL/UARTDriver.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_SerialManager/AP_SerialDevice.h>
 
 #include "msp_osd.h"
 #include "msp_protocol.h"
@@ -122,7 +122,7 @@ typedef struct PACKED {
 } msp_header_v2_t;
 
 typedef struct msp_port_s {
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice *uart;
     msp_state_e c_state;
     uint8_t in_buf[MSP_PORT_INBUF_SIZE];
     uint_fast16_t offset;

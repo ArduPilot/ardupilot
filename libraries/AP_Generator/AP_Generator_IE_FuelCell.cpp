@@ -23,13 +23,13 @@
 // Initialize the fuelcell object and prepare it for use
 void AP_Generator_IE_FuelCell::init()
 {
-    _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
+    _uart = AP::serialmanager().find_serial(AP_SerialDevice::Protocol::Generator, 0);
 
     if (_uart == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Generator: No serial port found");
         return;
     }
-    _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0));
+    _uart->begin();
     _health_warn_last_ms = AP_HAL::millis();
 }
 

@@ -22,6 +22,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_SerialManager/AP_SerialDevice.h>
 
 #define TORQEEDO_SERIAL_BAUD        19200   // communication is always at 19200
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
@@ -133,7 +134,11 @@ bool AP_Torqeedo::init_internals()
 {
     // find serial driver and initialise
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Torqeedo, 0);
+    AP_SerialDevice_UART *sd = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::Torqeedo, 0);
+    if (sd == nullptr) {
+        return false;
+    }
+    _uart = &(sd->get_uart());
     if (_uart == nullptr) {
         return false;
     }

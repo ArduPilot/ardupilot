@@ -24,6 +24,8 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_SerialDevice;
+
 class AP_ExternalAHRS_VectorNav : public AP_ExternalAHRS_backend {
 
 public:
@@ -45,8 +47,7 @@ public:
     }
 
 private:
-    AP_HAL::UARTDriver *uart;
-    int8_t port_num;
+    AP_SerialDevice *uart;
     bool port_opened;
     uint32_t baudrate;
 

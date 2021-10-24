@@ -238,7 +238,7 @@ private:
     // detected protocol version
     ProtocolVersion _protocol_version = ProtocolVersion::UNKNOWN;
     // uart for the device
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice_UART *uart;
     // camera state
     State _state = State::INITIALIZING;
     // time since last OSD cycle

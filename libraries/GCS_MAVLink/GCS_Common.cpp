@@ -104,7 +104,7 @@ uint8_t GCS_MAVLINK::mavlink_private = 0;
 GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
-                         AP_HAL::UARTDriver &uart)
+                         AP_SerialDevice &uart)
 {
     _port = &uart;
 
@@ -135,6 +135,8 @@ bool GCS_MAVLINK::init(uint8_t instance)
         set_channel_private(chan);
     }
 
+    AP_SerialDevice_UART *dev_uart = _port->get_serialdevice_uart();
+    if (dev_uart != nullptr) {
     /*
       Now try to cope with SiK radios that may be stuck in bootloader
       mode because CTS was held while powering on. This tells the
@@ -143,18 +145,20 @@ bool GCS_MAVLINK::init(uint8_t instance)
       0x20 at 115200 on startup, which tells the bootloader to reset
       and boot normally
      */
-    _port->begin(115200);
-    AP_HAL::UARTDriver::flow_control old_flow_control = _port->get_flow_control();
-    _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    for (uint8_t i=0; i<3; i++) {
+        _port->begin(115200);
+
+        AP_HAL::UARTDriver::flow_control old_flow_control = dev_uart->get_flow_control();
+        dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        for (uint8_t i=0; i<3; i++) {
+            hal.scheduler->delay(1);
+            _port->write(0x30);
+            _port->write(0x20);
+        }
+        // since tcdrain() and TCSADRAIN may not be implemented...
         hal.scheduler->delay(1);
-        _port->write(0x30);
-        _port->write(0x20);
+
+        dev_uart->set_flow_control(old_flow_control);
     }
-    // since tcdrain() and TCSADRAIN may not be implemented...
-    hal.scheduler->delay(1);
-    
-    _port->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
     _port->begin(uartstate->baudrate());
@@ -167,8 +171,8 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
     
-    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
-        mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
+    if (mavlink_protocol == AP_SerialDevice::Protocol::MAVLink2 ||
+        mavlink_protocol == AP_SerialDevice::Protocol::MAVLink2HL) {
         // load signing key
         load_signing_key();
     } else {
@@ -1478,8 +1482,8 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     const auto mavlink_protocol = uartstate->get_protocol();
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-        (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
-         mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
+        (mavlink_protocol == AP_SerialDevice::Protocol::MAVLink2 ||
+         mavlink_protocol == AP_SerialDevice::Protocol::MAVLinkHL)) {
         // if we receive any MAVLink2 packets on a connection
         // currently sending MAVLink1 then switch to sending
         // MAVLink2
@@ -2228,7 +2232,7 @@ void GCS::send_mission_item_reached_message(uint16_t mission_index)
 
 void GCS::setup_console()
 {
-    AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, 0);
+    AP_SerialDevice *uart = AP::serialmanager().find_serial(AP_SerialDevice::Protocol::MAVLink, 0);
     if (uart == nullptr) {
         // this is probably not going to end well.
         return;
@@ -2245,7 +2249,7 @@ GCS_MAVLINK_Parameters::GCS_MAVLINK_Parameters()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void GCS::create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params, AP_HAL::UARTDriver &uart)
+void GCS::create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params, AP_SerialDevice &uart)
 {
     if (_num_gcs >= ARRAY_SIZE(chan_parameters)) {
         return;
@@ -2271,7 +2275,7 @@ void GCS::setup_uarts()
             // should not happen
             break;
         }
-        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
+        AP_SerialDevice *uart = AP::serialmanager().find_serial(AP_SerialDevice::Protocol::MAVLink, i);
         if (uart == nullptr) {
             // no more mavlink uarts
             break;
@@ -2659,17 +2663,17 @@ MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t 
     return MAV_RESULT_FAILED;
 }
 
-uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
-{
-    const AP_HAL::UARTDriver *u = AP::serialmanager().get_serial_by_id(port_num);
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i)->get_uart() == u) {
-            return i;
-        }
-    }
+// uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
+// {
+//     const AP_HAL::UARTDriver *u = AP::serialmanager().get_serial_by_id(port_num);
+//     for (uint8_t i=0; i<num_gcs(); i++) {
+//         if (chan(i)->get_uart() == u) {
+//             return i;
+//         }
+//     }
 
-    return UINT8_MAX;
-}
+//     return UINT8_MAX;
+// }
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
 {
@@ -6025,18 +6029,26 @@ void GCS::passthru_timer(void)
     _passthru.port2->lock_port(lock_key, lock_key);
 
     // Check for requested Baud rates over USB
-    uint32_t baud = _passthru.port1->get_usb_baud();
-    if (_passthru.baud2 != baud && baud != 0) {
-        _passthru.baud2 = baud;
+    uint32_t baud1 = 0;
+    AP_SerialDevice_UART *sd_uart1 = _passthru.port1->get_serialdevice_uart();
+    if (sd_uart1) {
+        baud1 = sd_uart1->get_uart().get_usb_baud();
+    }
+    if (_passthru.baud2 != baud1 && baud1 != 0) {
+        _passthru.baud2 = baud1;
         _passthru.port2->end();
-        _passthru.port2->begin_locked(baud, lock_key);
+        _passthru.port2->begin_locked(baud1, lock_key);
     }
 
-    baud = _passthru.port2->get_usb_baud();
-    if (_passthru.baud1 != baud && baud != 0) {
-        _passthru.baud1 = baud;
-        _passthru.port1->end();
-        _passthru.port1->begin_locked(baud, lock_key);
+    AP_SerialDevice_UART *sd_uart2 = _passthru.port2->get_serialdevice_uart();
+    uint32_t baud2 = 0;
+    if (sd_uart2) {
+        baud2 = sd_uart2->get_uart().get_usb_baud();
+    }
+    if (_passthru.baud2 != baud2 && baud2 != 0) {
+        _passthru.baud2 = baud2;
+        _passthru.port2->end();
+        _passthru.port2->begin_locked(baud2, lock_key);
     }
 
     int16_t b;
@@ -6091,7 +6103,8 @@ uint64_t GCS_MAVLINK::capabilities() const
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     const auto mavlink_protocol = uartstate->get_protocol();
-    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
+    if (mavlink_protocol == AP_SerialDevice::Protocol::MAVLink2 ||
+        mavlink_protocol == AP_SerialDevice::Protocol::MAVLinkHL) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }
 

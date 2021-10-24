@@ -1735,7 +1735,7 @@ def write_UART_config(f):
             f.write('''
 #if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
-#define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+#define HAL_OTG2_PROTOCOL SerialDevice::Protocol::SLCAN
 #endif
 #define HAL_SERIAL%d_PROTOCOL HAL_OTG2_PROTOCOL
 #define HAL_SERIAL%d_BAUD 115200

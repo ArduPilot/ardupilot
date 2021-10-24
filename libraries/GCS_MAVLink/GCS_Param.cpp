@@ -104,7 +104,12 @@ bool GCS_MAVLINK::have_flow_control(void)
         return false;
     }
 
-    if (_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
+    AP_SerialDevice_UART *dev_uart = _port->get_serialdevice_uart();
+    if (dev_uart == nullptr) {
+        return false;
+    }
+
+    if (dev_uart->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
         return true;
     }
 

@@ -34,7 +34,7 @@ AP_NMEA_Output::AP_NMEA_Output()
     AP_SerialManager& sm = AP::serialmanager();
 
     for (uint8_t i = 0; i < ARRAY_SIZE(_uart); i++) {
-        _uart[i] = sm.find_serial(AP_SerialManager::SerialProtocol_NMEAOutput, i);
+        _uart[i] = sm.find_serial(AP_SerialDevice::Protocol::NMEAOutput, i);
 
         if (_uart[i] == nullptr) {
             break;

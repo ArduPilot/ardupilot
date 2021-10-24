@@ -14,7 +14,7 @@ class AP_OpticalFlow_UPFLOW : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_UPFLOW(OpticalFlow &_frontend, AP_HAL::UARTDriver *uart);
+    AP_OpticalFlow_UPFLOW(OpticalFlow &_frontend, AP_SerialDevice *uart);
 
     // initialise the sensor
     void init() override;
@@ -34,7 +34,7 @@ private:
         uint8_t    	quality;                //0 for not valid, 245 for valid.
         uint8_t    	version;
     };
-    AP_HAL::UARTDriver *uart;               // uart connected to flow sensor
+    AP_SerialDevice *uart;               // uart connected to flow sensor
     struct UpixelsOpticalFlow updata;       // struct for received data
     uint16_t recv_count;                    // amount of bytes received
     uint8_t sum;                            //checksum

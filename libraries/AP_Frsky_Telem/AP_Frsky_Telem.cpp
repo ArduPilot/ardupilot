@@ -59,12 +59,12 @@ bool AP_Frsky_Telem::init(bool use_external_data)
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
-    AP_HAL::UARTDriver *port;
-    if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
+    AP_SerialDevice_UART *port;
+    if ((port = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::FrSky_D, 0))) {
         _backend = new AP_Frsky_D(port);
-    } else if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
+    } else if ((port = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::FrSky_SPort, 0))) {
         _backend = new AP_Frsky_SPort(port);
-    } else if (use_external_data || (port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
+    } else if (use_external_data || (port = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::FrSky_SPort_Passthrough, 0))) {
         _backend = new AP_Frsky_SPort_Passthrough(port, use_external_data, _frsky_parameters);
     }
 

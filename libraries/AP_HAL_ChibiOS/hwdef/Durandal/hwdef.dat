@@ -27,7 +27,7 @@ FLASH_RESERVE_START_KB 128
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 
 # default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
+define HAL_OTG2_PROTOCOL AP_SerialDevice::Protocol::MAVLink2
 
 define HAL_STORAGE_SIZE 32768
 

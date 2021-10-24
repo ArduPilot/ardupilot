@@ -140,13 +140,22 @@ void AP_RangeFinder_Wasp::update(void) {
 
     char command[COMMAND_BUFFER_LEN] = {};
 
+    AP_SerialDevice_UART *dev_uart = uart->get_serialdevice_uart();
+    if (dev_uart == nullptr &&
+        configuration_state == WASP_CFG_RATE) {
+        configuration_state = WASP_CFG_ENCODING;
+    }
+
     switch (configuration_state) {
         case WASP_CFG_RATE:
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">BAUD %s\n", baud > 0 ? "HIGH" : "LOW");
             break;
         case WASP_CFG_ENCODING:
             uart->end();
-            uart->begin(baud > 0 ? 921600 : 115200);
+            if (dev_uart != nullptr) {
+                dev_uart->set_baud(baud > 0 ? 921600 : 115200);
+            }
+            uart->begin();
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">LBE LITTLE\n");
             break;
         case WASP_CFG_PROTOCOL:

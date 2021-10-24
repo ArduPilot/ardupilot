@@ -13,14 +13,15 @@ public:
 
 protected:
 
-    // baudrate used during object construction:
-    virtual uint32_t initial_baudrate(uint8_t serial_instance) const;
+    // baudrate used during object construction.  0 means, "use
+    // configured baud rate for this instance
+    virtual uint32_t initial_baudrate() const { return 0; }
 
     // the value 0 is special to the UARTDriver - it's "use default"
     virtual uint16_t rx_bufsize() const { return 0; }
     virtual uint16_t tx_bufsize() const { return 0; }
 
-    AP_HAL::UARTDriver *uart = nullptr;
+    AP_SerialDevice *uart = nullptr;
 
     // update state; not all backends call this!
     virtual void update(void) override;

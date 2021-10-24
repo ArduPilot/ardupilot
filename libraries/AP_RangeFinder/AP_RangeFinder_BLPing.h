@@ -57,7 +57,7 @@ public:
      * @param payload
      * @param payload_len
      */
-    void send_message(AP_HAL::UARTDriver *uart, PingProtocol::MessageId msg_id, const uint8_t *payload, uint16_t payload_len) const;
+    void send_message(AP_SerialDevice *uart, PingProtocol::MessageId msg_id, const uint8_t *payload, uint16_t payload_len) const;
 
     /**
      * @brief Get distance from message

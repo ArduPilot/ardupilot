@@ -49,7 +49,7 @@ private:
     uint8_t _nmea_checksum(const char *str);
 
     uint8_t _num_outputs;
-    AP_HAL::UARTDriver* _uart[NMEA_MAX_OUTPUTS];
+    AP_SerialDevice* _uart[SERIALMANAGER_NUM_PORTS];
 
     uint32_t _last_run_ms;
 };

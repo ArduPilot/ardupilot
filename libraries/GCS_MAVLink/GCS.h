@@ -134,7 +134,7 @@ class GCS_MAVLINK
 public:
     friend class GCS;
 
-    GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
+    GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_SerialDevice &uart);
     virtual ~GCS_MAVLINK() {}
 
     void        update_receive(uint32_t max_time_us=1000);
@@ -199,7 +199,7 @@ public:
     }
 
     // accessor for uart
-    AP_HAL::UARTDriver *get_uart() { return _port; }
+    AP_SerialDevice *get_uart() { return _port; }
 
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
@@ -380,7 +380,7 @@ public:
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
     // alternative protocol function handler
-    FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
+    FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_SerialDevice *);
 
     struct stream_entries {
         const streams stream_id;
@@ -665,7 +665,7 @@ private:
     bool calibrate_gyros();
 
     /// The stream we are communicating over
-    AP_HAL::UARTDriver *_port;
+    AP_SerialDevice *_port;
 
     /// Perform queued sending operations
     ///
@@ -1124,7 +1124,7 @@ protected:
     virtual uint8_t sysid_this_mav() const = 0;
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                                 AP_HAL::UARTDriver &uart) = 0;
+                                                 AP_SerialDevice &uart) = 0;
 
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
@@ -1140,7 +1140,7 @@ private:
     static GCS *_singleton;
 
     void create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                    AP_HAL::UARTDriver &uart);
+                                    AP_SerialDevice &uart);
 
     char statustext_printf_buffer[256+1];
 
@@ -1175,8 +1175,8 @@ private:
     struct {
         bool enabled;
         bool timer_installed;
-        AP_HAL::UARTDriver *port1;
-        AP_HAL::UARTDriver *port2;
+        AP_SerialDevice *port1;
+        AP_SerialDevice *port2;
         uint32_t start_ms;
         uint32_t last_ms;
         uint32_t last_port1_data_ms;

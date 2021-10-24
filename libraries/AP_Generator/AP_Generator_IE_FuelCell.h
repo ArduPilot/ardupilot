@@ -26,7 +26,7 @@ public:
 protected:
 
     // Pointer to serial uart
-    AP_HAL::UARTDriver *_uart = nullptr;
+    AP_SerialDevice *_uart = nullptr;
 
     // IE fuel cell running states
     enum class State {

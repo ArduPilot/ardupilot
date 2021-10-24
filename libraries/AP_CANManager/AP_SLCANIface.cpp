@@ -26,6 +26,7 @@
 #include "AP_CANManager.h"
 
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_SerialManager/AP_SerialDevice.h>
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
@@ -517,7 +518,7 @@ void SLCAN::CANIface::update_slcan_port()
         return;
     }
     if (_port == nullptr) {
-         _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+         _port = AP::serialmanager().find_serial(AP_SerialDevice::Protocol::SLCAN, 0);
         if (_port != nullptr) {
             _port->lock_port(_serial_lock_key, _serial_lock_key);
             _set_by_sermgr = true;

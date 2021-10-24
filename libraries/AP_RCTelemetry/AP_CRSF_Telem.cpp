@@ -59,8 +59,8 @@ AP_CRSF_Telem::~AP_CRSF_Telem(void)
 bool AP_CRSF_Telem::init(void)
 {
     // sanity check that we are using a UART for RC input
-    if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
-        && !AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
+    if (!AP::serialmanager().find_serial(AP_SerialDevice::Protocol::RCIN, 0)
+        && !AP::serialmanager().find_serial(AP_SerialDevice::Protocol::CRSF, 0)) {
         return false;
     }
 
@@ -103,7 +103,7 @@ void AP_CRSF_Telem::setup_custom_telemetry()
     }
 
     // check if passthru already assigned
-    const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough,0);
+    const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialDevice::Protocol::FrSky_SPort_Passthrough,0);
     if (frsky_port != -1) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;

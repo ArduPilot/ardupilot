@@ -24,7 +24,7 @@ bool AP_Frsky_Backend::init_serial_port()
         return false;
     }
     // we don't want flow control for either protocol
-    _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    _port->get_uart().set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     return true;
 }
 
@@ -34,7 +34,7 @@ bool AP_Frsky_Backend::init_serial_port()
 void AP_Frsky_Backend::loop(void)
 {
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
-    _port->begin(initial_baud(), 0, 0);
+    _port->get_uart().begin(initial_baud(), 0, 0);
 
     while (true) {
         hal.scheduler->delay(1);

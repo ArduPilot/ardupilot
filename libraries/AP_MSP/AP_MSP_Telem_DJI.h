@@ -45,6 +45,8 @@
 
 #if HAL_MSP_ENABLED
 
+#include <AP_SerialManager/AP_SerialDevice.h>
+
 class AP_MSP_Telem_DJI : public AP_MSP_Telem_Backend
 {
     using AP_MSP_Telem_Backend::AP_MSP_Telem_Backend;
@@ -52,7 +54,7 @@ public:
     bool init_uart() override;
     // implementation specific helpers
     bool is_scheduler_enabled() const override;
-    AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_DJI_FPV; };
+    AP_SerialDevice::Protocol get_serial_protocol() const override { return AP_SerialDevice::Protocol::DJI_FPV; };
     uint32_t get_osd_flight_mode_bitmask(void) override;
     void hide_osd_items(void) override;
 

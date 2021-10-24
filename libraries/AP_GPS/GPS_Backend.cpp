@@ -36,7 +36,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_SerialDevice *_port) :
     port(_port),
     gps(_gps),
     state(_state)

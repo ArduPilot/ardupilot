@@ -33,15 +33,22 @@ void AP_LTM_Telem::init()
     const AP_SerialManager &serial_manager = AP::serialmanager();
     
     // check for LTM_Port
-    if ((_port = serial_manager.find_serial(
-            AP_SerialManager::SerialProtocol_LTM_Telem, 0))) {
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        // initialise UART
-        _port->begin(0, AP_SERIALMANAGER_LTM_BUFSIZE_RX,
-        AP_SERIALMANAGER_LTM_BUFSIZE_TX);
-        hal.scheduler->register_io_process(
-                FUNCTOR_BIND_MEMBER(&AP_LTM_Telem::tick, void));
+    _port = serial_manager.find_serial(AP_SerialDevice::Protocol::LTM_Telem, 0);
+    if (_port == nullptr) {
+        return;
     }
+
+    {
+        AP_SerialDevice_UART *dev_uart = _port->get_serialdevice_uart();
+        if (dev_uart != nullptr) {
+            dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+            dev_uart->set_bufsize_rx(0);
+            dev_uart->set_bufsize_rx(32);
+        }
+    }
+    _port->begin();
+
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_LTM_Telem::tick, void));
 }
 
 void AP_LTM_Telem::send_LTM(uint8_t lt_packet[], uint8_t lt_packet_size)

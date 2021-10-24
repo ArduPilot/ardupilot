@@ -18,7 +18,6 @@
 */
 
 
-
 #include "AP_Devo_Telem.h"
 
 #if AP_DEVO_TELEM_ENABLED
@@ -40,13 +39,23 @@ void AP_DEVO_Telem::init()
     const AP_SerialManager& serial_manager = AP::serialmanager();
 
     // check for DEVO_DPort
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Devo_Telem, 0))) {
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        // initialise uart
-        _port->begin(AP_SERIALMANAGER_DEVO_TELEM_BAUD, AP_SERIALMANAGER_DEVO_BUFSIZE_RX, AP_SERIALMANAGER_DEVO_BUFSIZE_TX);
-
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_DEVO_Telem::tick, void));
+    _port = serial_manager.find_serial(AP_SerialDevice::Protocol::Devo_Telem, 0);
+    if (_port == nullptr) {
+        return;
     }
+    {
+        AP_SerialDevice_UART *dev_uart = _port->get_serialdevice_uart();
+        if (dev_uart != nullptr) {
+            dev_uart->set_baud(38400);
+            dev_uart->set_bufsize_rx(0);
+            dev_uart->set_bufsize_tx(32);
+            dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        }
+    }
+    // initialise uart
+    _port->begin();
+
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_DEVO_Telem::tick, void));
 }
 
 

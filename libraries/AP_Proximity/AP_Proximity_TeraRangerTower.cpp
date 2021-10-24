@@ -17,6 +17,8 @@
 
 #if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
+#include <AP_SerialManager/AP_SerialDevice.h>
+
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>

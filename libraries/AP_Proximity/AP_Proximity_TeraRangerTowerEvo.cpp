@@ -17,6 +17,7 @@
 #include "AP_Proximity_TeraRangerTowerEvo.h"
 
 #if HAL_PROXIMITY_ENABLED
+#include <AP_SerialManager/AP_SerialDevice.h>
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>

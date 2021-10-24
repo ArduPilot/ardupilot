@@ -50,7 +50,7 @@ protected:
     }
 
     GCS_MAVLINK_Copter *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                                AP_HAL::UARTDriver &uart) override {
+                                                AP_SerialDevice &uart) override {
         return new GCS_MAVLINK_Copter(params, uart);
     }
 

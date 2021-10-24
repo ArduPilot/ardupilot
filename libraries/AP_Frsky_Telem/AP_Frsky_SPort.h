@@ -7,7 +7,7 @@ class AP_Frsky_SPort : public AP_Frsky_Backend
 
 public:
 
-    AP_Frsky_SPort(AP_HAL::UARTDriver *port) : AP_Frsky_Backend(port) {
+    AP_Frsky_SPort(AP_SerialDevice_UART *port) : AP_Frsky_Backend(port) {
         singleton = this;
     }
 

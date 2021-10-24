@@ -55,7 +55,7 @@ private:
 
     // read - read serial port, return true if a new reading has been found
     bool get_reading();
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice *uart;
 
     // methods and state to record pilot desired runstate and actual runstate:
     enum class RunState {
