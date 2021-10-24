@@ -33,6 +33,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::TRAINING:
         failsafe.saved_mode_number = control_mode->mode_number();
         failsafe.saved_mode_set = true;
+        if(plane.emergency_landing) {
+            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            break;
+        }
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(mode_fbwa, reason);
         } else {
@@ -119,6 +123,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::THERMAL:
+        if(plane.emergency_landing) {
+            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            break;
+        }
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
