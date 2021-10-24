@@ -80,6 +80,7 @@ brand_map = {
     "FlywooF745" : ('Flywoo Goku GN 745 AIO', 'Flywoo'),
     "FlywooF745Nano" : ('Flywoo Goku Hex F745', 'Flywoo'),
     "modalai_fc-v1" : ('ModalAI FlightCore v1', 'ModalAI'),
+    'Pixhawk5X' : ('Pixhawk 5X', 'Holybro'),
 }
 
 class Firmware():
