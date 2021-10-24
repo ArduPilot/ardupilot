@@ -14,7 +14,7 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b);
+    virtual void set_soft_armed(const bool b);
     bool get_soft_armed() const { return soft_armed; }
 
     // return the time that the armed state last changed
