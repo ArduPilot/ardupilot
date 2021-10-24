@@ -1100,6 +1100,9 @@ private:
     void update_soaring();
 #endif
 
+    // RC_Channel.cpp
+    bool emergency_landing;
+
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
