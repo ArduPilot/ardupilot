@@ -22,6 +22,28 @@
 
 #define AP_MOTORS_MAX_NUM_MOTORS 12
 
+#ifndef FRAME_QUAD
+#define FRAME_QUAD 1
+#endif
+#ifndef FRAME_HEXA
+#define FRAME_HEXA 1
+#endif
+#ifndef FRAME_OCTA
+#define FRAME_OCTA 1
+#endif
+#ifndef FRAME_DECA
+#define FRAME_DECA 1
+#endif
+#ifndef FRAME_DODECAHEXA
+#define FRAME_DODECAHEXA 1
+#endif
+#ifndef FRAME_Y6
+#define FRAME_Y6 1
+#endif
+#ifndef FRAME_OCTAQUAD
+#define FRAME_OCTAQUAD 1
+#endif
+
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
