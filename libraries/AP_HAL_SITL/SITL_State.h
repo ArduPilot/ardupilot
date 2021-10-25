@@ -36,8 +36,8 @@
 #include <SITL/SIM_RF_Lanbao.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_LeddarOne.h>
-#include <SITL/SIM_RF_uLanding_v0.h>
-#include <SITL/SIM_RF_uLanding_v1.h>
+#include <SITL/SIM_RF_USD1_v0.h>
+#include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
 #include <SITL/SIM_RF_Wasp.h>
 #include <SITL/SIM_RF_NMEA.h>
@@ -239,10 +239,10 @@ private:
     SITL::RF_BLping *blping;
     // simulated LeddarOne rangefinder:
     SITL::RF_LeddarOne *leddarone;
-    // simulated uLanding v0 rangefinder:
-    SITL::RF_uLanding_v0 *ulanding_v0;
-    // simulated uLanding v1 rangefinder:
-    SITL::RF_uLanding_v1 *ulanding_v1;
+    // simulated USD1 v0 rangefinder:
+    SITL::RF_USD1_v0 *USD1_v0;
+    // simulated USD1 v1 rangefinder:
+    SITL::RF_USD1_v1 *USD1_v1;
     // simulated MaxsonarSerialLV rangefinder:
     SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
     // simulated Wasp rangefinder:

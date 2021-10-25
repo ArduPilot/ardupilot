@@ -271,18 +271,18 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         leddarone = new SITL::RF_LeddarOne();
         return leddarone->fd();
-    } else if (streq(name, "ulanding_v0")) {
-        if (ulanding_v0 != nullptr) {
-            AP_HAL::panic("Only one ulanding_v0 at a time");
+    } else if (streq(name, "USD1_v0")) {
+        if (USD1_v0 != nullptr) {
+            AP_HAL::panic("Only one USD1_v0 at a time");
         }
-        ulanding_v0 = new SITL::RF_uLanding_v0();
-        return ulanding_v0->fd();
-    } else if (streq(name, "ulanding_v1")) {
-        if (ulanding_v1 != nullptr) {
-            AP_HAL::panic("Only one ulanding_v1 at a time");
+        USD1_v0 = new SITL::RF_USD1_v0();
+        return USD1_v0->fd();
+    } else if (streq(name, "USD1_v1")) {
+        if (USD1_v1 != nullptr) {
+            AP_HAL::panic("Only one USD1_v1 at a time");
         }
-        ulanding_v1 = new SITL::RF_uLanding_v1();
-        return ulanding_v1->fd();
+        USD1_v1 = new SITL::RF_USD1_v1();
+        return USD1_v1->fd();
     } else if (streq(name, "maxsonarseriallv")) {
         if (maxsonarseriallv != nullptr) {
             AP_HAL::panic("Only one maxsonarseriallv at a time");
@@ -453,16 +453,16 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No leddarone created");
         }
         return leddarone->write_fd();
-    } else if (streq(name, "ulanding_v0")) {
-        if (ulanding_v0 == nullptr) {
-            AP_HAL::panic("No ulanding_v0 created");
+    } else if (streq(name, "USD1_v0")) {
+        if (USD1_v0 == nullptr) {
+            AP_HAL::panic("No USD1_v0 created");
         }
-        return ulanding_v0->write_fd();
-    } else if (streq(name, "ulanding_v1")) {
-        if (ulanding_v1 == nullptr) {
-            AP_HAL::panic("No ulanding_v1 created");
+        return USD1_v0->write_fd();
+    } else if (streq(name, "USD1_v1")) {
+        if (USD1_v1 == nullptr) {
+            AP_HAL::panic("No USD1_v1 created");
         }
-        return ulanding_v1->write_fd();
+        return USD1_v1->write_fd();
     } else if (streq(name, "maxsonarseriallv")) {
         if (maxsonarseriallv == nullptr) {
             AP_HAL::panic("No maxsonarseriallv created");
@@ -717,11 +717,11 @@ void SITL_State::_fdm_input_local(void)
     if (leddarone != nullptr) {
         leddarone->update(sitl_model->rangefinder_range());
     }
-    if (ulanding_v0 != nullptr) {
-        ulanding_v0->update(sitl_model->rangefinder_range());
+    if (USD1_v0 != nullptr) {
+        USD1_v0->update(sitl_model->rangefinder_range());
     }
-    if (ulanding_v1 != nullptr) {
-        ulanding_v1->update(sitl_model->rangefinder_range());
+    if (USD1_v1 != nullptr) {
+        USD1_v1->update(sitl_model->rangefinder_range());
     }
     if (maxsonarseriallv != nullptr) {
         maxsonarseriallv->update(sitl_model->rangefinder_range());
