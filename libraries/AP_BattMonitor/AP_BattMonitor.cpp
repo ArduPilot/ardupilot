@@ -449,7 +449,7 @@ void AP_BattMonitor::convert_params(void) {
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     info.old_key = 166;
-#elif APM_BUILD_COPTER_OR_HELI()
+#elif APM_BUILD_COPTER_OR_HELI
     info.old_key = 36;
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
     info.old_key = 33;
