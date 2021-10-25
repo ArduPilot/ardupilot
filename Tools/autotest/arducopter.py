@@ -6519,8 +6519,8 @@ class AutoTestCopter(AutoTest):
         drivers = [
             ("lightwareserial", 8),  # autodetected between this and -binary
             ("lightwareserial-binary", 8),
-            ("ulanding_v0", 11),
-            ("ulanding_v1", 11),
+            ("USD1_v0", 11),
+            ("USD1_v1", 11),
             ("leddarone", 12),
             ("maxsonarseriallv", 13),
             ("nmea", 17),
