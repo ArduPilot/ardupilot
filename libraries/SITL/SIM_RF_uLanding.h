@@ -22,7 +22,7 @@
 
 namespace SITL {
 
-class RF_uLanding : public SerialRangeFinder {
+class RF_USD1 : public SerialRangeFinder {
 public:
 };
 
