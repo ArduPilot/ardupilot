@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the uLanding v0 Serial RangeFinder
+  Simulator for the USD1 v0 Serial RangeFinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:ulanding_v0 --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:USD1_v0 --speedup=1
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 11
@@ -29,11 +29,11 @@ rc 3 1600
 
 #pragma once
 
-#include "SIM_RF_uLanding.h"
+#include "SIM_RF_USD1.h"
 
 namespace SITL {
 
-class RF_uLanding_v0 : public RF_uLanding {
+class RF_USD1_v0 : public RF_USD1 {
 public:
 
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
