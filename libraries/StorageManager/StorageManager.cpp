@@ -19,14 +19,13 @@
   of storage offsets to available storage
  */
 
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Math/AP_Math.h>
 
 #include "StorageManager.h"
 
 #include <stdio.h>
-
 
 extern const AP_HAL::HAL& hal;
 
@@ -43,7 +42,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     HAL_STORAGE_SIZE}
 };
 
-#elif !APM_BUILD_COPTER_OR_HELI()
+#elif !APM_BUILD_COPTER_OR_HELI
 
 /*
   layout for fixed wing and rovers
