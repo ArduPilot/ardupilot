@@ -46,7 +46,7 @@ class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_MPPT_PacketDigital;
-class AP_BattMonitor_INA231;
+class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
 
@@ -65,7 +65,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
     friend class AP_BattMonitor_MPPT_PacketDigital;
-    friend class AP_BattMonitor_INA231;
+    friend class AP_BattMonitor_INA2XX;
     friend class AP_BattMonitor_LTC2946;
 
     friend class AP_BattMonitor_Torqeedo;
@@ -100,7 +100,7 @@ public:
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
         MPPT_PacketDigital         = 20,
-        INA231                     = 21,
+        INA2XX                     = 21,
         LTC2946                    = 22,
         Torqeedo                   = 23,
     };
