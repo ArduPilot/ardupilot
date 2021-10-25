@@ -14,7 +14,7 @@
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
 #include "AP_BattMonitor_MPPT_PacketDigital.h"
-#include "AP_BattMonitor_INA231.h"
+#include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 
@@ -276,9 +276,9 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_MPPT_PacketDigital(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
-#if HAL_BATTMON_INA231_ENABLED
-            case Type::INA231:
-                drivers[instance] = new AP_BattMonitor_INA231(*this, state[instance], _params[instance]);
+#if HAL_BATTMON_INA2XX_ENABLED
+            case Type::INA2XX:
+                drivers[instance] = new AP_BattMonitor_INA2XX(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if HAL_BATTMON_LTC2946_ENABLED
