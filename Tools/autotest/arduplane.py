@@ -534,7 +534,7 @@ class AutoTestPlane(AutoTest):
         self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         if quadplane:
-            self.wait_statustext("Throttle disarmed", timeout=70)
+            self.wait_statustext("Throttle disarmed", timeout=200)
         else:
             self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
@@ -2993,6 +2993,10 @@ class AutoTestPlane(AutoTest):
             quadplane = self.get_parameter('Q_ENABLE')
             if quadplane:
                 mission_file = "basic-quadplane.txt"
+            tailsitter = self.get_parameter('Q_TAILSIT_ENABLE')
+            if tailsitter:
+                # tailsitter needs extra re-boot to pick up the rotated AHRS view
+                self.reboot_sitl()
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
