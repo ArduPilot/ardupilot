@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef BOARD_RSSI_ANA_PIN
-#define BOARD_RSSI_ANA_PIN 0
+#define BOARD_RSSI_ANA_PIN -1
 #endif
 
 #ifndef BOARD_RSSI_ANA_PIN_HIGH
@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: Pin used to read the RSSI voltage or PWM value
-    // @Values: 8:V5 Nano,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 8:V5 Nano,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 
@@ -154,6 +154,15 @@ float AP_RSSI::read_receiver_rssi()
     return 0.0f;
 }
 
+// Only valid for RECEIVER type RSSI selections. Returns -1 if protocol does not provide link quality report.
+float AP_RSSI::read_receiver_link_quality()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_link_quality();
+    }
+    return -1;
+}
+
 // Read the receiver RSSI value as an 8-bit integer
 // 0 represents weakest signal, 255 represents maximum signal.
 uint8_t AP_RSSI::read_receiver_rssi_uint8()
@@ -167,10 +176,9 @@ uint8_t AP_RSSI::read_receiver_rssi_uint8()
 // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
 float AP_RSSI::read_pin_rssi()
 {
-    if (!rssi_analog_source) {
+    if (!rssi_analog_source || !rssi_analog_source->set_pin(rssi_analog_pin)) {
         return 0;
     }
-    rssi_analog_source->set_pin(rssi_analog_pin);
     float current_analog_voltage = rssi_analog_source->voltage_average();
 
     return scale_and_constrain_float_rssi(current_analog_voltage, rssi_analog_pin_range_low, rssi_analog_pin_range_high);

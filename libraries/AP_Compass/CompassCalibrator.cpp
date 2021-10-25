@@ -64,6 +64,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #define FIELD_RADIUS_MIN 150
 #define FIELD_RADIUS_MAX 950
@@ -87,7 +88,7 @@ void CompassCalibrator::stop()
     _status_set_requested = true;
 }
 
-void CompassCalibrator::set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation)
+void CompassCalibrator::set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation, bool always_45_deg)
 {
     WITH_SEMAPHORE(state_sem);
     cal_settings.check_orientation = true;
@@ -95,6 +96,7 @@ void CompassCalibrator::set_orientation(enum Rotation orientation, bool is_exter
     cal_settings.orig_orientation = orientation;
     cal_settings.is_external = is_external;
     cal_settings.fix_orientation = fix_orientation;
+    cal_settings.always_45_deg = always_45_deg;
 }
 
 void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx, float tolerance)
@@ -251,6 +253,7 @@ void CompassCalibrator::update_cal_settings()
     _delay_start_sec = cal_settings.delay_start_sec;
     _start_time_ms = cal_settings.start_time_ms;
     _compass_idx = cal_settings.compass_idx;
+    _always_45_deg = cal_settings.always_45_deg;
 }
 
 // update completion mask based on latest sample
@@ -909,11 +912,14 @@ bool CompassCalibrator::calculate_orientation(void)
     // this function is very slow
     EXPECT_DELAY_MS(1000);
 
-    float variance[ROTATION_MAX_AUTO_ROTATION+1] {};
+    // Skip 4 rotations, see: auto_rotation_index()
+    float variance[ROTATION_MAX-4] {};
 
     _orientation_solution = _orientation;
     
-    for (enum Rotation r = ROTATION_NONE; r <= ROTATION_MAX_AUTO_ROTATION; r = (enum Rotation)(r+1)) {
+    for (uint8_t n=0; n < ARRAY_SIZE(variance); n++) {
+        Rotation r = auto_rotation_index(n);
+
         // calculate the average implied earth field across all samples
         Vector3f total_ef {};
         for (uint32_t i=0; i<_samples_collected; i++) {
@@ -927,32 +933,43 @@ bool CompassCalibrator::calculate_orientation(void)
             Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
             float err = (efield - avg_efield).length_squared();
             // divide by number of samples collected to get the variance
-            variance[r] += err / _samples_collected;
+            variance[n] += err / _samples_collected;
         }
     }
 
     // find the rotation with the lowest variance
     enum Rotation besti = ROTATION_NONE;
     float bestv = variance[0];
-    for (enum Rotation r = ROTATION_NONE; r <= ROTATION_MAX_AUTO_ROTATION; r = (enum Rotation)(r+1)) {
-        if (variance[r] < bestv) {
-            bestv = variance[r];
+    enum Rotation besti_90 = ROTATION_NONE;
+    float bestv_90 = variance[0];
+    for (uint8_t n=0; n < ARRAY_SIZE(variance); n++) {
+        Rotation r = auto_rotation_index(n);
+        if (variance[n] < bestv) {
+            bestv = variance[n];
             besti = r;
+        }
+        if (right_angle_rotation(r) && variance[n] < bestv_90) {
+            bestv_90 = variance[n];
+            besti_90 = r;
         }
     }
 
-    // consider this a pass if the best orientation is 2x better
-    // variance than 2nd best
-    const float variance_threshold = 2.0;
 
     float second_best = besti==ROTATION_NONE?variance[1]:variance[0];
-    enum Rotation besti2 = ROTATION_NONE;
-    for (enum Rotation r = ROTATION_NONE; r <= ROTATION_MAX_AUTO_ROTATION; r = (enum Rotation)(r+1)) {
-        if (!rotation_equal(besti, r)) {
-            if (variance[r] < second_best) {
-                second_best = variance[r];
+    enum Rotation besti2 = besti==ROTATION_NONE?ROTATION_YAW_45:ROTATION_NONE;
+    float second_best_90 = besti_90==ROTATION_NONE?variance[2]:variance[0];
+    enum Rotation besti2_90 = besti_90==ROTATION_NONE?ROTATION_YAW_90:ROTATION_NONE;
+    for (uint8_t n=0; n < ARRAY_SIZE(variance); n++) {
+        Rotation r = auto_rotation_index(n);
+        if (besti != r) {
+            if (variance[n] < second_best) {
+                second_best = variance[n];
                 besti2 = r;
             }
+        }
+        if (right_angle_rotation(r) && (besti_90 != r) && (variance[n] < second_best_90)) {
+            second_best_90 = variance[n];
+            besti2_90 = r;
         }
     }
 
@@ -963,7 +980,21 @@ bool CompassCalibrator::calculate_orientation(void)
         // if the orientation matched then allow for a low threshold
         pass = true;
     } else {
-        pass = _orientation_confidence > variance_threshold;
+        if (_orientation_confidence > 4.0) {
+            // very confident, always pass
+            pass = true;
+
+        } else if (_always_45_deg && (_orientation_confidence > 2.0)) {
+            // use same tolerance for all rotations
+            pass = true;
+
+        } else {
+            // just consider 90's
+            _orientation_confidence = second_best_90 / bestv_90;
+            pass = _orientation_confidence > 2.0;
+            besti = besti_90;
+            besti2 = besti2_90;
+        }
     }
     if (!pass) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
@@ -1058,4 +1089,66 @@ bool CompassCalibrator::fix_radius(void)
     _params.scale_factor = correction;
 
     return true;
+}
+
+// convert index to rotation, this allows to skip some rotations
+Rotation CompassCalibrator::auto_rotation_index(uint8_t n) const
+{
+    if (n < ROTATION_PITCH_180_YAW_90) {
+        return (Rotation)n;
+    }
+    // ROTATION_PITCH_180_YAW_90 (26) is the same as ROTATION_ROLL_180_YAW_90 (10)
+    // ROTATION_PITCH_180_YAW_270 (27) is the same as ROTATION_ROLL_180_YAW_270 (14)
+    n += 2;
+    if (n < ROTATION_ROLL_90_PITCH_68_YAW_293) {
+        return (Rotation)n;
+    }
+    // ROTATION_ROLL_90_PITCH_68_YAW_293 is for solo leg compass, not expecting to see this in other vehicles
+    n += 1;
+    if (n < ROTATION_PITCH_7) {
+        return (Rotation)n;
+    }
+    // ROTATION_PITCH_7 is too close to ROTATION_NONE to tell the difference in compass cal
+    n += 1;
+    if (n < ROTATION_MAX) {
+        return (Rotation)n;
+    }
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    return ROTATION_NONE;
+};
+
+bool CompassCalibrator::right_angle_rotation(Rotation r) const
+{
+    switch (r) {
+        case ROTATION_NONE:
+        case ROTATION_YAW_90:
+        case ROTATION_YAW_180:
+        case ROTATION_YAW_270:
+        case ROTATION_ROLL_180:
+        case ROTATION_ROLL_180_YAW_90:
+        case ROTATION_PITCH_180:
+        case ROTATION_ROLL_180_YAW_270:
+        case ROTATION_ROLL_90:
+        case ROTATION_ROLL_90_YAW_90:
+        case ROTATION_ROLL_270:
+        case ROTATION_ROLL_270_YAW_90:
+        case ROTATION_PITCH_90:
+        case ROTATION_PITCH_270:
+        case ROTATION_PITCH_180_YAW_90:
+        case ROTATION_PITCH_180_YAW_270:
+        case ROTATION_ROLL_90_PITCH_90:
+        case ROTATION_ROLL_180_PITCH_90:
+        case ROTATION_ROLL_270_PITCH_90:
+        case ROTATION_ROLL_90_PITCH_180:
+        case ROTATION_ROLL_270_PITCH_180:
+        case ROTATION_ROLL_90_PITCH_270:
+        case ROTATION_ROLL_180_PITCH_270:
+        case ROTATION_ROLL_270_PITCH_270:
+        case ROTATION_ROLL_90_PITCH_180_YAW_90:
+        case ROTATION_ROLL_90_YAW_270:
+            return true;
+
+        default:
+            return false;
+    }
 }

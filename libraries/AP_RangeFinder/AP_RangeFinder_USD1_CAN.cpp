@@ -7,9 +7,10 @@
   constructor
  */
 AP_RangeFinder_USD1_CAN::AP_RangeFinder_USD1_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    CANSensor("USD1", AP_CANManager::Driver_Type_USD1),
+    CANSensor("USD1"),
     AP_RangeFinder_Backend(_state, _params)
 {
+    register_driver(AP_CANManager::Driver_Type_USD1);
 }
 
 // update state
@@ -20,7 +21,7 @@ void AP_RangeFinder_USD1_CAN::update(void)
         // if data is older than 500ms, report NoData
         set_status(RangeFinder::Status::NoData);
     } else if (new_data) {
-        state.distance_cm = _distance_cm;
+        state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;

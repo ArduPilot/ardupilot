@@ -104,7 +104,7 @@ bool AP_RangeFinder_uLanding::detect_version(void)
 
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_uLanding::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -165,10 +165,10 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    reading_cm = sum / count;
+    reading_m = (sum * 0.01f) / count;
 
     if (_version == 0 && _header != ULANDING_HDR) {
-        reading_cm *= 2.5f;
+        reading_m *= 2.5f;
     }
 
     return true;

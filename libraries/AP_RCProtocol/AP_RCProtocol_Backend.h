@@ -67,7 +67,9 @@ public:
     int16_t get_RSSI(void) const {
         return rssi;
     }
-
+    int16_t get_rx_link_quality(void) const {
+        return rx_link_quality;
+    }
     // get UART for RCIN, if available. This will return false if we
     // aren't getting the active RC input protocol via the uart
     AP_HAL::UARTDriver *get_UART(void) const {
@@ -99,7 +101,7 @@ protected:
         uint32_t ch7 : 11;
     } PACKED;
 
-    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1);
     AP_RCProtocol &frontend;
 
     void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
@@ -115,4 +117,5 @@ private:
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
     int16_t rssi = -1;
+    int16_t rx_link_quality = -1;
 };

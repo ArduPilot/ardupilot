@@ -93,13 +93,14 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(Compass,          &rover.compass,              cal_update, 50, 200),
     SCHED_TASK(compass_save,           0.1,   200),
-    SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Logger,     &rover.logger,        periodic_tasks, 50,  300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200),
+#endif
 #if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,            1,    200),
 #endif
@@ -109,6 +110,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
+#if HAL_AIS_ENABLED
+    SCHED_TASK_CLASS(AP_AIS, &rover.g2.ais, update, 5, 100),
+#endif
 };
 
 
@@ -135,6 +139,7 @@ Rover::Rover(void) :
 {
 }
 
+#ifdef ENABLE_SCRIPTING
 // set target location (for use by scripting)
 bool Rover::set_target_location(const Location& target_loc)
 {
@@ -213,6 +218,7 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
     }
     return false;
 }
+#endif // ENABLE_SCRIPTING
 
 #if STATS_ENABLED == ENABLED
 /*
@@ -249,7 +255,7 @@ void Rover::ahrs_update()
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
-        ground_speed = norm(velocity.x, velocity.y);
+        ground_speed = velocity.xy().length();
     } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }

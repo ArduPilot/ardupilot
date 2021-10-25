@@ -65,10 +65,10 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Servo output function
     // @Description: Function assigned to this servo. Setting this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
-    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:FlapAuto,4:Aileron,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,19:Elevator,21:Rudder,22:SprayerPump,23:SprayerSpinner,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,69:Starter,70:Throttle,71:TrackerYaw,72:TrackerPitch,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,88:Winch,89:Main Sail,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,128:WingSailElevator,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX,137:SailMastRotation
-    // @Values{Plane}: 0:Disabled,1:RCPassThru,2:Flap,3:FlapAuto,4:Aileron,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,19:Elevator,21:Rudder,22:SprayerPump,23:SprayerSpinner,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7/TailTiltServo,40:Motor8,41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,69:Starter,70:Throttle,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,82:Motor9,83:Motor10,84:Motor11,85:Motor12,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
-    // @Values{Copter}: 0:Disabled,1:RCPassThru,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,22:SprayerPump,23:SprayerSpinner,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12,88:Winch,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
-    // @Values{Rover}: 0:Disabled,1:RCPassThru,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,22:SprayerPump,23:SprayerSpinner,26:GroundSteering,28:Gripper,33:Motor1,34:Motor2,35:Motor3,36:Motor4,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,70:Throttle,73:ThrottleLeft,74:ThrottleRight,88:Winch,89:Main Sail,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,128:WingSailElevator,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX,137:SailMastRotation
+    // @Values: -1:GPIO,0:Disabled,1:RCPassThru,2:Flap,3:FlapAuto,4:Aileron,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,19:Elevator,21:Rudder,22:SprayerPump,23:SprayerSpinner,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,69:Starter,70:Throttle,71:TrackerYaw,72:TrackerPitch,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,88:Winch,89:Main Sail,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,128:WingSailElevator,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX,137:SailMastRotation
+    // @Values{Plane}: -1:GPIO,0:Disabled,1:RCPassThru,2:Flap,3:FlapAuto,4:Aileron,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,19:Elevator,21:Rudder,22:SprayerPump,23:SprayerSpinner,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7/TailTiltServo,40:Motor8,41:TiltMotorsFront,45:TiltMotorsRear,46:TiltMotorRearLeft,47:TiltMotorRearRight,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,69:Starter,70:Throttle,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,82:Motor9,83:Motor10,84:Motor11,85:Motor12,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
+    // @Values{Copter}: -1:GPIO,0:Disabled,1:RCPassThru,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,22:SprayerPump,23:SprayerSpinner,27:Parachute,28:Gripper,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,73:ThrottleLeft,74:ThrottleRight,75:TiltMotorFrontLeft,76:TiltMotorFrontRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12,88:Winch,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,124:RateRoll,125:RatePitch,126:RateThrust,127:RateYaw,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX
+    // @Values{Rover}: -1:GPIO,0:Disabled,1:RCPassThru,6:MountPan,7:MountTilt,8:MountRoll,9:MountOpen,10:CameraTrigger,12:Mount2Pan,13:Mount2Tilt,14:Mount2Roll,15:Mount2Open,22:SprayerPump,23:SprayerSpinner,26:GroundSteering,28:Gripper,33:Motor1,34:Motor2,35:Motor3,36:Motor4,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,70:Throttle,73:ThrottleLeft,74:ThrottleRight,88:Winch,89:Main Sail,90:CameraISO,91:CameraAperture,92:CameraFocus,93:CameraShutterSpeed,94:Script1,95:Script2,96:Script3,97:Script4,98:Script5,99:Script6,100:Script7,101:Script8,102:Script9,103:Script10,104:Script11,105:Script12,106:Script13,107:Script14,108:Script15,109:Script16,120:NeoPixel1,121:NeoPixel2,122:NeoPixel3,123:NeoPixel4,128:WingSailElevator,129:ProfiLED1,130:ProfiLED2,131:ProfiLED3,132:ProfiLEDClock,133:Winch Clutch,134:SERVOn_MIN,135:SERVOn_TRIM,136:SERVOn_MAX,137:SailMastRotation
     // @User: Standard
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
 
@@ -84,52 +84,57 @@ SRV_Channel::SRV_Channel(void)
 }
 
 // convert a 0..range_max to a pwm
-uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 {
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    scaled_value = constrain_int16(scaled_value, 0, high_out);
+    scaled_value = constrain_float(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
-    return servo_min + ((int32_t)scaled_value * (int32_t)(servo_max - servo_min)) / (int32_t)high_out;
+    return servo_min + uint16_t( (scaled_value * (float)(servo_max - servo_min)) / (float)high_out );
 }
 
 // convert a -angle_max..angle_max to a pwm
-uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
     if (reversed) {
         scaled_value = -scaled_value;
     }
-    scaled_value = constrain_int16(scaled_value, -high_out, high_out);
+    scaled_value = constrain_float(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
-        return servo_trim + ((int32_t)scaled_value * (int32_t)(servo_max - servo_trim)) / (int32_t)high_out;
+        return servo_trim + uint16_t( (scaled_value * (float)(servo_max - servo_trim)) / (float)high_out);
     } else {
-        return servo_trim - (-(int32_t)scaled_value * (int32_t)(servo_trim - servo_min)) / (int32_t)high_out;
+        return servo_trim - uint16_t( (-scaled_value * (float)(servo_trim - servo_min)) / (float)high_out);
     }
 }
 
-void SRV_Channel::calc_pwm(int16_t output_scaled)
+void SRV_Channel::calc_pwm(float output_scaled)
 {
     if (have_pwm_mask & (1U<<ch_num)) {
+        // Note that this allows a set_output_pwm call to override E-Stop!!
+        // tricky to fix because we would endup E-stoping to individual SEROVx_MIN not MOT_PWM_MIN on copter
         return;
     }
 
     // check for E - stop
     bool force = false;
     if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
-        output_scaled = 0;
+        output_scaled = 0.0;
         force = true;
     }
 
-    uint16_t pwm;
-    if (type_angle) {
-        pwm = pwm_from_angle(output_scaled);
-    } else {
-        pwm = pwm_from_range(output_scaled);
+    if (!force && override_active) {
+        // don't overwrite a override
+        return;
     }
-    set_output_pwm(pwm,force);
+
+    if (type_angle) {
+        output_pwm = pwm_from_angle(output_scaled);
+    } else {
+        output_pwm = pwm_from_range(output_scaled);
+    }
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
@@ -215,9 +220,60 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
 bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
 {
-    return ((function >= SRV_Channel::k_heli_rsc && function <= SRV_Channel::k_motor8) ||
-            function == SRV_Channel::k_starter || function == SRV_Channel::k_throttle ||
-            function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight ||
-            (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
-            function == k_engine_run_enable);
+    switch (function) {
+    case Aux_servo_function_t::k_heli_rsc:  
+    case Aux_servo_function_t::k_heli_tail_rsc:
+    case Aux_servo_function_t::k_motor1:
+    case Aux_servo_function_t::k_motor2:
+    case Aux_servo_function_t::k_motor3:
+    case Aux_servo_function_t::k_motor4:
+    case Aux_servo_function_t::k_motor5:
+    case Aux_servo_function_t::k_motor6:
+    case Aux_servo_function_t::k_motor7:
+    case Aux_servo_function_t::k_motor8:
+    case Aux_servo_function_t::k_starter:
+    case Aux_servo_function_t::k_throttle:
+    case Aux_servo_function_t::k_throttleLeft:
+    case Aux_servo_function_t::k_throttleRight:
+    case Aux_servo_function_t::k_boost_throttle:
+    case Aux_servo_function_t::k_motor9:
+    case Aux_servo_function_t::k_motor10:
+    case Aux_servo_function_t::k_motor11:
+    case Aux_servo_function_t::k_motor12:
+    case Aux_servo_function_t::k_engine_run_enable:
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+// return true if function is for a control surface
+bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
+{
+    switch (function)
+    {
+    case SRV_Channel::Aux_servo_function_t::k_flap:  
+    case SRV_Channel::Aux_servo_function_t::k_flap_auto:
+    case SRV_Channel::Aux_servo_function_t::k_aileron:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft2:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight2:
+    case SRV_Channel::Aux_servo_function_t::k_elevator:
+    case SRV_Channel::Aux_servo_function_t::k_rudder:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_left:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_right:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_left:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_right:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_left:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_right:
+    case SRV_Channel::Aux_servo_function_t::k_airbrake:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
 }

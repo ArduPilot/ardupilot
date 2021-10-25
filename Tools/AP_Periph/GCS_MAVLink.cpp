@@ -16,7 +16,7 @@
 #include "GCS_MAVLink.h"
 #include "AP_Periph.h"
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU
@@ -24,14 +24,17 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
 };
 
 static const ap_message STREAM_POSITION_msgs[] = {
+#if defined(HAL_PERIPH_ENABLE_AHRS)
     MSG_LOCATION,
     MSG_LOCAL_POSITION
+#endif
 };
 
 static const ap_message STREAM_PARAMS_msgs[] = {
@@ -54,4 +57,22 @@ uint8_t GCS_MAVLINK_Periph::sysid_my_gcs() const
 {
     return periph.g.sysid_this_mav;
 }
-#endif // #ifndef HAL_NO_GCS
+
+uint8_t GCS_Periph::sysid_this_mav() const
+{
+    return periph.g.sysid_this_mav;
+}
+
+MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet)
+{
+    printf("RestartNode\n");
+    hal.scheduler->delay(10);
+    periph.prepare_reboot();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    NVIC_SystemReset();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    HAL_SITL::actually_reboot();
+#endif
+}
+
+#endif // #if HAL_GCS_ENABLED

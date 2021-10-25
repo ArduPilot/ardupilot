@@ -82,9 +82,9 @@ void ModeSmartRTL::wait_cleanup_run()
 void ModeSmartRTL::path_follow_run()
 {
     float target_yaw_rate = 0.0f;
-    if (!copter.failsafe.radio && g2.smart_rtl.use_pilot_yaw()) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -180,7 +180,7 @@ void ModeSmartRTL::save_position()
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
-bool ModeSmartRTL::get_wp(Location& destination)
+bool ModeSmartRTL::get_wp(Location& destination) const
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
@@ -205,6 +205,11 @@ uint32_t ModeSmartRTL::wp_distance() const
 int32_t ModeSmartRTL::wp_bearing() const
 {
     return wp_nav->get_wp_bearing_to_destination();
+}
+
+bool ModeSmartRTL::use_pilot_yaw() const
+{
+    return g2.smart_rtl.use_pilot_yaw();
 }
 
 #endif

@@ -30,7 +30,7 @@
 #endif
 
 class OpticalFlow_backend;
-class AP_AHRS_NavEKF;
+class AP_AHRS;
 
 class OpticalFlow
 {

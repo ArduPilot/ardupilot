@@ -27,7 +27,9 @@
 #ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
 #endif
+
 #if HAL_USE_PWM == TRUE
+#include <SRV_Channel/SRV_Channel.h>
 
 using namespace ChibiOS;
 
@@ -59,7 +61,6 @@ static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
  */
 void RCOutput::init()
 {
-    uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
     for (auto &group : pwm_group_list) {
         const uint8_t i = &group - pwm_group_list;
         //Start Pwm groups
@@ -67,10 +68,12 @@ void RCOutput::init()
         group.dshot_event_mask = EVENT_MASK(i);
 
         for (uint8_t j = 0; j < 4; j++ ) {
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
             uint8_t chan = group.chan[j];
-            if (chan >= pwm_count) {
+            if (SRV_Channels::is_GPIO(chan+chan_offset)) {
                 group.chan[j] = CHAN_DISABLED;
             }
+#endif
             if (group.chan[j] != CHAN_DISABLED) {
                 num_fmu_channels = MAX(num_fmu_channels, group.chan[j]+1);
                 group.ch_mask |= (1U<<group.chan[j]);
@@ -505,7 +508,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
         // implement safety pwm value
-        period_us = safe_pwm[chan];
+        period_us = 0;
     }
 
     chan -= chan_offset;
@@ -552,7 +555,7 @@ void RCOutput::push_local(void)
 
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
-                    period_us = safe_pwm[chan+chan_offset];
+                    period_us = 0;
                 }
 
                 if (group.current_mode == MODE_PWM_BRUSHED) {
@@ -582,14 +585,15 @@ void RCOutput::push_local(void)
                     period_us = group.dshot_pulse_time_us;
                 }
 #endif //#ifndef DISABLE_DSHOT
-                if (period_us > widest_pulse) {
-                    widest_pulse = period_us;
-                }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
                     group.current_mode == MODE_NEOPIXEL ||
                     group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
+                    // only control widest pulse for oneshot and dshot
+                    if (period_us > widest_pulse) {
+                        widest_pulse = period_us;
+                    }
                     const uint8_t i = &group - pwm_group_list;
                     need_trigger |= (1U<<i);
                 }
@@ -616,7 +620,12 @@ uint16_t RCOutput::read(uint8_t chan)
     }
 #if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
-        return iomcu.read_channel(chan);
+        uint16_t period_us = iomcu.read_channel(chan);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<chan) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us *= 8;
+        }
+        return period_us;
     }
 #endif
     chan -= chan_offset;
@@ -631,6 +640,10 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<i) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us[i] *= 8;
+        }
     }
 #endif
     if (len <= chan_offset) {
@@ -960,6 +973,11 @@ void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
  */
 bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const
 {
+    if (!hal.scheduler->is_system_initialized()) {
+        hal.util->snprintf(banner_msg, banner_msg_len, "RCOut: Initialising");
+        return true;
+    }
+
     // create array of each channel's mode
     output_mode ch_mode[chan_offset + NUM_GROUPS * ARRAY_SIZE(pwm_group::chan)] = {};
     bool have_nonzero_modes = false;
@@ -1145,16 +1163,14 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
 
     bool command_sent = false;
     // queue up a command if there is one
-    if (!hal.util->get_soft_armed()
-        && _dshot_current_command.cycle == 0
+    if (_dshot_current_command.cycle == 0
         && _dshot_command_queue.pop(_dshot_current_command)) {
         // got a new command
     }
 
     for (auto &group : pwm_group_list) {
         // send a dshot command
-        if (!hal.util->get_soft_armed()
-            && is_dshot_protocol(group.current_mode)
+        if (is_dshot_protocol(group.current_mode)
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
         // actually do a dshot send
@@ -1356,7 +1372,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                 // safety is on, overwride pwm
-                pwm = safe_pwm[chan+chan_offset];
+                pwm = 0;
             }
 
             const uint16_t chan_mask = (1U<<chan);
@@ -1366,7 +1382,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             pwm = constrain_int16(pwm, 1000, 2000);
-            uint16_t value = 2 * (pwm - 1000);
+            uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
             if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
@@ -1379,9 +1395,10 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
                     value = 0;
                 }
             }
+
+            // dshot values are from 48 to 2047. 48 means off.
             if (value != 0) {
-                // dshot values are from 48 to 2047. Zero means off.
-                value += 47;
+                value += DSHOT_ZERO_THROTTLE;
             }
 
             if (!armed) {
@@ -1710,7 +1727,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
  */
 void RCOutput::serial_bit_irq(void)
 {
-    uint32_t now = AP_HAL::micros();
+    uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
 
@@ -1729,7 +1746,7 @@ void RCOutput::serial_bit_irq(void)
             irq.bitmask = 0;
         }
     } else {
-        systime_t dt = now - irq.byte_start_tick;
+        uint16_t dt = now - irq.byte_start_tick;
         uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
         if (bitnum > 10) {
@@ -1811,7 +1828,12 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     pwm_group &group = *serial_group;
     const ioline_t line = group.pal_lines[group.serial.chan];
     // keep speed low to avoid noise when switching between input and output
+#ifndef PAL_STM32_OSPEED_LOWEST
+    // for GPIOv3
+    uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOW;
+#else
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
+#endif
     // restore the line to what it was before
     iomode_t restore_mode = palReadLineMode(line);
     uint16_t i = 0;
@@ -1940,24 +1962,6 @@ void RCOutput::force_safety_off(void)
 }
 
 /*
-  set PWM to send to a set of channels when the safety switch is
-  in the safe state
-*/
-void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.set_safety_pwm(chmask, period_us);
-    }
-#endif
-    for (uint8_t i=0; i<16; i++) {
-        if (chmask & (1U<<i)) {
-            safe_pwm[i] = period_us;
-        }
-    }
-}
-
-/*
   update safety state
  */
 void RCOutput::safety_update(void)
@@ -2016,22 +2020,6 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
         iomcu.set_failsafe_pwm(chmask, period_us);
     }
 #endif
-}
-
-/*
-  true when the output mode is of type dshot
-*/
-bool RCOutput::is_dshot_protocol(const enum output_mode mode)
-{
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        return false;
-    }
 }
 
 /*

@@ -154,7 +154,7 @@ def _build_summary(bld):
             Logs.info('')
             Logs.pprint(
                 'NORMAL',
-                'Note: Some targets were suppressed. Use --summary-all if you want information of all targets.',
+                '\033[0;31;1mNote: Some targets were suppressed. Use --summary-all if you want information of all targets.',
             )
 
     if hasattr(bld, 'extra_build_summary'):

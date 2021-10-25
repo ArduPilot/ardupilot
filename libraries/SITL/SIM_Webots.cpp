@@ -18,6 +18,8 @@
 
 #include "SIM_Webots.h"
 
+#if HAL_SIM_WEBOTS_ENABLED
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -516,7 +518,7 @@ void Webots::update(const struct sitl_input &input)
                             -state.velocity.world_linear_velocity[2]);
         
         position = Vector3d(state.gps.x, state.gps.y, -state.gps.z);
-        
+        position.xy() += origin.get_distance_NE_double(home);
 
         // limit to 16G to match pixhawk1
         float a_limit = GRAVITY_MSS*16;
@@ -567,3 +569,5 @@ void Webots::report_FPS(void)
     //     last_frame_count_s = state.timestamp;
     // }
 }
+
+#endif // HAL_SIM_WEBOTS_ENABLED

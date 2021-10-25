@@ -28,10 +28,10 @@ extern const AP_HAL::HAL& hal;
   the sky. For this reason we limit the max range to 6 meters as
   otherwise we may be giving false data
  */
-#define LANBAO_MAX_RANGE_CM 600
+#define LANBAO_MAX_RANGE_M 6
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_Lanbao::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_Lanbao::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -75,8 +75,8 @@ bool AP_RangeFinder_Lanbao::get_reading(uint16_t &reading_cm)
         }
     }
     if (count > 0) {
-        reading_cm = (sum_range / count) * 100;
-        return reading_cm <= LANBAO_MAX_RANGE_CM?true:false;
+        reading_m = (sum_range / count);
+        return reading_m <= LANBAO_MAX_RANGE_M?true:false;
     }
     return false;
 }

@@ -56,8 +56,7 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50),
     SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75),
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
+    SCHED_TASK_CLASS(Compass,              &blimp.compass,             cal_update,     100, 100),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100),
 #endif
@@ -133,7 +132,7 @@ void Blimp::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if (AP::compass().enabled()) {
+    if (AP::compass().available()) {
         // update compass with throttle value - used for compassmot
         compass.set_voltage(battery.voltage());
         compass.read();

@@ -2,7 +2,7 @@
 
 #include "AP_Generator_Backend.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
@@ -54,7 +54,7 @@ protected:
     State _last_state;     // The previous PSU state
     uint32_t _last_time_ms;   // Time we got a reading
     bool _healthy;        // Is the driver working
-    bool _health_warn_sent;
+    uint32_t _health_warn_last_ms; // Time to persist warning message without spamming
 
     // Temporary state params
     struct ParsedValue {
@@ -94,7 +94,7 @@ protected:
     virtual void decode_latest_term(void) = 0;
 
     // Check if we should notify on any change of fuel cell state
-    void check_status(void);
+    void check_status(const uint32_t now);
 
     // Check error codes and populate message with error code
     virtual bool check_for_err_code(char* msg_txt, uint8_t msg_len) const = 0;

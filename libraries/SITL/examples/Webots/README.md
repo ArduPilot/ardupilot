@@ -17,6 +17,6 @@ please note that to re-run the simulator you need to stop ardupilot SITL then st
 
 #### Simulation using Map Street 
 
-You can use [OpenStreetMaps](https://www.openstreetmap.org/ "OpenStreetMaps") with [Webots](https://cyberbotics.com/doc/automobile/openstreetmap-importer "Webots"), it is fairly straight forward. CAUTION: when creating worlds using **osm_importer** world "northDirection" point to [0 0 1]   instead of [1 0 0] and this leads to changes in axis that corrupt the readings. Webots controller insternally takes care of this issue as you can see in **./libraries/SITL/examples/Webots/worlds/pyramidMapReduced2.wbt**   
+You can use [OpenStreetMaps](https://www.openstreetmap.org/ "OpenStreetMaps") with [Webots](https://cyberbotics.com/doc/automobile/openstreetmap-importer "Webots"), it is fairly straight forward. This is a very nice sample  **./libraries/SITL/examples/Webots/worlds/pyramids_droneX.wbt**, and you need to run SITL using **./libraries/SITL/examples/Webots/pyramids_droneX.sh**
 [![Watch the video] Flying at Giza Pyramids](https://www.youtube.com/embed/c5CJaRH9Pig)
 

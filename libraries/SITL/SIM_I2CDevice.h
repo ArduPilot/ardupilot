@@ -4,6 +4,7 @@
 
 #include <SITL/SIM_Aircraft.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_Common/Bitmask.h>
 
 namespace SITL {
 
@@ -13,16 +14,51 @@ class I2CRegEnum {
 
 class I2CRegisters {
 
+public:
+
+    enum class RegMode {
+        RDONLY = 11,
+        WRONLY = 22,
+        RDWR = 33,
+    };
+
 protected:
 
     virtual int rdwr(I2C::i2c_rdwr_ioctl_data *&data) = 0;
 
-    void add_register(const char *name, uint8_t reg, int8_t mode);
+    void add_register(const char *name, uint8_t reg, RegMode mode);
 
     const char *regname[256];
     Bitmask<256> writable_registers;
     Bitmask<256> readable_registers;
 
+    void set_debug(bool value) { debug = value; }
+    bool get_debug() const { return debug; }
+
+private:
+    bool debug;
+};
+
+class I2CRegisters_ConfigurableLength : public I2CRegisters {
+public:
+    void add_register(const char *name, uint8_t reg, uint8_t len, RegMode mode);
+    int rdwr(I2C::i2c_rdwr_ioctl_data *&data) override;
+    void set_register(uint8_t reg, uint8_t *data, uint8_t len);
+    void set_register(uint8_t reg, uint16_t value);
+    void set_register(uint8_t reg, int16_t value);
+    void set_register(uint8_t reg, uint8_t value);
+    void set_register(uint8_t reg, int8_t value);
+
+    // void get_reg_value(uint8_t reg, int8_t &value) const;
+    void get_reg_value(uint8_t reg, uint8_t &value) const;
+    // void get_reg_value(uint8_t reg, int16_t &value) const;
+    // void get_reg_value(uint8_t reg, uint16_t &value) const;
+    // void get_reg_value(uint8_t reg, uint8_t *value, uint8_t len) const;
+
+protected:
+
+    uint32_t reg_data[256];  // OK, so not *that* configurable ATM....
+    uint8_t reg_data_len[256];
 };
 
 class I2CRegisters_16Bit : public I2CRegisters {

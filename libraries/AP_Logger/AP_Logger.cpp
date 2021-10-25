@@ -115,6 +115,34 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
 
+    // @Param: _FILE_RATEMAX
+    // @DisplayName: Maximum logging rate for file backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the file backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_FILE_RATEMAX",  8, AP_Logger, _params.file_ratemax, 0),
+
+#if HAL_LOGGING_MAVLINK_ENABLED
+    // @Param: _MAV_RATEMAX
+    // @DisplayName: Maximum logging rate for mavlink backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+#endif
+
+#if HAL_LOGGING_BLOCK_ENABLED
+    // @Param: _BLK_RATEMAX
+    // @DisplayName: Maximum logging rate for block backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_BLK_RATEMAX", 10, AP_Logger, _params.blk_ratemax, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -931,6 +959,24 @@ void AP_Logger::Write(const char *name, const char *labels, const char *units, c
     va_end(arg_list);
 }
 
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, units, mults, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
 void AP_Logger::WriteCritical(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
@@ -949,7 +995,8 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
     va_end(arg_list);
 }
 
-void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list,
+                       bool is_critical, bool is_streaming)
 {
     // WriteV is not safe in replay as we can re-use IDs
     const bool direct_comp = APM_BUILD_TYPE(APM_BUILD_Replay);
@@ -972,7 +1019,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy, is_critical);
+        backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
         va_end(arg_copy);
     }
 }
@@ -1174,7 +1221,7 @@ const struct AP_Logger::log_write_fmt *AP_Logger::log_write_fmt_for_msg_type(con
 // returns true if the msg_type is already taken
 bool AP_Logger::msg_type_in_use(const uint8_t msg_type) const
 {
-    // check static list of messages (e.g. from LOG_BASE_STRUCTURES)
+    // check static list of messages (e.g. from LOG_COMMON_STRUCTURES)
     // check the write format types to see if we've used this one
     for (uint16_t i=0; i<_num_types;i++) {
         if (structure(i)->msg_type == msg_type) {
@@ -1293,6 +1340,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 void AP_Logger::io_thread(void)
 {
     uint32_t last_run_us = AP_HAL::micros();
+    uint8_t counter = 0;
 
     while (true) {
         uint32_t now = AP_HAL::micros();
@@ -1306,6 +1354,10 @@ void AP_Logger::io_thread(void)
         last_run_us = AP_HAL::micros();
 
         FOR_EACH_BACKEND(io_timer());
+
+        if (++counter % 4 == 0) {
+            hal.util->log_stack_info();
+        }
     }
 }
 
@@ -1368,6 +1420,10 @@ bool AP_Logger::log_while_disarmed(void) const
 
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
+    if (_force_long_log_persist) {
+        // log for 10x longer than default
+        persist_ms *= 10U;
+    }
 
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
     const uint32_t arm_change_ms = hal.util->get_last_armed_change();

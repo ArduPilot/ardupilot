@@ -100,10 +100,10 @@ public:
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
-        k_param_pilot_speed_up,    // renamed from k_param_pilot_velocity_z_max
-        k_param_circle_rate,                // deprecated - remove
-        k_param_rangefinder_gain,
-        k_param_ch8_option_old, // deprecated
+        k_param_pilot_speed_up,         // renamed from k_param_pilot_velocity_z_max
+        k_param_circle_rate,            // deprecated - remove
+        k_param_rangefinder_gain,       // deprecated - remove
+        k_param_ch8_option_old,         // deprecated
         k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
         k_param_angle_max,
@@ -339,8 +339,8 @@ public:
         //
         // 220: PI/D Controllers
         //
-        k_param_acro_rp_p = 221,
-        k_param_axis_lock_p,    // remove
+        k_param_acro_rp_p = 221,    // remove
+        k_param_axis_lock_p,        // remove
         k_param_pid_rate_roll,      // remove
         k_param_pid_rate_pitch,     // remove
         k_param_pid_rate_yaw,       // remove
@@ -394,17 +394,13 @@ public:
     AP_Float        pilot_takeoff_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
-    AP_Int16        rtl_altitude;
+    AP_Int32        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
     AP_Int16        rtl_alt_final;
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Int8         rtl_alt_type;
-#endif
-
-#if RANGEFINDER_ENABLED == ENABLED
-    AP_Float        rangefinder_gain;
 #endif
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
@@ -464,13 +460,17 @@ public:
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro parameters
-    AP_Float                acro_rp_p;
-    AP_Float                acro_yaw_p;
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
+#endif
+
+#if MODE_ACRO_ENABLED == ENABLED
+    // Acro parameters
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
+#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -493,7 +493,9 @@ public:
     AP_Float wp_navalt_min;
 
     // button checking
+#if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
+#endif
 
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
@@ -653,9 +655,17 @@ public:
     AP_Float guided_timeout;
 #endif
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Float terrain_margin;
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+    // Acro parameters
+    AP_Float                acro_rp_rate;
 #endif
+
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+    AP_Float                acro_y_rate;
+#endif
+
+    AP_Float                pilot_y_rate;
+    AP_Float                pilot_y_expo;
 };
 
 extern const AP_Param::Info        var_info[];

@@ -23,9 +23,6 @@ public:
 
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
 
-    AP_Float _volt_multiplier;          /// voltage on volt pin multiplied by this to calculate battery voltage
-    AP_Float _curr_amp_per_volt;        /// voltage on current pin multiplied by this to calculate current in amps
-    AP_Float _curr_amp_offset;          /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32 _pack_capacity;            /// battery pack capacity less reserve in mAh
     AP_Int32 _serial_number;            /// battery serial number, automatically filled in on SMBus batteries
     AP_Float _low_voltage;              /// voltage level used to trigger a low battery failsafe
@@ -37,10 +34,7 @@ public:
     AP_Int32 _options;                  /// Options
     AP_Int16 _watt_max;                 /// max battery power allowed. Reduce max throttle to reduce current to satisfy t    his limit
     AP_Int8  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
-    AP_Int8  _volt_pin;                 /// board pin used to measure battery voltage
-    AP_Int8  _curr_pin;                 /// board pin used to measure battery current
     AP_Int8  _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
-    AP_Int8  _i2c_bus;                  /// I2C bus number
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe

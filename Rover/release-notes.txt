@@ -1,4 +1,80 @@
 Rover Release Notes:
+------------------------------------------------------------------
+Rover 4.1.1-rc1 16-Oct-2021
+Changes from 4.1.0 
+1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
+2) Bug Fixes
+    a) MAVFTP init fix (could cause slow parameter download)
+    b) Scripting fix when logging strings
+    c) Serial flow control fix (affected at least Lightware LW20 serial lidar)
+    d) QiotekZealotF427 IMU (ICM42605) orientation fixed
+------------------------------------------------------------------
+Rover 4.1.0 20-Sep-2021 / 4.1.0-rc3 15-Sep-2021
+Changes from 4.1.0-rc2
+1) Bug Fixes
+    a) Serial port auto detection of flow control fix
+------------------------------------------------------------------
+Rover 4.1.0-rc2 10-Sep-2021
+Changes from 4.1.0-rc1
+1) Enhancements
+    a) Log download speeds improved on F765 and F777 based boards (USB buffers increased)
+    b) Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+2) Bug Fixes
+    a) CRSF frame timeout increased to reduce RC failsafes
+    b) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    c) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    d) IMU semaphore fix to avoid occasional corruption
+    e) QioTek Zealot F427 GPIO pin fix
+    f) Replay/DAL RMGH log message format fix
+    g) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+------------------------------------------------------------------
+Rover 4.1.0-rc1 28-Aug-2021
+Changes from 4.1.0-beta7
+1) Enhancements
+    a) DCM fallback easier on boats
+    b) Flywoo F745 Goku Nano support
+    c) MatekF765-Wing support 
+2) Bug Fixes
+    a) ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH7
+    b) EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+    c) External AHRS (e.g. VectorNav driver) init fix
+    d) KakuteF4Mini SBUS fix
+    e) Pixhawk4 blue and red LEDs swapped
+------------------------------------------------------------------
+Rover 4.1.0-beta7 14-Aug-2021
+Changes from 4.1.0-beta6
+1) Enhancements
+    a) Flywoo F745 supports external I2C compasses
+    b) GPS-for-yaw arming check added
+    c) GPS_DRV_OPTIONS allows forcing UBlox GPS to 115200 baud
+    d) Lua scripts can be placed in root of ROMFS (only relevant for developers)
+2) Bug Fixes
+    a) Beacon driver protected from requests for data for non-existant beacons
+    b) CAN threading fix to resolve potential lockup when lua scripts use CAN
+    c) EKF3 GSF can be invoked multiple times with source switching (no longer limited by EK3_GSF_RST_MAX)
+    d) EKF3 IMU offset fix (vehicle's reported position was slightly incorrect if INS_POS_XYZ params set)
+    e) Motor test stops and reports failure if arming fails
+    f) OSD overwrite and nullptr check fix
+    g) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
+    h) RCOut banner displayed at very end of startup procedure to avoid invalid output
+------------------------------------------------------------------
+Rover 4.1.0-beta6 23-Jul-2021
+Changes from 4.1.0-beta5
+1) Enhancements
+    a) GPS-for-yaw enhancements including using position and yaw from different GPSs 
+    b) Long distance travel supported (thousands of km) including double precision EKF and moving origin
+2) Bug Fixes
+    a) BendyRuler avoidance fixed (was slow and jerky)
+    b) BLHeli fix that could cause failure to boot
+    c) CRSF message spamming and firmware string length fixed
+    d) Display re-enabled on 1MB boards
+    e) DShot always sends 0 when disarmed (protects against motors spin while disarmed due to misconfiguration)
+    f) DShot fix that could cause main loop jitter
+    g) DShot buzzer tone disabled during motor test to remove bad interation
+    h) Longitude wrap fix (allows autonomous flights as longitude wraps between -180 and 180 deg)
+    i) Log created on forced arm
+    j) MatekF405-bdshot NeoPixel LEDs re-enabled on PWM5
+    k) Serial port performance improvements using FIFO on H7 boards
 --------------------------------
 Rover 4.1.0-beta5 30-Jun-2021
 Changes from 4.1.0-beta4

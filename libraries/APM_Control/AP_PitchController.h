@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_AutoTune.h"
@@ -10,14 +9,14 @@
 
 class AP_PitchController {
 public:
-    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
+    AP_PitchController(const AP_Vehicle::FixedWing &parms);
 
     /* Do not allow copies */
     AP_PitchController(const AP_PitchController &other) = delete;
     AP_PitchController &operator=(const AP_PitchController&) = delete;
 
-	int32_t get_rate_out(float desired_rate, float scaler);
-	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
+	float get_rate_out(float desired_rate, float scaler);
+	float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
 
 	void reset_I();
 
@@ -51,15 +50,12 @@ private:
     bool failed_autotune_alloc;
 	AP_Int16 _max_rate_neg;
 	AP_Float _roll_ff;
-	uint32_t _last_t;
     float _last_out;
     AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
     float angle_err_deg;
 
     AP_Logger::PID_Info _pid_info;
 
-    int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
+    float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
-
-    AP_AHRS &_ahrs;
 };

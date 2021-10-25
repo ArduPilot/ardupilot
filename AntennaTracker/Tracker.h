@@ -58,10 +58,6 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 #include "mode.h"
 
 class Tracker : public AP_Vehicle {
@@ -85,10 +81,6 @@ private:
 
     AP_Logger logger;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
-#endif
-    
     /**
        antenna control channels
     */
@@ -194,7 +186,6 @@ private:
     void update_ahrs();
     void compass_save();
     void update_compass(void);
-    void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 

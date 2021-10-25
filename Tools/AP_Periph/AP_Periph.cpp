@@ -86,11 +86,15 @@ void AP_Periph_FW::init()
     
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
+#ifndef DISABLE_WATCHDOG
     stm32_watchdog_init();
+#endif
 
     stm32_watchdog_pat();
 
+#if !HAL_GCS_ENABLED
     hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
+#endif
     hal.serial(3)->begin(115200, 128, 256);
 
     load_parameters();
@@ -99,7 +103,17 @@ void AP_Periph_FW::init()
 
     can_start();
 
+#if HAL_GCS_ENABLED
+    stm32_watchdog_pat();
+    gcs().init();
+#endif
     serial_manager.init();
+
+#if HAL_GCS_ENABLED
+    gcs().setup_console();
+    gcs().setup_uarts();
+    gcs().send_text(MAV_SEVERITY_INFO, "AP_Periph GCS Initialised!");
+#endif
 
     stm32_watchdog_pat();
 
@@ -138,9 +152,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
-    if (compass.enabled()) {
-        compass.init();
-    }
+    compass.init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
@@ -202,6 +214,9 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
+#ifdef ENABLE_SCRIPTING
+    scripting.init();
+#endif
     start_ms = AP_HAL::native_millis();
 }
 
@@ -278,7 +293,7 @@ void AP_Periph_FW::update_rainbow()
 void AP_Periph_FW::show_stack_free()
 {
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
-    can_printf("ISR %u/%u", stack_free(&__main_stack_base__), isr_stack_size);
+    can_printf("ISR %u/%u", unsigned(stack_free(&__main_stack_base__)), unsigned(isr_stack_size));
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         uint32_t total_stack;
@@ -290,7 +305,7 @@ void AP_Periph_FW::show_stack_free()
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
-        can_printf("%s STACK=%u/%u\n", tp->name, stack_free(tp->wabase), total_stack);
+        can_printf("%s STACK=%u/%u\n", tp->name, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
     }
 }
 #endif
@@ -304,7 +319,9 @@ void AP_Periph_FW::update()
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED
-        palToggleLine(HAL_GPIO_PIN_LED);
+        if (!no_iface_finished_dna) {
+            palToggleLine(HAL_GPIO_PIN_LED);
+        }
 #endif
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
@@ -333,6 +350,11 @@ void AP_Periph_FW::update()
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
         rcout_init_1Hz();
 #endif
+
+#if HAL_GCS_ENABLED
+        gcs().send_message(MSG_HEARTBEAT);
+        gcs().send_message(MSG_SYS_STATUS);
+#endif    
     }
 
     static uint32_t last_error_ms;
@@ -340,7 +362,7 @@ void AP_Periph_FW::update()
     if (now - last_error_ms > 5000 && ierr.errors()) {
         // display internal errors as DEBUG every 5s
         last_error_ms = now;
-        can_printf("IERR 0x%x %u", ierr.errors(), ierr.last_error_line());
+        can_printf("IERR 0x%x %u", unsigned(ierr.errors()), unsigned(ierr.last_error_line()));
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -359,21 +381,25 @@ void AP_Periph_FW::update()
     }
 #endif
 
+    static uint32_t fiftyhz_last_update_ms;
+    if (now - fiftyhz_last_update_ms >= 20) {
+        // update at 50Hz
+        fiftyhz_last_update_ms = now;
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
-    static uint32_t notify_last_update_ms;
-    if (now - notify_last_update_ms >= 20) {
-        // update notify at 50Hz
-        notify_last_update_ms = now;
         notify.update();
-    }
 #endif
+#if HAL_GCS_ENABLED
+        gcs().update_receive();
+        gcs().update_send();
+#endif
+    }
 
 #if HAL_LOGGING_ENABLED
     logger.periodic_tasks();
 #endif
 
     can_update();
-    hal.scheduler->delay(1);
+
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();
 #endif

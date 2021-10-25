@@ -8,7 +8,7 @@ class ExpandingString;
 class AP_HAL::Util {
 public:
     int snprintf(char* str, size_t size,
-                 const char *format, ...);
+                 const char *format, ...) FMT_PRINTF(4, 5);
 
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
@@ -185,6 +185,12 @@ public:
     // generate Random values
     virtual bool get_random_vals(uint8_t* data, size_t size) { return false; }
 
+    // generate Random values, will block until enough entropy is available
+    virtual bool get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us) { return false; }
+
+    // log info on stack usage
+    virtual void log_stack_info(void) {}
+    
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

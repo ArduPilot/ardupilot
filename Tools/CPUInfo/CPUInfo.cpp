@@ -55,13 +55,14 @@ static void show_sizes(void)
 #define FIFTYTIMES(x) do { TENTIMES(x); TENTIMES(x); TENTIMES(x); TENTIMES(x); TENTIMES(x); } while (0)
 
 #define TIMEIT(name, op, count) do { \
-    uint32_t us_end, us_start; \
-    us_start = AP_HAL::micros(); \
+    uint16_t us_end, us_start; \
+    us_start = AP_HAL::micros16(); \
     for (uint8_t i = 0; i < count; i++) { \
         FIFTYTIMES(op); \
     } \
-    us_end = AP_HAL::micros(); \
-    hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end - us_start) / double(count * 50.0)); \
+    us_end = AP_HAL::micros16(); \
+    uint16_t dt_us = us_end - us_start; \
+    hal.console->printf("%-10s %7.4f usec/call\n", name, double(dt_us) / double(count * 50.0)); \
     hal.scheduler->delay(10); \
 } while (0)
 
@@ -101,7 +102,9 @@ static void show_timings(void)
     TIMEIT("nop", asm volatile("nop"::), 255);
 
     TIMEIT("micros()", AP_HAL::micros(), 200);
+    TIMEIT("micros16()", AP_HAL::micros16(), 200);
     TIMEIT("millis()", AP_HAL::millis(), 200);
+    TIMEIT("millis16()", AP_HAL::millis16(), 200);
     TIMEIT("micros64()", AP_HAL::micros64(), 200);
 
     TIMEIT("fadd", v_out += v_f, 100);

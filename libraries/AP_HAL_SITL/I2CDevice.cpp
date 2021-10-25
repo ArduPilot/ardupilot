@@ -60,7 +60,7 @@ uint8_t I2CBus::i2c_buscount;
 
 int I2CBus::_ioctl(uint8_t ioctl_number, void *data)
 {
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     return sitl->i2c_ioctl(ioctl_number, data);
 }
 

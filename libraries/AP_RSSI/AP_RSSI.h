@@ -50,7 +50,7 @@ public:
     // Read the receiver RSSI value as a float 0.0f - 1.0f.
     // 0.0 represents weakest signal, 1.0 represents maximum signal.
     float read_receiver_rssi();
-
+    float read_receiver_link_quality();
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
     uint8_t read_receiver_rssi_uint8();   

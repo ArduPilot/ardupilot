@@ -123,7 +123,8 @@ public:
     bool healthy(uint8_t i) const {
         bool ok = state[i].healthy && enabled(i);
 #ifndef HAL_BUILD_AP_PERIPH
-        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset);
+        // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
+        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
 #endif
         return ok;
     }
@@ -145,6 +146,7 @@ public:
     enum OptionsMask {
         ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
+        DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
     };
 
     enum airspeed_type {
@@ -205,6 +207,7 @@ private:
         AP_Int8  autocal;
         AP_Int8  tube_order;
         AP_Int8  skip_cal;
+        AP_Int32 bus_id;
     } param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {
@@ -276,6 +279,8 @@ private:
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 
     void Log_Airspeed();
+
+    bool add_backend(AP_Airspeed_Backend *backend);
 };
 
 namespace AP {

@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 #define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -115,13 +115,13 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
 
     // return average of all valid readings
     if (valid_count > 0) {
-        reading_cm = 100 * sum / valid_count;
+        reading_m = sum / valid_count;
         return true;
     }
 
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
-        reading_cm = MIN(MAX(LIGHTWARE_DIST_MAX_CM, max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX);
+        reading_m = MIN(MAX(LIGHTWARE_DIST_MAX_CM, max_distance_cm() + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
         return true;
     }
 

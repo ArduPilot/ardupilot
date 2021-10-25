@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_ADSB_ENABLED
+#define HAL_SIM_ADSB_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_ADSB_ENABLED
+
 #include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
@@ -43,12 +51,14 @@ private:
         
 class ADSB {
 public:
-    ADSB(const struct sitl_fdm &_fdm, const Location& _home) : home(_home) {};
+    ADSB(const struct sitl_fdm &_fdm, const Location& _home, const uint8_t _instance) : home(_home), instance(_instance) {};
     void update(void);
 
 private:
     const char *target_address = "127.0.0.1";
-    const uint16_t target_port = 5762;
+    const uint16_t target_port_base = 5762;
+
+    const uint8_t instance = 0;
 
     const Location& home;
     uint8_t num_vehicles = 0;
@@ -79,3 +89,5 @@ private:
 };
 
 }  // namespace SITL
+
+#endif  // HAL_SIM_ADSB_ENABLED

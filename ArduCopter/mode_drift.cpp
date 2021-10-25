@@ -54,7 +54,7 @@ void ModeDrift::run()
 
     // gain scheduling for yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    float target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
+    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.acro_y_rate / 45.0;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
@@ -91,7 +91,7 @@ void ModeDrift::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_yaw_target_and_rate(false);
         attitude_control->reset_rate_controller_I_terms();
         break;
 

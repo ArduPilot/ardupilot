@@ -76,8 +76,11 @@ def _depends_on_vehicle(bld, source_node):
 
 
     if path not in _depends_on_vehicle_cache:
-        s = _remove_comments(source_node.read())
-        _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        try:
+            s = _remove_comments(source_node.read())
+            _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
+        except Exception:
+            return False
 
     return _depends_on_vehicle_cache[path]
 
@@ -136,7 +139,7 @@ def ap_library(bld, library, vehicle):
         kw.update(
             name=_vehicle_tgen_name(library, vehicle),
             source=source,
-            defines=ap.get_legacy_defines(vehicle),
+            defines=ap.get_legacy_defines(vehicle, bld),
             idx=_vehicle_index(vehicle),
         )
         bld.objects(**kw)

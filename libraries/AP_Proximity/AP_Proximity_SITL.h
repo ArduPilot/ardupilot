@@ -27,7 +27,7 @@ public:
     bool get_upward_distance(float &distance) const override;
 
 private:
-    SITL::SITL *sitl;
+    SITL::SIM *sitl;
     AP_Float *fence_alt_max;
     Location current_loc;
 

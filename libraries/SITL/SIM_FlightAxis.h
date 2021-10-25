@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_FLIGHTAXIS_ENABLED
+#define HAL_SIM_FLIGHTAXIS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_FLIGHTAXIS_ENABLED
+
 #include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
@@ -163,6 +171,7 @@ private:
 
     void update_loop(void);
     void report_FPS(void);
+    void socket_creator(void);
 
     struct sitl_input last_input;
 
@@ -183,9 +192,15 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
+    SocketAPM *socknext;
     SocketAPM *sock;
     char replybuf[10000];
+    pid_t socket_pid;
+    uint32_t sock_error_count;
+    double last_recv_sec;
 };
 
 
 } // namespace SITL
+
+#endif // HAL_SIM_FLIGHTAXIS_ENABLED

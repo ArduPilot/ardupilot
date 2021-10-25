@@ -44,6 +44,11 @@ jobs:
           apt-get update
           apt-get install -y gcc-multilib g++-multilib
 
+      - name: run canard dsdlc generator test
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          python modules/canard_dsdlc/canard_dsdlc.py -O dsdlc_generated libraries/AP_UAVCAN/dsdl/ardupilot modules/pyuavcan/uavcan/dsdl_files/uavcan --run-test
+
       - name: build sitl_periph_gps
         shell: bash
         run: |
@@ -100,7 +105,7 @@ jobs:
       - name: setup can-utils
         run: |
           kernel_ver=`uname -r`
-          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           sudo apt-get update
           sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
           sudo modprobe vcan
@@ -112,6 +117,6 @@ jobs:
         shell: bash
         run: |
           kernel_ver=`uname -r`
-          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh

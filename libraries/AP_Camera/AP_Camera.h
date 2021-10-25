@@ -18,9 +18,8 @@
 class AP_Camera {
 
 public:
-    AP_Camera(uint32_t _log_camera_bit, const struct Location &_loc)
+    AP_Camera(uint32_t _log_camera_bit)
         : log_camera_bit(_log_camera_bit)
-        , current_loc(_loc)
     {
         AP_Param::setup_object_defaults(this, var_info);
         _singleton = this;
@@ -130,7 +129,6 @@ private:
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
 
     uint32_t log_camera_bit;
-    const struct Location &current_loc;
 
     // update camera trigger - 50Hz
     void update_trigger();

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_Backend.h"
+#include "AP_BattMonitor_Analog.h"
 
-class AP_BattMonitor_FuelFlow : public AP_BattMonitor_Backend
+class AP_BattMonitor_FuelFlow : public AP_BattMonitor_Analog
 {
 public:
 

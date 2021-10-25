@@ -408,7 +408,7 @@ bool NavEKF2_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
-    return dal.get_compass() && dal.get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
+    return dal.compass().use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
 /*

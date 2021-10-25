@@ -15,7 +15,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
 
 /*
  *  GCS backend used for many examples and tools
@@ -32,6 +32,7 @@ private:
     void handleMessage(const mavlink_message_t &msg) override { handle_common_message(msg); }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet) override;
 
 protected:
 
@@ -62,7 +63,7 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override { return 1; }
+    uint8_t sysid_this_mav() const override;
 
     GCS_MAVLINK_Periph *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
@@ -88,4 +89,4 @@ private:
     MAV_TYPE frame_type() const override { return MAV_TYPE_GENERIC; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED

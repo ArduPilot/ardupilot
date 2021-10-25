@@ -12,7 +12,8 @@ public:
         AP_Float tau;
         AP_Int16 rmax_pos;
         AP_Int16 rmax_neg;
-        float FF, P, I, D, IMAX, flt_T;
+        float FF, P, I, D, IMAX;
+        float flt_T, flt_E, flt_D;
     };
 
     enum ATType {
@@ -26,8 +27,8 @@ public:
         uint8_t type;
         uint8_t state;
         float actuator;
-        float desired_rate;
-        float actual_rate;
+        float P_slew;
+        float D_slew;
         float FF_single;
         float FF;
         float P;
@@ -67,16 +68,8 @@ private:
 	const AP_Vehicle::FixedWing &aparm;
 
     // values to restore if we leave autotune mode
-    ATGains restore; 
-
-    // values we last saved
-    ATGains last_save; 
-
-    // values to save on the next save event
-    ATGains next_save;
-
-    // time when we last saved
-    uint32_t last_save_ms;
+    ATGains restore;
+    ATGains last_save;
 
     // last logging time
     uint32_t last_log_ms;
@@ -93,23 +86,26 @@ private:
                        SHORT,
                        RAISE_PD,
                        LOWER_PD,
-                       IDLE_LOWER_PD};
+                       IDLE_LOWER_PD,
+                       RAISE_D,
+                       RAISE_P,
+                       LOWER_D,
+                       LOWER_P};
     Action action;
 
     // when we entered the current state
     uint32_t state_enter_ms;
 
-    void check_save(void);
     void check_state_exit(uint32_t state_time_ms);
-    void save_gains(const ATGains &v);
+    void save_gains(void);
 
     void save_float_if_changed(AP_Float &v, float value);
     void save_int16_if_changed(AP_Int16 &v, int16_t value);
     void state_change(ATState newstate);
 
     // get gains with PID components
-    ATGains get_gains(const ATGains &current);
-    void set_gains(const ATGains &v);
+    ATGains get_gains(void);
+    void restore_gains(void);
 
     // update rmax and tau towards target
     void update_rmax();
@@ -121,6 +117,11 @@ private:
     LowPassFilterFloat rate_filter;
     LowPassFilterFloat target_filter;
 
+    // separate slew limiters for P and D
+    float slew_limit_max, slew_limit_tau;
+    SlewLimiter slew_limiter_P{slew_limit_max, slew_limit_tau};
+    SlewLimiter slew_limiter_D{slew_limit_max, slew_limit_tau};
+
     float max_actuator;
     float min_actuator;
     float max_rate;
@@ -131,6 +132,14 @@ private:
     float max_D;
     float min_Dmod;
     float max_Dmod;
-    float max_SRate;
+    float max_SRate_P;
+    float max_SRate_D;
     float FF_single;
+    uint16_t ff_count;
+    float dt;
+    float D_limit;
+    float P_limit;
+    uint32_t D_set_ms;
+    uint32_t P_set_ms;
+    uint8_t done_count;
 };

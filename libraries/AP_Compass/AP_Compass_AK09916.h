@@ -31,6 +31,10 @@
 # define HAL_COMPASS_ICM20948_I2C_ADDR 0x69
 #endif
 
+#ifndef HAL_COMPASS_ICM20948_I2C_ADDR2
+# define HAL_COMPASS_ICM20948_I2C_ADDR2 0x68
+#endif
+
 class AuxiliaryBus;
 class AuxiliaryBusSlave;
 class AP_InertialSensor;
@@ -82,6 +86,7 @@ private:
     uint8_t _compass_instance;
     bool _initialized;
     enum Rotation _rotation;
+    enum AP_Compass_Backend::DevTypes _devtype;
 };
 
 

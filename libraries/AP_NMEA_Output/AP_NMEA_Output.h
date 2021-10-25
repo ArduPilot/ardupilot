@@ -20,9 +20,12 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 
-#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#ifndef HAL_NMEA_OUTPUT_ENABLED
+#define HAL_NMEA_OUTPUT_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
 
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -32,8 +35,7 @@ public:
     static AP_NMEA_Output* probe();
 
     /* Do not allow copies */
-    AP_NMEA_Output(const AP_NMEA_Output &other) = delete;
-    AP_NMEA_Output &operator=(const AP_NMEA_Output&) = delete;
+    CLASS_NO_COPY(AP_NMEA_Output);
 
     void update();
 
@@ -42,12 +44,10 @@ private:
 
     uint8_t _nmea_checksum(const char *str);
 
-    static AP_NMEA_Output* _singleton;
-
     uint8_t _num_outputs;
     AP_HAL::UARTDriver* _uart[SERIALMANAGER_NUM_PORTS];
 
     uint32_t _last_run_ms;
 };
 
-#endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+#endif  // !HAL_MINIMIZE_FEATURES

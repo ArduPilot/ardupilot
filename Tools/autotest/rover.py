@@ -219,7 +219,7 @@ class AutoTestRover(AutoTest):
     #
     #     # reduce throttle
     #     self.mavproxy.send('rc 3 1500\n')
-    #     self.mavproxy.expect('APM: Failsafe ended')
+    #     self.mavproxy.expect('AP: Failsafe ended')
     #     self.mavproxy.send('switch 2\n')  # manual mode
     #     self.wait_heartbeat()
     #     self.wait_mode('MANUAL')
@@ -1137,51 +1137,42 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
-    def test_camera_mission_items(self):
-        self.context_push()
-        ex = None
-        try:
-            self.load_mission("rover-camera-mission.txt")
-            self.wait_ready_to_arm()
-            self.change_mode("AUTO")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            prev_cf = None
-            while True:
-                cf = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True)
-                if prev_cf is None:
-                    prev_cf = cf
-                    continue
-                dist_travelled = self.get_distance_int(prev_cf, cf)
+    def CameraMission(self):
+        self.load_mission("rover-camera-mission.txt")
+        self.wait_ready_to_arm()
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        prev_cf = None
+        while True:
+            cf = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True)
+            if prev_cf is None:
                 prev_cf = cf
-                mc = self.mav.messages.get("MISSION_CURRENT", None)
-                if mc is None:
-                    continue
-                elif mc.seq == 2:
-                    expected_distance = 2
-                elif mc.seq == 4:
-                    expected_distance = 5
-                elif mc.seq == 5:
-                    break
-                else:
-                    continue
-                self.progress("Expected distance %f got %f" %
-                              (expected_distance, dist_travelled))
-                error = abs(expected_distance - dist_travelled)
-                # Rover moves at ~5m/s; we appear to do something at
-                # 5Hz, so we do see over a meter of error!
-                max_error = 1.5
-                if error > max_error:
-                    raise NotAchievedException("Camera distance error: %f (%f)" %
-                                               (error, max_error))
+                continue
+            dist_travelled = self.get_distance_int(prev_cf, cf)
+            prev_cf = cf
+            mc = self.mav.messages.get("MISSION_CURRENT", None)
+            if mc is None:
+                continue
+            elif mc.seq == 2:
+                expected_distance = 2
+            elif mc.seq == 4:
+                expected_distance = 5
+            elif mc.seq == 5:
+                break
+            else:
+                continue
+            self.progress("Expected distance %f got %f" %
+                          (expected_distance, dist_travelled))
+            error = abs(expected_distance - dist_travelled)
+            # Rover moves at ~5m/s; we appear to do something at
+            # 5Hz, so we do see over a meter of error!
+            max_error = 1.5
+            if error > max_error:
+                raise NotAchievedException("Camera distance error: %f (%f)" %
+                                           (error, max_error))
 
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        if ex is not None:
-            raise ex
+        self.disarm_vehicle()
 
     def test_do_set_mode_via_command_long(self):
         self.do_set_mode_via_command_long("HOLD")
@@ -3878,7 +3869,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
-        if self.arm_motors_with_rc_input():
+        try:
+            self.arm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if self.armed():
             raise NotAchievedException(
                 "Armed when within exclusion zone")
 
@@ -3930,7 +3925,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
-        if self.arm_motors_with_rc_input():
+        try:
+            self.arm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if self.armed():
             raise NotAchievedException(
                 "Armed when outside an inclusion zone")
 
@@ -3962,7 +3961,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
-        if self.arm_motors_with_rc_input():
+        try:
+            self.arm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if self.armed():
             raise NotAchievedException(
                 "Armed when within polygon exclusion zone")
 
@@ -3994,7 +3997,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
-        if self.arm_motors_with_rc_input():
+        try:
+            self.arm_motors_with_rc_input()
+        except NotAchievedException:
+            pass
+        if self.armed():
             raise NotAchievedException(
                 "Armed when outside polygon inclusion zone")
 
@@ -4552,6 +4559,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_motor_test(self):
         '''AKA run-rover-run'''
         magic_throttle_value = 1812
+        self.wait_ready_to_arm()
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
             1, # p1 - motor instance
@@ -5669,6 +5677,122 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                      target_compid=target_compid,
                      want_result=mavutil.mavlink.MAV_RESULT_FAILED)
 
+    def FlashStorage(self):
+        self.set_parameter("LOG_BITMASK", 1)
+        self.reboot_sitl()
+
+        self.customise_SITL_commandline([
+            "--set-storage-posix-enabled", "0",
+            "--set-storage-flash-enabled", "1",
+        ])
+        if self.get_parameter("LOG_BITMASK") == 1:
+            raise NotAchievedException("not using flash storage?")
+        self.set_parameter("LOG_BITMASK", 2)
+        self.reboot_sitl()
+        self.assert_parameter_value("LOG_BITMASK", 2)
+        self.set_parameter("LOG_BITMASK", 3)
+        self.reboot_sitl()
+        self.assert_parameter_value("LOG_BITMASK", 3)
+
+        self.customise_SITL_commandline([])
+        # make sure we're back at our original value:
+        self.assert_parameter_value("LOG_BITMASK", 1)
+
+    def FRAMStorage(self):
+        self.set_parameter("LOG_BITMASK", 1)
+        self.reboot_sitl()
+
+        self.customise_SITL_commandline([
+            "--set-storage-posix-enabled", "0",
+            "--set-storage-fram-enabled", "1",
+        ])
+        # TODO: ensure w'ere actually taking stuff from flash storage:
+#        if self.get_parameter("LOG_BITMASK") == 1:
+#            raise NotAchievedException("not using flash storage?")
+        self.set_parameter("LOG_BITMASK", 2)
+        self.reboot_sitl()
+        self.assert_parameter_value("LOG_BITMASK", 2)
+        self.set_parameter("LOG_BITMASK", 3)
+        self.reboot_sitl()
+        self.assert_parameter_value("LOG_BITMASK", 3)
+
+        self.customise_SITL_commandline([])
+        # make sure we're back at our original value:
+        self.assert_parameter_value("LOG_BITMASK", 1)
+
+    def test_depthfinder(self):
+        # Setup rangefinders
+        self.customise_SITL_commandline([
+            "--uartH=sim:nmea", # NMEA Rangefinder
+        ])
+
+        # RANGEFINDER_INSTANCES = [0, 2, 5]
+        self.set_parameters({
+            "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
+            "RNGFND1_ORIENT" : 25,   # Set to downward facing
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+
+            "RNGFND3_TYPE" : 2,      # MaxbotixI2C
+            "RNGFND3_ADDR" : 112,    # 0x70 address from SIM_I2C.cpp
+            "RNGFND3_ORIENT" : 0,    # Set to forward facing, thus we should not receive DPTH messages from this one
+
+            "RNGFND6_ADDR" : 113,    # 0x71 address from SIM_I2C.cpp
+            "RNGFND6_ORIENT" : 25,   # Set to downward facing
+            "RNGFND6_TYPE" : 2,      # MaxbotixI2C
+        })
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # should not get WATER_DEPTH messages or DPTH logs when the FRAME_CLASS is not a boat
+        m = self.mav.recv_match(type="WATER_DEPTH", blocking=True, timeout=2)
+        if m is not None:
+            raise NotAchievedException("WATER_DEPTH: received message when FRAME_CLASS not a Boat")
+
+        # Set FRAME_CLASS to start receiving WATER_DEPTH messages & logging DPTH
+        self.set_parameters({
+            "FRAME_CLASS": 2,       # Boat
+        })
+
+        # Check each rangefinder instance is in collection
+        rangefinder = [None, None, None, None, None, None] # Be lazy FIXME only need [3]
+
+        def check_rangefinder(mav, m):
+            if m.get_type() != 'WATER_DEPTH':
+                return
+
+            id = m.id
+
+            # Should not find instance 3 as it is forward facing
+            if id == 2:
+                raise NotAchievedException("Depthfinder Instance %i with non-downward orientation found" % (id))
+
+            rangefinder[id] = True
+
+            if id == 0:
+                if float(m.temperature) == 0.0:
+                    raise NotAchievedException("Depthfinder Instance %i NMEA with temperature not found" % (id))
+            elif id == 5:
+                if float(m.temperature) != 0.0:
+                    raise NotAchievedException("Depthfinder Instance %i should not have temperature" % (id))
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.install_message_hook_context(check_rangefinder)
+        self.drive_mission("rover1.txt", strict=False)
+
+        if rangefinder[0] is None:
+            raise NotAchievedException("Never saw Depthfinder 1")
+        if rangefinder[2] is not None:
+            raise NotAchievedException("Should not have found a Depthfinder 3")
+        if rangefinder[5] is None:
+            raise NotAchievedException("Never saw Depthfinder 6")
+        if not self.current_onboard_log_contains_message("DPTH"):
+            raise NotAchievedException("Expected DPTH log message")
+
+        # self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -5677,6 +5801,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("MAVProxy_SetModeUsingSwitch",
              "Set modes via mavproxy switch",
              self.test_setting_modes_via_mavproxy_switch),
+
+            ("HIGH_LATENCY2",
+             "Set sending of HIGH_LATENCY2",
+             self.HIGH_LATENCY2),
 
             ("MAVProxy_SetModeUsingMode",
              "Set modes via mavproxy mode command",
@@ -5740,7 +5868,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("CameraMission",
              "Test Camera Mission Items",
-             self.test_camera_mission_items),
+             self.CameraMission),
 
             # Gripper test
             ("Gripper",
@@ -5879,10 +6007,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Accelerometer Calibration testing",
              self.accelcal),
 
-            ("AHRSTrim",
-             "Accelerometer trim testing",
-             self.ahrstrim),
-
             ("AP_Proximity_MAV",
              "Test MAV proximity backend",
              self.ap_proximity_mav),
@@ -5891,9 +6015,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Test end mission behavior",
              self.test_end_mission_behavior),
 
+            ("FlashStorage",
+             "Test flash storage (for parameters etc)",
+             self.FlashStorage),
+
+            ("FRAMStorage",
+             "Test FRAM storage (for parameters etc)",
+             self.FRAMStorage),
+
             ("LogUpload",
              "Upload logs",
              self.log_upload),
+
+            ("DepthFinder",
+             "Test mulitple depthfinders for boats",
+             self.test_depthfinder),
         ])
         return ret
 

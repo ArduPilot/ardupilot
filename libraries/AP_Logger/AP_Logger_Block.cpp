@@ -303,6 +303,11 @@ void AP_Logger_Block::periodic_1Hz()
 {
     AP_Logger_Backend::periodic_1Hz();
 
+    if (rate_limiter == nullptr && _front._params.blk_ratemax > 0) {
+        // setup rate limiting
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.blk_ratemax);
+    }
+    
     if (!io_thread_alive()) {
         if (warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true

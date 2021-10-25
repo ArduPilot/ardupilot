@@ -21,6 +21,7 @@
 #include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #ifndef NUM_SERVO_CHANNELS
 #if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
@@ -50,6 +51,7 @@ public:
 
     typedef enum
     {
+        k_GPIO                  = -1,           ///< used as GPIO pin (input or output)
         k_none                  = 0,            ///< disabled
         k_manual                = 1,            ///< manual, just pass-thru the RC in signal
         k_flap                  = 2,            ///< flap
@@ -230,6 +232,9 @@ public:
     // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
     static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
 
+    // return true if function is for a control surface
+    static bool is_control_surface(SRV_Channel::Aux_servo_function_t function);
+
     // return the function of a channel
     SRV_Channel::Aux_servo_function_t get_function(void) const {
         return (SRV_Channel::Aux_servo_function_t)function.get();
@@ -280,13 +285,13 @@ private:
     uint16_t high_out;
 
     // convert a 0..range_max to a pwm
-    uint16_t pwm_from_range(int16_t scaled_value) const;
+    uint16_t pwm_from_range(float scaled_value) const;
 
     // convert a -angle_max..angle_max to a pwm
-    uint16_t pwm_from_angle(int16_t scaled_value) const;
+    uint16_t pwm_from_angle(float scaled_value) const;
 
     // convert a scaled output to a pwm value
-    void calc_pwm(int16_t output_scaled);
+    void calc_pwm(float output_scaled);
 
     // output value based on function
     void output_ch(void);
@@ -346,10 +351,10 @@ public:
 
     // set output value for a function channel as a scaled value. This
     // calls calc_pwm() to also set the pwm value
-    static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, int16_t value);
+    static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get scaled output for the given function type.
-    static int16_t get_output_scaled(SRV_Channel::Aux_servo_function_t function);
+    static float get_output_scaled(SRV_Channel::Aux_servo_function_t function);
 
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
@@ -394,8 +399,8 @@ public:
     // set and save the trim for a function channel to the output value
     static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
 
-    // set the trim for a function channel to min of the channel
-    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
+    // set the trim for a function channel to min of the channel honnoring reverse unless ignore_reversed is true
+    static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function, bool ignore_reversed = false);
 
     // set the trim for a function channel to given pwm
     static void set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm);
@@ -420,9 +425,6 @@ public:
 
     // setup failsafe for an auxiliary channel function
     static void set_failsafe_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
-
-    // setup safety for an auxiliary channel function (used when disarmed)
-    static void set_safety_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
 
     // set servo to a Limit
     static void set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_Channel::Limit limit);
@@ -531,6 +533,9 @@ public:
     // initialize before any call to push
     static void init();
 
+    // return true if a channel is set to type GPIO
+    static bool is_GPIO(uint8_t channel);
+
 private:
 
     static bool disabled_passthrough;
@@ -562,6 +567,11 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+
+#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+    AP_FETtecOneWire fetteconwire;
+    static AP_FETtecOneWire *fetteconwire_ptr;
+#endif  // HAL_AP_FETTEC_ONEWIRE_ENABLED
 #endif // HAL_BUILD_AP_PERIPH
 
     static uint16_t disabled_mask;
@@ -583,13 +593,14 @@ private:
         SRV_Channel::servo_mask_t channel_mask;
 
         // scaled output for this function
-        int16_t output_scaled;
+        float output_scaled;
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;
     AP_Int16 default_rate;
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
+    AP_Int32 gpio_mask;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {

@@ -30,6 +30,7 @@ public:
 
     // update the state structure
     virtual void update() = 0;
+    virtual void init_serial(uint8_t serial_instance) {};
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 #if HAL_MSP_RANGEFINDER_ENABLED
@@ -37,7 +38,8 @@ public:
 #endif
 
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
-    uint16_t distance_cm() const { return state.distance_cm; }
+    float distance() const { return state.distance_m; }
+    uint16_t distance_cm() const { return state.distance_m*100.0f; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
     virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
     virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
@@ -60,7 +62,7 @@ public:
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) { return false; }
+    virtual bool get_temp(float &temp) const { return false; }
 
 protected:
 

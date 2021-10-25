@@ -43,7 +43,7 @@ enum tuning_func {
     TUNING_ALTITUDE_HOLD_KP =           14, // altitude hold controller's P term (alt error to desired rate)
     TUNING_RATE_ROLL_PITCH_KD =         21, // body frame roll/pitch rate controller's D term
     TUNING_VEL_XY_KP =                  22, // loiter rate controller's P term (speed error to tilt angle)
-    TUNING_ACRO_RP_KP =                 25, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+    TUNING_ACRO_RP_RATE =               25, // acro controller's desired roll and pitch rate in deg/s
     TUNING_YAW_RATE_KD =                26, // body frame yaw rate controller's D term
     TUNING_VEL_XY_KI =                  28, // loiter rate controller's I term (speed error to tilt angle)
     TUNING_AHRS_YAW_KP =                30, // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
@@ -53,8 +53,8 @@ enum tuning_func {
     TUNING_ACCEL_Z_KD =                 36, // accel based throttle controller's D term
     TUNING_DECLINATION =                38, // compass declination in radians
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
-    TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-    TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
+    TUNING_ACRO_YAW_RATE =              40, // acro controller's desired yaw rate in deg/s
+    TUNING_RANGEFINDER_GAIN =           41, // unused
     TUNING_EKF_VERTICAL_POS =           42, // unused
     TUNING_EKF_HORIZONTAL_POS =         43, // unused
     TUNING_EKF_ACCEL_NOISE =            44, // unused
@@ -152,6 +152,7 @@ enum LoggingParameters {
 #define FS_THR_ENABLED_ALWAYS_LAND                 3
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
+#define FS_THR_ENABLED_AUTO_RTL_OR_RTL             6
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0
@@ -160,6 +161,7 @@ enum LoggingParameters {
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
 #define FS_GCS_ENABLED_ALWAYS_LAND             5
+#define FS_GCS_ENABLED_AUTO_RTL_OR_RTL         6
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

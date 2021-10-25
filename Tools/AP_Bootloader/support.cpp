@@ -17,6 +17,7 @@
 #include "mcu_f7.h"
 #include "mcu_h7.h"
 #include "mcu_g4.h"
+#include "mcu_l4.h"
 
 // optional uprintf() code for debug
 // #define BOOTLOADER_DEBUG SD1
@@ -110,10 +111,15 @@ void flash_set_keep_unlocked(bool set)
 /*
   read a word at offset relative to flash base
  */
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 uint32_t flash_func_read_word(uint32_t offset)
 {
     return *(const uint32_t *)(flash_base + offset);
 }
+#pragma GCC diagnostic pop
 
 bool flash_func_write_word(uint32_t offset, uint32_t v)
 {

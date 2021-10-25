@@ -17,6 +17,8 @@ public:
 
     // begin() implicitly clears rx/tx buffers, even if the port was already open (unless the UART is the console UART)
     virtual void begin(uint32_t baud) = 0;
+    virtual void begin_locked(uint32_t baud, uint32_t key) { begin(baud); }
+
 	/// Extended port open method
 	///
 	/// Allows for both opening with specified buffer sizes, and re-opening
@@ -74,6 +76,7 @@ public:
         OPTION_NODMA_RX           = (1U<<8), // don't use DMA for RX
         OPTION_NODMA_TX           = (1U<<9), // don't use DMA for TX
         OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
+        OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
     };
 
     enum flow_control {
@@ -136,4 +139,7 @@ public:
      */
     virtual bool set_RTS_pin(bool high) { return false; };
     virtual bool set_CTS_pin(bool high) { return false; };
+
+    // return true requested baud on USB port
+    virtual uint32_t get_usb_baud(void) const { return 0; }
 };

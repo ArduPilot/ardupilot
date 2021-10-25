@@ -216,6 +216,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
     while (n--) {
 #if defined(STM32F1)
+        (void)idx;
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
 #elif defined(STM32G4)
@@ -242,6 +243,7 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 #endif
     while (n--) {
 #if defined(STM32F1)
+        (void)idx;
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         dr[n/2] =   (*v) & 0xFFFF;
         dr[n/2+1] = (*v) >> 16;
@@ -275,11 +277,17 @@ void set_fast_reboot(enum rtc_boot_magic v)
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
+    (void)idx;
+    (void)v;
+    (void)n;
 }
 
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
+    (void)idx;
+    (void)v;
+    (void)n;
 }
 #endif // NO_FASTBOOT
 
@@ -305,6 +313,9 @@ void peripheral_power_enable(void)
 #ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
 #endif
+#ifdef HAL_GPIO_PIN_VDD_5V_HIPOWER_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_EN, 1);
+#endif
 #ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS_EN
     // the TBS-Colibri-F7 needs PE3 low at power on
     palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN, 1);
@@ -324,7 +335,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
@@ -468,3 +479,73 @@ uint32_t stack_free(void *stack_base)
     return ((uint32_t)p) - (uint32_t)stack_base;
 }
 #endif
+
+#if HAL_USE_HW_RNG && defined(RNG)
+static bool stm32_rand_generate(uint32_t *val)
+{
+    uint32_t error_bits = 0;
+    error_bits = RNG_SR_SEIS | RNG_SR_CEIS;
+    /* Check for error flags and if data is ready. */
+    if (((RNG->SR & error_bits) == 0) && ((RNG->SR & RNG_SR_DRDY) == RNG_SR_DRDY)) {
+        *val = RNG->DR;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us)
+{
+    unsigned int i = 0;
+    uint32_t run_until = hrt_micros32() + timeout_us;
+    uint32_t val;
+    while ((i < sz) && (hrt_micros32() < run_until)) {
+        /* If not aligned or there is odd/remainder */
+        if( (i + sizeof(uint32_t)) > sz ||
+            ((uint32_t)&output[i] % sizeof(uint32_t)) != 0) {
+            /* Single byte at a time */
+            if (stm32_rand_generate(&val)) {
+                output[i] = val;
+                i++;
+            }
+        } else {
+            /* Use native 32 bit copy instruction */
+            if (stm32_rand_generate((uint32_t*)&output[i])) {
+                i += sizeof(uint32_t);
+            }
+        }
+    }
+    return i >= sz;
+}
+
+unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz)
+{
+    if ((RNG->SR & RNG_SR_DRDY) != RNG_SR_DRDY) {
+        return false;
+    }
+    unsigned int i = 0;
+    uint32_t val;
+    while (i < sz) {
+        /* If not aligned or there is odd/remainder */
+        if( (i + sizeof(uint32_t)) > sz ||
+            ((uint32_t)&output[i] % sizeof(uint32_t)) != 0) {
+            /* Single byte at a time */
+            if (stm32_rand_generate(&val)) {
+                output[i] = val;
+                i++;
+            } else {
+                break;
+            }
+        } else {
+            /* Use native 32 bit copy instruction */
+            if (stm32_rand_generate((uint32_t*)&output[i])) {
+                i += sizeof(uint32_t);
+            } else {
+                break;
+            }
+        }
+    }
+    return i;
+}
+
+#endif // #if HAL_USE_HW_RNG && defined(RNG)

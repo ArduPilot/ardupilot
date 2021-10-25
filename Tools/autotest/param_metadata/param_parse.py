@@ -17,6 +17,7 @@ from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
+from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
@@ -34,7 +35,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
 parser.add_argument("--sitl",
                     dest='emit_sitl',
@@ -257,7 +258,7 @@ def process_library(vehicle, library, pathprefix=None):
             fields = prog_param_tagged_fields.findall(field_text)
             # a parameter is considered to be vehicle-specific if
             # there does not exist a Values: or Values{VehicleName}
-            # for that vehicle but @Values{OtherVehcicle} exists.
+            # for that vehicle but @Values{OtherVehicle} exists.
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
@@ -455,6 +456,7 @@ all_emitters = {
     'xml': XmlEmit,
     'html': HtmlEmit,
     'rst': RSTEmit,
+    'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
     'xml_mp': XmlEmitMP,
 }
@@ -480,7 +482,7 @@ if args.emit_sitl:
     # only generate rst for SITL for now:
     emitters_to_use = ['rst']
 
-# actually invoke each emiiter:
+# actually invoke each emitter:
 for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name](sitl=args.emit_sitl)
 

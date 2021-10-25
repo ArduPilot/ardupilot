@@ -7,9 +7,9 @@ class AP_RangeFinder_Backend_Serial : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_Backend_Serial(RangeFinder::RangeFinder_State &_state,
-                                  AP_RangeFinder_Params &_params,
-                                  uint8_t serial_instance);
+                                  AP_RangeFinder_Params &_params);
 
+    void init_serial(uint8_t serial_instance) override;
     // static detection function
     static bool detect(uint8_t serial_instance);
 
@@ -29,7 +29,7 @@ protected:
 
     // it is essential that anyone relying on the base-class update to
     // implement this:
-    virtual bool get_reading(uint16_t &reading_cm) = 0;
+    virtual bool get_reading(float &reading_m) = 0;
 
     // maximum time between readings before we change state to NoData:
     virtual uint16_t read_timeout_ms() const { return 200; }

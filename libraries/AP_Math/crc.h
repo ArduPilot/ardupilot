@@ -22,6 +22,8 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len);
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a);
 uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed);
 uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);
+uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len);
+uint8_t crc8_maxim(const uint8_t *data, uint16_t length);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
@@ -34,6 +36,10 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len);
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
+
+// CRC16_CCITT algorithm using the GDL90 parser method which is non-standard
+// https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
+uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc);
 
 uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
 

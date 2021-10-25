@@ -52,21 +52,29 @@ public:
 
     /*
      * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
-     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     virtual void     set_reversible_mask(uint16_t chanmask) {}
     
     /*
-     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * mark the channels in chanmask as reversed.
+     * The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     virtual void     set_reversed_mask(uint16_t chanmask) {}
+    virtual uint16_t get_reversed_mask() { return 0; }
 
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
      */
     virtual void     update_channel_masks() {}
+
+    /*
+     * Allow channel mask updates to be temporarily suspended
+     */
+    virtual void     disable_channel_mask_updates() {}
+    virtual void     enable_channel_mask_updates() {}
 
     /*
      * Delay subsequent calls to write() going to the underlying hardware in
@@ -91,12 +99,6 @@ public:
     /* Read the current input state. This returns the last value that was written. */
     virtual uint16_t read_last_sent(uint8_t chan) { return read(chan); }
     virtual void     read_last_sent(uint16_t* period_us, uint8_t len) { read(period_us, len); };
-
-    /*
-      set PWM to send to a set of channels when the safety switch is
-      in the safe state
-     */
-    virtual void     set_safety_pwm(uint32_t chmask, uint16_t period_us) {}
 
     /*
       set PWM to send to a set of channels if the FMU firmware dies
@@ -184,7 +186,9 @@ public:
     
     /*
       output modes. Allows for support of PWM, oneshot and dshot 
-     */
+    */
+    // this enum is used by BLH_OTYPE and ESC_PWM_TYPE on AP_Periph
+    // double check params are still correct when changing
     enum output_mode {
         MODE_PWM_NONE,
         MODE_PWM_NORMAL,
@@ -198,6 +202,10 @@ public:
         MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
         MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
     };
+    // true when the output mode is of type dshot
+    // static to allow use in the ChibiOS thread stuff
+    static bool is_dshot_protocol(const enum output_mode mode);
+
 
     // https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
     enum BLHeliDshotCommand : uint8_t {
@@ -224,6 +232,8 @@ public:
       DSHOT_LED2_OFF = 28,
       DSHOT_LED3_OFF = 29,
     };
+
+    const uint8_t DSHOT_ZERO_THROTTLE = 48;
 
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,

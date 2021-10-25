@@ -44,7 +44,7 @@
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
+#include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_Arming/AP_Arming.h>
@@ -71,11 +71,6 @@
 // Local modules
 
 #include "Parameters.h"
-
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
 
 #include "mode.h"
 
@@ -121,10 +116,6 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
-#endif
 
     // Arming/Disarming management class
     AP_Arming_Blimp arming;
@@ -202,7 +193,6 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
-        uint8_t primary_gps : 2;    // primary gps index
     } sensor_health;
 
     // Motor Output
@@ -240,7 +230,7 @@ private:
     NotchFilterFloat vel_yaw_filter;
 
     // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
+    AP_InertialNav inertial_nav;
 
     // Vel & pos PIDs
     AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3, 0.02}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
@@ -362,8 +352,6 @@ private:
     // landing_detector.cpp
     void update_land_and_crash_detectors();
     void update_land_detector();
-    void set_land_complete(bool b);
-    void set_land_complete_maybe(bool b);
 
     // landing_gear.cpp
     void landinggear_update();
@@ -430,8 +418,6 @@ private:
     bool rangefinder_up_ok();
     void rpm_update();
     void update_optical_flow(void);
-    void compass_cal_update(void);
-    void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
 

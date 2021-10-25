@@ -61,8 +61,11 @@ void Copter::update_land_detector()
     } else {
 
 #if FRAME_CONFIG == HELI_FRAME
-        // check that collective pitch is below mid collective (zero thrust) position
-        bool motor_at_lower_limit = (motors->get_below_mid_collective() && fabsf(ahrs.get_roll()) < M_PI/2.0f);
+        // check for both manual collective modes and modes that use altitude hold. For manual collective (called throttle 
+        // because multi's use throttle), check that collective pitch is below mid collective (zero thrust) position.  For modes 
+        // that use altitude hold, check that the pilot is commanding a descent and collective is at min allowed for altitude hold modes.
+        bool motor_at_lower_limit = ((flightmode->has_manual_throttle() && motors->get_below_mid_collective() && fabsf(ahrs.get_roll()) < M_PI/2.0f) 
+                                    || (motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f));
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
         bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
@@ -177,7 +180,7 @@ void Copter::update_throttle_mix()
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-        bool large_angle_request = (norm(angle_target.x, angle_target.y) > LAND_CHECK_LARGE_ANGLE_CD);
+        bool large_angle_request = angle_target.xy().length() > LAND_CHECK_LARGE_ANGLE_CD;
 
         // check for large external disturbance - angle error over 30 degrees
         const float angle_error = attitude_control->get_att_error_angle_deg();

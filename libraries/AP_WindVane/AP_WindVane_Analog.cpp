@@ -26,7 +26,10 @@ AP_WindVane_Analog::AP_WindVane_Analog(AP_WindVane &frontend) :
 
 void AP_WindVane_Analog::update_direction()
 {
-    _dir_analog_source->set_pin(_frontend._dir_analog_pin);
+    if (!_dir_analog_source->set_pin(_frontend._dir_analog_pin)) {
+        // pin invalid, don't have health monitoring to report yet
+        return;
+    }
     _current_analog_voltage = _dir_analog_source->voltage_latest();
 
     const float voltage_ratio = linear_interpolate(0.0f, 1.0f, _current_analog_voltage, _frontend._dir_analog_volt_min, _frontend._dir_analog_volt_max);

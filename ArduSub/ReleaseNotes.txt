@@ -1,6 +1,13 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.0.3 5-March-2021
+
+ - No longer report battery percentage
+ - Do not override RNGFND1_TYPE
+ - Relax position controller when entering Depth Hold mode
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.0.2 21-September-2020
 
  - Fix critical error on preflight calibration

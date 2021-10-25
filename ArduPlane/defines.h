@@ -7,7 +7,7 @@
 #define FALSE 0
 
 #define DEBUG 0
-#define SERVO_MAX 4500  // This value represents 45 degrees and is just an
+#define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
 // failsafe
@@ -116,6 +116,7 @@ enum log_messages {
 #define MASK_LOG_SONAR                  (1<<14)
 // #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
+#define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
 
 // altitude control algorithms
 enum {
@@ -159,6 +160,10 @@ enum FlightOptions {
     CLIMB_BEFORE_TURN = (1 << 4),
     ACRO_YAW_DAMPER = (1 << 5),
     SURPRESS_TKOFF_SCALING = (1<<6),
+    ENABLE_DEFAULT_AIRSPEED = (1<<7),
+    GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
+    OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
+    CENTER_THROTTLE_TRIM = (1<<10),
 };
 
 enum CrowFlapOptions {
@@ -178,6 +183,7 @@ enum guided_heading_type_t {
 enum class AirMode {
     OFF,
     ON,
+    ASSISTED_FLIGHT_ONLY,
 };
 
 enum class FenceAutoEnable : uint8_t {

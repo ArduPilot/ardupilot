@@ -34,11 +34,11 @@ public:
     int write_fd() const { return read_fd_their_end; }
 
     ssize_t read_from_autopilot(char *buffer, size_t size) const;
-    ssize_t write_to_autopilot(const char *buffer, size_t size) const;
+    virtual ssize_t write_to_autopilot(const char *buffer, size_t size) const;
 
 protected:
 
-    class SITL *_sitl;
+    class SIM *_sitl;
 
     int fd_their_end;
     int fd_my_end;

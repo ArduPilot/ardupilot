@@ -574,11 +574,13 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
             nvicEnableVector(FDCAN1_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN1_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             break;
+#ifdef FDCAN2
         case 1:
             nvicEnableVector(FDCAN2_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN2_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             break;
-#ifdef FDCAN3_IT0_IRQn
+#endif
+#ifdef FDCAN3
         case 2:
             nvicEnableVector(FDCAN3_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN3_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
@@ -1029,7 +1031,7 @@ bool CANIface::select(bool &read, bool &write,
     return false;
 }
 
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
 void CANIface::get_stats(ExpandingString &str)
 {
     CriticalSectionLocker lock;

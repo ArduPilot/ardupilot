@@ -46,9 +46,6 @@ public:
     // force safety off
     void force_safety_off(void);
 
-    // set PWM of channels when safety is on
-    void set_safety_pwm(uint16_t chmask, uint16_t period_us);
-
     // set mask of channels that ignore safety state
     void set_safety_mask(uint16_t chmask);
 
@@ -107,6 +104,21 @@ public:
     // setup for FMU failsafe mixing
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
+
+    // Check if pin number is valid for GPIO
+    bool valid_GPIO_pin(uint8_t pin) const;
+
+    // convert external pin numbers 101 to 108 to internal 0 to 7
+    bool convert_pin_number(uint8_t& pin) const;
+
+    // set GPIO mask of channels setup for output
+    void set_GPIO_mask(uint8_t mask);
+
+    // write to a output pin
+    void write_GPIO(uint8_t pin, bool value);
+
+    // toggle a output pin
+    void toggle_GPIO(uint8_t pin);
 
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
@@ -184,9 +196,6 @@ private:
     struct {
         uint8_t num_channels;
         uint16_t pwm[IOMCU_MAX_CHANNELS];
-        uint8_t safety_pwm_set;
-        uint8_t safety_pwm_sent;
-        uint16_t safety_pwm[IOMCU_MAX_CHANNELS];
         uint16_t safety_mask;
         uint16_t failsafe_pwm[IOMCU_MAX_CHANNELS];
         uint8_t failsafe_pwm_set;
@@ -207,6 +216,8 @@ private:
         bool oneshot_enabled;
         bool brushed_enabled;
     } rate;
+
+    struct page_GPIO GPIO;
 
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;

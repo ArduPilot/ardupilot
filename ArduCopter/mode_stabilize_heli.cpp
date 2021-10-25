@@ -29,7 +29,7 @@ void ModeStabilize_Heli::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     // get pilot's desired throttle
     pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
@@ -50,14 +50,14 @@ void ModeStabilize_Heli::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_yaw_target_and_rate(false);
         attitude_control->reset_rate_controller_I_terms();
         break;
     case AP_Motors::SpoolState::GROUND_IDLE:
         // If aircraft is landed, set target heading to current and reset the integrator
         // Otherwise motors could be at ground idle for practice autorotation
         if ((motors->init_targets_on_arming() && motors->using_leaky_integrator()) || (copter.ap.land_complete && !motors->using_leaky_integrator())) {
-            attitude_control->reset_yaw_target_and_rate();
+            attitude_control->reset_yaw_target_and_rate(false);
             attitude_control->reset_rate_controller_I_terms_smoothly();
         }
         break;

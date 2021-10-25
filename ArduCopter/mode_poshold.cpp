@@ -80,10 +80,10 @@ void ModePosHold::run()
 
     // convert pilot input to lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -102,7 +102,7 @@ void ModePosHold::run()
 
     case AltHold_MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_yaw_target_and_rate(false);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -158,16 +158,14 @@ void ModePosHold::run()
     case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
-        }
-
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+        // update the vertical offset based on the surface measurement
+        copter.surface_tracking.update_surface_offset();
+
+        // Send the commanded climb rate to the position controller
+        pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
         break;
     }
 

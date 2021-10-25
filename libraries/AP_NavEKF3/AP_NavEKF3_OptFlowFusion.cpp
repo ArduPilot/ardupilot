@@ -54,12 +54,11 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        if ((frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
-            // Set the flow noise used by the fusion processes
-            R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
-            // Fuse the optical flow X and Y axis data into the main filter sequentially
-            FuseOptFlow(ofDataDelayed);
-        }
+        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
+        // Set the flow noise used by the fusion processes
+        R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
+        // Fuse the optical flow X and Y axis data into the main filter sequentially
+        FuseOptFlow(ofDataDelayed, fuse_optflow);
     }
 }
 
@@ -77,7 +76,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
-    || gpsNotAvailable 
+    || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
@@ -265,12 +264,13 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * Requires a valid terrain height estimate.
+ *
+ * really_fuse should be true to actually fuse into the main filter, false to only calculate variances
 */
-void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
+void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
 {
     Vector24 H_LOS;
     Vector3F relVelSensor;
-    Vector14 SH_LOS;
     Vector2 losPred;
 
     // Copy required states to local variable names
@@ -285,23 +285,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
-    ftype ptd = pd + heightAboveGndEst;
-
-    // Calculate common expressions for observation jacobians
-    SH_LOS[0] = sq(q0) - sq(q1) - sq(q2) + sq(q3);
-    SH_LOS[1] = vn*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + ve*(2*q0*q3 + 2*q1*q2);
-    SH_LOS[2] = ve*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd*(2*q0*q1 + 2*q2*q3) - vn*(2*q0*q3 - 2*q1*q2);
-    SH_LOS[3] = 1/(pd - ptd);
-    SH_LOS[4] = vd*SH_LOS[0] - ve*(2*q0*q1 - 2*q2*q3) + vn*(2*q0*q2 + 2*q1*q3);
-    SH_LOS[5] = 2.0f*q0*q2 - 2.0f*q1*q3;
-    SH_LOS[6] = 2.0f*q0*q1 + 2.0f*q2*q3;
-    SH_LOS[7] = q0*q0;
-    SH_LOS[8] = q1*q1;
-    SH_LOS[9] = q2*q2;
-    SH_LOS[10] = q3*q3;
-    SH_LOS[11] = q0*q3*2.0f;
-    SH_LOS[12] = pd-ptd;
-    SH_LOS[13] = 1.0f/(SH_LOS[12]*SH_LOS[12]);
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
@@ -441,10 +424,11 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 faultStatus.bad_xflow = true;
                 return;
             }
-            varInnovOptFlow[0] = t77;
+            flowVarInnov[0] = t77;
 
             // calculate innovation for X axis observation
-            innovOptFlow[0] = losPred[0] - ofDataDelayed.flowRadXYcomp.x;
+            // flowInnovTime_ms will be updated when Y-axis innovations are calculated
+            flowInnov[0] = losPred[0] - ofDataDelayed.flowRadXYcomp.x;
 
             // calculate Kalman gains for X-axis observation
             Kfusion[0] = t78*(t12-P[0][4]*t2*t7+P[0][1]*t2*t15+P[0][6]*t2*t10+P[0][2]*t2*t19-P[0][3]*t2*t22+P[0][5]*t2*t27);
@@ -467,7 +451,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -617,10 +601,11 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 faultStatus.bad_yflow = true;
                 return;
             }
-            varInnovOptFlow[1] = t77;
+            flowVarInnov[1] = t77;
 
             // calculate innovation for Y observation
-            innovOptFlow[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
+            flowInnov[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
+            flowInnovTime_ms = AP_HAL::millis();
 
             // calculate Kalman gains for the Y-axis observation
             Kfusion[0] = -t78*(t12+P[0][5]*t2*t8-P[0][6]*t2*t10+P[0][1]*t2*t16-P[0][2]*t2*t19+P[0][3]*t2*t22+P[0][4]*t2*t27);
@@ -643,7 +628,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates) {
+            if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -679,10 +664,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(flowInnov[obsIndex]) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * flowVarInnov[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
+        if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
             // notify first time only
@@ -693,16 +678,16 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
+            for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                for (uint8_t j = 0; j<=6; j++) {
                     KH[i][j] = Kfusion[i] * H_LOS[j];
                 }
-                for (unsigned j = 7; j<=stateIndexLim; j++) {
+                for (uint8_t j = 7; j<=stateIndexLim; j++) {
                     KH[i][j] = 0.0f;
                 }
             }
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (uint8_t j = 0; j<=stateIndexLim; j++) {
+                for (uint8_t i = 0; i<=stateIndexLim; i++) {
                     ftype res = 0;
                     res += KH[i][0] * P[0][j];
                     res += KH[i][1] * P[1][j];
@@ -737,7 +722,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed)
 
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * innovOptFlow[obsIndex];
+                    statesArray[j] = statesArray[j] - Kfusion[j] * flowInnov[obsIndex];
                 }
                 stateStruct.quat.normalize();
 

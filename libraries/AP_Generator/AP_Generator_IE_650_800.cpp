@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_650_800.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -61,7 +61,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
 
     switch (_term_number) {
         case 1:
-            _parsed.tank_pct = atof(_term);
+            _parsed.tank_pct = strtof(_term, NULL);
             // Out of range values
             if (_parsed.tank_pct > 100.0f || _parsed.tank_pct < 0.0f) {
                 _data_valid = false;
@@ -69,7 +69,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
             break;
 
         case 2:
-            _parsed.battery_pct = atof(_term);
+            _parsed.battery_pct = strtof(_term, NULL);
             // Out of range values
             if (_parsed.battery_pct > 100.0f || _parsed.battery_pct < 0.0f) {
                 _data_valid = false;

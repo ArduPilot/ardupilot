@@ -55,8 +55,8 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        ftype temp = (tasErrVar + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= tasErrVar) {
+        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (temp >= tasDataDelayed.tasVariance) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
         } else {
@@ -236,7 +236,7 @@ void NavEKF3_core::SelectBetaDragFusion()
 
     // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastPosPassTime_ms) > frontend->deadReckonDeclare_ms) && ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
-    const bool noYawSensor = !use_compass() && !using_external_yaw();
+    const bool noYawSensor = !use_compass() && !using_noncompass_for_yaw();
     const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
 
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
@@ -428,12 +428,7 @@ void NavEKF3_core::FuseSideslip()
         }
 
         // calculate predicted sideslip angle and innovation using small angle approximation
-        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
-
-        // reject measurement if greater than 3-sigma inconsistency
-        if (innovBeta > 0.5f) {
-            return;
-        }
+        innovBeta = constrain_ftype(vel_rel_wind.y / vel_rel_wind.x, -0.5f, 0.5f);
 
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
@@ -567,7 +562,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK4 = HK0*q1 + HK1*q2 + q3*vd;
             const ftype HK5 = HK0*q2 - HK1*q1 + q0*vd;
             const ftype HK6 = -HK0*q3 + HK1*q0 + q1*vd;
-            const ftype HK7 = powF(q0, 2) + powF(q1, 2) - powF(q2, 2) - powF(q3, 2);
+            const ftype HK7 = sq(q0) + sq(q1) - sq(q2) - sq(q3);
             const ftype HK8 = HK7*Kacc;
             const ftype HK9 = q0*q3 + q1*q2;
             const ftype HK10 = HK3*HK9;
@@ -581,7 +576,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK18 = -HK12*P[0][23] + HK12*P[0][5] - HK13*P[0][6] + HK14*P[0][1] + HK15*P[0][0] - HK16*P[0][2] + HK17*P[0][3] - HK7*P[0][22] + HK7*P[0][4];
             const ftype HK19 = HK12*P[5][23];
             const ftype HK20 = -HK12*P[23][23] - HK13*P[6][23] + HK14*P[1][23] + HK15*P[0][23] - HK16*P[2][23] + HK17*P[3][23] + HK19 - HK7*P[22][23] + HK7*P[4][23];
-            const ftype HK21 = powF(Kacc, 2);
+            const ftype HK21 = sq(Kacc);
             const ftype HK22 = HK12*HK21;
             const ftype HK23 = HK12*P[5][5] - HK13*P[5][6] + HK14*P[1][5] + HK15*P[0][5] - HK16*P[2][5] + HK17*P[3][5] - HK19 + HK7*P[4][5] - HK7*P[5][22];
             const ftype HK24 = HK12*P[5][6] - HK12*P[6][23] - HK13*P[6][6] + HK14*P[1][6] + HK15*P[0][6] - HK16*P[2][6] + HK17*P[3][6] + HK7*P[4][6] - HK7*P[6][22];
@@ -652,7 +647,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK6 = HK0*q3 + HK1*q0 - q2*vd;
             const ftype HK7 = q0*q3 - q1*q2;
             const ftype HK8 = HK3*HK7;
-            const ftype HK9 = powF(q0, 2) - powF(q1, 2) + powF(q2, 2) - powF(q3, 2);
+            const ftype HK9 = sq(q0) - sq(q1) + sq(q2) - sq(q3);
             const ftype HK10 = HK9*Kacc;
             const ftype HK11 = q0*q1 + q2*q3;
             const ftype HK12 = 2*HK11;
@@ -662,7 +657,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK16 = 2*HK4;
             const ftype HK17 = 2*HK6;
             const ftype HK18 = HK12*P[0][6] + HK13*P[0][22] - HK13*P[0][4] + HK14*P[0][2] + HK15*P[0][0] + HK16*P[0][1] - HK17*P[0][3] - HK9*P[0][23] + HK9*P[0][5];
-            const ftype HK19 = powF(Kacc, 2);
+            const ftype HK19 = sq(Kacc);
             const ftype HK20 = HK12*P[6][6] - HK13*P[4][6] + HK13*P[6][22] + HK14*P[2][6] + HK15*P[0][6] + HK16*P[1][6] - HK17*P[3][6] + HK9*P[5][6] - HK9*P[6][23];
             const ftype HK21 = HK13*P[4][22];
             const ftype HK22 = HK12*P[6][22] + HK13*P[22][22] + HK14*P[2][22] + HK15*P[0][22] + HK16*P[1][22] - HK17*P[3][22] - HK21 - HK9*P[22][23] + HK9*P[5][22];

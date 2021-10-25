@@ -18,6 +18,8 @@
 
 #include "SIM_CRRCSim.h"
 
+#if HAL_SIM_CRRCSIM_ENABLED
+
 #include <stdio.h>
 
 #include <AP_HAL/AP_HAL.h>
@@ -119,12 +121,9 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
     gyro = Vector3f(pkt.rollRate, pkt.pitchRate, pkt.yawRate);
     velocity_ef = Vector3f(pkt.speedN, pkt.speedE, pkt.speedD);
 
-    Location loc1, loc2;
-    loc2.lat = pkt.latitude * 1.0e7;
-    loc2.lng = pkt.longitude * 1.0e7;
-    const Vector2f posdelta = loc1.get_distance_NE(loc2);
-    position.x = posdelta.x;
-    position.y = posdelta.y;
+    origin.lat = pkt.latitude * 1.0e7;
+    origin.lng = pkt.longitude * 1.0e7;
+    position.xy().zero();
     position.z = -pkt.altitude;
 
     airspeed = pkt.airspeed;
@@ -157,3 +156,5 @@ void CRRCSim::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
+
+#endif  // HAL_SIM_CRRCSIM_ENABLED

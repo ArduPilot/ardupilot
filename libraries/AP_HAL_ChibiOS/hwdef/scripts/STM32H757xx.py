@@ -23,8 +23,9 @@ mcu = {
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x38000000,  64, 1), # SRAM4. This supports both DMA and BDMA ops
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
-        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
     ],
+
+    'INSTRUCTION_RAM' : (0x00000400, 63), # ITCM (first 1k removed, to keep address 0 unused)
 
     'EXPECTED_CLOCK' : 400000000,
 
@@ -63,7 +64,7 @@ AltFunction_map = {
 	"PA0:TIM5_CH1"      	:	2,
 	"PA0:TIM8_ETR"      	:	3,
 	"PA0:UART4_TX"      	:	8,
-	"PA0:USART2_CTS_NSS"	:	7,
+	"PA0:USART2_CTS"    	:	7,
 	"PA1:ETH_MII_RX_CLK"	:	11,
 	"PA1:ETH_RMII_REF_CLK"	:	11,
 	"PA1:EVENT-OUT"     	:	15,

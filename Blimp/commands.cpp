@@ -25,7 +25,7 @@ void Blimp::set_home_to_current_location_inflight()
     // get current location from EKF
     Location temp_loc;
     Location ekf_origin;
-    if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
+    if (ahrs.get_position(temp_loc) && ahrs.get_origin(ekf_origin)) {
         temp_loc.alt = ekf_origin.alt;
         if (!set_home(temp_loc, false)) {
             return;
@@ -38,7 +38,7 @@ bool Blimp::set_home_to_current_location(bool lock)
 {
     // get current location from EKF
     Location temp_loc;
-    if (ahrs.get_location(temp_loc)) {
+    if (ahrs.get_position(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
         }

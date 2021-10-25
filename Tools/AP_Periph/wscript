@@ -2,6 +2,20 @@
 # encoding: utf-8
 
 import fnmatch
+import sys
+
+try:
+    import em
+except ImportError:
+    print("you need to install empy with 'python -m pip install empy'")
+    sys.exit(1)
+
+try:
+    import pexpect
+except ImportError:
+    print("you need to install pexpect with 'python -m pip install pexpect'")
+    sys.exit(1)
+    
 
 def build(bld):
     targets = bld.ap_periph_boards()
@@ -57,7 +71,10 @@ def build(bld):
     )
 
     # build external libcanard library
-    bld.stlib(source='../../modules/libcanard/canard.c',
+    bld.stlib(source=['../../modules/libcanard/canard.c'] +
+                     bld.bldnode.ant_glob('modules/libcanard/dsdlc_generated/src/**.c'),
+              includes=[bld.env.SRCROOT + '/modules/libcanard', 
+                        bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated/include'],
               target='libcanard')
 
     bld.ap_program(
@@ -65,11 +82,5 @@ def build(bld):
         use=['AP_Periph_libs', 'libcanard'],
         program_groups=['bin','AP_Periph'],
         includes=[bld.env.SRCROOT + '/modules/libcanard',
-                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
-    )
-
-    bld(
-        # build libcanard headers
-        rule="python3 ${SRCROOT}/modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ${SRCROOT}/modules/uavcan/dsdl/uavcan ${SRCROOT}/libraries/AP_UAVCAN/dsdl/ardupilot ${SRCROOT}/libraries/AP_UAVCAN/dsdl/com",
-        group='dynamic_sources',
+                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated/include']
     )

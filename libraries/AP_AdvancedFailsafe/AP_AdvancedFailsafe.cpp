@@ -26,6 +26,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Mission/AP_Mission.h>
 
 AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
 
@@ -207,6 +208,12 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
+
+    AP_Mission *_mission = AP::mission();
+    if (_mission == nullptr) {
+        return;
+    }
+    AP_Mission &mission = *_mission;
 
     switch (_state) {
     case STATE_PREFLIGHT:

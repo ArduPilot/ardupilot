@@ -118,7 +118,7 @@ void CompassLearn::update(void)
         // @Field: Yaw: best learnt yaw
         // @Field: WVar: error of best learn yaw
         // @Field: N: number of samples used
-        AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+        AP::logger().WriteStreaming("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
                                                (double)best_offsets.y,
@@ -164,7 +164,9 @@ void CompassLearn::update(void)
             sample_available = false;
             num_samples = 0;
             have_earth_field = false;
-            memset(predicted_offsets, 0, sizeof(predicted_offsets));
+            for (auto &v : predicted_offsets) {
+                v.zero();
+            }
             worst_error = 0;
             best_error = 0;
             best_yaw_deg = 0;

@@ -27,7 +27,8 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission);
+
+    using AP_AdvancedFailsafe::AP_AdvancedFailsafe;
 
     // called to set all outputs to termination state
     void terminate_vehicle(void) override;

@@ -4,6 +4,7 @@
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/param_metadata/Parameters.html
 /Tools/autotest/param_metadata/Parameters.rst
+/Tools/autotest/param_metadata/ParametersLatex.rst
 /Tools/autotest/param_metadata/Parameters.wiki
 /Tools/autotest/param_metadata/Parameters.md
 /Tools/autotest/param_metadata/apm.pdef.xml
@@ -14,8 +15,9 @@
 /Tools/autotest/jsbsim_start_0.xml
 /Tools/autotest/rover-ch7_mission.txt
 /tmp/*
-# Exclude all bins but allow font bins
+# Exclude all bins but allow font bins and bootloaders
 *.bin
+!*_bl.bin
 !font*.bin
 *.d
 *.dfu
@@ -104,6 +106,7 @@ config.mk
 *.apj
 .gdbinit
 /.vscode
+/.history
 Parameters.html
 Parameters.md
 Parameters.rst

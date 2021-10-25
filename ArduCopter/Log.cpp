@@ -27,7 +27,7 @@ void Copter::Log_Write_Control_Tuning()
 {
     // get terrain altitude
     float terr_alt = 0.0f;
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     if (!terrain.height_above_terrain(terr_alt, true)) {
         terr_alt = logger.quiet_nan();
     }
@@ -86,7 +86,7 @@ void Copter::Log_Write_Attitude()
 // Write an EKF and POS packet
 void Copter::Log_Write_EKF_POS()
 {
-    AP::ahrs_navekf().Log_Write();
+    AP::ahrs().Log_Write();
     ahrs.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
@@ -264,12 +264,6 @@ void Copter::Log_Sensor_Health()
     if (sensor_health.compass != compass.healthy()) {
         sensor_health.compass = compass.healthy();
         AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-
-    // check primary GPS
-    if (sensor_health.primary_gps != gps.primary_sensor()) {
-        sensor_health.primary_gps = gps.primary_sensor();
-        AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
 }
 
@@ -472,7 +466,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Value: Value
 
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB" },
+      "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB" , true },
     
 // @LoggerMessage: MOTB
 // @Description: Battery information
@@ -483,7 +477,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: ThLimit: Throttle limit set due to battery current limitations
 
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
+      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" , true },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
@@ -504,7 +498,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Throt: Throttle output
 #if FRAME_CONFIG == HELI_FRAME
     { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" },
+      "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" , true },
 #endif
 
 // @LoggerMessage: SIDD
@@ -521,7 +515,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Az: Delta velocity, Z-Axis
 
     { LOG_SYSIDD_MSG, sizeof(log_SysIdD),
-      "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" },
+      "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" , true },
 
 // @LoggerMessage: SIDS
 // @Description: System ID settings
@@ -536,7 +530,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: TFout: Time to reach zero amplitude after chirp finishes
 
     { LOG_SYSIDS_MSG, sizeof(log_SysIdS),
-      "SIDS", "QBfffffff",  "TimeUS,Ax,Mag,FSt,FSp,TFin,TC,TR,TFout", "s--ssssss", "F--------" },
+      "SIDS", "QBfffffff",  "TimeUS,Ax,Mag,FSt,FSp,TFin,TC,TR,TFout", "s--ssssss", "F--------" , true },
 
 // @LoggerMessage: GUID
 // @Description: Guided mode target information
@@ -554,7 +548,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aZ: Target acceleration, Z-Axis
 
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" },
+      "GUID",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()

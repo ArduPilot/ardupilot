@@ -305,3 +305,41 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
     close(dev_random);
     return true;
 }
+
+bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set) const
+{
+    unsigned long cpu1, cpu2;
+    char *endptr, sep;
+
+    CPU_ZERO(cpu_set);
+
+    do {
+        cpu1 = strtoul(str, &endptr, 10);
+        if (str == endptr) {
+            return false;
+        }
+
+        str = endptr + 1;
+        sep = *endptr;
+        if (sep == ',' || sep == '\0') {
+            CPU_SET(cpu1, cpu_set);
+            continue;
+        }
+
+        if (sep != '-') {
+            return false;
+        }
+
+        cpu2 = strtoul(str, &endptr, 10);
+        if (str == endptr) {
+            return false;
+        }
+
+        str = endptr + 1;
+        for (; cpu1 <= cpu2; cpu1++) {
+            CPU_SET(cpu1, cpu_set);
+        }
+    } while (*endptr != '\0');
+
+    return true;
+}

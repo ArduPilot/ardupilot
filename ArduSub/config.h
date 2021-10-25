@@ -244,7 +244,3 @@
 #ifndef AC_RALLY
 #define AC_RALLY   DISABLED
 #endif
-
-#ifndef AC_TERRAIN
-#define AC_TERRAIN DISABLED // Requires Rally enabled as well
-#endif

@@ -60,6 +60,10 @@ void Rover::init_ardupilot()
     log_init();
 #endif
 
+#if HAL_AIS_ENABLED
+    g2.ais.init();
+#endif
+
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -93,6 +97,11 @@ void Rover::init_ardupilot()
     // init wheel encoders
     g2.wheel_encoder.init();
 
+#if HAL_TORQEEDO_ENABLED
+    // init torqeedo motor driver
+    g2.torqeedo.init();
+#endif
+
     relay.init();
 
 #if HAL_MOUNT_ENABLED
@@ -121,6 +130,8 @@ void Rover::init_ardupilot()
     set_mode(*initial_mode, ModeReason::INITIALISED);
 
     // initialise rc channels
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
+    rc().convert_options(RC_Channel::AUX_FUNC::SAVE_TRIM, RC_Channel::AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC);
     rc().init();
 
     rover.g2.sailboat.init();
@@ -135,13 +146,6 @@ void Rover::init_ardupilot()
 void Rover::startup_ground(void)
 {
     set_mode(mode_initializing, ModeReason::INITIALISED);
-
-    gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
-
-    #if(GROUND_START_DELAY > 0)
-        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
-        hal.scheduler->delay(GROUND_START_DELAY * 1000);
-    #endif
 
     // IMU ground start
     //------------------------
@@ -239,6 +243,7 @@ bool Rover::set_mode(const uint8_t new_mode, ModeReason reason)
     static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
     Mode *mode = rover.mode_from_mode_num((enum Mode::Number)new_mode);
     if (mode == nullptr) {
+        notify_no_such_mode(new_mode);
         return false;
     }
     return rover.set_mode(*mode, reason);
@@ -252,7 +257,7 @@ void Rover::startup_INS_ground(void)
     ahrs.init();
     // say to EKF that rover only move by going forward
     ahrs.set_fly_forward(true);
-    ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::GROUND);
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();

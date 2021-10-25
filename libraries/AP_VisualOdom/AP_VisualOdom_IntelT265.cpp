@@ -129,13 +129,13 @@ void AP_VisualOdom_IntelT265::rotate_attitude(Quaternion &attitude) const
 // use sensor provided attitude to calculate rotation to align sensor with AHRS/EKF attitude
 bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude)
 {
-    // do not align to ahrs if it is using us as its yaw source
-    if (AP::ahrs().is_ext_nav_used_for_yaw()) {
+    // do not align to ahrs if we are its yaw source
+    if (AP::ahrs().using_extnav_for_yaw()) {
         return false;
     }
 
     // do not align until ahrs yaw initialised
-    if (!AP::ahrs().initialised() || !AP::ahrs().yaw_initialised()) {
+    if (!AP::ahrs().initialised() || !AP::ahrs().dcm_yaw_initialised()) {
         return false;
     }
 

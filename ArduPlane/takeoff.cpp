@@ -36,6 +36,12 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
+    bool do_takeoff_attitude_check = !(g2.flight_options & FlightOptions::DISABLE_TOFF_ATTITUDE_CHK);
+#if HAL_QUADPLANE_ENABLED
+    // disable attitude check on tailsitters
+    do_takeoff_attitude_check = !quadplane.tailsitter.enabled();
+#endif
+
     if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
         // we are requiring an X acceleration event to launch
         float xaccel = SpdHgt_Controller->get_VXdot();
@@ -80,8 +86,7 @@ bool Plane::auto_takeoff_check(void)
         goto no_launch;
     }
 
-    if (!quadplane.is_tailsitter() &&
-        !(g2.flight_options & FlightOptions::DISABLE_TOFF_ATTITUDE_CHK)) {
+    if (do_takeoff_attitude_check) {
         // Check aircraft attitude for bad launch
         if (ahrs.pitch_sensor <= -3000 || ahrs.pitch_sensor >= 4500 ||
             (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {

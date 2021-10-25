@@ -20,7 +20,7 @@ public:
     void update() override;
 
 private:
-    SITL::SITL *sitl;    
+    SITL::SIM *sitl;
     uint8_t next_beacon;
     uint32_t last_update_ms;
 };

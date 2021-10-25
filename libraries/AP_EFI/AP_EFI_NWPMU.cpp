@@ -26,9 +26,10 @@
 extern const AP_HAL::HAL& hal;
 
 AP_EFI_NWPMU::AP_EFI_NWPMU(AP_EFI &_frontend) :
-    CANSensor("NWPMU", AP_CANManager::Driver_Type_EFI_NWPMU),
+    CANSensor("NWPMU"),
     AP_EFI_Backend(_frontend)
 {
+    register_driver(AP_CANManager::Driver_Type_EFI_NWPMU);
 }
 
 void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
@@ -40,53 +41,57 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
     switch ((NWPMU_ID)id) {
     case NWPMU_ID::ECU_1: {
         internal_state.last_updated_ms = AP_HAL::millis();
-        struct ecu_1 *data = (struct ecu_1 *)frame.data;
-        internal_state.engine_speed_rpm = data->rpm;
-        internal_state.throttle_position_percent = data->tps * 0.1f;
-        internal_state.cylinder_status[0].ignition_timing_deg = data->ignition_angle * 0.1f;
+        struct ecu_1 data;
+        memcpy(&data, frame.data, sizeof(data));
+        internal_state.engine_speed_rpm = data.rpm;
+        internal_state.throttle_position_percent = data.tps * 0.1f;
+        internal_state.cylinder_status[0].ignition_timing_deg = data.ignition_angle * 0.1f;
         break;
     }
 
     case NWPMU_ID::ECU_2: {
         internal_state.last_updated_ms = AP_HAL::millis();
-        struct ecu_2 *data = (struct ecu_2 *)frame.data;
-        switch ((NWPMU_PRESSURE_TYPE)data->pressure_type) {
+        struct ecu_2 data;
+        memcpy(&data, frame.data, sizeof(data));
+        switch ((NWPMU_PRESSURE_TYPE)data.pressure_type) {
         case NWPMU_PRESSURE_TYPE::kPa:
-            internal_state.atmospheric_pressure_kpa = data->baro * 0.01f;
-            internal_state.intake_manifold_pressure_kpa = data->baro * 0.01f;
+            internal_state.atmospheric_pressure_kpa = data.baro * 0.01f;
+            internal_state.intake_manifold_pressure_kpa = data.baro * 0.01f;
             break;
         case NWPMU_PRESSURE_TYPE::psi:
-            internal_state.atmospheric_pressure_kpa = data->baro * 0.0689476f;
-            internal_state.intake_manifold_pressure_kpa = data->baro * 0.0689476f;
+            internal_state.atmospheric_pressure_kpa = data.baro * 0.0689476f;
+            internal_state.intake_manifold_pressure_kpa = data.baro * 0.0689476f;
             break;
         default:
             break;
         }
-        internal_state.cylinder_status[0].lambda_coefficient = data->lambda * 0.01f;
+        internal_state.cylinder_status[0].lambda_coefficient = data.lambda * 0.01f;
         break;
     }
 
     case NWPMU_ID::ECU_4: {
         internal_state.last_updated_ms = AP_HAL::millis();
-        struct ecu_4 *data = (struct ecu_4 *)frame.data;
+        struct ecu_4 data;
+        memcpy(&data, frame.data, sizeof(data));
         // remap the analog input for fuel pressure, 0.5 V == 0 PSI, 4.5V == 100 PSI
         internal_state.fuel_pressure = linear_interpolate(0, 689.476,
-                                                          data->analog_fuel_pres * 0.001,
+                                                          data.analog_fuel_pres * 0.001,
                                                           0.5f,4.5f);
         break;
     }
 
     case NWPMU_ID::ECU_5: {
         internal_state.last_updated_ms = AP_HAL::millis();
-        struct ecu_5 *data = (struct ecu_5 *)frame.data;
-        switch((NWPMU_TEMPERATURE_TYPE)data->temp_type) {
+        struct ecu_5 data;
+        memcpy(&data, frame.data, sizeof(data));
+        switch((NWPMU_TEMPERATURE_TYPE)data.temp_type) {
         case NWPMU_TEMPERATURE_TYPE::C:
-            internal_state.coolant_temperature = data->coolant_temp * 0.1f + C_TO_KELVIN;
-            internal_state.cylinder_status[0].cylinder_head_temperature = data->coolant_temp * 0.1f + C_TO_KELVIN;
+            internal_state.coolant_temperature = data.coolant_temp * 0.1f + C_TO_KELVIN;
+            internal_state.cylinder_status[0].cylinder_head_temperature = data.coolant_temp * 0.1f + C_TO_KELVIN;
             break;
         case NWPMU_TEMPERATURE_TYPE::F:
-            internal_state.coolant_temperature = ((data->coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
-            internal_state.cylinder_status[0].cylinder_head_temperature = ((data->coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
+            internal_state.coolant_temperature = ((data.coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
+            internal_state.cylinder_status[0].cylinder_head_temperature = ((data.coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
             break;
         default:
             break;
@@ -96,12 +101,13 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
 
     case NWPMU_ID::ECU_6: {
         internal_state.last_updated_ms = AP_HAL::millis();
-        struct ecu_6 *data = (struct ecu_6 *)frame.data;
+        struct ecu_6 data;
+        memcpy(&data, frame.data, sizeof(data));
         if (!_emitted_version && (AP_HAL::millis() > 10000)) { // don't emit a version early in the boot process
             gcs().send_text(MAV_SEVERITY_INFO, "NWPMU Version: %d.%d.%d",
-                            data->firmware_major,
-                            data->firmware_minor,
-                            data->firmware_build);
+                            data.firmware_major,
+                            data.firmware_minor,
+                            data.firmware_build);
             _emitted_version = true;
         }
         break;

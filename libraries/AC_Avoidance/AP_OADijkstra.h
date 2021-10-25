@@ -13,7 +13,7 @@
 class AP_OADijkstra {
 public:
 
-    AP_OADijkstra();
+    AP_OADijkstra(AP_Int16 &options);
 
     /* Do not allow copies */
     AP_OADijkstra(const AP_OADijkstra &other) = delete;
@@ -190,6 +190,12 @@ private:
     AP_OADijkstra_Error _error_last_id;                 // last error id sent to GCS
     uint32_t _error_last_report_ms;                     // last time an error message was sent to GCS
 
-    // Logging function
+    // Logging functions
     void Write_OADijkstra(const uint8_t state, const uint8_t error_id, const uint8_t curr_point, const uint8_t tot_points, const Location &final_dest, const Location &oa_dest) const;
+    void Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const;
+    uint8_t _log_num_points;
+    uint8_t _log_visgraph_version;
+
+    // refernce to AP_OAPathPlanner options param
+    AP_Int16 &_options;
 };

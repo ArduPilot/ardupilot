@@ -3,6 +3,14 @@
 // protocols.
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 1
+#endif
+
+#if HAL_GCS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
@@ -31,7 +39,9 @@
 #define HAL_HIGH_LATENCY2_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
-#ifndef HAL_NO_GCS
+#ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
+#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED (HAVE_FILESYSTEM_SUPPORT && BOARD_FLASH_SIZE > 1024)
+#endif
 
 // macros used to determine if a message will fit in the space available.
 
@@ -89,6 +99,37 @@ public:
     // saveable rate of each stream
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
 };
+
+#if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
+class DefaultIntervalsFromFiles
+{
+
+public:
+
+    DefaultIntervalsFromFiles(uint16_t max_num);
+    ~DefaultIntervalsFromFiles();
+
+    void set(ap_message id, uint16_t interval);
+    uint16_t num_intervals() const {
+        return _num_intervals;
+    }
+    bool get_interval_for_ap_message_id(ap_message id, uint16_t &interval) const;
+    ap_message id_at(uint8_t ofs) const;
+    uint16_t interval_at(uint8_t ofs) const;
+
+private:
+
+    struct from_file_default_interval {
+        ap_message id;
+        uint16_t interval;
+    };
+
+    from_file_default_interval *_intervals;
+
+    uint16_t _num_intervals;
+    uint16_t _max_intervals;
+};
+#endif
 
 ///
 /// @class	GCS_MAVLINK
@@ -225,6 +266,9 @@ public:
     void send_meminfo(void);
     void send_fence_status() const;
     void send_power_status(void);
+#if HAL_WITH_MCU_MONITORING
+    void send_mcu_status(void);
+#endif
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
     void send_distance_sensor();
@@ -244,8 +288,7 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
-    void send_sensor_offsets();
-    virtual void send_simstate() const;
+    void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
     void send_battery2();
@@ -273,8 +316,10 @@ public:
     void send_generator_status() const;
     virtual void send_winch_status() const {};
     void send_water_depth() const;
+    int8_t battery_remaining_pct(const uint8_t instance) const;
+
 #if HAL_HIGH_LATENCY2_ENABLED
-    void send_high_latency() const;
+    void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     // lock a channel, preventing use by MAVLink
@@ -413,6 +458,8 @@ protected:
     void handle_obstacle_distance(const mavlink_message_t &msg);
     void handle_obstacle_distance_3d(const mavlink_message_t &msg);
 
+    void handle_adsb_message(const mavlink_message_t &msg);
+
     void handle_osd_param_config(const mavlink_message_t &msg) const;
 
     void handle_common_param_message(const mavlink_message_t &msg);
@@ -467,6 +514,7 @@ protected:
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
@@ -506,6 +554,7 @@ protected:
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_long_t &packet);
 
     void handle_optical_flow(const mavlink_message_t &msg);
 
@@ -545,6 +594,8 @@ protected:
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
+
+    uint8_t receiver_rssi() const;
 
     /*
       correct an offboard timestamp in microseconds to a local time
@@ -668,6 +719,13 @@ private:
     // boolean that indicated that message intervals have been set
     // from streamrates:
     bool deferred_messages_initialised;
+#if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
+    // read configuration files from (e.g.) SD and ROMFS, set
+    // intervals from same
+    void initialise_message_intervals_from_config_files();
+    // read file, set message intervals from it:
+    void get_intervals_from_filepath(const char *path, DefaultIntervalsFromFiles &);
+#endif
     // return interval deferred message bucket should be sent after.
     // When sending parameters and waypoints this may be longer than
     // the interval specified in "deferred"
@@ -830,6 +888,12 @@ private:
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
 
+#if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
+    // structure containing default intervals read from files for this
+    // link:
+    DefaultIntervalsFromFiles *default_intervals_from_files;
+#endif
+
     // alternative protocol handler support
     struct {
         GCS_MAVLINK::protocol_handler_fn_t handler;
@@ -866,12 +930,6 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
-
-    // send_sensor_offsets decimates its send rate using this counter:
-    // FIXME: decimate this instead when initialising the message
-    // intervals from the stream rates.  Consider the implications of
-    // doing so vis-a-vis the fact it will consume a bucket.
-    uint8_t send_sensor_offsets_counter;
 
     // if we've ever sent a DISTANCE_SENSOR message out of an
     // orientation we continue to send it out, even if it is not
@@ -1095,7 +1153,14 @@ private:
 GCS &gcs();
 
 // send text when we do have a GCS
+#if !defined(HAL_BUILD_AP_PERIPH)
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#else
+extern "C" {
+void can_printf(const char *fmt, ...);
+}
+#define GCS_SEND_TEXT(severity, format, args...) (void)severity; can_printf(format, ##args)
+#endif
 
 #elif defined(HAL_BUILD_AP_PERIPH) && !defined(STM32F1)
 
@@ -1105,9 +1170,9 @@ void can_printf(const char *fmt, ...);
 }
 #define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
 
-#else // HAL_NO_GCS
+#else // HAL_GCS_ENABLED
 // empty send text when we have no GCS
 #define GCS_SEND_TEXT(severity, format, args...)
 
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED
 

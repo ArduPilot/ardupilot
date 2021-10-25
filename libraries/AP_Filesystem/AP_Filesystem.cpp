@@ -246,6 +246,23 @@ FileData *AP_Filesystem::load_file(const char *filename)
     return backend.fs.load_file(filename);
 }
 
+// returns null-terminated string; cr or lf terminates line
+bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
+{
+    const Backend &backend = backend_by_fd(fd);
+
+    uint8_t i = 0;
+    for (; i<buflen-1; i++) {
+        if (backend.fs.read(fd, &buf[i], 1) != 1) {
+            break;
+        }
+        if (buf[i] == '\r' || buf[i] == '\n') {
+            break;
+        }
+    }
+    buf[i] = '\0';
+    return i != 0;
+}
 
 namespace AP
 {

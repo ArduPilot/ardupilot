@@ -59,32 +59,47 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 // avoid unnecessary operations
 void NavEKF3_core::setWindMagStateLearningMode()
 {
-    // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
-    bool setWindInhibit = (!useAirspeed() && !assume_zero_sideslip() && !(dragFusionEnabled && finalInflightYawInit)) || onGround || (PV_AidingMode == AID_NONE);
-    if (!inhibitWindStates && setWindInhibit) {
+    const bool canEstimateWind = ((finalInflightYawInit && dragFusionEnabled) || assume_zero_sideslip()) &&
+                                 !onGround &&
+                                 PV_AidingMode != AID_NONE;
+    if (!inhibitWindStates && !canEstimateWind) {
         inhibitWindStates = true;
         updateStateIndexLim();
-    } else if (inhibitWindStates && !setWindInhibit) {
+    } else if (inhibitWindStates && canEstimateWind &&
+               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
         inhibitWindStates = false;
         updateStateIndexLim();
         // set states and variances
-        if (yawAlignComplete && useAirspeed()) {
-            // if we have airspeed and a valid heading, set the wind states to the reciprocal of the vehicle heading
+        if (yawAlignComplete && assume_zero_sideslip()) {
+            // if we have a valid heading, set the wind states to the reciprocal of the vehicle heading
             // which assumes the vehicle has launched into the wind
+            // use airspeed if if recent data available
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
-            ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
-            stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
-            stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
+            ftype trueAirspeedVariance;
+            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500 && useAirspeed());
+            if (haveAirspeedMeasurement) {
+                trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
+                const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+                stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
+                stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
+            } else {
+                trueAirspeedVariance = sq(WIND_VEL_VARIANCE_MAX); // use 2-sigma for faster initial convergence
+            }
 
             // set the wind state variances to the measurement uncertainty
-            for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(constrain_ftype(frontend->_easNoise, 0.5f, 5.0f) * constrain_ftype(dal.get_EAS2TAS(), 0.9f, 10.0f));
-            }
+            zeroCols(P, 22, 23);
+            zeroRows(P, 22, 23);
+            P[22][22] = P[23][23] = trueAirspeedVariance;
+
+            windStatesAligned = true;
+
         } else {
-            // set the variances using a typical wind speed
+            // set the variances using a typical max wind speed for small UAV operation
+            zeroCols(P, 22, 23);
+            zeroRows(P, 22, 23);
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(5.0f);
+                P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
             }
         }
     }
@@ -329,12 +344,12 @@ void NavEKF3_core::setAidingMode()
                 posTimeout = true;
                 velTimeout = true;
                 tasTimeout = true;
-                gpsNotAvailable = true;
+                gpsIsInUse = false;
              } else if (posAidLossCritical) {
                 // if the loss of position is critical, declare all sources of position aiding as being timed out
                 posTimeout = true;
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
-                gpsNotAvailable = true;
+                gpsIsInUse = false;
 
             }
             break;
@@ -550,14 +565,13 @@ bool NavEKF3_core::use_compass(void) const
         return false;
     }
 
-    const auto *compass = dal.get_compass();
-    return compass &&
-           compass->use_for_yaw(magSelectIndex) &&
+    const auto &compass = dal.compass();
+    return compass.use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
 }
 
-// are we using a yaw source other than the magnetomer?
-bool NavEKF3_core::using_external_yaw(void) const
+// are we using (aka fusing) a non-compass yaw?
+bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -569,6 +583,17 @@ bool NavEKF3_core::using_external_yaw(void) const
         yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
+    return false;
+}
+
+// are we using (aka fusing) external nav for yaw?
+bool NavEKF3_core::using_extnav_for_yaw() const
+{
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+    }
+#endif
     return false;
 }
 
@@ -611,9 +636,12 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     validOrigin = true;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
 
-    // put origin in frontend as well to ensure it stays in sync between lanes
-    frontend->common_EKF_origin = EKF_origin;
-    frontend->common_origin_valid = true;
+    if (!frontend->common_origin_valid) {
+        frontend->common_origin_valid = true;
+        // put origin in frontend as well to ensure it stays in sync between lanes
+        public_origin = EKF_origin;
+    }
+
 
     return true;
 }
@@ -738,7 +766,7 @@ void NavEKF3_core::runYawEstimatorCorrection()
 
         // action an external reset request
         if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
-            EKFGSF_resetMainFilterYaw();
+            EKFGSF_resetMainFilterYaw(true);
         }
     } else {
         EKFGSF_yaw_valid_count = 0;

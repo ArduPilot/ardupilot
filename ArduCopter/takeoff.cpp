@@ -35,8 +35,9 @@ bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         return false;
     }
 
-    // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && copter.ap.using_interlock) {
+    // Vehicles using motor interlock should return false if motor interlock is disabled.
+    // Interlock must be enabled to allow the controller to spool up the motor(s) for takeoff.
+    if (!motors->get_interlock() && copter.ap.using_interlock) {
         return false;
     }
 
@@ -96,7 +97,8 @@ void Mode::auto_takeoff_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !copter.ap.auto_armed) {
-        make_safe_spool_down();
+        // do not spool down tradheli when on the ground with motor interlock enabled
+        make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         return;
     }
@@ -106,9 +108,12 @@ void Mode::auto_takeoff_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
     }
 
     // aircraft stays in landed state until rotor speed runup has finished
@@ -151,8 +156,17 @@ void Mode::auto_takeoff_run()
     // run the vertical position controller and set output throttle
     copter.pos_control->update_z_controller();
 
-    // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_rate_heading(thrustvector, target_yaw_rate);
+    // call attitude controller
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from position controller, yaw rate from pilot
+        attitude_control->input_thrust_vector_rate_heading(thrustvector, target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        // roll & pitch from position controller, yaw rate from mavlink command or mission item
+        attitude_control->input_thrust_vector_rate_heading(thrustvector, auto_yaw.rate_cds());
+    } else {
+        // roll & pitch from position controller, yaw heading from GCS or auto_heading()
+        attitude_control->input_thrust_vector_heading(thrustvector, auto_yaw.yaw(), auto_yaw.rate_cds());
+    }
 }
 
 void Mode::auto_takeoff_set_start_alt(void)

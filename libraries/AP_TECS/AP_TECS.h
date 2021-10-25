@@ -56,8 +56,8 @@ public:
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
-    int32_t get_throttle_demand(void) override {
-        return int32_t(_throttle_dem * 100.0f);
+    float get_throttle_demand(void) override {
+        return _throttle_dem * 100.0f;
     }
 
     // demanded pitch angle in centi-degrees

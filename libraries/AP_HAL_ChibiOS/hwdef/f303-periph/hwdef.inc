@@ -82,7 +82,7 @@ define PERIPH_FW TRUE
 MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0x800
+PROCESS_STACK 0xA00
 define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
@@ -103,8 +103,6 @@ define HAL_UART_STACK_SIZE 0x300
 
 define STORAGE_THD_WA_SIZE 512
 define IO_THD_WA_SIZE      512
-
-define HAL_NO_GCS
 
 define HAL_MINIMIZE_FEATURES 0
 

@@ -6,7 +6,7 @@
 #define BATTMONITOR_SMBUS_TEMP_EXT 0x07
 
 // return the maximum of the internal and external temperature sensors
-bool AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
+void AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
     
     uint16_t t_int, t_ext;
     
@@ -18,8 +18,5 @@ bool AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
         _state.temperature_time = AP_HAL::millis();
         t = ((t_ext > t_int) ? t_ext : t_int);
         _state.temperature = 0.1f * (float)t - C_TO_KELVIN;
-        return true;
     }
-
-    return false;
 }

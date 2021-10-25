@@ -43,7 +43,7 @@ define HAL_WITH_RAMTRON 1
 USB_STRING_MANUFACTURER "mRo"
 
 # RC Input set for Interrupt also USART6_RX for serial RC
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
@@ -203,8 +203,6 @@ PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 PI5  TIM8_CH1 TIM8 PWM(7) GPIO(56)
 PI6  TIM8_CH2 TIM8 PWM(8) GPIO(57)
-
-define BOARD_PWM_COUNT_DEFAULT 8
 
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-APM automatic test suite.
+ArduPilot automatic test suite.
 
 Andrew Tridgell, October 2011
 
@@ -29,6 +29,7 @@ import antennatracker
 import quadplane
 import balancebot
 import sailboat
+import helicopter
 
 import examples
 from pysim import util
@@ -116,7 +117,7 @@ def build_binaries():
 
     # copy the script (and various libraries used by the script) as it
     # changes git branch, which can change the script while running
-    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py":
+    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py", "board_list.py":
         orig = util.reltopdir('Tools/scripts/%s' % thing)
         copy = util.reltopdir('./%s' % thing)
         shutil.copy2(orig, copy)
@@ -143,7 +144,7 @@ def build_examples(**kwargs):
 
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux']:
+    for target in ['linux', 'sitl']:
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -163,20 +164,22 @@ def run_unit_test(test):
 
 def run_unit_tests():
     """Run all unit tests files."""
-    binary_dir = util.reltopdir(os.path.join('build',
-                                             'linux',
-                                             'tests',
-                                             ))
-    tests = glob.glob("%s/*" % binary_dir)
     success = True
     fail_list = []
-    for test in tests:
-        try:
-            run_unit_test(test)
-        except subprocess.CalledProcessError:
-            print("Exception running (%s)" % test)
-            fail_list.append(os.path.basename(test))
-            success = False
+    for target in ['linux', 'sitl']:
+        binary_dir = util.reltopdir(os.path.join('build',
+                                                 target,
+                                                 'tests',
+                                                 ))
+        tests = glob.glob("%s/*" % binary_dir)
+        for test in tests:
+            try:
+                run_unit_test(test)
+            except subprocess.CalledProcessError:
+                print("Exception running (%s)" % test)
+                fail_list.append(target + '/' + os.path.basename(test))
+                success = False
+
     print("Failing tests:")
     for failure in fail_list:
         print("  %s" % failure)
@@ -383,7 +386,7 @@ tester_class_map = {
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
-    "test.Helicopter": arducopter.AutoTestHeli,
+    "test.Helicopter": helicopter.AutoTestHelicopter,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
@@ -434,6 +437,7 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
+        "sitl_32bit" : opts.sitl_32bit,
     }
 
     if opts.Werror:
@@ -510,8 +514,10 @@ def run_step(step):
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
+        "replay": opts.replay,
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
+        "reset_after_every_test": opts.reset_after_every_test,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -935,6 +941,11 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
+    group_build.add_option("--sitl-32bit",
+                           default=False,
+                           action='store_true',
+                           dest="sitl_32bit",
+                           help="compile sitl using 32-bit")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -975,6 +986,9 @@ if __name__ == "__main__":
                          dest="force_ahrs_type",
                          default=None,
                          help="force a specific AHRS type (e.g. 10 for SITL-ekf")
+    group_sim.add_option("", "--replay",
+                         action='store_true',
+                         help="enable replay logging for tests")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
@@ -990,6 +1004,10 @@ if __name__ == "__main__":
                                 type='string',
                                 default="",
                                 help='list available subtests for a vehicle e.g Copter')
+    group_completion.add_option("--reset-after-every-test",
+                                action='store_true',
+                                default=False,
+                                help='reset everything after every test run')
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()

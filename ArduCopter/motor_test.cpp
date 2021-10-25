@@ -95,29 +95,29 @@ void Copter::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 //  return true if tests can continue, false if not
-bool Copter::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc)
+bool Copter::mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check_rc, const char* mode)
 {
     // check board has initialised
     if (!ap.initialised) {
-        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Board initialising");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: Board initialising", mode);
         return false;
     }
 
     // check rc has been calibrated
     if (check_rc && !arming.rc_calibration_checks(true)) {
-        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: RC not calibrated", mode);
         return false;
     }
 
     // ensure we are landed
     if (!ap.land_complete) {
-        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: vehicle not landed");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: vehicle not landed", mode);
         return false;
     }
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: Safety switch", mode);
         return false;
     }
 
@@ -141,7 +141,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
            The RC calibrated check can be skipped if direct pwm is
            supplied
         */
-        if (!mavlink_motor_test_check(gcs_chan, throttle_type != 1)) {
+        if (!mavlink_motor_control_check(gcs_chan, throttle_type != 1, "Motor Test")) {
             return MAV_RESULT_FAILED;
         } else {
             // start test

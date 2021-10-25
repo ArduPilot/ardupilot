@@ -58,9 +58,8 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.get_compass_is_null = AP::ahrs().get_compass() == nullptr;
     _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
-    _RFRN.vehicle_class = ahrs.get_vehicle_class();
+    _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
@@ -146,7 +145,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
     if (alloc_failed) {
-        AP_BoardConfig::config_error("Unable to allocate DAL backends");
+        AP_BoardConfig::allocation_error("DAL backends");
     }
 }
 
@@ -255,15 +254,6 @@ int AP_DAL::snprintf(char* str, size_t size, const char *format, ...) const
 void *AP_DAL::malloc_type(size_t size, Memory_Type mem_type) const
 {
     return hal.util->malloc_type(size, AP_HAL::Util::Memory_Type(mem_type));
-}
-
-
-const AP_DAL_Compass *AP_DAL::get_compass() const
-{
-    if (_RFRN.get_compass_is_null) {
-        return nullptr;
-    }
-    return &_compass;
 }
 
 // map core number for replay

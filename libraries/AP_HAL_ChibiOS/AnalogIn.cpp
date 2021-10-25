@@ -29,11 +29,6 @@ extern AP_IOMCU iomcu;
 
 #include "hwdef/common/stm32_util.h"
 
-#ifndef CHIBIOS_ADC_MAVLINK_DEBUG
-// this allows the first 6 analog channels to be reported by mavlink for debugging purposes
-#define CHIBIOS_ADC_MAVLINK_DEBUG 0
-#endif
-
 // MAVLink is included as we send a mavlink message as part of debug,
 // and also use the MAV_POWER flags below in update_power_flags
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -145,11 +140,26 @@ float AnalogSource::voltage_latest()
     return _pin_scaler() * read_latest();
 }
 
-void AnalogSource::set_pin(uint8_t pin)
+bool AnalogSource::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
-        return;
+        return true;
     }
+    bool found_pin = false;
+    if (_pin == ANALOG_SERVO_VRSSI_PIN) {
+        found_pin = true;
+    } else {
+        for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
+            if (AnalogIn::pin_config[i].channel == pin) {
+                found_pin = true;
+                break;
+            }
+        }
+    }
+    if (!found_pin) {
+        return false;
+    }
+
     WITH_SEMAPHORE(_semaphore);
     _pin = pin;
     _sum_value = 0;
@@ -158,6 +168,7 @@ void AnalogSource::set_pin(uint8_t pin)
     _latest_value = 0;
     _value = 0;
     _value_ratiometric = 0;
+    return true;
 }
 
 /*
@@ -206,6 +217,8 @@ void AnalogIn::adccallback(ADCDriver *adcp)
  */
 void AnalogIn::init()
 {
+    static_assert(sizeof(uint16_t) == sizeof(adcsample_t), "adcsample_t must be uint16_t");
+
     if (ADC_GRP1_NUM_CHANNELS == 0) {
         return;
     }
@@ -242,8 +255,8 @@ void AnalogIn::init()
         } else {
             adcgrpcfg.sqr[2] |= chan << (6*(i-9));
         }
-#elif defined(STM32F3) || defined(STM32G4)
-#if defined(STM32G4)
+#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32G4) || defined(STM32L4)
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_640P5 << (3*(chan%10));
 #else
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_601P5 << (3*(chan%10));
@@ -273,6 +286,10 @@ void AnalogIn::init()
 #endif
     }
     adcStartConversion(&ADCD1, &adcgrpcfg, samples, ADC_DMA_BUF_DEPTH);
+
+#if HAL_WITH_MCU_MONITORING
+    setup_adc3();
+#endif
 }
 
 /*
@@ -288,6 +305,123 @@ void AnalogIn::read_adc(uint32_t *val)
     sample_count = 0;
     chSysUnlock();
 }
+
+
+#if HAL_WITH_MCU_MONITORING
+/*
+  on H7 we can support monitoring MCU temperature and voltage using ADC3
+ */
+#define ADC3_GRP1_NUM_CHANNELS 3
+
+// internal ADC channels (from H7 reference manual)
+#define ADC3_VSENSE_CHAN 18
+#define ADC3_VREFINT_CHAN 19
+#define ADC3_VBAT4_CHAN 17
+
+// samples filled in by ADC DMA engine
+adcsample_t *AnalogIn::samples_adc3;
+uint32_t AnalogIn::sample_adc3_sum[ADC3_GRP1_NUM_CHANNELS];
+// we also keep min and max so we can report the range of voltages
+// seen, to give an idea of supply stability
+uint16_t AnalogIn::sample_adc3_max[ADC3_GRP1_NUM_CHANNELS];
+uint16_t AnalogIn::sample_adc3_min[ADC3_GRP1_NUM_CHANNELS];
+uint32_t AnalogIn::sample_adc3_count;
+
+/*
+  callback from ADC3 driver when sample buffer is filled
+ */
+void AnalogIn::adc3callback(ADCDriver *adcp)
+{
+    const adcsample_t *buffer = samples_adc3;
+
+    stm32_cacheBufferInvalidate(buffer, sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC3_GRP1_NUM_CHANNELS);
+    for (uint8_t i = 0; i < ADC_DMA_BUF_DEPTH; i++) {
+        for (uint8_t j = 0; j < ADC3_GRP1_NUM_CHANNELS; j++) {
+            const uint16_t v = *buffer++;
+            sample_adc3_sum[j] += v;
+            if (sample_adc3_min[j] == 0 ||
+                sample_adc3_min[j] > v) {
+                sample_adc3_min[j] = v;
+            }
+            if (sample_adc3_max[j] == 0 ||
+                sample_adc3_max[j] < v) {
+                sample_adc3_max[j] = v;
+            }
+        }
+    }
+    sample_adc3_count += ADC_DMA_BUF_DEPTH;
+}
+
+/*
+  setup ADC3 for internal temperature and voltage monitoring
+ */
+void AnalogIn::setup_adc3(void)
+{
+    samples_adc3 = (adcsample_t *)hal.util->malloc_type(sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC3_GRP1_NUM_CHANNELS, AP_HAL::Util::MEM_DMA_SAFE);
+    if (samples_adc3 == nullptr) {
+        // not likely, but can't setup ADC3
+        return;
+    }
+
+    adcStart(&ADCD3, NULL);
+
+    adcSTM32EnableVREF(&ADCD3);
+    adcSTM32EnableTS(&ADCD3);
+    adcSTM32EnableVBAT(&ADCD3);
+
+    memset(&adc3grpcfg, 0, sizeof(adc3grpcfg));
+    adc3grpcfg.circular = true;
+    adc3grpcfg.num_channels = ADC3_GRP1_NUM_CHANNELS;
+    adc3grpcfg.end_cb = adc3callback;
+#if defined(ADC_CFGR_RES_16BITS)
+    // use 16 bit resolution
+    adc3grpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_16BITS;
+#elif defined(ADC_CFGR_RES_12BITS)
+    // use 12 bit resolution
+    adc3grpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_12BITS;
+#else
+    // use 12 bit resolution with ADCv1 or ADCv2
+    adc3grpcfg.sqr1 = ADC_SQR1_NUM_CH(ADC3_GRP1_NUM_CHANNELS);
+    adc3grpcfg.cr2 = ADC_CR2_SWSTART;
+#endif
+
+    const uint8_t channels[ADC3_GRP1_NUM_CHANNELS] = { ADC3_VBAT4_CHAN, ADC3_VSENSE_CHAN, ADC3_VREFINT_CHAN };
+
+    for (uint8_t i=0; i<ADC3_GRP1_NUM_CHANNELS; i++) {
+        uint8_t chan = channels[i];
+        // setup cycles per sample for the channel
+        adc3grpcfg.pcsel |= (1<<chan);
+        adc3grpcfg.smpr[chan/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
+        if (i < 4) {
+            adc3grpcfg.sqr[0] |= chan << (6*(i+1));
+        } else if (i < 9) {
+            adc3grpcfg.sqr[1] |= chan << (6*(i-4));
+        } else {
+            adc3grpcfg.sqr[2] |= chan << (6*(i-9));
+        }
+    }
+    adcStartConversion(&ADCD3, &adc3grpcfg, samples_adc3, ADC_DMA_BUF_DEPTH);
+}
+
+/*
+  calculate average sample since last read for all channels
+ */
+void AnalogIn::read_adc3(uint32_t *val, uint16_t *min, uint16_t *max)
+{
+    chSysLock();
+    for (uint8_t i = 0; i < ADC3_GRP1_NUM_CHANNELS; i++) {
+        val[i] = sample_adc3_sum[i] / sample_adc3_count;
+        min[i] = sample_adc3_min[i];
+        max[i] = sample_adc3_max[i];
+    }
+    memset(sample_adc3_sum, 0, sizeof(sample_adc3_sum));
+    memset(sample_adc3_min, 0, sizeof(sample_adc3_min));
+    memset(sample_adc3_max, 0, sizeof(sample_adc3_max));
+    sample_adc3_count = 0;
+    chSysUnlock();
+}
+
+#endif // HAL_WITH_MCU_MONITORING
 
 /*
   called at 1kHz
@@ -349,19 +483,28 @@ void AnalogIn::_timer_tick(void)
         }
     }
 
-#if CHIBIOS_ADC_MAVLINK_DEBUG
-    static uint8_t count;
-    if (AP_HAL::millis() > 5000 && count++ == 10) {
-        count = 0;
-        uint16_t adc[6] {};
-        uint8_t n = ADC_GRP1_NUM_CHANNELS;
-        if (n > 6) {
-            n = 6;
-        }
-        for (uint8_t i=0; i < n; i++) {
-            adc[i] = buf_adc[i] * ADC_BOARD_SCALING;
-        }
-        mavlink_msg_ap_adc_send(MAVLINK_COMM_0, adc[0], adc[1], adc[2], adc[3], adc[4], adc[5]);
+#if HAL_WITH_MCU_MONITORING
+    // 20Hz temperature and ref voltage
+    static uint32_t last_mcu_temp_us;
+    if (now - last_mcu_temp_us > 50000 &&
+        hal.scheduler->is_system_initialized()) {
+        last_mcu_temp_us = now;
+
+        uint32_t buf_adc3[ADC3_GRP1_NUM_CHANNELS];
+        uint16_t min_adc3[ADC3_GRP1_NUM_CHANNELS];
+        uint16_t max_adc3[ADC3_GRP1_NUM_CHANNELS];
+
+        read_adc3(buf_adc3, min_adc3, max_adc3);
+
+        // factory calibration values
+        const float TS_CAL1 = *(const volatile uint16_t *)0x1FF1E820;
+        const float TS_CAL2 = *(const volatile uint16_t *)0x1FF1E840;
+        const float VREFINT_CAL = *(const volatile uint16_t *)0x1FF1E860;
+
+        _mcu_temperature = ((110 - 30) / (TS_CAL2 - TS_CAL1)) * (float(buf_adc3[1]) - TS_CAL1) + 30;
+        _mcu_voltage = 3.3 * VREFINT_CAL / float(buf_adc3[2]+0.001);
+        _mcu_voltage_min = 3.3 * VREFINT_CAL / float(min_adc3[2]+0.001);
+        _mcu_voltage_max = 3.3 * VREFINT_CAL / float(max_adc3[2]+0.001);
     }
 #endif
 }

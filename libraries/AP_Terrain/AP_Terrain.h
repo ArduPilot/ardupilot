@@ -19,10 +19,12 @@
 #include <AP_Common/Location.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 
+#ifndef AP_TERRAIN_AVAILABLE
 #if HAVE_FILESYSTEM_SUPPORT && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
 #else
 #define AP_TERRAIN_AVAILABLE 0
+#endif
 #endif
 
 #if AP_TERRAIN_AVAILABLE
@@ -60,7 +62,7 @@
 // we allow for a 2cm discrepancy in the grid corners. This is to
 // account for different rounding in terrain DAT file generators using
 // different programming languages
-#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= 2)
+#define TERRAIN_LATLON_EQUAL(v1, v2) (labs((v1)-(v2)) <= unsigned(margin.get()*100))
 
 #if TERRAIN_DEBUG
 #include <assert.h>
@@ -101,6 +103,7 @@ public:
     void update(void);
 
     bool enabled() const { return enable; }
+    void set_enabled(bool _enable) { enable = _enable; }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
@@ -349,6 +352,7 @@ private:
 
     // parameters
     AP_Int8  enable;
+    AP_Float margin;
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
 

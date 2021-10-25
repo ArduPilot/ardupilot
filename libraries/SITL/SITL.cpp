@@ -39,192 +39,199 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-SITL *SITL::_singleton = nullptr;
+SIM *SIM::_singleton = nullptr;
 
 // table of user settable parameters
-const AP_Param::GroupInfo SITL::var_info[] = {
+const AP_Param::GroupInfo SIM::var_info[] = {
     
-    AP_GROUPINFO("DRIFT_SPEED",    5, SITL,  drift_speed, 0.05f),
-    AP_GROUPINFO("DRIFT_TIME",     6, SITL,  drift_time,  5),
-    AP_GROUPINFO("ENGINE_MUL",     8, SITL,  engine_mul,  1),
-    AP_GROUPINFO("WIND_SPD",       9, SITL,  wind_speed,  0),
-    AP_GROUPINFO("WIND_DIR",      10, SITL,  wind_direction,  180),
-    AP_GROUPINFO("WIND_TURB",     11, SITL,  wind_turbulance,  0),
-    AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
-    AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
-    AP_GROUPINFO("BATT_CAP_AH",   20, SITL,  batt_capacity_ah,  0),
-    AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
-    AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),
-    AP_GROUPINFO("RC_FAIL",       25, SITL,  rc_fail, 0),
-    AP_GROUPINFO("FLOAT_EXCEPT",  28, SITL,  float_exception, 1),
-    AP_GROUPINFO("SONAR_SCALE",   32, SITL,  sonar_scale, 12.1212f),
-    AP_GROUPINFO("FLOW_ENABLE",   33, SITL,  flow_enable, 0),
-    AP_GROUPINFO("TERRAIN",       34, SITL,  terrain_enable, 1),
-    AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
-    AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
-    AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
-    AP_GROUPINFO("ADSB_COUNT",    45, SITL,  adsb_plane_count, -1),
-    AP_GROUPINFO("ADSB_RADIUS",   46, SITL,  adsb_radius_m, 10000),
-    AP_GROUPINFO("ADSB_ALT",      47, SITL,  adsb_altitude_m, 1000),
-    AP_GROUPINFO("PIN_MASK",      50, SITL,  pin_mask, 0),
-    AP_GROUPINFO("ADSB_TX",       51, SITL,  adsb_tx, 0),
-    AP_GROUPINFO("SPEEDUP",       52, SITL,  speedup, -1),
-    AP_GROUPINFO("IMU_POS",       53, SITL,  imu_pos_offset, 0),
-    AP_SUBGROUPEXTENSION("",      54, SITL,  var_ins),
-    AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
-    AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
-    AP_GROUPINFO("ENGINE_FAIL",   58, SITL,  engine_fail,  0),
-    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SITL, ShipSim),
-    AP_SUBGROUPEXTENSION("",      60, SITL,  var_mag),
-    AP_SUBGROUPEXTENSION("",      61, SITL,  var_gps),
-    AP_SUBGROUPEXTENSION("",      62, SITL,  var_info3),
-    AP_SUBGROUPEXTENSION("",      63, SITL,  var_info2),
+    AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
+    AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
+    AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    AP_GROUPINFO("WIND_SPD",       9, SIM,  wind_speed,  0),
+    AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
+    AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
+    AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+    AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
+    AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
+    AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
+    AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
+    AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
+    AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
+    AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
+    AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
+    AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
+    AP_GROUPINFO("WIND_DELAY",    40, SIM,  wind_delay, 0),
+    AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
+    AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
+    AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
+    AP_GROUPINFO("PIN_MASK",      50, SIM,  pin_mask, 0),
+    AP_GROUPINFO("ADSB_TX",       51, SIM,  adsb_tx, 0),
+    AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
+    AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
+    AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
+    AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
+    AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
+    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
+    AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
+    AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
+    AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
+    AP_SUBGROUPEXTENSION("",      63, SIM,  var_info2),
     AP_GROUPEND
 };
 
 // second table of user settable parameters for SITL. 
-const AP_Param::GroupInfo SITL::var_info2[] = {
-    AP_GROUPINFO("TEMP_START",   1, SITL,  temp_start,  25),
-    AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
-    AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
-    AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
+const AP_Param::GroupInfo SIM::var_info2[] = {
+    AP_GROUPINFO("TEMP_START",   1, SIM,  temp_start,  25),
+    AP_GROUPINFO("TEMP_BRD_OFF", 2, SIM,  temp_board_offset, 20),
+    AP_GROUPINFO("TEMP_TCONST",  3, SIM,  temp_tconst, 30),
+    AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
-    AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
-    AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
-    AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
-    AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
-    AP_GROUPINFO("RC_CHANCOUNT",21, SITL,  rc_chancount, 16),
+    AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
+    AP_GROUPINFO("WIND_T"      ,15, SIM,  wind_type, SIM::WIND_TYPE_SQRT),
+    AP_GROUPINFO("WIND_T_ALT"  ,16, SIM,  wind_type_alt, 60),
+    AP_GROUPINFO("WIND_T_COEF", 17, SIM,  wind_type_coef, 0.01f),
+    AP_GROUPINFO("RC_CHANCOUNT",21, SIM,  rc_chancount, 16),
     // @Group: SPR_
     // @Path: ./SIM_Sprayer.cpp
-    AP_SUBGROUPINFO(sprayer_sim, "SPR_", 22, SITL, Sprayer),
+    AP_SUBGROUPINFO(sprayer_sim, "SPR_", 22, SIM, Sprayer),
     // @Group: GRPS_
     // @Path: ./SIM_Gripper_Servo.cpp
-    AP_SUBGROUPINFO(gripper_sim, "GRPS_", 23, SITL, Gripper_Servo),
+    AP_SUBGROUPINFO(gripper_sim, "GRPS_", 23, SIM, Gripper_Servo),
     // @Group: GRPE_
     // @Path: ./SIM_Gripper_EPM.cpp
-    AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SITL, Gripper_EPM),
+    AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SIM, Gripper_EPM),
 
     // weight on wheels pin
-    AP_GROUPINFO("WOW_PIN",     25, SITL,  wow_pin, -1),
+    AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
     // vibration frequencies on each axis
-    AP_GROUPINFO("VIB_FREQ",   26, SITL,  vibe_freq, 0),
+    AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
     // @Path: ./SIM_Parachute.cpp
-    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
+    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SIM, Parachute),
 
     // enable bandwidth limitting on telemetry ports:
-    AP_GROUPINFO("BAUDLIMIT_EN",   28, SITL,  telem_baudlimit_enable, 0),
+    AP_GROUPINFO("BAUDLIMIT_EN",   28, SIM,  telem_baudlimit_enable, 0),
 
     // @Group: PLD_
     // @Path: ./SIM_Precland.cpp
-    AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SITL, SIM_Precland),
+    AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SIM, SIM_Precland),
 
     // apply a force to the vehicle over a period of time:
-    AP_GROUPINFO("SHOVE_X",     30, SITL,  shove.x, 0),
-    AP_GROUPINFO("SHOVE_Y",     31, SITL,  shove.y, 0),
-    AP_GROUPINFO("SHOVE_Z",     32, SITL,  shove.z, 0),
-    AP_GROUPINFO("SHOVE_TIME",  33, SITL,  shove.t, 0),
+    AP_GROUPINFO("SHOVE_X",     30, SIM,  shove.x, 0),
+    AP_GROUPINFO("SHOVE_Y",     31, SIM,  shove.y, 0),
+    AP_GROUPINFO("SHOVE_Z",     32, SIM,  shove.z, 0),
+    AP_GROUPINFO("SHOVE_TIME",  33, SIM,  shove.t, 0),
     
     // optical flow sensor measurement noise in rad/sec
-    AP_GROUPINFO("FLOW_RND",   34, SITL,  flow_noise,  0.05f),
+    AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
-    AP_GROUPINFO("TWIST_X",     37, SITL,  twist.x, 0),
-    AP_GROUPINFO("TWIST_Y",     38, SITL,  twist.y, 0),
-    AP_GROUPINFO("TWIST_Z",     39, SITL,  twist.z, 0),
-    AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
+    AP_GROUPINFO("TWIST_X",     37, SIM,  twist.x, 0),
+    AP_GROUPINFO("TWIST_Y",     38, SIM,  twist.y, 0),
+    AP_GROUPINFO("TWIST_Z",     39, SIM,  twist.z, 0),
+    AP_GROUPINFO("TWIST_TIME",  40, SIM,  twist.t, 0),
 
-    AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
+    AP_GROUPINFO("GND_BEHAV",   41, SIM,  gnd_behav, -1),
 
     // sailboat wave and tide simulation parameters
-    AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
-    AP_GROUPINFO("WAVE_LENGTH", 45, SITL,  wave.length, 10.0f),
-    AP_GROUPINFO("WAVE_AMP",    46, SITL,  wave.amp, 0.5f),
-    AP_GROUPINFO("WAVE_DIR",    47, SITL,  wave.direction, 0.0f),
-    AP_GROUPINFO("WAVE_SPEED",  48, SITL,  wave.speed, 0.5f),
-    AP_GROUPINFO("TIDE_DIR",    49, SITL,  tide.direction, 0.0f),
-    AP_GROUPINFO("TIDE_SPEED",  50, SITL,  tide.speed, 0.0f),
+    AP_GROUPINFO("WAVE_ENABLE", 44, SIM,  wave.enable, 0.0f),
+    AP_GROUPINFO("WAVE_LENGTH", 45, SIM,  wave.length, 10.0f),
+    AP_GROUPINFO("WAVE_AMP",    46, SIM,  wave.amp, 0.5f),
+    AP_GROUPINFO("WAVE_DIR",    47, SIM,  wave.direction, 0.0f),
+    AP_GROUPINFO("WAVE_SPEED",  48, SIM,  wave.speed, 0.5f),
+    AP_GROUPINFO("TIDE_DIR",    49, SIM,  tide.direction, 0.0f),
+    AP_GROUPINFO("TIDE_SPEED",  50, SIM,  tide.speed, 0.0f),
 
     // the following coordinates are for CMAC, in Canberra
-    AP_GROUPINFO("OPOS_LAT",    51, SITL,  opos.lat, -35.363261f),
-    AP_GROUPINFO("OPOS_LNG",    52, SITL,  opos.lng, 149.165230f),
-    AP_GROUPINFO("OPOS_ALT",    53, SITL,  opos.alt, 584.0f),
-    AP_GROUPINFO("OPOS_HDG",    54, SITL,  opos.hdg, 353.0f),
+    AP_GROUPINFO("OPOS_LAT",    51, SIM,  opos.lat, -35.363261f),
+    AP_GROUPINFO("OPOS_LNG",    52, SIM,  opos.lng, 149.165230f),
+    AP_GROUPINFO("OPOS_ALT",    53, SIM,  opos.alt, 584.0f),
+    AP_GROUPINFO("OPOS_HDG",    54, SIM,  opos.hdg, 353.0f),
 
     // extra delay per main loop
-    AP_GROUPINFO("LOOP_DELAY",  55, SITL,  loop_delay, 0),
+    AP_GROUPINFO("LOOP_DELAY",  55, SIM,  loop_delay, 0),
 
     // @Path: ./SIM_Buzzer.cpp
-    AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SITL, Buzzer),
+    AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SIM, Buzzer),
 
     // @Path: ./SIM_ToneAlarm.cpp
-    AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SITL, ToneAlarm),
+    AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SIM, ToneAlarm),
 
-    AP_GROUPINFO("EFI_TYPE",    58, SITL,  efi_type,  SITL::EFI_TYPE_NONE),
+    AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
-    AP_GROUPINFO("SAFETY_STATE",    59, SITL,  _safety_switch_state, 0),
+    AP_GROUPINFO("SAFETY_STATE",    59, SIM,  _safety_switch_state, 0),
 
     // max motor vibration frequency
-    AP_GROUPINFO("VIB_MOT_MAX", 61, SITL,  vibe_motor, 0.0f),
+    AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise
-    AP_GROUPINFO("INS_THR_MIN", 62, SITL,  ins_noise_throttle_min, 0.1f),
+    AP_GROUPINFO("INS_THR_MIN", 62, SIM,  ins_noise_throttle_min, 0.1f),
     // amplitude scaling of motor noise relative to gyro/accel noise
-    AP_GROUPINFO("VIB_MOT_MULT", 63, SITL,  vibe_motor_scale, 1.0f),
+    AP_GROUPINFO("VIB_MOT_MULT", 63, SIM,  vibe_motor_scale, 1.0f),
 
     AP_GROUPEND
 
 };
 
 // third table of user settable parameters for SITL. 
-const AP_Param::GroupInfo SITL::var_info3[] = {
-    AP_GROUPINFO("ODOM_ENABLE",   1, SITL,  odom_enable, 0),
+const AP_Param::GroupInfo SIM::var_info3[] = {
+    AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
 
-    AP_GROUPINFO("LED_LAYOUT",    11, SITL, led_layout, 0),
+    AP_GROUPINFO("LED_LAYOUT",    11, SIM, led_layout, 0),
 
     // Scenario for thermalling simulation, for soaring
-    AP_GROUPINFO("THML_SCENARI",  12, SITL,  thermal_scenario, 0),
+    AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
     // vicon sensor position (position offsets in body frame)
-    AP_GROUPINFO("VICON_POS",     14, SITL,  vicon_pos_offset, 0),
+    AP_GROUPINFO("VICON_POS",     14, SIM,  vicon_pos_offset, 0),
 
     // Buyoancy for submarines
-    AP_GROUPINFO_FRAME("BUOYANCY", 15, SITL, buoyancy, 1, AP_PARAM_FRAME_SUB),
+    AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
     // vicon glitch in NED frame
-    AP_GROUPINFO("VICON_GLIT",    16, SITL,  vicon_glitch, 0),
+    AP_GROUPINFO("VICON_GLIT",    16, SIM,  vicon_glitch, 0),
 
     // vicon failure
-    AP_GROUPINFO("VICON_FAIL",    17, SITL,  vicon_fail, 0),
+    AP_GROUPINFO("VICON_FAIL",    17, SIM,  vicon_fail, 0),
 
     // vicon yaw (in earth frame)
-    AP_GROUPINFO("VICON_YAW",     18, SITL,  vicon_yaw, 0),
+    AP_GROUPINFO("VICON_YAW",     18, SIM,  vicon_yaw, 0),
 
     // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-    AP_GROUPINFO("VICON_YAWERR",  19, SITL,  vicon_yaw_error, 0),
+    AP_GROUPINFO("VICON_YAWERR",  19, SIM,  vicon_yaw_error, 0),
 
     // vicon message type mask
-    AP_GROUPINFO("VICON_TMASK",   20, SITL,  vicon_type_mask, 3),
+    AP_GROUPINFO("VICON_TMASK",   20, SIM,  vicon_type_mask, 3),
 
     // vicon velocity glitch in NED frame
-    AP_GROUPINFO("VICON_VGLI",    21, SITL,  vicon_vel_glitch, 0),
+    AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
-    AP_GROUPINFO("RATE_HZ",  22, SITL,  loop_rate_hz, 1200),
+    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, 1200),
 
     // count of simulated IMUs
-    AP_GROUPINFO("IMU_COUNT",    23, SITL,  imu_count,  2),
+    AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
+
+    // @Path: ./SIM_FETtecOneWireESC.cpp
+    AP_SUBGROUPINFO(fetteconewireesc_sim, "FTOWESC_", 30, SIM, FETtecOneWireESC),
 
     // @Path: ./SIM_RichenPower.cpp
-    AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
+    AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SIM, RichenPower),
 
     // @Path: ./SIM_IntelligentEnergy24.cpp
-    AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SITL, IntelligentEnergy24),
+    AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
     // user settable barometer parameters
-    AP_GROUPINFO("BARO_COUNT",    33, SITL,  baro_count, 2),
+    AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
-    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SITL, SITL::BaroParm),
-    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SITL, SITL::BaroParm),
-    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SITL, SITL::BaroParm),
+    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
+#if BARO_MAX_INSTANCES > 1
+    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, SIM::BaroParm),
+#endif
+#if BARO_MAX_INSTANCES > 2
+    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
+#endif
 
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
@@ -265,188 +272,204 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Units: m
     // @User: Advanced
 
-    AP_GROUPINFO("ESC_TELEM", 40, SITL, esc_telem, 1),
+    AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
     // user settable parameters for the 1st airspeed sensor
-    AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
-    AP_GROUPINFO("ARSPD_OFS",     51, SITL,  arspd_offset[0], 2013),
-    AP_GROUPINFO("ARSPD_FAIL",    52, SITL,  arspd_fail[0], 0),
-    AP_GROUPINFO("ARSPD_FAILP",   53, SITL,  arspd_fail_pressure[0], 0),
-    AP_GROUPINFO("ARSPD_PITOT",   54, SITL,  arspd_fail_pitot_pressure[0], 0),
+    AP_GROUPINFO("ARSPD_RND",     50, SIM,  arspd_noise[0], 2.0),
+    AP_GROUPINFO("ARSPD_OFS",     51, SIM,  arspd_offset[0], 2013),
+    AP_GROUPINFO("ARSPD_FAIL",    52, SIM,  arspd_fail[0], 0),
+    AP_GROUPINFO("ARSPD_FAILP",   53, SIM,  arspd_fail_pressure[0], 0),
+    AP_GROUPINFO("ARSPD_PITOT",   54, SIM,  arspd_fail_pitot_pressure[0], 0),
 
     // user settable parameters for the 2nd airspeed sensor
-    AP_GROUPINFO("ARSPD2_RND",    56, SITL,  arspd_noise[1], 2.0),
-    AP_GROUPINFO("ARSPD2_OFS",    57, SITL,  arspd_offset[1], 2013),
-    AP_GROUPINFO("ARSPD2_FAIL",   58, SITL,  arspd_fail[1], 0),
-    AP_GROUPINFO("ARSPD2_FAILP",  59, SITL,  arspd_fail_pressure[1], 0),
-    AP_GROUPINFO("ARSPD2_PITOT",  60, SITL,  arspd_fail_pitot_pressure[1], 0),
+    AP_GROUPINFO("ARSPD2_RND",    56, SIM,  arspd_noise[1], 2.0),
+    AP_GROUPINFO("ARSPD2_OFS",    57, SIM,  arspd_offset[1], 2013),
+    AP_GROUPINFO("ARSPD2_FAIL",   58, SIM,  arspd_fail[1], 0),
+    AP_GROUPINFO("ARSPD2_FAILP",  59, SIM,  arspd_fail_pressure[1], 0),
+    AP_GROUPINFO("ARSPD2_PITOT",  60, SIM,  arspd_fail_pitot_pressure[1], 0),
 
     // user settable common airspeed parameters
-    AP_GROUPINFO("ARSPD_SIGN",    62, SITL,  arspd_signflip, 0),
+    AP_GROUPINFO("ARSPD_SIGN",    62, SIM,  arspd_signflip, 0),
 
 #ifdef SFML_JOYSTICK
-    AP_SUBGROUPEXTENSION("",      63, SITL,  var_sfml_joystick),
+    AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
 
     AP_GROUPEND
 };
 
 // user settable parameters for the barometers
-const AP_Param::GroupInfo SITL::BaroParm::var_info[] = {
-    AP_GROUPINFO("RND",      1, SITL::BaroParm,  noise, 0.2f),
-    AP_GROUPINFO("DRIFT",    2, SITL::BaroParm,  drift, 0),
-    AP_GROUPINFO("DISABLE",  3, SITL::BaroParm,  disable, 0),
-    AP_GROUPINFO("GLITCH",   4, SITL::BaroParm,  glitch, 0),
-    AP_GROUPINFO("FREEZE",   5, SITL::BaroParm,  freeze, 0),
-    AP_GROUPINFO("DELAY",    6, SITL::BaroParm,  delay, 0),
+const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
+    AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
+    AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
+    AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
+    AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
+    AP_GROUPINFO("FREEZE",   5, SIM::BaroParm,  freeze, 0),
+    AP_GROUPINFO("DELAY",    6, SIM::BaroParm,  delay, 0),
 
     // wind coeffients
-    AP_GROUPINFO("WCF_FWD", 7,  SITL::BaroParm, wcof_xp, 0.0),
-    AP_GROUPINFO("WCF_BAK", 8,  SITL::BaroParm, wcof_xn, 0.0),
-    AP_GROUPINFO("WCF_RGT", 9,  SITL::BaroParm, wcof_yp, 0.0),
-    AP_GROUPINFO("WCF_LFT", 10, SITL::BaroParm, wcof_yn, 0.0),
+    AP_GROUPINFO("WCF_FWD", 7,  SIM::BaroParm, wcof_xp, 0.0),
+    AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
+    AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
+    AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
     AP_GROUPEND
 };
     
 // GPS SITL parameters
-const AP_Param::GroupInfo SITL::var_gps[] = {
-    AP_GROUPINFO("GPS_DISABLE",    1, SITL,  gps_disable[0], 0),
-    AP_GROUPINFO("GPS_DELAY",      2, SITL,  gps_delay[0],   1),
-    AP_GROUPINFO("GPS_TYPE",       3, SITL,  gps_type[0],  SITL::GPS_TYPE_UBLOX),
-    AP_GROUPINFO("GPS_BYTELOSS",   4, SITL,  gps_byteloss[0],  0),
-    AP_GROUPINFO("GPS_NUMSATS",    5, SITL,  gps_numsats[0],   10),
-    AP_GROUPINFO("GPS_GLITCH",     6, SITL,  gps_glitch[0],  0),
-    AP_GROUPINFO("GPS_HZ",         7, SITL,  gps_hertz[0],  5),
-    AP_GROUPINFO("GPS_DRIFTALT",   8, SITL,  gps_drift_alt[0], 0),
-    AP_GROUPINFO("GPS_POS",        9, SITL,  gps_pos_offset[0], 0),
-    AP_GROUPINFO("GPS_NOISE",     10, SITL,  gps_noise[0], 0),
-    AP_GROUPINFO("GPS_LOCKTIME",  11, SITL,  gps_lock_time[0], 0),
-    AP_GROUPINFO("GPS_ALT_OFS",   12, SITL,  gps_alt_offset[0], 0),
-    AP_GROUPINFO("GPS_HDG",       13, SITL,  gps_hdg_enabled[0], SITL::GPS_HEADING_NONE),
-    AP_GROUPINFO("GPS_ACC",       14, SITL,  gps_accuracy[0], 0.3),
-    AP_GROUPINFO("GPS_VERR",      15, SITL,  gps_vel_err[0], 0),
+const AP_Param::GroupInfo SIM::var_gps[] = {
+    AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
+    AP_GROUPINFO("GPS_DELAY",      2, SIM,  gps_delay[0],   1),
+    AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
+    AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
+    AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
+    AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
+    AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
+    AP_GROUPINFO("GPS_DRIFTALT",   8, SIM,  gps_drift_alt[0], 0),
+    AP_GROUPINFO("GPS_POS",        9, SIM,  gps_pos_offset[0], 0),
+    AP_GROUPINFO("GPS_NOISE",     10, SIM,  gps_noise[0], 0),
+    AP_GROUPINFO("GPS_LOCKTIME",  11, SIM,  gps_lock_time[0], 0),
+    AP_GROUPINFO("GPS_ALT_OFS",   12, SIM,  gps_alt_offset[0], 0),
+    AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
+    AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
+    AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
 
-    AP_GROUPINFO("GPS2_DISABLE",  30, SITL,  gps_disable[1], 1),
-    AP_GROUPINFO("GPS2_DELAY",    31, SITL,  gps_delay[1],   1),
-    AP_GROUPINFO("GPS2_TYPE",     32, SITL,  gps_type[1],  SITL::GPS_TYPE_UBLOX),
-    AP_GROUPINFO("GPS2_BYTELOS",  33, SITL,  gps_byteloss[1],  0),
-    AP_GROUPINFO("GPS2_NUMSATS",  34, SITL,  gps_numsats[1],   10),
-    AP_GROUPINFO("GPS2_GLTCH",    35, SITL,  gps_glitch[1],  0),
-    AP_GROUPINFO("GPS2_HZ",       36, SITL,  gps_hertz[1],  5),
-    AP_GROUPINFO("GPS2_DRFTALT",  37, SITL,  gps_drift_alt[1], 0),
-    AP_GROUPINFO("GPS2_POS",      38, SITL,  gps_pos_offset[1], 0),
-    AP_GROUPINFO("GPS2_NOISE",    39, SITL,  gps_noise[1], 0),
-    AP_GROUPINFO("GPS2_LCKTIME",  40, SITL,  gps_lock_time[1], 0),
-    AP_GROUPINFO("GPS2_ALT_OFS",  41, SITL,  gps_alt_offset[1], 0),
-    AP_GROUPINFO("GPS2_HDG",      42, SITL,  gps_hdg_enabled[1], SITL::GPS_HEADING_NONE),
-    AP_GROUPINFO("GPS2_ACC",      43, SITL,  gps_accuracy[1], 0.3),
-    AP_GROUPINFO("GPS2_VERR",     44, SITL,  gps_vel_err[1], 0),
+    AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
+    AP_GROUPINFO("GPS2_DELAY",    31, SIM,  gps_delay[1],   1),
+    AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
+    AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
+    AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
+    AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
+    AP_GROUPINFO("GPS2_HZ",       36, SIM,  gps_hertz[1],  5),
+    AP_GROUPINFO("GPS2_DRFTALT",  37, SIM,  gps_drift_alt[1], 0),
+    AP_GROUPINFO("GPS2_POS",      38, SIM,  gps_pos_offset[1], 0),
+    AP_GROUPINFO("GPS2_NOISE",    39, SIM,  gps_noise[1], 0),
+    AP_GROUPINFO("GPS2_LCKTIME",  40, SIM,  gps_lock_time[1], 0),
+    AP_GROUPINFO("GPS2_ALT_OFS",  41, SIM,  gps_alt_offset[1], 0),
+    AP_GROUPINFO("GPS2_HDG",      42, SIM,  gps_hdg_enabled[1], SIM::GPS_HEADING_NONE),
+    AP_GROUPINFO("GPS2_ACC",      43, SIM,  gps_accuracy[1], 0.3),
+    AP_GROUPINFO("GPS2_VERR",     44, SIM,  gps_vel_err[1], 0),
 
-    AP_GROUPINFO("INIT_LAT_OFS",  45, SITL,  gps_init_lat_ofs, 0),
-    AP_GROUPINFO("INIT_LON_OFS",  46, SITL,  gps_init_lon_ofs, 0),
-    AP_GROUPINFO("INIT_ALT_OFS",  47, SITL,  gps_init_alt_ofs, 0),
+    AP_GROUPINFO("INIT_LAT_OFS",  45, SIM,  gps_init_lat_ofs, 0),
+    AP_GROUPINFO("INIT_LON_OFS",  46, SIM,  gps_init_lon_ofs, 0),
+    AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
 
     AP_GROUPEND
 };
 
 // Mag SITL parameters
-const AP_Param::GroupInfo SITL::var_mag[] = {
-    AP_GROUPINFO("MAG_RND",        1, SITL,  mag_noise,   0),
-    AP_GROUPINFO("MAG_MOT",        2, SITL,  mag_mot, 0),
-    AP_GROUPINFO("MAG_DELAY",      3, SITL,  mag_delay, 0),
-    AP_GROUPINFO("MAG_OFS",        4, SITL,  mag_ofs[0], 0),
-    AP_GROUPINFO("MAG_ALY",        5, SITL,  mag_anomaly_ned, 0),
-    AP_GROUPINFO("MAG_ALY_HGT",    6, SITL,  mag_anomaly_hgt, 1.0f),
-    AP_GROUPINFO("MAG_DIA",        7, SITL,  mag_diag[0], 0),
-    AP_GROUPINFO("MAG_ODI",        8, SITL,  mag_offdiag[0], 0),
-    AP_GROUPINFO("MAG_ORIENT",     9, SITL,  mag_orient[0], 0),
-    AP_GROUPINFO("MAG1_SCALING",  10, SITL,  mag_scaling[0], 1),
-    AP_GROUPINFO("MAG1_DEVID",    11, SITL,  mag_devid[0], 97539),
-    AP_GROUPINFO("MAG2_DEVID",    12, SITL,  mag_devid[1], 131874),
-    AP_GROUPINFO("MAG3_DEVID",    13, SITL,  mag_devid[2], 263178),
-    AP_GROUPINFO("MAG4_DEVID",    14, SITL,  mag_devid[3], 97283),
-    AP_GROUPINFO("MAG5_DEVID",    15, SITL,  mag_devid[4], 97795),
-    AP_GROUPINFO("MAG6_DEVID",    16, SITL,  mag_devid[5], 98051),
-    AP_GROUPINFO("MAG7_DEVID",    17, SITL,  mag_devid[6], 0),
-    AP_GROUPINFO("MAG8_DEVID",    18, SITL,  mag_devid[7], 0),
-    AP_GROUPINFO("MAG1_FAIL",     26, SITL,  mag_fail[0], 0),
+const AP_Param::GroupInfo SIM::var_mag[] = {
+    AP_GROUPINFO("MAG_RND",        1, SIM,  mag_noise,   0),
+    AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
+    AP_GROUPINFO("MAG_DELAY",      3, SIM,  mag_delay, 0),
+    AP_GROUPINFO("MAG_OFS",        4, SIM,  mag_ofs[0], 0),
+    AP_GROUPINFO("MAG_ALY",        5, SIM,  mag_anomaly_ned, 0),
+    AP_GROUPINFO("MAG_ALY_HGT",    6, SIM,  mag_anomaly_hgt, 1.0f),
+    AP_GROUPINFO("MAG_DIA",        7, SIM,  mag_diag[0], 0),
+    AP_GROUPINFO("MAG_ODI",        8, SIM,  mag_offdiag[0], 0),
+    AP_GROUPINFO("MAG_ORIENT",     9, SIM,  mag_orient[0], 0),
+    AP_GROUPINFO("MAG1_SCALING",  10, SIM,  mag_scaling[0], 1),
+    AP_GROUPINFO("MAG1_DEVID",    11, SIM,  mag_devid[0], 97539),
+    AP_GROUPINFO("MAG2_DEVID",    12, SIM,  mag_devid[1], 131874),
+#if MAX_CONNECTED_MAGS > 2
+    AP_GROUPINFO("MAG3_DEVID",    13, SIM,  mag_devid[2], 263178),
+#endif
+#if MAX_CONNECTED_MAGS > 3
+    AP_GROUPINFO("MAG4_DEVID",    14, SIM,  mag_devid[3], 97283),
+#endif
+#if MAX_CONNECTED_MAGS > 4
+    AP_GROUPINFO("MAG5_DEVID",    15, SIM,  mag_devid[4], 97795),
+#endif
+#if MAX_CONNECTED_MAGS > 5
+    AP_GROUPINFO("MAG6_DEVID",    16, SIM,  mag_devid[5], 98051),
+#endif
+#if MAX_CONNECTED_MAGS > 6
+    AP_GROUPINFO("MAG7_DEVID",    17, SIM,  mag_devid[6], 0),
+#endif
+#if MAX_CONNECTED_MAGS > 7
+    AP_GROUPINFO("MAG8_DEVID",    18, SIM,  mag_devid[7], 0),
+#endif
+    AP_GROUPINFO("MAG1_FAIL",     26, SIM,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
-    AP_GROUPINFO("MAG2_OFS",      19, SITL,  mag_ofs[1], 0),
-    AP_GROUPINFO("MAG2_DIA",      20, SITL,  mag_diag[1], 0),
-    AP_GROUPINFO("MAG2_ODI",      21, SITL,  mag_offdiag[1], 0),
-    AP_GROUPINFO("MAG2_ORIENT",   22, SITL,  mag_orient[1], 0),
-    AP_GROUPINFO("MAG2_FAIL",     27, SITL,  mag_fail[1], 0),
-    AP_GROUPINFO("MAG2_SCALING",  28, SITL,  mag_scaling[1], 1),
+    AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
+    AP_GROUPINFO("MAG2_DIA",      20, SIM,  mag_diag[1], 0),
+    AP_GROUPINFO("MAG2_ODI",      21, SIM,  mag_offdiag[1], 0),
+    AP_GROUPINFO("MAG2_ORIENT",   22, SIM,  mag_orient[1], 0),
+    AP_GROUPINFO("MAG2_FAIL",     27, SIM,  mag_fail[1], 0),
+    AP_GROUPINFO("MAG2_SCALING",  28, SIM,  mag_scaling[1], 1),
 #endif
 #if HAL_COMPASS_MAX_SENSORS > 2
-    AP_GROUPINFO("MAG3_OFS",      23, SITL,  mag_ofs[2], 0),
-    AP_GROUPINFO("MAG3_DIA",      24, SITL,  mag_diag[2], 0),
-    AP_GROUPINFO("MAG3_ODI",      25, SITL,  mag_offdiag[2], 0),
-    AP_GROUPINFO("MAG3_FAIL",     29, SITL,  mag_fail[2], 0),
-    AP_GROUPINFO("MAG3_SCALING",  30, SITL,  mag_scaling[2], 1),
-    AP_GROUPINFO("MAG3_ORIENT",   36, SITL,  mag_orient[2], 0),
+    AP_GROUPINFO("MAG3_OFS",      23, SIM,  mag_ofs[2], 0),
+    AP_GROUPINFO("MAG3_DIA",      24, SIM,  mag_diag[2], 0),
+    AP_GROUPINFO("MAG3_ODI",      25, SIM,  mag_offdiag[2], 0),
+    AP_GROUPINFO("MAG3_FAIL",     29, SIM,  mag_fail[2], 0),
+    AP_GROUPINFO("MAG3_SCALING",  30, SIM,  mag_scaling[2], 1),
+    AP_GROUPINFO("MAG3_ORIENT",   36, SIM,  mag_orient[2], 0),
 #endif
     AP_GROUPEND
 };
 
 #ifdef SFML_JOYSTICK
-const AP_Param::GroupInfo SITL::var_sfml_joystick[] = {
-    AP_GROUPINFO("SF_JS_STICK",    1, SITL,  sfml_joystick_id,   0),
-    AP_GROUPINFO("SF_JS_AXIS1",    2, SITL,  sfml_joystick_axis[0], sf::Joystick::Axis::X),
-    AP_GROUPINFO("SF_JS_AXIS2",    3, SITL,  sfml_joystick_axis[1], sf::Joystick::Axis::Y),
-    AP_GROUPINFO("SF_JS_AXIS3",    4, SITL,  sfml_joystick_axis[2], sf::Joystick::Axis::Z),
-    AP_GROUPINFO("SF_JS_AXIS4",    5, SITL,  sfml_joystick_axis[3], sf::Joystick::Axis::U),
-    AP_GROUPINFO("SF_JS_AXIS5",    6, SITL,  sfml_joystick_axis[4], sf::Joystick::Axis::V),
-    AP_GROUPINFO("SF_JS_AXIS6",    7, SITL,  sfml_joystick_axis[5], sf::Joystick::Axis::R),
-    AP_GROUPINFO("SF_JS_AXIS7",    8, SITL,  sfml_joystick_axis[6], sf::Joystick::Axis::PovX),
-    AP_GROUPINFO("SF_JS_AXIS8",    9, SITL,  sfml_joystick_axis[7], sf::Joystick::Axis::PovY),
+const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
+    AP_GROUPINFO("SF_JS_STICK",    1, SIM,  sfml_joystick_id,   0),
+    AP_GROUPINFO("SF_JS_AXIS1",    2, SIM,  sfml_joystick_axis[0], sf::Joystick::Axis::X),
+    AP_GROUPINFO("SF_JS_AXIS2",    3, SIM,  sfml_joystick_axis[1], sf::Joystick::Axis::Y),
+    AP_GROUPINFO("SF_JS_AXIS3",    4, SIM,  sfml_joystick_axis[2], sf::Joystick::Axis::Z),
+    AP_GROUPINFO("SF_JS_AXIS4",    5, SIM,  sfml_joystick_axis[3], sf::Joystick::Axis::U),
+    AP_GROUPINFO("SF_JS_AXIS5",    6, SIM,  sfml_joystick_axis[4], sf::Joystick::Axis::V),
+    AP_GROUPINFO("SF_JS_AXIS6",    7, SIM,  sfml_joystick_axis[5], sf::Joystick::Axis::R),
+    AP_GROUPINFO("SF_JS_AXIS7",    8, SIM,  sfml_joystick_axis[6], sf::Joystick::Axis::PovX),
+    AP_GROUPINFO("SF_JS_AXIS8",    9, SIM,  sfml_joystick_axis[7], sf::Joystick::Axis::PovY),
     AP_GROUPEND
 };
 #endif //SFML_JOYSTICK
 
 // INS SITL parameters
-const AP_Param::GroupInfo SITL::var_ins[] = {
-    AP_GROUPINFO("IMUT_START",    1, SITL, imu_temp_start,  25),
-    AP_GROUPINFO("IMUT_END",      2, SITL, imu_temp_end, 45),
-    AP_GROUPINFO("IMUT_TCONST",   3, SITL, imu_temp_tconst, 300),
-    AP_GROUPINFO("IMUT_FIXED",    4, SITL, imu_temp_fixed, 0),
-    AP_GROUPINFO("ACC1_BIAS",     5, SITL, accel_bias[0], 0),
-    AP_GROUPINFO("ACC2_BIAS",     6, SITL, accel_bias[1], 0),
-    AP_GROUPINFO("ACC3_BIAS",     7, SITL, accel_bias[2], 0),
-    AP_GROUPINFO("GYR1_RND",      8, SITL, gyro_noise[0],  0),
-    AP_GROUPINFO("GYR2_RND",      9, SITL, gyro_noise[1],  0),
-    AP_GROUPINFO("GYR3_RND",     10, SITL, gyro_noise[2],  0),
-    AP_GROUPINFO("ACC1_RND",     11, SITL, accel_noise[0], 0),
-    AP_GROUPINFO("ACC2_RND",     12, SITL, accel_noise[1], 0),
-    AP_GROUPINFO("ACC3_RND",     13, SITL, accel_noise[2], 0),
-    AP_GROUPINFO("GYR1_SCALE",   14, SITL, gyro_scale[0], 0),
-    AP_GROUPINFO("GYR2_SCALE",   15, SITL, gyro_scale[1], 0),
-    AP_GROUPINFO("GYR3_SCALE",   16, SITL, gyro_scale[2], 0),
-    AP_GROUPINFO("ACCEL1_FAIL",  17, SITL, accel_fail[0],  0),
-    AP_GROUPINFO("ACCEL2_FAIL",  18, SITL, accel_fail[1],  0),
-    AP_GROUPINFO("ACCEL3_FAIL",  19, SITL, accel_fail[2],  0),
-    AP_GROUPINFO("GYR_FAIL_MSK", 20, SITL, gyro_fail_mask,  0),
-    AP_GROUPINFO("ACC_FAIL_MSK", 21, SITL, accel_fail_mask,  0),
-    AP_GROUPINFO("ACC1_SCAL",    22, SITL, accel_scale[0], 0),
-    AP_GROUPINFO("ACC2_SCAL",    23, SITL, accel_scale[1], 0),
-    AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
-    AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
+const AP_Param::GroupInfo SIM::var_ins[] = {
+    AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
+    AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
+    AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
+    AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
+    AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
+    AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
+    AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
+    AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
+    AP_GROUPINFO("GYR2_RND",      9, SIM, gyro_noise[1],  0),
+    AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
+    AP_GROUPINFO("ACC1_RND",     11, SIM, accel_noise[0], 0),
+    AP_GROUPINFO("ACC2_RND",     12, SIM, accel_noise[1], 0),
+    AP_GROUPINFO("ACC3_RND",     13, SIM, accel_noise[2], 0),
+    AP_GROUPINFO("GYR1_SCALE",   14, SIM, gyro_scale[0], 0),
+    AP_GROUPINFO("GYR2_SCALE",   15, SIM, gyro_scale[1], 0),
+    AP_GROUPINFO("GYR3_SCALE",   16, SIM, gyro_scale[2], 0),
+    AP_GROUPINFO("ACCEL1_FAIL",  17, SIM, accel_fail[0],  0),
+    AP_GROUPINFO("ACCEL2_FAIL",  18, SIM, accel_fail[1],  0),
+    AP_GROUPINFO("ACCEL3_FAIL",  19, SIM, accel_fail[2],  0),
+    AP_GROUPINFO("GYR_FAIL_MSK", 20, SIM, gyro_fail_mask,  0),
+    AP_GROUPINFO("ACC_FAIL_MSK", 21, SIM, accel_fail_mask,  0),
+    AP_GROUPINFO("ACC1_SCAL",    22, SIM, accel_scale[0], 0),
+    AP_GROUPINFO("ACC2_SCAL",    23, SIM, accel_scale[1], 0),
+    AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
+    AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
     // @Param: SAIL_TYPE
     // @DisplayName: Sailboat simulation sail type
     // @Description: 0: mainsail with sheet, 1: directly actuated wing
-    AP_GROUPINFO("SAIL_TYPE",     26, SITL, sail_type, 0),
+    AP_GROUPINFO("SAIL_TYPE",     26, SIM, sail_type, 0),
 
+    // @Param: JSON_MASTER
+    // @DisplayName: JSON master instance
+    // @Description: the instance number to  take servos from
+    AP_GROUPINFO("JSON_MASTER",     27, SIM, ride_along_master, 0),
 
     // the IMUT parameters must be last due to the enable parameters
-    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
-    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SITL, AP_InertialSensor::TCal),
-    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SITL, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
     AP_GROUPEND
 };
     
 /* report SITL state via MAVLink SIMSTATE*/
-void SITL::simstate_send(mavlink_channel_t chan) const
+void SIM::simstate_send(mavlink_channel_t chan) const
 {
     float yaw;
 
@@ -471,7 +494,7 @@ void SITL::simstate_send(mavlink_channel_t chan) const
 }
 
 /* report SITL state via MAVLink SIM_STATE */
-void SITL::sim_state_send(mavlink_channel_t chan) const
+void SIM::sim_state_send(mavlink_channel_t chan) const
 {
     // convert to same conventions as DCM
     float yaw = state.yawDeg;
@@ -504,7 +527,7 @@ void SITL::sim_state_send(mavlink_channel_t chan) const
 }
 
 /* report SITL state to AP_Logger */
-void SITL::Log_Write_SIMSTATE()
+void SIM::Log_Write_SIMSTATE()
 {
     float yaw;
 
@@ -535,7 +558,7 @@ void SITL::Log_Write_SIMSTATE()
  convert a set of roll rates from earth frame to body frame
  output values are in radians/second
 */
-void SITL::convert_body_frame(double rollDeg, double pitchDeg,
+void SIM::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)
 {
@@ -559,7 +582,7 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
 
   all inputs and outputs are in radians/s
 */
-Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
+Vector3f SIM::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
 {
     float p = gyro.x;
     float q = gyro.y;
@@ -578,7 +601,7 @@ Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
 }
 
 // get the rangefinder reading for the desired rotation, returns -1 for no data
-float SITL::get_rangefinder(uint8_t instance) {
+float SIM::get_rangefinder(uint8_t instance) {
     if (instance < RANGEFINDER_MAX_INSTANCES) {
         return state.rangefinder_m[instance];
     }
@@ -590,9 +613,9 @@ float SITL::get_rangefinder(uint8_t instance) {
 
 namespace AP {
 
-SITL::SITL *sitl()
+SITL::SIM *sitl()
 {
-    return SITL::SITL::get_singleton();
+    return SITL::SIM::get_singleton();
 }
 
 };

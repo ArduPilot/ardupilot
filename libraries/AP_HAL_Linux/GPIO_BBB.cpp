@@ -17,6 +17,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#define LOW             0
+#define HIGH            1
+
 using namespace Linux;
 
 GPIO_BBB::GPIO_BBB()
@@ -26,26 +29,28 @@ void GPIO_BBB::init()
 {
 #if LINUX_GPIO_NUM_BANKS == 4
     int mem_fd;
-    // Enable all GPIO banks
-    // Without this, access to deactivated banks (i.e. those with no clock source set up) will (logically) fail with SIGBUS
-    // Idea taken from https://groups.google.com/forum/#!msg/beagleboard/OYFp4EXawiI/Mq6s3sg14HoJ
-
-    uint8_t bank_enable[3] = { 5, 65, 105 };
-    int export_fd = open("/sys/class/gpio/export", O_WRONLY | O_CLOEXEC);
-    if (export_fd == -1) {
-        AP_HAL::panic("unable to open /sys/class/gpio/export");
-    }
-    for (uint8_t i=0; i<3; i++) {
-        dprintf(export_fd, "%u\n", (unsigned)bank_enable[i]);
-    }
-    close(export_fd);
-
 
     /* open /dev/mem */
     if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC)) < 0) {
             printf("can't open /dev/mem \n");
             exit (-1);
     }
+
+    /*
+    Enable all GPIO clocks
+    Without this, access to deactivated banks (i.e. those with no clock source set up) will (logically) fail with SIGBUS
+     */
+    volatile unsigned *cm_per = (volatile unsigned *)mmap(0, CM_PER_BASE_SIZE, PROT_READ|PROT_WRITE,
+                                MAP_SHARED, mem_fd, CM_PER_BASE);
+    if ((char *)cm_per == MAP_FAILED) {
+        AP_HAL::panic("unable to map CM_PER registers");
+    }
+    off_t cm_offsets[LINUX_GPIO_NUM_BANKS-1] = { CM_PER_GPIO1_CLKCTRL, CM_PER_GPIO2_CLKCTRL, CM_PER_GPIO3_CLKCTRL };
+    for (uint8_t i=0; i<LINUX_GPIO_NUM_BANKS-1; i++) {
+        unsigned reg_value = *(cm_per + cm_offsets[i]);
+        *(cm_per + cm_offsets[i]) = (reg_value & ~0b11) | 0b10;
+    }
+    munmap((void *)cm_per, CM_PER_BASE_SIZE);
 
     /* mmap GPIO */
     off_t offsets[LINUX_GPIO_NUM_BANKS] = { GPIO0_BASE, GPIO1_BASE, GPIO2_BASE, GPIO3_BASE };

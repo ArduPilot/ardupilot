@@ -589,8 +589,11 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
 // Command a thrust vector, heading and heading rate
 void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
+    // a zero _angle_vel_yaw_max means that setting is disabled
+    const float ang_vel_yaw_max_rads = is_zero(_ang_vel_yaw_max) ? get_slew_yaw_rads() : MIN(radians(_ang_vel_yaw_max), get_slew_yaw_rads());
+
     // Convert from centidegrees on public interface to radians
-    float heading_rate = constrain_float(radians(heading_rate_cds * 0.01f), -get_slew_yaw_rads(), get_slew_yaw_rads());
+    float heading_rate = constrain_float(radians(heading_rate_cds * 0.01f), -ang_vel_yaw_max_rads, ang_vel_yaw_max_rads);
     float heading_angle = radians(heading_angle_cd * 0.01f);
 
     // calculate the attitude target euler angles
@@ -614,7 +617,7 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
         _ang_vel_target.z = input_shaping_angle(attitude_error.z, _input_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, heading_rate, get_slew_yaw_rads(), _dt);
 
         // Limit the angular velocity
-        ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), MIN(radians(_ang_vel_yaw_max), get_slew_yaw_rads()));
+        ang_vel_limit(_ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), ang_vel_yaw_max_rads);
     } else {
         // set persisted quaternion target attitude
         _attitude_target = desired_attitude_quat;
@@ -876,18 +879,22 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
 }
 
 // Sets attitude target to vehicle attitude and sets all rates to zero
-void AC_AttitudeControl::reset_target_and_rate()
+// If reset_rate is false rates are not reset to allow the rate controllers to run
+void AC_AttitudeControl::reset_target_and_rate(bool reset_rate)
 {
     // move attitude target to current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
 
-    // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    _ang_vel_target.zero();
-    _euler_angle_target.zero();
+    if (reset_rate) {
+        // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
+        _ang_vel_target.zero();
+        _euler_angle_target.zero();
+    }
 }
 
 // Sets yaw target to vehicle heading and sets yaw rate to zero
-void AC_AttitudeControl::reset_yaw_target_and_rate()
+// If reset_rate is false rates are not reset to allow the rate controllers to run
+void AC_AttitudeControl::reset_yaw_target_and_rate(bool reset_rate)
 {
     // move attitude target to current heading
     float yaw_shift = _ahrs.yaw - _euler_angle_target.z;
@@ -895,11 +902,13 @@ void AC_AttitudeControl::reset_yaw_target_and_rate()
     _attitude_target_update.from_axis_angle(Vector3f{0.0f, 0.0f, yaw_shift});
     _attitude_target = _attitude_target_update * _attitude_target;
 
-    // set yaw rate to zero
-    _euler_rate_target.z = 0.0f;
+    if (reset_rate) {
+        // set yaw rate to zero
+        _euler_rate_target.z = 0.0f;
 
-    // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+        // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
+        euler_rate_to_ang_vel(_euler_angle_target, _euler_rate_target, _ang_vel_target);
+    }
 }
 
 // Shifts the target attitude to maintain the current error in the event of an EKF reset
@@ -998,7 +1007,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 }
 
 // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-float AC_AttitudeControl::get_althold_lean_angle_max() const
+float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 {
     // convert to centi-degrees for public interface
     return MAX(ToDeg(_althold_lean_angle_max), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;

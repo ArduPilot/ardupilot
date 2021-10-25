@@ -66,6 +66,10 @@
  #define HAL_BARO_PROBE_EXT_DEFAULT 0
 #endif
 
+#ifndef HAL_BARO_EXTERNAL_BUS_DEFAULT
+ #define HAL_BARO_EXTERNAL_BUS_DEFAULT -1
+#endif
+
 #ifdef HAL_BUILD_AP_PERIPH
 #define HAL_BARO_ALLOW_INIT_NO_BARO
 #endif
@@ -121,7 +125,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: This selects the bus number for looking for an I2C barometer. When set to -1 it will probe all external i2c buses based on the GND_PROBE_EXT parameter.
     // @Values: -1:Disabled,0:Bus0,1:Bus1
     // @User: Advanced
-    AP_GROUPINFO("_EXT_BUS", 7, AP_Baro, _ext_bus, -1),
+    AP_GROUPINFO("_EXT_BUS", 7, AP_Baro, _ext_bus, HAL_BARO_EXTERNAL_BUS_DEFAULT),
 
     // @Param: _SPEC_GRAV
     // @DisplayName: Specific Gravity (For water depth measurement)
@@ -223,10 +227,10 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 // singleton instance
 AP_Baro *AP_Baro::_singleton;
 
-#ifdef HAL_NO_GCS
-#define BARO_SEND_TEXT(severity, format, args...)
-#else
+#if HAL_GCS_ENABLED
 #define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#else
+#define BARO_SEND_TEXT(severity, format, args...)
 #endif
 
 /*
@@ -537,7 +541,8 @@ void AP_Baro::init(void)
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+    const int8_t serial_port = AP::externalAHRS().get_port();
+    if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif
@@ -624,7 +629,7 @@ void AP_Baro::init(void)
         break;
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }

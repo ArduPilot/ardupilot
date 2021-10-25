@@ -17,6 +17,49 @@ import boards
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
 
+# Ref: https://stackoverflow.com/questions/40590192/getting-an-error-attributeerror-module-object-has-no-attribute-run-while
+try:
+    from subprocess import CompletedProcess
+except ImportError:
+    # Python 2
+    class CompletedProcess:
+
+        def __init__(self, args, returncode, stdout=None, stderr=None):
+            self.args = args
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+        def check_returncode(self):
+            if self.returncode != 0:
+                err = subprocess.CalledProcessError(self.returncode, self.args, output=self.stdout)
+                raise err
+            return self.returncode
+
+    def sp_run(*popenargs, **kwargs):
+        input = kwargs.pop("input", None)
+        check = kwargs.pop("handle", False)
+        kwargs.pop("capture_output", True)
+        if input is not None:
+            if 'stdin' in kwargs:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = subprocess.PIPE
+        process = subprocess.Popen(*popenargs, **kwargs)
+        try:
+            outs, errs = process.communicate(input)
+        except:
+            process.kill()
+            process.wait()
+            raise
+        returncode = process.poll()
+        if check and returncode:
+            raise subprocess.CalledProcessError(returncode, popenargs, output=outs)
+        return CompletedProcess(popenargs, returncode, stdout=outs, stderr=errs)
+
+    subprocess.run = sp_run
+    # ^ This monkey patch allows it work on Python 2 or 3 the same way
+
+
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
 # vehicle, compile all the examples, add a new example. Should fit in
@@ -81,6 +124,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='Configure as debug variant.')
+
+    g.add_option('--disable-watchdog',
+        action='store_true',
+        default=False,
+        help='Build with watchdog disabled.')
 
     g.add_option('--coverage',
                  action='store_true',
@@ -168,6 +216,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables and sets up ONVIF camera control")
 
+    g.add_option('--scripting-docs', action='store_true',
+                 default=False,
+                 help="enable generation of scripting documentation")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -237,6 +289,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
+    g.add_option('--sitl-32bit', action='store_true',
+                 default=False,
+                 help="Enable SITL 32bit")
+
     g.add_option('--build-dates', action='store_true',
                  default=False,
                  help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
@@ -244,7 +300,7 @@ configuration in order to save typing.
     g.add_option('--sitl-flash-storage',
         action='store_true',
         default=False,
-        help='Configure for building SITL with flash storage emulation.')
+        help='Use flash storage emulation.')
 
     g.add_option('--disable-ekf2',
         action='store_true',
@@ -281,6 +337,10 @@ configuration in order to save typing.
 	    default=None,
 	    help='Extra hwdef.dat file for custom build.')
 
+    g.add_option('--assert-cc-version',
+                 default=None,
+                 help='fail configure if not using the specified gcc version')
+    
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -322,6 +382,7 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.COVERAGE = cfg.options.coverage
+    cfg.env.SITL32BIT = cfg.options.sitl_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -409,6 +470,12 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.start_msg('SITL 32-bit build')
+    if cfg.env.SITL32BIT:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
     cfg.env.append_value('GIT_SUBMODULES', 'mavlink')
 
     cfg.env.prepend_value('INCLUDES', [
@@ -441,6 +508,26 @@ def configure(cfg):
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
     _collect_autoconfig_files(cfg)
+
+def generate_canard_dsdlc(cfg):
+    dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
+    src = cfg.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
+    dsdlc_path = cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath()
+    if not os.path.exists(dsdlc_path):
+        print("Please update submodules with: git submodule update --recursive --init")
+        sys.exit(1)
+    src = ' '.join([s.abspath() for s in src])
+    cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
+                        dsdlc_path,
+                        dsdlc_gen_path,
+                        src)
+    print("Generating DSDLC for CANARD: " + cmd)
+    ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if ret.returncode != 0:
+        print('Failed to run: ', cmd)
+        print(ret.stdout.decode('utf-8'))
+        print(ret.stderr.decode('utf-8'))
+        raise RuntimeError('Failed to generate DSDL C bindings')
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
@@ -530,10 +617,10 @@ def _build_dynamic_sources(bld):
             ],
             )
 
-    if bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES:
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
             features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/*', dir=True, src=False),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
@@ -643,7 +730,15 @@ def _build_post_funs(bld):
 
 def _load_pre_build(bld):
     '''allow for a pre_build() function in build modules'''
+    if bld.cmd == 'clean':
+        return
     brd = bld.get_board()
+    if bld.env.AP_PERIPH:
+        dsdlc_gen_path = bld.bldnode.make_node('modules/libcanard/dsdlc_generated/include').abspath()
+        #check if canard dsdlc directory empty
+        # check if directory exists
+        if not os.path.exists(dsdlc_gen_path) or not os.listdir(dsdlc_gen_path):
+            generate_canard_dsdlc(bld)
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
 

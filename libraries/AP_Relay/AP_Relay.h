@@ -38,6 +38,9 @@ public:
     // toggle the relay status
     void        toggle(uint8_t instance);
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+    
     static AP_Relay *get_singleton(void) {return singleton; }
 
     static const struct AP_Param::GroupInfo        var_info[];

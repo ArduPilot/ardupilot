@@ -18,6 +18,8 @@
 
 #include "SIM_XPlane.h"
 
+#if HAL_SIM_XPLANE_ENABLED
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -303,6 +305,7 @@ bool XPlane::receive_data(void)
         }
     }
     position = pos + position_zero;
+    position.xy() += origin.get_distance_NE_double(home);
     update_position();
     time_advance();
 
@@ -318,6 +321,7 @@ bool XPlane::receive_data(void)
         home.lat = loc.lat;
         home.lng = loc.lng;
         home.alt = loc.alt;
+        origin = home;
         position.x = 0;
         position.y = 0;
         position.z = 0;
@@ -486,3 +490,5 @@ void XPlane::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
+
+#endif  // HAL_SIM_XPLANE_ENABLED

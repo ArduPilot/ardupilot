@@ -40,17 +40,17 @@ void Sub::init_ardupilot()
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        AP_Param::set_default_by_name("BARO_EXT_BUS", 0);
         break;
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
-        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        AP_Param::set_by_name("BARO_EXT_BUS", 1);
         break;
     default:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
         break;
     }
-#else
-    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#elif CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+    AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
 #endif
     celsius.init(barometer.external_bus());
 
@@ -62,7 +62,9 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
+
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
@@ -82,12 +84,6 @@ void Sub::init_ardupilot()
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
-
-    // init Location class
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location::set_terrain(&terrain);
-    wp_nav.set_terrain(&terrain);
-#endif
 
 #if OPTFLOW == ENABLED
     // initialise optical flow sensor
@@ -183,7 +179,7 @@ void Sub::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
-    ahrs.set_vehicle_class(AHRS_VEHICLE_SUBMARINE);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::SUBMARINE);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());

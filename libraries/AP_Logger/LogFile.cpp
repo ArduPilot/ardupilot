@@ -210,12 +210,15 @@ void AP_Logger::Write_RSSI()
     const struct log_RSSI pkt{
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
         time_us       : AP_HAL::micros64(),
-        RXRSSI        : rssi->read_receiver_rssi()
+        RXRSSI        : rssi->read_receiver_rssi(),
+        RXLQ          : rssi->read_receiver_link_quality()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
+                              uint8_t source_system,
+                              uint8_t source_component,
                               const MAV_RESULT result,
                               bool was_command_long)
 {
@@ -224,10 +227,10 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
         time_us         : AP_HAL::micros64(),
         target_system   : packet.target_system,
         target_component: packet.target_component,
+        source_system   : source_system,
+        source_component: source_component,
         frame           : packet.frame,
         command         : packet.command,
-        current         : packet.current,
-        autocontinue    : packet.autocontinue,
         param1          : packet.param1,
         param2          : packet.param2,
         param3          : packet.param3,
@@ -292,6 +295,16 @@ void AP_Logger::Write_Power(void)
         // encode armed state in bit 3
         safety_and_armed |= 1U<<2;
     }
+    float MCU_temp = 0;
+    float MCU_voltage = 0;
+    float MCU_vmin = 0;
+    float MCU_vmax = 0;
+#if HAL_WITH_MCU_MONITORING
+    MCU_temp = hal.analogin->mcu_temperature();
+    MCU_voltage = hal.analogin->mcu_voltage();
+    MCU_vmin = hal.analogin->mcu_voltage_min();
+    MCU_vmax = hal.analogin->mcu_voltage_max();
+#endif
     const struct log_POWR pkt{
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
         time_us : AP_HAL::micros64(),
@@ -299,7 +312,11 @@ void AP_Logger::Write_Power(void)
         Vservo  : hal.analogin->servorail_voltage(),
         flags   : hal.analogin->power_status_flags(),
         accumulated_flags   : hal.analogin->accumulated_power_status_flags(),
-        safety_and_arm : safety_and_armed
+        safety_and_arm : safety_and_armed,
+        MCU_temp : MCU_temp,
+        MCU_voltage : MCU_voltage,
+        MCU_voltage_min : MCU_vmin,
+        MCU_voltage_max : MCU_vmax,
     };
     WriteBlock(&pkt, sizeof(pkt));
 #endif
@@ -553,41 +570,53 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y)
+void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    struct log_PSC pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSC_MSG),
+    const struct log_PSCN pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCN_MSG),
         time_us         : AP_HAL::micros64(),
-        pos_target_x    : pos_target.x * 0.01f,
-        pos_target_Y    : pos_target.y * 0.01f,
-        position_x      : position.x * 0.01f,
-        position_y      : position.y * 0.01f,
-        vel_target_x    : vel_target.x * 0.01f,
-        vel_target_y    : vel_target.y * 0.01f,
-        velocity_x      : velocity.x * 0.01f,
-        velocity_y      : velocity.y * 0.01f,
-        accel_target_x  : accel_target.x * 0.01f,
-        accel_target_y  : accel_target.y * 0.01f,
-        accel_x         : accel_x * 0.01f,
-        accel_y         : accel_y * 0.01f
+        pos_target    : pos_target * 0.01f,
+        pos           : pos * 0.01f,
+        vel_desired   : vel_desired * 0.01f,
+        vel_target    : vel_target * 0.01f,
+        vel           : vel * 0.01f,
+        accel_desired : accel_desired * 0.01f,
+        accel_target  : accel_target * 0.01f,
+        accel         : accel * 0.01f
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out)
+void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
 {
-    const struct log_PSCZ pkt{
-        LOG_PACKET_HEADER_INIT(LOG_PSCZ_MSG),
-        time_us         : AP_HAL::micros64(),
-        pos_target_z    : pos_target_z * 0.01f,
-        pos_z           : pos_z * 0.01f,
-        vel_desired_z   : vel_desired_z * 0.01f,
-        vel_target_z    : vel_target_z * 0.01f,
-        vel_z           : vel_z * 0.01f,
-        accel_desired_z : accel_desired_z * 0.01f,
-        accel_target_z  : accel_target_z * 0.01f,
-        accel_z         : accel_z * 0.01f,
-        throttle_out    : throttle_out
+    const struct log_PSCE pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCE_MSG),
+            time_us         : AP_HAL::micros64(),
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
+{
+    const struct log_PSCD pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCD_MSG),
+            time_us         : AP_HAL::micros64(),
+            pos_target    : pos_target * 0.01f,
+            pos           : pos * 0.01f,
+            vel_desired   : vel_desired * 0.01f,
+            vel_target    : vel_target * 0.01f,
+            vel           : vel * 0.01f,
+            accel_desired : accel_desired * 0.01f,
+            accel_target  : accel_target * 0.01f,
+            accel         : accel * 0.01f
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

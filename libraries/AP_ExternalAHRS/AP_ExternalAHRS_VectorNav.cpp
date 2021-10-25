@@ -29,6 +29,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 
@@ -120,7 +121,7 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     last_pkt2 = new VN_packet2;
 
     if (!pktbuf || !last_pkt1 || !last_pkt2) {
-        AP_HAL::panic("Failed to allocate ExternalAHRS");
+        AP_BoardConfig::allocation_error("ExternalAHRS");
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_VectorNav::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
@@ -290,7 +291,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
     // @Field: UP: uncertainty in pitch
     // @Field: UY: uncertainty in yaw
 
-    AP::logger().Write("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
+    AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
                        "sdddnnnDUmmnddd", "F000000GG000000",
                        "QffffffLLffffff",
                        AP_HAL::micros64(),

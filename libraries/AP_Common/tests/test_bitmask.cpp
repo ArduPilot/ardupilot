@@ -45,10 +45,22 @@ TEST(Bitmask, Tests)
 
     Bitmask<49> x2;
     x2 = x;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     x.set(50);
-    for (uint8_t i=0; i<50; i++) {
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(x.set(50), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bitmask_range");
+#endif
+
+    for (uint8_t i=0; i<49; i++) {
         EXPECT_EQ(x2.get(i), x.get(i));
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    EXPECT_EQ(x2.get(50), x.get(50));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(x2.get(50), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bitmask_range");
+#endif
 }
 
 TEST(Bitmask, SetAll)
@@ -87,4 +99,5 @@ TEST(Bitmask, Assignment)
     EXPECT_EQ(true, y.get(48));
 }
 
+AP_GTEST_PANIC()
 AP_GTEST_MAIN()

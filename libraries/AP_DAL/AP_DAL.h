@@ -141,17 +141,7 @@ public:
     }
 #endif
 
-    // this method *always* returns you the compass.  This is in
-    // constrast to get_compass, which only returns the compass once
-    // the vehicle deigns to permit its use by the EKF.
     AP_DAL_Compass &compass() { return _compass; }
-
-    // this call replaces AP::ahrs()->get_compass(), whose return
-    // result can be varied by the vehicle (typically by setting when
-    // first reading is received).  This is explicitly not
-    // "AP_DAL_Compass &compass() { return _compass; } - but it should
-    // change to be that.
-    const AP_DAL_Compass *get_compass() const;
 
     // random methods that AP_NavEKF3 wants to call on AHRS:
     bool airspeed_sensor_enabled(void) const {

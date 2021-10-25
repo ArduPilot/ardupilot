@@ -4,8 +4,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AC_PID_2D.h"
 
-#define AC_PID_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
-#define AC_PID_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
+#define AC_PID_2D_FILT_E_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PID_2D_FILT_D_HZ_DEFAULT  10.0f   // default input filter frequency
 #define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
 
@@ -25,22 +24,22 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 2, AC_PID_2D, _kimax, 0),
 
-    // @Param: FILT
+    // @Param: FLTE
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("FILT", 3, AC_PID_2D, _filt_E_hz, AC_PID_2D_FILT_HZ_DEFAULT),
+    AP_GROUPINFO("FLTE", 3, AC_PID_2D, _filt_E_hz, AC_PID_2D_FILT_E_HZ_DEFAULT),
 
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
     AP_GROUPINFO("D",    4, AC_PID_2D, _kd, 0),
 
-    // @Param: D_FILT
+    // @Param: FLTD
     // @DisplayName: D term filter frequency in Hz
     // @Description: D term filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("D_FILT", 5, AC_PID_2D, _filt_D_hz, AC_PID_2D_FILT_D_HZ_DEFAULT),
+    AP_GROUPINFO("FLTD", 5, AC_PID_2D, _filt_D_hz, AC_PID_2D_FILT_D_HZ_DEFAULT),
 
     // @Param: FF
     // @DisplayName: PID Feed Forward Gain

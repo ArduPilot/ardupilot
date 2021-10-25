@@ -15,6 +15,7 @@ bool ModeLand::init(bool ignore_checks)
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
     pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -38,6 +39,11 @@ bool ModeLand::init(bool ignore_checks)
 #if AC_FENCE == ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
+#endif
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precland state machine
+    copter.precland_statemachine.init();
 #endif
 
     return true;
@@ -66,7 +72,7 @@ void ModeLand::gps_run()
 
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
     } else {
@@ -78,8 +84,8 @@ void ModeLand::gps_run()
             land_pause = false;
         }
 
-        land_run_horizontal_control();
-        land_run_vertical_control(land_pause);
+        // run normal landing or precision landing (if enabled)
+        land_run_normal_or_precland(land_pause);
     }
 }
 
@@ -104,11 +110,11 @@ void ModeLand::nogps_run()
             update_simple_mode();
 
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+            get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -121,7 +127,7 @@ void ModeLand::nogps_run()
 
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
     } else {
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);

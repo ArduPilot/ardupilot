@@ -108,7 +108,7 @@ void AP_RangeFinder_UAVCAN::update()
         set_status(RangeFinder::Status::NoData);
     } else if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
-        state.distance_cm = _distance_cm;
+        state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;

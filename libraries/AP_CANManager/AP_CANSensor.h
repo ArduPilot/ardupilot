@@ -24,8 +24,8 @@
 
 class CANSensor : public AP_CANDriver {
 public:
-    CANSensor(const char *driver_name, AP_CANManager::Driver_Type dtype, uint16_t stack_size=2048);
-    
+    CANSensor(const char *driver_name, uint16_t stack_size=2048);
+
     /* Do not allow copies */
     CANSensor(const CANSensor &other) = delete;
     CANSensor &operator=(const CANSensor&) = delete;
@@ -47,6 +47,9 @@ public:
         }
     }
 #endif
+
+protected:
+    void register_driver(AP_CANManager::Driver_Type dtype);
 
 private:
     void loop();

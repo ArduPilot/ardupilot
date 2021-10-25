@@ -98,7 +98,7 @@ void Blimp::Log_Write_Attitude()
 // Write an EKF and POS packet
 void Blimp::Log_Write_EKF_POS()
 {
-    AP::ahrs_navekf().Log_Write();
+    AP::ahrs().Log_Write();
     ahrs.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
@@ -266,12 +266,6 @@ void Blimp::Log_Sensor_Health()
     if (sensor_health.compass != compass.healthy()) {
         sensor_health.compass = compass.healthy();
         AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-
-    // check primary GPS
-    if (sensor_health.primary_gps != gps.primary_sensor()) {
-        sensor_health.primary_gps = gps.primary_sensor();
-        AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
 }
 

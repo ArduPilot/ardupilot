@@ -203,11 +203,11 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
     _last_update_ms = AP_HAL::millis();
 
     // write to log and send to EKF if new data has arrived
-    AP::ahrs_navekf().writeOptFlowMeas(quality(),
-                                       _state.flowRate,
-                                       _state.bodyRate,
-                                       _last_update_ms,
-                                       get_pos_offset());
+    AP::ahrs().writeOptFlowMeas(quality(),
+                                _state.flowRate,
+                                _state.bodyRate,
+                                _last_update_ms,
+                                get_pos_offset());
     Log_Write_Optflow();
 }
 

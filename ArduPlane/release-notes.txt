@@ -1,3 +1,216 @@
+Release 4.1.2 17th October 2021
+-------------------------------
+
+This is minor update with a few important fixes and some new features:
+
+ - added EK3_PRIMARY parameter, to allow for selection of other than
+   the first IMU as initial EK3 lane
+
+ - added ESC_TELEMETRY_1_to_4 to list of mavlink message selections
+
+ - fixed burst read ftp error causing bad ftp param download
+
+ - fixed H7 FIFO issue with RTSCTS flow control on UARTs
+
+ - apply takeoff throttle slew limit in TAKEOFF mode and forward
+   transition in quadplanes
+
+ - reset target mission airspeed on disarm
+
+ - added RC_OPTION bit to enable multi-receiver systems
+
+ - don't apply fixed wing pitch limit to tailsitters when hovering
+
+ - fixed turn rate coordination when inverted in fixed wing flight
+
+ - fixed bug in AUTOTUNE mode that could leave gains from part way
+   through the tune
+
+Of these fixes the only one that is not backwards compatible is the
+new RC_OPTION bit which needs to be set if you have multiple RC
+receivers on your aircraft and want to fail over to a backup receiver
+while in flight. You will need to set the new RC_OPTION to enable that
+for the 4.1.2 release and later.
+
+Happy flying!
+
+Release 4.1.1 stable 8th October 2021
+-------------------------------------
+
+This is the a minor bugfix release in the 4.1.x stable series. Changes
+are:
+
+ - fixed IMU orientation on QiotekZealotF427 controller
+ - fixed lua scripting bug in logging of strings
+ - fixed an initialisation bug in the attitude controller for quadplanes
+ - added desired values to PSC quadplane pos control logging
+ - prevent entry into CRSF parameter mode while armed
+ - added bootloader to build for MatekF765-SE
+
+Thanks to all the users who have been reporting back on flights with
+4.1.0, and happy flying!
+
+
+Release 4.1.0 stable 28th September 2021
+----------------------------------------
+
+This is the first stable release of the 4.1.x series for fixed
+wing. This is a major release, with a lot of changes over the 4.0.9
+release.
+
+The changes since the last beta (4.1.0beta8) are:
+
+ - fixed a wind speed initialiation bug that affects planes with no
+   airspeed sensor and no compass
+ - added support for icm42605 on MatekH743
+
+There have in total been over 9000 patches applied since the last
+major release (the 4.0.9 stable release), so listing all of them is
+not practical, but a few of the highlights are:
+
+ - USB log download speeds improved on F7 and H7 based boards
+ - Large improvements in EKF stability and support for very long distance flights
+ - new boards QiotekZealotF427, MatekF765-SE, MambaF405v2, KakuteF4Mini, FlywooF745, FlywooF745Nano, BeastF7 and BeastH7
+ - massive improvements to lua scripting, with greatly expanded API
+ - External AHRS support (VectorNav)
+ - support for EKF3 affinity for better sensor redundancy
+ - big improvements to GPS moving baseline yaw support
+ - new fixed wing PID system
+ - major fixed wing autotune update giving much better tuning
+ - added MAN_EXPO_* parameters for input expos in MANUAL, TRAINING and ACRO modes
+ - added ONESHOT_MASK for oneshot output on control surfaces
+ - dupport for bi-directional dshot on many boards
+ - added PiccoloCAN servo support
+ - new quadplane landing approach system, with airbraking
+ - greatly improved tiltrotor support with much improved transition stability
+ - new unified ESC telemetry system for CAN, DShot and serial ESC telemetry
+ - temperature calibration for IMUs, including factory calibration support
+ - much improved notch filtering support, including double-notch and realtime FFT based notch filtering
+ - much faster parameter download and mission upload/down using MAVFTP
+ - switched to new EKF3 as default state estimator with many new features
+
+The 4.1.0 includes contributions from over 240 developers and changes
+over 300 thousand lines of code across 2800 files. It has been a
+mammoth effort from the whole community to bring this new version of
+ArduPilot which pushes the best open flight controller to whole new
+levels. A big thank you to everyone who contributed, includding the
+developers, testers and documenters. You should all be very proud of
+this release!
+
+We are already starting work on 4.2.x, and will of course continue to
+do point releases to the 4.1.x series to keep everyone up to date with
+the latest fixes.
+
+Happy flying, and thanks for choosing ArduPilot!
+
+
+Release 4.1.0beta8 15th September 2021
+--------------------------------------
+
+This is a very small beta update, with a single patch to fix a serial
+flow control issue that came in beta7.
+
+Changes since beta7 are:
+
+ - fixed auto-detection of serial flow control
+
+Happy flying!
+
+Release 4.1.0beta7 11th September 2021
+--------------------------------------
+
+This is a small beta update, with a few important fixes. I expect this
+to be the final beta and will release 4.1.0 in one week if no
+significant issues are found.
+
+Changes since beta6 are:
+
+ - USB log download speeds improved on F765 and F777 based boards (USB buffers increased)
+ - Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+ - Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+ - DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+ - IMU semaphore fix to avoid occasional corruption
+ - QioTek Zealot F427 GPIO pin fix
+ - Replay/DAL RMGH log message format fix
+ - Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+ - increase CRSF frame timeout to cope with scheduling delays
+ - fixed quadplane Z controller init calculation
+
+Please test this final beta and report on the discuss.ardupilot.org
+4.1.0beta topic.
+
+Happy flying!
+
+
+Release 4.1.0beta6 29th August 2021
+-----------------------------------
+
+This is a small beta update, with a few important fixes.
+
+Changes are:
+
+ - Flywoo F745 Goku Nano support
+ - Scripting support for getting circle mode radius and setting rate
+ - Scripting support for new Guided mode controls including acceleration control
+ - ChibiOS scheduling slip workaround to avoid occasional 60ms delays found on MatekH743
+ - EKF2 divide-by-zero protection when using optical flow (issue only found in simulator)
+ - External AHRS (e.g. VectorNav driver) init fix
+ - KakuteF4Mini SBUS fix
+ - Pixhawk4 blue and red LEDs swapped
+ - Position control fixes to limit initial desired accel (horizontal and vertical) which could lead to an excessive climb or descent
+ - fixed airspeed constraint by AHRS_WIND_MAX
+ - fixed use of hw serial inversion pins on F4 boards
+ - updates for new revisions of QioTekF427Zealot
+
+Happy flying!
+
+Release 4.1.0beta5 16th August 2021
+-----------------------------------
+
+This is a small beta update, with a few important fixes.
+
+Changes are:
+
+ - Flywoo F745 supports external I2C compasses
+ - GPS-for-yaw arming check added
+ - GPS_DRV_OPTIONS allows forcing UBlox GPS to 115200 baud
+ - Lua scripts can be placed in ROMFS_custom directory
+ - Q_P_VELXY_FILT renamed to _FLTE, Q_P_VELXY_D_FILT renamed to _FLTD
+ - CAN threading fix to resolve potential lockup when lua scripts use CAN
+ - EKF3 GSF can be invoked multiple times with source switching (no longer limited by EK3_GSF_RST_MAX)
+ - EKF3 IMU offset fix (vehicle's reported position was slightly incorrect if INS_POS_XYZ params set)
+ - OSD overwrite and nullptr check fix
+ - RCOut banner displayed at very end of startup procedure to avoid invalid output
+ - allow for VTOL flightmodes after AHRS fallback to DCM
+ - fixed a bug in Z accel initialisation (particularly affects tailsitters)
+ - added LOG_BITMASK bit for logging attitude and PIDs at full loop rate
+
+Happy flying!
+
+Release 4.1.0beta4 25th July 2021
+---------------------------------
+
+This is a large beta update, with significant changes over beta3.
+
+Changes are:
+
+ - major fixed wing autotune update over previous 4.1 beta releases
+ - added MAN_EXPO_* parameters for input expos in MANUAL, TRAINING and ACRO modes
+ - added ONESHOT_MASK for oneshot output on control surfaces
+ - GPS-for-yaw enhancements including using position and yaw from different GPSs
+ - Long distance flight supported (thousands of km) including double precision EKF and moving origin
+ - major improvements to EKF3 stability
+ - BLHeli fix that could cause failure to boot
+ - CRSF message spamming and firmware string length fixed
+ - Display re-enabled on 1MB boards
+ - DShot always sends 0 when disarmed (protects against motors spin while disarmed due to misconfiguration)
+ - DShot fix that could cause main loop jitter
+ - DShot buzzer tone disabled during motor test to remove bad interation
+ - MatekF405-bdshot NeoPixel LEDs re-enabled on PWM5
+ - Serial port performance improvements using FIFO on H7 boards
+
+Please report all test results and happy flying!
+
 Release 4.1.0beta3 5th July 2021
 --------------------------------
 

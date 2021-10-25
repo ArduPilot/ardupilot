@@ -18,7 +18,7 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     char linebuf[10];           // legacy protocol buffer
     uint8_t linebuf_len;        // legacy protocol buffer length

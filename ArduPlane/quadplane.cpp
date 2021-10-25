@@ -1,4 +1,7 @@
 #include "Plane.h"
+
+#if HAL_QUADPLANE_ENABLED
+
 #include "AC_AttitudeControl/AC_AttitudeControl_TS.h"
 
 const AP_Param::GroupInfo QuadPlane::var_info[] = {
@@ -86,7 +89,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THR_MIN_PWM", 22, QuadPlane, thr_min_pwm, 1000),
+    // 22: THR_MIN_PWM
 
     // @Param: THR_MAX_PWM
     // @DisplayName: Maximum PWM output
@@ -95,7 +98,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THR_MAX_PWM", 23, QuadPlane, thr_max_pwm, 2000),
+    // 23: THR_MAX_PWM
 
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
@@ -149,7 +152,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: TailSitter, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri, 10: Single/Dual, 12:DodecaHexa, 14:Deca, 15:Scripting Matrix, 17:Dynamic Scripting Matrix
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 46, QuadPlane, frame_class, 1),
 
@@ -200,29 +203,9 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_MODE", 36, QuadPlane, rtl_mode, 0),
 
-    // @Param: TILT_MASK
-    // @DisplayName: Tiltrotor mask
-    // @Description: This is a bitmask of motors that are tiltable in a tiltrotor (or tiltwing). The mask is in terms of the standard motor order for the frame type.
-    // @User: Standard
-    AP_GROUPINFO("TILT_MASK", 37, QuadPlane, tilt.tilt_mask, 0),
-
-    // @Param: TILT_RATE_UP
-    // @DisplayName: Tiltrotor upwards tilt rate
-    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from forward flight to hover
-    // @Units: deg/s
-    // @Increment: 1
-    // @Range: 10 300
-    // @User: Standard
-    AP_GROUPINFO("TILT_RATE_UP", 38, QuadPlane, tilt.max_rate_up_dps, 40),
-
-    // @Param: TILT_MAX
-    // @DisplayName: Tiltrotor maximum VTOL angle
-    // @Description: This is the maximum angle of the tiltable motors at which multicopter control will be enabled. Beyond this angle the plane will fly solely as a fixed wing aircraft and the motors will tilt to their maximum angle at the TILT_RATE
-    // @Units: deg
-    // @Increment: 1
-    // @Range: 20 80
-    // @User: Standard
-    AP_GROUPINFO("TILT_MAX", 39, QuadPlane, tilt.max_angle_deg, 45),
+    // 37: TILT_MASK
+    // 38: TILT_RATE_UP
+    // 39: TILT_MAX
 
     // @Param: GUIDED_MODE
     // @DisplayName: Enable VTOL in GUIDED mode
@@ -265,79 +248,16 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_ANGLE", 45, QuadPlane, assist_angle, 30),
 
-    // @Param: TILT_TYPE
-    // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrottor must use the tailsitter frame class (10)
-    // @Values: 0:Continuous,1:Binary,2:VectoredYaw,3:Bicopter
-    AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
-
-    // @Param: TAILSIT_ANGLE
-    // @DisplayName: Tailsitter fixed wing transition angle
-    // @Description: This is the pitch angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
-    // @Units: deg
-    // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle_fw, 45),
-
-    // @Param: TAILSIT_ANG_VT
-    // @DisplayName: Tailsitter VTOL transition angle
-    // @Description: This is the pitch angle at which tailsitter aircraft will change from fixed wing control to VTOL control, if zero Q_TAILSIT_ANGLE will be used
-    // @Units: deg
-    // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANG_VT", 61, QuadPlane, tailsitter.transition_angle_vtol, 0),
-
-    // @Param: TILT_RATE_DN
-    // @DisplayName: Tiltrotor downwards tilt rate
-    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from hover to forward flight. When this is zero the Q_TILT_RATE_UP value is used.
-    // @Units: deg/s
-    // @Increment: 1
-    // @Range: 10 300
-    // @User: Standard
-    AP_GROUPINFO("TILT_RATE_DN", 49, QuadPlane, tilt.max_rate_down_dps, 0),
-        
-    // @Param: TAILSIT_INPUT
-    // @DisplayName: Tailsitter input type bitmask
-    // @Description: This controls whether stick input when hovering as a tailsitter follows the conventions for fixed wing hovering or multicopter hovering. When PlaneMode is not enabled (bit0 = 0) the roll stick will roll the aircraft in earth frame and yaw stick will yaw in earth frame. When PlaneMode input is enabled, the roll and yaw sticks are swapped so that the roll stick controls earth-frame yaw and rudder controls earth-frame roll. When body-frame roll is enabled (bit1 = 1), the yaw stick controls earth-frame yaw rate and the roll stick controls roll in the tailsitter's body frame when flying level.
-    // @Bitmask: 0:PlaneMode,1:BodyFrameRoll
-    AP_GROUPINFO("TAILSIT_INPUT", 50, QuadPlane, tailsitter.input_type, 0),
-
-    // @Param: TAILSIT_MASK
-    // @DisplayName: Tailsitter input mask
-    // @Description: This controls what channels have full manual control when hovering as a tailsitter and the Q_TAILSIT_MASKCH channel in high. This can be used to teach yourself to prop-hang a 3D plane by learning one or more channels at a time.
-    // @Bitmask: 0:Aileron,1:Elevator,2:Throttle,3:Rudder
-    AP_GROUPINFO("TAILSIT_MASK", 51, QuadPlane, tailsitter.input_mask, 0),
-
-    // @Param: TAILSIT_MASKCH
-    // @DisplayName: Tailsitter input mask channel
-    // @Description: This controls what input channel will activate the Q_TAILSIT_MASK mask. When this channel goes above 1700 then the pilot will have direct manual control of the output channels specified in Q_TAILSIT_MASK. Set to zero to disable.
-    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    AP_GROUPINFO("TAILSIT_MASKCH", 52, QuadPlane, tailsitter.input_mask_chan, 0),
-
-    // @Param: TAILSIT_VFGAIN
-    // @DisplayName: Tailsitter vector thrust gain in forward flight
-    // @Description: This controls the amount of vectored thrust control used in forward flight for a vectored tailsitter
-    // @Range: 0 1
-    // @Increment: 0.01
-    AP_GROUPINFO("TAILSIT_VFGAIN", 53, QuadPlane, tailsitter.vectored_forward_gain, 0),
-
-    // @Param: TAILSIT_VHGAIN
-    // @DisplayName: Tailsitter vector thrust gain in hover
-    // @Description: This controls the amount of vectored thrust control used in hover for a vectored tailsitter
-    // @Range: 0 1
-    // @Increment: 0.01
-    AP_GROUPINFO("TAILSIT_VHGAIN", 54, QuadPlane, tailsitter.vectored_hover_gain, 0.5),
-
-    // @Param: TILT_YAW_ANGLE
-    // @DisplayName: Tilt minimum angle for vectored yaw
-    // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes. This is also used to limit the forwards travel of bicopter tilts when in VTOL modes
-    // @Range: 0 30
-    AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
-
-    // @Param: TAILSIT_VHPOW
-    // @DisplayName: Tailsitter vector thrust gain power
-    // @Description: This controls the amount of extra pitch given to the vectored control when at high pitch errors
-    // @Range: 0 4
-    // @Increment: 0.1
-    AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
+    // 47: TILT_TYPE
+    // 48: TAILSIT_ANGLE
+    // 61: TAILSIT_ANG_VT
+    // 49: TILT_RATE_DN
+    // 50: TAILSIT_INPUT
+    // 51: TAILSIT_MASK
+    // 52: TAILSIT_MASKCH
+    // 53: TAILSIT_VFGAIN
+    // 54: TAILSIT_VHGAIN
+    // 56: TAILSIT_VHPOW
 
     // @Param: MAV_TYPE
     // @DisplayName: MAVLink type identifier
@@ -348,13 +268,13 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming, ThrLandControl: enable throttle stick control of landing rate, DisableApproach: Disable use of approach and airbrake stages in VTOL landing, EnableLandResponsition: enable pilot controlled repositioning in AUTO land. Descent will pause while repositioning.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition,18:Only allow arming in Qmodes or auto
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
 
     // 60 is used above for VELZ_MAX_DN
-    // 61 is used above for TS_ANGLE_VTOL
+    // 61 was used above for TAILSIT_ANG_VT
 
     AP_GROUPEND
 };
@@ -375,16 +295,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
 
-    // @Param: TAILSIT_GSCMAX
-    // @DisplayName: Maximum tailsitter gain scaling
-    // @Description: Maximum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
-    // @Range: 1 5
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_GSCMAX", 3, QuadPlane, tailsitter.throttle_scale_max, 2),
+    // 3: TAILSIT_GSCMAX
 
     // @Param: TRIM_PITCH
     // @DisplayName: Quadplane AHRS trim pitch
-    // @Description: This sets the compensation for the pitch angle trim difference between forward and vertical flight pitch, NOTE! this is relative to forward flight trim not mounting locaiton. For tailsitters this is relative to a baseline of 90 degrees.
+    // @Description: This sets the compensation for the pitch angle trim difference between calibrated AHRS level and vertical flight pitch. NOTE! this is relative to calibrated AHRS trim, not forward flight trim which includes TRIM_PITCH_CD. For tailsitters, this is relative to a baseline of 90 degrees in AHRS.
     // @Units: deg
     // @Range: -10 +10
     // @Increment: 0.1
@@ -392,13 +307,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: True
     AP_GROUPINFO("TRIM_PITCH", 4, QuadPlane, ahrs_trim_pitch, 0),
 
-    // @Param: TAILSIT_RLL_MX
-    // @DisplayName: Maximum Roll angle
-    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_ANGLE_MAX is used.
-    // @Units: deg
-    // @Range: 0 80
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_RLL_MX", 5, QuadPlane, tailsitter.max_roll_angle, 0),
+    // 5: TAILSIT_RLL_MX
 
 #if QAUTOTUNE_ENABLED
     // @Group: AUTOTUNE_
@@ -424,12 +333,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
-    // @Param: TAILSIT_MOTMX
-    // @DisplayName: Tailsitter motor mask
-    // @Description: Bitmask of motors to remain active in forward flight for a 'Copter' tailsitter. Non-zero indicates airframe is a Copter tailsitter and uses copter style motor layouts determined by Q_FRAME_CLASS and Q_FRAME_TYPE. This should be zero for non-Copter tailsitters.
-    // @User: Standard
-    // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
-    AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
+    // 9: TAILSIT_MOTMX
 
     // @Param: THROTTLE_EXPO
     // @DisplayName: Throttle expo strength
@@ -492,19 +396,8 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist_alt, 0),
 
-    // @Param: TAILSIT_GSCMSK
-    // @DisplayName: Tailsitter gain scaling mask
-    // @Description: Bitmask of gain scaling methods to be applied: Throttle: scale gains with throttle, ATT_THR: reduce gain at high throttle/tilt, 2:Disk theory velocity calculation, requires Q_TAILSIT_DSKLD to be set, ATT_THR must not be set, 3:Altitude correction, scale with air density
-    // @User: Standard
-    // @Bitmask: 0:Throttle,1:ATT_THR,2:Disk Theory,3:Altitude correction
-    AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_THROTTLE),
-
-    // @Param: TAILSIT_GSCMIN
-    // @DisplayName: Minimum tailsitter gain scaling
-    // @Description: Minimum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
-    // @Range: 0.1 1
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
+    // 17: TAILSIT_GSCMSK
+    // 18: TAILSIT_GSCMIN
 
     // @Param: ASSIST_DELAY
     // @DisplayName: Quadplane assistance delay
@@ -519,45 +412,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: VTOL manual forward throttle max percent
     // @Description: Maximum value for manual forward throttle; used with RC option FWD_THR (209)
     // @Range: 0 100
-    // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
-    // @Param: TAILSIT_DSKLD
-    // @DisplayName: Tailsitter disk loading
-    // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. Only used with Q_TAILSIT_GSCMSK = 4
-    // @Units: kg/m/m
-    // @Range: 0 50
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_DSKLD", 21, QuadPlane, tailsitter.disk_loading, 0),
+    // 21: TAILSIT_DSKLD
+    // 22: TILT_FIX_ANGLE
+    // 23: TILT_FIX_GAIN
+    // 24: TAILSIT_RAT_FW
+    // 25: TAILSIT_RAT_VT
 
-    // @Param: TILT_FIX_ANGLE
-    // @DisplayName: Fixed wing tiltrotor angle
-    // @Description: This is the angle the motors tilt down when at maximum output for forward flight. Set this to a non-zero value to enable vectoring for roll/pitch in forward flight on tilt-vectored aircraft
-    // @Units: deg
-    // @Range: 0 30
-    // @User: Standard
-    AP_GROUPINFO("TILT_FIX_ANGLE", 22, QuadPlane, tilt.fixed_angle, 0),
+    // @Group: TAILSIT_
+    // @Path: tailsitter.cpp
+    AP_SUBGROUPINFO(tailsitter, "TAILSIT_", 26, QuadPlane, Tailsitter),
 
-    // @Param: TILT_FIX_GAIN
-    // @DisplayName: Fixed wing tiltrotor gain
-    // @Description: This is the gain for use of tilting motors in fixed wing flight for tilt vectored quadplanes
-    // @Range: 0 1
-    // @User: Standard
-    AP_GROUPINFO("TILT_FIX_GAIN", 23, QuadPlane, tilt.fixed_gain, 0),
-
-    // @Param: TAILSIT_RAT_FW
-    // @DisplayName: Tailsitter VTOL to forward flight transition rate
-    // @Description: The pitch rate at which tailsitter aircraft will pitch down in the transition from VTOL to forward flight
-    // @Units: deg/s
-    // @Range: 10 500
-    AP_GROUPINFO("TAILSIT_RAT_FW", 24, QuadPlane, tailsitter.transition_rate_fw, 50),
-
-    // @Param: TAILSIT_RAT_VT
-    // @DisplayName: Tailsitter forward flight to VTOL transition rate
-    // @Description: The pitch rate at which tailsitter aircraft will pitch up in the transition from forward flight to VTOL
-    // @Units: deg/s
-    // @Range: 10 500
-    AP_GROUPINFO("TAILSIT_RAT_VT", 25, QuadPlane, tailsitter.transition_rate_vtol, 50),
+    // @Group: TILT_
+    // @Path: tiltrotor.cpp
+    AP_SUBGROUPINFO(tiltrotor, "TILT_", 27, QuadPlane, Tiltrotor),
 
     AP_GROUPEND
 };
@@ -586,23 +455,6 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 };
 
 /*
-  extra defaults for tailsitters
- */
-static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] = {
-    { "KFF_RDDRMIX",       0.02 },
-    { "Q_A_RAT_PIT_FF",    0.2 },
-    { "Q_A_RAT_YAW_FF",    0.2 },
-    { "Q_A_RAT_YAW_I",     0.18 },
-    { "Q_A_ANGLE_BOOST",   0 },
-    { "LIM_PITCH_MAX",    3000 },
-    { "LIM_PITCH_MIN",    -3000 },
-    { "MIXING_GAIN",      1.0 },
-    { "RUDD_DT_GAIN",      10 },
-    { "Q_TRANSITION_MS",   2000 },
-    { "Q_TRANS_DECEL",    6 },
-};
-
-/*
   conversion table for quadplane parameters
  */
 const AP_Param::ConversionInfo q_conversion_table[] = {
@@ -611,7 +463,7 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 4046, AP_PARAM_FLOAT, "Q_P_VELXY_P"},     //  Q_VXY_P
     { Parameters::k_param_quadplane, 78,   AP_PARAM_FLOAT, "Q_P_VELXY_I"},     //  Q_VXY_I
     { Parameters::k_param_quadplane, 142,  AP_PARAM_FLOAT, "Q_P_VELXY_IMAX"},  //  Q_VXY_IMAX
-    { Parameters::k_param_quadplane, 206,  AP_PARAM_FLOAT, "Q_P_VELXY_FILT"},  //  Q_VXY_FILT_HZ
+    { Parameters::k_param_quadplane, 206,  AP_PARAM_FLOAT, "Q_P_VELXY_FLTE"},  //  Q_VXY_FILT_HZ
     { Parameters::k_param_quadplane, 4047, AP_PARAM_FLOAT, "Q_P_VELZ_P"},      //  Q_VZ_P
     { Parameters::k_param_quadplane, 4048, AP_PARAM_FLOAT, "Q_P_ACCZ_P"},      //  Q_AZ_P
     { Parameters::k_param_quadplane, 80,   AP_PARAM_FLOAT, "Q_P_ACCZ_I"},      //  Q_AZ_I
@@ -629,10 +481,39 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_q_attitude_control, 449,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FF" },  // Q_A_RAT_RLL_FF
     { Parameters::k_param_q_attitude_control, 450,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FF" },  // Q_A_RAT_PIT_FF
     { Parameters::k_param_q_attitude_control, 451,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FF" },  // Q_A_RAT_YAW_FILT
+
+    // tailsitter params have moved but retain the same names
+    { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
+    { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
+    { Parameters::k_param_quadplane, 50,  AP_PARAM_INT8,  "Q_TAILSIT_INPUT" },
+    { Parameters::k_param_quadplane, 53,  AP_PARAM_FLOAT, "Q_TAILSIT_VFGAIN" },
+    { Parameters::k_param_quadplane, 54,  AP_PARAM_FLOAT, "Q_TAILSIT_VHGAIN" },
+    { Parameters::k_param_quadplane, 56,  AP_PARAM_FLOAT, "Q_TAILSIT_VHPOW" },
+    { Parameters::k_param_quadplane, 251,   AP_PARAM_FLOAT, "Q_TAILSIT_GSCMAX" },
+    { Parameters::k_param_quadplane, 379,   AP_PARAM_FLOAT, "Q_TAILSIT_RLL_MX" },
+    { Parameters::k_param_quadplane, 635,   AP_PARAM_INT16, "Q_TAILSIT_MOTMX" },
+    { Parameters::k_param_quadplane, 1147,  AP_PARAM_INT16, "Q_TAILSIT_GSCMSK" },
+    { Parameters::k_param_quadplane, 1211,  AP_PARAM_FLOAT, "Q_TAILSIT_GSCMIN" },
+    { Parameters::k_param_quadplane, 1403,  AP_PARAM_FLOAT, "Q_TAILSIT_DSKLD" },
+    { Parameters::k_param_quadplane, 1595,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
+    { Parameters::k_param_quadplane, 1659,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
+
+    // tiltrotor params have moved but retain the same names
+    { Parameters::k_param_quadplane, 37,  AP_PARAM_INT16,  "Q_TILT_MASK" },
+    { Parameters::k_param_quadplane, 38,  AP_PARAM_INT16,  "Q_TILT_RATE_UP" },
+    { Parameters::k_param_quadplane, 39,  AP_PARAM_INT8,  "Q_TILT_MAX" },
+    { Parameters::k_param_quadplane, 47,  AP_PARAM_INT8,  "Q_TILT_TYPE" },
+    { Parameters::k_param_quadplane, 49,  AP_PARAM_INT16,  "Q_TILT_RATE_DN" },
+    { Parameters::k_param_quadplane, 55,  AP_PARAM_FLOAT,  "Q_TILT_YAW_ANGLE" },
+    { Parameters::k_param_quadplane, 1467,  AP_PARAM_FLOAT,  "Q_TILT_FIX_ANGLE" },
+    { Parameters::k_param_quadplane, 1531,  AP_PARAM_FLOAT,  "Q_TILT_FIX_GAIN" },
+
+    { Parameters::k_param_quadplane, 22,  AP_PARAM_INT16, "Q_M_PWM_MIN" },
+    { Parameters::k_param_quadplane, 23,  AP_PARAM_INT16, "Q_M_PWM_MAX" },
 };
 
 
-QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
+QuadPlane::QuadPlane(AP_AHRS &_ahrs) :
     ahrs(_ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -663,8 +544,6 @@ bool QuadPlane::setup(void)
         return false;
     }
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
-
-    enum Rotation rotation = ROTATION_NONE;
 
     /*
       cope with upgrade from old AP_Motors values for frame_class
@@ -726,123 +605,90 @@ bool QuadPlane::setup(void)
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
+    case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
+    case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
         break;
     default:
-        AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", frame_class);
+        AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", (unsigned int)(frame_class.get()));
     }
 
-    if (tailsitter.motor_mask == 0) {
-        // this is a normal quadplane
-        switch ((AP_Motors::motor_frame_class)frame_class) {
-        case AP_Motors::MOTOR_FRAME_TRI:
-            motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsTri::var_info;
+    // Make sure not both a tailsiter and tiltrotor
+    if (tailsitter.enabled() && tiltrotor.enabled()) {
+        AP_BoardConfig::config_error("set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
+    }
+
+    switch ((AP_Motors::motor_frame_class)frame_class) {
+    case AP_Motors::MOTOR_FRAME_TRI:
+        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTri::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        // this is a duo-motor tailsitter
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTailsitter::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
+#ifdef ENABLE_SCRIPTING
+            motors = new AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
+#endif // ENABLE_SCRIPTING
             break;
-        case AP_Motors::MOTOR_FRAME_TAILSITTER:
-            // this is a duo-motor tailsitter (vectored thrust if tilt.tilt_mask != 0)
-            motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsTailsitter::var_info;
-            if (tilt.tilt_type != TILT_TYPE_BICOPTER) {
-                rotation = ROTATION_PITCH_90;
-            }
-            break;
-        default:
-            motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
-            motors_var_info = AP_MotorsMatrix::var_info;
-            break;
-        }
-    } else {
-        // this is a copter tailsitter with motor layout specified by frame_class and frame_type
-        // tilting motors are not supported (tiltrotor control variables are ignored)
-        if (tilt.tilt_mask != 0) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Warning: Motor tilt not supported\n");
-        }
-        rotation = ROTATION_PITCH_90;
+    default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
+        break;
     }
 
     if (!motors) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "motors");
+        AP_BoardConfig::allocation_error("motors");
     }
 
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     // create the attitude view used by the VTOL code
-    ahrs_view = ahrs.create_view(rotation, ahrs_trim_pitch);
+    ahrs_view = ahrs.create_view(tailsitter.enabled() ? ROTATION_PITCH_90 : ROTATION_NONE, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
+        AP_BoardConfig::allocation_error("ahrs_view");
     }
 
     attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "attitude_control");
+        AP_BoardConfig::allocation_error("attitude_control");
     }
 
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control, loop_delta_t);
     if (!pos_control) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "pos_control");
+        AP_BoardConfig::allocation_error("pos_control");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "wp_nav");
+        AP_BoardConfig::allocation_error("wp_nav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
-#if AP_TERRAIN_AVAILABLE
-    wp_nav->set_terrain(&plane.terrain);
-#endif
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (!loiter_nav) {
-        AP_BoardConfig::config_error("Unable to allocate %s", "loiter_nav");
+        AP_BoardConfig::allocation_error("loiter_nav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init(frame_class, frame_type);
-
-    tilt.is_vectored = tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW;
-
-    if (motors_var_info == AP_MotorsMatrix::var_info && tilt.is_vectored) {
-        // we will be using vectoring for yaw
-        motors->disable_yaw_torque();
-    }
-
-    motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
+    motors->update_throttle_range();
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
     wp_nav->wp_and_spline_init();
 
-    // TODO: update this if servo function assignments change
-    // used by relax_attitude_control() to control special behavior for vectored tailsitters
-    _is_vectored = (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
-                   (!is_zero(tailsitter.vectored_hover_gain) &&
-                    (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
-                     SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
-
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
     for (uint8_t i=0; i<8; i++) {
         SRV_Channel::Aux_servo_function_t func = SRV_Channels::get_motor_function(i);
-        SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
+        SRV_Channels::set_failsafe_pwm(func, motors->get_pwm_output_min());
     }
 
     transition_state = TRANSITION_DONE;
-
-    if (tilt.tilt_mask != 0) {
-        // setup tilt compensation
-        motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
-        if (tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
-            // setup tilt servos for vectored yaw
-            SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
-            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
-            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRear,  1000);
-            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearLeft, 1000);
-            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearRight, 1000);
-        }
-    }
 
     // default QAssist state as set with Q_OPTIONS
     if ((options & OPTION_Q_ASSIST_FORCE_ENABLE) != 0) {
@@ -853,10 +699,9 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
-    // Set tailsitter transition rate to match old caculation
-    if (!tailsitter.transition_rate_fw.configured()) {
-        tailsitter.transition_rate_fw.set_and_save(tailsitter.transition_angle_fw / (transition_time_ms/2000.0f));
-    }
+    tailsitter.setup();
+
+    tiltrotor.setup();
 
     // param count will have changed
     AP_Param::invalidate_count();
@@ -873,10 +718,6 @@ void QuadPlane::setup_defaults(void)
 {
     AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
 
-    if (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
-        AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
-    }
-    
     // reset ESC calibration
     if (esc_calibration != 0) {
         esc_calibration.set_and_save(0);
@@ -911,61 +752,19 @@ void QuadPlane::run_esc_calibration(void)
     }
 }
 
-
-// init quadplane stabilize mode 
-void QuadPlane::init_stabilize(void)
-{
-    throttle_wait = false;
-}
-
-/*
-  when doing a forward transition of a tilt-vectored quadplane we use
-  euler angle control to maintain good yaw. This updates the yaw
-  target based on pilot input and target roll
- */
-void QuadPlane::update_yaw_target(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (now - tilt.transition_yaw_set_ms > 100 ||
-        !is_zero(get_pilot_input_yaw_rate_cds())) {
-        // lock initial yaw when transition is started or when
-        // pilot commands a yaw change. This allows us to track
-        // straight in transitions for tilt-vectored planes, but
-        // allows for turns when level transition is not wanted
-        tilt.transition_yaw_cd = ahrs.yaw_sensor;
-    }
-
-    /*
-      now calculate the equivalent yaw rate for a coordinated turn for
-      the desired bank angle given the airspeed
-     */
-    float aspeed;
-    bool have_airspeed = ahrs.airspeed_estimate(aspeed);
-    if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
-        float dt = (now - tilt.transition_yaw_set_ms) * 0.001;
-        // calculate the yaw rate to achieve the desired turn rate
-        const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
-        const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;
-        tilt.transition_yaw_cd += yaw_rate_cds * dt;
-    }
-    tilt.transition_yaw_set_ms = now;
-}
-
 /*
   ask the multicopter attitude control to match the roll and pitch rates being demanded by the
   fixed wing controller if not in a pure VTOL mode
  */
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
-    check_attitude_relax();
-
-    bool use_multicopter_control = in_vtol_mode() && !in_tailsitter_vtol_transition();
+    bool use_multicopter_control = in_vtol_mode() && !tailsitter.in_vtol_transition();
     bool use_multicopter_eulers = false;
 
     if (!use_multicopter_control &&
-        tilt.is_vectored &&
+        tiltrotor.is_vectored() &&
         transition_state <= TRANSITION_TIMER) {
-        update_yaw_target();
+        tiltrotor.update_yaw_target();
         use_multicopter_control = true;
         use_multicopter_eulers = true;
     }
@@ -976,10 +775,10 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 
         // tailsitter-only body-frame roll control options
         // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
-        if (is_tailsitter() &&
-            (tailsitter.input_type & TAILSITTER_INPUT_BF_ROLL)) {
+        if (tailsitter.enabled() &&
+            (tailsitter.input_type & Tailsitter::input::TAILSITTER_INPUT_BF_ROLL)) {
 
-            if (!(tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
+            if (!(tailsitter.input_type & Tailsitter::input::TAILSITTER_INPUT_PLANE)) {
                 // In multicopter input mode, the roll and yaw stick axes are independent of pitch
                 attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
                                                                                 plane.nav_roll_cd,
@@ -1021,7 +820,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         if (use_multicopter_eulers) {
             attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
                                                                plane.nav_pitch_cd,
-                                                               tilt.transition_yaw_cd,
+                                                               tiltrotor.transition_yaw_cd,
                                                                true);
         } else {
             // use euler angle attitude control
@@ -1033,7 +832,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // use the fixed wing desired rates
         float roll_rate = plane.rollController.get_pid_info().target;
         float pitch_rate = plane.pitchController.get_pid_info().target;
-        if (is_tailsitter()) {
+        if (tailsitter.enabled()) {
             // tailsitter roll and yaw swapped due to change in reference frame
             attitude_control->input_rate_bf_roll_pitch_yaw_2(yaw_rate_cds,pitch_rate*100.0f, -roll_rate*100.0f);
         } else {
@@ -1048,33 +847,19 @@ void QuadPlane::hold_stabilize(float throttle_in)
     // call attitude controller
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
-    if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
+    if ((throttle_in <= 0) && !air_mode_active()) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
         relax_attitude_control();
     } else {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         bool should_boost = true;
-        if (is_tailsitter() && assisted_flight) {
+        if (tailsitter.enabled() && assisted_flight) {
             // tailsitters in forward flight should not use angle boost
             should_boost = false;
         }
         attitude_control->set_throttle_out(throttle_in, should_boost, 0);
     }
-}
-
-// quadplane stabilize mode
-void QuadPlane::control_stabilize(void)
-{
-    // special check for ESC calibration in QSTABILIZE
-    if (esc_calibration != 0) {
-        run_esc_calibration();
-        return;
-    }
-
-    // normal QSTABILIZE mode
-    float pilot_throttle_scaled = get_pilot_throttle();
-    hold_stabilize(pilot_throttle_scaled);
 }
 
 // run the multicopter Z controller
@@ -1086,12 +871,13 @@ void QuadPlane::run_z_controller(void)
         pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
         // initialise the vertical position controller
-        if (!is_tailsitter()) {
+        if (!tailsitter.enabled()) {
             pos_control->init_z_controller();
         } else {
             // initialise the vertical position controller with no descent
             pos_control->init_z_controller_no_descent();
         }
+        last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
     pos_control->update_z_controller();
@@ -1101,43 +887,7 @@ void QuadPlane::relax_attitude_control()
 {
     // disable roll and yaw control for vectored tailsitters
     // if not a vectored tailsitter completely disable attitude control
-    attitude_control->relax_attitude_controllers(_is_vectored);
-}
-
-/*
-  check if we should relax the attitude controllers
-
-  We relax them whenever we will be using them after a period of
-  inactivity
- */
-void QuadPlane::check_attitude_relax(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (now - last_att_control_ms > 100) {
-        relax_attitude_control();
-    }
-    last_att_control_ms = now;
-}
-
-/*
-  init QACRO mode
- */
-void QuadPlane::init_qacro(void)
-{
-    throttle_wait = false;
-    transition_state = TRANSITION_DONE;
-    attitude_control->relax_attitude_controllers();
-}
-
-// init quadplane hover mode 
-void QuadPlane::init_hover(void)
-{
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    set_climb_rate_cms(0, false);
-
-    init_throttle_wait();
+    attitude_control->relax_attitude_controllers(tailsitter._is_vectored);
 }
 
 /*
@@ -1257,100 +1007,6 @@ float QuadPlane::get_pilot_land_throttle(void) const
     return constrain_float(throttle_in, 0, 1);
 }
 
-/*
-  control QACRO mode
- */
-void QuadPlane::control_qacro(void)
-{
-    if (throttle_wait) {
-        set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0, true, 0);
-        relax_attitude_control();
-    } else {
-        check_attitude_relax();
-
-        set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-        // convert the input to the desired body frame rate
-        float target_roll = 0;
-        float target_pitch = plane.channel_pitch->norm_input() * acro_pitch_rate * 100.0f;
-        float target_yaw = 0;
-        if (is_tailsitter()) {
-            // Note that the 90 degree Y rotation for copter mode swaps body-frame roll and yaw
-            target_roll =  plane.channel_rudder->norm_input() * acro_yaw_rate * 100.0f;
-            target_yaw  = -plane.channel_roll->norm_input() * acro_roll_rate * 100.0f;
-        } else {
-            target_roll = plane.channel_roll->norm_input() * acro_roll_rate * 100.0f;
-            target_yaw  = plane.channel_rudder->norm_input() * acro_yaw_rate * 100.0;
-        }
-
-        float throttle_out = get_pilot_throttle();
-
-        // run attitude controller
-        if (plane.g.acro_locking) {
-            attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
-        } else {
-            attitude_control->input_rate_bf_roll_pitch_yaw_2(target_roll, target_pitch, target_yaw);
-        }
-
-        // output pilot's throttle without angle boost
-        attitude_control->set_throttle_out(throttle_out, false, 10.0f);
-    }
-}
-
-/*
-  control QHOVER mode
- */
-void QuadPlane::control_hover(void)
-{
-    if (throttle_wait) {
-        set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0, true, 0);
-        relax_attitude_control();
-        pos_control->relax_z_controller(0);
-    } else {
-        hold_hover(get_pilot_desired_climb_rate_cms());
-    }
-}
-
-void QuadPlane::init_loiter(void)
-{
-    // initialise loiter
-    loiter_nav->clear_pilot_desired_acceleration();
-    loiter_nav->init_target();
-
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-
-    init_throttle_wait();
-
-    // remember initial pitch
-    loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
-
-    // prevent re-init of target position
-    last_loiter_ms = AP_HAL::millis();
-}
-
-void QuadPlane::init_qland(void)
-{
-    init_loiter();
-    throttle_wait = false;
-    setup_target_position();
-    poscontrol.set_state(QPOS_LAND_DESCEND);
-    poscontrol.pilot_correction_done = false;
-    last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-    landing_detect.lower_limit_start_ms = 0;
-    landing_detect.land_start_ms = 0;
-#if LANDING_GEAR_ENABLED == ENABLED
-    plane.g2.landing_gear.deploy_for_landing();
-#endif
-#if AC_FENCE == ENABLED
-    plane.fence.auto_disable_fence_for_landing();
-#endif
-}
-
-
 // helper for is_flying()
 bool QuadPlane::is_flying(void)
 {
@@ -1363,7 +1019,7 @@ bool QuadPlane::is_flying(void)
     if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
         return true;
     }
-    if (in_tailsitter_vtol_transition()) {
+    if (tailsitter.in_vtol_transition()) {
         return true;
     }
     return false;
@@ -1404,7 +1060,7 @@ bool QuadPlane::is_flying_vtol(void) const
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
     }
-    if (plane.control_mode->is_vtol_man_throttle() && air_mode == AirMode::ON) {
+    if (plane.control_mode->is_vtol_man_throttle() && air_mode_active()) {
         // in manual throttle modes with airmode on, don't consider aircraft landed
         return true;
     }
@@ -1413,7 +1069,7 @@ bool QuadPlane::is_flying_vtol(void) const
     }
     if (plane.control_mode->is_vtol_man_mode()) {
         // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
-        return plane.get_throttle_input() > 0;
+        return is_positive(plane.get_throttle_input());
     }
     if (in_vtol_mode() && millis() - landing_detect.lower_limit_start_ms > 5000) {
         // use landing detector
@@ -1426,7 +1082,7 @@ bool QuadPlane::is_flying_vtol(void) const
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt. 
  */
-float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
+float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
     if (poscontrol.get_state() == QPOS_LAND_FINAL) {
         // when in final use descent rate for final even if alt has climbed again
@@ -1440,19 +1096,24 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
         const float thr_in = get_pilot_land_throttle();
-        const float dz = 0.1;
-        const float thresh1 = 0.5+dz;
-        const float thresh2 = 0.5-dz;
-        const float scaling = 1.0 / (0.5 - dz);
-        if (thr_in > thresh1) {
-            // start climbing
-            ret = -(thr_in - thresh1)*scaling*max_climb_speed;
-        } else if (thr_in > thresh2) {
-            // hold height
-            ret = 0;
-        } else {
-            ret *= (thresh2 - thr_in)*scaling;
+        if (thr_in > THR_CTRL_LAND_THRESH) {
+            thr_ctrl_land = true;
         }
+        if (thr_ctrl_land) {
+            const float dz = 0.1;
+            const float thresh1 = 0.5+dz;
+            const float thresh2 = 0.5-dz;
+            const float scaling = 1.0 / (0.5 - dz);
+            if (thr_in > thresh1) {
+                // start climbing
+                ret = -(thr_in - thresh1)*scaling*max_climb_speed;
+            } else if (thr_in > thresh2) {
+                // hold height
+                ret = 0;
+            } else {
+                ret *= (thresh2 - thr_in)*scaling;
+            }
+        }    
     }
 
     if (poscontrol.pilot_correction_active) {
@@ -1463,110 +1124,15 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     return ret;
 }
 
-
-// run quadplane loiter controller
-void QuadPlane::control_loiter()
-{
-    if (throttle_wait) {
-        set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0, true, 0);
-        relax_attitude_control();
-        pos_control->relax_z_controller(0);
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        return;
-    }
-    if (!motors->armed()) {
-        init_loiter();
-    }
-
-    check_attitude_relax();
-
-    if (should_relax()) {
-        loiter_nav->soften_for_landing();
-    }
-
-    const uint32_t now = AP_HAL::millis();
-    if (now - last_loiter_ms > 500) {
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-    }
-    last_loiter_ms = now;
-
-    // motors use full range
-    set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
-
-    // process pilot's roll and pitch input
-    float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
-    loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
-    
-    // run loiter controller
-    if (!pos_control->is_active_xy()) {
-        pos_control->init_xy_controller();
-    }
-    loiter_nav->update();
-
-    // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = loiter_nav->get_roll();
-    plane.nav_pitch_cd = loiter_nav->get_pitch();
-
-    if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
-        // we limit pitch during initial transition
-        float pitch_limit_cd = linear_interpolate(loiter_initial_pitch_cd, aparm.angle_max,
-                                                  now,
-                                                  last_pidz_init_ms, last_pidz_init_ms+transition_time_ms*2);
-        if (plane.nav_pitch_cd > pitch_limit_cd) {
-            plane.nav_pitch_cd = pitch_limit_cd;
-            pos_control->set_externally_limited_xy();
-        }
-    }
-    
-    
-    // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                  plane.nav_pitch_cd,
-                                                                  get_desired_yaw_rate_cds());
-
-    if (plane.control_mode == &plane.mode_qland) {
-        if (poscontrol.get_state() < QPOS_LAND_FINAL && check_land_final()) {
-            poscontrol.set_state(QPOS_LAND_FINAL);
-            setup_target_position();
-            // cut IC engine if enabled
-            if (land_icengine_cut != 0) {
-                plane.g2.ice_control.engine_control(0, 0, 0);
-            }
-        }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
-
-        if (poscontrol.get_state() == QPOS_LAND_FINAL && (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
-            ahrs.set_touchdown_expected(true);
-        }
-
-        set_climb_rate_cms(-descent_rate_cms, descent_rate_cms>0);
-        check_land_complete();
-    } else if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
-        set_climb_rate_cms(0, false);
-    } else {
-        // update altitude target and call position controller
-        set_climb_rate_cms(get_pilot_desired_climb_rate_cms(), false);
-    }
-    run_z_controller();
-}
-
 /*
   get pilot input yaw rate in cd/s
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (!manual_air_mode &&
-        plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() &&
-        plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED) {
+        !is_positive(plane.get_throttle_input()) && !plane.control_mode->does_auto_throttle() &&
+        plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
         // the user may be trying to disarm
         return 0;
     }
@@ -1580,8 +1146,16 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 
     // add in rudder input
     float max_rate = yaw_rate_max;
-    if (is_tailsitter() &&
-        tailsitter.input_type & TAILSITTER_INPUT_BF_ROLL) {
+    if (!in_vtol_mode() && tailsitter.enabled()) {
+        // scale by RUDD_DT_GAIN when not in a VTOL mode for
+        // tailsitters. This allows for flat turns in tailsitters for
+        // fixed wing modes if you want them, but prevents crazy yaw
+        // rate demands in fixed wing based on your preferred yaw rate
+        // when hovering
+        max_rate *= plane.g2.rudd_dt_gain * 0.01;
+    }
+    if (tailsitter.enabled() &&
+        tailsitter.input_type & Tailsitter::input::TAILSITTER_INPUT_BF_ROLL) {
         // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
@@ -1598,14 +1172,13 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         // use bank angle to get desired yaw rate
         yaw_cds += desired_auto_yaw_rate_cds();
     }
-    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
-    if (plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() && !manual_air_mode) {
+    bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
+    if (!is_positive(plane.get_throttle_input()) && !plane.control_mode->does_auto_throttle() && !manual_air_mode && !(inertial_nav.get_velocity_z() < -0.5 * get_pilot_velocity_z_max_dn())) {
         // the user may be trying to disarm
         return 0;
     }
     // add in pilot input
     yaw_cds += get_pilot_input_yaw_rate_cds();
-
     // add in weathervaning
     yaw_cds += get_weathervane_yaw_rate_cds();
     
@@ -1694,10 +1267,34 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
 /*
   return true if the quadplane should provide stability assistance
  */
-bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
+bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
 {
-    if (assist_speed <= 0 || is_control_surface_tailsitter()) {
-        // assistance disabled
+    if (!hal.util->get_soft_armed() || (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED) || tailsitter.is_control_surface_tailsitter()) {
+        // disarmed or disabled by aux switch or because a control surface tailsitter
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return false;
+    }
+
+    if (!tailsitter.enabled() && !( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
+                                                                      || is_positive(plane.get_throttle_input()) 
+                                                                      || plane.is_flying() ) ) {
+        // not in a flight mode and condition where it would be safe to turn on vertial lift motors
+        // skip this check for tailsitters because the forward and vertial motors are the same and are controled directly by throttle imput unlike other quadplanes
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return false;
+    }
+
+    if (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE) {
+        // force enabled, no need to check thresholds
+        in_angle_assist = false;
+        angle_error_start_ms = 0;
+        return true;
+    }
+
+    if (assist_speed <= 0) {
+        // disabled via speed threshold
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return false;
@@ -1779,14 +1376,6 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
     return ret;
 }
 
-// return true if it is safe to provide assistance
-bool QuadPlane::assistance_safe()
-{
-    return hal.util->get_soft_armed() && ( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
-                                                                      || plane.get_throttle_input()>0 
-                                                                      || plane.is_flying() );
-}
-
 /*
   update for transition from quadplane to fixed wing mode
  */
@@ -1796,7 +1385,7 @@ void QuadPlane::update_transition(void)
         plane.control_mode == &plane.mode_acro ||
         plane.control_mode == &plane.mode_training) {
         // in manual modes quad motors are always off
-        if (!tilt.motors_active && !is_tailsitter()) {
+        if (!tiltrotor.motors_active() && !tailsitter.enabled()) {
             set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
             motors->output();
         }
@@ -1824,18 +1413,17 @@ void QuadPlane::update_transition(void)
     bool have_airspeed = ahrs.airspeed_estimate(aspeed);
 
     // tailsitters use angle wait, not airspeed wait
-    if (is_tailsitter() && transition_state == TRANSITION_AIRSPEED_WAIT) {
+    if (tailsitter.enabled() && transition_state == TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_ANGLE_WAIT_FW;
     }
 
     /*
       see if we should provide some assistance
      */
-    if (assistance_safe() && (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
-        (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
+    if (should_assist(aspeed, have_airspeed)) {
         // the quad should provide some assistance to the plane
         assisted_flight = true;
-        if (!is_tailsitter()) {
+        if (!tailsitter.enabled()) {
             // update transition state for vehicles using airspeed wait
             if (transition_state != TRANSITION_AIRSPEED_WAIT) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
@@ -1849,9 +1437,9 @@ void QuadPlane::update_transition(void)
         assisted_flight = false;
     }
 
-    if (is_tailsitter()) {
+    if (tailsitter.enabled()) {
         if (transition_state == TRANSITION_ANGLE_WAIT_FW &&
-            tailsitter_transition_fw_complete()) {
+            tailsitter.transition_fw_complete()) {
             transition_state = TRANSITION_DONE;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
@@ -1861,7 +1449,7 @@ void QuadPlane::update_transition(void)
     // if rotors are fully forward then we are not transitioning,
     // unless we are waiting for airspeed to increase (in which case
     // the tilt will decrease rapidly)
-    if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
+    if (tiltrotor.fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         if (transition_state == TRANSITION_TIMER) {
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
         }
@@ -1910,12 +1498,12 @@ void QuadPlane::update_transition(void)
         // otherwise the plane can end up in high-alpha flight with
         // low VTOL thrust and may not complete a transition
         float climb_rate_cms = assist_climb_rate_cms();
-        if ((options & OPTION_LEVEL_TRANSITION) && tilt.tilt_mask == 0) {
+        if ((options & OPTION_LEVEL_TRANSITION) && !tiltrotor.enabled()) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
         }
         hold_hover(climb_rate_cms);
 
-        if (!tilt.is_vectored) {
+        if (!tiltrotor.is_vectored()) {
             // set desired yaw to current yaw in both desired angle
             // and rate request. This reduces wing twist in transition
             // due to multicopter yaw demands. This is disabled when
@@ -1973,7 +1561,7 @@ void QuadPlane::update_transition(void)
         // control surfaces at this stage.
         // We disable this for vectored yaw tilt rotors as they do need active
         // yaw control throughout the transition
-        if (!tilt.is_vectored) {
+        if (!tiltrotor.is_vectored()) {
             attitude_control->reset_yaw_target_and_rate();
             attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         }
@@ -1987,7 +1575,6 @@ void QuadPlane::update_transition(void)
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
         plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
-        check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
@@ -2001,7 +1588,7 @@ void QuadPlane::update_transition(void)
         return;
 
     case TRANSITION_DONE:
-        if (!tilt.motors_active && !is_tailsitter()) {
+        if (!tiltrotor.motors_active() && !tailsitter.enabled()) {
             set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
             motors->output();
         }
@@ -2046,7 +1633,7 @@ void QuadPlane::update(void)
         /*
           make sure we don't have any residual control from previous flight stages
          */
-        if (is_tailsitter()) {
+        if (tailsitter.enabled()) {
             // tailsitters only relax I terms, to make ground testing easier
             attitude_control->reset_rate_controller_I_terms();
         } else {
@@ -2069,7 +1656,7 @@ void QuadPlane::update(void)
         // output to motors
         motors_output();
 
-        if (now - last_vtol_mode_ms > 1000 && is_tailsitter()) {
+        if (tailsitter.enabled() && (now - last_vtol_mode_ms) > 1000) {
             /*
               we are just entering a VTOL mode as a tailsitter, set
               our transition state so the fixed wing controller brings
@@ -2079,16 +1666,16 @@ void QuadPlane::update(void)
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
             transition_initial_pitch = constrain_float(ahrs.pitch_sensor,-8500,8500);
-        } else if (is_tailsitter() &&
+        }
+        if (tailsitter.enabled() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             float aspeed;
             bool have_airspeed = ahrs.airspeed_estimate(aspeed);
             // provide asistance in forward flight portion of tailsitter transision
-            if (assistance_safe() && (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
-                (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
+            if (should_assist(aspeed, have_airspeed)) {
                 assisted_flight = true;
             }
-            if (tailsitter_transition_vtol_complete()) {
+            if (tailsitter.transition_vtol_complete()) {
                 /*
                   we have completed transition to VTOL as a tailsitter,
                   setup for the back transition when needed
@@ -2104,7 +1691,7 @@ void QuadPlane::update(void)
             transition_low_airspeed_ms = 0;
             if (throttle_wait && !plane.is_flying()) {
                 transition_state = TRANSITION_DONE;
-            } else if (is_tailsitter()) {
+            } else if (tailsitter.enabled()) {
                 /*
                   setup for the transition back to fixed wing for later
                  */
@@ -2131,7 +1718,7 @@ void QuadPlane::update(void)
         throttle_wait = false;
     }
 
-    tiltrotor_update();
+    tiltrotor.update();
 
     // motors logging
     if (motors->armed()) {
@@ -2176,12 +1763,12 @@ void QuadPlane::update_throttle_suppression(void)
     }
 
     // if the users throttle is above zero then allow motors to run
-    if (plane.get_throttle_input() != 0) {
+    if (!is_zero(plane.get_throttle_input())) {
         return;
     }
 
     // if in a VTOL manual throttle mode and air_mode is on then allow motors to run
-    if (plane.control_mode->is_vtol_man_throttle() && air_mode == AirMode::ON) {
+    if (plane.control_mode->is_vtol_man_throttle() && air_mode_active()) {
         return;
     }
 
@@ -2232,7 +1819,7 @@ void QuadPlane::update_throttle_hover()
 
     // do not update if quadplane forward motor is running (wing may be generating lift)
     // we use the THR_MIN value to account for petrol motors idling at THR_MIN
-    if (!is_tailsitter() && (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > MAX(0,plane.aparm.throttle_min+10))) {
+    if (!tailsitter.enabled() && (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > MAX(0,plane.aparm.throttle_min+10))) {
         return;
     }
 
@@ -2259,10 +1846,6 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
-    if (run_rate_controller) {
-        attitude_control->rate_controller_run();
-    }
-
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
@@ -2292,7 +1875,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
         return;
     }
 
-    if (in_tailsitter_vtol_transition() && !assisted_flight) {
+    if (tailsitter.in_vtol_transition() && !assisted_flight) {
         /*
           don't run the motor outputs while in tailsitter->vtol
           transition. That is taken care of by the fixed wing
@@ -2301,108 +1884,26 @@ void QuadPlane::motors_output(bool run_rate_controller)
         return;
     }
 
+    const uint32_t now = AP_HAL::millis();
+    if (run_rate_controller) {
+        if (now - last_att_control_ms > 100) {
+            // relax if have been inactive
+            relax_attitude_control();
+        }
+        attitude_control->rate_controller_run();
+        last_att_control_ms = now;
+    }
+
     // see if motors should be shut down
     update_throttle_suppression();
-    
+
     motors->output();
 
     // remember when motors were last active for throttle suppression
-    if (motors->get_throttle() > 0.01f || tilt.motors_active) {
-        last_motors_active_ms = AP_HAL::millis();
+    if (motors->get_throttle() > 0.01f || tiltrotor.motors_active()) {
+        last_motors_active_ms = now;
     }
 
-}
-
-/*
-  update control mode for quadplane modes
- */
-void QuadPlane::control_run(void)
-{
-    if (!initialised) {
-        return;
-    }
-
-    switch (plane.control_mode->mode_number()) {
-    case Mode::Number::QACRO:
-        control_qacro();
-        break;
-    case Mode::Number::QSTABILIZE:
-        control_stabilize();
-        break;
-    case Mode::Number::QHOVER:
-        control_hover();
-        break;
-    case Mode::Number::QLOITER:
-    case Mode::Number::QLAND:
-        control_loiter();
-        break;
-    case Mode::Number::QRTL:
-        control_qrtl();
-        break;
-#if QAUTOTUNE_ENABLED
-    case Mode::Number::QAUTOTUNE:
-        qautotune.run();
-        break;
-#endif
-    default:
-        break;
-    }
-
-    // we also stabilize using fixed wing surfaces
-    float speed_scaler = plane.get_speed_scaler();
-    if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-        plane.stabilize_acro(speed_scaler);
-    } else {
-        plane.stabilize_roll(speed_scaler);
-        plane.stabilize_pitch(speed_scaler);
-    }
-}
-
-/*
-  enter a quadplane mode
- */
-bool QuadPlane::init_mode(void)
-{
-    if (!setup()) {
-        return false;
-    }
-    if (!initialised) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");
-        return false;
-    }
-
-    AP_Notify::flags.esc_calibration = false;
-
-    switch (plane.control_mode->mode_number()) {
-    case Mode::Number::QSTABILIZE:
-        init_stabilize();
-        break;
-    case Mode::Number::QHOVER:
-        init_hover();
-        break;
-    case Mode::Number::QLOITER:
-        init_loiter();
-        break;
-    case Mode::Number::QLAND:
-        init_qland();
-        break;
-    case Mode::Number::QRTL:
-        init_qrtl();
-        break;
-    case Mode::Number::GUIDED:
-        guided_takeoff = false;
-        break;
-#if QAUTOTUNE_ENABLED
-    case Mode::Number::QAUTOTUNE:
-        return qautotune.init();
-#endif
-    case Mode::Number::QACRO:
-        init_qacro();
-        break;
-    default:
-        break;
-    }
-    return true;
 }
 
 /*
@@ -2501,6 +2002,10 @@ bool QuadPlane::in_vtol_mode(void) const
         poscontrol.get_state() > QPOS_APPROACH) {
         return true;
     }
+    if (plane.control_mode == &plane.mode_guided &&
+        guided_takeoff) {
+        return true;
+    }
     if (in_vtol_auto()) {
         if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
             return true;
@@ -2520,7 +2025,9 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
     return (plane.control_mode == &plane.mode_qloiter ||
             plane.control_mode == &plane.mode_qland ||
             plane.control_mode == &plane.mode_qrtl ||
+#if QAUTOTUNE_ENABLED
             plane.control_mode == &plane.mode_qautotune ||
+#endif
             (plane.control_mode->is_guided_mode() &&
             plane.auto_state.vtol_loiter &&
              poscontrol.get_state() > QPOS_APPROACH) ||
@@ -2575,15 +2082,27 @@ void QuadPlane::run_xy_controller(void)
  */
 void QuadPlane::poscontrol_init_approach(void)
 {
+    const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
     if ((options & OPTION_DISABLE_APPROACH) != 0) {
         // go straight to QPOS_POSITION1
         poscontrol.set_state(QPOS_POSITION1);
+        gcs().send_text(MAV_SEVERITY_INFO,"VTOL Position1 d=%.1f", dist);
     } else if (poscontrol.get_state() != QPOS_APPROACH) {
-        const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
         gcs().send_text(MAV_SEVERITY_INFO,"VTOL approach d=%.1f", dist);
         poscontrol.set_state(QPOS_APPROACH);
         poscontrol.thrust_loss_start_ms = 0;
     }
+}
+
+/*
+  log the QPOS message
+ */
+void QuadPlane::log_QPOS(void)
+{
+    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist", "QBf",
+                                AP_HAL::micros64(),
+                                poscontrol.get_state(),
+                                plane.auto_state.wp_distance);
 }
 
 /*
@@ -2608,7 +2127,11 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         } else if (s == QPOS_AIRBRAKE) {
             // start with zero integrator on vertical throttle
             qp.pos_control->get_accel_z_pid().set_integrator(0);
+        } else if (s == QPOS_LAND_DESCEND) {
+            // reset throttle descent control
+            qp.thr_ctrl_land = false;
         }
+        qp.log_QPOS();
     }
     state = s;
     last_state_change_ms = AP_HAL::millis();
@@ -2631,8 +2154,6 @@ void QuadPlane::vtol_position_controller(void)
 
     // target speed when we reach position2 threshold
     const float position2_target_speed = 2.0;
-
-    check_attitude_relax();
 
     // horizontal position control
     switch (poscontrol.get_state()) {
@@ -2699,7 +2220,7 @@ void QuadPlane::vtol_position_controller(void)
           gives us a nice lot of deceleration
          */
         if (poscontrol.get_state() == QPOS_APPROACH && distance < stop_distance) {
-            if (is_tailsitter() || motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+            if (tailsitter.enabled() || motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
                 // tailsitters don't use airbrake stage for landing
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 v=%.1f d=%.0f sd=%.0f h=%.1f",
                                 groundspeed,
@@ -2746,7 +2267,7 @@ void QuadPlane::vtol_position_controller(void)
             vel_forward.last_ms = now_ms;
         }
 
-        if (tilt.tilt_mask == 0 && !is_tailsitter()) {
+        if (!tiltrotor.enabled() && !tailsitter.enabled()) {
             /*
               cope with fwd motor thrust loss during approach. We detect
               this by looking for the fwd throttle saturating. This only
@@ -2787,17 +2308,9 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_POSITION1: {
         setup_target_position();
 
-        if (is_tailsitter()) {
-            if (in_tailsitter_vtol_transition()) {
-                break;
-            }
-            poscontrol.set_state(QPOS_POSITION2);
-            poscontrol.pilot_correction_done = false;
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
-                                    (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
+        if (tailsitter.enabled() && tailsitter.in_vtol_transition()) {
             break;
         }
-
 
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
@@ -2849,25 +2362,27 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
-        /*
-          limit the pitch down with an expanding envelope. This
-          prevents the velocity controller demanding nose down during
-          the initial slowdown if the target velocity curve is higher
-          than the actual velocity curve (for a high drag
-          aircraft). Nose down will cause a lot of downforce on the
-          wings which will draw a lot of current and also cause the
-          aircraft to lose altitude rapidly.pitch limit varies also with speed
-          to prevent inability to progress to position if moving from a loiter
-          to landing
-         */
-        float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
-                                               poscontrol.time_since_state_start_ms(),
-                                               0, 5000);
-        if (plane.nav_pitch_cd < minlimit_cd) {
-            plane.nav_pitch_cd = minlimit_cd;
-            // tell the pos controller we have limited the pitch to
-            // stop integrator buildup
-            pos_control->set_externally_limited_xy();
+        if (!tailsitter.enabled()) {
+            /*
+              limit the pitch down with an expanding envelope. This
+              prevents the velocity controller demanding nose down during
+              the initial slowdown if the target velocity curve is higher
+              than the actual velocity curve (for a high drag
+              aircraft). Nose down will cause a lot of downforce on the
+              wings which will draw a lot of current and also cause the
+              aircraft to lose altitude rapidly.pitch limit varies also with speed
+              to prevent inability to progress to position if moving from a loiter
+              to landing
+            */
+            float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                                   poscontrol.time_since_state_start_ms(),
+                                                   0, 5000);
+            if (plane.nav_pitch_cd < minlimit_cd) {
+                plane.nav_pitch_cd = minlimit_cd;
+                // tell the pos controller we have limited the pitch to
+                // stop integrator buildup
+                pos_control->set_externally_limited_xy();
+            }
         }
 
         // call attitude controller
@@ -2973,7 +2488,7 @@ void QuadPlane::vtol_position_controller(void)
         }
         break;
     case QPOS_POSITION1:
-        if (in_tailsitter_vtol_transition()) {
+        if (tailsitter.in_vtol_transition()) {
             pos_control->relax_z_controller(0);
             break;
         }
@@ -3018,6 +2533,12 @@ void QuadPlane::vtol_position_controller(void)
             float zero = 0;
             float target_z = target_altitude_cm;
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
+        } else if (plane.control_mode == &plane.mode_qrtl) {
+            Location loc2 = loc;
+            loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+            float target_z = loc2.alt;
+            float zero = 0;
+            pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else {
             set_climb_rate_cms(0, false);
         }
@@ -3046,10 +2567,7 @@ void QuadPlane::vtol_position_controller(void)
     if (now_ms - poscontrol.last_log_ms >= 40) {
         // log poscontrol at 25Hz
         poscontrol.last_log_ms = now_ms;
-        AP::logger().Write("QPOS", "TimeUS,State,Dist", "QBf",
-                           AP_HAL::micros64(),
-                           poscontrol.get_state(),
-                           plane.auto_state.wp_distance);
+        log_QPOS();
     }
 }
 
@@ -3115,8 +2633,6 @@ void QuadPlane::takeoff_controller(void)
     /*
       for takeoff we use the position controller
     */
-    check_attitude_relax();
-
     setup_target_position();
 
     // set position controller desired velocity and acceleration to zero
@@ -3137,7 +2653,25 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    set_climb_rate_cms(wp_nav->get_default_speed_up(), false);
+    float vel_z = wp_nav->get_default_speed_up();
+    if (guided_takeoff) {
+        // for guided takeoff we aim for a specific height with zero
+        // velocity at that height
+        Location origin;
+        if (ahrs.get_origin(origin)) {
+            // a small margin to ensure we do move to the next takeoff
+            // stage
+            const int32_t margin_cm = 5;
+            float pos_z = margin_cm + plane.next_WP_loc.alt - origin.alt;
+            vel_z = 0;
+            pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
+        } else {
+            set_climb_rate_cms(vel_z, false);
+        }
+    } else {
+        set_climb_rate_cms(vel_z, false);
+    }
+
     run_z_controller();
 }
 
@@ -3147,8 +2681,6 @@ void QuadPlane::takeoff_controller(void)
 void QuadPlane::waypoint_controller(void)
 {
     setup_target_position();
-
-    check_attitude_relax();
 
     /*
       this is full copter control of auto flight
@@ -3210,48 +2742,6 @@ void QuadPlane::control_auto(void)
         waypoint_controller();
         break;
     }
-}
-
-/*
-  handle QRTL mode
- */
-void QuadPlane::control_qrtl(void)
-{
-    vtol_position_controller();
-    if (poscontrol.get_state() >= QPOS_POSITION2) {
-        // change target altitude to home alt
-        plane.next_WP_loc.alt = plane.home.alt;
-        verify_vtol_land();
-    }
-}
-
-/*
-  handle QRTL mode
- */
-void QuadPlane::init_qrtl(void)
-{
-    // use do_RTL() to setup next_WP_loc
-    plane.do_RTL(plane.home.alt + qrtl_alt*100UL);
-    plane.prev_WP_loc = plane.current_loc;
-    pos_control->set_accel_desired_xy_cmss(Vector2f());
-    pos_control->init_xy_controller();
-    poscontrol_init_approach();
-    float dist = plane.next_WP_loc.get_distance(plane.current_loc);
-    const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
-    if (dist < 1.5*radius &&
-        motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
-        // we're close to destination and already running VTOL motors, don't transition
-        gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
-        poscontrol.set_state(QPOS_POSITION1);
-    }
-    int32_t from_alt;
-    int32_t to_alt;
-    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
-        poscontrol.slow_descent = from_alt > to_alt;
-        return;
-    }
-    // defualt back to old method
-    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
 
 /*
@@ -3324,12 +2814,10 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     if (!setup()) {
         return false;
     }
-    attitude_control->reset_rate_controller_I_terms();
-    
+
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.alt = plane.current_loc.alt;
-    poscontrol.set_state(QPOS_POSITION1);
 
     // initialise the position controller
     pos_control->init_xy_controller();
@@ -3385,7 +2873,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (plane.current_loc.alt < plane.next_WP_loc.alt) {
         return false;
     }
-    transition_state = is_tailsitter() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
+    transition_state = tailsitter.enabled() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
 
     // todo: why are you doing this, I want to delete it.
@@ -3576,7 +3064,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate   : target_climb_rate_cms,
         climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
-        speed_scaler        : log_spd_scaler,
+        speed_scaler        : tailsitter.log_spd_scaler,
         transition_state    : static_cast<uint8_t>(transition_state),
         assist              : assisted_flight,
     };
@@ -3593,7 +3081,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
   reduces the need for down pitch which reduces load on the vertical
   lift motors.
  */
-int8_t QuadPlane::forward_throttle_pct()
+float QuadPlane::forward_throttle_pct()
 {
     /*
       Unless an RC channel is assigned for manual forward throttle control,
@@ -3620,8 +3108,13 @@ int8_t QuadPlane::forward_throttle_pct()
     /*
       in qautotune mode or modes without a velocity controller
     */
-    if (vel_forward.gain <= 0 ||
-        plane.control_mode == &plane.mode_qautotune) {
+    bool use_forward_gain = (vel_forward.gain > 0);
+#if QAUTOTUNE_ENABLED
+    if (plane.control_mode == &plane.mode_qautotune) {
+        use_forward_gain = false;
+    }
+#endif
+    if (!use_forward_gain) {
         return 0;
     }
 
@@ -3698,7 +3191,7 @@ int8_t QuadPlane::forward_throttle_pct()
         vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
                                                   height_above_ground, alt_cutoff, alt_cutoff+2);
     }
-    if (vel_forward.last_pct == 0) {
+    if (is_zero(vel_forward.last_pct)) {
         // if the percent is 0 then decay the integrator
         vel_forward.integrator *= 0.95f;
     }
@@ -3720,8 +3213,11 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         !motors->armed() ||
         weathervane.gain <= 0 ||
         plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune) {
+#if QAUTOTUNE_ENABLED
+        plane.control_mode == &plane.mode_qautotune ||
+#endif
+        plane.control_mode == &plane.mode_qhover
+        ) {
         weathervane.last_output = 0;
         return 0;
     }
@@ -3786,6 +3282,9 @@ void QuadPlane::guided_update(void)
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         takeoff_controller();
     } else {
+        if (guided_takeoff) {
+            poscontrol.set_state(QPOS_POSITION2);
+        }
         guided_takeoff = false;
         // run VTOL position controller
         vtol_position_controller();
@@ -3863,6 +3362,9 @@ bool QuadPlane::using_wp_nav(void) const
         return true;
     }
     if (plane.control_mode == &plane.mode_qrtl && poscontrol.get_state() >= QPOS_POSITION2) {
+        return true;
+    }
+    if (plane.control_mode == &plane.mode_auto && poscontrol.get_state() > QPOS_APPROACH) {
         return true;
     }
     return false;
@@ -3958,7 +3460,7 @@ void QuadPlane::update_throttle_mix(void)
 
     if (plane.control_mode->is_vtol_man_throttle()) {
         // manual throttle
-        if ((plane.get_throttle_input() <= 0) && (air_mode == AirMode::OFF)) {
+        if (!is_positive(plane.get_throttle_input()) && !air_mode_active()) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
@@ -3968,7 +3470,7 @@ void QuadPlane::update_throttle_mix(void)
 
         // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
         const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-        bool large_angle_request = (norm(angle_target.x, angle_target.y) > LAND_CHECK_LARGE_ANGLE_CD);
+        bool large_angle_request = angle_target.xy().length() > LAND_CHECK_LARGE_ANGLE_CD;
 
         // check for large external disturbance - angle error over 30 degrees
         const float angle_error = attitude_control->get_att_error_angle_deg();
@@ -4054,7 +3556,7 @@ bool QuadPlane::show_vtol_view() const
 {
     bool show_vtol = in_vtol_mode();
 
-    if (is_tailsitter()) {
+    if (tailsitter.enabled()) {
         if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
             // in a vtol mode but still transitioning from forward flight
             return false;
@@ -4065,7 +3567,7 @@ bool QuadPlane::show_vtol_view() const
             return true;
         }
     }
-    if (!show_vtol && tilt.is_vectored && transition_state <= TRANSITION_TIMER) {
+    if (!show_vtol && tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER) {
         // we use multirotor controls during fwd transition for
         // vectored yaw vehicles
         return true;
@@ -4092,7 +3594,7 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
         motors->armed() &&
         motors->get_desired_spool_state() >= AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED &&
         in_vtol_mode() &&
-        !is_tailsitter() &&
+        !tailsitter.enabled() &&
         poscontrol.get_state() != QPOS_AIRBRAKE) {
         // we want the desired rates for fixed wing slaved to the
         // multicopter rates
@@ -4171,4 +3673,27 @@ void QuadPlane::set_desired_spool_state(AP_Motors::DesiredSpoolState state)
     }
 }
 
+bool QuadPlane::air_mode_active() const
+{
+    if ((air_mode == AirMode::ON) || ((air_mode == AirMode::ASSISTED_FLIGHT_ONLY) && assisted_flight)) {
+        return true;
+    }
+    return false;
+}
+
+/*
+  return scaling factor for tilting rotors in forward flight throttle
+  we want to scale back tilt angle for roll/pitch by throttle in forward flight
+ */
+float QuadPlane::FW_vector_throttle_scaling()
+{
+    const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
+    // scale relative to a fixed 0.5 mid throttle so that changes in TRIM_THROTTLE in missions don't change
+    // the scaling of tilt
+    const float mid_throttle = 0.5;
+    return mid_throttle / constrain_float(throttle, 0.1, 1.0);
+}
+
 QuadPlane *QuadPlane::_singleton = nullptr;
+
+#endif  // HAL_QUADPLANE_ENABLED

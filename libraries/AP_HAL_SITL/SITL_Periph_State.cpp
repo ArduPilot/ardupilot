@@ -49,6 +49,7 @@ void SITL_State::init(int argc, char * const argv[]) {
                 exit(1);
         }
     }
+
     printf("Running Instance: %d\n", _instance);
 }
 
@@ -58,10 +59,6 @@ void SITL_State::wait_clock(uint64_t wait_time_usec) {
     }
 }
 
-
-int SITL_State::gps_pipe(uint8_t index) {
-    return 0;
-}
 
 int SITL_State::sim_fd(const char *name, const char *arg) {
     return 0;

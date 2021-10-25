@@ -11,7 +11,7 @@ float Mode::AutoYaw::roi_yaw() const
 float Mode::AutoYaw::look_ahead_yaw()
 {
     const Vector3f& vel = copter.inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
+    float speed = vel.xy().length();
     // Commanded Yaw to automatically look ahead.
     if (copter.position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
         _look_ahead_yaw = degrees(atan2f(vel.y,vel.x))*100.0f;
@@ -61,6 +61,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     // perform initialisation
     switch (_mode) {
 
+    case AUTO_YAW_HOLD:
+        break;
+
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called
         break;
@@ -81,6 +84,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
 
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
+        break;
+
+    case AUTO_YAW_ANGLE_RATE:
         break;
 
     case AUTO_YAW_RATE:
@@ -198,7 +204,7 @@ float Mode::AutoYaw::yaw()
         // keep heading pointing in the direction held in fixed_yaw
         // with no pilot input allowed
         const uint32_t now_ms = millis();
-        float dt = now_ms - _last_update_ms;
+        float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         float yaw_angle_step = constrain_float(_fixed_yaw_offset_cd, - dt * _fixed_yaw_slewrate_cds, dt * _fixed_yaw_slewrate_cds);
         _fixed_yaw_offset_cd -= yaw_angle_step;
@@ -225,7 +231,7 @@ float Mode::AutoYaw::yaw()
 
     case AUTO_YAW_ANGLE_RATE:{
         const uint32_t now_ms = millis();
-        float dt = now_ms - _last_update_ms;
+        float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         _yaw_angle_cd += _yaw_rate_cds * dt;
         return _yaw_angle_cd;

@@ -22,7 +22,7 @@ your black magic probe, or install the provided udev rules file so
 that the probe will be loaded as /dev/ttyBmpGdb
 
 Now make sure you have the right version of arm-none-eabi-gdb
-installed. We recommend version 6-2017-q2-update, which is available
+installed. We recommend version 10-2020-q4-major, which is available
 here: https://firmware.ardupilot.org/Tools/STM32-tools/
 
 Now build ArduPilot with the --debug configure option. You may also

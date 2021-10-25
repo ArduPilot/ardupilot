@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_PitchController.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -133,9 +134,8 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     AP_GROUPEND
 };
 
-AP_PitchController::AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
+AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
     : aparm(parms)
-    , _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
@@ -144,9 +144,12 @@ AP_PitchController::AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWin
 /*
   AC_PID based rate controller
 */
-int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
+float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
     const float dt = AP::scheduler().get_loop_period_s();
+
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     const float eas2tas = _ahrs.get_EAS2TAS();
     bool limit_I = fabsf(_last_out) >= 45;
     float rate_y = _ahrs.get_gyro().y;
@@ -206,7 +209,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     
     // output is scaled to notional centidegrees of deflection
-    return constrain_int32(out * 100, -4500, 4500);
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 /*
@@ -219,10 +222,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
  4) minimum FBW airspeed (metres/sec)
  5) maximum FBW airspeed (metres/sec)
 */
-int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
+float AP_PitchController::get_rate_out(float desired_rate, float scaler)
 {
     float aspeed;
-	if (!_ahrs.airspeed_estimate(aspeed)) {
+	if (!AP::ahrs().airspeed_estimate(aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
 	}
@@ -239,7 +242,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
 float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inverted) const
 {
 	float rate_offset;
-	float bank_angle = _ahrs.roll;
+	float bank_angle = AP::ahrs().roll;
 
 	// limit bank angle between +- 80 deg if right way up
 	if (fabsf(bank_angle) < radians(90))	{
@@ -253,6 +256,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 			bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
 		}
 	}
+    const AP_AHRS &_ahrs = AP::ahrs();
 	if (!_ahrs.airspeed_estimate(aspeed)) {
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
@@ -278,7 +282,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
@@ -301,19 +305,16 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 	// as the rates will be tuned when upright, and it is common that
 	// much higher rates are needed inverted	
 	if (!inverted) {
+        desired_rate += rate_offset;
         if (gains.rmax_neg && desired_rate < -gains.rmax_neg) {
             desired_rate = -gains.rmax_neg;
         } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
             desired_rate = gains.rmax_pos;
 		}
+    } else {
+        // Make sure not to invert the turn coordination offset
+        desired_rate = -desired_rate + rate_offset;
 	}
-	
-	if (inverted) {
-		desired_rate = -desired_rate;
-	}
-
-	// Apply the turn correction offset
-	desired_rate = desired_rate + rate_offset;
 
     /*
       when we are past the users defined roll limit for the aircraft
@@ -324,6 +325,7 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
       linearly reduce pitch demanded rate when beyond the configured
       roll limit, reducing to zero at 90 degrees
     */
+    const AP_AHRS &_ahrs = AP::ahrs();
     float roll_wrapped = labs(_ahrs.roll_sensor);
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;

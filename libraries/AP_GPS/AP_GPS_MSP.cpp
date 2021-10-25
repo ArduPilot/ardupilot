@@ -21,11 +21,6 @@
 
 #if HAL_MSP_GPS_ENABLED
 
-AP_GPS_MSP::AP_GPS_MSP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
-{
-}
-
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
 // the caller is consuming the new data;
@@ -66,7 +61,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     state.velocity = vel;
 
     state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-    state.ground_speed = norm(state.velocity.y, state.velocity.x);
+    state.ground_speed = state.velocity.xy().length();
 
     state.have_speed_accuracy = true;
     state.have_horizontal_accuracy = true;
@@ -77,12 +72,13 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     state.vertical_accuracy = pkt.vertical_pos_accuracy * 0.01;
     state.speed_accuracy = pkt.horizontal_vel_accuracy * 0.01;
 
+    state.last_gps_time_ms = AP_HAL::millis();
+
     if (pkt.true_yaw != 65535) {
         state.gps_yaw = wrap_360(pkt.true_yaw*0.01);
         state.have_gps_yaw = true;
+        state.gps_yaw_time_ms = state.last_gps_time_ms;
     }
-
-    state.last_gps_time_ms = AP_HAL::millis();
 
     new_data = pkt.fix_type>0;
 }

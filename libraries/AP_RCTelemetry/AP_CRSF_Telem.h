@@ -16,13 +16,14 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_OSD/AP_OSD.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
 #define HAL_CRSF_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #ifndef HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
-#define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED HAL_CRSF_TELEM_ENABLED && BOARD_FLASH_SIZE > 1024
+#define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED OSD_ENABLED && OSD_PARAM_ENABLED && HAL_CRSF_TELEM_ENABLED && BOARD_FLASH_SIZE > 1024
 #endif
 
 #if HAL_CRSF_TELEM_ENABLED
@@ -253,6 +254,7 @@ private:
         FLIGHT_MODE,
         PASSTHROUGH,
         STATUS_TEXT,
+        GENERAL_COMMAND,
         NUM_SENSORS
     };
 
@@ -271,6 +273,7 @@ private:
     void calc_flight_mode();
     void calc_device_info();
     void calc_device_ping();
+    void calc_command_response();
     void calc_parameter();
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
@@ -291,6 +294,7 @@ private:
     void process_param_read_frame(ParameterSettingsReadFrame* read);
     void process_param_write_frame(ParameterSettingsWriteFrame* write);
     void process_device_info_frame(ParameterDeviceInfoFrame* info);
+    void process_command_frame(CommandFrame* command);
 
     // setup ready for passthrough operation
     void setup_wfq_scheduler(void) override;
@@ -333,6 +337,12 @@ private:
         uint32_t params_mode_start_ms;
         bool params_mode_active;
     } _custom_telem;
+
+    struct {
+        bool pending;
+        bool valid;
+        uint8_t port_id;
+    } _baud_rate_request;
 
     // vtx state
     bool _vtx_freq_update;  // update using the frequency method or not

@@ -22,6 +22,7 @@
 #include "Util.h"
 #include "DSP.h"
 #include "CANSocketIface.h"
+#include "SPIDevice.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
@@ -30,6 +31,8 @@
 #include <AP_Logger/AP_Logger.h>
 
 using namespace HALSITL;
+
+HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL();
 
 static Storage sitlStorage;
 static SITL_State sitlState;
@@ -48,7 +51,6 @@ static DSP dspDriver;
 
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
@@ -64,11 +66,12 @@ static UARTDriver sitlUart8Driver(8, &sitlState);
 
 #if defined(HAL_BUILD_AP_PERIPH)
 static Empty::I2CDeviceManager i2c_mgr_instance;
+static Empty::SPIDeviceManager spi_mgr_instance;
 #else
 static I2CDeviceManager i2c_mgr_instance;
+static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);
-
 
 #if HAL_NUM_CAN_IFACES
 static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
@@ -88,7 +91,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart7Driver,   /* uartH */
         &sitlUart8Driver,   /* uartI */
         &i2c_mgr_instance,
-        &emptySPI,          /* spi */
+        &spi_mgr_instance,  /* spi */
         &qspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
@@ -175,6 +178,11 @@ static void fill_stack_nan(void)
 {
     float stk[2048];
     fill_nanf(stk, ARRAY_SIZE(stk));
+}
+
+uint8_t HAL_SITL::get_instance() const
+{
+    return _sitl_state->get_instance();
 }
 
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const

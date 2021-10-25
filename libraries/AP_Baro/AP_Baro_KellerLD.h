@@ -64,9 +64,11 @@ private:
     } _accum;
 
     uint8_t _instance;
-
-    // measurement range parameters used in pressure calculation
-    // varies based on model, stored in ROM on device
+    
+    // Model-specific offset/calibration values stored in device ROM
+    //  pressure offset used in pressure calculation
+    float _p_mode_offset;
+    //  measurement range parameters used in pressure calculation
     float _p_min;
     float _p_max;
 };

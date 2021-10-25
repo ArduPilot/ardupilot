@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <AP_Math/AP_Math.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 // table of user settable parameters
@@ -81,9 +83,9 @@ void Gripper_EPM::update_from_demand()
     }
 
     if (should_report()) {
-        ::fprintf(stderr, "demand=%f\n", demand);
-        printf("Field strength: %f%%\n", field_strength);
-        printf("Field strength: %f Tesla\n", tesla());
+        hal.console->printf("demand=%f\n", demand);
+        hal.console->printf("Field strength: %f%%\n", field_strength);
+        hal.console->printf("Field strength: %f Tesla\n", tesla());
         last_report_us = now;
         reported_field_strength = field_strength;
     }

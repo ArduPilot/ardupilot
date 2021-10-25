@@ -441,6 +441,7 @@ define HAL_WITH_RAMTRON 1
 # setup for the possibility of an IMU heater as the The CUBE has
 # an IMU header
 define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1

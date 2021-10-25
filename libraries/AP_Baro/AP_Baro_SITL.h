@@ -18,7 +18,7 @@ protected:
 
 private:
     uint8_t _instance;
-    SITL::SITL *_sitl;
+    SITL::SIM *_sitl;
 
     // barometer delay buffer variables
     struct readings_baro {

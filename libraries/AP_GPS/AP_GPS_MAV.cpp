@@ -19,11 +19,6 @@
 #include "AP_GPS_MAV.h"
 #include <stdint.h>
 
-AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
-{
-}
-
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
 // the caller is consuming the new data;
@@ -86,7 +81,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
 
                 state.velocity = vel;
                 state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-                state.ground_speed = norm(vel.x, vel.y);
+                state.ground_speed = vel.xy().length();
             }
 
             if (have_sa) {
@@ -104,8 +99,11 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                 state.have_vertical_accuracy = true;
             }
 
+            const uint32_t now_ms = AP_HAL::millis();
+
             if (have_yaw) {
                 state.gps_yaw = wrap_360(packet.yaw*0.01);
+                state.gps_yaw_time_ms = now_ms;
                 state.have_gps_yaw = true;
                 state.gps_yaw_configured = true;
             }
@@ -120,12 +118,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                     first_week = packet.time_week;
                 }
                 uint32_t timestamp_ms = (packet.time_week - first_week) * AP_MSEC_PER_WEEK + packet.time_week_ms;
-                uint32_t corrected_ms = jitter.correct_offboard_timestamp_msec(timestamp_ms, AP_HAL::millis());
+                uint32_t corrected_ms = jitter.correct_offboard_timestamp_msec(timestamp_ms, now_ms);
                 state.uart_timestamp_ms = corrected_ms;
+                if (have_yaw) {
+                    state.gps_yaw_time_ms = corrected_ms;
+                }
             }
 
             state.num_sats = packet.satellites_visible;
-            state.last_gps_time_ms = AP_HAL::millis();
+            state.last_gps_time_ms = now_ms;
             _new_data = true;
             break;
             }

@@ -92,7 +92,12 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
-    SRV_Channels::set_output_pwm(function, pwm);
+    if ((1U<<chan) & _motor_pwm_range_mask) {
+        // note that PWM_MIN/MAX has been forced to 1000/2000
+        SRV_Channels::set_output_scaled(function, pwm - 1000);
+    } else {
+        SRV_Channels::set_output_pwm(function, pwm);
+    }
 }
 
 /*
@@ -142,6 +147,19 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
     case PWM_TYPE_DSHOT1200:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
+    case PWM_TYPE_PWM_RANGE:
+        /*
+          this is a motor output type for multirotors which honours
+          the SERVOn_MIN/MAX values per channel
+         */
+        _motor_pwm_range_mask |= mask;
+        for (uint8_t i=0; i<16; i++) {
+            if ((1U<<i) & mask) {
+                SRV_Channels::set_range(SRV_Channels::get_motor_function(i), 1000);
+            }
+        }
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
+        break;
     default:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
         break;
@@ -188,6 +206,25 @@ void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
     limit.roll = flag;
     limit.pitch = flag;
     limit.yaw = flag;
+}
+
+// returns true if the configured PWM type is digital and should have fixed endpoints
+bool AP_Motors::is_digital_pwm_type() const
+{
+    switch (_pwm_type) {
+        case PWM_TYPE_DSHOT150:
+        case PWM_TYPE_DSHOT300:
+        case PWM_TYPE_DSHOT600:
+        case PWM_TYPE_DSHOT1200:
+            return true;
+        case PWM_TYPE_NORMAL:
+        case PWM_TYPE_ONESHOT:
+        case PWM_TYPE_ONESHOT125:
+        case PWM_TYPE_BRUSHED:
+        case PWM_TYPE_PWM_RANGE:
+            break;
+    }
+    return false;
 }
 
 namespace AP {

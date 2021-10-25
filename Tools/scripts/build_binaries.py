@@ -26,10 +26,40 @@ import generate_manifest
 import gen_stable
 import build_binaries_history
 
+from board_list import AUTOBUILD_BOARDS, AP_PERIPH_BOARDS
+
 if sys.version_info[0] < 3:
     running_python3 = False
 else:
     running_python3 = True
+
+
+def is_chibios_build(board):
+    '''see if a board is using HAL_ChibiOS'''
+    # cope with both running from Tools/scripts or running from cwd
+    hwdef_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
+    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
+        return True
+    hwdef_dir = os.path.join("libraries", "AP_HAL_ChibiOS", "hwdef")
+    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
+        return True
+    return False
+
+
+def get_required_compiler(tag, board):
+    '''return required compiler for a build tag.
+       return format is the version string that waf configure will detect.
+       You should setup a link from this name in $HOME/arm-gcc directory pointing at the
+       appropriate compiler
+    '''
+    if not is_chibios_build(board):
+        # only override compiler for ChibiOS builds
+        return None
+    if tag == 'latest':
+        # use 10.2.1 compiler for master builds
+        return "g++-10.2.1"
+    # for all other builds we use the default compiler in $PATH
+    return None
 
 
 class build_binaries(object):
@@ -58,25 +88,38 @@ class build_binaries(object):
 
     def board_options(self, board):
         '''return board-specific options'''
-        if board == "bebop":
+        if board in ["bebop", "disco"]:
             return ["--static"]
         return []
 
-    def run_waf(self, args):
+    def run_waf(self, args, compiler=None):
         if os.path.exists("waf"):
             waf = "./waf"
         else:
             waf = os.path.join(".", "modules", "waf", "waf-light")
         cmd_list = [waf]
         cmd_list.extend(args)
-        self.run_program("BB-WAF", cmd_list)
+        env = None
+        if compiler is not None:
+            # default to $HOME/arm-gcc, but allow for any path with AP_GCC_HOME environment variable
+            gcc_home = os.environ.get("AP_GCC_HOME", os.path.join(os.environ["HOME"], "arm-gcc"))
+            gcc_path = os.path.join(gcc_home, compiler, "bin")
+            if os.path.exists(gcc_path):
+                # setup PATH to point at the right compiler, and setup to use ccache
+                env = os.environ.copy()
+                env["PATH"] = gcc_path + ":" + env["PATH"]
+                env["CC"] = "ccache arm-none-eabi-gcc"
+                env["CXX"] = "ccache arm-none-eabi-g++"
+            else:
+                raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
+        self.run_program("BB-WAF", cmd_list, env=env)
 
-    def run_program(self, prefix, cmd_list, show_output=True):
+    def run_program(self, prefix, cmd_list, show_output=True, env=None):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
-                             stderr=subprocess.STDOUT)
+                             stderr=subprocess.STDOUT, env=env)
         output = ""
         while True:
             x = p.stdout.readline()
@@ -164,7 +207,7 @@ is bob we will attempt to checkout bob-AVR'''
         return False
 
     def skip_board_waf(self, board):
-        '''check if we should skip this build because we don't support the
+        '''check if we should skip this build because we do not support the
         board in this release
         '''
 
@@ -347,7 +390,7 @@ is bob we will attempt to checkout bob-AVR'''
                 pass
 
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
-                      binaryname, px4_binaryname, frames=[None]):
+                      binaryname, frames=[None]):
         '''build vehicle binaries'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
@@ -409,15 +452,19 @@ is bob we will attempt to checkout bob-AVR'''
                                 "--board", board,
                                 "--out", self.buildroot,
                                 "clean"]
+                    gccstring = get_required_compiler(tag, board)
+                    if gccstring is not None:
+                        waf_opts += ["--assert-cc-version", gccstring]
+
                     waf_opts.extend(self.board_options(board))
-                    self.run_waf(waf_opts)
+                    self.run_waf(waf_opts, compiler=gccstring)
                 except subprocess.CalledProcessError:
                     self.progress("waf configure failed")
                     continue
                 try:
                     target = os.path.join("bin",
                                           "".join([binaryname, framesuffix]))
-                    self.run_waf(["build", "--targets", target])
+                    self.run_waf(["build", "--targets", target], compiler=gccstring)
                 except subprocess.CalledProcessError:
                     msg = ("Failed build of %s %s%s %s" %
                            (vehicle, board, framesuffix, tag))
@@ -439,7 +486,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                extensions = [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]
+                extensions = [".apj", ".abin", "_with_bl.hex", ".hex"]
                 if vehicle == 'AP_Periph':
                     # need bin file for uavcan-gui-tool and MissionPlanner
                     extensions.append('.bin')
@@ -465,212 +512,14 @@ is bob we will attempt to checkout bob-AVR'''
                 # record some history about this build
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
-        if not self.checkout(vehicle, tag, "PX4", None):
-            self.checkout(vehicle, "latest")
-            return
-
-        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
-        board_list = board_list.split(' ')
-        self.checkout(vehicle, "latest")
-        if 'px4-v2' not in board_list:
-            print("Skipping px4 builds")
-            return
-
-        # PX4-building
-        board = "px4"
-        for frame in frames:
-            self.progress("Building frame %s for board %s" % (frame, board))
-            if frame is None:
-                framesuffix = ""
-            else:
-                framesuffix = "-%s" % frame
-
-            if not self.checkout(vehicle, tag, "PX4", frame):
-                msg = ("Failed checkout of %s %s %s %s" %
-                       (vehicle, "PX4", tag, frame))
-                self.progress(msg)
-                self.error_strings.append(msg)
-                self.checkout(vehicle, "latest")
-                continue
-
-            try:
-                deadwood = "../Build.%s" % vehicle
-                if os.path.exists(deadwood):
-                    self.progress("#### Removing (%s)" % deadwood)
-                    shutil.rmtree(os.path.join(deadwood))
-            except Exception as e:
-                self.progress("FIXME: narrow exception (%s)" % repr(e))
-
-            self.progress("Building %s %s PX4%s binaries" %
-                          (vehicle, tag, framesuffix))
-            ddir = os.path.join(self.binaries,
-                                vehicle_binaries_subdir,
-                                self.hdate_ym,
-                                self.hdate_ymdhm,
-                                "".join(["PX4", framesuffix]))
-            if self.skip_build(tag, ddir):
-                continue
-
-            for v in ["v1", "v2", "v3", "v4", "v4pro"]:
-                px4_v = "%s-%s" % (board, v)
-
-                if self.skip_board_waf(px4_v):
-                    continue
-
-                if os.path.exists(self.buildroot):
-                    shutil.rmtree(self.buildroot)
-
-                self.progress("Configuring for %s in %s" %
-                              (px4_v, self.buildroot))
-                try:
-                    self.run_waf(["configure", "--board", px4_v,
-                                  "--out", self.buildroot, "clean"])
-                except subprocess.CalledProcessError:
-                    self.progress("waf configure failed")
-                    continue
-                try:
-                    self.run_waf([
-                        "build",
-                        "--targets",
-                        os.path.join("bin",
-                                     "".join([binaryname, framesuffix]))])
-                except subprocess.CalledProcessError:
-                    msg = ("Failed build of %s %s%s %s for %s" %
-                           (vehicle, board, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-
-                oldfile = os.path.join(self.buildroot, px4_v, "bin",
-                                       "%s%s.px4" % (binaryname, framesuffix))
-                newfile = "%s-%s.px4" % (px4_binaryname, v)
-                self.progress("Copying (%s) to (%s)" % (oldfile, newfile,))
-                try:
-                    shutil.copyfile(oldfile, newfile)
-                except Exception as e:
-                    self.progress("FIXME: narrow exception (%s)" % repr(e))
-                    msg = ("Failed build copy of %s PX4%s %s for %s" %
-                           (vehicle, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-                # FIXME: why the two stage copy?!
-                self.copyit(newfile, ddir, tag, vehicle)
         self.checkout(vehicle, "latest")
 
     def common_boards(self):
         '''returns list of boards common to all vehicles'''
-        return ["fmuv2",
-                "fmuv3",
-                "fmuv5",
-                "mindpx-v2",
-                "erlebrain2",
-                "navigator",
-                "navio",
-                "navio2",
-                "edge",
-                "pxf",
-                "pxfmini",
-                "KakuteF4",
-                "KakuteF7",
-                "KakuteF7Mini",
-                "KakuteF4Mini",
-                "MambaF405v2",
-                "MatekF405",
-                "MatekF405-bdshot",
-                "MatekF405-STD",
-                "MatekF405-Wing",
-                "MatekF765-Wing",
-                "MatekF405-CAN",
-                "MatekH743",
-                "MatekH743-bdshot",
-                "OMNIBUSF7V2",
-                "sparky2",
-                "omnibusf4",
-                "omnibusf4pro",
-                "omnibusf4pro-bdshot",
-                "omnibusf4v6",
-                "OmnibusNanoV6",
-                "OmnibusNanoV6-bdshot",
-                "mini-pix",
-                "airbotf4",
-                "revo-mini",
-                "revo-mini-bdshot",
-                "revo-mini-i2c",
-                "revo-mini-i2c-bdshot",
-                "CubeBlack",
-                "CubeBlack+",
-                "CubePurple",
-                "Pixhawk1",
-                "Pixhawk1-1M",
-                "Pixhawk4",
-                "Pix32v5",
-                "PH4-mini",
-                "CUAVv5",
-                "CUAVv5Nano",
-                "CUAV-Nora",
-                "CUAV-X7",
-                "CUAV-X7-bdshot",
-                "mRoX21",
-                "Pixracer",
-                "Pixracer-bdshot",
-                "F4BY",
-                "mRoX21-777",
-                "mRoControlZeroF7",
-                "mRoNexus",
-                "mRoPixracerPro",
-                "mRoPixracerPro-bdshot",
-                "mRoControlZeroOEMH7",
-                "mRoControlZeroClassic",
-                "mRoControlZeroH7",
-                "mRoControlZeroH7-bdshot",
-                "F35Lightning",
-                "speedybeef4",
-                "SuccexF4",
-                "DrotekP3Pro",
-                "VRBrain-v51",
-                "VRBrain-v52",
-                "VRUBrain-v51",
-                "VRCore-v10",
-                "VRBrain-v54",
-                "TBS-Colibri-F7",
-                "Durandal",
-                "Durandal-bdshot",
-                "CubeOrange",
-                "CubeOrange-bdshot",
-                "CubeYellow",
-                "R9Pilot",
-                "QioTekZealotF427",
-                "BeastH7",
-                "BeastF7",
-                "FlywooF745",
-                "luminousbee5",
-                # SITL targets
-                "SITL_x86_64_linux_gnu",
-                "SITL_arm_linux_gnueabihf",
-                ]
+        return AUTOBUILD_BOARDS
 
     def AP_Periph_boards(self):
-        '''returns list of boards for AP_Periph'''
-        return ["f103-GPS",
-                "f103-ADSB",
-                "f103-RangeFinder",
-                "f303-GPS",
-                "f303-Universal",
-                "f303-M10025",
-                "f303-M10070",
-                "f303-MatekGPS",
-                "f405-MatekGPS",
-                "f103-Airspeed",
-                "CUAV_GPS",
-                "ZubaxGNSS",
-                "CubeOrange-periph",
-                "CubeBlack-periph",
-                "MatekH743-periph",
-                "HitecMosaic",
-                "FreeflyRTK",
-                "HolybroGPS",
-                ]
+        return AP_PERIPH_BOARDS
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
@@ -682,7 +531,6 @@ is bob we will attempt to checkout bob-AVR'''
                            boards,
                            "Copter",
                            "arducopter",
-                           "ArduCopter",
                            frames=[None, "heli"])
 
     def build_arduplane(self, tag):
@@ -693,8 +541,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "ArduPlane",
                            boards,
                            "Plane",
-                           "arduplane",
-                           "ArduPlane")
+                           "arduplane")
 
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
@@ -703,8 +550,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "AntennaTracker",
                            boards,
                            "AntennaTracker",
-                           "antennatracker",
-                           "AntennaTracker",)
+                           "antennatracker")
 
     def build_rover(self, tag):
         '''build Rover binaries'''
@@ -713,8 +559,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "Rover",
                            boards,
                            "Rover",
-                           "ardurover",
-                           "Rover")
+                           "ardurover")
 
     def build_ardusub(self, tag):
         '''build Sub binaries'''
@@ -722,8 +567,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "ArduSub",
                            self.common_boards(),
                            "Sub",
-                           "ardusub",
-                           "ArduSub")
+                           "ardusub")
 
     def build_AP_Periph(self, tag):
         '''build AP_Periph binaries'''
@@ -731,7 +575,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.build_vehicle(tag,
                            "AP_Periph",
                            boards,
-                           "AP_Periph",
                            "AP_Periph",
                            "AP_Periph")
 

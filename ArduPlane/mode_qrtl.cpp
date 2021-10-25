@@ -1,14 +1,54 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQRTL::_enter()
 {
-    return plane.mode_qstabilize._enter();
+    // use do_RTL() to setup next_WP_loc
+    plane.do_RTL(plane.home.alt + quadplane.qrtl_alt*100UL);
+    plane.prev_WP_loc = plane.current_loc;
+    pos_control->set_accel_desired_xy_cmss(Vector2f());
+    pos_control->init_xy_controller();
+    quadplane.poscontrol_init_approach();
+    float dist = plane.next_WP_loc.get_distance(plane.current_loc);
+    const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
+    if (dist < 1.5*radius &&
+        quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+        // we're close to destination and already running VTOL motors, don't transition
+        gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+        poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+    }
+    int32_t from_alt;
+    int32_t to_alt;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
+        poscontrol.slow_descent = from_alt > to_alt;
+        return true;
+    }
+    // defualt back to old method
+    poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
+    return true;
 }
 
 void ModeQRTL::update()
 {
     plane.mode_qstabilize.update();
+}
+
+/*
+  handle QRTL mode
+ */
+void ModeQRTL::run()
+{
+    quadplane.vtol_position_controller();
+    if (poscontrol.get_state() > QuadPlane::QPOS_POSITION2) {
+        // change target altitude to home alt
+        plane.next_WP_loc.alt = plane.home.alt;
+    }
+    if (poscontrol.get_state() >= QuadPlane::QPOS_POSITION2) {
+        // start landing logic
+        quadplane.verify_vtol_land();
+    }
 }
 
 /*
@@ -43,3 +83,4 @@ bool ModeQRTL::update_target_altitude()
     return true;
 }
 
+#endif

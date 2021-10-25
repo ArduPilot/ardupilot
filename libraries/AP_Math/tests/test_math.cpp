@@ -10,7 +10,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SQRT_2 1.4142135623730951f
+#define SQRT_2 1.4142135623730950488016887242097
 
 TEST(VectorTest, Rotations)
 {
@@ -19,12 +19,20 @@ TEST(VectorTest, Rotations)
 #define TEST_ROTATION(rotation, _x, _y, _z) { \
     const float accuracy = 1.0e-6; \
     Vector3f v(1, 1, 1); \
+    Vector3f v2 = v; \
     v.rotate(rotation); \
     Vector3f expected(_x, _y, _z); \
     EXPECT_NEAR(expected.length(), v.length(), accuracy); \
     EXPECT_FLOAT_EQ(expected.x, v.x); \
     EXPECT_FLOAT_EQ(expected.y, v.y); \
     EXPECT_FLOAT_EQ(expected.z, v.z); \
+    Quaternion quat; \
+    quat.from_rotation(rotation); \
+    quat.earth_to_body(v2); \
+    EXPECT_NEAR(expected.length(), v.length(), accuracy); \
+    EXPECT_NEAR(expected.x, v2.x, accuracy); \
+    EXPECT_NEAR(expected.y, v2.y, accuracy); \
+    EXPECT_NEAR(expected.z, v2.z, accuracy); \
     rotation_count++; \
 }
 
@@ -66,14 +74,22 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_270_PITCH_270, 1, 1, 1);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_180_YAW_90, 1, -1, -1);
     TEST_ROTATION(ROTATION_ROLL_90_YAW_270, -1, -1, 1);
-    TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.4066309f, -1.5839677f, -0.5706992f);
+    TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.40663092252764576617352076937095, -1.5839677018260314156350432313047, -0.57069923113341980425161636958364);
     TEST_ROTATION(ROTATION_PITCH_315, 0, 1, SQRT_2);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_315, 0, -1, SQRT_2);
-    TEST_ROTATION(ROTATION_PITCH_7, 1.1144155f, 1, 0.87067682f);
-
+    TEST_ROTATION(ROTATION_PITCH_7, 1.1144154950464695286171945554088, 1, 0.87067680823617454866081288855639);
+    TEST_ROTATION(ROTATION_ROLL_45, 1, 0, SQRT_2);
+    TEST_ROTATION(ROTATION_ROLL_315, 1, SQRT_2, 0);
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
-    TEST_ROTATION(ROTATION_CUSTOM, 1, 1, 1);  // TODO look at internal error ?
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    TEST_ROTATION(ROTATION_CUSTOM, 1, 1, 1);
     TEST_ROTATION(ROTATION_MAX, 1, 1, 1);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    Vector3F v {1, 1, 1};
+    EXPECT_EXIT(v.rotate(ROTATION_CUSTOM), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::flow_of_ctrl");
+    EXPECT_EXIT(v.rotate(ROTATION_MAX), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
+#endif
 }
 
 TEST(MathTest, IsZero)
@@ -361,8 +377,13 @@ TEST(MathTest, Constrain)
     EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
     EXPECT_EQ(19.9f, constrain_value(19.8f, 19.9f, 20.1f));
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
     EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(constrain_float(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+    EXPECT_EXIT(constrain_value(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+#endif
 }
 
 TEST(MathWrapTest, Angle180)
@@ -651,6 +672,7 @@ TEST(MathTest, FIXEDWINGTURNRATE)
     EXPECT_NEAR(56.187965393066406f, fixedwing_turn_rate(45, 10.0f), accuracy);
 }
 
+AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop

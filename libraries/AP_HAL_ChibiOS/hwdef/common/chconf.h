@@ -99,7 +99,7 @@ extern "C" {
  * @note    Allowed values are 16, 32 or 64 bits.
  */
 #if !defined(CH_CFG_INTERVALS_SIZE)
-#define CH_CFG_INTERVALS_SIZE               32
+#define CH_CFG_INTERVALS_SIZE               CH_CFG_ST_RESOLUTION
 #endif
 
 /**
@@ -119,7 +119,7 @@ extern "C" {
  *          this value.
  */
 #ifndef CH_CFG_ST_TIMEDELTA
-#define CH_CFG_ST_TIMEDELTA                 2
+#define CH_CFG_ST_TIMEDELTA                 10
 #endif
 
 /*

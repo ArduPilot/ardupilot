@@ -1189,7 +1189,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Field: w: current TECS prioritization of height vs speed (0==100% height,2==100% speed, 1==50%height+50%speed
     // @Field: f: flags
     // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "TECS",
         "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
         "smnmnnnn----o--",
@@ -1221,7 +1221,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Field: PErr: difference between estimated potential energy and desired potential energy
     // @Field: EDelta: current error in speed/balance weighting
     // @Field: LF: aerodynamic load factor
-    AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
+    AP::logger().WriteStreaming("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
                        "s------",
                        "F------",
                        "Qffffff",

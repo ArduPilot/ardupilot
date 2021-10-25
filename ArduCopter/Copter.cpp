@@ -166,8 +166,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            40,    200),
 #endif
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
+    SCHED_TASK_CLASS(Compass, &copter.compass, cal_update, 100, 100),
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100),
 #if HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100),
@@ -175,7 +174,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,          10,    100),
 #endif
-#if AC_TERRAIN == ENABLED
+#if AP_TERRAIN_AVAILABLE
     SCHED_TASK(terrain_update,        10,    100),
 #endif
 #if GRIPPER_ENABLED == ENABLED
@@ -199,7 +198,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #ifdef USERHOOK_SUPERSLOWLOOP
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
-#if BUTTON_ENABLED == ENABLED
+#if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,            &copter.button,           update,           5, 100),
 #endif
 #if STATS_ENABLED == ENABLED
@@ -270,6 +269,7 @@ void Copter::fast_loop()
     AP_Vehicle::fast_loop();
 }
 
+#ifdef ENABLE_SCRIPTING
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
 {
@@ -296,6 +296,19 @@ bool Copter::set_target_location(const Location& target_loc)
     return mode_guided.set_destination(target_loc);
 }
 
+// set target position (for use by scripting)
+bool Copter::set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
+
+    return mode_guided.set_destination(pos_neu_cm, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, yaw_relative, terrain_alt);
+}
+
 // set target position and velocity (for use by scripting)
 bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel)
 {
@@ -307,7 +320,22 @@ bool Copter::set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& t
     const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
     const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
 
-    return mode_guided.set_destination_posvel(pos_neu_cm, vel_neu_cms);
+    return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, Vector3f());
+}
+
+// set target position, velocity and acceleration (for use by scripting)
+bool Copter::set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    const Vector3f pos_neu_cm(target_pos.x * 100.0f, target_pos.y * 100.0f, -target_pos.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
+    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+
+    return mode_guided.set_destination_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cms, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, yaw_relative);
 }
 
 bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
@@ -320,6 +348,22 @@ bool Copter::set_target_velocity_NED(const Vector3f& vel_ned)
     // convert vector to neu in cm
     const Vector3f vel_neu_cms(vel_ned.x * 100.0f, vel_ned.y * 100.0f, -vel_ned.z * 100.0f);
     mode_guided.set_velocity(vel_neu_cms);
+    return true;
+}
+
+// set target velocity and acceleration (for use by scripting)
+bool Copter::set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    // convert vector to neu in cm
+    const Vector3f vel_neu_cms(target_vel.x * 100.0f, target_vel.y * 100.0f, -target_vel.z * 100.0f);
+    const Vector3f accel_neu_cms(target_accel.x * 100.0f, target_accel.y * 100.0f, -target_accel.z * 100.0f);
+
+    mode_guided.set_velaccel(vel_neu_cms, accel_neu_cms, use_yaw, yaw_deg * 100.0, use_yaw_rate, yaw_rate_degs * 100.0, relative_yaw);
     return true;
 }
 
@@ -336,6 +380,21 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     mode_guided.set_angle(q, climb_rate_ms*100, use_yaw_rate, radians(yaw_rate_degs), false);
     return true;
 }
+
+// circle mode controls
+bool Copter::get_circle_radius(float &radius_m)
+{
+    radius_m = circle_nav->get_radius() * 0.01f;
+    return true;
+}
+
+bool Copter::set_circle_rate(float rate_dps)
+{
+    circle_nav->set_rate(rate_dps);
+    return true;
+}
+
+#endif // ENABLE_SCRIPTING
 
 
 // rc_loops - reads user input from transmitter/receiver
@@ -378,7 +437,7 @@ void Copter::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if(AP::compass().enabled()) {
+    if(AP::compass().available()) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
         compass.set_voltage(battery.voltage());
@@ -505,7 +564,7 @@ void Copter::one_hz_loop()
 
 #if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
-        motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+        motors->update_throttle_range();
 #endif
     }
 

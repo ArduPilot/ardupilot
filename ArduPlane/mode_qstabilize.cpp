@@ -1,14 +1,11 @@
 #include "mode.h"
 #include "Plane.h"
 
+#if HAL_QUADPLANE_ENABLED
+
 bool ModeQStabilize::_enter()
 {
-    if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
-        plane.control_mode = plane.previous_mode;
-    } else {
-        plane.auto_state.vtol_mode = true;
-    }
-
+    quadplane.throttle_wait = false;
     return true;
 }
 
@@ -24,7 +21,7 @@ void ModeQStabilize::update()
     const float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
 
     // then scale to target angles in centidegrees
-    if (plane.quadplane.tailsitter_active()) {
+    if (plane.quadplane.tailsitter.active()) {
         // tailsitters are different
         set_tailsitter_roll_pitch(roll_input, pitch_input);
         return;
@@ -38,6 +35,20 @@ void ModeQStabilize::update()
         plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
         plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
     }
+}
+
+// quadplane stabilize mode
+void ModeQStabilize::run()
+{
+    // special check for ESC calibration in QSTABILIZE
+    if (quadplane.esc_calibration != 0) {
+        quadplane.run_esc_calibration();
+        return;
+    }
+
+    // normal QSTABILIZE mode
+    float pilot_throttle_scaled = quadplane.get_pilot_throttle();
+    quadplane.hold_stabilize(pilot_throttle_scaled);
 }
 
 // set the desired roll and pitch for a tailsitter
@@ -67,3 +78,5 @@ void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float 
         plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min_cd, plane.quadplane.aparm.angle_max);
     }
 }
+
+#endif

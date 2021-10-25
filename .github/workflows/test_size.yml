@@ -86,9 +86,37 @@ jobs:
           mkdir $GITHUB_WORKSPACE/pr_bin
           cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/pr_bin/
 
+          # build MatekF405 Plane without quadplane
+          if [ "${{matrix.config}}" = "MatekF405" ]; then
+            PLANE_BINARY="build/MatekF405/bin/arduplane.bin"
+            echo "normal size"
+            ls -l "$PLANE_BINARY"
+            EXTRA_HWDEF="/tmp/extra-options.def"
+            echo "define HAL_QUADPLANE_ENABLED 0" >"$EXTRA_HWDEF"
+            ./waf configure --board ${{matrix.config}} --extra-hwdef="$EXTRA_HWDEF"
+            ./waf plane
+            rm "$EXTRA_HWDEF"
+            echo "non-quadplane size:"
+            ls -l "$PLANE_BINARY"
+          fi
+
       - name: Full size compare with Master
         shell: bash
         run: |
           cd pr/
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
+
+      - name: elf_diff compare with Master
+        shell: bash
+        run: |
+          python3 -m pip install -U weasyprint elf_diff
+          python3 -m elf_diff --bin_prefix=arm-none-eabi- $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+          tar cf multipage_pair_report.tar multipage_pair_report
+
+      - name: Archive elf_diff output
+        uses: actions/upload-artifact@v2
+        with:
+           name: elf_diff
+           path: multipage_pair_report.tar
+           retention-days: 14

@@ -35,7 +35,6 @@ public:
 
     // read input from hal.rcin - create a control_in value
     bool        update(void);
-    void        recompute_pwm_no_deadzone();
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
     // for hover throttle
@@ -72,7 +71,7 @@ public:
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
     bool       has_override() const;
 
-    int16_t    stick_mixing(const int16_t servo_in);
+    float    stick_mixing(const float servo_in);
 
     // get control input with zero deadzone
     int16_t    get_control_in_zero_dz(void) const;
@@ -91,6 +90,9 @@ public:
 
     // set and save trim if changed
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
+
+    // check if any of the trim/min/max param are configured in storage, this would indicate that the user has done a calibration at somepoint
+    bool       configured_in_storage() { return radio_min.configured_in_storage() || radio_max.configured_in_storage() || radio_trim.configured_in_storage(); }
 
     ChannelType get_type(void) const { return type_in; }
 
@@ -139,7 +141,7 @@ public:
         AVOID_ADSB =          38, // enable AP_Avoidance library
         PRECISION_LOITER =    39, // enable precision loiter
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
-        ARMDISARM =           41, // arm or disarm vehicle
+        ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
         INVERTED  =           43, // enable inverted flight
         WINCH_ENABLE =        44, // winch enable/disable
@@ -178,7 +180,7 @@ public:
         TAKEOFF   =           77, // takeoff
         RUNCAM_CONTROL =      78, // control RunCam device
         RUNCAM_OSD_CONTROL =  79, // control RunCam OSD
-        VISODOM_CALIBRATE  =  80, // calibrate visual odometry camera's attitude
+        VISODOM_ALIGN =       80, // align visual odometry camera's attitude to AHRS
         DISARM =              81, // disarm vehicle
         Q_ASSIST =            82, // disable, enable and force Q assist
         ZIGZAG_Auto =         83, // zigzag auto switch
@@ -196,8 +198,10 @@ public:
         FBWA_TAILDRAGGER =    95, // enables FBWA taildragger takeoff mode. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA.
         MODE_SWITCH_RESET =   96, // trigger re-reading of mode switch
         WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
+        TRAINING            = 98, // mode training
+        AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
 
-        // entries from 100 onwards are expected to be developer
+        // entries from 100-150  are expected to be developer
         // options used for testing
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
@@ -208,6 +212,15 @@ public:
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
+
+        // options 150-199 continue user rc switch options
+        CRUISE =             150,  ///CRUISE mode
+        TURTLE =             151,  // Turtle mode - flip over after crash
+        SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
+        ARMDISARM =          153, // arm or disarm vehicle
+        ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
+        TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
+        TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -285,7 +298,7 @@ protected:
     // virtual function to be overridden my subclasses
     virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
-    virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
+    void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
@@ -295,7 +308,7 @@ protected:
     void do_aux_function_clear_wp(const AuxSwitchPos ch_flag);
     void do_aux_function_gripper(const AuxSwitchPos ch_flag);
     void do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag);
-    virtual void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
+    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
@@ -393,12 +406,18 @@ public:
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
+    // helper used by scripting to convert the above function from 0 to 1 indexeing
+    // range is checked correctly by the underlying channel function
+    RC_Channel *lua_rc_channel(const uint8_t chan) {
+        return channel(chan -1);
+    }
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
                                                                        // returns the number of valid channels
 
     static uint8_t get_valid_channel_count(void);                      // returns the number of valid channels in the last read
     static int16_t get_receiver_rssi(void);                            // returns [0, 255] for receiver RSSI (0 is no link) if present, otherwise -1
+    static int16_t get_receiver_link_quality(void);                         // returns 0-100 % of last 100 packets received at receiver are valid
     bool read_input(void);                                             // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
     static bool receiver_bind(const int dsmMode);                      // puts the receiver in bind mode if present, returns true if success
@@ -412,6 +431,7 @@ public:
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
     RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
+    void convert_options(const RC_Channel::aux_func_t old_option, const RC_Channel::aux_func_t new_option);
 
     void init_aux_all();
     void read_aux_all();
@@ -465,7 +485,7 @@ public:
         return _options & uint32_t(Option::LOG_DATA);
     }
     
-    bool arming_check_throttle() const {
+    virtual bool arming_check_throttle() const {
         return _options & uint32_t(Option::ARMING_CHECK_THROTTLE);
     }
 
@@ -473,6 +493,13 @@ public:
         return _options & uint32_t(Option::ARMING_SKIP_CHECK_RPY);
     }
 
+    bool suppress_crsf_message(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::SUPPRESS_CRSF_MESSAGE));
+    }
+
+    bool multiple_receiver_support() const {
+        return _options & uint32_t(Option::MULTI_RECEIVER_SUPPORT);
+    }
 
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
@@ -531,6 +558,8 @@ protected:
         ARMING_SKIP_CHECK_RPY   = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
         ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
         CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
+        SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
+        MULTI_RECEIVER_SUPPORT  = (1U << 10), // allow multiple receivers
     };
 
     void new_override_received() {

@@ -17,6 +17,9 @@
 */
 
 #include "SIM_ADSB.h"
+
+#if HAL_SIM_ADSB_ENABLED
+
 #include "SITL.h"
 
 #include <stdio.h>
@@ -26,7 +29,7 @@
 
 namespace SITL {
 
-SITL *_sitl;
+SIM *_sitl;
 
 /*
   update a simulated vehicle
@@ -114,8 +117,8 @@ void ADSB::send_report(void)
         // threading issue with non-blocking sockets and the initial wait on uartA
         return;
     }
-    if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port);
+    if (!mavlink.connected && mav_socket.connect(target_address, target_port_base + 10 * instance)) {
+        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port_base + 10 * instance);
         mavlink.connected = true;
     }
     if (!mavlink.connected) {
@@ -192,7 +195,7 @@ void ADSB::send_report(void)
             ADSB_Vehicle &vehicle = vehicles[i];
             Location loc = home;
 
-            loc.offset_double(vehicle.position.x, vehicle.position.y);
+            loc.offset(vehicle.position.x, vehicle.position.y);
 
             // re-init when exceeding radius range
             if (home.get_distance(loc) > _sitl->adsb_radius_m) {
@@ -270,3 +273,5 @@ void ADSB::send_report(void)
 }
 
 } // namespace SITL
+
+#endif // HAL_SIM_ADSB_ENABLED

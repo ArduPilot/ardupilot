@@ -113,13 +113,13 @@ struct PACKED log_Vibe {
 
 #define LOG_STRUCTURE_FROM_INERTIALSENSOR        \
     { LOG_ACC_MSG, sizeof(log_ACC), \
-      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
+      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" , true }, \
     { LOG_GYR_MSG, sizeof(log_GYR), \
-      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" }, \
+      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" , true }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "QBffffffIIfBBHH", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
+      "IMU",  "QBffffffIIfBBHH", "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" , true }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QBfffI", "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
+      "VIBE", "QBfffI", "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" , true }, \
     { LOG_ISBH_MSG, sizeof(log_ISBH), \
       "ISBH", "QHBBHHQf", "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate", "s-----sz", "F-----F-" },  \
     { LOG_ISBD_MSG, sizeof(log_ISBD), \

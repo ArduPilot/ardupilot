@@ -89,7 +89,13 @@ public:
 #endif
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) override;
-    
+
+    // returns random values
+    bool get_random_vals(uint8_t* data, size_t size) override;
+
+    // returns true random values
+    bool get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us) override;
+
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -126,4 +132,7 @@ private:
     // save/load key persistent parameters in bootloader sector
     bool get_persistent_params(ExpandingString &str) const;
 #endif
+
+    // log info on stack usage
+    void log_stack_info(void) override;
 };

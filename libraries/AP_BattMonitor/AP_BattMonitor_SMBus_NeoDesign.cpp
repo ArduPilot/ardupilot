@@ -9,9 +9,8 @@
 // Constructor
 AP_BattMonitor_SMBus_NeoDesign::AP_BattMonitor_SMBus_NeoDesign(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
-                                                   AP_BattMonitor_Params &params,
-                                                   AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
+                                                   AP_BattMonitor_Params &params)
+    : AP_BattMonitor_SMBus(mon, mon_state, params, AP_BATTMONITOR_SMBUS_BUS_INTERNAL)
 {
     _pec_supported = true;
 }
@@ -76,4 +75,3 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     read_remaining_capacity();
     read_temp();
 }
-

@@ -95,7 +95,10 @@ int16_t RC_Channels::get_receiver_rssi(void)
 {
     return hal.rcin->get_rssi();
 }
-
+int16_t RC_Channels::get_receiver_link_quality(void)
+{
+    return hal.rcin->get_rx_link_quality();
+}
 void RC_Channels::clear_overrides(void)
 {
     RC_Channels &_rc = rc();

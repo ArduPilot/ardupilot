@@ -49,7 +49,7 @@ define STORAGE_FLASH_PAGE 1
 USB_STRING_MANUFACTURER "mRo"
 
 # RC Input set for Interrupt not DMA also USART6_RX for serial RC
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
@@ -133,11 +133,11 @@ PF9 SPI5_MOSI SPI5
 
 # GPIOs
 # This defines general purpose outputs, mapped to GPIO
-# numbers 1 thru 4 for users.
-PG9  EXTERN_GPIO1 GPIO(1)
-PG13 EXTERN_GPIO2 GPIO(2)
-PG12 EXTERN_GPIO3 GPIO(3)
-PG14 EXTERN_GPIO4 GPIO(4)
+# numbers 3 thru 6 for users.
+PG9  EXTERN_GPIO1 OUTPUT GPIO(3)
+PG13 EXTERN_GPIO2 OUTPUT GPIO(4)
+PG12 EXTERN_GPIO3 OUTPUT GPIO(5)
+PG14 EXTERN_GPIO4 OUTPUT GPIO(6)
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
@@ -198,8 +198,6 @@ PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 PI5  TIM8_CH1 TIM8 PWM(7) GPIO(56)
 PI6  TIM8_CH2 TIM8 PWM(8) GPIO(57)
-
-define BOARD_PWM_COUNT_DEFAULT 8
 
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.

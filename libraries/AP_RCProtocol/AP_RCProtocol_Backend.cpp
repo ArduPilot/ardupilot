@@ -58,7 +58,7 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 /*
   provide input from a backend
  */
-void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi)
+void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
@@ -73,6 +73,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
         rc_input_count++;
     }
     rssi = _rssi;
+    rx_link_quality = _rx_link_quality;
 }
 
 
@@ -128,7 +129,7 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
 // @Field: U7: eight quartet of bytes
 // @Field: U8: ninth quartet of bytes
 // @Field: U9: tenth quartet of bytes
-        AP::logger().Write("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
+        AP::logger().WriteStreaming("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
                            AP_HAL::micros64(),
                            timestamp,
                            (uint8_t)prot,

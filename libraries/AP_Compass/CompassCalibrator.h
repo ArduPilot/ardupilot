@@ -21,7 +21,7 @@ public:
     void new_sample(const Vector3f& sample);
 
     // set compass's initial orientation and whether it should be automatically fixed (if required)
-    void set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation);
+    void set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation, bool always_45_deg);
 
     // running is true if actively calculating offsets, diagonals or offdiagonals
     bool running();
@@ -83,6 +83,7 @@ public:
         float delay_start_sec;
         uint32_t start_time_ms;
         uint8_t compass_idx;
+        bool always_45_deg;
     } cal_settings;
 
     // Get calibration result
@@ -90,6 +91,14 @@ public:
     
     // Get current Calibration state
     const State get_state();
+
+protected:
+    // convert index to rotation, this allows to skip some rotations
+    // protected so CompassCalibrator_index_test can see it
+    Rotation auto_rotation_index(uint8_t n) const;
+
+    // return true if this is a right angle rotation
+    bool right_angle_rotation(Rotation r) const;
 
 private:
 
@@ -230,6 +239,7 @@ private:
     bool _is_external;                      // true if compass is external (provided by caller)
     bool _check_orientation;                // true if orientation should be automatically checked
     bool _fix_orientation;                  // true if orientation should be fixed if necessary
+    bool _always_45_deg;                    // true if orentation should considder 45deg with equal tolerance
     float _orientation_confidence;          // measure of confidence in automatic orientation detection
     CompassSample _last_sample;
 

@@ -2,8 +2,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-class AP_Terrain;
-
 #define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
 class Location
@@ -35,8 +33,6 @@ public:
     Location(const Vector3f &ekf_offset_neu, AltFrame frame);
     Location(const Vector3d &ekf_offset_neu, AltFrame frame);
 
-    static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
-
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
 
@@ -61,9 +57,13 @@ public:
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
     // return distance in meters between two locations
-    float get_distance(const struct Location &loc2) const;
+    ftype get_distance(const struct Location &loc2) const;
+
+    // return the altitude difference in meters taking into account alt frame.
+    bool get_alt_distance(const struct Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+    // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 
@@ -73,20 +73,20 @@ public:
     Vector2F get_distance_NE_ftype(const Location &loc2) const;
 
     // extrapolate latitude/longitude given distances (in meters) north and east
-    void offset(float ofs_north, float ofs_east);
-    void offset_double(double ofs_north, double ofs_east);
+    static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
+    void offset(ftype ofs_north, ftype ofs_east);
 
     // extrapolate latitude/longitude given bearing and distance
-    void offset_bearing(float bearing_deg, float distance);
+    void offset_bearing(ftype bearing_deg, ftype distance);
     
     // extrapolate latitude/longitude given bearing, pitch and distance
-    void offset_bearing_and_pitch(float bearing_deg, float pitch_deg, float distance);
+    void offset_bearing_and_pitch(ftype bearing_deg, ftype pitch_deg, ftype distance);
 
     // longitude_scale - returns the scaler to compensate for
     // shrinking longitude as you move north or south from the equator
     // Note: this does not include the scaling to convert
     // longitude/latitude points to meters or centimeters
-    static float longitude_scale(int32_t lat);
+    static ftype longitude_scale(int32_t lat);
 
     bool is_zero(void) const WARN_IF_UNUSED;
 
@@ -95,7 +95,7 @@ public:
     // return bearing in centi-degrees from location to loc2
     int32_t get_bearing_to(const struct Location &loc2) const;
     // return the bearing in radians
-    float get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01f); } ;
+    ftype get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01); } ;
 
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
@@ -122,6 +122,12 @@ public:
      */
     float line_path_proportion(const Location &point1, const Location &point2) const;
 
+    // update altitude and alt-frame base on this location's horizontal position between point1 and point2
+    // this location's lat,lon is used to calculate the alt of the closest point on the line between point1 and point2
+    // origin and destination's altitude frames must be the same
+    // this alt-frame will be updated to match the destination alt frame
+    void linearly_interpolate_alt(const Location &point1, const Location &point2);
+
     bool initialised() const { return (lat !=0 || lng != 0 || alt != 0); }
 
     // wrap longitude at -180e7 to 180e7
@@ -132,9 +138,8 @@ public:
     
     // get lon1-lon2, wrapping at -180e7 to 180e7
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
-    
+
 private:
-    static AP_Terrain *_terrain;
 
     // scaling factor from 1e-7 degrees to meters at equator
     // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH

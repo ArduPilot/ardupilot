@@ -18,6 +18,8 @@
 
 #include "SIM_SerialProximitySensor.h"
 
+#if HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+
 #include <AP_Math/AP_Math.h>
 
 #include <stdio.h>
@@ -43,7 +45,7 @@ void SerialProximitySensor::update(const Location &location)
 
 float SerialProximitySensor::measure_distance_at_angle_bf(const Location &location, float angle) const
 {
-    const SITL *sitl = AP::sitl();
+    const SIM *sitl = AP::sitl();
 
     Vector2f vehicle_pos_cm;
     if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
@@ -97,7 +99,7 @@ float SerialProximitySensor::measure_distance_at_angle_bf(const Location &locati
     for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
         for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
             Location post_location = post_origin;
-            post_location.offset_double(x*10+3, y*10+2);
+            post_location.offset(x*10+3, y*10+2);
             if (postfile != nullptr) {
                 ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
             }
@@ -111,8 +113,8 @@ float SerialProximitySensor::measure_distance_at_angle_bf(const Location &locati
                 float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
-                    intersection_point.offset_double(intersection_point_cm.x/100.0,
-                                                     intersection_point_cm.y/100.0);
+                    intersection_point.offset(intersection_point_cm.x/100.0,
+                                              intersection_point_cm.y/100.0);
                     ::fprintf(intersectionsfile,
                               "map icon %f %f barrell\n",
                               intersection_point.lat*1e-7,
@@ -134,3 +136,5 @@ float SerialProximitySensor::measure_distance_at_angle_bf(const Location &locati
     // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
     return min_dist_cm / 100.0f;
 }
+
+#endif  // HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED

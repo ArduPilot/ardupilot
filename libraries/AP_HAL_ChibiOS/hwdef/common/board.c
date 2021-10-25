@@ -171,12 +171,14 @@ static void stm32_gpio_init(void) {
   /* Enabling GPIO-related clocks, the mask comes from the
      registry header file.*/
 #if defined(STM32H7)
+#if !EXTERNAL_PROG_FLASH_MB // if we have external flash resetting GPIO might disable all comms with it
   rccResetAHB4(STM32_GPIO_EN_MASK);
+#endif
   rccEnableAHB4(STM32_GPIO_EN_MASK, true);
 #elif defined(STM32F3)
   rccResetAHB(STM32_GPIO_EN_MASK);
   rccEnableAHB(STM32_GPIO_EN_MASK, true);
-#elif defined(STM32G4)
+#elif defined(STM32G4) || defined(STM32L4)
   rccResetAHB2(STM32_GPIO_EN_MASK);
   rccEnableAHB2(STM32_GPIO_EN_MASK, true);
 #else
@@ -249,6 +251,16 @@ void __early_init(void) {
 void __late_init(void) {
   halInit();
   chSysInit();
+
+  /*
+   * Initialize RNG
+   */
+#if HAL_USE_HW_RNG && defined(RNG)
+  rccEnableAHB2(RCC_AHB2ENR_RNGEN, 0);
+  RNG->CR |= RNG_CR_IE;
+  RNG->CR |= RNG_CR_RNGEN;
+#endif
+
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();

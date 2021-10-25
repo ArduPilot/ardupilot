@@ -259,7 +259,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     // extract yaw and pitch from Obstacle Vector
     const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
-    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(norm(obstacle.x, obstacle.y), obstacle.z))); 
+    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z))); 
 
     // allot to correct layer and sector based on calculated pitch and yaw
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);

@@ -34,7 +34,8 @@ enum ioevents {
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
     IOEVENT_SET_SAFETY_MASK,
-    IOEVENT_MIXING
+    IOEVENT_MIXING,
+    IOEVENT_GPIO,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -218,6 +219,16 @@ void AP_IOMCU::thread_main(void)
         }
         mask &= ~EVENT_MASK(IOEVENT_SET_SAFETY_MASK);
 
+        if (is_chibios_backend) {
+            if (mask & EVENT_MASK(IOEVENT_GPIO)) {
+                if (!write_registers(PAGE_GPIO, 0, sizeof(GPIO)/sizeof(uint16_t), (const uint16_t*)&GPIO)) {
+                    event_failed(mask);
+                    continue;
+                }
+            }
+            mask &= ~EVENT_MASK(IOEVENT_GPIO);
+        }
+
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
         if (now - last_rc_read_ms > 20) {
@@ -241,14 +252,6 @@ void AP_IOMCU::thread_main(void)
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
             last_safety_option_check_ms = now;
-        }
-
-        // update safety pwm
-        if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
-            uint8_t set = pwm_out.safety_pwm_set;
-            if (write_registers(PAGE_SAFETY_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
-                pwm_out.safety_pwm_sent = set;
-            }
         }
 
         // update failsafe pwm
@@ -360,7 +363,7 @@ void AP_IOMCU::read_status()
 // @Field: Nerr: Protocol failures on MCU side
 // @Field: Nerr2: Reported number of failures on IOMCU side
 // @Field: NDel: Number of delayed packets received by MCU
-            AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
+            AP::logger().WriteStreaming("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
                                AP_HAL::micros64(),
                                reg_status.freemem,
                                reg_status.timestamp_ms,
@@ -853,25 +856,6 @@ bool AP_IOMCU::check_crc(void)
 }
 
 /*
-  set the pwm to use when safety is on
- */
-void AP_IOMCU::set_safety_pwm(uint16_t chmask, uint16_t period_us)
-{
-    bool changed = false;
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
-        if (chmask & (1U<<i)) {
-            if (pwm_out.safety_pwm[i] != period_us) {
-                pwm_out.safety_pwm[i] = period_us;
-                changed = true;
-            }
-        }
-    }
-    if (changed) {
-        pwm_out.safety_pwm_set++;
-    }
-}
-
-/*
   set the pwm to use when in FMU failsafe
  */
 void AP_IOMCU::set_failsafe_pwm(uint16_t chmask, uint16_t period_us)
@@ -1077,6 +1061,62 @@ void AP_IOMCU::check_iomcu_reset(void)
         trigger_event(IOEVENT_SET_SAFETY_MASK);
     }
     last_rc_protocols = 0;
+}
+
+// Check if pin number is valid for GPIO
+bool AP_IOMCU::valid_GPIO_pin(uint8_t pin) const
+{
+    return convert_pin_number(pin);
+}
+
+// convert external pin numbers 101 to 108 to internal 0 to 7
+bool AP_IOMCU::convert_pin_number(uint8_t& pin) const
+{
+    if (pin < 101) {
+        return false;
+    }
+    pin -= 101;
+    if (pin > 7) {
+        return false;
+    }
+    return true;
+}
+
+// set GPIO mask of channels setup for output
+void AP_IOMCU::set_GPIO_mask(uint8_t mask)
+{
+    if (mask == GPIO.channel_mask) {
+        return;
+    }
+    GPIO.channel_mask = mask;
+    trigger_event(IOEVENT_GPIO);
+}
+
+// write to a output pin
+void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
+{
+    if (!convert_pin_number(pin)) {
+        return;
+    }
+    if (value == ((GPIO.output_mask & (1U << pin)) != 0)) {
+        return;
+    }
+    if (value) {
+        GPIO.output_mask |= (1U << pin);
+    } else {
+        GPIO.output_mask &= ~(1U << pin);
+    }
+    trigger_event(IOEVENT_GPIO);
+}
+
+// toggle a output pin
+void AP_IOMCU::toggle_GPIO(uint8_t pin)
+{
+    if (!convert_pin_number(pin)) {
+        return;
+    }
+    GPIO.output_mask ^= (1U << pin);
+    trigger_event(IOEVENT_GPIO);
 }
 
 
