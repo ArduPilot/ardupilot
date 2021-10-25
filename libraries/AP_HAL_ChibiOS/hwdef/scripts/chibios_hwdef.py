@@ -693,6 +693,34 @@ def get_ram_map():
     return get_mcu_config('RAM_MAP', True)
 
 
+def get_flash_npages():
+    global mcu_series
+    if mcu_series.startswith('STM32F4'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 12
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 24
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32F7'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 12
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32H7'):
+        return get_config('FLASH_SIZE_KB', type=int)//128
+    elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
+        return get_config('FLASH_SIZE_KB', type=int)
+    else:
+        return get_config('FLASH_SIZE_KB', type=int)//2
+
+
 def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
@@ -815,6 +843,26 @@ def write_mcu_config(f):
         f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__')
     else:
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+
+    storage_flash_page = None
+    if not args.bootloader:
+        if get_config('STORAGE_FLASH_PAGE', default=0, type=int):
+            storage_flash_page = get_config('STORAGE_FLASH_PAGE', type=int)
+            f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
+
+    if flash_size >= 2048:
+        # lets pick a flash sector for Crash log
+        num_flash_pages = get_flash_npages()
+        crash_dump_flash_page = get_config('CRASH_DUMP_FLASHPAGE', default=num_flash_pages-1, type=int)
+        if crash_dump_flash_page >= num_flash_pages:
+            raise Exception("CRASH_DUMP_FLASHPAGE cannot exceed number of available flash pages: %u" % num_flash_pages)
+        if storage_flash_page is not None:
+            while crash_dump_flash_page == storage_flash_page or crash_dump_flash_page == storage_flash_page+1:
+                if crash_dump_flash_page > 0:
+                    crash_dump_flash_page -= 1
+                else:
+                    raise Exception('Unable to find a Crash log flash page')
+        f.write('#define HAL_CRASH_DUMP_FLASHPAGE %u\n' % crash_dump_flash_page)
 
     if args.bootloader:
         if env_vars['EXTERNAL_PROG_FLASH_MB']:
@@ -1453,7 +1501,7 @@ def write_UART_config(f):
     elif not uart_list[2].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
         crash_uart = uart_list[2]
 
-    if crash_uart is not None:
+    if crash_uart is not None and get_config('FLASH_SIZE_KB', type=int) >= 2048:
         f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
         f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
         f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))

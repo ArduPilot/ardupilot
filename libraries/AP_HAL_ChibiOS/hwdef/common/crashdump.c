@@ -115,6 +115,9 @@ void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
     struct port_extctx* ctx = (struct port_extctx*)pInfo->sp;
     FaultType faultType = (FaultType)__get_IPSR();
     save_fault_watchdog(__LINE__, faultType, pInfo->sp, ctx->lr_thd);
+#if !defined(HAL_CRASH_SERIAL_PORT) && !defined(HAL_CRASH_DUMP_FLASHPAGE)
+    while(true) {} // Nothing to do
+#endif
 #if defined(HAL_CRASH_SERIAL_PORT)
     if (do_serial_crash_dump) {
         CrashCatcher_DumpStartHex(pInfo);
