@@ -406,8 +406,10 @@ bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
 bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 {
-    // NAV commands all have ids below MAV_CMD_NAV_LAST except NAV_SET_YAW_SPEED
-    return (cmd.id <= MAV_CMD_NAV_LAST || cmd.id == MAV_CMD_NAV_SET_YAW_SPEED);
+    // NAV commands all have ids below MAV_CMD_NAV_LAST, plus some exceptions
+    return (cmd.id <= MAV_CMD_NAV_LAST ||
+            cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
+            cmd.id == MAV_CMD_NAV_SCRIPT_TIME);
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -1158,6 +1160,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.scripting.p3 = packet.param4;
         break;
 
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        cmd.content.nav_script_time.command = packet.param1;
+        cmd.content.nav_script_time.timeout_s = packet.param2;
+        cmd.content.nav_script_time.arg1 = packet.param3;
+        cmd.content.nav_script_time.arg2 = packet.param4;
+        break;
+        
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1610,6 +1619,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.scripting.p3;
         break;
 
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        packet.param1 = cmd.content.nav_script_time.command;
+        packet.param2 = cmd.content.nav_script_time.timeout_s;
+        packet.param3 = cmd.content.nav_script_time.arg1;
+        packet.param4 = cmd.content.nav_script_time.arg2;
+        break;
+        
     default:
         // unrecognised command
         return false;
@@ -2328,6 +2344,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "Jump";
     case MAV_CMD_DO_GO_AROUND:
         return "Go Around";
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        return "NavScriptTime";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
