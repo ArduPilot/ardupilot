@@ -521,6 +521,18 @@ private:
         float terrain_correction;
     } auto_state;
 
+#if ENABLE_SCRIPTING
+    // support for scripting nav commands, with verify
+    struct {
+        uint16_t id;
+        float roll_rate_dps;
+        float pitch_rate_dps;
+        float throttle_pct;
+        uint32_t start_ms;
+        bool done;
+    } nav_scripting;
+#endif
+
     struct {
         // roll pitch yaw commanded from external controller in centidegrees
         Vector3l forced_rpy_cd;
@@ -932,6 +944,12 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
+#if ENABLE_SCRIPTING
+    // nav scripting support
+    void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
+#endif
+
     // commands.cpp
     void set_guided_WP(void);
     void update_home();
@@ -1118,6 +1136,17 @@ private:
     bool have_reverse_thrust(void) const;
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
+
+#ifdef ENABLE_SCRIPTING
+    // support for NAV_SCRIPT_TIME mission command
+    bool nav_scripting_active(void) const;
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
+    void nav_script_time_done(uint16_t id) override;
+
+    // command throttle percentage and roll, pitch, yaw target
+    // rates. For use with scripting controllers
+    bool set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) override;
+#endif
 
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
