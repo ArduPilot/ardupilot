@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the uLanding v0 rangefinder
+  Simulator for the USD1 v0 rangefinder
 */
 
-#include "SIM_RF_uLanding_v0.h"
+#include "SIM_RF_USD1_v0.h"
 
 using namespace SITL;
 
-uint32_t RF_uLanding_v0::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_USD1_v0::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
     const uint16_t reading = alt_cm / 2.5f;
     buffer[0] = 0x48;
