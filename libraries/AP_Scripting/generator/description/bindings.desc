@@ -350,8 +350,8 @@ singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE
 singleton QuadPlane method in_vtol_mode boolean
 singleton QuadPlane method in_assisted_flight boolean
 
-include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
-singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
+include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix alias MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
@@ -405,14 +405,14 @@ singleton hal.analogin alias analog
 singleton hal.analogin literal
 singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
 
-include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
-singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
+include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix_Scripting_Dynamic alias Motors_dynamic
 singleton AP_MotorsMatrix_Scripting_Dynamic method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method add_motor void uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMatrix_Scripting_Dynamic::factor_table
 
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI()
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table alias motor_factor_table
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
