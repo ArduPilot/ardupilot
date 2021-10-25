@@ -53,8 +53,8 @@ def _vehicle_index(vehicle):
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
-                   'APM_BUILD_TYPE',
-                   'AP_NavEKF3_core.h']
+                   'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
+                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 
 def _remove_comments(s):
