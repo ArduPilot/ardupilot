@@ -197,6 +197,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                             cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
 
+#if ENABLE_SCRIPTING
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        do_nav_script_time(cmd);
+        break;
+#endif
+        
     default:
         // unable to use the command, allow the vehicle to try the next command
         return false;
@@ -292,6 +298,11 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
+#if ENABLE_SCRIPTING
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        return verify_nav_script_time(cmd);
+#endif
+        
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
@@ -1106,3 +1117,78 @@ float Plane::get_wp_radius() const
 #endif
     return g.waypoint_radius;
 }
+
+#if ENABLE_SCRIPTING
+/*
+  support for scripted navigation, with verify operation for completion
+ */
+void Plane::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
+{
+    nav_scripting.done = false;
+    nav_scripting.id++;
+    nav_scripting.start_ms = AP_HAL::millis();
+
+    // start with current roll rate, pitch rate and throttle
+    nav_scripting.roll_rate_dps = plane.rollController.get_pid_info().target;
+    nav_scripting.pitch_rate_dps = plane.pitchController.get_pid_info().target;
+    nav_scripting.throttle_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+}
+
+/*
+  wait for scripting to say that the mission item is complete
+ */
+bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
+{
+    if (cmd.content.nav_script_time.timeout_s > 0) {
+        const uint32_t now = AP_HAL::millis();
+        if (now - nav_scripting.start_ms > cmd.content.nav_script_time.timeout_s*1000U) {
+            gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
+            nav_scripting.done = true;
+        }
+    }
+    return nav_scripting.done;
+}
+
+// check if we are in a NAV_SCRIPT_* command
+bool Plane::nav_scripting_active(void) const
+{
+    return !nav_scripting.done &&
+            control_mode == &mode_auto &&
+            mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME;
+}
+
+// support for NAV_SCRIPTING mission command
+bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+{
+    if (!nav_scripting_active()) {
+        // not in NAV_SCRIPT_TIME
+        return false;
+    }
+    const auto &c = mission.get_current_nav_cmd().content.nav_script_time;
+    id = nav_scripting.id;
+    cmd = c.command;
+    arg1 = c.arg1;
+    arg2 = c.arg2;
+    return true;
+}
+
+// called when script has completed the command
+void Plane::nav_script_time_done(uint16_t id)
+{
+    if (id == nav_scripting.id) {
+        nav_scripting.done = true;
+    }
+}
+
+// support for NAV_SCRIPTING mission command
+bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps)
+{
+    if (!nav_scripting_active()) {
+        return false;
+    }
+    nav_scripting.roll_rate_dps = roll_rate_dps;
+    nav_scripting.pitch_rate_dps = pitch_rate_dps;
+    nav_scripting.throttle_pct = throttle_pct;
+    return true;
+}
+#endif // ENABLE_SCRIPTING
