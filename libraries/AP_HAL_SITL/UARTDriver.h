@@ -9,6 +9,8 @@
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
+#include <SITL/SIM_SerialDevice.h>
+
 class HALSITL::UARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class HALSITL::SITL_State;
@@ -127,10 +129,7 @@ private:
     uint16_t _mc_myport;
     uint32_t last_tick_us;
 
-    // if this is not -1 then data should be written here instead of
-    // _fd.  This is to support simulated serial devices, which use a
-    // pipe for read and a pipe for write
-    int _fd_write = -1;
+    SITL::SerialDevice *_sim_serial_device;
 };
 
 #endif
