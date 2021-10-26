@@ -90,7 +90,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             uint8_t buf[300];
             uint16_t buf_len = mavlink_msg_to_send_buffer(buf, &msg_buf[i].obs_msg);
 
-            if (::write(fd_my_end, (void*)&buf, buf_len) != buf_len) {
+            if (write_to_autopilot((char*)&buf, buf_len) != buf_len) {
                 hal.console->printf("Vicon: write failure\n");
             }
             msg_buf[i].time_send_us = 0;
