@@ -26,6 +26,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #ifdef SFML_JOYSTICK
   #ifdef HAVE_SFML_GRAPHICS_HPP
@@ -432,25 +433,49 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
+#endif
     AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2_RND",      9, SIM, gyro_noise[1],  0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
+#endif
     AP_GROUPINFO("ACC1_RND",     11, SIM, accel_noise[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_RND",     12, SIM, accel_noise[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_RND",     13, SIM, accel_noise[2], 0),
+#endif
     AP_GROUPINFO("GYR1_SCALE",   14, SIM, gyro_scale[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2_SCALE",   15, SIM, gyro_scale[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_SCALE",   16, SIM, gyro_scale[2], 0),
+#endif
     AP_GROUPINFO("ACCEL1_FAIL",  17, SIM, accel_fail[0],  0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACCEL2_FAIL",  18, SIM, accel_fail[1],  0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACCEL3_FAIL",  19, SIM, accel_fail[2],  0),
+#endif
     AP_GROUPINFO("GYR_FAIL_MSK", 20, SIM, gyro_fail_mask,  0),
     AP_GROUPINFO("ACC_FAIL_MSK", 21, SIM, accel_fail_mask,  0),
     AP_GROUPINFO("ACC1_SCAL",    22, SIM, accel_scale[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_SCAL",    23, SIM, accel_scale[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
+#endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
     // @Param: SAIL_TYPE
@@ -465,8 +490,12 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
+#if INS_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
+#endif
     AP_GROUPEND
 };
     
