@@ -201,57 +201,39 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
     case GDL90_ID_TRANSPONDER_STATUS:
         memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
-        if (rx.decoded.transponder_status.identActive)
-        {
+        if (rx.decoded.transponder_status.identActive) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
         }
         
-        if (rx.decoded.transponder_status.modeAEnabled)
-        {
+        if (rx.decoded.transponder_status.modeAEnabled) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
         }
 
-        if (rx.decoded.transponder_status.modeCEnabled)
-        {
+        if (rx.decoded.transponder_status.modeCEnabled) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
         }
 
-        if (rx.decoded.transponder_status.modeSEnabled)
-        {
+        if (rx.decoded.transponder_status.modeSEnabled) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
         }
 
-        if (rx.decoded.transponder_status.es1090TxEnabled)
-        {
+        if (rx.decoded.transponder_status.es1090TxEnabled) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
         }
 
-        if (rx.decoded.transponder_status.x_bit)
-        {
+        if (rx.decoded.transponder_status.x_bit) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
-        }
-        else
-        {
+        } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
         }
 
@@ -259,8 +241,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
         _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
 
-        if (run_state.last_packet_Transponder_Status_ms == 0)
-        {
+        if (run_state.last_packet_Transponder_Status_ms == 0) {
             // set initial control message contents to transponder defaults
             _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
             _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;

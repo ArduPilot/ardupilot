@@ -164,34 +164,6 @@ public:
 
     AP_ADSB::Type get_type(uint8_t instance) const;
 
-    // struct {
-    //     // from gdl90 status message and ownship message
-    //     bool      airborne;
-    //     bool      interrogatedSinceLast;
-    //     bool      identActive;
-    //     bool      x_bit;
-    //     bool      modeAEnabled;
-    //     bool      modeCEnabled;
-    //     bool      modeSEnabled;
-    //     bool      es1090TxEnabled;
-    //     uint16_t  squawkCode;
-    //     uint8_t   NIC;
-    //     uint8_t   NACp;
-    //     uint8_t   temperature;
-    //     char      flight_id[8];
-    
-    //     uint8_t   fault;
-    //     // // no connection to ping200x
-    //     // bool      noComms = 1;
-
-    //     // // from gdl90 heartbeat message
-    //     // bool      functionFailureGnssNo3dFix;
-    //     // bool      functionFailureGnssUnavailable;
-    //     // bool      functionFailureTransmitSystem;
-    //     // bool      maintenanceRequired;
-
-    // } tx_status;
-
 private:
     static AP_ADSB *_singleton;
 
