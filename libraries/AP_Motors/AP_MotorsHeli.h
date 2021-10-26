@@ -22,8 +22,8 @@
 #define AP_MOTORS_HELI_COLLECTIVE_HOVER_TC      10.0f // time constant used to update estimated hover throttle, 0 ~ 1
 #define AP_MOTORS_HELI_COLLECTIVE_HOVER_MIN     0.3f  // minimum possible hover throttle
 #define AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX     0.8f // maximum possible hover throttle
-#define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -10.0f // minimum collective blade pitch angle in deg
-#define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       10.0f // maximum collective blade pitch angle in deg
+#define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -90.0f // minimum collective blade pitch angle in deg
+#define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
 
@@ -267,8 +267,8 @@ protected:
     AP_Float        _collective_min_deg;        // Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN)
 
     // internal variables
-    float           _collective_zero_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
-    float           _collective_land_min_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
+    float           _collective_zero_pct;      // collective mid parameter value converted to 0 ~ 1 range
+    float           _collective_land_min_pct;      // collective mid parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 
     motor_frame_type _frame_type;

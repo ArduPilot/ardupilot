@@ -377,14 +377,20 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     _collective_zero_thrst_deg = constrain_float(_collective_zero_thrst_deg, _collective_min_deg, _collective_max_deg);
 
-    // calculate collective zero thrust point as a number from 0 to 1
-    _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
-    _collective2_zero_pct = _collective_zero_pct;
-
     _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
 
-    // calculate collective land min point as a number from 0 to 1
-    _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+    if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
+        // calculate collective zero thrust point as a number from 0 to 1
+        _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+
+        // calculate collective land min point as a number from 0 to 1
+        _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+    } else {
+        _collective_zero_pct = 0.0f;
+        _collective_land_min_pct = 0.0f;
+    }
+
+    _collective2_zero_pct = _collective_zero_pct;
 
     // configure swashplate 1 and update scalars
     _swashplate1.configure();
