@@ -86,11 +86,9 @@ public:
         return _base_port;
     }
 
-    // create a file descriptor attached to a virtual device; type of
-    // device is given by name parameter
-    int sim_fd(const char *name, const char *arg);
-    // returns a write file descriptor for a created virtual device
-    int sim_fd_write(const char *name);
+    // create a simulated serial device; type of device is given by
+    // name parameter
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg);
 
     bool use_rtscts(void) const {
         return _use_rtscts;

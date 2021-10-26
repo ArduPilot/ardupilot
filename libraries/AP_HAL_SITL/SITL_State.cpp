@@ -212,182 +212,182 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 }
 
 #define streq(a, b) (!strcmp(a, b))
-int SITL_State::sim_fd(const char *name, const char *arg)
+SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *arg)
 {
     if (streq(name, "vicon")) {
         if (vicon != nullptr) {
             AP_HAL::panic("Only one vicon system at a time");
         }
         vicon = new SITL::Vicon();
-        return vicon->fd();
+        return vicon;
     } else if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
         }
         benewake_tf02 = new SITL::RF_Benewake_TF02();
-        return benewake_tf02->fd();
+        return benewake_tf02;
     } else if (streq(name, "benewake_tf03")) {
         if (benewake_tf03 != nullptr) {
             AP_HAL::panic("Only one benewake_tf03 at a time");
         }
         benewake_tf03 = new SITL::RF_Benewake_TF03();
-        return benewake_tf03->fd();
+        return benewake_tf03;
     } else if (streq(name, "benewake_tfmini")) {
         if (benewake_tfmini != nullptr) {
             AP_HAL::panic("Only one benewake_tfmini at a time");
         }
         benewake_tfmini = new SITL::RF_Benewake_TFmini();
-        return benewake_tfmini->fd();
+        return benewake_tfmini;
     } else if (streq(name, "lightwareserial")) {
         if (lightwareserial != nullptr) {
             AP_HAL::panic("Only one lightwareserial at a time");
         }
         lightwareserial = new SITL::RF_LightWareSerial();
-        return lightwareserial->fd();
+        return lightwareserial;
     } else if (streq(name, "lightwareserial-binary")) {
         if (lightwareserial_binary != nullptr) {
             AP_HAL::panic("Only one lightwareserial-binary at a time");
         }
         lightwareserial_binary = new SITL::RF_LightWareSerialBinary();
-        return lightwareserial_binary->fd();
+        return lightwareserial_binary;
     } else if (streq(name, "lanbao")) {
         if (lanbao != nullptr) {
             AP_HAL::panic("Only one lanbao at a time");
         }
         lanbao = new SITL::RF_Lanbao();
-        return lanbao->fd();
+        return lanbao;
     } else if (streq(name, "blping")) {
         if (blping != nullptr) {
             AP_HAL::panic("Only one blping at a time");
         }
         blping = new SITL::RF_BLping();
-        return blping->fd();
+        return blping;
     } else if (streq(name, "leddarone")) {
         if (leddarone != nullptr) {
             AP_HAL::panic("Only one leddarone at a time");
         }
         leddarone = new SITL::RF_LeddarOne();
-        return leddarone->fd();
+        return leddarone;
     } else if (streq(name, "USD1_v0")) {
         if (USD1_v0 != nullptr) {
             AP_HAL::panic("Only one USD1_v0 at a time");
         }
         USD1_v0 = new SITL::RF_USD1_v0();
-        return USD1_v0->fd();
+        return USD1_v0;
     } else if (streq(name, "USD1_v1")) {
         if (USD1_v1 != nullptr) {
             AP_HAL::panic("Only one USD1_v1 at a time");
         }
         USD1_v1 = new SITL::RF_USD1_v1();
-        return USD1_v1->fd();
+        return USD1_v1;
     } else if (streq(name, "maxsonarseriallv")) {
         if (maxsonarseriallv != nullptr) {
             AP_HAL::panic("Only one maxsonarseriallv at a time");
         }
         maxsonarseriallv = new SITL::RF_MaxsonarSerialLV();
-        return maxsonarseriallv->fd();
+        return maxsonarseriallv;
     } else if (streq(name, "wasp")) {
         if (wasp != nullptr) {
             AP_HAL::panic("Only one wasp at a time");
         }
         wasp = new SITL::RF_Wasp();
-        return wasp->fd();
+        return wasp;
     } else if (streq(name, "nmea")) {
         if (nmea != nullptr) {
             AP_HAL::panic("Only one nmea at a time");
         }
         nmea = new SITL::RF_NMEA();
-        return nmea->fd();
+        return nmea;
 
     } else if (streq(name, "rf_mavlink")) {
         if (rf_mavlink != nullptr) {
             AP_HAL::panic("Only one rf_mavlink at a time");
         }
         rf_mavlink = new SITL::RF_MAVLink();
-        return rf_mavlink->fd();
+        return rf_mavlink;
 
     } else if (streq(name, "frsky-d")) {
         if (frsky_d != nullptr) {
             AP_HAL::panic("Only one frsky_d at a time");
         }
         frsky_d = new SITL::Frsky_D();
-        return frsky_d->fd();
+        return frsky_d;
     // } else if (streq(name, "frsky-SPort")) {
     //     if (frsky_sport != nullptr) {
     //         AP_HAL::panic("Only one frsky_sport at a time");
     //     }
     //     frsky_sport = new SITL::Frsky_SPort();
-    //     return frsky_sport->fd();
+    //     return frsky_sport;
 
     // } else if (streq(name, "frsky-SPortPassthrough")) {
     //     if (frsky_sport_passthrough != nullptr) {
     //         AP_HAL::panic("Only one frsky_sport passthrough at a time");
     //     }
     //     frsky_sport = new SITL::Frsky_SPortPassthrough();
-    //     return frsky_sportpassthrough->fd();
+    //     return frsky_sportpassthrough;
     } else if (streq(name, "crsf")) {
         if (crsf != nullptr) {
             AP_HAL::panic("Only one crsf at a time");
         }
         crsf = new SITL::CRSF();
-        return crsf->fd();
+        return crsf;
     } else if (streq(name, "rplidara2")) {
         if (rplidara2 != nullptr) {
             AP_HAL::panic("Only one rplidara2 at a time");
         }
         rplidara2 = new SITL::PS_RPLidarA2();
-        return rplidara2->fd();
+        return rplidara2;
     } else if (streq(name, "terarangertower")) {
         if (terarangertower != nullptr) {
             AP_HAL::panic("Only one terarangertower at a time");
         }
         terarangertower = new SITL::PS_TeraRangerTower();
-        return terarangertower->fd();
+        return terarangertower;
     } else if (streq(name, "sf45b")) {
         if (sf45b != nullptr) {
             AP_HAL::panic("Only one sf45b at a time");
         }
         sf45b = new SITL::PS_LightWare_SF45B();
-        return sf45b->fd();
+        return sf45b;
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
-        return _sitl->richenpower_sim.fd();
+        return &_sitl->richenpower_sim;
     } else if (streq(name, "fetteconewireesc")) {
         sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
-        return _sitl->fetteconewireesc_sim.fd();
+        return &_sitl->fetteconewireesc_sim;
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
-        return _sitl->ie24_sim.fd();
+        return &_sitl->ie24_sim;
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 != nullptr) {
             AP_HAL::panic("Only one gyus42v2 at a time");
         }
         gyus42v2 = new SITL::RF_GYUS42v2();
-        return gyus42v2->fd();
+        return gyus42v2;
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
         }
         efi_ms = new SITL::EFI_MegaSquirt();
-        return efi_ms->fd();
+        return efi_ms;
     } else if (streq(name, "VectorNav")) {
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
         }
         vectornav = new SITL::VectorNav();
-        return vectornav->fd();
+        return vectornav;
     } else if (streq(name, "LORD")) {
         if (lord != nullptr) {
             AP_HAL::panic("Only one LORD at a time");
         }
         lord = new SITL::LORD();
-        return lord->fd();
+        return lord;
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
             AP_HAL::panic("Only one AIS at a time");
         }
         ais = new SITL::AIS();
-        return ais->fd();
+        return ais;
     } else if (strncmp(name, "gps", 3) == 0) {
         const char *p = strchr(name, ':');
         if (p == nullptr) {
@@ -398,155 +398,9 @@ int SITL_State::sim_fd(const char *name, const char *arg)
             AP_HAL::panic("Bad GPS number %u", x);
         }
         gps[x-1] = new SITL::GPS(x-1);
-        return gps[x-1]->fd();
+        return gps[x-1];
     }
 
-    AP_HAL::panic("unknown simulated device: %s", name);
-}
-int SITL_State::sim_fd_write(const char *name)
-{
-    if (streq(name, "vicon")) {
-        if (vicon == nullptr) {
-            AP_HAL::panic("No vicon created");
-        }
-        return vicon->write_fd();
-    } else if (streq(name, "benewake_tf02")) {
-        if (benewake_tf02 == nullptr) {
-            AP_HAL::panic("No benewake_tf02 created");
-        }
-        return benewake_tf02->write_fd();
-    } else if (streq(name, "benewake_tf03")) {
-        if (benewake_tf03 == nullptr) {
-            AP_HAL::panic("No benewake_tf03 created");
-        }
-        return benewake_tf03->write_fd();
-    } else if (streq(name, "benewake_tfmini")) {
-        if (benewake_tfmini == nullptr) {
-            AP_HAL::panic("No benewake_tfmini created");
-        }
-        return benewake_tfmini->write_fd();
-    } else if (streq(name, "lightwareserial")) {
-        if (lightwareserial == nullptr) {
-            AP_HAL::panic("No lightwareserial created");
-        }
-        return lightwareserial->write_fd();
-    } else if (streq(name, "lightwareserial-binary")) {
-        if (lightwareserial_binary == nullptr) {
-            AP_HAL::panic("No lightwareserial_binary created");
-        }
-        return lightwareserial_binary->write_fd();
-    } else if (streq(name, "lanbao")) {
-        if (lanbao == nullptr) {
-            AP_HAL::panic("No lanbao created");
-        }
-        return lanbao->write_fd();
-    } else if (streq(name, "blping")) {
-        if (blping == nullptr) {
-            AP_HAL::panic("No blping created");
-        }
-        return blping->write_fd();
-    } else if (streq(name, "leddarone")) {
-        if (leddarone == nullptr) {
-            AP_HAL::panic("No leddarone created");
-        }
-        return leddarone->write_fd();
-    } else if (streq(name, "USD1_v0")) {
-        if (USD1_v0 == nullptr) {
-            AP_HAL::panic("No USD1_v0 created");
-        }
-        return USD1_v0->write_fd();
-    } else if (streq(name, "USD1_v1")) {
-        if (USD1_v1 == nullptr) {
-            AP_HAL::panic("No USD1_v1 created");
-        }
-        return USD1_v1->write_fd();
-    } else if (streq(name, "maxsonarseriallv")) {
-        if (maxsonarseriallv == nullptr) {
-            AP_HAL::panic("No maxsonarseriallv created");
-        }
-        return maxsonarseriallv->write_fd();
-    } else if (streq(name, "wasp")) {
-        if (wasp == nullptr) {
-            AP_HAL::panic("No wasp created");
-        }
-        return wasp->write_fd();
-    } else if (streq(name, "nmea")) {
-        if (nmea == nullptr) {
-            AP_HAL::panic("No nmea created");
-        }
-        return nmea->write_fd();
-    } else if (streq(name, "rf_mavlink")) {
-        if (rf_mavlink == nullptr) {
-            AP_HAL::panic("No rf_mavlink created");
-        }
-        return rf_mavlink->write_fd();
-    } else if (streq(name, "frsky-d")) {
-        if (frsky_d == nullptr) {
-            AP_HAL::panic("No frsky-d created");
-        }
-        return frsky_d->write_fd();
-    } else if (streq(name, "crsf")) {
-        if (crsf == nullptr) {
-            AP_HAL::panic("No crsf created");
-        }
-        return crsf->write_fd();
-    } else if (streq(name, "rplidara2")) {
-        if (rplidara2 == nullptr) {
-            AP_HAL::panic("No rplidara2 created");
-        }
-        return rplidara2->write_fd();
-    } else if (streq(name, "terarangertower")) {
-        if (terarangertower == nullptr) {
-            AP_HAL::panic("No terarangertower created");
-        }
-        return terarangertower->write_fd();
-    } else if (streq(name, "sf45b")) {
-        if (sf45b == nullptr) {
-            AP_HAL::panic("No sf45b created");
-        }
-        return sf45b->write_fd();
-    } else if (streq(name, "richenpower")) {
-        return _sitl->richenpower_sim.write_fd();
-    } else if (streq(name, "fetteconewireesc")) {
-        return _sitl->fetteconewireesc_sim.write_fd();
-    } else if (streq(name, "ie24")) {
-        return _sitl->ie24_sim.write_fd();
-    } else if (streq(name, "gyus42v2")) {
-        if (gyus42v2 == nullptr) {
-            AP_HAL::panic("No gyus42v2 created");
-        }
-        return gyus42v2->write_fd();
-    } else if (streq(name, "megasquirt")) {
-        if (efi_ms == nullptr) {
-            AP_HAL::panic("No megasquirt created");
-        }
-        return efi_ms->write_fd();
-    } else if (streq(name, "VectorNav")) {
-        if (vectornav == nullptr) {
-            AP_HAL::panic("No VectorNav created");
-        }
-        return vectornav->write_fd();
-    } else if (streq(name, "LORD")) {
-        if (lord == nullptr) {
-            AP_HAL::panic("No LORD created");
-        }
-        return lord->write_fd();
-    } else if (streq(name, "AIS")) {
-        if (ais == nullptr) {
-            AP_HAL::panic("No AIS created");
-        }
-        return ais->write_fd();
-    } else if (strncmp(name, "gps", 3) == 0) {
-        const char *p = strchr(name, ':');
-        if (p == nullptr) {
-            AP_HAL::panic("Need a GPS number (e.g. sim:gps:1)");
-        }
-        const uint8_t x = atoi(p+1);
-        if (x <= 0 || x > ARRAY_SIZE(gps)) {
-            AP_HAL::panic("Bad GPS number %u", x);
-        }
-        return gps[x-1]->write_fd();
-    }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 

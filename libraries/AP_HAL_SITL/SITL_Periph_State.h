@@ -15,6 +15,7 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 
+#include <SITL/SITL.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
@@ -29,12 +30,6 @@ class HALSITL::SITL_State {
     friend class HALSITL::GPIO;
 public:
     void init(int argc, char * const argv[]);
-
-    // create a file descriptor attached to a virtual device; type of
-    // device is given by name parameter
-    int sim_fd(const char *name, const char *arg);
-    // returns a write file descriptor for a created virtual device
-    int sim_fd_write(const char *name);
 
     bool use_rtscts(void) const {
         return _use_rtscts;
@@ -66,6 +61,10 @@ public:
     };
 
     uint8_t get_instance() const { return _instance; }
+
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg) {
+        return nullptr;
+    }
 
 private:
 
