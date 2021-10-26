@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import fnmatch
+import shutil
 
 import argparse
 
@@ -20,6 +21,7 @@ parser.add_argument('--Werror', action='store_true', default=False, help="build 
 parser.add_argument('--pattern', default='*')
 parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
 parser.add_argument('--python', default='python')
+parser.add_argument('--copy-hwdef-incs-to-directory', default=None, help='directory hwdefs should be copied to')
 args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -72,6 +74,8 @@ def is_ap_periph(board):
         pass
     return False
 
+if args.copy_hwdef_incs_to_directory is not None:
+    os.makedirs(args.copy_hwdef_incs_to_directory)
 
 for board in board_list:
     done.append(board)
@@ -80,6 +84,16 @@ for board in board_list:
     if args.Werror:
         config_opts += ["--Werror"]
     run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
+    if args.copy_hwdef_incs_to_directory is not None:
+        source = os.path.join("build", board, "hwdef.h")
+        if board == "iomcu":
+            filename = "hwdef-%s-iomcu.h" % board
+        elif is_ap_periph(board):
+            filename = "hwdef-%s-periph.h" % board
+        else:
+            filename = "hwdef-%s.h" % board
+        target = os.path.join(args.copy_hwdef_incs_to_directory, filename)
+        shutil.copy(source, target)
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
