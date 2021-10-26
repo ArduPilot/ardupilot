@@ -545,6 +545,7 @@ class sitl(Board):
             HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
         )
 
+        cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
 
@@ -708,7 +709,8 @@ class esp32(Board):
         super(esp32, self).configure_env(cfg, env)
         cfg.load('esp32')
         env.DEFINES.update(
-            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32'
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            AP_SIM_ENABLED = 0,
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
@@ -920,6 +922,18 @@ class chibios(Board):
         else:
             cfg.msg("Enabling ChibiOS thread statistics", "no")
 
+        if cfg.env.SIM_ENABLED:
+            env.DEFINES.update(
+                AP_SIM_ENABLED = 1,
+            )
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
+        else:
+            env.DEFINES.update(
+                AP_SIM_ENABLED = 0,
+            )
+
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
@@ -984,6 +998,7 @@ class linux(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
+            AP_SIM_ENABLED = 0,
         )
 
         if not cfg.env.DEBUG:
