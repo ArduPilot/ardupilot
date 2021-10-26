@@ -20,7 +20,7 @@
 #include <AP_Math/AP_Math.h>
 #include <SITL/SITL.h>
 
-class AP_WheelEncoder_SITL_Qaudrature : public AP_WheelEncoder_Backend
+class AP_WheelEncoder_SITL_Quadrature : public AP_WheelEncoder_Backend
 {
 public:
     // constructor
