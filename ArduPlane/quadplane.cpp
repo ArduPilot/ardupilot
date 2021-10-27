@@ -2613,6 +2613,10 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
     }
     state = s;
     last_state_change_ms = AP_HAL::millis();
+
+    // we consider setting the state to be equivalent to running to
+    // prevent code from overriding the state as stale
+    last_run_ms = last_state_change_ms;
 }
 
 /*
@@ -2634,6 +2638,10 @@ void QuadPlane::vtol_position_controller(void)
     const float position2_target_speed = 2.0;
 
     check_attitude_relax();
+
+    if (hal.util->get_soft_armed()) {
+        poscontrol.last_run_ms = now_ms;
+    }
 
     // horizontal position control
     switch (poscontrol.get_state()) {
@@ -3206,8 +3214,14 @@ void QuadPlane::control_auto(void)
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_TURNS:
-    case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_LOITER_TO_ALT: {
+        const uint32_t now = AP_HAL::millis();
+        if (now - poscontrol.last_run_ms > 100) {
+            // ensure that poscontrol is reset
+            poscontrol.set_state(QPOS_POSITION1);
+        }
         vtol_position_controller();
+    }
         break;
     default:
         waypoint_controller();
