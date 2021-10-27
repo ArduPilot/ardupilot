@@ -203,6 +203,7 @@ public:
         WIND_VANE_DIR_OFSSET= 97, // flag for windvane direction offset input, used with windvane type 2
         TRAINING            = 98, // mode training
         AUTO_RTL =            99, // AUTO RTL via DO_LAND_START
+		TURB_START =         98, // initialize turbine start sequence
 
         // entries from 100-150  are expected to be developer
         // options used for testing

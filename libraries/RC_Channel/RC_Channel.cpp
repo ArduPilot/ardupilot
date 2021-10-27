@@ -501,6 +501,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_8:
     case AUX_FUNC::VTX_POWER:
     case AUX_FUNC::OPTFLOW_CAL:
+	case AUX_FUNC::TURB_START:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
