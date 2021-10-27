@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: ADS-B Options
-    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Prefer AHRS for Location instead of GPS
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
@@ -322,7 +322,13 @@ void AP_ADSB::update(void)
 
     const uint32_t now = AP_HAL::millis();
 
-    if (!AP::ahrs().get_position(_my_loc)) {
+    // Cache our GPS position so all the follow-on drivers/tasks won't need to.
+    // Default behavior is to use GPS if available, then fallback to whatever we can via AHRS.
+    // With the ADSB_OPTION bit set, we'll never use GPS direct. Always prefer AHRS which could be GPS, beacons, VICON ect
+    // The benefit of using GPS is it uses GPS Pos+Alt where AHRS is a mixture of sources. AHRS default is position = GPS and Alt = baro
+    if ((AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) && ((_options & uint32_t(AP_ADSB::AdsbOption::Prefer_ARHS_for_Location)) == 0)) {
+        _my_loc = AP::gps().location();
+    } else if (!AP::ahrs().get_position(_my_loc)) {
         _my_loc.zero();
     }
 
