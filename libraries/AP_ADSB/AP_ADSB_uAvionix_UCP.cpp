@@ -364,7 +364,7 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     msg.verticalVelocityFOM_mmps = msg.horizontalVelocityFOM_mmps;
 
     // Velocities
-    msg.verticalVelocity_cmps = fix_is_good ? velocity.z * 1E2 : INT16_MAX;
+    msg.verticalVelocity_cmps = fix_is_good ? -1.0f * velocity.z * 1E2 : INT16_MAX;
     msg.northVelocity_mmps = fix_is_good ? velocity.x * 1E3 : INT32_MAX;
     msg.eastVelocity_mmps = fix_is_good ? velocity.y * 1E3 : INT32_MAX;
 
