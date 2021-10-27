@@ -291,6 +291,12 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     // set bailout ramp time
     _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
     _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+	
+	if (_heliflags.start_engine) {
+        _main_rotor.set_turbine_start(true);
+    } else {
+        _main_rotor.set_turbine_start(false);
+    }
 
     // allow use of external governor autorotation bailout
     if (_main_rotor._ext_gov_arot_pct.get() > 0) {
