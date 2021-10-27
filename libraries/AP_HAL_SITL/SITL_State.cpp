@@ -72,9 +72,6 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     // find the barometer object if it exists
     _sitl = AP::sitl();
-    _barometer = AP_Baro::get_singleton();
-    _ins = AP_InertialSensor::get_singleton();
-    _compass = Compass::get_singleton();
 
     if (_sitl != nullptr) {
         // setup some initial values
@@ -828,7 +825,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
-    float altitude = _barometer?_barometer->get_altitude():0;
+    float altitude = AP::baro().get_altitude();
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;

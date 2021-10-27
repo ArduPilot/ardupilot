@@ -56,12 +56,6 @@ public:
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
-    // file descriptor, exposed so SITL_State::loop_hook() can use it
-    int _fd;
-
-    // file descriptor for reading multicast packets
-    int _mc_fd;
-
     bool _unbuffered_writes;
 
     enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
@@ -88,6 +82,12 @@ public:
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
     
 private:
+
+    int _fd;
+
+    // file descriptor for reading multicast packets
+    int _mc_fd;
+
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
