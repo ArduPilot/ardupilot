@@ -215,12 +215,14 @@ ftype norm(const T first, const U second, const Params... parameters)
     return sqrtF(sq(first, second, parameters...));
 }
 
+#undef MIN
 template<typename A, typename B>
 static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two)
 {
     return one < two ? one : two;
 }
 
+#undef MAX
 template<typename A, typename B>
 static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two)
 {
