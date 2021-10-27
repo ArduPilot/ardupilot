@@ -16,7 +16,7 @@ STM32_ST_USE_TIMER 5
 FLASH_RESERVE_START_KB 64
 
 # store parameters in pages 2 and 3
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 16384
 
 # board ID for firmware load

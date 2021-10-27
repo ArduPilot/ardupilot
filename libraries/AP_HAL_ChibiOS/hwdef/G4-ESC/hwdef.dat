@@ -7,7 +7,7 @@ MCU STM32G474 STM32G474xx
 FLASH_RESERVE_START_KB 30
 
 # store parameters in pages 13 and 14
-define STORAGE_FLASH_PAGE 13
+STORAGE_FLASH_PAGE 13
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load

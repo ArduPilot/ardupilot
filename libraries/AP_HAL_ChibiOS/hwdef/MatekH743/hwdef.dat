@@ -178,7 +178,7 @@ define HAL_STORAGE_SIZE 16384
 
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
-define STORAGE_FLASH_PAGE 14
+STORAGE_FLASH_PAGE 14
 
 # reserve space for flash storage in last 2 sectors
 FLASH_RESERVE_END_KB 256
