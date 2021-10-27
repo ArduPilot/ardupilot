@@ -699,9 +699,10 @@ void Util::log_stack_info(void)
 #endif
 }
 
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
+#if defined(HAL_CRASH_DUMP_FLASHPAGE) && !defined(HAL_BOOTLOADER_BUILD)
 void Util::last_crash_dump(ExpandingString &str) const
 {
+#if HAL_GCS_ENABLED
     // get dump size
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE);
@@ -715,5 +716,6 @@ void Util::last_crash_dump(ExpandingString &str) const
         size = stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE);
     }
     str.append(dump_start, size);
+#endif
 }
 #endif
