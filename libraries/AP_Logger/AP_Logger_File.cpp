@@ -1012,8 +1012,11 @@ bool AP_Logger_File::io_thread_alive() const
         return true;
     }
     // if the io thread hasn't had a heartbeat in a while then it is
-    // considered dead. Five seconds is enough time for a sdcard remount.
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    uint32_t timeout_ms = 10000;
+#else
     uint32_t timeout_ms = 5000;
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
     // the IO thread is working with hardware - writing to a physical
     // disk.  Unfortunately these hardware devices do not obey our
