@@ -47,6 +47,10 @@ struct dirent {
 #include "AP_Filesystem_posix.h"
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#include "AP_Filesystem_ESP32.h"
+#endif
+
 #include "AP_Filesystem_backend.h"
 
 class AP_Filesystem {
