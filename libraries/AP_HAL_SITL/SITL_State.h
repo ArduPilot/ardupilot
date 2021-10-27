@@ -77,7 +77,6 @@ public:
         Blimp
     };
 
-    ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool output_ready = false;
@@ -162,10 +161,7 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-    AP_Baro *_barometer;
-    AP_InertialSensor *_ins;
     Scheduler *_scheduler;
-    Compass *_compass;
 
     SocketAPM _sitl_rc_in{true};
     SITL::SIM *_sitl;
