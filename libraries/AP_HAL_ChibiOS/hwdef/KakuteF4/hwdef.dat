@@ -117,7 +117,7 @@ PC8 TIM8_CH3 TIM8 PWM(5) GPIO(54) # LED strip
 define HAL_NEOPIXEL_COUNT 8
 
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64

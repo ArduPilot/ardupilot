@@ -466,7 +466,7 @@ DMA_PRIORITY USART6*
 FLASH_RESERVE_START_KB 96
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

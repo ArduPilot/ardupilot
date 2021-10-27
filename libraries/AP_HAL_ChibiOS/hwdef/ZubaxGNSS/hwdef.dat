@@ -13,7 +13,7 @@ define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
 FLASH_RESERVE_START_KB 34
 
 # store parameters in last 2 pages
-define STORAGE_FLASH_PAGE 126
+STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
 
 # reserve space for flash storage in last 2 sectors
