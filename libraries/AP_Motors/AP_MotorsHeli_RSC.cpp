@@ -15,6 +15,10 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
+<<<<<<< HEAD
+=======
+#include <GCS_MAVLink/GCS.h>
+>>>>>>> 5faab0ee08... AP_Motors: tradheli support for turbine start
 #include "AP_MotorsHeli_RSC.h"
 #include <AP_RPM/AP_RPM.h>
 
@@ -268,6 +272,8 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             governor_reset();
             _autothrottle = false;
             _governor_fault = false;
+			//turbine start flag on
+			_starting = true;
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -283,6 +289,15 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
             } else {
                 // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
+                if (_turbine_start && _starting == true ) {			
+			_control_output += 0.001f;
+			
+			         if(_control_output >= 1.0f) {
+						_control_output = get_idle_output();
+						gcs().send_text(MAV_SEVERITY_INFO, "Turbine startup");
+				       _starting = false;
+				      }
+             } else{
                 if (_cooldown_time > 0) {
                     _control_output = get_idle_output() * 1.5f;
                     _fast_idle_timer += dt;
@@ -292,6 +307,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 } else {
                     _control_output = get_idle_output();
                 }
+			 } 	 
             }
             break;
 
