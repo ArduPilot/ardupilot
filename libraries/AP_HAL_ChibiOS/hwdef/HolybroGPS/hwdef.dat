@@ -8,7 +8,7 @@ MCU STM32F4xx STM32F412Rx
 FLASH_RESERVE_START_KB 64
 
 # store parameters in pages 2 and 3
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
 # board ID for firmware load

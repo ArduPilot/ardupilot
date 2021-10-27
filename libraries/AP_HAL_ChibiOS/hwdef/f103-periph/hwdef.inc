@@ -7,7 +7,7 @@ MCU STM32F103 STM32F103xB
 FLASH_RESERVE_START_KB 25
 
 # store parameters in pages 23 and 24
-define STORAGE_FLASH_PAGE 23
+STORAGE_FLASH_PAGE 23
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load

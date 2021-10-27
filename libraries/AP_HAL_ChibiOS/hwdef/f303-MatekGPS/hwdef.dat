@@ -7,7 +7,7 @@ MCU STM32F303 STM32F303xC
 FLASH_RESERVE_START_KB 26
 
 # store parameters in pages 11 and 12
-define STORAGE_FLASH_PAGE 11
+STORAGE_FLASH_PAGE 11
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
