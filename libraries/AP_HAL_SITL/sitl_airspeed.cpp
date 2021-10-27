@@ -45,13 +45,13 @@ void SITL_State::_update_airspeed(float airspeed)
     if (!is_zero(_sitl->arspd_fail_pressure[0])) {
         // compute a realistic pressure report given some level of trapper air pressure in the tube and our current altitude
         // algorithm taken from https://en.wikipedia.org/wiki/Calibrated_airspeed#Calculation_from_impact_pressure
-        float tube_pressure = fabsf(_sitl->arspd_fail_pressure[0] - _barometer->get_pressure() + _sitl->arspd_fail_pitot_pressure[0]);
+        float tube_pressure = fabsf(_sitl->arspd_fail_pressure[0] - AP::baro().get_pressure() + _sitl->arspd_fail_pitot_pressure[0]);
         airspeed = 340.29409348 * sqrt(5 * (pow((tube_pressure / SSL_AIR_PRESSURE + 1), 2.0/7.0) - 1.0));
     }
     if (!is_zero(_sitl->arspd_fail_pressure[1])) {
         // compute a realistic pressure report given some level of trapper air pressure in the tube and our current altitude
         // algorithm taken from https://en.wikipedia.org/wiki/Calibrated_airspeed#Calculation_from_impact_pressure
-        float tube_pressure = fabsf(_sitl->arspd_fail_pressure[1] - _barometer->get_pressure() + _sitl->arspd_fail_pitot_pressure[1]);
+        float tube_pressure = fabsf(_sitl->arspd_fail_pressure[1] - AP::baro().get_pressure() + _sitl->arspd_fail_pitot_pressure[1]);
         airspeed2 = 340.29409348 * sqrt(5 * (pow((tube_pressure / SSL_AIR_PRESSURE + 1), 2.0/7.0) - 1.0));
     }
 
