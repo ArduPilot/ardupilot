@@ -2774,12 +2774,14 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             // the following text is unlikely to make it out...
             send_text(MAV_SEVERITY_WARNING,"deferencing a bad thing");
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
+// esp32 can't do this bit, skip it, return an error
             void *foo = (void*)0xE000ED38;
 
             typedef void (*fptr)();
             fptr gptr = (fptr) (void *) foo;
             gptr();
-
+#endif
             return MAV_RESULT_FAILED;
         }
         if (is_equal(packet.param4, 95.0f)) {
