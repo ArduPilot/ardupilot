@@ -168,7 +168,14 @@ fail:
     return nullptr;
 }
 
+// un-named, assume SPI for compat
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
+                                                     enum Rotation rotation)
+{  
+    return probe_ICM20948_SPI(inv2_instance,rotation);
+}
+
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_SPI(uint8_t inv2_instance,
                                                      enum Rotation rotation)
 {
 #if HAL_INS_ENABLED
@@ -190,6 +197,26 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
 #else
     return nullptr;
 #endif
+}
+
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance,
+                                                     enum Rotation rotation)
+{
+    AP_InertialSensor &ins = AP::ins();
+
+    AP_AK09916_BusDriver *bus =
+        new AP_AK09916_BusDriver_Auxiliary(ins, HAL_INS_INV2_I2C, inv2_instance, HAL_COMPASS_AK09916_I2C_ADDR);
+    if (!bus) {
+        return nullptr;
+    }
+
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(bus, false, rotation);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
 }
 
 bool AP_Compass_AK09916::init()
