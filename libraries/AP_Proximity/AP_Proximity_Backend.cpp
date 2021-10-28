@@ -198,7 +198,8 @@ void AP_Proximity_Backend::database_push(float angle, float distance)
 
 // update Object Avoidance database with Earth-frame point
 // pitch can be optionally provided if needed
-void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
+// id = 65535 if the object can't be tracked
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned, uint16_t id)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
@@ -218,7 +219,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     //Convert the vector to a NEU frame from NED
     temp_pos.z = temp_pos.z * -1.0f;
 
-    oaDb->queue_push(temp_pos, timestamp_ms, distance);
+    oaDb->queue_push(temp_pos, timestamp_ms, distance, id);
 }
 
 #endif // HAL_PROXIMITY_ENABLED

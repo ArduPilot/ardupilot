@@ -259,14 +259,15 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     // extract yaw and pitch from Obstacle Vector
     const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
-    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z))); 
+    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z)));
 
     // allot to correct layer and sector based on calculated pitch and yaw
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);
     temp_boundary.add_distance(face, pitch, yaw, obstacle.length());
 
     if (database_ready) {
-        database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned);
+        // id will not be UINT16_MAX if its tracked
+        database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned, packet.obstacle_id);
     }
     return;
 }

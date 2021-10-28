@@ -110,7 +110,8 @@ protected:
     static void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned) {
         database_push(angle, 0.0f, distance, timestamp_ms, current_pos, body_to_ned);
     };
-    static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+    // id == 65535 if the object can't be tracked
+    static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned, uint16_t id = UINT16_MAX);
 
     uint32_t _last_timeout_check_ms;  // time when boundary was checked for non-updated valid faces
 
