@@ -1358,6 +1358,11 @@ void AP_Logger::io_thread(void)
         if (++counter % 4 == 0) {
             hal.util->log_stack_info();
         }
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        if (counter % 100 == 0) {
+            file_content_update();
+        }
+#endif
     }
 }
 
@@ -1438,6 +1443,80 @@ bool AP_Logger::log_while_disarmed(void) const
 
     return false;
 }
+
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+/*
+  log the content of a file in FILE log messages
+ */
+void AP_Logger::log_file_content(const char *filename)
+{
+    WITH_SEMAPHORE(file_content.sem);
+    auto *file = new file_list;
+    if (file == nullptr) {
+        return;
+    }
+    file->filename = filename;
+    if (file_content.head == nullptr) {
+        file_content.tail = file_content.head = file;
+        file_content.fd = -1;
+    } else {
+        file_content.tail->next = file;
+        file_content.tail = file;
+    }
+}
+
+/*
+  periodic call to log file content
+ */
+void AP_Logger::file_content_update(void)
+{
+    auto *file = file_content.head;
+    if (file == nullptr) {
+        return;
+    }
+
+    // remove a file structure from the linked list
+    auto remove_from_list = [this,file]()
+    { 
+        WITH_SEMAPHORE(file_content.sem);
+        file_content.head = file->next;
+        if (file_content.tail == file) {
+            file_content.tail = file_content.head;
+        }
+        delete file;
+        file_content.fd = -1;
+    };
+
+    if (file_content.fd == -1) {
+        // open a new file
+        file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
+        if (file_content.fd == -1) {
+            remove_from_list();
+            return;
+        }
+        file_content.offset = 0;
+    }
+
+    struct log_File pkt {
+        LOG_PACKET_HEADER_INIT(LOG_FILE_MSG),
+    };
+    strncpy_noterm(pkt.filename, file->filename, sizeof(pkt.filename));
+    const auto length = AP::FS().read(file_content.fd, pkt.data, sizeof(pkt.data));
+    if (length <= 0) {
+        AP::FS().close(file_content.fd);
+        remove_from_list();
+        return;
+    }
+    pkt.offset = file_content.offset;
+    pkt.length = length;
+    if (WriteBlock_first_succeed(&pkt, sizeof(pkt))) {
+        file_content.offset += length;
+    } else {
+        // seek back ready for another try
+        AP::FS().lseek(file_content.fd, file_content.offset, SEEK_SET);
+    }
+}
+#endif // HAL_LOGGER_FILE_CONTENTS_ENABLED
 
 namespace AP {
 

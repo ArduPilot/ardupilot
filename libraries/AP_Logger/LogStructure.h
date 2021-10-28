@@ -687,6 +687,14 @@ struct PACKED log_STAK {
     char name[16];
 };
 
+struct PACKED log_File {
+    LOG_PACKET_HEADER;
+    char filename[16];
+    uint16_t offset;
+    uint16_t length;
+    char data[64];
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1318,6 +1326,8 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "PSCD", "Qffffffff", "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", "smmnnnooo", "F00000000" }, \
     { LOG_STAK_MSG, sizeof(log_STAK), \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
+    { LOG_FILE_MSG, sizeof(log_File), \
+      "FILE",   "NhhZ",       "FileName,Offset,Length,Data", "----", "----" }, \
 LOG_STRUCTURE_FROM_AIS \
 
 // message types 0 to 63 reserved for vehicle specific use
@@ -1396,6 +1406,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_PRECLAND,
     LOG_IDS_FROM_AIS,
     LOG_STAK_MSG,
+    LOG_FILE_MSG,
 
     _LOG_LAST_MSG_
 };

@@ -67,6 +67,10 @@
 
 #endif
 
+#ifndef HAL_LOGGER_FILE_CONTENTS_ENABLED
+#define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
+#endif
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_DCM.h>
@@ -84,7 +88,6 @@
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
-
 
 class AP_Logger_Backend;
 class AP_AHRS;
@@ -464,6 +467,9 @@ public:
         return _log_start_count;
     }
 
+    // add a filename to list of files to log. The name must be a constant string, not allocated
+    void log_file_content(const char *name);
+
 protected:
 
     const struct LogStructure *_structures;
@@ -550,6 +556,21 @@ private:
     void start_io_thread(void);
     void io_thread();
 
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    // support for logging file content
+    struct file_list {
+        struct file_list *next;
+        const char *filename;
+    };
+    struct {
+        struct file_list *head, *tail;
+        int fd;
+        uint16_t offset;
+        HAL_Semaphore sem;
+    } file_content;
+    void file_content_update(void);
+#endif
+    
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {
