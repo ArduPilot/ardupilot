@@ -445,6 +445,7 @@ private:
         uint32_t thrust_loss_start_ms;
         uint32_t last_log_ms;
         bool reached_wp_speed;
+        uint32_t last_run_ms;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
