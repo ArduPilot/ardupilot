@@ -110,6 +110,9 @@ define HAL_STORAGE_SIZE 16384
 # H743 has 16 pages of 128k each
 define STORAGE_FLASH_PAGE 14
 
+# reserve space for flash storage in last 2 sectors
+FLASH_RESERVE_END_KB 256
+
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH
 
