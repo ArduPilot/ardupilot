@@ -304,8 +304,13 @@ private:
     void setup_defaults(void);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
+    float stopping_distance(float ground_speed_squared);
     float stopping_distance(void);
-    
+
+    // distance below which we don't do approach, based on stopping
+    // distance for cruise speed
+    float transition_threshold(void);
+
     AP_Int16 transition_time_ms;
 
     // transition deceleration, m/s/s
