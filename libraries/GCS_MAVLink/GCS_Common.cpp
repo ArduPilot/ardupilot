@@ -76,7 +76,9 @@
   #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#endif
 #include <AP_GPS/AP_GPS.h>
 
 #include <ctype.h>
@@ -216,12 +218,17 @@ void GCS_MAVLINK::send_mcu_status(void)
 
 // returns the battery remaining percentage if valid, -1 otherwise
 int8_t GCS_MAVLINK::battery_remaining_pct(const uint8_t instance) const {
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     uint8_t percentage;
     return AP::battery().capacity_remaining_pct(percentage, instance) ? MIN(percentage, INT8_MAX) : -1;
+#else
+    return -1;
+#endif
 }
 
 void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
                   "Not enough battery cells for the MAVLink message");
@@ -300,11 +307,15 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     cell_volts_ext, // Cell 11..14 voltages
                                     0, // battery mode
                                     0); // fault_bitmask
+#else
+    (void)instance;
+#endif
 }
 
 // returns true if all battery instances were reported
 bool GCS_MAVLINK::send_battery_status()
 {
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const AP_BattMonitor &battery = AP::battery();
 
     for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
@@ -319,6 +330,9 @@ bool GCS_MAVLINK::send_battery_status()
         }
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
@@ -2216,6 +2230,7 @@ void GCS::setup_uarts()
 // report battery2 state
 void GCS_MAVLINK::send_battery2()
 {
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const AP_BattMonitor &battery = AP::battery();
 
     if (battery.num_instances() > 1) {
@@ -2227,6 +2242,7 @@ void GCS_MAVLINK::send_battery2()
         }
         mavlink_msg_battery2_send(chan, battery.voltage(1)*1000, current);
     }
+#endif
 }
 
 /*
@@ -3988,11 +4004,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
 
 MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_t &packet)
 {
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const uint16_t battery_mask = packet.param1;
     const float percentage = packet.param2;
     if (AP::battery().reset_remaining_mask(battery_mask, percentage)) {
         return MAV_RESULT_ACCEPTED;
     }
+#endif
     return MAV_RESULT_FAILED;
 }
 
@@ -4710,7 +4728,7 @@ void GCS_MAVLINK::send_sys_status()
     if (!gcs().vehicle_initialised()) {
         return;
     }
-
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const AP_BattMonitor &battery = AP::battery();
     float battery_current;
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
@@ -4720,6 +4738,7 @@ void GCS_MAVLINK::send_sys_status()
     } else {
         battery_current = -1;
     }
+#endif
 
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
@@ -4738,9 +4757,15 @@ void GCS_MAVLINK::send_sys_status()
         control_sensors_enabled,
         control_sensors_health,
         static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
         battery.voltage() * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
+#else
+        0,
+        -1,
+        -1,
+#endif
         0,  // comm drops %,
         0,  // comm drops in pkts,
         errors1,
@@ -5821,14 +5846,9 @@ void GCS_MAVLINK::send_high_latency2() const
     AP_AHRS &ahrs = AP::ahrs();
     Location global_position_current;
     UNUSED_RESULT(ahrs.get_position(global_position_current));
-
-    const AP_BattMonitor &battery = AP::battery();
-    float battery_current = -1;
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
-
-    if (battery.healthy() && battery.current_amps(battery_current)) {
-        battery_current = constrain_float(battery_current * 100,-INT16_MAX,INT16_MAX);
-    }
+#endif
 
     AP_Mission *mission = AP::mission();
     uint16_t current_waypoint = 0;
@@ -5889,7 +5909,11 @@ void GCS_MAVLINK::send_high_latency2() const
         0, // [dm] Maximum error vertical position since last message
         high_latency_air_temperature(), // [degC] Air temperature from airspeed sensor
         0, // [dm/s] Maximum climb rate magnitude since last message
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
         battery_remaining, // [%] Battery level (-1 if field not provided).
+#else
+        -1,
+#endif
         current_waypoint, // Current waypoint number
         failure_flags, // Bitmap of failure flags.
         base_mode(), // Field for custom payload. base mode (arming status) in ArduPilot's case
