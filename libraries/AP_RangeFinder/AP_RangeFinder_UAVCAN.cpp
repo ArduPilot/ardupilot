@@ -16,13 +16,6 @@ extern const AP_HAL::HAL& hal;
 //UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(MeasurementCb, uavcan::equipment::range_sensor::Measurement);
 
-/*
-  constructor - registers instance at top RangeFinder driver
- */
-AP_RangeFinder_UAVCAN::AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params)
-{}
-
 //links the rangefinder uavcan message to this backend
 void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
