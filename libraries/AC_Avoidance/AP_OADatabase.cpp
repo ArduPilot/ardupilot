@@ -35,6 +35,14 @@ extern const AP_HAL::HAL& hal;
     #define AP_OADATABASE_DISTANCE_FROM_HOME 3
 #endif
 
+#ifndef AP_OADATABASE_TRACKED_OBSTACLE_NUM
+    #define AP_OADATABASE_TRACKED_OBSTACLE_NUM 10
+#endif
+
+#ifndef AP_OADATABASE_TRACKED_OBSTACLE_TIMEOUT_MS
+    #define AP_OADATABASE_TRACKED_OBSTACLE_TIMEOUT_MS 1000
+#endif
+
 const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
     // @Param: SIZE
@@ -102,6 +110,13 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FRAME("ALT_MIN", 8, AP_OADatabase, _min_alt, 0.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
+    // @Param: EN_TRACKED
+    // @DisplayName: OADatabase enable Tracked Objects
+    // @Description: Enable storing tracked objects in the OAdatabase. This is only possible via mavlink message OBSTACLE_DISTANCE_3D
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("EN_TRACKED", 9, AP_OADatabase, _tracked_obs_enable, 0),
+
     AP_GROUPEND
 };
 
@@ -141,8 +156,35 @@ void AP_OADatabase::update()
     database_items_remove_all_expired();
 }
 
+// get number of items in the database
+uint16_t AP_OADatabase::database_count() const
+{
+    if (_tracked_obs_enable) {
+        return _database.count + _database_tracked.count;
+    }
+
+    return _database.count;
+}
+
+// fetch an item in database. Undefined result when i >= _database.count + _database_tracked.count.
+float AP_OADatabase::get_item_pos_radius(uint32_t i, Vector3f& pos) const
+{
+    if (!_tracked_obs_enable) {
+        pos = _database.items[i].pos;
+        return _database.items[i].radius;
+    }
+
+    if (i < _database.count) {
+        pos = _database.items[i].pos;
+        return _database.items[i].radius;
+    }
+    uint16_t index = i-_database.count;
+    pos = _database_tracked.items[index].pos;
+    return _database_tracked.items[index].radius;
+}
+
 // push a location into the database
-void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance)
+void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance, uint16_t id)
 {
     if (!healthy()) {
         return;
@@ -150,14 +192,14 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
 
     // check if this obstacle needs to be rejected from DB because of low altitude near home
 #if APM_BUILD_COPTER_OR_HELI
-    if (!is_zero(_min_alt)) { 
+    if (!is_zero(_min_alt)) {
         Vector2f current_pos;
         if (!AP::ahrs().get_relative_position_NE_home(current_pos)) {
             // we do not know where the vehicle is
             return;
         }
         if (current_pos.length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
-            // vehicle is within a small radius of home 
+            // vehicle is within a small radius of home
             float height_above_home;
             AP::ahrs().get_relative_position_D_home(height_above_home);
             if (-height_above_home < _min_alt) {
@@ -167,16 +209,26 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
         }
     }
 #endif
-    
+
     // ignore objects that are far away
     if ((_dist_max > 0.0f) && (distance > _dist_max)) {
         return;
     }
 
-    const OA_DbItem item = {pos, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
-    {
-        WITH_SEMAPHORE(_queue.sem);
-        _queue.items->push(item);
+    if ((id != UINT16_MAX) && _tracked_obs_enable) {
+        // has a valid ID
+        const OA_DBItem_Tracked item  = {id, pos, timestamp_ms};
+        {
+            WITH_SEMAPHORE(_queue.sem);
+            _queue.items_tracked->push(item);
+        }
+    } else {
+        // untracked
+        const OA_DbItem item = {pos, timestamp_ms, MAX(_radius_min, distance * dist_to_radius_scalar), 0, AP_OADatabase::OA_DbItemImportance::Normal};
+        {
+            WITH_SEMAPHORE(_queue.sem);
+            _queue.items->push(item);
+        }
     }
 }
 
@@ -188,6 +240,9 @@ void AP_OADatabase::init_queue()
     }
 
     _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    if (_tracked_obs_enable) {
+        _queue.items_tracked = new ObjectBuffer<OA_DBItem_Tracked>(AP_OADATABASE_TRACKED_OBSTACLE_NUM);
+    }
 }
 
 void AP_OADatabase::init_database()
@@ -198,6 +253,21 @@ void AP_OADatabase::init_database()
     }
 
     _database.items = new OA_DbItem[_database.size];
+    if (_tracked_obs_enable) {
+        _database_tracked.items = new OA_DBItem_Tracked[AP_OADATABASE_TRACKED_OBSTACLE_NUM];
+    }
+}
+
+// returns true if database is healthy
+bool AP_OADatabase::healthy() const
+{
+    bool oadb_healthy = false;
+    if (!_tracked_obs_enable) {
+        oadb_healthy = (_queue.items != nullptr) && (_database.items != nullptr);
+        return oadb_healthy;
+    }
+    const bool oadb_tracked_healthy = (_queue.items_tracked != nullptr) && (_database_tracked.items != nullptr);
+    return oadb_tracked_healthy && oadb_healthy;
 }
 
 // get bitmask of gcs channels item should be sent to based on its importance
@@ -230,6 +300,11 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
 bool AP_OADatabase::process_queue()
 {
     if (!healthy()) {
+        return false;
+    }
+
+    // process tracked objects
+    if (!process_queue_tracked_items()) {
         return false;
     }
 
@@ -272,6 +347,48 @@ bool AP_OADatabase::process_queue()
         }
     }
     return (_queue.items->available() > 0);
+}
+
+// empty tracked object queue and try and put into database
+bool AP_OADatabase::process_queue_tracked_items()
+{
+    if (!healthy()) {
+        return false;
+    }
+    const uint16_t queue_available = MIN(_queue.items_tracked->available(), 10U);
+    if (queue_available == 0) {
+        return false;
+    }
+
+    for (uint16_t queue_index=0; queue_index<queue_available; queue_index++) {
+        OA_DBItem_Tracked item;
+
+        bool pop_success;
+        {
+            WITH_SEMAPHORE(_queue.sem);
+            pop_success = _queue.items_tracked->pop(item);
+        }
+        if (!pop_success) {
+            return false;
+        }
+        bool item_exists = false;
+        for (uint16_t i = 0; i < _database_tracked.count; i++) {
+            if (_database_tracked.items[i].id == item.id) {
+                // item already exists, lets update the details
+                _database_tracked.items[i] = item;
+                item_exists = true;
+                break;
+            }
+        }
+        if (!item_exists) {
+            // add it
+            if (_database_tracked.count < AP_OADATABASE_TRACKED_OBSTACLE_NUM) {
+                _database_tracked.items[_database_tracked.count] = item;
+                _database_tracked.count++;
+            }
+        }
+    }
+    return true;
 }
 
 void AP_OADatabase::database_item_add(const OA_DbItem &item)
@@ -329,6 +446,25 @@ void AP_OADatabase::database_item_refresh(const uint16_t index, const uint32_t t
 
 void AP_OADatabase::database_items_remove_all_expired()
 {
+    // we expect tracked objects to be updated at atleast 1hz
+    if (_tracked_obs_enable) {
+        for (uint16_t i = 0; i < _database_tracked.count; i++) {
+            if (_database_tracked.items[i].id == UINT16_MAX) {
+                //unassigned
+                continue;
+            }
+            if ((AP_HAL::millis() - _database_tracked.items[i].timestamp_ms ) > AP_OADATABASE_TRACKED_OBSTACLE_TIMEOUT_MS) {
+                // No update received on this tracked item, consider it lost
+                _database_tracked.items[i].id = UINT16_MAX;
+                _database_tracked.count--;
+                if (i != _database_tracked.count) {
+                    _database_tracked.items[i] = _database_tracked.items[_database_tracked.count];
+                    _database_tracked.items[_database_tracked.count].id = UINT16_MAX;
+                }
+            }
+        }
+    }
+
     // calculate age of all items in the _database
 
     if (_database_expiry_seconds <= 0) {

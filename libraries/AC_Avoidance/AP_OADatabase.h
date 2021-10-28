@@ -31,20 +31,27 @@ public:
         OA_DbItemImportance importance;
     };
 
+    struct OA_DBItem_Tracked{
+        uint16_t id;            // id of a tracked object, set 65535 for unkown
+        Vector3f pos;           // position of the object as an offset in meters from the EKF origin
+        uint32_t timestamp_ms;  // system time that object was last updated
+        float radius;           // objects radius in meters
+    };
+
     void init();
     void update();
 
     // push an object into the database.  Pos is the offset in meters from the EKF origin, angle is in degrees, distance in meters
-    void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance);
+    void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance, uint16_t id = UINT16_MAX);
 
     // returns true if database is healthy
-    bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
+    bool healthy() const;
 
-    // fetch an item in database. Undefined result when i >= _database.count.
-    const OA_DbItem& get_item(uint32_t i) const { return _database.items[i]; }
+    // fetch an item in database. Undefined result when i >= _database.count + _database_tracked.count.
+    float get_item_pos_radius(uint32_t i, Vector3f& pos) const;
 
     // get number of items in the database
-    uint16_t database_count() const { return _database.count; }
+    uint16_t database_count() const;
 
     // empty queue and try and put into database. Return true if there's more work to do
     bool process_queue();
@@ -59,6 +66,9 @@ private:
     // initialise
     void init_queue();
     void init_database();
+
+    // empty tracked object queue and try and put into database
+    bool process_queue_tracked_items();
 
     // database item management
     void database_item_add(const OA_DbItem &item);
@@ -90,9 +100,11 @@ private:
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
     AP_Float        _dist_max;                              // objects maximum distance (in meters)
     AP_Float        _min_alt;                               // OADatabase minimum vehicle height check (in meters)
+    AP_Int8         _tracked_obs_enable;                    // true if tracked items exist
 
     struct {
         ObjectBuffer<OA_DbItem> *items;                     // thread safe incoming queue of points from proximity sensor to be put into database
+        ObjectBuffer<OA_DBItem_Tracked> *items_tracked;     // tracked objects
         uint16_t        size;                               // cached value of _queue_size_param.
         HAL_Semaphore   sem;                                // semaphore for multi-thread use of queue
     } _queue;
@@ -103,6 +115,11 @@ private:
         uint16_t        count;                              // number of objects in the items array
         uint16_t        size;                               // cached value of _database_size_param that sticks after initialized
     } _database;
+
+    struct {
+        OA_DBItem_Tracked       *items;                             // array of tracked objects in the database
+        uint16_t                count;                              // number of objects in the items array
+    } _database_tracked;
 
     uint16_t _next_index_to_send[MAVLINK_COMM_NUM_BUFFERS]; // index of next object in _database to send to GCS
     uint16_t _highest_index_sent[MAVLINK_COMM_NUM_BUFFERS]; // highest index in _database sent to GCS
