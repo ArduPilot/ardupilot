@@ -21,6 +21,7 @@ import os
 import time
 from queue import Queue, Empty
 from threading  import Thread
+import signal
 
 def serial_debug(args):
     global spinner, process_cmd
@@ -79,44 +80,52 @@ def swd_debug(args):
             out.close()
         hardfault_detected = False
         # Check if already in hardfault
-        p = subprocess.Popen(['arm-none-eabi-gdb', '-nx', '--batch',
-                '-ex', 'target extended-remote {}'.format(args.gdb_port),
-                '-ex', 'bt',
-                args.elf_file], stdout=subprocess.PIPE, close_fds=ON_POSIX)
-        q = Queue()
-        t = Thread(target=enqueue_output, args=(p.stdout, q))
-        t.daemon = True # thread dies with the program
-        t.start()
+        # p = subprocess.Popen(['arm-none-eabi-gdb', '-nx', '--batch',
+        #         '-ex', 'target extended-remote {}'.format(args.gdb_port),
+        #         '-ex', 'bt',
+        #         args.elf_file], stdout=subprocess.PIPE, close_fds=ON_POSIX)
+        # q = Queue()
+        # t = Thread(target=enqueue_output, args=(p.stdout, q))
+        # t.daemon = True # thread dies with the program
+        # t.start()
 
-        print("Checking if already Crashed")
-        while p.poll() is None:
-            try:
-                line = q.get(False)
-                if b"HardFault_Handler" in line:
-                    hardfault_detected = True
-                    break
-            except Empty:
-                pass
-            sys.stdout.write(next(spinner))
-            sys.stdout.flush()
-            sys.stdout.write('\b')
+        # print("Checking if already Crashed")
+        # while p.poll() is None:
+        #     try:
+        #         line = q.get(False)
+        #         if b"HardFault_Handler" in line:
+        #             hardfault_detected = True
+        #             break
+        #     except Empty:
+        #         pass
+        #     sys.stdout.write(next(spinner))
+        #     sys.stdout.flush()
+        #     sys.stdout.write('\b')
         if not hardfault_detected:
             # lets place breakpoint at HardFault_Handler and wait for it to hit
-            p = subprocess.Popen(['arm-none-eabi-gdb', '-nx', '--batch',
+            cmd = ['arm-none-eabi-gdb', '-nx', '--batch',
                     '-ex', 'target extended-remote {}'.format(args.gdb_port),
-                    '-ex', 'b HardFault_Handler',
+                    '-ex', 'b *&HardFault_Handler',
+                    '-ex', 'continue',
                     '-ex', 'run',
-                    args.elf_file], stdout=subprocess.PIPE, close_fds=ON_POSIX)
+                    args.elf_file]
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, close_fds=ON_POSIX)
             q = Queue()
             t = Thread(target=enqueue_output, args=(p.stdout, q))
             t.daemon = True # thread dies with the program
             t.start()
-
+            print(' '.join(cmd))
             # Wait for HardFault_Handler to hit
+            running = False
             while p.poll() is None:
                 try:
                     line = q.get(False)
-                    if b"HardFault_Handler" in line:
+                    # print(line.decode('utf-8'))
+                    if b"Breakpoint" in line:
+                        time.sleep(1)
+                        p.send_signal(signal.SIGINT)
+                        running = True
+                    if b"HardFault_Handler" in line and running:
                         hardfault_detected = True
                         break
                 except Empty:
