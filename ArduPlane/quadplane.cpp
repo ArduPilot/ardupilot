@@ -2581,9 +2581,21 @@ void QuadPlane::poscontrol_init_approach(void)
         // go straight to QPOS_POSITION1
         poscontrol.set_state(QPOS_POSITION1);
     } else if (poscontrol.get_state() != QPOS_APPROACH) {
+        // check if we are close to the destination. We don't want to
+        // do a full approach when very close
         const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
-        gcs().send_text(MAV_SEVERITY_INFO,"VTOL approach d=%.1f", dist);
-        poscontrol.set_state(QPOS_APPROACH);
+        if (dist < transition_threshold()) {
+            if (is_tailsitter() || motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f", dist);
+                poscontrol.set_state(QPOS_POSITION1);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL short d=%.1f", dist);
+                poscontrol.set_state(QPOS_AIRBRAKE);
+            }
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL approach d=%.1f", dist);
+            poscontrol.set_state(QPOS_APPROACH);
+        }
         poscontrol.thrust_loss_start_ms = 0;
     }
 }
@@ -3944,12 +3956,30 @@ bool QuadPlane::in_transition(void) const
 /*
   calculate current stopping distance for a quadplane in fixed wing flight
  */
-float QuadPlane::stopping_distance(void)
+float QuadPlane::stopping_distance(float ground_speed_squared)
 {
     // use v^2/(2*accel). This is only quite approximate as the drag
     // varies with pitch, but it gives something for the user to
     // control the transition distance in a reasonable way
-    return plane.ahrs.groundspeed_vector().length_squared() / (2 * transition_decel);
+    return ground_speed_squared / (2 * transition_decel);
+}
+
+/*
+  calculate current stopping distance for a quadplane in fixed wing flight
+ */
+float QuadPlane::stopping_distance(void)
+{
+    return stopping_distance(plane.ahrs.groundspeed_vector().length_squared());
+}
+
+/*
+  distance below which we don't do approach, based on stopping
+  distance for cruise speed
+ */
+float QuadPlane::transition_threshold(void)
+{
+    // 1.5 times stopping distance for cruise speed
+    return 1.5 * stopping_distance(sq(plane.aparm.airspeed_cruise_cm*0.01));
 }
 
 #define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
