@@ -237,6 +237,7 @@ static void main_loop()
     utilInstance.apply_persistent_params();
 #endif
 
+#if !defined(DISABLE_WATCHDOG)
 #ifdef IOMCU_FW
     stm32_watchdog_init();
 #elif !defined(HAL_BOOTLOADER_BUILD)
@@ -249,6 +250,7 @@ static void main_loop()
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
 #endif // IOMCU_FW
+#endif // DISABLE_WATCHDOG
 
     schedulerInstance.watchdog_pat();
 
