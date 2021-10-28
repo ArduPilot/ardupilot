@@ -50,6 +50,8 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_AIS/AP_AIS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Hygrometer/AP_Hygrometer.h>
+#include <AP_Hygrometer/AP_Hygrometer_Backend.h>
 
 #include <stdio.h>
 
@@ -890,6 +892,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_WATER_DEPTH,           MSG_WATER_DEPTH},
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
+        { MAVLINK_MSG_ID_HYGROMETER_SENSOR,     MSG_HYGROMETER_STATUS},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -2746,6 +2749,70 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_alt(),
         vfr_hud_climbrate());
 }
+
+// int16_t GCS_MAVLINK::hygrometer_temp() const
+// {
+//     AP_Hygrometer *hygrometer = AP_Hygrometer::get_singleton();
+//     static float temperature = 0;
+//     if (hygrometer != nullptr && hygrometer->get_temperature(temperature)) {
+//          printf("GCS_MAVLINK temperature = %f\n",temperature);
+//         return temperature;
+//     }
+
+//     return 0;
+// }
+
+// uint16_t GCS_MAVLINK::hygrometer_humi() const
+// {
+//     AP_Hygrometer *hygrometer = AP_Hygrometer::get_singleton();
+//     static float humidity = 0;
+//     if (hygrometer != nullptr && hygrometer->get_humidity(humidity)) {
+//         printf("GCS_MAVLINK humidity = %f\n",humidity);
+//         return humidity;
+//     }
+
+//     return 0;
+// }
+
+// uint8_t GCS_MAVLINK::hygrometer_id() const
+// {
+//     AP_Hygrometer *hygrometer = AP_Hygrometer::get_singleton();
+//     static uint8_t id = 0;
+//     if (hygrometer != nullptr && hygrometer->get_id(id)) {
+//         printf("GCS_MAVLINK id = %d\n",id);
+//         return id;
+//     }
+
+//     return 0;
+// }
+
+void GCS_MAVLINK::send_hygrometer(const class AP_Hygrometer_Backend *sensor, const uint8_t instance) const
+{
+    mavlink_msg_hygrometer_sensor_send(
+        chan,
+        instance,                                // hygrometer instance, use 0 for first sensor          
+        sensor->get_temperature(),               // temperature the sensor measure
+        sensor->get_humidity());              // humidity the sensor measure
+}
+
+
+void GCS_MAVLINK::send_hygrometer()
+{
+    AP_Hygrometer *hygrometer = AP_Hygrometer::get_singleton();
+    if (hygrometer == nullptr) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < HYGROMETER_MAX_SENSORS; i++) {
+        AP_Hygrometer_Backend *sensor = hygrometer->get_backend(i);
+        if (sensor == nullptr) {
+            continue;
+        }
+
+        send_hygrometer(sensor, i);
+    }
+}
+
 
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
@@ -5256,7 +5323,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_high_latency2();
 #endif // HAL_HIGH_LATENCY2_ENABLED
         break;
-
+    case MSG_HYGROMETER_STATUS:
+#if HAL_HYGROMETER_ENABLED   
+        CHECK_PAYLOAD_SIZE(HYGROMETER_SENSOR);
+        send_hygrometer();
+ #endif // HAL_HYGROMETER_ENABLED       
+        break;
 
     default:
         // try_send_message must always at some stage return true for

@@ -351,6 +351,8 @@ public:
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
+
+        // k_param_hygrometer = 262,
     };
 
     AP_Int16 format_version;

@@ -61,6 +61,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
 #endif
 
+#if HAL_HYGROMETER_ENABLED
+    // @Group: HYGRO
+    // @Path: ../libraries/AP_Hygrometer/AP_Hygrometer.cpp
+    AP_SUBGROUPINFO(hygrometer, "HYGRO", 9, AP_Vehicle, AP_Hygrometer),
+#endif
     AP_GROUPEND
 };
 
@@ -174,6 +179,10 @@ void AP_Vehicle::setup()
 #if HAL_GENERATOR_ENABLED
     generator.init();
 #endif
+
+#if HAL_HYGROMETER_ENABLED
+    hygrometer.init();
+#endif
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 }
 
@@ -241,6 +250,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
+#endif
+#if HAL_HYGROMETER_ENABLED
+    SCHED_TASK(update_hygrometer,     3,    100),
 #endif
     SCHED_TASK(accel_cal_update,      10,    100),
 };
@@ -459,6 +471,11 @@ void AP_Vehicle::accel_cal_update()
     }
 #endif
 #endif // HAL_INS_ENABLED
+}
+
+void AP_Vehicle::update_hygrometer(void)
+{
+    hygrometer.update_hygrometer_log(1);
 }
 
 

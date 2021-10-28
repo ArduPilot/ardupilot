@@ -232,6 +232,32 @@ void GCS_MAVLINK_Plane::send_position_target_global_int()
         0.0f); // yaw_rate
 }
 
+// int16_t GCS_MAVLINK_Plane::hygrometer_temp() const
+// {
+//     static float temperature = 0;
+
+//     plane.hygrometer.get_temperature(temperature);
+//     printf("GCS_MAVLINK_Plane temperature = %f\n",temperature);
+//     return (int16_t)(100*temperature);
+// }
+
+// uint16_t GCS_MAVLINK_Plane::hygrometer_humi() const
+// {
+//     static float humidity = 0;
+
+//     plane.hygrometer.get_humidity(humidity);
+//     printf("GCS_MAVLINK_Plane humidity = %f\n",humidity);
+//     return (uint16_t)(100*humidity);
+// }
+
+// uint8_t GCS_MAVLINK_Plane::hygrometer_id() const
+// {
+//     static uint8_t id = 0;
+
+//     plane.hygrometer.get_id(id);
+//     printf("GCS_MAVLINK_Plane id = %d\n",id);
+//     return id;
+// }
 
 float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 {
@@ -516,6 +542,7 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+    MSG_HYGROMETER_STATUS,
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
