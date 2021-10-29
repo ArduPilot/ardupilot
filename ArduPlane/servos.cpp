@@ -176,8 +176,8 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
         in1 *= (100 + g.mixing_offset) * 0.01;
     }
     
-    float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
-    float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
+    float out1 = (in2 - in1) * g.mixing_gain;
+    float out2 = (in2 + in1) * g.mixing_gain;
     SRV_Channels::set_output_scaled(func1_out, out1);
     SRV_Channels::set_output_scaled(func2_out, out2);
 }
@@ -194,8 +194,8 @@ void Plane::flaperon_update(int8_t flap_percent)
       or from auto flaps.
      */
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
-    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    float flaperon_left  = aileron + flap_percent * 45;
+    float flaperon_right = aileron - flap_percent * 45;
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
@@ -243,12 +243,12 @@ void Plane::dspoiler_update(void)
 
     if (rudder > 0) {
         // apply rudder to right wing
-        dspoiler_outer_right = constrain_float(dspoiler_outer_right + rudder, -4500, 4500);
-        dspoiler_inner_right = constrain_float(dspoiler_inner_right - rudder, -4500, 4500);
+        dspoiler_outer_right = dspoiler_outer_right + rudder;
+        dspoiler_inner_right = dspoiler_inner_right - rudder;
     } else {
         // apply rudder to left wing
-        dspoiler_outer_left = constrain_float(dspoiler_outer_left - rudder, -4500, 4500);
-        dspoiler_inner_left = constrain_float(dspoiler_inner_left + rudder, -4500, 4500);
+        dspoiler_outer_left = dspoiler_outer_left - rudder;
+        dspoiler_inner_left = dspoiler_inner_left + rudder;
     }
 
     // limit flap throw used for aileron
@@ -286,10 +286,10 @@ void Plane::dspoiler_update(void)
                 outer_flap_scaled = constrain_float(outer_flap_scaled - 50, 0,50) * 2;
             }
             // scale flaps so when weights are 100 they give full up or down
-            dspoiler_outer_left  = constrain_float(dspoiler_outer_left  + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
-            dspoiler_inner_left  = constrain_float(dspoiler_inner_left  - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
-            dspoiler_outer_right = constrain_float(dspoiler_outer_right + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
-            dspoiler_inner_right = constrain_float(dspoiler_inner_right - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
+            dspoiler_outer_left  = dspoiler_outer_left  + outer_flap_scaled * weight_outer * 0.45;
+            dspoiler_inner_left  = dspoiler_inner_left  - inner_flap_scaled * weight_inner * 0.45;
+            dspoiler_outer_right = dspoiler_outer_right + outer_flap_scaled * weight_outer * 0.45;
+            dspoiler_inner_right = dspoiler_inner_right - inner_flap_scaled * weight_inner * 0.45;
         }
     }
 
