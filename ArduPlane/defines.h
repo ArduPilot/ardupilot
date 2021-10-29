@@ -165,6 +165,7 @@ enum FlightOptions {
     GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
     OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
     CENTER_THROTTLE_TRIM = (1<<10),
+    DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
 };
 
 enum CrowFlapOptions {
