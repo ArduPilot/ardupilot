@@ -136,6 +136,7 @@ bool Copter::should_use_landing_swash() const
 void Copter::heli_update_landing_swash()
 {
     motors->set_collective_for_landing(should_use_landing_swash());
+    update_collective_low_flag(channel_throttle->get_control_in());
 }
 
 // convert motor interlock switch's position to desired rotor speed expressed as a value from 0 to 1
@@ -237,4 +238,19 @@ void Copter::heli_set_autorotation(bool autorotation)
     motors->set_in_autorotation(autorotation);
 }
 #endif
+
+// update collective low flag.  Use a debounce time of 400 milliseconds.
+void Copter::update_collective_low_flag(int16_t throttle_control)
+{
+    static uint32_t last_nonzero_collective_ms = 0;
+    uint32_t tnow_ms = millis();
+
+    if (throttle_control > 0) {
+        last_nonzero_collective_ms = tnow_ms;
+        heli_flags.coll_stk_low = false;
+    } else if (tnow_ms - last_nonzero_collective_ms > 400) {
+        heli_flags.coll_stk_low = true;
+    }
+}
+
 #endif  // FRAME_CONFIG == HELI_FRAME
