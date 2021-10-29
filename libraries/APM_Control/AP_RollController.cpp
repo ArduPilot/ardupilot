@@ -129,7 +129,7 @@ AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
 /*
   AC_PID based rate controller
 */
-float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
+float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -187,6 +187,10 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
 
     // sum components
     float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    if (ground_mode) {
+        // when on ground suppress D term to prevent oscillations
+        out -= pinfo.D + 0.5*pinfo.P;
+    }
 
     // remember the last output to trigger the I limit
     _last_out = out;
@@ -209,7 +213,7 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
 */
 float AP_RollController::get_rate_out(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, false);
+    return _get_rate_out(desired_rate, scaler, false, false);
 }
 
 /*
@@ -221,7 +225,7 @@ float AP_RollController::get_rate_out(float desired_rate, float scaler)
  3) boolean which is true when stabilise mode is active
  4) minimum FBW airspeed (metres/sec)
 */
-float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
 {
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
@@ -238,7 +242,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
         desired_rate = gains.rmax_pos;
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 
 void AP_RollController::reset_I()

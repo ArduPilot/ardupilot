@@ -144,7 +144,7 @@ AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
 /*
   AC_PID based rate controller
 */
-float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
+float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode)
 {
     const float dt = AP::scheduler().get_loop_period_s();
 
@@ -199,6 +199,10 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
 
     // sum components
     float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    if (ground_mode) {
+        // when on ground suppress D and half P term to prevent oscillations
+        out -= pinfo.D + 0.5*pinfo.P;
+    }
 
     // remember the last output to trigger the I limit
     _last_out = out;
@@ -229,7 +233,7 @@ float AP_PitchController::get_rate_out(float desired_rate, float scaler)
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
 	}
-    return _get_rate_out(desired_rate, scaler, false, aspeed);
+    return _get_rate_out(desired_rate, scaler, false, aspeed, false);
 }
 
 /*
@@ -282,7 +286,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 // 4) minimum FBW airspeed (metres/sec)
 // 5) maximum FBW airspeed (metres/sec)
 //
-float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
+float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
 {
 	// Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
 	// Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
@@ -336,7 +340,7 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
         desired_rate *= (1 - roll_prop);
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
 }
 
 void AP_PitchController::reset_I()
