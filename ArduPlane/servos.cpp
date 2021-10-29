@@ -990,6 +990,20 @@ void Plane::servos_output(void)
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
     }
+
+    // set limit flags
+    bool roll_limit = SRV_Channels::get_output_limit(SRV_Channel::k_aileron);
+    roll_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_left);
+    roll_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_right);
+    rollController.set_I_limit(roll_limit);
+
+    bool pitch_limit = SRV_Channels::get_output_limit(SRV_Channel::k_elevator);
+    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_left);
+    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_right);
+    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_vtail_left);
+    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_vtail_right);
+    pitchController.set_I_limit(pitch_limit);
+
 }
 
 void Plane::update_throttle_hover() {
