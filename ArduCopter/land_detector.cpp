@@ -64,7 +64,7 @@ void Copter::update_land_detector()
         // check for both manual collective modes and modes that use altitude hold. For manual collective (called throttle 
         // because multi's use throttle), check that collective pitch is below mid collective (zero thrust) position.  For modes 
         // that use altitude hold, check that the pilot is commanding a descent and collective is at min allowed for altitude hold modes.
-        bool motor_at_lower_limit = ((flightmode->has_manual_throttle() && motors->get_below_mid_collective() && fabsf(ahrs.get_roll()) < M_PI/2.0f) 
+        bool motor_at_lower_limit = ((flightmode->has_manual_throttle() && motors->get_below_land_min_coll() && fabsf(ahrs.get_roll()) < M_PI/2.0f) 
                                     || (motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f));
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
