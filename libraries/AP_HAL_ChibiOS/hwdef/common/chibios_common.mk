@@ -334,7 +334,11 @@ else
 	@echo Done
 endif
 
+ifneq ($(CRASHCATCHER),)
 lib: $(OBJS) $(LIBCC_OBJS) $(BUILDDIR)/lib$(PROJECT).a $(BUILDDIR)/libcc.a pass
+else
+lib: $(OBJS) $(BUILDDIR)/lib$(PROJECT).a pass
+endif
 
 $(BUILDDIR)/lib$(PROJECT).a: $(OBJS)
 	@$(AR) -r $@ $^

@@ -850,8 +850,10 @@ def write_mcu_config(f):
             storage_flash_page = get_config('STORAGE_FLASH_PAGE', type=int)
             f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
 
-    if flash_size >= 2048:
+    if flash_size >= 2048 and not args.bootloader:
         # lets pick a flash sector for Crash log
+        f.write('#define HAL_CRASHDUMP_ENABLE 1\n')
+        env_vars['ENABLE_CRASHDUMP'] = 1
         num_flash_pages = get_flash_npages()
         crash_dump_flash_page = get_config('CRASH_DUMP_FLASHPAGE', default=num_flash_pages-1, type=int)
         if crash_dump_flash_page >= num_flash_pages:
@@ -863,6 +865,9 @@ def write_mcu_config(f):
                 else:
                     raise Exception('Unable to find a Crash log flash page')
         f.write('#define HAL_CRASH_DUMP_FLASHPAGE %u\n' % crash_dump_flash_page)
+    else:
+        f.write('#define HAL_CRASHDUMP_ENABLE 0\n')
+        env_vars['ENABLE_CRASHDUMP'] = 0
 
     if args.bootloader:
         if env_vars['EXTERNAL_PROG_FLASH_MB']:
