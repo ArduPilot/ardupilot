@@ -24,7 +24,7 @@
 #define AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX     0.8f // maximum possible hover throttle
 #define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -90.0f // minimum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
-#define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
+#define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -1.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
 
 // flybar types
@@ -133,8 +133,8 @@ public:
     // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
     bool get_takeoff_collective() const { return _heliflags.takeoff_collective; }
 
-    // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
-    bool get_below_mid_collective() const { return _heliflags.below_mid_collective; }
+    // accessor to get the land min collective flag signifying that current collective is lower than collective required for landing
+    bool get_below_land_min_coll() const { return _heliflags.below_land_min_coll; }
 
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
@@ -249,7 +249,7 @@ protected:
         uint8_t servo_test_running      : 1;    // true if servo_test is running
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
-        uint8_t below_mid_collective    : 1;    // true if collective is below H_COL_MID
+        uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
     } _heliflags;
 
     // parameters
@@ -261,14 +261,14 @@ protected:
     AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
     AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
     AP_Int8         _heli_options;              // bitmask for optional features
-    AP_Float        _collective_zero_thrst_deg; // Zero thrust blade collective pitch in degrees
+    AP_Float        _collective_zero_thrust_deg;// Zero thrust blade collective pitch in degrees
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
     AP_Float        _collective_min_deg;        // Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN)
 
     // internal variables
-    float           _collective_zero_pct;      // collective mid parameter value converted to 0 ~ 1 range
-    float           _collective_land_min_pct;      // collective mid parameter value converted to 0 ~ 1 range
+    float           _collective_zero_thrust_pct;      // collective zero thrutst parameter value converted to 0 ~ 1 range
+    float           _collective_land_min_pct;      // collective land min parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 
     motor_frame_type _frame_type;

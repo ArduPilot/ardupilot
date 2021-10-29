@@ -375,22 +375,22 @@ void AP_MotorsHeli_Dual::calculate_scalars()
         _collective2_max = AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX;
     }
 
-    _collective_zero_thrst_deg = constrain_float(_collective_zero_thrst_deg, _collective_min_deg, _collective_max_deg);
+    _collective_zero_thrust_deg = constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg);
 
     _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
-        _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+        _collective_zero_thrust_pct = (_collective_zero_thrust_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
 
         // calculate collective land min point as a number from 0 to 1
         _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
     } else {
-        _collective_zero_pct = 0.0f;
+        _collective_zero_thrust_pct = 0.0f;
         _collective_land_min_pct = 0.0f;
     }
 
-    _collective2_zero_pct = _collective_zero_pct;
+    _collective2_zero_thrst_pct = _collective_zero_thrust_pct;
 
     // configure swashplate 1 and update scalars
     _swashplate1.configure();
@@ -576,11 +576,11 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_lower = true;
     }
 
-    // updates below mid collective flag
+    // updates below land min collective flag
     if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_mid_collective = true;
+        _heliflags.below_land_min_coll = true;
     } else {
-        _heliflags.below_mid_collective = false;
+        _heliflags.below_land_min_coll = false;
     }
 
     // updates takeoff collective flag based on 50% hover collective
@@ -589,7 +589,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     // Set rear collective to midpoint if required
     float collective2_out = collective_out;
     if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
-        collective2_out = _collective2_zero_pct;
+        collective2_out = _collective2_zero_thrst_pct;
     }
 
     // if servo output not in manual mode, process pre-compensation factors
@@ -601,7 +601,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
             // for intermeshing, reverse yaw in negative collective region and smoothen transition near zero collective
             if (_yaw_rev_expo > 0.01f) {
                 // yaw_compensation range: (-1,1) S-shaped curve (Logistic Model) 1/(1 + e^kt)
-                yaw_compensation = 1.0f - (2.0f / (1.0f + powf(2.7182818f , _yaw_rev_expo * (collective_out-_collective_zero_pct))));
+                yaw_compensation = 1.0f - (2.0f / (1.0f + powf(2.7182818f , _yaw_rev_expo * (collective_out-_collective_zero_thrust_pct))));
                 yaw_out = yaw_out * yaw_compensation;
             }
         } else {

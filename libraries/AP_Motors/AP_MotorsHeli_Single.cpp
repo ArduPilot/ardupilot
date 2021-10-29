@@ -325,18 +325,18 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
     }
 
-    _collective_zero_thrst_deg = constrain_float(_collective_zero_thrst_deg, _collective_min_deg, _collective_max_deg);
+    _collective_zero_thrust_deg = constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg);
 
     _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
-        _collective_zero_pct = (_collective_zero_thrst_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+        _collective_zero_thrust_pct = (_collective_zero_thrust_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
 
         // calculate collective land min point as a number from 0 to 1
         _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
     } else {
-        _collective_zero_pct = 0.0f;
+        _collective_zero_thrust_pct = 0.0f;
         _collective_land_min_pct = 0.0f;
     }
 
@@ -458,11 +458,11 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 
     }
 
-    // updates below mid collective flag
+    // updates below land min collective flag
     if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_mid_collective = true;
+        _heliflags.below_land_min_coll = true;
     } else {
-        _heliflags.below_mid_collective = false;
+        _heliflags.below_land_min_coll = false;
     }
 
     // updates takeoff collective flag based on 50% hover collective
@@ -477,7 +477,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             // the 4.5 scaling factor is to bring the values in line with previous releases
-            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_zero_pct) / 4.5f;
+            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_zero_thrust_pct) / 4.5f;
         }
     } else {
         yaw_offset = 0.0f;
