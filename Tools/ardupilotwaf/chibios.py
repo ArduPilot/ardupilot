@@ -529,13 +529,23 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
-    ch_task = bld(
-        # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-        group='dynamic_sources',
-        source=common_src,
-        target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
-    )
+
+    if bld.env.ENABLE_CRASHDUMP:
+        ch_task = bld(
+            # build libch.a from ChibiOS sources and hwdef.h
+            rule="BUILDDIR='${BUILDDIR_REL}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            group='dynamic_sources',
+            source=common_src,
+            target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
+        )
+    else:
+        ch_task = bld(
+            # build libch.a from ChibiOS sources and hwdef.h
+            rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            group='dynamic_sources',
+            source=common_src,
+            target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
+        )
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
         'cortex-m4' : 'libarm_cortexM4lf_math.a',
@@ -549,7 +559,8 @@ def build(bld):
         bld.env.LIB += ['DSP']
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
-    bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
+    if bld.env.ENABLE_CRASHDUMP:
+        bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
     # own code note that we also include functions that we deliberately don't
     # implement anywhere (the FILE* functions). This allows us to get link
