@@ -137,5 +137,5 @@ protected:
     AP_Float        _yaw_rev_expo;                  // yaw reverser smoothing exponent, for intermeshing mode only.
 
     // internal variables
-    float _collective2_zero_pct;
+    float _collective2_zero_thrst_pct;
 };
