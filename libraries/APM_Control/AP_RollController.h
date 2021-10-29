@@ -16,7 +16,7 @@ public:
     AP_RollController &operator=(const AP_RollController&) = delete;
 
 	float get_rate_out(float desired_rate, float scaler);
-	float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
+    float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
 
 	void reset_I();
 
@@ -61,5 +61,5 @@ private:
 
     AP_Logger::PID_Info _pid_info;
 
-    float _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
+    float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
 };
