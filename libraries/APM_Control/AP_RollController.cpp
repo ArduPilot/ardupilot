@@ -135,10 +135,8 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
 
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
-    bool limit_I = fabsf(_last_out) >= 45;
     float rate_x = _ahrs.get_gyro().x;
     float aspeed;
-    float old_I = rate_pid.get_i();
 
     rate_pid.set_dt(dt);
 
@@ -147,7 +145,7 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     }
     bool underspeed = aspeed <= float(aparm.airspeed_min);
     if (underspeed) {
-        limit_I = true;
+        _limit_I = true;
     }
 
     // the P and I elements are scaled by sq(scaler). To use an
@@ -155,13 +153,8 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, _limit_I);
 
-    if (underspeed) {
-        // when underspeed we lock the integrator
-        rate_pid.set_integrator(old_I);
-    }
-    
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
@@ -192,16 +185,13 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
         out -= pinfo.D + 0.5*pinfo.P;
     }
 
-    // remember the last output to trigger the I limit
-    _last_out = out;
-
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
         autotune->update(pinfo, scaler, angle_err_deg);
     }
-    
+
     // output is scaled to notional centidegrees of deflection
-    return constrain_float(out * 100, -4500, 4500);
+    return out * 100;
 }
 
 /*

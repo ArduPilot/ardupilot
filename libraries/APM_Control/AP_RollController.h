@@ -28,7 +28,10 @@ public:
         _pid_info.I *= 0.995f;
         rate_pid.set_integrator(rate_pid.get_i() * 0.995);
     }
-    
+
+    // set I limit flag to preven integrator windup
+    void set_I_limit(bool b) { _limit_I = b; }
+
     void autotune_start(void);
     void autotune_restore(void);
 
@@ -55,9 +58,9 @@ private:
     AP_AutoTune::ATGains gains;
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;
-	float _last_out;
     AC_PID rate_pid{0.08, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
     float angle_err_deg;
+    bool _limit_I;
 
     AP_Logger::PID_Info _pid_info;
 
