@@ -736,10 +736,11 @@ def start_mavproxy(opts, stuff):
                 else:
                     cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
-        if opts.udp:
-            cmd.extend(["--master", ":" + str(5760 + 10 * i)])
-        else:
-            cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+        if not opts.mcast:
+            if opts.udp:
+                cmd.extend(["--master", ":" + str(5760 + 10 * i)])
+            else:
+                cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
         if stuff["sitl-port"] and not opts.no_rcin:
             cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
 
