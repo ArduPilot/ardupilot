@@ -538,6 +538,17 @@ float SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t function
     return 0;
 }
 
+// get limit flag for given output, true if assigned and scaled value is larger than given range/angle
+bool SRV_Channels::get_output_limit(SRV_Channel::Aux_servo_function_t function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            return channels[i].get_output_limit();
+        }
+    }
+    return false;
+}
+
 /*
   get mask of output channels for a function
  */

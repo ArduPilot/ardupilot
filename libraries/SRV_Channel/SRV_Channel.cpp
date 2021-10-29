@@ -83,13 +83,30 @@ SRV_Channel::SRV_Channel(void)
     have_pwm_mask = ~uint16_t(0);
 }
 
+// constrain float, setting limit flag
+float SRV_Channel::constrain_scaled(float scaled, float low, float high)
+{
+    if (scaled < low) {
+        limited = true;
+        return low;
+    }
+
+    if (scaled > high) {
+        limited = true;
+        return high;
+    }
+
+    limited = false;
+    return scaled;
+}
+
 // convert a 0..range_max to a pwm
-uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
+uint16_t SRV_Channel::pwm_from_range(float scaled_value)
 {
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    scaled_value = constrain_float(scaled_value, 0, high_out);
+    scaled_value = constrain_scaled(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
@@ -97,12 +114,12 @@ uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 }
 
 // convert a -angle_max..angle_max to a pwm
-uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
+uint16_t SRV_Channel::pwm_from_angle(float scaled_value)
 {
     if (reversed) {
         scaled_value = -scaled_value;
     }
-    scaled_value = constrain_float(scaled_value, -high_out, high_out);
+    scaled_value = constrain_scaled(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
         return servo_trim + uint16_t( (scaled_value * (float)(servo_max - servo_trim)) / (float)high_out);
     } else {
@@ -115,6 +132,7 @@ void SRV_Channel::calc_pwm(float output_scaled)
     if (have_pwm_mask & (1U<<ch_num)) {
         // Note that this allows a set_output_pwm call to override E-Stop!!
         // tricky to fix because we would endup E-stoping to individual SEROVx_MIN not MOT_PWM_MIN on copter
+        limited = false;
         return;
     }
 
@@ -127,6 +145,7 @@ void SRV_Channel::calc_pwm(float output_scaled)
 
     if (!force && override_active) {
         // don't overwrite a override
+        limited = true;
         return;
     }
 

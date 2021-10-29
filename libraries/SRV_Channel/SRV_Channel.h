@@ -261,6 +261,9 @@ public:
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
 
+    // return limit flag, true if scaled value is larger than given range/angle, set on calc_pwm call
+    bool get_output_limit() { return limited; }
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -284,11 +287,17 @@ private:
     // high point of angle or range output
     uint16_t high_out;
 
-    // convert a 0..range_max to a pwm
-    uint16_t pwm_from_range(float scaled_value) const;
+    // true if scaled value is larger than given range
+    bool limited;
 
-    // convert a -angle_max..angle_max to a pwm
-    uint16_t pwm_from_angle(float scaled_value) const;
+    // constrain float, setting limit flag
+    float constrain_scaled(float scaled, float low, float high);
+
+    // convert a 0..range_max to a pwm, setting limit flag
+    uint16_t pwm_from_range(float scaled_value);
+
+    // convert a -angle_max..angle_max to a pwm, setting limit flag
+    uint16_t pwm_from_angle(float scaled_value);
 
     // convert a scaled output to a pwm value
     void calc_pwm(float output_scaled);
@@ -358,6 +367,9 @@ public:
 
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
+
+    // get limit flag for given output, true if assigned and scaled value is larger than given range/angle
+    static bool get_output_limit(SRV_Channel::Aux_servo_function_t function);
 
     // get normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max)
     // Value is taken from pwm value.  Returns zero on error.
