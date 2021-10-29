@@ -23,7 +23,9 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#if HAL_CRASHDUMP_ENABLE
 #include <CrashCatcher.h>
+#endif
 #include <ch.h>
 #include "hal.h"
 #include <hrt.h>
@@ -50,6 +52,156 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
+#if !HAL_CRASHDUMP_ENABLE
+// do legacy hardfault handling
+void HardFault_Handler(void);
+void HardFault_Handler(void) {
+    //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
+    //Get thread context. Contains main registers including PC and LR
+    struct port_extctx ctx;
+    memcpy(&ctx, (void*)__get_PSP(), sizeof(struct port_extctx));
+    (void)ctx;
+    //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
+    FaultType faultType = (FaultType)__get_IPSR();
+    (void)faultType;
+    //For HardFault/BusFault this is the address that was accessed causing the error
+    uint32_t faultAddress = SCB->BFAR;
+    (void)faultAddress;
+    bool forced = SCB->HFSR & SCB_HFSR_FORCED_Msk;
+    (void)forced;
+    uint32_t cfsr = SCB->CFSR;
+    (void)cfsr;
+    //Flags about hardfault / busfault
+    //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
+    bool isFaultPrecise = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 1) ? true : false);
+    bool isFaultImprecise = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 2) ? true : false);
+    bool isFaultOnUnstacking = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 3) ? true : false);
+    bool isFaultOnStacking = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 4) ? true : false);
+    bool isFaultAddressValid = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 7) ? true : false);
+    (void)isFaultPrecise;
+    (void)isFaultImprecise;
+    (void)isFaultOnUnstacking;
+    (void)isFaultOnStacking;
+    (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
+#ifdef HAL_GPIO_PIN_FAULT
+    while (true) {
+        // forced means that another kind of unhandled fault got escalated to a hardfault
+        if (faultType == BusFault) {
+            fault_printf("BUSFAULT\n");
+        } else if (forced) {
+            fault_printf("FORCED HARDFAULT\n");
+        } else {
+            fault_printf("HARDFAULT(%d)\n", int(faultType));
+        }
+        fault_printf("CSFR=0x%08x\n", cfsr);
+        fault_printf("CUR=0x%08x\n", ch.rlist.current);
+        if (ch.rlist.current) {
+            fault_printf("NAME=%s\n", ch.rlist.current->name);
+        }
+        fault_printf("FA=0x%08x\n", faultAddress);
+        fault_printf("PC=0x%08x\n", ctx.pc);
+        fault_printf("LR=0x%08x\n", ctx.lr_thd);
+        fault_printf("R0=0x%08x\n", ctx.r0);
+        fault_printf("R1=0x%08x\n", ctx.r1);
+        fault_printf("R2=0x%08x\n", ctx.r2);
+        fault_printf("R3=0x%08x\n", ctx.r3);
+        fault_printf("R12=0x%08x\n", ctx.r12);
+        fault_printf("XPSR=0x%08x\n", ctx.xpsr);
+        fault_printf("\n\n");
+    }
+#endif
+    //Cause debugger to stop. Ignored if no debugger is attached
+    while(1) {}
+}
+
+// For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
+// ChibiOS does not do this by default
+void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
+
+void UsageFault_Handler(void);
+void UsageFault_Handler(void) {
+    //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
+    //Get thread context. Contains main registers including PC and LR
+    struct port_extctx ctx;
+    memcpy(&ctx, (void*)__get_PSP(), sizeof(struct port_extctx));
+    (void)ctx;
+    //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
+    FaultType faultType = (FaultType)__get_IPSR();
+    (void)faultType;
+    uint32_t faultAddress = SCB->BFAR;
+    //Flags about hardfault / busfault
+    //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
+    bool isUndefinedInstructionFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 0) ? true : false);
+    bool isEPSRUsageFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 1) ? true : false);
+    bool isInvalidPCFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 2) ? true : false);
+    bool isNoCoprocessorFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 3) ? true : false);
+    bool isUnalignedAccessFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 8) ? true : false);
+    bool isDivideByZeroFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 9) ? true : false);
+    (void)isUndefinedInstructionFault;
+    (void)isEPSRUsageFault;
+    (void)isInvalidPCFault;
+    (void)isNoCoprocessorFault;
+    (void)isUnalignedAccessFault;
+    (void)isDivideByZeroFault;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
+    //Cause debugger to stop. Ignored if no debugger is attached
+    while(1) {}
+}
+
+void MemManage_Handler(void);
+void MemManage_Handler(void) {
+    //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
+    //Get thread context. Contains main registers including PC and LR
+    struct port_extctx ctx;
+    memcpy(&ctx, (void*)__get_PSP(), sizeof(struct port_extctx));
+    (void)ctx;
+    //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
+    FaultType faultType = (FaultType)__get_IPSR();
+    (void)faultType;
+    //For HardFault/BusFault this is the address that was accessed causing the error
+    uint32_t faultAddress = SCB->MMFAR;
+    (void)faultAddress;
+    //Flags about hardfault / busfault
+    //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
+    bool isInstructionAccessViolation = ((SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & (1 << 0) ? true : false);
+    bool isDataAccessViolation = ((SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & (1 << 1) ? true : false);
+    bool isExceptionUnstackingFault = ((SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & (1 << 3) ? true : false);
+    bool isExceptionStackingFault = ((SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & (1 << 4) ? true : false);
+    bool isFaultAddressValid = ((SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & (1 << 7) ? true : false);
+    (void)isInstructionAccessViolation;
+    (void)isDataAccessViolation;
+    (void)isExceptionUnstackingFault;
+    (void)isExceptionStackingFault;
+    (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
+    while(1) {}
+}
+#else
+// Handle via Crash Catcher
+extern void HardFault_Handler(void);
+
+void BusFault_Handler(void);
+void BusFault_Handler(void) {
+    HardFault_Handler();
+}
+
+void UsageFault_Handler(void);
+void UsageFault_Handler(void) {
+    HardFault_Handler();
+}
+
+void MemManage_Handler(void);
+void MemManage_Handler(void) {
+    HardFault_Handler();
+}
+#endif
 /*
   save watchdog data for a hard fault
  */
@@ -88,22 +240,6 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
 
-extern void HardFault_Handler(void);
-
-void BusFault_Handler(void);
-void BusFault_Handler(void) {
-    HardFault_Handler();
-}
-
-void UsageFault_Handler(void);
-void UsageFault_Handler(void) {
-    HardFault_Handler();
-}
-
-void MemManage_Handler(void);
-void MemManage_Handler(void) {
-    HardFault_Handler();
-}
 }
 namespace AP_HAL {
 
