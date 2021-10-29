@@ -1842,19 +1842,26 @@ bool Compass::configured(uint8_t i)
         return false;
     }
 
+    if (_state[id].dev_id != _state[id].detected_dev_id) {
+        // configured ID is different to detected ID, so we're unconfigured
+        return false;
+    }
+
+#ifndef HAL_USE_EMPTY_STORAGE
     // back up cached value of dev_id
     int32_t dev_id_cache_value = _state[id].dev_id;
 
     // load dev_id from eeprom
     _state[id].dev_id.load();
 
-    // if dev_id loaded from eeprom is different from detected dev id or dev_id loaded from eeprom is different from cached dev_id, compass is unconfigured
-    if (_state[id].dev_id != _state[id].detected_dev_id || _state[id].dev_id != dev_id_cache_value) {
+    if (_state[id].dev_id != dev_id_cache_value) {
+        // configured ID is different to stored ID, so we're unconfigured
+
         // restore cached value
         _state[id].dev_id = dev_id_cache_value;
-        // return failure
         return false;
     }
+#endif  // HAL_USE_EMPTY_STORAGE
 
     // if we got here then it must be configured
     return true;
