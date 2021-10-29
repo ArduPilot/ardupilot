@@ -552,7 +552,7 @@ static bool stm32_flash_write_f4f7(uint32_t addr, const void *buf, uint32_t coun
         return false;
     }
 
-    if ((addr+count) >= STM32_FLASH_BASE+STM32_FLASH_SIZE) {
+    if ((addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
         return false;
     }
 
@@ -653,7 +653,7 @@ static bool stm32_flash_write_f1(uint32_t addr, const void *buf, uint32_t count)
         return false;
     }
 
-    if ((addr+count) >= STM32_FLASH_BASE+STM32_FLASH_SIZE) {
+    if ((addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
         _flash_fail_line = __LINE__;
         return false;
     }
@@ -715,7 +715,7 @@ static bool stm32_flash_write_g4(uint32_t addr, const void *buf, uint32_t count)
         return false;
     }
 
-    if ((addr+count) >= STM32_FLASH_BASE+STM32_FLASH_SIZE) {
+    if ((addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
         _flash_fail_line = __LINE__;
         return false;
     }
