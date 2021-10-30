@@ -1,8 +1,9 @@
 #include "AP_Compass_SITL.h"
 
+#if AP_SIM_COMPASS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_SITL::AP_Compass_SITL()
@@ -158,4 +159,4 @@ void AP_Compass_SITL::read()
         drain_accumulated_samples(_compass_instance[i], nullptr);
     }
 }
-#endif
+#endif  // AP_SIM_COMPASS_ENABLED
