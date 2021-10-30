@@ -16,8 +16,8 @@ public:
     AP_PitchController(const AP_PitchController &other) = delete;
     AP_PitchController &operator=(const AP_PitchController&) = delete;
 
-	int32_t get_rate_out(float desired_rate, float scaler);
-	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
+    int32_t get_rate_out(float desired_rate, float scaler);
+    int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
 
 	void reset_I();
 
@@ -58,7 +58,7 @@ private:
 
     AP_Logger::PID_Info _pid_info;
 
-    int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
+    int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
 
     AP_AHRS &_ahrs;
