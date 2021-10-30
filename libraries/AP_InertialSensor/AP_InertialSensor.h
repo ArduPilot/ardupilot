@@ -47,6 +47,10 @@
 #include <Filter/HarmonicNotchFilter.h>
 #include <AP_Math/polyfit.h>
 
+#ifndef AP_SIM_INS_ENABLED
+#define AP_SIM_INS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
 class AP_AHRS;
