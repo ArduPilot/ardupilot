@@ -89,8 +89,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
             & motor_checks(report)
             & oa_check(report)
             & parameter_checks(report)
-            & mode_checks(report)
-            & pilot_throttle_checks(report));
+            & mode_checks(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -184,19 +183,6 @@ bool AP_Arming_Rover::parameter_checks(bool report)
     if (!is_positive(rover.g2.wp_nav.get_default_speed())) {
         check_failed(ARMING_CHECK_PARAMETERS, report, "WP_SPEED too low");
         return false;
-    }
-
-    return true;
-}
-
-// check throttle is above failsafe throttle
-bool AP_Arming_Rover::pilot_throttle_checks(bool report)
-{
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
-        if (rover.g.fs_throttle_enabled != FS_THR_DISABLED && rover.channel_throttle->get_radio_in() < rover.g.fs_throttle_value) {
-            check_failed(ARMING_CHECK_RC, report, "Throttle below failsafe");
-            return false;
-        }
     }
 
     return true;
