@@ -428,6 +428,11 @@ void Copter::throttle_loop()
     // compensate for ground effect (if enabled)
     update_ground_effect_detector();
     update_ekf_terrain_height_stable();
+
+    if(AP::compass().available()) {
+        // update compass with throttle value - used for compassmot
+        compass.set_current_throttle(motors->get_throttle());
+    }
 }
 
 // update_batt_compass - read battery and compass
