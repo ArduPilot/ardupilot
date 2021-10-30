@@ -393,7 +393,7 @@ void AP_AHRS::update(bool skip_ins_update)
             break;
 #if AP_AHRS_SIM_ENABLED
         case EKFType::SIM:
-            shortname = "SITL";
+            shortname = "SIM";
             break;
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
