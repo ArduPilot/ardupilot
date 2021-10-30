@@ -3,7 +3,7 @@
 #include <SITL/SITL.h>
 #include <stdio.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_INS_ENABLED
 
 const extern AP_HAL::HAL& hal;
 
@@ -347,4 +347,4 @@ void AP_InertialSensor_SITL::start()
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
 }
 
-#endif // HAL_BOARD_SITL
+#endif // AP_SIM_INS_ENABLED

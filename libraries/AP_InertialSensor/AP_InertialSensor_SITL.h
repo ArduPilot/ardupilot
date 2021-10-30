@@ -1,14 +1,16 @@
 #pragma once
 
-#include <SITL/SITL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_InertialSensor.h"
+
+#if AP_SIM_INS_ENABLED
+
 #include "AP_InertialSensor_Backend.h"
 
 // simulated sensor rates in Hz. This matches a pixhawk1
 const uint16_t INS_SITL_SENSOR_A[] = { 1000, 1000 };
 const uint16_t INS_SITL_SENSOR_B[] = { 760, 800 };
+
+#include <SITL/SITL.h>
 
 class AP_InertialSensor_SITL : public AP_InertialSensor_Backend
 {
@@ -47,4 +49,4 @@ private:
 
     static uint8_t bus_id;
 };
-#endif // CONFIG_HAL_BOARD
+#endif // AP_SIM_INS_ENABLED
