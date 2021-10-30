@@ -49,6 +49,7 @@ static const SysFileList sysfs_file_list[] = {
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
     {"crash_dump.bin"},
 #endif
+    {"storage.bin"},
 };
 
 int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
@@ -135,6 +136,16 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         hal.util->last_crash_dump(*r.str);
     }
 #endif
+    if (strcmp(fname, "storage.bin") == 0) {
+        // we don't want to store the contents of storage.bin
+        // we read directly from the storage driver
+        void *ptr = nullptr;
+        size_t size = 0;
+        if (hal.storage->get_storage_ptr(ptr, size)) {
+            r.str->set_buffer((char*)ptr, size, size);
+        }
+    }
+    
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
@@ -168,6 +179,7 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
     struct rfile &r = file[fd];
     count = MIN(count, r.str->get_length() - r.file_ofs);
     memcpy(buf, &r.str->get_string()[r.file_ofs], count);
+
     r.file_ofs += count;
     return count;
 }
@@ -254,6 +266,10 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     }
     // give a fixed size for stat. It is too expensive to
     // read every file for a directory listing
-    stbuf->st_size = 100000;
+    if (strcmp(pathname_noslash, "storage.bin") == 0) {
+        stbuf->st_size = HAL_STORAGE_SIZE;
+    } else {
+        stbuf->st_size = 100000;
+    }
     return 0;
 }
