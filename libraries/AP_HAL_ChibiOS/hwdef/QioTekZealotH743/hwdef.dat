@@ -160,13 +160,13 @@ SPIDEV ramtron        SPI2 DEVID2  FRAM_CS      MODE3   8*MHZ    8*MHZ
 SPIDEV sdcard         SPI2 DEVID3  FLASH_CS     MODE0 400*KHZ   10*MHZ
 
 
-# four IMUs, ADIS1647X for reserve
-IMU ADIS1647x    SPI:adis16470 ROTATION_PITCH_180_YAW_270 ADIS_DRDY_PIN
-IMU Invensense   SPI:imu1 ROTATION_ROLL_180
-IMU Invensensev3 SPI:imu1 ROTATION_YAW_270
-IMU Invensense   SPI:imu2 ROTATION_ROLL_180
-IMU Invensensev3 SPI:imu2 ROTATION_YAW_270
-IMU Invensense   SPI:imu3 ROTATION_ROLL_180
+# four IMUs, adi16740 is used, then imu3 will be removed
+IMU ADIS1647x    SPI:adis16470 ROTATION_ROLL_180 ADIS_DRDY_PIN
+IMU Invensense   SPI:imu1      ROTATION_ROLL_180
+IMU Invensensev3 SPI:imu1      ROTATION_YAW_270
+IMU Invensense   SPI:imu2      ROTATION_ROLL_180
+IMU Invensensev3 SPI:imu2      ROTATION_YAW_270
+IMU Invensense   SPI:imu3      ROTATION_ROLL_180
 
 
 # two Baro sensors
@@ -227,5 +227,5 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-DMA_PRIORITY  ADC* SPI1* TIM*UP*
+DMA_PRIORITY  SPI1* SPI3* TIM*UP*
 DMA_NOSHARE  SPI1* TIM*UP* 
