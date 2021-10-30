@@ -257,8 +257,8 @@ void AP_Baro::calibrate(bool save)
         BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
         return;
     }
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#if AP_SIM_BARO_ENABLED
     if (AP::sitl()->baro_count == 0) {
         return;
     }
@@ -628,7 +628,7 @@ void AP_Baro::init(void)
     default:
         break;
     }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#elif AP_SIM_BARO_ENABLED
     SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
@@ -681,7 +681,7 @@ void AP_Baro::init(void)
 #endif
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_BARO_ENABLED
     if (sitl->baro_count == 0) {
         return;
     }

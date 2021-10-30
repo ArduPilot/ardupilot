@@ -1,9 +1,9 @@
+#include "AP_Baro_SITL.h"
+
+#if AP_SIM_BARO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-#include "AP_Baro_SITL.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -182,4 +182,4 @@ float AP_Baro_SITL::wind_pressure_correction(void)
     return error * 0.5 * SSL_AIR_DENSITY * AP::baro().get_air_density_ratio();
 }
 
-#endif  // CONFIG_HAL_BOARD
+#endif  // AP_SIM_BARO_ENABLED
