@@ -172,6 +172,9 @@ void Plane::update_is_flying_5Hz(void)
 
     // tell AHRS flying state
     set_likely_flying(new_is_flying);
+
+    // conservative ground mode value for rate D suppression
+    ground_mode = !is_flying() && !hal.util->get_soft_armed();
 }
 
 /*
