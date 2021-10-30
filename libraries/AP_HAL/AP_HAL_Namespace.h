@@ -65,6 +65,8 @@ namespace AP_HAL {
         SPIDevice_Type              = -1,
     };
 
+    class SIMState;
+
     // Must be implemented by the concrete HALs.
     const HAL& get_HAL();
 }
