@@ -597,6 +597,9 @@ private:
     // time since started flying in any mode in milliseconds
     uint32_t started_flying_ms;
 
+    // ground mode is true when disarmed and not flying
+    bool ground_mode;
+
     // Navigation control variables
     // The instantaneous desired bank angle.  Hundredths of a degree
     int32_t nav_roll_cd;
@@ -679,7 +682,6 @@ private:
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
     } loiter;
-
 
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
