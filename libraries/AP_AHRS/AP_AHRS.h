@@ -32,9 +32,13 @@
 #define HAL_NAVEKF3_AVAILABLE 1
 #endif
 
+#ifndef AP_AHRS_SIM_ENABLED
+#define AP_AHRS_SIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #include "AP_AHRS.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_AHRS_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
 
@@ -665,7 +669,7 @@ private:
 #if HAL_NAVEKF2_AVAILABLE
         ,TWO = 2
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_AHRS_SIM_ENABLED
         ,SIM = 10
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
@@ -760,7 +764,7 @@ private:
 
     EKFType last_active_ekf_type;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_AHRS_SIM_ENABLED
     SITL::SIM *_sitl;
     uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
