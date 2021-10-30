@@ -333,11 +333,15 @@ uint16_t get_random16(void)
 }
 
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
 // generate a random float between -1 and 1, for use in SITL
 float rand_float(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+#else
+    return get_random16() / 65535.0;
+#endif
 }
 
 Vector3f rand_vec3f(void)
