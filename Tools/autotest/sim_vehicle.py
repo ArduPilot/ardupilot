@@ -714,8 +714,15 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         c = ["-I" + str(i)]
         if spawns is not None:
             c.extend(["--home", spawns[i]])
-        if opts.auto_sysid and opts.sysid is None and 0 <= i < 255:
-            c.extend(["--sysid", str(i + 1)])
+        if opts.auto_sysid:
+            if opts.sysid is not None:
+                raise ValueError("Can't use auto-sysid and sysid together")
+            sysid = i + 1
+            # Take 0-based logging into account
+            if i < 0 or i > 255:
+                raise ValueError("Invalid system id %d" % i)
+            c.extend(["--sysid", str(sysid)])
+
         os.chdir(i_dir)
         run_in_terminal_window(cmd_name, cmd + c)
     os.chdir(old_dir)
@@ -1231,6 +1238,10 @@ if cmd_opts.strace and cmd_opts.valgrind:
 
 if cmd_opts.strace and cmd_opts.callgrind:
     print("callgrind and strace almost certainly not a good idea")
+
+if cmd_opts.sysid and cmd_opts.auto_sysid:
+    print("Cannot use auto-sysid together with sysid")
+    sys.exit(1)
 
 # magically determine vehicle type (if required):
 if cmd_opts.vehicle is None:
