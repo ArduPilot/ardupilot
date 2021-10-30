@@ -387,7 +387,7 @@ const AP_Param::Info Blimp::var_info[] = {
     GOBJECT(can_mgr,        "CAN_",       AP_CANManager),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
