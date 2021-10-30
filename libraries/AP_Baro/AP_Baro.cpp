@@ -535,7 +535,17 @@ void AP_Baro::init(void)
         sensors[i].bus_id.set(0);
     }
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_SIM_BARO_ENABLED
+    SITL::SIM *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        AP_HAL::panic("No SITL pointer");
+    }
+    for(uint8_t i = 0; i < sitl->baro_count; i++) {
+        ADD_BACKEND(new AP_Baro_SITL(*this));
+    }
+#endif
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS && !AP_SIM_BARO_ENABLED
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
@@ -551,6 +561,15 @@ void AP_Baro::init(void)
 
 // macro for use by HAL_INS_PROBE_LIST
 #define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+
+#if AP_SIM_BARO_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                      std::move(GET_I2C_DEVICE(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+#endif
+    // do not probe for other drivers when using simulation:
+    return;
+#endif
 
 #if defined(HAL_BARO_PROBE_LIST)
     // probe list from BARO lines in hwdef.dat
@@ -629,14 +648,6 @@ void AP_Baro::init(void)
 
     default:
         break;
-    }
-#elif AP_SIM_BARO_ENABLED
-    SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        AP_HAL::panic("No SITL pointer");
-    }
-    for(uint8_t i = 0; i < sitl->baro_count; i++) {
-        ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H_IMU_I2C
 	ADD_BACKEND(AP_Baro_LPS2XH::probe_InvensenseIMU(*this,
