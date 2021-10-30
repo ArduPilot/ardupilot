@@ -22,16 +22,8 @@
 extern const AP_HAL::HAL& hal;
 AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
 
-/* 
-   open the sensor in constructor
-*/
-AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
-	AP_RPM_Backend(_ap_rpm, instance, _state)
-{
-}
-
 /*
-  handle interrupt on an instance
+  handle interrupt on the instance
  */
 void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
 {

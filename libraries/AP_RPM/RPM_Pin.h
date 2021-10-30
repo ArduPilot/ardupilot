@@ -23,8 +23,10 @@
 class AP_RPM_Pin : public AP_RPM_Backend
 {
 public:
-    // constructor
-    AP_RPM_Pin(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+    /*
+    open the sensor in constructor
+    */
+    using AP_RPM_Backend::AP_RPM_Backend;
 
     // update state
     void update(void) override;
