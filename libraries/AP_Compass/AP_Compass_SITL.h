@@ -1,13 +1,15 @@
 #pragma once
 
 #include "AP_Compass.h"
+
+#if AP_SIM_COMPASS_ENABLED
+
 #include "AP_Compass_Backend.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
 #include <AP_Math/vectorN.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h>
+#include <SITL/SITL.h>
 
 #define MAX_SITL_COMPASSES 3
 
@@ -42,4 +44,4 @@ private:
     Vector3f _last_odi;
     Vector3f _last_data[MAX_SITL_COMPASSES];
 };
-#endif // CONFIG_HAL_BOARD
+#endif // AP_SIM_COMPASS_ENABLED

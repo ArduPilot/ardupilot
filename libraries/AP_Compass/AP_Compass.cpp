@@ -1227,7 +1227,7 @@ void Compass::_detect_backends(void)
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_COMPASS_ENABLED
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
