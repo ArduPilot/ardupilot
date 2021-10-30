@@ -3141,7 +3141,7 @@ void AP_AHRS::Log_Write()
     Write_AHRS2();
     Write_POS();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_AHRS_SIM_ENABLED
     AP::sitl()->Log_Write_SIMSTATE();
 #endif
 }
