@@ -48,7 +48,7 @@
 #include <AP_Math/polyfit.h>
 
 #ifndef AP_SIM_INS_ENABLED
-#define AP_SIM_INS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define AP_SIM_INS_ENABLED AP_SIM_ENABLED
 #endif
 
 class AP_InertialSensor_Backend;
