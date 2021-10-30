@@ -3852,7 +3852,7 @@ void GCS_MAVLINK::send_banner()
 
 void GCS_MAVLINK::send_simstate() const
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
@@ -3863,7 +3863,7 @@ void GCS_MAVLINK::send_simstate() const
 
 void GCS_MAVLINK::send_sim_state() const
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
