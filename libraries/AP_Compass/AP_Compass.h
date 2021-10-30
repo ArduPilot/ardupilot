@@ -273,11 +273,20 @@ public:
     const Vector3f &get_motor_offsets(uint8_t i) const { return _get_state(Priority(i)).motor_offset; }
     const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(_first_usable); }
 
-    /// Set the throttle as a percentage from 0.0 to 1.0
+    /// Set the throttle at the time the battery was read as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
     void set_throttle(float thr_pct) {
-        if (_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
-            _thr = thr_pct;
+        _read_thr = thr_pct;
+        _thr_mot_factor = 1.0f;
+    }
+
+    /// Set the current throttle as a percentage from 0.0 to 1.0
+    /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
+    void set_current_throttle(float thr_pct) {
+        if (is_zero(_read_thr)) {
+            _thr_mot_factor = 1.0f;
+        } else {
+            _thr_mot_factor = thr_pct / _read_thr;
         }
     }
 
@@ -479,8 +488,10 @@ private:
     AP_Float    _custom_pitch;
     AP_Float    _custom_yaw;
     
-    // throttle expressed as a percentage from 0 ~ 1.0, used for motor compensation
-    float       _thr;
+    // current throttle expressed as a percentage from 0 ~ 1.0, used for motor compensation
+    float       _read_thr;
+    // throttle compensation factor for battery read
+    float       _thr_mot_factor;
 
     struct mag_state {
         AP_Int8     external;
