@@ -7,7 +7,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #ifndef AP_SIM_BARO_ENABLED
-#define AP_SIM_BARO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define AP_SIM_BARO_ENABLED AP_SIM_ENABLED
 #endif
 
 #ifndef HAL_MSP_BARO_ENABLED
