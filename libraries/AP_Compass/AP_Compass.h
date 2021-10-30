@@ -70,6 +70,10 @@
 
 #define MAX_CONNECTED_MAGS (COMPASS_MAX_UNREG_DEV+COMPASS_MAX_INSTANCES)
 
+#ifndef AP_SIM_COMPASS_ENABLED
+#define AP_SIM_COMPASS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #include "CompassCalibrator.h"
 
 class CompassLearn;
