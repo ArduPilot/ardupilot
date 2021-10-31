@@ -25,8 +25,6 @@
 
 class AP_SerialLED {
 public:
-    AP_SerialLED();
-
     // set number of LEDs per pin
     bool set_num_neopixel(uint8_t chan, uint8_t num_leds);
     bool set_num_profiled(uint8_t chan, uint8_t num_leds);
