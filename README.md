@@ -157,3 +157,7 @@ for reviewing patches on their specific area.
   - ***Subsystem***: OSD
 - [Rishabh Singh ](https://github.com/rishabsingh3003):
   - ***Subsystem***: Avoidance/Proximity
+- [David Bussenschutt ](https://github.com/davidbuzz):
+  - ***Subsystem***: ESP32,AP_HAL_ESP32
+- [Charles Villard ](https://github.com/Silvanosky):
+  - ***Subsystem***: ESP32,AP_HAL_ESP32

@@ -31,7 +31,9 @@
 [submodule "modules/DroneCAN/DSDL"]
 	path = modules/DroneCAN/DSDL
 	url = git://github.com/DroneCAN/DSDL.git
-
 [submodule "modules/CrashDebug"]
 	path = modules/CrashDebug
 	url = https://github.com/adamgreen/CrashDebug
+[submodule "modules/esp_idf"]
+	path = modules/esp_idf
+	url = git://github.com/espressif/esp-idf.git
