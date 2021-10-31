@@ -130,7 +130,8 @@ void AP_Logger_File::periodic_1Hz()
         erase.was_logging) {
         // restart logging after an erase if needed
         erase.was_logging = false;
-        start_new_log();
+        // setup to open the log in the backend thread
+        start_new_log_pending = true;
     }
     
     if (_initialised &&
@@ -138,15 +139,8 @@ void AP_Logger_File::periodic_1Hz()
         _write_fd == -1 && _read_fd == -1 &&
         logging_enabled() &&
         !recent_open_error()) {
-        // retry logging open. This allows for booting with
-        // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
-        // card is inserted then logging starts
-        // this also allows for logging to start after forced arming
-        if (!hal.util->get_soft_armed()) {
-            start_new_log();
-        } else {
-            start_new_log_pending = true;
-        }
+        // setup to open the log in the backend thread
+        start_new_log_pending = true;
     }
 
     if (!io_thread_alive()) {
