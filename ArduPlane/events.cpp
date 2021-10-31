@@ -190,7 +190,7 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
     if(failsafe.saved_mode_set) { //we saved an entry mode..check that our fs mode has not been changed by GCS
-        if((control_mode == &mode_circle && g.fs_action_short == FS_ACTION_SHORT_CIRCLE) ||
+        if((control_mode == &mode_circle && (g.fs_action_short == FS_ACTION_SHORT_CIRCLE || g.fs_action_short == FS_ACTION_SHORT_BESTGUESS)) ||
            (control_mode == &mode_fbwa && g.fs_action_short == FS_ACTION_SHORT_FBWA) ||
            (control_mode == &mode_fbwb && g.fs_action_short == FS_ACTION_SHORT_FBWB)) {
               failsafe.saved_mode_set = false;
