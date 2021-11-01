@@ -81,7 +81,7 @@
 extern const AP_HAL::HAL& hal;
 
 //#define CRSF_DEBUG
-#define CRSF_DEBUG_CHARS
+//#define CRSF_DEBUG_CHARS
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
@@ -154,6 +154,7 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 #define CRSF_DIGITAL_CHANNEL_MAX 1811
 
 
+constexpr uint16_t AP_RCProtocol_CRSF::elrs_air_rates[8];
 AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
 
 AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
