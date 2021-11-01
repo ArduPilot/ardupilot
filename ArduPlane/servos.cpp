@@ -159,15 +159,18 @@ bool Plane::suppress_throttle(void)
   function values. This mixer operates purely on scaled values,
   allowing the user to trim and limit individual servos using the
   SERVOn_* parameters
+  priority_ratio deterimins if first input or second input function should be given priority in the case of output saturation
  */
-void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
-                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const
+bool Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out, float priority_ratio) const
 {
+    bool saturated = false;
+
     // the order is setup so that non-reversed servos go "up", and
     // func1 is the "left" channel. Users can adjust with channel
     // reversal as needed
-    float in1 = SRV_Channels::get_output_scaled(func1_in);
-    float in2 = SRV_Channels::get_output_scaled(func2_in);
+    float in1 = SRV_Channels::get_output_scaled(func1_in) * g.mixing_gain;
+    float in2 = SRV_Channels::get_output_scaled(func2_in) * g.mixing_gain;
 
     // apply MIXING_OFFSET to input channels
     if (g.mixing_offset < 0) {
@@ -175,11 +178,32 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
     } else if (g.mixing_offset > 0) {
         in1 *= (100 + g.mixing_offset) * 0.01;
     }
-    
-    float out1 = (in2 - in1) * g.mixing_gain;
-    float out2 = (in2 + in1) * g.mixing_gain;
+
+    float out1 = in2 - in1;
+    float out2 = in2 + in1;
+
+    const float overflow = MAX(fabs(out1),fabs(out2)) - SERVO_MAX;
+    if (is_positive(overflow)) {
+        // output saturated, calculate how much to reduce input
+        priority_ratio = constrain_float(priority_ratio, 0.0, 1.0);
+        float overflow1 = overflow * (1-priority_ratio);
+        float overflow2 = overflow * priority_ratio;
+
+        // remove overflow
+        in1 -= is_positive(in1) ? overflow1 : -overflow1;
+        in2 -= is_positive(in2) ? overflow2 : -overflow2;
+
+        // re-calculate output
+        out1 = in2 - in1;
+        out2 = in2 + in1;
+
+        saturated = true;
+    }
+
     SRV_Channels::set_output_scaled(func1_out, out1);
     SRV_Channels::set_output_scaled(func2_out, out2);
+
+    return saturated;
 }
 
 
@@ -697,20 +721,6 @@ void Plane::set_landing_gear(void)
 #endif // LANDING_GEAR_ENABLED
 
 /*
-  apply vtail and elevon mixers
-  the rewrites radio_out for the corresponding channels
- */
-void Plane::servo_output_mixers(void)
-{
-    // mix elevons and vtail channels
-    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
-    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
-
-    // implement differential spoilers
-    dspoiler_update();
-}
-
-/*
   support for twin-engine planes
  */
 void Plane::servos_twin_engine_mix(void)
@@ -971,7 +981,15 @@ void Plane::servos_output(void)
     force_flare();
  
     // run vtail and elevon mixers
-    servo_output_mixers();
+    // full priority to pitch when level, full priority to roll when at 90 deg bank
+    const float roll_pitch_priority = 1 - (abs(abs(ahrs.roll) - M_PI_2) / M_PI_2);
+    const bool elevon_limit = channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right, roll_pitch_priority);
+
+    // elevator is always more important than rudder
+    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left, 0.0);
+
+    // implement differential spoilers
+    dspoiler_update();
 
     //  set control surface servos to neutral
     landing_neutral_control_surface_servos();
@@ -992,16 +1010,12 @@ void Plane::servos_output(void)
     }
 
     // set limit flags
-    bool roll_limit = SRV_Channels::get_output_limit(SRV_Channel::k_aileron);
-    roll_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_left);
-    roll_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_right);
+    bool roll_limit = elevon_limit && (roll_pitch_priority > 0.5);
+    roll_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_aileron);
     rollController.set_I_limit(roll_limit);
 
-    bool pitch_limit = SRV_Channels::get_output_limit(SRV_Channel::k_elevator);
-    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_left);
-    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevon_right);
-    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_vtail_left);
-    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_vtail_right);
+    bool pitch_limit = elevon_limit && (roll_pitch_priority < 0.5);
+    pitch_limit |= SRV_Channels::get_output_limit(SRV_Channel::k_elevator);
     pitchController.set_I_limit(pitch_limit);
 
 }
