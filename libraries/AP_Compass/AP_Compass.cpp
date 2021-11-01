@@ -1880,7 +1880,16 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
 
     bool all_configured = true;
     for (uint8_t i=0; i<get_count(); i++) {
-        all_configured = all_configured && (!use_for_yaw(i) || configured(i));
+        if (configured(i)) {
+            continue;
+        }
+        if (!use_for_yaw(i)) {
+            // we're not planning on using this anyway so sure,
+            // whatever, it's configured....
+            continue;
+        }
+        all_configured = false;
+        break;
     }
     if (!all_configured) {
         snprintf(failure_msg, failure_msg_len, "Compass not calibrated");
