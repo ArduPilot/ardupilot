@@ -1041,6 +1041,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 
     case AUX_FUNC::DISABLE_AIRSPEED_USE: {
+#if AP_AIRSPEED_ENABLED
         AP_Airspeed *airspeed = AP::airspeed();
         if (airspeed == nullptr) {
             break;
@@ -1055,6 +1056,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             airspeed->force_disable_use(false);
             break;
         }
+#endif
         break;
     }
 
