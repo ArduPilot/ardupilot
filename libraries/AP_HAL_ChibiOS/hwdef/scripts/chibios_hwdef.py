@@ -1503,7 +1503,7 @@ def write_UART_config(f):
     # write config for CrashCatcher UART
     if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
         crash_uart = uart_list[0]
-    elif not uart_list[2].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+    elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
         crash_uart = uart_list[2]
 
     if crash_uart is not None and get_config('FLASH_SIZE_KB', type=int) >= 2048:
