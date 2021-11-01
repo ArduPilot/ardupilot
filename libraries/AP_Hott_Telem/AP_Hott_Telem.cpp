@@ -161,6 +161,7 @@ void AP_Hott_Telem::send_EAM(void)
         msg.electric_sec = t % 60U;
     }
 
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed && airspeed->healthy()) {
         msg.speed = uint16_t(airspeed->get_airspeed() * 3.6 + 0.5);
@@ -168,6 +169,10 @@ void AP_Hott_Telem::send_EAM(void)
         WITH_SEMAPHORE(ahrs.get_semaphore());
         msg.speed = uint16_t(ahrs.groundspeed() * 3.6 + 0.5);
     }
+#else
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    msg.speed = uint16_t(ahrs.groundspeed() * 3.6 + 0.5);
+#endif
 
     send_packet((const uint8_t *)&msg, sizeof(msg));
 }
