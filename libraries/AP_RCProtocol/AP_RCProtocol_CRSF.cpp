@@ -80,10 +80,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-// #define CRSF_DEBUG
+//#define CRSF_DEBUG
+#define CRSF_DEBUG_CHARS
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
-static const char* get_frame_type(uint8_t byte)
+static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 {
     switch(byte) {
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_GPS:
@@ -124,6 +125,17 @@ static const char* get_frame_type(uint8_t byte)
         return "LINK_STATSv3_TX";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
         return "UNKNOWN";
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
+        switch (subtype) {
+        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH:
+            return "AP_CUSTOM_SINGLE";
+        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT:
+            return "AP_CUSTOM_TEXT";
+        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH:
+            return "AP_CUSTOM_MULTI";
+        }
+        return "AP_CUSTOM";
     }
     return "UNKNOWN";
 }
@@ -295,14 +307,18 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
     uart->write((uint8_t*)frame, frame->length + 2);
 
 #ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type));
+    hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
     for (uint8_t i = 0; i < frame->length + 2; i++) {
         uint8_t val = ((uint8_t*)frame)[i];
+#ifdef CRSF_DEBUG_CHARS
         if (val >= 32 && val <= 126) {
             hal.console->printf(" 0x%x '%c'", val, (char)val);
         } else {
+#endif
             hal.console->printf(" 0x%x", val);
+#ifdef CRSF_DEBUG_CHARS
         }
+#endif
     }
     hal.console->printf("\n");
 #endif
@@ -314,7 +330,15 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
     uint8_t* fptr = (uint8_t*)&_frame;
     for (uint8_t i = 0; i < _frame.length + 2; i++) {
-        hal.console->printf(" 0x%x", fptr[i]);
+#ifdef CRSF_DEBUG_CHARS
+        if (fptr[i] >= 32 && fptr[i] <= 126) {
+            hal.console->printf(" 0x%x '%c'", fptr[i], (char)fptr[i]);
+        } else {
+#endif
+            hal.console->printf(" 0x%x", fptr[i]);
+#ifdef CRSF_DEBUG_CHARS
+        }
+#endif
     }
     hal.console->printf("\n");
 #endif
@@ -481,7 +505,7 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         }
     }
 
-    _link_status.rf_mode = static_cast<RFMode>(MIN(link->rf_mode, 3U));
+    _link_status.rf_mode = MIN(link->rf_mode, 7U);
 }
 
 // process link statistics to get RX RSSI
