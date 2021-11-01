@@ -468,6 +468,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
+#if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -477,6 +478,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
             return temperature;
         }
     }
+#endif
 #endif
     
     // if we don't have an external temperature and airspeed temperature
