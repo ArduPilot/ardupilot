@@ -189,6 +189,10 @@ bool Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
         float overflow1 = overflow * (1-priority_ratio);
         float overflow2 = overflow * priority_ratio;
 
+        // don't remove more than original input
+        overflow1 = MIN(fabs(in1),overflow1);
+        overflow2 = MIN(fabs(in2),overflow2);
+
         // remove overflow
         in1 -= is_positive(in1) ? overflow1 : -overflow1;
         in2 -= is_positive(in2) ? overflow2 : -overflow2;
