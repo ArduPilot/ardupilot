@@ -42,7 +42,7 @@ void ModeLoiterAltQLand::switch_qland()
     }
 }
 
-bool ModeLoiterAltQLand::handle_guided_request(Location target_loc)
+bool ModeLoiterAltQLand::handle_guided_request(const Location target_loc, const uint16_t radius)
 {
     plane.guided_WP_loc = target_loc;
 

@@ -119,8 +119,8 @@ public:
     // method for mode specific target altitude profiles
     virtual bool update_target_altitude() { return false; }
 
-    // handle a guided target request from GCS
-    virtual bool handle_guided_request(Location target_loc) { return false; }
+    // handle a guided target request from GCS. A radius of Zero indicates to use WP_LOITER_RAD
+    virtual bool handle_guided_request(const Location target_loc, const uint16_t radius = 0) { return false; }
 
 protected:
 
@@ -224,11 +224,15 @@ public:
     bool does_auto_throttle() const override { return true; }
 
     // handle a guided target request from GCS
-    bool handle_guided_request(Location target_loc) override;
+    bool handle_guided_request(const Location target_loc, const uint16_t radius = 0) override;
 
 protected:
 
     bool _enter() override;
+
+private:
+    // adjustable radius for guided. A radius of Zero indicates to use WP_LOITER_RAD
+    uint16_t loiter_radius_m;
 };
 
 class ModeCircle: public Mode
@@ -287,8 +291,8 @@ public:
     const char *name() const override { return "Loiter to QLAND"; }
     const char *name4() const override { return "L2QL"; }
 
-    // handle a guided target request from GCS
-    bool handle_guided_request(Location target_loc) override;
+    // handle a guided target request from GCS. Radius is unused.
+    bool handle_guided_request(const Location target_loc, const uint16_t radius = 0) override;
 
 protected:
     bool _enter() override;

@@ -604,7 +604,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
  */
 bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    return plane.control_mode->handle_guided_request(cmd.content.location);
+    return plane.control_mode->handle_guided_request(cmd.content.location, cmd.p1);
 }
 
 /*

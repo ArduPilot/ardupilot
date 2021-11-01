@@ -39,13 +39,14 @@ void ModeGuided::update()
 
 void ModeGuided::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    // A radius of Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(loiter_radius_m);
 }
 
-bool ModeGuided::handle_guided_request(Location target_loc)
+bool ModeGuided::handle_guided_request(const Location target_loc, const uint16_t radius)
 {
     plane.guided_WP_loc = target_loc;
+    loiter_radius_m = radius;
 
     // add home alt if needed
     if (plane.guided_WP_loc.relative_alt) {
