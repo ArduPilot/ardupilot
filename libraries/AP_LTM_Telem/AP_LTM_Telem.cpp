@@ -121,11 +121,13 @@ void AP_LTM_Telem::send_Sframe(void)
     const uint16_t amp = (uint16_t) roundf(current * 100.0f);                          // current sensor (expects value in hundredth of A)
 
     // airspeed in m/s if available and enabled - even if not used - otherwise send 0
-    const AP_Airspeed *aspeed = AP::airspeed();
     uint8_t airspeed = 0; // airspeed sensor (m/s)
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *aspeed = AP::airspeed();
     if (aspeed && aspeed->enabled()) {
         airspeed = (uint8_t) roundf(aspeed->get_airspeed());
     }
+#endif
 
     const uint8_t flightmode = AP_Notify::flags.flight_mode; // flight mode
 
