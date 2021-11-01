@@ -35,6 +35,11 @@ param set SERIAL5_PROTOCOL 5
 #define HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
+#ifndef AP_SIM_GPS_FILE_ENABLED
+// really need to use AP_FileSystem for this.
+#define AP_SIM_GPS_FILE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+#endif
+
 #include "SIM_SerialDevice.h"
 
 namespace SITL {
@@ -49,7 +54,9 @@ public:
         UBLOX =  1,
         NMEA  =  5,
         SBP   =  6,
+#if AP_SIM_GPS_FILE_ENABLED
         FILE  =  7,
+#endif
         NOVA  =  8,
         SBP2  =  9,
     };
@@ -107,7 +114,9 @@ private:
     void update_sbp(const struct gps_data *d);
     void update_sbp2(const struct gps_data *d);
 
+#if AP_SIM_GPS_FILE_ENABLED
     void update_file();
+#endif
 
     void update_nova(const struct gps_data *d);
     void nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
