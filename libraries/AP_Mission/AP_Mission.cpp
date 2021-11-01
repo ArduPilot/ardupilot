@@ -2335,7 +2335,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
     // run through remainder of mission to approximate a distance to landing
     for (uint8_t i=0; i<255; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
             // get next command
             if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 // we got to the end of the mission
@@ -2398,7 +2398,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
     uint16_t index = start_index;
     for (uint8_t i=0; i<255; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
             if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 break;
             } else {
