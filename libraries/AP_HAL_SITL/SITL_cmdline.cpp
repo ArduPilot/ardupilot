@@ -508,10 +508,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
+#if HAL_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
+#endif
             break;
         }
         default:
