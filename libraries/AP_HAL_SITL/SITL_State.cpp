@@ -208,6 +208,7 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         vicon = new SITL::Vicon();
         return vicon;
+#if HAL_SIM_ADSB_ENABLED
     } else if (streq(name, "adsb")) {
         // ADSB is a stand-out as it is the only serial device which
         // will cope with begin() being called multiple times on a
@@ -216,6 +217,7 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
             adsb = new SITL::ADSB();
         }
         return adsb;
+#endif
     } else if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
@@ -327,24 +329,30 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         crsf = new SITL::CRSF();
         return crsf;
+#if HAL_SIM_PS_RPLIDARA2_ENABLED
     } else if (streq(name, "rplidara2")) {
         if (rplidara2 != nullptr) {
             AP_HAL::panic("Only one rplidara2 at a time");
         }
         rplidara2 = new SITL::PS_RPLidarA2();
         return rplidara2;
+#endif
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
     } else if (streq(name, "terarangertower")) {
         if (terarangertower != nullptr) {
             AP_HAL::panic("Only one terarangertower at a time");
         }
         terarangertower = new SITL::PS_TeraRangerTower();
         return terarangertower;
+#endif
+#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     } else if (streq(name, "sf45b")) {
         if (sf45b != nullptr) {
             AP_HAL::panic("Only one sf45b at a time");
         }
         sf45b = new SITL::PS_LightWare_SF45B();
         return sf45b;
+#endif
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
         return &_sitl->richenpower_sim;
@@ -378,12 +386,14 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         lord = new SITL::LORD();
         return lord;
+#if HAL_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if (ais != nullptr) {
             AP_HAL::panic("Only one AIS at a time");
         }
         ais = new SITL::AIS();
         return ais;
+#endif
     } else if (strncmp(name, "gps", 3) == 0) {
         const char *p = strchr(name, ':');
         if (p == nullptr) {
@@ -506,8 +516,10 @@ void SITL_State::_fdm_input_local(void)
     // construct servos structure for FDM
     _simulator_servos(input);
 
+#if HAL_SIM_JSON_MASTER_ENABLED
     // read servo inputs from ride along flight controllers
     ride_along.receive(input);
+#endif
 
     // update the model
     sitl_model->update_model(input);
@@ -523,15 +535,19 @@ void SITL_State::_fdm_input_local(void)
         }
     }
 
+#if HAL_SIM_JSON_MASTER_ENABLED
     // output JSON state to ride along flight controllers
     ride_along.send(_sitl->state,sitl_model->get_position_relhome());
+#endif
 
     if (gimbal != nullptr) {
         gimbal->update();
     }
+#if HAL_SIM_ADSB_ENABLED
     if (adsb != nullptr) {
         adsb->update(*sitl_model);
     }
+#endif
     if (vicon != nullptr) {
         Quaternion attitude;
         sitl_model->get_attitude(attitude);
@@ -603,17 +619,24 @@ void SITL_State::_fdm_input_local(void)
         crsf->update();
     }
 
+#if HAL_SIM_PS_RPLIDARA2_ENABLED
     if (rplidara2 != nullptr) {
         rplidara2->update(sitl_model->get_location());
     }
+#endif
 
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
     if (terarangertower != nullptr) {
         terarangertower->update(sitl_model->get_location());
     }
+#endif
 
+#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     if (sf45b != nullptr) {
         sf45b->update(sitl_model->get_location());
     }
+#endif
+
     if (vectornav != nullptr) {
         vectornav->update();
     }
@@ -622,9 +645,11 @@ void SITL_State::_fdm_input_local(void)
         lord->update();
     }
 
+#if HAL_SIM_AIS_ENABLED
     if (ais != nullptr) {
         ais->update();
     }
+#endif
     for (uint8_t i=0; i<ARRAY_SIZE(gps); i++) {
         if (gps[i] != nullptr) {
             gps[i]->update();

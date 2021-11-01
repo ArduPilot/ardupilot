@@ -194,12 +194,16 @@ private:
     // internal SITL model
     SITL::Aircraft *sitl_model;
 
+#if HAL_SIM_GIMBAL_ENABLED
     // simulated gimbal
     bool enable_gimbal;
     SITL::Gimbal *gimbal;
+#endif
 
+#if HAL_SIM_ADSB_ENABLED
     // simulated ADSb
     SITL::ADSB *adsb;
+#endif
 
     // simulated vicon system:
     SITL::Vicon *vicon;
@@ -241,16 +245,22 @@ private:
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
 
+#if HAL_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+#endif
 
     // simulated FETtec OneWire ESCs:
     SITL::FETtecOneWireESC *fetteconewireesc;
 
+#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
+#endif
 
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
     SITL::PS_TeraRangerTower *terarangertower;
+#endif
 
     // simulated CRSF devices
     SITL::CRSF *crsf;
@@ -261,11 +271,15 @@ private:
     // simulated LORD Microstrain system
     SITL::LORD *lord;
 
+#if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
+#endif
 
+#if HAL_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
+#endif
 
     // simulated EFI MegaSquirt device:
     SITL::EFI_MegaSquirt *efi_ms;
