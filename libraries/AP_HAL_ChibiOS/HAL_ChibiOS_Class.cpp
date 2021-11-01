@@ -34,6 +34,7 @@
 #include <AP_Logger/AP_Logger.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_HAL/SIMState.h>
 
 #include <hwdef.h>
 
@@ -97,6 +98,10 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#if AP_SIM_ENABLED
+static AP_HAL::SIMState xsimstate;
+#endif
+
 #if HAL_WITH_DSP
 static ChibiOS::DSP dspDriver;
 #else
@@ -152,6 +157,9 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+#if AP_SIM_ENABLED
+        &xsimstate,
+#endif
         &dspDriver,
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
