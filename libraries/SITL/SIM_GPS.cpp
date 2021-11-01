@@ -996,6 +996,7 @@ uint32_t GPS::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc
 /*
   temporary method to use file as GPS data
  */
+#if AP_SIM_GPS_FILE_ENABLED
 void GPS::update_file()
 {
     static int fd = -1;
@@ -1027,6 +1028,7 @@ void GPS::update_file()
         lseek(temp_fd, 0, SEEK_SET);
     }
 }
+#endif  // AP_SIM_GPS_FILE_ENABLED
 
 /*
   possibly send a new GPS packet
@@ -1175,9 +1177,11 @@ void GPS::update()
             update_nova(&d);
             break;
 
+#if AP_SIM_GPS_FILE_ENABLED
         case Type::FILE:
             update_file();
             break;
+#endif
     }
 }
 
