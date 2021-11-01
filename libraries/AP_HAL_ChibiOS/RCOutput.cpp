@@ -32,6 +32,10 @@
 #include <GCS_MAVLink/GCS.h>
 #endif
 
+#if AP_SIM_ENABLED
+#include <AP_HAL/SIMState.h>
+#endif
+
 #if HAL_USE_PWM == TRUE
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -512,10 +516,16 @@ void RCOutput::disable_ch(uint8_t chan)
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
+
     if (chan >= max_channels) {
         return;
     }
     last_sent[chan] = period_us;
+
+#if AP_SIM_ENABLED
+    hal.simstate->pwm_output[chan] = period_us;
+    return;
+#endif
 
 #if HAL_WITH_IO_MCU
     // handle IO MCU channels
