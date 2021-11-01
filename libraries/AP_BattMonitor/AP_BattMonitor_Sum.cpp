@@ -14,12 +14,16 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_Sum::var_info[] = {
 
+    // Param indexes must be between 20 and 29 to avoid conflict with other battery monitor param tables loaded by pointer
+
     // @Param: SUM_MASK
     // @DisplayName: Battery Sum mask
     // @Description: 0: sum of remaining battery monitors, If none 0 sum of specified monitors. Current will be summed and voltages averaged.
     // @Bitmask: 0:monitor 1, 1:monitor 2, 2:monitor 3, 3:monitor 4, 4:monitor 5, 5:monitor 6, 6:monitor 7, 7:monitor 8, 8:monitor 9
     // @User: Standard
-    AP_GROUPINFO("SUM_MASK", 1, AP_BattMonitor_Sum, _sum_mask, 0),
+    AP_GROUPINFO("SUM_MASK", 20, AP_BattMonitor_Sum, _sum_mask, 0),
+
+    // Param indexes must be between 20 and 29 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };

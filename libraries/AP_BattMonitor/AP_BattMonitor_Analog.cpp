@@ -43,6 +43,8 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor_Analog, _curr_amp_offset, AP_BATT_CURR_AMP_OFFSET_DEFAULT),
 
+    // Param indexes must be less than 10 to avoid conflict with other battery monitor param tables loaded by pointer
+
     AP_GROUPEND
 };
 
