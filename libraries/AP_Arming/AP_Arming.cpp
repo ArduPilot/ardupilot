@@ -226,6 +226,7 @@ bool AP_Arming::barometer_checks(bool report)
 
 bool AP_Arming::airspeed_checks(bool report)
 {
+#if AP_AIRSPEED_ENABLED
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -240,6 +241,7 @@ bool AP_Arming::airspeed_checks(bool report)
             }
         }
     }
+#endif
 
     return true;
 }
