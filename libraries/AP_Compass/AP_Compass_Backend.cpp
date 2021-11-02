@@ -21,7 +21,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     }
     mag.rotate(state.rotation);
 
-    if (!state.external) {
+    if (!state.params.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
         if (_compass._board_orientation == ROTATION_CUSTOM && _compass._custom_rotation) {
             mag = *_compass._custom_rotation * mag;
@@ -31,14 +31,14 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     } else {
         // add user selectable orientation
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
-        Rotation rotation = Rotation(state.orientation.get());
+        Rotation rotation = Rotation(state.params.orientation.get());
         if (rotation == ROTATION_CUSTOM && _compass._custom_external_rotation) {
             mag = *_compass._custom_external_rotation * mag;
         } else {
             mag.rotate(rotation);
         }
 #else
-        mag.rotate((enum Rotation)state.orientation.get());
+        mag.rotate((enum Rotation)state.params.orientation.get());
 #endif
     }
 }
@@ -62,13 +62,13 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
 {
     Compass::mag_state &state = _compass._state[Compass::StateIndex(i)];
 
-    if (state.diagonals.get().is_zero()) {
-        state.diagonals.set(Vector3f(1.0f,1.0f,1.0f));
+    if (state.params.diagonals.get().is_zero()) {
+        state.params.diagonals.set(Vector3f(1.0f,1.0f,1.0f));
     }
 
-    const Vector3f &offsets = state.offset.get();
-    const Vector3f &diagonals = state.diagonals.get();
-    const Vector3f &offdiagonals = state.offdiagonals.get();
+    const Vector3f &offsets = state.params.offset.get();
+    const Vector3f &diagonals = state.params.diagonals.get();
+    const Vector3f &offdiagonals = state.params.offdiagonals.get();
 
     // add in the basic offsets
     mag += offsets;
@@ -76,7 +76,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     // add in scale factor, use a wide sanity check. The calibrator
     // uses a narrower check.
     if (_compass.have_scale_factor(i)) {
-        mag *= state.scale_factor;
+        mag *= state.params.scale_factor;
     }
 
     // apply eliptical correction
@@ -89,7 +89,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     mag = mat * mag;
 
 #if COMPASS_MOT_ENABLED
-    const Vector3f &mot = state.motor_compensation.get();
+    const Vector3f &mot = state.params.motor_compensation.get();
     /*
       calculate motor-power based compensation
       note that _motor_offset[] is kept even if compensation is not
@@ -202,7 +202,7 @@ bool AP_Compass_Backend::register_compass(int32_t dev_id, uint8_t& instance) con
 */
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
-    _compass._state[Compass::StateIndex(instance)].dev_id.set_and_notify(dev_id);
+    _compass._state[Compass::StateIndex(instance)].params.dev_id.set_and_notify(dev_id);
     _compass._state[Compass::StateIndex(instance)].detected_dev_id = dev_id;
 }
 
@@ -211,7 +211,7 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 */
 void AP_Compass_Backend::save_dev_id(uint8_t instance)
 {
-    _compass._state[Compass::StateIndex(instance)].dev_id.save();
+    _compass._state[Compass::StateIndex(instance)].params.dev_id.save();
 }
 
 /*
@@ -219,14 +219,14 @@ void AP_Compass_Backend::save_dev_id(uint8_t instance)
 */
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
-    if (_compass._state[Compass::StateIndex(instance)].external != 2) {
-        _compass._state[Compass::StateIndex(instance)].external.set_and_notify(external);
+    if (_compass._state[Compass::StateIndex(instance)].params.external != 2) {
+        _compass._state[Compass::StateIndex(instance)].params.external.set_and_notify(external);
     }
 }
 
 bool AP_Compass_Backend::is_external(uint8_t instance)
 {
-    return _compass._state[Compass::StateIndex(instance)].external;
+    return _compass._state[Compass::StateIndex(instance)].params.external;
 }
 
 // set rotation of an instance
@@ -235,7 +235,7 @@ void AP_Compass_Backend::set_rotation(uint8_t instance, enum Rotation rotation)
     _compass._state[Compass::StateIndex(instance)].rotation = rotation;
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     // lazily create the custom rotation matrix
-    if (!_compass._custom_external_rotation && Rotation(_compass._state[Compass::StateIndex(instance)].orientation.get()) == ROTATION_CUSTOM) {
+    if (!_compass._custom_external_rotation && Rotation(_compass._state[Compass::StateIndex(instance)].params.orientation.get()) == ROTATION_CUSTOM) {
         _compass._custom_external_rotation = new Matrix3f();
         if (_compass._custom_external_rotation) {
             _compass._custom_external_rotation->from_euler(radians(_compass._custom_roll), radians(_compass._custom_pitch), radians(_compass._custom_yaw));
