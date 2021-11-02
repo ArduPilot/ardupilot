@@ -965,7 +965,7 @@ void NavEKF3::UpdateFilter(void)
     }
 
     const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
-    if (primary != 0 && core[user_primary].healthy() && !armed) {
+    if (primary != user_primary && core[user_primary].healthy() && !armed) {
         // when on the ground and disarmed force the selected primary
         // core. This avoids us ending with with a lottery for which
         // IMU is used in each flight. Otherwise the alignment of the
