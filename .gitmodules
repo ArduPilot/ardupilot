@@ -1,24 +1,24 @@
 [submodule "modules/uavcan"]
 	path = modules/uavcan
-	url = git://github.com/DroneCAN/libuavcan.git
+	url = https://github.com/DroneCAN/libuavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
-	url = git://github.com/ArduPilot/waf.git
+	url = https://github.com/ArduPilot/waf.git
 [submodule "modules/gbenchmark"]
 	path = modules/gbenchmark
-	url = git://github.com/google/benchmark.git
+	url = https://github.com/google/benchmark.git
 [submodule "modules/mavlink"]
 	path = modules/mavlink
-	url = git://github.com/ArduPilot/mavlink
+	url = https://github.com/ArduPilot/mavlink
 [submodule "gtest"]
 	path = modules/gtest
-	url = git://github.com/ArduPilot/googletest
+	url = https://github.com/ArduPilot/googletest
 [submodule "modules/ChibiOS"]
 	path = modules/ChibiOS
-	url = git://github.com/ArduPilot/ChibiOS.git
+	url = https://github.com/ArduPilot/ChibiOS.git
 [submodule "modules/libcanard"]
 	path = modules/libcanard
-	url = git://github.com/ArduPilot/libcanard.git
+	url = https://github.com/ArduPilot/libcanard.git
 [submodule "modules/gsoap"]
 	path = modules/gsoap
 	url = https://github.com/ArduPilot/gsoap
@@ -30,10 +30,10 @@
 	url =  https://github.com/ardupilot/canard_dsdlc
 [submodule "modules/DroneCAN/DSDL"]
 	path = modules/DroneCAN/DSDL
-	url = git://github.com/DroneCAN/DSDL.git
+	url = https://github.com/DroneCAN/DSDL.git
 [submodule "modules/CrashDebug"]
 	path = modules/CrashDebug
 	url = https://github.com/adamgreen/CrashDebug
 [submodule "modules/esp_idf"]
 	path = modules/esp_idf
-	url = git://github.com/espressif/esp-idf.git
+	url = https://github.com/espressif/esp-idf.git
