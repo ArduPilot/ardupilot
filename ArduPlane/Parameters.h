@@ -439,7 +439,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 takeoff_flap_percent;  
-    AP_Int8 stick_mixing;
+    AP_Enum<StickMixing> stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
