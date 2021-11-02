@@ -695,9 +695,9 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     if path is not None:
         cmd.extend(["--defaults", path])
     if opts.mcast:
-        cmd.extend(["--uartA mcast:"])
+        cmd.extend(["--uartA", "mcast:"])
     elif opts.udp:
-        cmd.extend(["--uartA udpclient:127.0.0.1:" + str(5760+cmd_opts.instance*10)])
+        cmd.extend(["--uartA", "udpclient:127.0.0.1:" + str(5760+cmd_opts.instance*10)])
 
     if cmd_opts.start_time is not None:
         # Parse start_time into a double precision number specifying seconds since 1900.
