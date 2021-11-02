@@ -22,6 +22,7 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_TTLServo/AP_TTLServo.h>
 
 #ifndef NUM_SERVO_CHANNELS
 #if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
@@ -561,6 +562,10 @@ private:
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
+    
+    // Support for TTL servos (Robotis Dynamixel 1.0 protocol like)
+    AP_TTLServo ttl_servo;
+    static AP_TTLServo *ttl_servo_ptr;
     
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol

@@ -103,6 +103,9 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
 
+#define AP_SERIALMANAGER_TTLSERVO_BUFSIZE_RX    128
+#define AP_SERIALMANAGER_TTLSERVO_BUFSIZE_TX    128
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -156,6 +159,7 @@ public:
         SerialProtocol_AIS = 40,
         SerialProtocol_CoDevESC = 41,
         SerialProtocol_MSP_DisplayPort = 42,
+        SerialProtocol_TTLServo = 43,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 

@@ -50,6 +50,7 @@ AP_RobotisServo *SRV_Channels::robotis_ptr;
 #if HAL_AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
+AP_TTLServo *SRV_Channels::ttl_servo_ptr;
 #endif // HAL_BUILD_AP_PERIPH
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
@@ -206,7 +207,11 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
 #endif
-
+    
+    // @Group: _TTL_
+    // @Path: ../AP_TTLServo/AP_TTLServo.cpp
+    AP_SUBGROUPINFO(ttl_servo, "_TTL_",  26, SRV_Channels, AP_TTLServo),
+    
 #endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _DSHOT_RATE
@@ -254,9 +259,13 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
+
 #if HAL_AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr = &fetteconwire;
 #endif
+
+    ttl_servo_ptr = &ttl_servo;
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -377,7 +386,10 @@ void SRV_Channels::push()
 #if HAL_AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr->update();
 #endif
-
+    
+    // Give TTLServo library a chance to update
+    ttl_servo_ptr->update();
+    
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
