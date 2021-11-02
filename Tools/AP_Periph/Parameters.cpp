@@ -181,9 +181,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,         "COMPASS_",     Compass),
+    GOBJECT(compass,         "COMPASS",     Compass),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
