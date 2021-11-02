@@ -463,7 +463,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
         if (_rotor_rpm >= (_governor_rpm * 0.5f)) {
             float torque_limit = (get_governor_torque() * get_governor_torque());
             _governor_output = (_rotor_rpm / _governor_rpm) * torque_limit;
-            _control_output = constrain_float(throttlecurve + _governor_output, 0.0f, 1.0f);
+            _control_output = constrain_float(get_idle_output() + (_rotor_ramp_output * (throttlecurve + _governor_output - get_idle_output())), 0.0f, 1.0f);
             _governor_torque_reference = _control_output;  // increment torque setting to be passed to main power loop
             if (_rotor_rpm >= (_governor_rpm - 2.0f)) {
                 _governor_engage = true;
