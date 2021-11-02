@@ -66,9 +66,9 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(ekf2, NavEKF2, "EK2_", NavEKF2),
     
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass, "COMPASS_", Compass),
+    GOBJECT(compass, "COMPASS", Compass),
 
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
