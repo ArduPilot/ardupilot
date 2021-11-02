@@ -47,11 +47,11 @@ enum failsafe_action_long {
 };
 
 // type of stick mixing enabled
-enum StickMixing {
-    STICK_MIXING_DISABLED = 0,
-    STICK_MIXING_FBW      = 1,
-    STICK_MIXING_DIRECT   = 2,
-    STICK_MIXING_VTOL_YAW = 3,
+enum class StickMixing {
+    NONE     = 0,
+    FBW      = 1,
+    DIRECT   = 2,
+    VTOL_YAW = 3,
 };
 
 enum ChannelMixing {

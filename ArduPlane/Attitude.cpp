@@ -79,8 +79,8 @@ bool Plane::stick_mixing_enabled(void)
 #endif
     if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
-        if (g.stick_mixing != STICK_MIXING_DISABLED &&
-            g.stick_mixing != STICK_MIXING_VTOL_YAW &&
+        if (g.stick_mixing != StickMixing::NONE &&
+            g.stick_mixing != StickMixing::VTOL_YAW &&
             stickmixing &&
             failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
@@ -502,12 +502,12 @@ void Plane::stabilize()
         }
 #endif
     } else {
-        if (allow_stick_mixing && g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {
+        if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
         }
         stabilize_roll(speed_scaler);
         stabilize_pitch(speed_scaler);
-        if (allow_stick_mixing && (g.stick_mixing == STICK_MIXING_DIRECT || control_mode == &mode_stabilize)) {
+        if (allow_stick_mixing && (g.stick_mixing == StickMixing::DIRECT || control_mode == &mode_stabilize)) {
             stabilize_stick_mixing_direct();
         }
         stabilize_yaw(speed_scaler);

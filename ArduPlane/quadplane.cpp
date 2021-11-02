@@ -1144,7 +1144,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         return 0;
     }
 
-    if ((plane.g.stick_mixing == STICK_MIXING_DISABLED) &&
+    if ((plane.g.stick_mixing == StickMixing::NONE) &&
         (plane.control_mode == &plane.mode_qrtl ||
          plane.control_mode->is_guided_mode() ||
          in_vtol_auto())) {
