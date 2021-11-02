@@ -598,6 +598,9 @@ private:
     bool init_done;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
+
+    // convet params to per instance param table
+    void convert_per_instance();
 };
 
 namespace AP {
