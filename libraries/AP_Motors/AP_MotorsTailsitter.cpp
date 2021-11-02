@@ -177,7 +177,9 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     // Add adjustment to reduce average throttle
     _thrust_left  = constrain_float(_thrust_left  + thr_adj, 0.0f, 1.0f);
     _thrust_right = constrain_float(_thrust_right + thr_adj, 0.0f, 1.0f);
-    _throttle = throttle_thrust + thr_adj;
+
+    _throttle = throttle_thrust;
+
     // compensation_gain can never be zero
     _throttle_out = _throttle / compensation_gain;
 
