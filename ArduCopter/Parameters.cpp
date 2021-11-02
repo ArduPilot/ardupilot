@@ -502,9 +502,9 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
 #endif
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,        "COMPASS_", Compass),
+    GOBJECT(compass,        "COMPASS", Compass),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
