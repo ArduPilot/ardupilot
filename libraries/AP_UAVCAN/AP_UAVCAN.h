@@ -140,6 +140,21 @@ public:
         const uavcan::ReceivedDataStructure<DataType_> *msg;
     };
 
+    // options bitmask
+    enum class Options : uint16_t {
+        DNA_CLEAR_DATABASE        = (1U<<0),
+        DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
+    };
+
+    // check if a option is set
+    bool option_is_set(Options option) const {
+        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+    }
+
+    // check if a option is set and if it is then reset it to
+    // 0. return true if it was set
+    bool check_and_reset_option(Options option);
+
 private:
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
@@ -170,6 +185,7 @@ private:
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;
+    AP_Int16 _options;
 
     uavcan::Node<0> *_node;
 
