@@ -468,6 +468,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             if (_rotor_rpm >= (_governor_rpm - 2.0f)) {
                 _governor_engage = true;
                 _autothrottle = true;
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Governor Engaged");
             }
         } else {
             // temporary use of throttle curve and ramp timer to accelerate rotor to governor min torque rise speed
