@@ -55,7 +55,7 @@ def configure(cfg):
         env.DEFAULT_PARAMETERS = cfg.srcnode.abspath()+"/libraries/AP_HAL_ESP32/boards/defaults.parm"
     print("USING DEFAULT_PARAMETERS:"+str(env.DEFAULT_PARAMETERS))
 
-    env.append_value('GIT_SUBMODULES', 'esp_idf')
+    #env.append_value('GIT_SUBMODULES', 'esp_idf')
 
 
 def pre_build(self):

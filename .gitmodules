@@ -34,6 +34,3 @@
 [submodule "modules/CrashDebug"]
 	path = modules/CrashDebug
 	url = https://github.com/adamgreen/CrashDebug
-[submodule "modules/esp_idf"]
-	path = modules/esp_idf
-	url = https://github.com/espressif/esp-idf.git
