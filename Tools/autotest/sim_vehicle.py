@@ -694,10 +694,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
     if path is not None:
         cmd.extend(["--defaults", path])
-    if opts.mcast:
-        cmd.extend(["--uartA", "mcast:"])
-    elif opts.udp:
-        cmd.extend(["--uartA", "udpclient:127.0.0.1:" + str(5760+cmd_opts.instance*10)])
 
     if cmd_opts.start_time is not None:
         # Parse start_time into a double precision number specifying seconds since 1900.
@@ -714,6 +710,10 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         c = ["-I" + str(i)]
         if spawns is not None:
             c.extend(["--home", spawns[i]])
+        if opts.mcast:
+            c.extend(["--uartA", "mcast:"])
+        elif opts.udp:
+            c.extend(["--uartA", "udpclient:127.0.0.1:" + str(5760+i*10)])
         if opts.auto_sysid:
             if opts.sysid is not None:
                 raise ValueError("Can't use auto-sysid and sysid together")
