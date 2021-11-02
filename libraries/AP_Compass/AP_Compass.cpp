@@ -379,6 +379,8 @@ void Compass::init()
     }
 #endif // COMPASS_MAX_INSTANCES
 
+    convert_per_instance();
+
     // cache expected dev ids for use during runtime detection
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].expected_dev_id = _state[i].params.dev_id;
@@ -441,6 +443,47 @@ void Compass::init()
 #endif
 
     init_done = true;
+}
+
+// convet params to per instance param table
+// PARAMETER_CONVERSION - Added: Nov-2021
+void Compass::convert_per_instance()
+{
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+
+    const struct convert_table {
+        uint8_t element[3];
+        ap_var_type type;
+        const char* name;
+    }  conversion_table[] = {
+        { {8,19,22}, AP_PARAM_INT8, "ORIENT" },   // COMPASS_ORIENT, COMPASS_ORIENT2, COMPASS_ORIENT3
+        { {4,18,21}, AP_PARAM_INT8, "USE" },      // COMPASS_USE, COMPASS_USE2, COMPASS_USE3
+        { {9,20,23}, AP_PARAM_INT8, "EXTERN" },   // COMPASS_EXTERNAL, COMPASS_EXTERN2, COMPASS_EXTERN3
+        { {40,41,42}, AP_PARAM_FLOAT, "SCALE" },  // COMPASS_SCALE, COMPASS_SCALE2, COMPASS_SCALE3
+        { {1,10,13}, AP_PARAM_VECTOR3F, "OFS" },  // COMPASS_OFS_X/Y/Z, COMPASS_OFS2_X/Y/Z, COMPASS_OFS3_X/Y/Z
+#ifndef HAL_BUILD_AP_PERIPH
+        { {24,26,28}, AP_PARAM_VECTOR3F, "DIA" }, // COMPASS_DIA_X/Y/Z, COMPASS_DIA2_X/Y/Z, COMPASS_DIA3_X/Y/Z
+        { {25,27,29}, AP_PARAM_VECTOR3F, "ODI" }, // COMPASS_ODI_X/Y/Z, COMPASS_ODI2_X/Y/Z, COMPASS_ODI3_X/Y/Z
+#endif
+#if COMPASS_MOT_ENABLED
+        { {7,11,14}, AP_PARAM_VECTOR3F, "MOT" },  // COMPASS_MOT_X/Y/Z, COMPASS_MOT2_X/Y/Z, COMPASS_MOT3_X/Y/Z
+#endif
+    };
+
+    char param_name[17] {};
+    info.new_name = param_name;
+
+    for (const auto & elem : conversion_table) {
+        info.type = elem.type;
+        for (uint8_t i=0; i < MIN(COMPASS_MAX_INSTANCES,3); i++) {
+            info.old_group_element = elem.element[i];
+            hal.util->snprintf(param_name, sizeof(param_name), "COMPASS%i_%s", i+1,  elem.name);
+            AP_Param::convert_old_parameter(&info, 1.0f, 0);
+        }
+    }
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
