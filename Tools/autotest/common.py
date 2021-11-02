@@ -7036,16 +7036,12 @@ Also, ignores heartbeats not from our target system'''
                      0 # param7
                      )
         self.progress("zeroed mag parameters")
-        params = [
-            [("SIM_MAG_OFS_X", "COMPASS_OFS_X", 0),
-             ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", 0),
-             ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", 0), ],
-        ]
-        for count in range(2, compass_count + 1):
+        params = []
+        for count in range(1, compass_count + 1):
             params += [
-                [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, 0),
-                 ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, 0),
-                 ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, 0), ],
+                [("SIM_MAG%d_OFS_X" % count, "COMPASS%d_OFS_X" % count, 0),
+                 ("SIM_MAG%d_OFS_Y" % count, "COMPASS%d_OFS_Y" % count, 0),
+                 ("SIM_MAG%d_OFS_Z" % count, "COMPASS%d_OFS_Z" % count, 0), ],
             ]
         self.check_zero_mag_parameters(params)
 
@@ -7053,22 +7049,15 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Forty twoing Mag DIA and ODI parameters")
         self.drain_mav()
         self.get_sim_time()
-        params = [
-            [("SIM_MAG_DIA_X", "COMPASS_DIA_X", 42.0),
-             ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 42.0),
-             ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 42.0),
-             ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 42.0),
-             ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 42.0),
-             ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 42.0), ],
-        ]
-        for count in range(2, compass_count + 1):
+        params = []
+        for count in range(1, compass_count + 1):
             params += [
-                [("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, 42.0),
-                 ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, 42.0),
-                 ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, 42.0),
-                 ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, 42.0),
-                 ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, 42.0),
-                 ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, 42.0), ],
+                [("SIM_MAG%d_DIA_X" % count, "COMPASS%d_DIA_X" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Y" % count, "COMPASS%d_DIA_Y" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Z" % count, "COMPASS%d_DIA_Z" % count, 42.0),
+                 ("SIM_MAG%d_ODI_X" % count, "COMPASS%d_ODI_X" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Y" % count, "COMPASS%d_ODI_Y" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Z" % count, "COMPASS%d_ODI_Z" % count, 42.0), ],
             ]
         self.wait_heartbeat()
         to_set = {}
@@ -7104,9 +7093,8 @@ Also, ignores heartbeats not from our target system'''
 
     def check_zeros_mag_orient(self, compass_count=3):
         self.progress("zeroed mag parameters")
-        self.verify_parameter_values({"COMPASS_ORIENT": 0})
-        for count in range(2, compass_count + 1):
-            self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
+        for count in range(1, compass_count + 1):
+            self.verify_parameter_values({"COMPASS%d_ORIENT" % count: 0})
 
     def test_mag_calibration(self, compass_count=3, timeout=1000):
         def reset_pos_and_start_magcal(mavproxy, tmask):
@@ -7133,27 +7121,27 @@ Also, ignores heartbeats not from our target system'''
             MAG_DIA = 1.0
             MAG_ODI = 0.004
             params += [
-                [("SIM_MAG_OFS_X", "COMPASS_OFS_X", MAG_OFS),
-                 ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", MAG_OFS + 100),
-                 ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", MAG_OFS + 200),
-                 ("SIM_MAG_DIA_X", "COMPASS_DIA_X", MAG_DIA),
-                 ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", MAG_DIA + 0.1),
-                 ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", MAG_DIA + 0.2),
-                 ("SIM_MAG_ODI_X", "COMPASS_ODI_X", MAG_ODI),
-                 ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", MAG_ODI + 0.001),
-                 ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", MAG_ODI + 0.001), ],
+                [("SIM_MAG_OFS_X", "COMPASS1_OFS_X", MAG_OFS),
+                 ("SIM_MAG_OFS_Y", "COMPASS1_OFS_Y", MAG_OFS + 100),
+                 ("SIM_MAG_OFS_Z", "COMPASS1_OFS_Z", MAG_OFS + 200),
+                 ("SIM_MAG_DIA_X", "COMPASS1_DIA_X", MAG_DIA),
+                 ("SIM_MAG_DIA_Y", "COMPASS1_DIA_Y", MAG_DIA + 0.1),
+                 ("SIM_MAG_DIA_Z", "COMPASS1_DIA_Z", MAG_DIA + 0.2),
+                 ("SIM_MAG_ODI_X", "COMPASS1_ODI_X", MAG_ODI),
+                 ("SIM_MAG_ODI_Y", "COMPASS1_ODI_Y", MAG_ODI + 0.001),
+                 ("SIM_MAG_ODI_Z", "COMPASS1_ODI_Z", MAG_ODI + 0.001), ],
             ]
             for count in range(2, compass_count + 1):
                 params += [
-                    [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, MAG_OFS + 100 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, MAG_OFS + 100 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, MAG_OFS + 100 * ((count+1) % compass_count)),
-                     ("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, MAG_DIA + 0.1 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, MAG_DIA + 0.1 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, MAG_DIA + 0.1 * ((count+1) % compass_count)),
-                     ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, MAG_ODI + 0.001 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, MAG_ODI + 0.001 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, MAG_ODI + 0.001 * ((count+1) % compass_count)), ],
+                    [("SIM_MAG%d_OFS_X" % count, "COMPASS%d_OFS_X" % count, MAG_OFS + 100 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_OFS_Y" % count, "COMPASS%d_OFS_Y" % count, MAG_OFS + 100 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_OFS_Z" % count, "COMPASS%d_OFS_Z" % count, MAG_OFS + 100 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_DIA_X" % count, "COMPASS%d_DIA_X" % count, MAG_DIA + 0.1 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_DIA_Y" % count, "COMPASS%d_DIA_Y" % count, MAG_DIA + 0.1 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_DIA_Z" % count, "COMPASS%d_DIA_Z" % count, MAG_DIA + 0.1 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_ODI_X" % count, "COMPASS%d_ODI_X" % count, MAG_ODI + 0.001 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_ODI_Y" % count, "COMPASS%d_ODI_Y" % count, MAG_ODI + 0.001 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_ODI_Z" % count, "COMPASS%d_ODI_Z" % count, MAG_ODI + 0.001 * ((count+1) % compass_count)), ],
                 ]
             self.progress("Setting calibration mode")
             self.wait_heartbeat()
@@ -7177,7 +7165,7 @@ Also, ignores heartbeats not from our target system'''
             # for count in range(2, compass_count + 1):
             #     self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
             #     # set compass external to check that orientation is found and auto set
-            #     self.set_parameter("COMPASS_EXTERN%d" % count, 1)
+            #     self.set_parameter("COMPASS%d_EXTERN" % count, 1)
             to_set = {}
             for param_set in params:
                 for param in param_set:
@@ -7191,9 +7179,8 @@ Also, ignores heartbeats not from our target system'''
             # Change the default value to unexpected 42
             self.forty_two_mag_dia_odi_parameters()
             self.progress("Zeroing Mags orientations")
-            self.set_parameter("COMPASS_ORIENT", 0)
-            for count in range(2, compass_count + 1):
-                self.set_parameter("COMPASS_ORIENT%d" % count, 0)
+            for count in range(1, compass_count + 1):
+                self.set_parameter("COMPASS%d_ORIENT" % count, 0)
 
             # Only care about compass prearm
             self.set_parameter("ARMING_CHECK", 4)
@@ -7361,9 +7348,9 @@ Also, ignores heartbeats not from our target system'''
                          timeout=20,
                          )
             self.check_mag_parameters(params, compass_tnumber)
-            self.verify_parameter_values({"COMPASS_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
+            self.verify_parameter_values({"COMPASS1_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
             for count in range(2, compass_tnumber + 1):
-                self.verify_parameter_values({"COMPASS_ORIENT%d" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
+                self.verify_parameter_values({"COMPASS%d_ORIENT" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
             self.try_arm(False, "Compass calibrated requires reboot")
 
             # test buzzer/notify ?
@@ -7378,7 +7365,7 @@ Also, ignores heartbeats not from our target system'''
                     (_in, _out, value) = param
                     self.set_parameter(_out, value)
             for count in range(compass_tnumber + 1, compass_count + 1):
-                self.set_parameter("COMPASS_ORIENT%d" % count, self.get_parameter("SIM_MAG%d_ORIENT" % count))
+                self.set_parameter("COMPASS%d_ORIENT" % count, self.get_parameter("SIM_MAG%d_ORIENT" % count))
             self.arm_vehicle()
             self.progress("Test calibration rejection when armed")
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
@@ -7447,35 +7434,25 @@ Also, ignores heartbeats not from our target system'''
             parameter_mappings[key] = key
         for (old_compass_num, new_compass_num) in transforms:
             old_key_compass_bit = str(old_compass_num)
-            if old_key_compass_bit == "1":
-                old_key_compass_bit = ""
             new_key_compass_bit = str(new_compass_num)
-            if new_key_compass_bit == "1":
-                new_key_compass_bit = ""
             # vectors first:
             for key_vector_bit in ["OFS", "DIA", "ODI", "MOT"]:
                 for axis in "X", "Y", "Z":
-                    old_key = "COMPASS_%s%s_%s" % (key_vector_bit,
-                                                   old_key_compass_bit,
+                    old_key = "COMPASS%s_%s_%s" % (old_key_compass_bit,
+                                                   key_vector_bit,
                                                    axis)
-                    new_key = "COMPASS_%s%s_%s" % (key_vector_bit,
-                                                   new_key_compass_bit,
+                    new_key = "COMPASS%s_%s_%s" % (new_key_compass_bit,
+                                                   key_vector_bit,
                                                    axis)
                     parameter_mappings[old_key] = new_key
             # then non-vectorey bits:
             for key_bit in "SCALE", "ORIENT":
-                old_key = "COMPASS_%s%s" % (key_bit, old_key_compass_bit)
-                new_key = "COMPASS_%s%s" % (key_bit, new_key_compass_bit)
+                old_key = "COMPASS%s_%s" % (old_key_compass_bit, key_bit)
+                new_key = "COMPASS%s_%s" % (new_key_compass_bit, key_bit)
                 parameter_mappings[old_key] = new_key
             # then a sore thumb:
-            if old_key_compass_bit == "":
-                old_key = "COMPASS_EXTERNAL"
-            else:
-                old_key = "COMPASS_EXTERN%s" % old_key_compass_bit
-            if new_key_compass_bit == "":
-                new_key = "COMPASS_EXTERNAL"
-            else:
-                new_key = "COMPASS_EXTERN%s" % new_key_compass_bit
+            old_key = "COMPASS%s_EXTERN" % old_key_compass_bit
+            new_key = "COMPASS%s_EXTERN" % new_key_compass_bit
             parameter_mappings[old_key] = new_key
 
         for key in values.keys():
@@ -7491,53 +7468,53 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             originals = {
-                "COMPASS_OFS_X": 1.1,
-                "COMPASS_OFS_Y": 1.2,
-                "COMPASS_OFS_Z": 1.3,
-                "COMPASS_DIA_X": 1.4,
-                "COMPASS_DIA_Y": 1.5,
-                "COMPASS_DIA_Z": 1.6,
-                "COMPASS_ODI_X": 1.7,
-                "COMPASS_ODI_Y": 1.8,
-                "COMPASS_ODI_Z": 1.9,
-                "COMPASS_MOT_X": 1.91,
-                "COMPASS_MOT_Y": 1.92,
-                "COMPASS_MOT_Z": 1.93,
-                "COMPASS_SCALE": 1.94,
-                "COMPASS_ORIENT": 1,
-                "COMPASS_EXTERNAL": 2,
+                "COMPASS1_OFS_X": 1.1,
+                "COMPASS1_OFS_Y": 1.2,
+                "COMPASS1_OFS_Z": 1.3,
+                "COMPASS1_DIA_X": 1.4,
+                "COMPASS1_DIA_Y": 1.5,
+                "COMPASS1_DIA_Z": 1.6,
+                "COMPASS1_ODI_X": 1.7,
+                "COMPASS1_ODI_Y": 1.8,
+                "COMPASS1_ODI_Z": 1.9,
+                "COMPASS1_MOT_X": 1.91,
+                "COMPASS1_MOT_Y": 1.92,
+                "COMPASS1_MOT_Z": 1.93,
+                "COMPASS1_SCALE": 1.94,
+                "COMPASS1_ORIENT": 1,
+                "COMPASS1_EXTERN": 2,
 
-                "COMPASS_OFS2_X": 2.1,
-                "COMPASS_OFS2_Y": 2.2,
-                "COMPASS_OFS2_Z": 2.3,
-                "COMPASS_DIA2_X": 2.4,
-                "COMPASS_DIA2_Y": 2.5,
-                "COMPASS_DIA2_Z": 2.6,
-                "COMPASS_ODI2_X": 2.7,
-                "COMPASS_ODI2_Y": 2.8,
-                "COMPASS_ODI2_Z": 2.9,
-                "COMPASS_MOT2_X": 2.91,
-                "COMPASS_MOT2_Y": 2.92,
-                "COMPASS_MOT2_Z": 2.93,
-                "COMPASS_SCALE2": 2.94,
-                "COMPASS_ORIENT2": 3,
-                "COMPASS_EXTERN2": 4,
+                "COMPASS2_OFS_X": 2.1,
+                "COMPASS2_OFS_Y": 2.2,
+                "COMPASS2_OFS_Z": 2.3,
+                "COMPASS2_DIA_X": 2.4,
+                "COMPASS2_DIA_Y": 2.5,
+                "COMPASS2_DIA_Z": 2.6,
+                "COMPASS2_ODI_X": 2.7,
+                "COMPASS2_ODI_Y": 2.8,
+                "COMPASS2_ODI_Z": 2.9,
+                "COMPASS2_MOT_X": 2.91,
+                "COMPASS2_MOT_Y": 2.92,
+                "COMPASS2_MOT_Z": 2.93,
+                "COMPASS2_SCALE": 2.94,
+                "COMPASS2_ORIENT": 3,
+                "COMPASS2_EXTERN": 4,
 
-                "COMPASS_OFS3_X": 3.1,
-                "COMPASS_OFS3_Y": 3.2,
-                "COMPASS_OFS3_Z": 3.3,
-                "COMPASS_DIA3_X": 3.4,
-                "COMPASS_DIA3_Y": 3.5,
-                "COMPASS_DIA3_Z": 3.6,
-                "COMPASS_ODI3_X": 3.7,
-                "COMPASS_ODI3_Y": 3.8,
-                "COMPASS_ODI3_Z": 3.9,
-                "COMPASS_MOT3_X": 3.91,
-                "COMPASS_MOT3_Y": 3.92,
-                "COMPASS_MOT3_Z": 3.93,
-                "COMPASS_SCALE3": 3.94,
-                "COMPASS_ORIENT3": 5,
-                "COMPASS_EXTERN3": 6,
+                "COMPASS3_OFS_X": 3.1,
+                "COMPASS3_OFS_Y": 3.2,
+                "COMPASS3_OFS_Z": 3.3,
+                "COMPASS3_DIA_X": 3.4,
+                "COMPASS3_DIA_Y": 3.5,
+                "COMPASS3_DIA_Z": 3.6,
+                "COMPASS3_ODI_X": 3.7,
+                "COMPASS3_ODI_Y": 3.8,
+                "COMPASS3_ODI_Z": 3.9,
+                "COMPASS3_MOT_X": 3.91,
+                "COMPASS3_MOT_Y": 3.92,
+                "COMPASS3_MOT_Z": 3.93,
+                "COMPASS3_SCALE": 3.94,
+                "COMPASS3_ORIENT": 5,
+                "COMPASS3_EXTERN": 6,
             }
 
             # quick sanity check to ensure all values are unique:
@@ -7596,35 +7573,35 @@ Also, ignores heartbeats not from our target system'''
             MAG_OFS_Y = 200
             MAG_OFS_Z = 300
             wanted = {
-                "COMPASS_OFS_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA_X": 1,
-                "COMPASS_DIA_Y": 1,
-                "COMPASS_DIA_Z": 1,
-                "COMPASS_ODI_X": 0,
-                "COMPASS_ODI_Y": 0,
-                "COMPASS_ODI_Z": 0,
+                "COMPASS1_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS1_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS1_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS1_DIA_X": 1,
+                "COMPASS1_DIA_Y": 1,
+                "COMPASS1_DIA_Z": 1,
+                "COMPASS1_ODI_X": 0,
+                "COMPASS1_ODI_Y": 0,
+                "COMPASS1_ODI_Z": 0,
 
-                "COMPASS_OFS2_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS2_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS2_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA2_X": 1,
-                "COMPASS_DIA2_Y": 1,
-                "COMPASS_DIA2_Z": 1,
-                "COMPASS_ODI2_X": 0,
-                "COMPASS_ODI2_Y": 0,
-                "COMPASS_ODI2_Z": 0,
+                "COMPASS2_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS2_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS2_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS2_DIA_X": 1,
+                "COMPASS2_DIA_Y": 1,
+                "COMPASS2_DIA_Z": 1,
+                "COMPASS2_ODI_X": 0,
+                "COMPASS2_ODI_Y": 0,
+                "COMPASS2_ODI_Z": 0,
 
-                "COMPASS_OFS3_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS3_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS3_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA3_X": 1,
-                "COMPASS_DIA3_Y": 1,
-                "COMPASS_DIA3_Z": 1,
-                "COMPASS_ODI3_X": 0,
-                "COMPASS_ODI3_Y": 0,
-                "COMPASS_ODI3_Z": 0,
+                "COMPASS3_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS3_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS3_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS3_DIA_X": 1,
+                "COMPASS3_DIA_Y": 1,
+                "COMPASS3_DIA_Z": 1,
+                "COMPASS3_ODI_X": 0,
+                "COMPASS3_ODI_Y": 0,
+                "COMPASS3_ODI_Z": 0,
             }
             self.set_parameters({
                 "SIM_MAG_OFS_X": MAG_OFS_X,
