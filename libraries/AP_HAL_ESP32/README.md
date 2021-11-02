@@ -28,7 +28,10 @@ sudo pacman -S --needed gcc git make flex bison gperf python-pip cmake ninja cca
 
 cd ardupilot
 git submodule update --init --recursive
+# ensure the idf exists in modules/esp_idf (supports pre-existing submodules and/or cloning it for you)
+./Tools/scripts/esp32_get_idf.sh
 cd modules/esp_idf
+# use it:
 ./install.sh
 unset IDF_PATH
 source ./export.sh
