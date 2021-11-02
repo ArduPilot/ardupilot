@@ -719,8 +719,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 raise ValueError("Can't use auto-sysid and sysid together")
             sysid = i + 1
             # Take 0-based logging into account
-            if i < 0 or i > 255:
-                raise ValueError("Invalid system id %d" % i)
+            if sysid < 1 or sysid > 255:
+                raise ValueError("Invalid system id %d" % sysid)
             c.extend(["--sysid", str(sysid)])
 
         os.chdir(i_dir)
