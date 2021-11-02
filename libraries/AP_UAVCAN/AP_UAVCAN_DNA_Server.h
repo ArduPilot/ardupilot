@@ -88,6 +88,7 @@ class AP_UAVCAN_DNA_Server
     bool isValidNodeDataAvailable(uint8_t node_id);
 
     HAL_Semaphore sem;
+    AP_UAVCAN *_ap_uavcan;
 
 public:
     AP_UAVCAN_DNA_Server(StorageAccess _storage) : storage(_storage) {}
