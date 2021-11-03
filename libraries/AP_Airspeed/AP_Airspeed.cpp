@@ -49,19 +49,23 @@ extern const AP_HAL::HAL &hal;
  #ifndef ARSPD_DEFAULT_PIN
  #define ARSPD_DEFAULT_PIN 1
  #endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
- #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
- #define ARSPD_DEFAULT_PIN 1
-#elif APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ // The HAL_BOARD_SITL setting is required because of current probe process for MS4525 will
+ // connect and find the SIM_DLVR sensors & fault as there is no way to tell them apart
+ #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+  #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
+  #define ARSPD_DEFAULT_PIN 1
+ #else
+  #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
+  #ifdef HAL_DEFAULT_AIRSPEED_PIN
+      #define ARSPD_DEFAULT_PIN HAL_DEFAULT_AIRSPEED_PIN
+  #else
+     #define ARSPD_DEFAULT_PIN 15
+  #endif
+ #endif //CONFIG_HAL_BOARD
+#else   // All Other Vehicle Types
  #define ARSPD_DEFAULT_TYPE TYPE_NONE
  #define ARSPD_DEFAULT_PIN 15
-#else
- #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
-#ifdef HAL_DEFAULT_AIRSPEED_PIN
- #define ARSPD_DEFAULT_PIN HAL_DEFAULT_AIRSPEED_PIN
-#else
- #define ARSPD_DEFAULT_PIN 15
-#endif
 #endif
 
 #ifndef HAL_AIRSPEED_BUS_DEFAULT
