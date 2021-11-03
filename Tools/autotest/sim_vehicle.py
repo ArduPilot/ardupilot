@@ -1109,6 +1109,11 @@ group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
                      help="Specify path of swarminit.txt for shifting spawn location")
+group_sim.add_option("", "--auto-offset-line",
+                     type="string",
+                     default=None,
+                     help="Argument of form  BEARING,DISTANCE.  When running multiple instances, form a line along bearing with an interval of DISTANCE",  # NOQA
+                     )
 group_sim.add_option("--flash-storage",
                      action='store_true',
                      help="use flash storage emulation")
@@ -1324,6 +1329,17 @@ else:
     location = None
 if cmd_opts.swarm is not None:
     offsets = find_offsets(instances, cmd_opts.swarm)
+elif cmd_opts.auto_offset_line is not None:
+    if location is None:
+        raise ValueError("location needed for auto-offset-line")
+    (bearing, metres) = cmd_opts.auto_offset_line.split(",")
+    bearing = float(bearing)
+    metres = float(metres)
+    dist = 0
+    offsets = {}
+    for x in instances:
+        offsets[x] = [dist*math.sin(math.radians(bearing)), dist*math.cos(math.radians(bearing)), 0, 0]
+        dist += metres
 else:
     offsets = {x: [0.0, 0.0, 0.0, None] for x in instances}
 if location is not None:
