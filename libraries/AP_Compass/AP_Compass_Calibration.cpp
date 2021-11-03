@@ -200,7 +200,7 @@ bool Compass::_accept_calibration(uint8_t i)
         set_and_save_offdiagonals(i,offdiag);
         set_and_save_scale_factor(i,scale_factor);
 
-        if (_get_state(prio).external && _rotate_auto >= 2) {
+        if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
             set_and_save_orientation(i, cal_report.orientation);
         }
 
