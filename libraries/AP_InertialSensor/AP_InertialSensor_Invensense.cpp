@@ -13,8 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  driver for all supported Invensense IMUs, including MPU6000, MPU9250
-  ICM-20608 and ICM-20602
+  driver for all supported Invensense IMUs, including
+  MPU6000, MPU9250,  ICM20608, ICM20602, ICM20601, ICM20789, ICM20689
  */
 
 #include <assert.h>
