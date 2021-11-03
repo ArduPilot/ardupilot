@@ -302,7 +302,7 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
             memcpy(&dump_buffer[sizeof(dump_buffer)-sizeof(dump_size)], &dump_size, sizeof(dump_size));
             buf_off = 32;
         }
-        stm32_flash_write(stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE) + dump_size, dump_buffer, buf_off);
+        stm32_flash_write(stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE) + dump_size, dump_buffer, 32);
         dump_size += buf_off;
         buf_off = 0;
         memset(dump_buffer, 0, sizeof(dump_buffer));
