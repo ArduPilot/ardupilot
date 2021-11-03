@@ -380,7 +380,7 @@ public:
     static const uint8_t NUM_PARAMS = 9;
     static const uint8_t SAVE_PARAM = NUM_PARAMS + 1;
 
-#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
+#if OSD_ENABLED && (HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT)
     void draw(void) override;
 #endif
 #if HAL_GCS_ENABLED
