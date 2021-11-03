@@ -321,6 +321,7 @@ void CompassCalibrator::update_cal_report()
     cal_report.orientation_confidence = _orientation_confidence;
     cal_report.original_orientation = _orig_orientation;
     cal_report.orientation = _orientation_solution;
+    cal_report.check_orientation = _check_orientation;
 }
 
 // running method for use in thread
