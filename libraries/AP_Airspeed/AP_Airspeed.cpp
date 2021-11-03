@@ -308,7 +308,7 @@ bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
     const uint8_t i = num_sensors;
     sensor[num_sensors++] = backend;
     if (!sensor[i]->init()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u init failed", i+1);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i+1);
         delete sensor[i];
         sensor[i] = nullptr;
     }
@@ -431,7 +431,7 @@ void AP_Airspeed::init()
             break;
         }
         if (sensor[i] && !sensor[i]->init()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u init failed", i + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
             delete sensor[i];
             sensor[i] = nullptr;
         }
@@ -487,7 +487,7 @@ void AP_Airspeed::calibrate(bool in_startup)
             continue;
         }
         if (sensor[i] == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u not initalized, cannot cal", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initalized, cannot cal", i+1);
             continue;
         }
         state[i].cal.start_ms = AP_HAL::millis();
@@ -512,7 +512,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     if (AP_HAL::millis() - state[i].cal.start_ms >= 1000 &&
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u unhealthy", i + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
             param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
