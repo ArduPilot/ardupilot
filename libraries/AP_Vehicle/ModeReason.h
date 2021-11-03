@@ -65,4 +65,5 @@ enum class ModeReason : uint8_t {
   AUTO_RTL_EXIT = 45,
   LOITER_ALT_REACHED_QLAND = 46,
   LOITER_ALT_IN_VTOL = 47,
+  RADIO_FAILSAFE_RECOVERY = 48,
 };
