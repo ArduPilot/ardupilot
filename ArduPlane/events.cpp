@@ -20,6 +20,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
+    failsafe.saved_mode_number = control_mode->mode_number();
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
     switch (control_mode->mode_number())
     {
@@ -30,9 +31,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
-    case Mode::Number::TRAINING:
-        failsafe.saved_mode_number = control_mode->mode_number();
-        failsafe.saved_mode_set = true;
+    case Mode::Number::TRAINING:  
         if(plane.emergency_landing) {
             set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
             break;
@@ -42,8 +41,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             set_mode(mode_fbwb, reason);
         } else {
-            set_mode(mode_circle, reason);
+            set_mode(mode_circle, reason); // circle if action = 0 or 1 
         }
+        gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         break;
 
 #if HAL_QUADPLANE_ENABLED
@@ -54,13 +54,12 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::QAUTOTUNE:
 #endif
     case Mode::Number::QACRO:
-        failsafe.saved_mode_number = control_mode->mode_number();
-        failsafe.saved_mode_set = true;
         if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
             set_mode(mode_qrtl, reason);
         } else {
             set_mode(mode_qland, reason);
         }
+        gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         break;
 #endif // HAL_QUADPLANE_ENABLED
 
@@ -75,18 +74,19 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
-        if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
+        if (g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) { // if acton = 0(BESTGUESS) this group of modes take no action
             failsafe.saved_mode_number = control_mode->mode_number();
-            failsafe.saved_mode_set = true;
-            if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
+            if (g.fs_action_short == FS_ACTION_SHORT_FBWA) {
                 set_mode(mode_fbwa, reason);
+            } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
+                set_mode(mode_fbwb, reason);
             } else {
                 set_mode(mode_circle, reason);
             }
+            gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         }
-        break;
-
-    case Mode::Number::CIRCLE:
+         break;
+    case Mode::Number::CIRCLE:  // these modes never take any short failsafe action and continue
     case Mode::Number::TAKEOFF:
     case Mode::Number::RTL:
 #if HAL_QUADPLANE_ENABLED
@@ -97,7 +97,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::INITIALISING:
         break;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
@@ -189,14 +188,11 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     // We're back in radio contact
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
-    if(failsafe.saved_mode_set) { //we saved an entry mode..check that our fs mode has not been changed by GCS
-        if((control_mode == &mode_circle && g.fs_action_short == FS_ACTION_SHORT_CIRCLE) ||
-           (control_mode == &mode_fbwa && g.fs_action_short == FS_ACTION_SHORT_FBWA) ||
-           (control_mode == &mode_fbwb && g.fs_action_short == FS_ACTION_SHORT_FBWB)) {
-              failsafe.saved_mode_set = false;
-              set_mode_by_number(failsafe.saved_mode_number, reason); //mode has not been changed while in FS, return to entry mode
-        }
-    }
+    //restore entry mode if desired but check that our current mode is still due to failsafe
+    if ( _last_reason == ModeReason::RADIO_FAILSAFE) { 
+       set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
+       gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+     }
 }
 
 void Plane::failsafe_long_off_event(ModeReason reason)
