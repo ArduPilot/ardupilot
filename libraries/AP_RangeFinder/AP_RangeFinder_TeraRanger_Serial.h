@@ -20,7 +20,12 @@ public:
 
 protected:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_TeraRanger_Serial(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // TeraRanger Neo ES user manual: 0.2m to 30m
+        params.max_distance.set_default(30.0f);
+    }
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_LASER;

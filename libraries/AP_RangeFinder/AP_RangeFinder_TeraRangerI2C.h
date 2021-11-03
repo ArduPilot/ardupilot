@@ -29,7 +29,16 @@ protected:
 
 private:
     // constructor
-    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
+    AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
+                                 AP_HAL::I2CDevice &_dev) :
+        AP_RangeFinder_Backend_I2C(_state, _params, _dev)
+    {
+        // only the TeraRanger One (14m) uses address 0x30; the Evo
+        // models at 0x31 range from 3m to 60m and can't be told apart
+        if (params.address == 0x30) {
+            params.max_distance.set_default(14.0f);
+        }
+    }
 
     bool measure(void);
     bool collect_raw(uint16_t &raw_distance);
