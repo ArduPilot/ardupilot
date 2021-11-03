@@ -67,6 +67,7 @@ public:
         Rotation original_orientation;
         Rotation orientation;
         float scale_factor;
+        bool check_orientation;
     } cal_report;
 
     // Structure setup to set calibration run settings
