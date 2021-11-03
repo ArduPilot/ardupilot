@@ -10,6 +10,9 @@ public:
     AP_RangeFinder_TOFSenseP_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
         AP_RangeFinder_Backend_CAN(_state, _params, AP_CAN::Protocol::TOFSenseP, "tofsensep")
     {
+        // TOFSense datasheet: 0.03m to 8m
+        params.min_distance.set_default(0.03f);
+        params.max_distance.set_default(8.0f);
     }
 
     // handler for incoming frames

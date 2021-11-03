@@ -31,7 +31,14 @@ protected:
 
 private:
     // constructor
-    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
+    AP_RangeFinder_TOFSenseF_I2C(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
+                                 AP_HAL::I2CDevice &_dev) :
+        AP_RangeFinder_Backend_I2C(_state, _params, _dev)
+    {
+        // TOFSense-F datasheet: 0.05m to 15m
+        params.min_distance.set_default(0.05f);
+        params.max_distance.set_default(15.0f);
+    }
 
     bool init(void) override;
     void timer(void);

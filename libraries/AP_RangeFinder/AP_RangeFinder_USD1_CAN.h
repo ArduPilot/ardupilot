@@ -10,6 +10,9 @@ public:
     AP_RangeFinder_USD1_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
         AP_RangeFinder_Backend_CAN(_state, _params, AP_CAN::Protocol::USD1, "usd1")
     {
+        // US-D1 manual: readings may be erroneous outside 0.5m to 50m
+        params.min_distance.set_default(0.5f);
+        params.max_distance.set_default(45.0f);
     }
 
     // handler for incoming frames
