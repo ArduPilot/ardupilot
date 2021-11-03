@@ -588,6 +588,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         // param count could have changed
         AP_Param::invalidate_count();
     }
+
+    if (drivers[instance]) {
+        // consider setting some default parameter values for the backend:
+        float distance;
+        if (drivers[instance]->max_distance_param_default(distance*100)) {
+            params[instance].max_distance_cm.set_default(distance);
+        }
+        if (drivers[instance]->min_distance_param_default(distance)) {
+            params[instance].min_distance_cm.set_default(distance*100);
+        }
+    }
 }
 
 AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
