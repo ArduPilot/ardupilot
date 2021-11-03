@@ -83,3 +83,19 @@ void strncpy_noterm(char *dest, const char *src, size_t n)
     }
     memcpy(dest, src, len);
 }
+
+/**
+ * return the numeric value of an ascii hex character
+ * 
+ * @param[in] a Hexadecimal character 
+ * @return  Returns a binary value
+ */
+int16_t char_to_hex(char a)
+{
+    if (a >= 'A' && a <= 'F')
+        return a - 'A' + 10;
+    else if (a >= 'a' && a <= 'f')
+        return a - 'a' + 10;
+    else
+        return a - '0';
+}
