@@ -40,10 +40,9 @@ extern const AP_HAL::HAL& hal;
   constructor
  */
 AP_Logger_File::AP_Logger_File(AP_Logger &front,
-                               LoggerMessageWriter_DFLogStart *writer,
-                               const char *log_directory) :
+                               LoggerMessageWriter_DFLogStart *writer) :
     AP_Logger_Backend(front, writer),
-    _log_directory(log_directory)
+    _log_directory(HAL_BOARD_LOG_DIRECTORY)
 {
     df_stats_clear();
 }

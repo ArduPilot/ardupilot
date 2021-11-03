@@ -172,95 +172,48 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
 #endif
-    if (_next_backend == LOGGER_MAX_BACKENDS) {
-        AP_HAL::panic("Too many backends");
-        return;
-    }
     _num_types = num_types;
     _structures = structures;
 
+    // the "main" logging type needs to come before mavlink so that
+    // index 0 is correct
+    static const struct {
+        Backend_Type type;
+        AP_Logger_Backend* (*probe_fn)(AP_Logger&, LoggerMessageWriter_DFLogStart*);
+    } backend_configs[] {
 #if HAL_LOGGING_FILESYSTEM_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_File(*this,
-                                                         message_writer,
-                                                         HAL_BOARD_LOG_DIRECTORY);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_File");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
-#endif // HAL_LOGGING_FILESYSTEM_ENABLED
-
+        { Backend_Type::FILESYSTEM, AP_Logger_File::probe },
+#endif
 #if HAL_LOGGING_DATAFLASH_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
-            return;
-        }
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_DataFlash");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
+        { Backend_Type::BLOCK, AP_Logger_DataFlash::probe },
 #endif
-
 #if HAL_LOGGING_SITL_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
-            return;
-        }
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_SITL(*this, message_writer);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_SITL");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
+        { Backend_Type::BLOCK, AP_Logger_SITL::probe },
 #endif
-    // the "main" logging type needs to come before mavlink so that index 0 is correct
 #if HAL_LOGGING_MAVLINK_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
+        { Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
+#endif
+};
+
+    for (const auto &backend_config : backend_configs) {
+        if ((_params.backend_types & uint8_t(backend_config.type)) == 0) {
+            continue;
+        }
         if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
+            AP_BoardConfig::config_error("Too many backends");
             return;
         }
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_MAVLink(*this,
-                                                            message_writer);
+        if (message_writer == nullptr)  {
+            AP_BoardConfig::allocation_error("mesage writer");
         }
+        backends[_next_backend] = backend_config.probe_fn(*this, message_writer);
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_MAVLink");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
+            AP_BoardConfig::allocation_error("logger backend");
         }
+        _next_backend++;
     }
-#endif
 
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
