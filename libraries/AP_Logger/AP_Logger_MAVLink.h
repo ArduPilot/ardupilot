@@ -60,6 +60,7 @@ public:
 
 protected:
 
+    void io_timer() override;
     void push_log_blocks() override;
     bool WritesOK() const override;
 
