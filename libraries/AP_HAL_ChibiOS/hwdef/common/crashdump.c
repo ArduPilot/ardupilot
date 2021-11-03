@@ -72,15 +72,55 @@ uint32_t stm32_crash_dump_size(void)
 #endif
 }
 
+#define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
 extern uint32_t __ram0_start__, __ram0_end__;
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void);
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
     // do a full dump if on serial
-    static CrashCatcherMemoryRegion regions[] = {
-        {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
-        {0xFFFFFFFF, 0xFFFFFFFF, CRASH_CATCHER_BYTE}
-    };
+    static CrashCatcherMemoryRegion regions[60] = {
+    {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
+    {(uint32_t)&ch, (uint32_t)&ch + sizeof(ch), CRASH_CATCHER_BYTE}};
+
+    // loop through chibios threads and add their stack info
+    uint8_t curr_region = 2;
+    for (thread_t *tp = chRegFirstThread(); tp && (curr_region < (ARRAY_SIZE(regions) - 1)); tp = chRegNextThread(tp)) {
+        uint32_t total_stack;
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            total_stack = (uint32_t)((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            total_stack = (uint32_t)(tp) - (uint32_t)(tp->wabase);
+        }
+        // log names if in RAM
+        if (tp->name != NULL && is_address_in_memory((void*)tp->name)) {
+            regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+            regions[curr_region].startAddress = (uint32_t)(tp->name);
+            regions[curr_region++].endAddress = (uint32_t)(tp->name) + 13;
+        }
+        // log thread info
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)(tp);
+        regions[curr_region++].endAddress = (uint32_t)(tp) + sizeof(thread_t);
+        // log thread stacks
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)(tp->wabase);
+        regions[curr_region++].endAddress = (uint32_t)(tp->wabase) + total_stack;
+        
+    }
+    // ensure that last is filled with 0xFFFFFFFF
+    if (curr_region < ARRAY_SIZE(regions)) {
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = 0xFFFFFFFF;
+        regions[curr_region].endAddress = 0xFFFFFFFF;
+    } else {
+        regions[ARRAY_SIZE(regions) - 1].elementSize = CRASH_CATCHER_BYTE;
+        regions[ARRAY_SIZE(regions) - 1].startAddress = 0xFFFFFFFF;
+        regions[ARRAY_SIZE(regions) - 1].endAddress = 0xFFFFFFFF;
+    }
+
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (do_flash_crash_dump) {
         // smaller dump if on flash
