@@ -765,6 +765,17 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motors(motors, ARRAY_SIZE(motors));
                     break;
                 }
+                case MOTOR_FRAME_TYPE_Y4:
+                    _frame_type_string = "Y4";
+                    // Y4 motor definition with right front CCW, left front CW
+                    static const AP_MotorsMatrix::MotorDefRaw motors[] {
+                        { -1.0f,  1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1 },
+                        {  0.0f, -1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2 },
+                        {  0.0f, -1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3 },
+                        {  1.0f,  1.000f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4 },
+                    };
+                    add_motors_raw(motors, ARRAY_SIZE(motors));
+                    break;
                 default:
                     // quad frame class does not support this frame type
                     _frame_type_string = "UNSUPPORTED";
