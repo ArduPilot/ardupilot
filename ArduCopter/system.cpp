@@ -15,6 +15,7 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
+    flightmode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
 
 #if STATS_ENABLED == ENABLED
     // initialise stats module
