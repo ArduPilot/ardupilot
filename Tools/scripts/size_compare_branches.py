@@ -28,12 +28,14 @@ else:
 class SizeCompareBranches(object):
     '''script to build and compare branches using elf_diff'''
 
-    def __init__(self, branch=None, master_branch="master", board="MatekF405-Wing", bin_dir=None, pdf_file=None):
+    def __init__(self, branch=None, master_branch="master", board="MatekF405-Wing", vehicle="plane",
+                 bin_dir=None, pdf_file=None):
         if branch is None:
             raise Exception("branch required")  # FIXME: narrow exception
         self.master_branch = master_branch
         self.branch = branch
         self.board = board
+        self.vehicle = vehicle
         self.bin_dir = bin_dir
         self.pdf_file = pdf_file
 
@@ -113,12 +115,12 @@ class SizeCompareBranches(object):
         '''pretty-print progress'''
         print("SCB: %s" % string)
 
-    def build_branch_into_dir(self, board, branch, outdir):
+    def build_branch_into_dir(self, board, branch, vehicle, outdir):
         self.run_git(["checkout", branch])
         self.run_git(["submodule", "update", "--recursive"])
         shutil.rmtree("build", ignore_errors=True)
         self.run_waf(["configure", "--board", board])
-        self.run_waf(["plane"])
+        self.run_waf([vehicle])
         shutil.rmtree(outdir, ignore_errors=True)
         shutil.copytree("build", outdir)
 
@@ -127,14 +129,27 @@ class SizeCompareBranches(object):
         outdir_2 = "/tmp/out-branch"
 
         self.progress("Building branch 1")
-        self.build_branch_into_dir(self.board, self.master_branch, outdir_1)
+        self.build_branch_into_dir(self.board, self.master_branch, self.vehicle, outdir_1)
 
         self.progress("Building branch 2")
-        self.build_branch_into_dir(self.board, self.branch, outdir_2)
+        self.build_branch_into_dir(self.board, self.branch, self.vehicle, outdir_2)
 
         self.progress("Starting compare (~10 minutes!)")
 
-        binary_filename = "arduplane"
+        # map from vehicle names to binary names
+        vehicle_map = {
+            "rover"     : "ardurover",
+            "copter"    : "arducopter",
+            "plane"     : "arduplane",
+            "sub"       : "ardusub",
+            "heli"      : "arducopter-heli",
+            "blimp"     : "blimp",
+            "antennatracker " : "antennatracker",
+        }
+        if self.vehicle in vehicle_map:
+            binary_filename = vehicle_map[self.vehicle]
+        else:
+            raise Exception("Vehicle name incorrect")
 
         elf_diff_commandline = [
             "time",
@@ -167,6 +182,11 @@ if __name__ == '__main__':
                       default=None,
                       help="branch to compare")
     parser.add_option("",
+                      "--vehicle",
+                      type="string",
+                      default="plane",
+                      help="vehicle to build for")
+    parser.add_option("",
                       "--board",
                       type="string",
                       default="MatekF405-Wing",
@@ -188,6 +208,7 @@ if __name__ == '__main__':
         branch=cmd_opts.branch,
         master_branch=cmd_opts.master_branch,
         board=cmd_opts.board,
+        vehicle=cmd_opts.vehicle,
         #        pdf_file=cmd_opts.pdf_file
     )
     x.run()
