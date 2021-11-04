@@ -111,12 +111,15 @@ jobs:
         shell: bash
         run: |
           python3 -m pip install -U weasyprint elf_diff anytree
-          python3 -m elf_diff --bin_prefix=arm-none-eabi- $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-          tar cf multipage_pair_report.tar multipage_pair_report
+          python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=plane $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+          python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=copter $GITHUB_WORKSPACE/master_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+          mkdir elf_diff
+          tar cf elf_diff/plane.tar plane
+          tar cf elf_diff/copter.tar copter
 
       - name: Archive elf_diff output
         uses: actions/upload-artifact@v2
         with:
-           name: elf_diff
-           path: multipage_pair_report.tar
+           name: ELF_DIFF_${{matrix.config}}
+           path: elf_diff
            retention-days: 14
