@@ -9,6 +9,11 @@ pip3 install --user elf_diff weasyprint
 
 AP_FLAKE8_CLEAN
 
+How to use?
+Starting in the ardupilot directory.
+~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=copter
+
+Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
 '''
 
 import optparse
@@ -159,6 +164,7 @@ class SizeCompareBranches(object):
             '--bin_prefix=arm-none-eabi-',
             "--old_alias", "%s %s" % (self.master_branch, binary_filename),
             "--new_alias", "%s %s" % (self.branch, binary_filename),
+            "--html_dir", "../ELF_DIFF_%s" % (self.vehicle),
             os.path.join(outdir_1, self.board, "bin", binary_filename),
             os.path.join(outdir_2, self.board, "bin", binary_filename)
         ]
