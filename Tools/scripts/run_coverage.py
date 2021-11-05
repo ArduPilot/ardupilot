@@ -161,8 +161,7 @@ class CoverageRunner(object):
                             "--debug",
                             "--no-clean",
                             "--speedup=" + str(SPEEDUP),
-                            "run.examples"
-            ], check=self.check_tests)
+                            "run.examples"], check=self.check_tests)
         self.progress("Running run.unit_tests")
         subprocess.run(
             [self.autotest,
@@ -173,15 +172,14 @@ class CoverageRunner(object):
         subprocess.run(["reset"], check=True)
         os.set_blocking(sys.stdout.fileno(), True)
         os.set_blocking(sys.stderr.fileno(), True)
-        test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker"]
+        test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker", "BalanceBot", "Sailboat"]
         for test in test_list:
             self.progress("Running test.%s" % test)
             subprocess.run([self.autotest,
                             "--timeout=" + str(TIMEOUT),
                             "--debug",
                             "--no-clean",
-                            "test.%s" % test,
-            ], check=self.check_tests)
+                            "test.%s" % test], check=self.check_tests)
         # TODO add any other execution path/s we can to maximise the actually
         # used code, can we run other tests or things?  Replay, perhaps?
         self.update_stats()
