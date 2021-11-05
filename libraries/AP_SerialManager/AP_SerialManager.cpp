@@ -417,6 +417,9 @@ void AP_SerialManager::init()
             set_options(i);
             switch (state[i].protocol) {
                 case SerialProtocol_None:
+                    // disable RX and TX pins in case they are shared
+                    // with another peripheral (eg. RCIN pin)
+                    uart->disable_rxtx();
                     break;
                 case SerialProtocol_Console:
                 case SerialProtocol_MAVLink:
