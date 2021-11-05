@@ -310,7 +310,7 @@ void GPS::update_ubx(const struct gps_data *d)
     const uint8_t MSG_SVINFO = 0x30;
     const uint8_t MSG_RELPOSNED = 0x3c;
 
-    static uint32_t _next_nav_sv_info_time = 0;
+    uint32_t _next_nav_sv_info_time = 0;
 
     uint16_t time_week;
     uint32_t time_week_ms;
