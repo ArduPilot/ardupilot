@@ -72,16 +72,22 @@ ssize_t GPS::write_to_autopilot(const char *p, size_t size) const
     }
 #endif
 
+    const float byteloss = _sitl->gps_byteloss[instance];
+
+    // shortcut if we're not doing byteloss:
+    if (!is_positive(byteloss)) {
+        return SerialDevice::write_to_autopilot(p, size);
+    }
+
     size_t ret = 0;
     while (size--) {
-        if (_sitl->gps_byteloss[instance] > 0.0f) {
             float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
-            if (r < _sitl->gps_byteloss[instance]) {
+            if (r < byteloss) {
                 // lose the byte
                 p++;
                 continue;
             }
-        }
+
         const ssize_t pret = SerialDevice::write_to_autopilot(p, 1);
         if (pret == 0) {
             // no space?
