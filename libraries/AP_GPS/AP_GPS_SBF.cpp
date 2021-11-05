@@ -71,6 +71,10 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
         state.gps_yaw_configured = true;
     }
+
+    if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+        state.gps_yaw_configured = true;
+    }
 }
 
 AP_GPS_SBF::~AP_GPS_SBF (void) {
@@ -92,9 +96,9 @@ AP_GPS_SBF::read(void)
         ret |= parse(temp);
     }
 
+    const uint32_t now = AP_HAL::millis();
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         if (config_step != Config_State::Complete) {
-            uint32_t now = AP_HAL::millis();
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2000) {
                     const size_t port_enable_len = strlen(_port_enable);
@@ -116,9 +120,20 @@ AP_GPS_SBF::read(void)
                                 }
                                 break;
                             case Config_State::SSO:
-                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                const char *extra_config;
+                                switch (get_type()) {
+                                    case AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA:
+                                        extra_config = "+AttEuler+AttCovEuler";
+                                        break;
+                                    case AP_GPS::GPS_Type::GPS_TYPE_SBF:
+                                    default:
+                                        extra_config = "";
+                                        break;
+                                }
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod%s,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)gps._com_port[state.instance]) == -1) {
+                                             (int)gps._com_port[state.instance],
+                                             extra_config) == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
@@ -145,6 +160,15 @@ AP_GPS_SBF::read(void)
                                         break;
                                 }
                                 break;
+                            case Config_State::SGA:
+                            {
+                                const bool GNSSAttitude = get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA;
+                                if (asprintf(&config_string, "sga, %s\n",
+                                             GNSSAttitude ? "MovingBase" : "none")) {
+                                  config_string = nullptr;
+                                }
+                                break;
+                            }
                             case Config_State::Complete:
                               // should never reach here, why search for a config if we have fully configured already
                               INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -168,13 +192,17 @@ AP_GPS_SBF::read(void)
             } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
                 // since init is done at this point and unmounting should be rate limited,
                 // take over the _init_blob_time variable
-                uint32_t now = AP_HAL::millis();
                 if (now > _init_blob_time) {
                     unmount_disk();
                     _init_blob_time = now + 1000;
                 }
             }
         }
+    }
+
+    if ((now - state.gps_yaw_time_ms) > 300) {
+        state.have_gps_yaw = false;
+        state.have_gps_yaw_accuracy = false;
     }
 
     return ret;
@@ -345,8 +373,11 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     _init_blob_index++;
                                     if ((gps._sbas_mode == AP_GPS::SBAS_Mode::Disabled)
                                         ||_init_blob_index >= ARRAY_SIZE(sbas_on_blob)) {
-                                        config_step = Config_State::Complete;
+                                        config_step = Config_State::SGA;
                                     }
+                                    break;
+                                case Config_State::SGA:
+                                    config_step = Config_State::Complete;
                                     break;
                                 case Config_State::Complete:
                                     // should never reach here, this implies that we validated a config string when we hadn't sent any
@@ -497,6 +528,56 @@ AP_GPS_SBF::process_message(void)
             state.speed_accuracy = sqrt(max_variance_squared);
         } else {
             state.have_speed_accuracy = false;
+        }
+        break;
+    }
+    case AttEuler:
+    {
+        if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+            const msg5938 &temp = sbf_msg.data.msg5938u;
+
+            check_new_itow(temp.TOW, sbf_msg.length);
+
+            constexpr double floatDNU = -2e-10f;
+            constexpr uint8_t errorBits = 0x8F; // Bits 0-1 are aux 1 baseline
+                                                // Bits 2-3 are aux 2 baseline
+                                                // Bit 7 is attitude not requested
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
+            if (((temp.Error & errorBits) == 0)
+                && (temp.Mode > 0)
+                && (temp.Heading != floatDNU)) {
+#pragma GCC diagnostic pop
+                state.gps_yaw = temp.Heading;
+                state.gps_yaw_time_ms = AP_HAL::millis();
+                state.have_gps_yaw = true;
+            } else {
+                state.gps_yaw = false;
+            }
+        }
+        break;
+    }
+    case AttEulerCov:
+    {
+        if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+            const msg5939 &temp = sbf_msg.data.msg5939u;
+
+            check_new_itow(temp.TOW, sbf_msg.length);
+
+            constexpr double floatDNU = -2e-10f;
+            constexpr uint8_t errorBits = 0x8F; // Bits 0-1 are aux 1 baseline
+                                                // Bits 2-3 are aux 2 baseline
+                                                // Bit 7 is attitude not requested
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
+            if (((temp.Error & errorBits) == 0)
+                && (temp.Cov_HeadHead != floatDNU)) {
+#pragma GCC diagnostic pop
+                state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
+                state.have_gps_yaw_accuracy = true;
+            } else {
+                state.gps_yaw_accuracy = false;
+            }
         }
         break;
     }
