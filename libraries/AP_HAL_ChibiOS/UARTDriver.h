@@ -46,6 +46,9 @@ public:
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
 
+    // disable TX/RX pins for unusued uart
+    void disable_rxtx(void) const override;
+    
     uint32_t available() override;
     uint32_t available_locked(uint32_t key) override;
 
