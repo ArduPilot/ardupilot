@@ -33,6 +33,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -154,6 +155,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
+
     // index 15
 
     // @Param: CUSTOM_PIT
@@ -163,6 +165,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
+
     // index 16
 
     // @Param: CUSTOM_YAW
@@ -172,6 +175,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
+
     // index 17
 
     AP_GROUPEND
@@ -227,6 +231,26 @@ void AP_AHRS::init()
 #if HAL_NMEA_OUTPUT_ENABLED
     _nmea_out = AP_NMEA_Output::probe();
 #endif
+
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+    // convert to new custom rotaton
+    // PARAMETER_CONVERSION - Added: Nov-2021
+    if (_board_orientation == ROTATION_CUSTOM_OLD) {
+        _board_orientation.set_and_save(ROTATION_CUSTOM_1);
+        AP_Param::ConversionInfo info;
+        if (AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+            info.type = AP_PARAM_FLOAT;
+            float rpy[3] = {};
+            AP_Float rpy_param;
+            for (info.old_group_element=15; info.old_group_element<=17; info.old_group_element++) {
+                if (AP_Param::find_old_parameter(&info, &rpy_param)) {
+                    rpy[info.old_group_element-15] = rpy_param.get();
+                }
+            }
+            AP::custom_rotations().convert(ROTATION_CUSTOM_1, rpy[0], rpy[1], rpy[2]);
+        }
+    }
+#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 }
 
 // updates matrices responsible for rotating vectors from vehicle body
