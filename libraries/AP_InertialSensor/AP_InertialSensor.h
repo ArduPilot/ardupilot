@@ -224,9 +224,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // set overall board orientation
-    void set_board_orientation(enum Rotation orientation, Matrix3f* custom_rotation = nullptr) {
+    void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
-        _custom_rotation = custom_rotation;
     }
 
     // return the selected loop rate at which samples are made avilable
@@ -595,7 +594,6 @@ private:
     
     // board orientation from AHRS
     enum Rotation _board_orientation;
-    Matrix3f* _custom_rotation;
 
     // per-sensor orientation to allow for board type defaults at runtime
     enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
