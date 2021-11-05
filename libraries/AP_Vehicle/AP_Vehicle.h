@@ -51,6 +51,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
+#include <AP_CustomRotations/AP_CustomRotations.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -413,6 +414,8 @@ private:
     bool done_safety_init;
 
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
+
+    AP_CustomRotations custom_rotations;
 };
 
 namespace AP {
