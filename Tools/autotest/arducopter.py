@@ -6279,7 +6279,21 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Landing gear should deploy with current_distance below min_distance")
             self.change_mode('STABILIZE')
-            self.wait_ready_to_arm()
+            timeout = 60
+            tstart = self.get_sim_time()
+            while not self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
+                if self.get_sim_time() - tstart > timeout:
+                    raise NotAchievedException("Failed to become armable after %f seconds" % timeout)
+                self.mav.mav.distance_sensor_send(
+                    0,  # time_boot_ms
+                    100, # min_distance (cm)
+                    2500, # max_distance (cm)
+                    200, # current_distance (cm)
+                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
+                    21, # id
+                    mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
+                    255  # covariance
+                )
             self.arm_vehicle()
             self.set_parameter("SERVO10_FUNCTION", 29)
             self.set_parameter("LGR_DEPLOY_ALT", 1)
@@ -6298,16 +6312,6 @@ class AutoTestCopter(AutoTest):
                 0
             )
 
-            self.mav.mav.distance_sensor_send(
-                0,  # time_boot_ms
-                100, # min_distance (cm)
-                2500, # max_distance (cm)
-                200, # current_distance (cm)
-                mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
-                21, # id
-                mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
-                255  # covariance
-            )
             self.context_collect("STATUSTEXT")
             tstart = self.get_sim_time()
             while True:
@@ -6537,6 +6541,7 @@ class AutoTestCopter(AutoTest):
             do_drivers = drivers[0:3]
             drivers = drivers[3:]
             command_line_args = []
+            self.context_push()
             for (offs, cmdline_argument, serial_num) in [(0, '--uartE', 4),
                                                          (1, '--uartF', 5),
                                                          (2, '--uartG', 6)]:
@@ -6549,6 +6554,7 @@ class AutoTestCopter(AutoTest):
                     self.set_parameter("RNGFND%u_TYPE" % (offs+1), rngfnd_param_value)
             self.customise_SITL_commandline(command_line_args)
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
+            self.context_pop()
 
         self.fly_rangefinder_mavlink()
 
