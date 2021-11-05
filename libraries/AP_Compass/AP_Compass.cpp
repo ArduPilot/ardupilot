@@ -7,6 +7,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
@@ -640,6 +641,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
+
     // index 49
 
     // @Param: CUS_PIT
@@ -650,6 +652,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
+
     // index 50
 
     // @Param: CUS_YAW
@@ -660,7 +663,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
+
     // index 51
+
     AP_GROUPEND
 };
 
@@ -687,6 +692,30 @@ void Compass::init()
     if (!_enabled) {
         return;
     }
+
+    // convert to new custom rotation method
+    // PARAMETER_CONVERSION - Added: Nov-2021
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
+            continue;
+        }
+        _state[i].orientation.set_and_save(ROTATION_CUSTOM_2);
+        AP_Param::ConversionInfo info;
+        if (AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+            info.type = AP_PARAM_FLOAT;
+            float rpy[3] = {};
+            AP_Float rpy_param;
+            for (info.old_group_element=49; info.old_group_element<=51; info.old_group_element++) {
+                if (AP_Param::find_old_parameter(&info, &rpy_param)) {
+                    rpy[info.old_group_element-49] = rpy_param.get();
+                }
+            }
+            AP::custom_rotations().convert(ROTATION_CUSTOM_2, rpy[0], rpy[1], rpy[2]);
+        }
+        break;
+    }
+#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
