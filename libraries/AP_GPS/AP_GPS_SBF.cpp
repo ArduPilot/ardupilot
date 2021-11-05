@@ -68,7 +68,10 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     // if we ever parse RTK observations it will always be of type NED, so set it once
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
-    if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
+
+    // yaw available when option bit set or using dual antenna
+    if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw) ||
+        (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA)) {
         state.gps_yaw_configured = true;
     }
 }
@@ -92,9 +95,9 @@ AP_GPS_SBF::read(void)
         ret |= parse(temp);
     }
 
+    const uint32_t now = AP_HAL::millis();
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         if (config_step != Config_State::Complete) {
-            uint32_t now = AP_HAL::millis();
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2000) {
                     const size_t port_enable_len = strlen(_port_enable);
@@ -116,9 +119,20 @@ AP_GPS_SBF::read(void)
                                 }
                                 break;
                             case Config_State::SSO:
-                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                const char *extra_config;
+                                switch (get_type()) {
+                                    case AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA:
+                                        extra_config = "+AttCovEuler+AuxAntPositions";
+                                        break;
+                                    case AP_GPS::GPS_Type::GPS_TYPE_SBF:
+                                    default:
+                                        extra_config = "";
+                                        break;
+                                }
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod%s,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,
-                                             (int)gps._com_port[state.instance]) == -1) {
+                                             (int)gps._com_port[state.instance],
+                                             extra_config) == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
@@ -145,6 +159,17 @@ AP_GPS_SBF::read(void)
                                         break;
                                 }
                                 break;
+                            case Config_State::SGA:
+                            {
+                                const char *targetGA = "none";
+                                if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+                                    targetGA = "MultiAntenna";
+                                }
+                                if (asprintf(&config_string, "sga, %s\n", targetGA)) {
+                                  config_string = nullptr;
+                                }
+                                break;
+                            }
                             case Config_State::Complete:
                               // should never reach here, why search for a config if we have fully configured already
                               INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -168,13 +193,18 @@ AP_GPS_SBF::read(void)
             } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
                 // since init is done at this point and unmounting should be rate limited,
                 // take over the _init_blob_time variable
-                uint32_t now = AP_HAL::millis();
                 if (now > _init_blob_time) {
                     unmount_disk();
                     _init_blob_time = now + 1000;
                 }
             }
         }
+    }
+
+    // yaw timeout after 300 milliseconds
+    if ((now - state.gps_yaw_time_ms) > 300) {
+        state.have_gps_yaw = false;
+        state.have_gps_yaw_accuracy = false;
     }
 
     return ret;
@@ -345,8 +375,11 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     _init_blob_index++;
                                     if ((gps._sbas_mode == AP_GPS::SBAS_Mode::Disabled)
                                         ||_init_blob_index >= ARRAY_SIZE(sbas_on_blob)) {
-                                        config_step = Config_State::Complete;
+                                        config_step = Config_State::SGA;
                                     }
+                                    break;
+                                case Config_State::SGA:
+                                    config_step = Config_State::Complete;
                                     break;
                                 case Config_State::Complete:
                                     // should never reach here, this implies that we validated a config string when we hadn't sent any
@@ -500,6 +533,51 @@ AP_GPS_SBF::process_message(void)
         }
         break;
     }
+    case AttEulerCov:
+    {
+        // yaw accuracy is taken from this message even though we actually calculate the yaw ourself (see AuxAntPositions below)
+        // this is OK based on the assumption that the calculation methods are similar and that inaccuracy arises from the sensor readings
+        if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+            const msg5939 &temp = sbf_msg.data.msg5939u;
+
+            check_new_itow(temp.TOW, sbf_msg.length);
+
+            constexpr double floatDNU = -2e-10f;
+            constexpr uint8_t errorBits = 0x8F; // Bits 0-1 are aux 1 baseline
+                                                // Bits 2-3 are aux 2 baseline
+                                                // Bit 7 is attitude not requested
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
+            if (((temp.Error & errorBits) == 0)
+                && (temp.Cov_HeadHead != floatDNU)) {
+#pragma GCC diagnostic pop
+                state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
+                state.have_gps_yaw_accuracy = true;
+            } else {
+                state.gps_yaw_accuracy = false;
+            }
+        }
+        break;
+    }
+    case AuxAntPositions:
+    {
+#if GPS_MOVING_BASELINE
+        if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+            // calculate yaw using reported antenna positions in earth-frame
+            // note that this calculation does not correct for the vehicle's roll and pitch meaning it is inaccurate at very high lean angles
+            const msg5942 &temp = sbf_msg.data.msg5942u;
+            check_new_itow(temp.TOW, sbf_msg.length);
+            if (temp.N > 0 && temp.ant1.Error == 0 && temp.ant1.AmbiguityType == 0) {
+                // valid RTK integer fix
+                const float rel_heading_deg = degrees(atan2f(temp.ant1.DeltaEast, temp.ant1.DeltaNorth));
+                calculate_moving_base_yaw(rel_heading_deg,
+                                          Vector3f(temp.ant1.DeltaNorth, temp.ant1.DeltaEast, temp.ant1.DeltaUp).length(),
+                                          -temp.ant1.DeltaUp);
+            }
+        }
+#endif
+        break;
+    }
     case BaseVectorGeod:
     {
 #pragma GCC diagnostic push
@@ -542,7 +620,7 @@ AP_GPS_SBF::process_message(void)
             }
 #endif // GPS_MOVING_BASELINE
 
-        } else {
+        } else if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
             state.rtk_baseline_y_mm = 0;
             state.rtk_baseline_x_mm = 0;
             state.rtk_baseline_z_mm = 0;
