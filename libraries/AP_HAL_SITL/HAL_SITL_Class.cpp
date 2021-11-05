@@ -63,6 +63,7 @@ static UARTDriver sitlUart5Driver(5, &sitlState);
 static UARTDriver sitlUart6Driver(6, &sitlState);
 static UARTDriver sitlUart7Driver(7, &sitlState);
 static UARTDriver sitlUart8Driver(8, &sitlState);
+static UARTDriver sitlUart9Driver(9, &sitlState);
 
 #if defined(HAL_BUILD_AP_PERIPH)
 static Empty::I2CDeviceManager i2c_mgr_instance;
@@ -90,6 +91,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart6Driver,   /* uartG */
         &sitlUart7Driver,   /* uartH */
         &sitlUart8Driver,   /* uartI */
+        &sitlUart9Driver,   /* uartJ */
         &i2c_mgr_instance,
         &spi_mgr_instance,  /* spi */
         &qspi_mgr_instance,
