@@ -73,6 +73,10 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
+    // @Group: CUST_ROT
+    // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
+    AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
+
     AP_GROUPEND
 };
 
@@ -203,6 +207,8 @@ void AP_Vehicle::setup()
 #if HAL_EFI_ENABLED
     efi.init();
 #endif
+
+    custom_rotations.init();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 }
