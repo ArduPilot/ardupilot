@@ -24,7 +24,7 @@ root_dir = os.path.realpath(os.path.join(tools_dir, '../..'))
 class CoverageRunner(object):
     """Coverage Runner Class."""
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, check_tests=True):
         """Set the files Path."""
         self.REPORT_DIR = os.path.join(root_dir, "reports/lcov-report")
         self.INFO_FILE = os.path.join(root_dir, self.REPORT_DIR, "lcov.info")
@@ -34,6 +34,7 @@ class CoverageRunner(object):
 
         self.autotest = os.path.join(root_dir, "Tools/autotest/autotest.py")
         self.verbose = verbose
+        self.check_tests = check_tests
         self.start_time = time.time()
 
     def progress(self, text):
@@ -161,15 +162,15 @@ class CoverageRunner(object):
                             "--no-clean",
                             "--speedup=" + str(SPEEDUP),
                             "run.examples"
-                            ])
+            ], check=self.check_tests)
         self.progress("Running run.unit_tests")
         subprocess.run(
             [self.autotest,
              "--timeout=" + str(TIMEOUT),
              "--debug",
              "--no-clean",
-             "run.unit_tests"])
-        subprocess.run(["reset"])
+             "run.unit_tests"], check=self.check_tests)
+        subprocess.run(["reset"], check=True)
         os.set_blocking(sys.stdout.fileno(), True)
         os.set_blocking(sys.stderr.fileno(), True)
         test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker"]
@@ -180,8 +181,7 @@ class CoverageRunner(object):
                             "--debug",
                             "--no-clean",
                             "test.%s" % test,
-                            ])
-
+            ], check=self.check_tests)
         # TODO add any other execution path/s we can to maximise the actually
         # used code, can we run other tests or things?  Replay, perhaps?
         self.update_stats()
@@ -289,10 +289,12 @@ if __name__ == '__main__':
                        help='Clean the build directory and build binaries for coverage.')
     group.add_argument('-u', '--update', action='store_true',
                        help='Update coverage statistics. To be used after running some tests.')
+    group.add_argument('-c', '--no-check-tests', action='store_true',
+                       help='Do not fail if tests do not run.')
 
     args = parser.parse_args()
 
-    runner = CoverageRunner(verbose=args.verbose)
+    runner = CoverageRunner(verbose=args.verbose, check_tests=not args.no_check_tests)
     if args.init:
         runner.init_coverage()
         sys.exit(0)
