@@ -15,9 +15,6 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 # order of UARTs (and USB).
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 
-# enable TX on USART6 (disabled for fmuv5 with iomcu)
-PG14 USART6_TX USART6 NODMA
-
 # disable the IOMCU UART
 undef IOMCU_UART
 undef UART8_TX
@@ -40,6 +37,13 @@ PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60)
 undef PG9
 undef USART6_RX
 PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
+PG14 GRCIN_TX INPUT FLOAT
+
+# alternative RC input as a USART. PI5 and PG14 are both connected
+# to the same RCIN port
+PI5 GRCIN INPUT FLOAT ALT(1)
+PG14 USART6_TX USART6 NODMA ALT(1)
+
 
 # setup for supplied power brick
 undef HAL_BATT_VOLT_SCALE
