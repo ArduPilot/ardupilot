@@ -39,12 +39,15 @@ void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
-    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true);
+    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+    backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
+#endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #ifndef IOMCU_FW
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
+    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
@@ -257,6 +260,10 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     { 115200,  0,   1, true },
     // SBUS settings, even parity, 2 stop bits:
     { 100000,  2,   2, true },
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+    // FastSBUS:
+    { 200000,  2,   2, true },
+#endif
     // CrossFire:
     { 416666,  0,   1, false },
 };
@@ -389,6 +396,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case SBUS:
     case SBUS_NI:
         return "SBUS";
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+    case FASTSBUS:
+        return "FastSBUS";
+#endif
     case DSM:
         return "DSM";
     case SUMD:

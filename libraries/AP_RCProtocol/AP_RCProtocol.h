@@ -21,6 +21,14 @@
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
 
+#ifndef AP_RCPROTOCOL_FASTSBUS_ENABLED
+  #ifdef IOMCU_FW
+    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
+  #else
+    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 1
+  #endif
+#endif
+
 class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
@@ -42,6 +50,9 @@ public:
         ST24       =  9,
         FPORT      = 10,
         FPORT2     = 11,
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+        FASTSBUS   = 12,
+#endif
         NONE    //last enum always is None
     };
     void init();
@@ -64,6 +75,9 @@ public:
     bool requires_3_frames(enum rcprotocol_t p) {
         switch (p) {
         case DSM:
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+        case FASTSBUS:
+#endif
         case SBUS:
         case SBUS_NI:
         case PPM:
