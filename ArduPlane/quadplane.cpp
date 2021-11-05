@@ -814,7 +814,6 @@ bool QuadPlane::setup(void)
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
-    wp_nav->wp_and_spline_init();
 
     // TODO: update this if servo function assignments change
     // used by relax_attitude_control() to control special behavior for vectored tailsitters
@@ -858,6 +857,9 @@ bool QuadPlane::setup(void)
     if (!tailsitter.transition_rate_fw.configured()) {
         tailsitter.transition_rate_fw.set_and_save(tailsitter.transition_angle_fw / (transition_time_ms/2000.0f));
     }
+
+    // init wp_nav variables after detaults are setup
+    wp_nav->wp_and_spline_init();
 
     // param count will have changed
     AP_Param::invalidate_count();
@@ -2832,7 +2834,7 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = stopping_speed;
 
         // maximum configured VTOL speed
-        const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+        const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
         const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
 
