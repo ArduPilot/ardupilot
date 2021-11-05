@@ -128,12 +128,7 @@ void AP_Compass_SITL::_timer()
         Vector3f f = (_eliptical_corr * new_mag_data) - _sitl->mag_ofs[i].get();
         // rotate compass
         f.rotate_inverse((enum Rotation)_sitl->mag_orient[i].get());
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        if (get_board_orientation() == ROTATION_CUSTOM) {
-            f = _sitl->ahrs_rotation * f;
-        } else {
-            f.rotate(get_board_orientation());
-        }
+        f.rotate(get_board_orientation());
         // scale the compass to simulate sensor scale factor errors
         f *= _sitl->mag_scaling[i];
 
