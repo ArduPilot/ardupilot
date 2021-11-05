@@ -70,14 +70,8 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 void AP_AHRS::update_orientation()
 {
     const enum Rotation orientation = (enum Rotation)_board_orientation.get();
-    if (orientation != ROTATION_CUSTOM) {
-        AP::ins().set_board_orientation(orientation);
-        AP::compass().set_board_orientation(orientation);
-    } else {
-        _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
-        AP::ins().set_board_orientation(orientation, &_custom_rotation);
-        AP::compass().set_board_orientation(orientation, &_custom_rotation);
-    }
+    AP::ins().set_board_orientation(orientation);
+    AP::compass().set_board_orientation(orientation);
 }
 
 // return a ground speed estimate in m/s
