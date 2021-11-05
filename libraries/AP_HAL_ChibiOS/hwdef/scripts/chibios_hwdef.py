@@ -558,9 +558,9 @@ class generic_pin(object):
     def periph_instance(self):
         '''return peripheral instance'''
         if self.periph_type() == 'PERIPH_TYPE::GPIO':
-            result = re.match(r'[A-Z_]*([0-9]*)', self.label)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.label)
         else:
-            result = re.match(r'[A-Z_]*([0-9]*)', self.type)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.type)
         if result:
             return int(result.group(1))
         return 0
