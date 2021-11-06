@@ -48,7 +48,9 @@ public:
     }
 
     bool fully_fwd() const;
-    float tilt_max_change(bool up) const;
+    float tilt_max_change(bool up, bool in_flap_range = false) const;
+    float get_fully_forward_tilt() const;
+    float get_forward_flight_tilt() const;
 
     // update yaw target for tiltrotor transition
     void update_yaw_target();
@@ -66,6 +68,7 @@ public:
     AP_Float tilt_yaw_angle;
     AP_Float fixed_angle;
     AP_Float fixed_gain;
+    AP_Float flap_angle_deg;
 
     float current_tilt;
     float current_throttle;
