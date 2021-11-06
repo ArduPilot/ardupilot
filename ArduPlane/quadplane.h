@@ -273,6 +273,7 @@ private:
     float transition_threshold(void);
 
     AP_Int16 transition_time_ms;
+    AP_Int16 back_trans_pitch_limit_ms;
 
     // transition deceleration, m/s/s
     AP_Float transition_decel;
