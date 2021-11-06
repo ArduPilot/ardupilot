@@ -90,7 +90,9 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 UARTDriver::UARTDriver(uint8_t _serial_num) :
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
-_baudrate(57600)
+_baudrate(57600),
+_last_remaining_update_ms(AP_HAL::millis()),
+_bw_lim_bytes_remaining(0)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
@@ -699,6 +701,21 @@ uint32_t UARTDriver::txspace()
     if (!_tx_initialised) {
         return 0;
     }
+
+    if(_bandwidth_Bps != 0){
+        const uint32_t now_ms = AP_HAL::millis();
+        if (_last_remaining_update_ms != now_ms){
+        	uint32_t const tdelta_ms = MIN(now_ms - _last_remaining_update_ms, UART_BW_LIMIT_MAX_TDELTA_MS);
+        	uint32_t const bytes_delta = (tdelta_ms * _bandwidth_Bps) / 1000;
+        	if(bytes_delta > 10){
+            	_bw_lim_bytes_remaining += bytes_delta;
+            	_last_remaining_update_ms = now_ms;
+        	}
+        }
+
+        return MIN(_bw_lim_bytes_remaining, _writebuf.space());
+    }
+
     return _writebuf.space();
 }
 
@@ -806,6 +823,13 @@ size_t UARTDriver::write(uint8_t c)
     if (unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
+
+    if(_bandwidth_Bps != 0){
+    	if (_bw_lim_bytes_remaining > 1){
+    		_bw_lim_bytes_remaining--;
+    	}
+    }
+
     _write_mutex.give();
     return ret;
 }
@@ -832,6 +856,15 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     WITH_SEMAPHORE(_write_mutex);
 
     size_t ret = _writebuf.write(buffer, size);
+
+    if(_bandwidth_Bps != 0){
+    	if (ret >= _bw_lim_bytes_remaining){
+    		_bw_lim_bytes_remaining = 0;
+    	} else {
+    		_bw_lim_bytes_remaining -= ret;
+    	}
+    }
+
     if (unbuffered_writes) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }

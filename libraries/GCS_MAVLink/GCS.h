@@ -43,6 +43,12 @@
 #define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED (HAVE_FILESYSTEM_SUPPORT && BOARD_FLASH_SIZE > 1024)
 #endif
 
+enum STREAM_OPTIONS_FLAG{
+	STREAM_OPTIONS_FLAG_DISABLE_STREAMS = 0x01,
+	STREAM_OPTIONS_FLAG_ALTERNATE_QOS 	= 0x02,
+	STREAM_OPTIONS_BANDWIDTH_OVERRIDE	= 0x04,
+};
+
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
@@ -98,6 +104,8 @@ public:
 
     // saveable rate of each stream
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
+    AP_Int16		streamOptions;
+    AP_Int32		bandwidthOverride;
 };
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -421,6 +429,7 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        *streamRates;
+    AP_Int16		streamOptions;
 
     void handle_heartbeat(const mavlink_message_t &msg) const;
 
