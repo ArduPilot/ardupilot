@@ -130,10 +130,7 @@ public:
 
     void VTOL_update() override;
 
-    void force_transistion_complete() override {
-        transition_state = TRANSITION_DONE; 
-        transition_start_ms = 0;
-    };
+    void force_transistion_complete() override;
 
     bool complete() const override { return transition_state == TRANSITION_DONE; }
 
@@ -158,9 +155,13 @@ private:
         TRANSITION_DONE
     } transition_state;
 
-    // timer start for transition
-    uint32_t transition_start_ms;
-    float transition_initial_pitch;
+    // for transition to VTOL flight
+    uint32_t vtol_transition_start_ms;
+    float vtol_transition_initial_pitch;
+
+    // for transition to FW flight
+    uint32_t fw_transition_start_ms;
+    float fw_transition_initial_pitch;
 
     // time when we were last in a vtol control mode
     uint32_t last_vtol_mode_ms;
