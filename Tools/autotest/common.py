@@ -1286,6 +1286,9 @@ class AutoTest(ABC):
 
         self.start_mavproxy_count = 0
 
+        self.last_sim_time_cached = 0
+        self.last_sim_time_cached_wallclock = 0
+
     def __del__(self):
         if self.rc_thread is not None:
             self.progress("Joining RC thread in __del__")
@@ -1592,7 +1595,7 @@ class AutoTest(ABC):
         while True:
             if time.time() - tstart > 30:
                 raise NotAchievedException("STAT_RESET did not go non-zero")
-            if self.get_parameter('STAT_RESET') != 0:
+            if self.get_parameter('STAT_RESET', timeout_in_wallclock=True) != 0:
                 break
 
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
@@ -2768,7 +2771,14 @@ class AutoTest(ABC):
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
             raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        return x.time_boot_ms * 1.0e-3
+        ret = x.time_boot_ms * 1.0e-3
+        if ret != self.last_sim_time_cached:
+            self.last_sim_time_cached = ret
+            self.last_sim_time_cached_wallclock = time.time()
+        else:
+            if time.time() - self.last_sim_time_cached_wallclock > 30:
+                raise AutoTestTimeoutException("sim_time_cached is not updating!")
+        return ret
 
     def sim_location(self):
         """Return current simulator location."""
