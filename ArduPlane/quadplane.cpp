@@ -429,6 +429,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: tiltrotor.cpp
     AP_SUBGROUPINFO(tiltrotor, "TILT_", 27, QuadPlane, Tiltrotor),
 
+    // @Param: BACKTRANS_MS
+    // @DisplayName: SLT and Tiltrotor back transition pitch limit duration
+    // @Description: Pitch angle will increase from 0 to angle max over this duration when switching into VTOL flight in a postion control mode. 0 Disables.
+    // @Units: ms
+    // @Range: 0 10000
+    AP_GROUPINFO("BACKTRANS_MS", 28, QuadPlane, back_trans_pitch_limit_ms, 3000),
+
     AP_GROUPEND
 };
 
@@ -1555,10 +1562,15 @@ void SLT_Transition::update()
             quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
             motors->output();
         }
+        last_fw_mode_ms = now;
+        last_fw_nav_pitch_cd = plane.nav_pitch_cd;
         return;
     }
 
     quadplane.motors_output();
+
+    last_fw_mode_ms = now;
+    last_fw_nav_pitch_cd = plane.nav_pitch_cd;
 }
 
 void SLT_Transition::VTOL_update()
@@ -2326,27 +2338,8 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
-        if (!tailsitter.enabled()) {
-            /*
-              limit the pitch down with an expanding envelope. This
-              prevents the velocity controller demanding nose down during
-              the initial slowdown if the target velocity curve is higher
-              than the actual velocity curve (for a high drag
-              aircraft). Nose down will cause a lot of downforce on the
-              wings which will draw a lot of current and also cause the
-              aircraft to lose altitude rapidly.pitch limit varies also with speed
-              to prevent inability to progress to position if moving from a loiter
-              to landing
-            */
-            float minlimit_cd = linear_interpolate(-300, MAX(-aparm.angle_max,plane.aparm.pitch_limit_min_cd),
-                                                   poscontrol.time_since_state_start_ms(),
-                                                   0, 5000);
-            if (plane.nav_pitch_cd < minlimit_cd) {
-                plane.nav_pitch_cd = minlimit_cd;
-                // tell the pos controller we have limited the pitch to
-                // stop integrator buildup
-                pos_control->set_externally_limited_xy();
-            }
+        if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+            pos_control->set_externally_limited_xy();
         }
 
         // call attitude controller
@@ -2398,6 +2391,10 @@ void QuadPlane::vtol_position_controller(void)
         // nav roll and pitch are controlled by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
+
+        if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+            pos_control->set_externally_limited_xy();
+        }
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -2651,16 +2648,21 @@ void QuadPlane::waypoint_controller(void)
     */
     // run wpnav controller
     wp_nav->update_wpnav();
-    
-    // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
-                                                       wp_nav->get_pitch(),
-                                                       wp_nav->get_yaw(),
-                                                       true);
-    // nav roll and pitch are controller by loiter controller
+
+    // nav roll and pitch are controller by waypoint controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
-    
+
+    if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+        pos_control->set_externally_limited_xy();
+    }
+
+    // call attitude controller
+    attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+                                                       plane.nav_pitch_cd,
+                                                       wp_nav->get_yaw(),
+                                                       true);
+
     // climb based on altitude error
     set_climb_rate_cms(assist_climb_rate_cms(), false);
     run_z_controller();
@@ -3691,6 +3693,61 @@ bool SLT_Transition::active() const
 {
     return quadplane.assisted_flight && ((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER));
 }
+
+bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_cd)
+{
+    if (quadplane.back_trans_pitch_limit_ms <= 0) {
+        // disabled
+        return false;
+    }
+    uint32_t limit_time_ms = quadplane.back_trans_pitch_limit_ms;
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_fw_mode_ms > limit_time_ms) {
+        // past transition period, nothing to do
+        return false;
+    }
+
+    // we limit pitch during initial transition
+    float max_limit_cd = linear_interpolate(MAX(last_fw_nav_pitch_cd,0), MIN(quadplane.aparm.angle_max,plane.aparm.pitch_limit_max_cd),
+                                                now,
+                                                last_fw_mode_ms, last_fw_mode_ms+limit_time_ms);
+
+    if (pitch_cd > max_limit_cd) {
+        pitch_cd = max_limit_cd;
+        return true;
+    }
+
+    /*
+        limit the pitch down with an expanding envelope. This
+        prevents the velocity controller demanding nose down during
+        the initial slowdown if the target velocity curve is higher
+        than the actual velocity curve (for a high drag
+        aircraft). Nose down will cause a lot of downforce on the
+        wings which will draw a lot of current and also cause the
+        aircraft to lose altitude rapidly.pitch limit varies also with speed
+        to prevent inability to progress to position if moving from a loiter
+        to landing
+    */
+    float min_limit_cd = linear_interpolate(MIN(last_fw_nav_pitch_cd,0), MAX(-quadplane.aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                            now,
+                                            last_fw_mode_ms, last_fw_mode_ms+limit_time_ms);
+
+    if (plane.nav_pitch_cd < min_limit_cd) {
+        plane.nav_pitch_cd = min_limit_cd;
+        return true;
+    }
+
+    return false;
+}
+
+void SLT_Transition::force_transistion_complete() {
+    transition_state = TRANSITION_DONE; 
+    transition_start_ms = 0;
+    transition_low_airspeed_ms = 0;
+    last_fw_mode_ms = AP_HAL::millis();
+    last_fw_nav_pitch_cd = plane.nav_pitch_cd;
+};
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 {

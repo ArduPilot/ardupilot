@@ -76,18 +76,10 @@ void ModeQLoiter::run()
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
 
-    if (now - quadplane.last_pidz_init_ms < (uint32_t)quadplane.transition_time_ms*2 && !quadplane.tailsitter.enabled()) {
-        // we limit pitch during initial transition
-        float pitch_limit_cd = linear_interpolate(quadplane.loiter_initial_pitch_cd, quadplane.aparm.angle_max,
-                                                  now,
-                                                  quadplane.last_pidz_init_ms, quadplane.last_pidz_init_ms+quadplane.transition_time_ms*2);
-        if (plane.nav_pitch_cd > pitch_limit_cd) {
-            plane.nav_pitch_cd = pitch_limit_cd;
-            pos_control->set_externally_limited_xy();
-        }
+    if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+        pos_control->set_externally_limited_xy();
     }
-    
-    
+
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
