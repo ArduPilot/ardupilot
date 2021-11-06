@@ -433,7 +433,7 @@ bool Tailsitter::transition_fw_complete(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
         return true;
     }
-    if (AP_HAL::millis() - transition->transition_start_ms > ((transition_angle_fw+(transition->transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
+    if (AP_HAL::millis() - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
         return true;
     }
@@ -473,7 +473,7 @@ bool Tailsitter::transition_vtol_complete(void) const
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
         return true;
     }
-    if (AP_HAL::millis() - transition->transition_start_ms >  ((trans_angle-(transition->transition_initial_pitch*0.01f))/transition_rate_vtol)*1500) {
+    if (AP_HAL::millis() - transition->vtol_transition_start_ms >  ((trans_angle-(transition->vtol_transition_initial_pitch*0.01f))/transition_rate_vtol)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
@@ -690,14 +690,13 @@ void Tailsitter_Transition::update()
     case TRANSITION_ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
             transition_state = TRANSITION_DONE;
-            transition_start_ms = 0;
             break;
         }
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         quadplane.assisted_flight = true;
-        uint32_t dt = now - transition_start_ms;
+        uint32_t dt = now - fw_transition_start_ms;
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
-        plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
+        plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
         plane.nav_roll_cd = 0;
         quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
@@ -729,15 +728,13 @@ void Tailsitter_Transition::VTOL_update()
           multicopter
          */
         transition_state = TRANSITION_ANGLE_WAIT_VTOL;
-        transition_start_ms = now;
-        transition_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);
     }
     last_vtol_mode_ms = now;
 
     if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
         float aspeed;
         bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
-        // provide assistance in forward flight portion of tailsitter transision
+        // provide assistance in forward flight portion of tailsitter transistion
         quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
@@ -770,11 +767,15 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
           during transition to vtol in a tailsitter try to raise the
           nose while keeping the wings level
          */
-        uint32_t dt = now - transition_start_ms;
+        uint32_t dt = now - vtol_transition_start_ms;
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
-        nav_pitch_cd = constrain_float(transition_initial_pitch + (tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
+        nav_pitch_cd = constrain_float(vtol_transition_initial_pitch + (tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
         nav_roll_cd = 0;
         allow_stick_mixing = false;
+
+    } else if (transition_state == TRANSITION_DONE) {
+        // still in FW, reset transition starting point
+        force_transistion_complete();
     }
 }
 
@@ -782,9 +783,17 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
 void Tailsitter_Transition::restart()
 {
     transition_state = TRANSITION_ANGLE_WAIT_FW;
-    transition_start_ms = AP_HAL::millis();
-    transition_initial_pitch = constrain_float(quadplane.ahrs_view->pitch_sensor,-8500,8500);
-};
+    fw_transition_start_ms = AP_HAL::millis();
+    fw_transition_initial_pitch = constrain_float(quadplane.attitude_control->get_attitude_target_quat().get_euler_pitch() * degrees(100.0),-8500,8500);
+}
+
+// force state to FW and setup for the transition back to VTOL
+void Tailsitter_Transition::force_transistion_complete()
+{
+    transition_state = TRANSITION_DONE;
+    vtol_transition_start_ms = AP_HAL::millis();
+    vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+}
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
 {
