@@ -91,8 +91,8 @@ UARTDriver::UARTDriver(uint8_t _serial_num) :
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600),
-_last_remaining_update_ms(AP_HAL::millis()),
-_bw_lim_bytes_remaining(0)
+_last_txspace_update_ms(AP_HAL::millis()),
+_bandwidth_space_available(0)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
@@ -702,18 +702,26 @@ uint32_t UARTDriver::txspace()
         return 0;
     }
 
+    //If bandwidth limited then base result on time since last call to txspace
     if(_bandwidth_Bps != 0){
         const uint32_t now_ms = AP_HAL::millis();
-        if (_last_remaining_update_ms != now_ms){
-        	uint32_t const tdelta_ms = MIN(now_ms - _last_remaining_update_ms, UART_BW_LIMIT_MAX_TDELTA_MS);
+        //Only update if milliseconds has changed since last call
+        if (_last_txspace_update_ms != now_ms){
+        	//Limit the maximum time step - nominal 1s
+        	uint32_t const tdelta_ms = MIN(now_ms - _last_txspace_update_ms, UART_BW_LIMIT_MAX_TDELTA_MS);
         	uint32_t const bytes_delta = (tdelta_ms * _bandwidth_Bps) / 1000;
+        	//Only increment available space if change is large enough.
+        	//This avoids problems with quantization effects at low rates.
         	if(bytes_delta > 10){
-            	_bw_lim_bytes_remaining += bytes_delta;
-            	_last_remaining_update_ms = now_ms;
+        		_bandwidth_space_available += bytes_delta;
+        		_last_txspace_update_ms = now_ms;
         	}
         }
+        //Limit bandwidth space to prevent it running away when not fully utilized
+        _bandwidth_space_available = MIN(_bandwidth_space_available, 1024);
 
-        return MIN(_bw_lim_bytes_remaining, _writebuf.space());
+        //Return minimum of bandwidth space and write buffer space.
+        return MIN(_bandwidth_space_available, _writebuf.space());;
     }
 
     return _writebuf.space();
@@ -824,9 +832,10 @@ size_t UARTDriver::write(uint8_t c)
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
 
+    //If bandwidth limiting then remove the transmit length from the available space
     if(_bandwidth_Bps != 0){
-    	if (_bw_lim_bytes_remaining > 1){
-    		_bw_lim_bytes_remaining--;
+    	if (_bandwidth_space_available > 1){
+    		_bandwidth_space_available--;
     	}
     }
 
@@ -857,11 +866,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 
     size_t ret = _writebuf.write(buffer, size);
 
+    //If bandwidth limiting then remove the transmit length from the available space
     if(_bandwidth_Bps != 0){
-    	if (ret >= _bw_lim_bytes_remaining){
-    		_bw_lim_bytes_remaining = 0;
+    	if (ret >= _bandwidth_space_available){
+    		_bandwidth_space_available = 0;
     	} else {
-    		_bw_lim_bytes_remaining -= ret;
+    		_bandwidth_space_available -= ret;
     	}
     }
 

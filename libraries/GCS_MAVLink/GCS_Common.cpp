@@ -100,6 +100,11 @@ GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
     _port = &uart;
 
     streamRates = parameters.streamRates;
+
+    //Override port bandwidth if parameter value is not default zero
+    if(parameters.bandwidthOverride != 0){
+        _port->set_bandwidth(parameters.bandwidthOverride);
+    }
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)

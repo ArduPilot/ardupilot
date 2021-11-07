@@ -507,19 +507,11 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  5),
 
-    // @Param: OPTIONS
-    // @DisplayName: Stream options
-    // @Description: Stream options
-    // @Values: 0:None, 1:Disable Streams, 2:QOS 4:Bandwidth override enable
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("OPTIONS", 10, GCS_MAVLINK_Parameters, streamOptions,  0),
-
     // @Param: BW_OVERRIDE
     // @DisplayName: Stream options
     // @Description: Stream options
-    // @Units: bps
-    // @Range: 0 100000000
+    // @Units: Bps
+    // @Range: 0 1000000
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("BW_OVERRIDE", 11, GCS_MAVLINK_Parameters, bandwidthOverride,  0),

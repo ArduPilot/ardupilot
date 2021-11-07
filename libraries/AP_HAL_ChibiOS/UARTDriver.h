@@ -135,6 +135,8 @@ public:
         if (sdef.is_usb) {
             return 200;
         }
+
+        //if bandwidth setting is not zero then use baud rate.
         if(_bandwidth_Bps != 0){
             return _bandwidth_Bps/1024;
         }
@@ -185,8 +187,10 @@ private:
 
     // bandwidth in bytes per second
     uint32_t _bandwidth_Bps;
-    uint32_t _last_remaining_update_ms;
-    uint32_t _bw_lim_bytes_remaining;
+    //Last time that the space in the buffer was updated
+    uint32_t _last_txspace_update_ms;
+    //tx space remaining when bandwidth limiting
+    uint32_t _bandwidth_space_available;
 
 #define UART_BW_LIMIT_MAX_TDELTA_MS		1000
 
