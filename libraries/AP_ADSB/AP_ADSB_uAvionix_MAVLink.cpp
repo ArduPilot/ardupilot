@@ -72,7 +72,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
     const int32_t latitude = _frontend._my_loc.lat;
     const int32_t longitude = _frontend._my_loc.lng;
     const int32_t altGNSS = _frontend._my_loc.alt * 10; // convert cm to mm
-    const int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    const int16_t velVert = -1.0f * gps_velocity.z * 1E2; // convert m/s to cm/s
     const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
     const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
     const uint8_t fixType = gps.status(); // this lines up perfectly with our enum
