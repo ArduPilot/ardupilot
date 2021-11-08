@@ -5746,6 +5746,7 @@ Also, ignores heartbeats not from our target system'''
         x["timeout"] = 1
         tstart = time.time()
         while True:
+            self.drain_all_pexpects()
             if time.time() - tstart > orig_timeout and not self.gdb:
                 if not self.sitl_is_running():
                     self.progress("SITL is not running")
