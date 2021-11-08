@@ -510,7 +510,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: BW_OVERRIDE
     // @DisplayName: Stream options
     // @Description: Stream options
-    // @Units: Bps
+    // @Units: 1/s
     // @Range: 0 1000000
     // @RebootRequired: True
     // @User: Advanced
