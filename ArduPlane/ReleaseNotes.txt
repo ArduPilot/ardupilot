@@ -1,3 +1,43 @@
+Release 4.1.3beta1 9th November 2021
+------------------------------------
+
+This is a minor release with some bug fixes and small number of new
+features.
+
+ - allow for scripting based quadplane motor mixers
+
+ - fixed double application of rangefinder landing offset on go-around
+
+ - avoid doing quadplane approach when close to landing point
+
+ - suppress D gains on fixed wing control surfaces when in ground mode
+   to prevent ground oscillation on some aircraft
+
+ - added OBAL Linux board support
+
+ - added CAN_Dn_UC_OPTION parameter to control conflicts in DroneCAN
+   DNA database
+
+ - fixed a bug in POSITION1 quadplane landing code that led to too
+   sharp pullup in VTOL automatic landing
+
+ - default maximum attitude rate for quadplanes to 75 degrees/second
+
+ - fixed a bug in use of non-zero EK3_PRIMARY value
+
+ - fixed a bug in ADSB vertical velocity reporting
+
+ - fixed an overshoot in quadplane guided takeoff
+
+ - allow for interruption of quadplane guided takeoff with a new
+   target location
+
+I plan on this being a short beta, with 4.1.3 final in a few days if
+no issues are found.
+
+Happy flying!
+
+
 Release 4.1.2 17th October 2021
 -------------------------------
 
