@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Options bitmask
     // @Description: 0 measured earth frame Z acceleration would indicate the vehicle is falling at 1g, 9.81m/s/s would be a hover, 0 = disabled
-    // @Bitmask: 0:Don't deploy landing gear, 1:Don't disarm, 2:Notify only, parachute will not be relased! testing only!
+    // @Bitmask: 0:Don't deploy landing gear, 1:Don't disarm, 2:Notify only parachute will not be relased! testing only!
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 8, AP_Parachute, _options, 0),
 
