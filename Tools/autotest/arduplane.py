@@ -3000,9 +3000,9 @@ class AutoTestPlane(AutoTest):
              "Test Gripper mission items",
              self.test_gripper_mission),
 
-            #("Parachute", "Test Parachute", self.test_parachute),
+            # ("Parachute", "Test Parachute", self.test_parachute),
 
-            #("ParachuteSinkRate", "Test Parachute (SinkRate triggering)", self.test_parachute_sinkrate),
+            # ("ParachuteSinkRate", "Test Parachute (SinkRate triggering)", self.test_parachute_sinkrate),
 
             ("AIRSPEED_AUTOCAL", "Test AIRSPEED_AUTOCAL", self.airspeed_autocal),
 
