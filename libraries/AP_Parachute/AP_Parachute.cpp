@@ -191,7 +191,7 @@ void AP_Parachute::release(release_reason reason)
 
     const uint32_t time_till_deploy = _cancel_timeout_ms - now;
     if (_cancel_delay > 0) {
-        gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Releaseing in %0.1f s - %s", time_till_deploy * 0.001f, string);
+        gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Releasing in %0.1f s - %s", time_till_deploy * 0.001f, string);
     } else {
         gcs().send_text(MAV_SEVERITY_INFO,"Parachute: %s", string);
     }
