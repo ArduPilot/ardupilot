@@ -871,7 +871,7 @@ void ModeAuto::wp_run()
     }
 
     // if set and no pilot input for 2 sec weathervane copter into wind
-    if (allows_weathervaning()) {
+    if (allows_weathervaning_auto()) {
         auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
     }
 
@@ -990,7 +990,7 @@ void ModeAuto::loiter_run()
     }
 
     // if set and no pilot input for 2 sec weathervane copter into wind
-    if (allows_weathervaning()) {
+    if (allows_weathervaning_auto()) {
         auto_yaw.update_weathervane(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_alt_above_ground_cm());
         target_yaw_rate += auto_yaw.rate_cds();
     }
