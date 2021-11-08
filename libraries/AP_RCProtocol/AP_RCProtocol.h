@@ -62,7 +62,24 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
+        switch (p) {
+        case DSM:
+        case SBUS:
+        case SBUS_NI:
+        case PPM:
+        case FPORT:
+        case FPORT2:
+            return true;
+        case IBUS:
+        case SUMD:
+        case SRXL:
+        case SRXL2:
+        case CRSF:
+        case ST24:
+        case NONE:
+            return false;
+        }
+        return false;
     }
 
     uint8_t num_channels();
