@@ -303,7 +303,6 @@ void AP_RCProtocol::check_added_uart(void)
             if (added.phase > CONFIG_420000_8N1) {
                 added.phase = (enum config_phase)0;
             }
-            added.baudrate = (added.baudrate==100000)?115200:100000;
             added.opened = false;
         }
     }
