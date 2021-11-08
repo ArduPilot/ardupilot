@@ -144,4 +144,7 @@ public:
 
     // return true requested baud on USB port
     virtual uint32_t get_usb_baud(void) const { return 0; }
+
+    // disable TX/RX pins for unusued uart
+    virtual void disable_rxtx(void) const {}
 };

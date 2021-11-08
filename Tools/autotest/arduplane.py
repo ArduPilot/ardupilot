@@ -3159,6 +3159,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect('STATUSTEXT')
         self.set_parameter("EK3_POS_I_GATE", 0)
         self.set_parameter("SIM_GPS_HZ", 1)
+        self.set_parameter("GPS_DELAY_MS", 300)
         self.wait_statustext("DCM Active", check_context=True, timeout=60)
         self.wait_statustext("EKF3 Active", check_context=True)
         self.wait_statustext("DCM Active", check_context=True)

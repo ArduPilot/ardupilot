@@ -1877,4 +1877,15 @@ void usb_initialise(void)
 }
 #endif
 
+// disable TX/RX pins for unusued uart
+void UARTDriver::disable_rxtx(void) const
+{
+    if (arx_line) {
+        palSetLineMode(arx_line, PAL_MODE_INPUT);
+    }
+    if (atx_line) {
+        palSetLineMode(atx_line, PAL_MODE_INPUT);
+    }
+}
+
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

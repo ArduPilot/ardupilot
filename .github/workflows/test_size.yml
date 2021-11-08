@@ -110,7 +110,7 @@ jobs:
       - name: elf_diff compare with Master
         shell: bash
         run: |
-          python3 -m pip install -U weasyprint elf_diff
+          python3 -m pip install -U weasyprint elf_diff anytree
           python3 -m elf_diff --bin_prefix=arm-none-eabi- $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
           tar cf multipage_pair_report.tar multipage_pair_report
 

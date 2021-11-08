@@ -1,8 +1,8 @@
-#include "AP_BattMonitor_INA231.h"
+#include "AP_BattMonitor_INA2xx.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
-#if HAL_BATTMON_INA231_ENABLED
+#if HAL_BATTMON_INA2XX_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,9 +18,46 @@ extern const AP_HAL::HAL& hal;
 // this should become a parameter in future
 #define MAX_AMPS 90.0
 
-void AP_BattMonitor_INA231::init(void)
+#ifndef HAL_BATTMON_INA2XX_BUS
+#define HAL_BATTMON_INA2XX_BUS 0
+#endif
+#ifndef HAL_BATTMON_INA2XX_ADDR
+#define HAL_BATTMON_INA2XX_ADDR 0
+#endif
+
+const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
+
+    // @Param: I2C_BUS
+    // @DisplayName: Battery monitor I2C bus number
+    // @Description: Battery monitor I2C bus number
+    // @Range: 0 3
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("I2C_BUS", 25, AP_BattMonitor_INA2XX, i2c_bus, HAL_BATTMON_INA2XX_BUS),
+
+    // @Param: I2C_ADDR
+    // @DisplayName: Battery monitor I2C address
+    // @Description: Battery monitor I2C address
+    // @Range: 0 127
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, i2c_address, HAL_BATTMON_INA2XX_ADDR),
+
+    AP_GROUPEND
+};
+
+AP_BattMonitor_INA2XX::AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
+                                             AP_BattMonitor::BattMonitor_State &mon_state,
+                                             AP_BattMonitor_Params &params)
+        : AP_BattMonitor_Backend(mon, mon_state, params)
 {
-    dev = hal.i2c_mgr->get_device(HAL_BATTMON_INA231_BUS, HAL_BATTMON_INA231_ADDR, 100000, false, 20);
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
+}
+
+void AP_BattMonitor_INA2XX::init(void)
+{
+    dev = hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, false, 20);
     if (!dev) {
         return;
     }
@@ -31,7 +68,7 @@ void AP_BattMonitor_INA231::init(void)
         !write_word(REG_CONFIG, REG_CONFIG_DEFAULT) ||
         !read_word(REG_CONFIG, config) ||
         config != REG_CONFIG_DEFAULT) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA231: Failed to find device 0x%04x", unsigned(config));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: Failed to find device 0x%04x", unsigned(config));
         return;
     }
 
@@ -44,20 +81,20 @@ void AP_BattMonitor_INA231::init(void)
     if (!write_word(REG_CONFIG, REG_CONFIG_RESET) || // reset
         !write_word(REG_CONFIG, conf) ||
         !write_word(REG_CALIBRATION, cal)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA231: Failed to configure device");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: Failed to configure device");
         return;
     }
 
 
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA231: found monitor on bus %u", HAL_BATTMON_INA231_BUS);
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: found monitor on I2C:%u:%02x", unsigned(i2c_bus), unsigned(i2c_address));
 
     if (dev) {
-        dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA231::timer, void));
+        dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2XX::timer, void));
     }
 }
 
 /// read the battery_voltage and current, should be called at 10hz
-void AP_BattMonitor_INA231::read(void)
+void AP_BattMonitor_INA2XX::read(void)
 {
     WITH_SEMAPHORE(accumulate.sem);
     _state.healthy = accumulate.count > 0;
@@ -88,7 +125,7 @@ void AP_BattMonitor_INA231::read(void)
  read word from register
  returns true if read was successful, false if failed
 */
-bool AP_BattMonitor_INA231::read_word(const uint8_t reg, int16_t& data) const
+bool AP_BattMonitor_INA2XX::read_word(const uint8_t reg, int16_t& data) const
 {
     // read the appropriate register from the device
     if (!dev->read_registers(reg, (uint8_t *)&data, sizeof(data))) {
@@ -105,13 +142,13 @@ bool AP_BattMonitor_INA231::read_word(const uint8_t reg, int16_t& data) const
   write word to a register, byte swapped
   returns true if write was successful, false if failed
 */
-bool AP_BattMonitor_INA231::write_word(const uint8_t reg, const uint16_t data) const
+bool AP_BattMonitor_INA2XX::write_word(const uint8_t reg, const uint16_t data) const
 {
     const uint8_t b[3] { reg, uint8_t(data >> 8), uint8_t(data&0xff) };
     return dev->transfer(b, sizeof(b), nullptr, 0);
 }
 
-void AP_BattMonitor_INA231::timer(void)
+void AP_BattMonitor_INA2XX::timer(void)
 {
     int16_t bus_voltage, current;
     if (!read_word(REG_BUS_VOLTAGE, bus_voltage) ||
@@ -124,4 +161,4 @@ void AP_BattMonitor_INA231::timer(void)
     accumulate.count++;
 }
 
-#endif // HAL_BATTMON_INA231_ENABLED
+#endif // HAL_BATTMON_INA2XX_ENABLED

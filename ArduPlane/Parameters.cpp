@@ -1142,11 +1142,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
-#if HAL_EFI_ENABLED
-    // @Group: EFI
-    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
-    AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
-#endif
+
+    // 22 was EFI
 
     // @Param: FWD_BAT_VOLT_MAX
     // @DisplayName: Forward throttle battery voltage compensation maximum voltage
@@ -1468,6 +1465,22 @@ void Plane::load_parameters(void)
 #endif
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
+
+
+    // PARAMETER_CONVERSION - Added: Oct-2021
+#if HAL_EFI_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 22;       // Old parameter index in g2
+        const uint16_t old_top_element = 86; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &efi, efi.var_info, old_index, old_top_element, false);
+    }
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

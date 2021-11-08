@@ -84,6 +84,7 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-Holybro*',
                  '/dev/serial/by-id/usb-mRo*',
                  '/dev/serial/by-id/usb-modalFC*',
+                 '/dev/serial/by-id/usb-Auterion*',
                  '/dev/serial/by-id/usb-*-BL_*',
                  '/dev/serial/by-id/usb-*_BL_*',
                  '/dev/tty.usbmodem*']
@@ -681,9 +682,6 @@ class uploader(object):
             print("Unsupported bootloader protocol %d" % self.bl_rev)
             raise RuntimeError("Bootloader protocol mismatch")
 
-        self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
-        self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
-        self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
         if self.no_extf:
             self.extf_maxsize = 0
         else:
@@ -692,6 +690,11 @@ class uploader(object):
             except Exception:
                 print("Could not get external flash size, assuming 0")
                 self.extf_maxsize = 0
+                self.__sync()
+
+        self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
+        self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
+        self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
 
     def dump_board_info(self):
         # OTP added in v4:

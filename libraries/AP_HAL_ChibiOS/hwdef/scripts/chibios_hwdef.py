@@ -109,6 +109,8 @@ airspeed_list = []
 
 all_lines = []
 
+dma_exclude_pattern = []
+
 # map from uart names to SERIALn numbers
 uart_serial_num = {}
 
@@ -556,9 +558,9 @@ class generic_pin(object):
     def periph_instance(self):
         '''return peripheral instance'''
         if self.periph_type() == 'PERIPH_TYPE::GPIO':
-            result = re.match(r'[A-Z_]*([0-9]*)', self.label)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.label)
         else:
-            result = re.match(r'[A-Z_]*([0-9]*)', self.type)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.type)
         if result:
             return int(result.group(1))
         return 0
@@ -2032,17 +2034,22 @@ def write_peripheral_enable(f):
 
 def get_dma_exclude(periph_list):
     '''return list of DMA devices to exclude from DMA'''
-    dma_exclude = []
+    dma_exclude = set()
+    for p in dma_exclude_pattern:
+        for periph in periph_list:
+            if fnmatch.fnmatch(periph, p):
+                dma_exclude.add(periph)
+
     for periph in periph_list:
         if periph in bylabel:
             p = bylabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
+                dma_exclude.add(periph)
         if periph in altlabel:
             p = altlabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
-    return dma_exclude
+                dma_exclude.add(periph)
+    return list(dma_exclude)
 
 
 def write_alt_config(f):
@@ -2427,6 +2434,10 @@ def process_line(line):
         default_gpio = a[1:]
         return
 
+    if a[0] == 'NODMA':
+        dma_exclude_pattern.extend(a[1:])
+        return
+    
     config[a[0]] = a[1:]
     if p is not None:
         # add to set of pins for primary config

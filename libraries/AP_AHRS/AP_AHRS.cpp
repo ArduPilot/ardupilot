@@ -2324,52 +2324,56 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
-    for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
-        Quaternion ekf2_quat;
-        EKF2.getQuaternionBodyToNED(i, ekf2_quat);
+    if (ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
+        for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
+            Quaternion ekf2_quat;
+            EKF2.getQuaternionBodyToNED(i, ekf2_quat);
 
-        // check roll and pitch difference
-        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
-        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
-            return false;
-        }
+            // check roll and pitch difference
+            const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
+            if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                return false;
+            }
 
-        // check yaw difference
-        Vector3f angle_diff;
-        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
-        const float yaw_diff = fabsf(angle_diff.z);
-        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
-            return false;
+            // check yaw difference
+            Vector3f angle_diff;
+            primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+            const float yaw_diff = fabsf(angle_diff.z);
+            if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                return false;
+            }
         }
+        total_ekf_cores = EKF2.activeCores();
     }
-    total_ekf_cores = EKF2.activeCores();
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // check primary vs ekf3
-    for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
-        Quaternion ekf3_quat;
-        EKF3.getQuaternionBodyToNED(i, ekf3_quat);
+    if (ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
+        for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
+            Quaternion ekf3_quat;
+            EKF3.getQuaternionBodyToNED(i, ekf3_quat);
 
-        // check roll and pitch difference
-        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
-        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
-            return false;
-        }
+            // check roll and pitch difference
+            const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
+            if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                return false;
+            }
 
-        // check yaw difference
-        Vector3f angle_diff;
-        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
-        const float yaw_diff = fabsf(angle_diff.z);
-        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
-            return false;
+            // check yaw difference
+            Vector3f angle_diff;
+            primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+            const float yaw_diff = fabsf(angle_diff.z);
+            if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                return false;
+            }
         }
+        total_ekf_cores += EKF3.activeCores();
     }
-    total_ekf_cores += EKF3.activeCores();
 #endif
 
     // check primary vs dcm

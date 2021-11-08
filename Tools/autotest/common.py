@@ -1286,6 +1286,9 @@ class AutoTest(ABC):
 
         self.start_mavproxy_count = 0
 
+        self.last_sim_time_cached = 0
+        self.last_sim_time_cached_wallclock = 0
+
     def __del__(self):
         if self.rc_thread is not None:
             self.progress("Joining RC thread in __del__")
@@ -1592,7 +1595,7 @@ class AutoTest(ABC):
         while True:
             if time.time() - tstart > 30:
                 raise NotAchievedException("STAT_RESET did not go non-zero")
-            if self.get_parameter('STAT_RESET') != 0:
+            if self.get_parameter('STAT_RESET', timeout_in_wallclock=True) != 0:
                 break
 
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
@@ -2758,17 +2761,31 @@ class AutoTest(ABC):
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
         self.drain_mav()
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
-        if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
-        return m.time_boot_ms * 1.0e-3
+        tstart = time.time()
+        while True:
+            self.drain_all_pexpects()
+            if time.time() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
+
+            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+            if m is None:
+                continue
+
+            return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
             raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        return x.time_boot_ms * 1.0e-3
+        ret = x.time_boot_ms * 1.0e-3
+        if ret != self.last_sim_time_cached:
+            self.last_sim_time_cached = ret
+            self.last_sim_time_cached_wallclock = time.time()
+        else:
+            if time.time() - self.last_sim_time_cached_wallclock > 30:
+                raise AutoTestTimeoutException("sim_time_cached is not updating!")
+        return ret
 
     def sim_location(self):
         """Return current simulator location."""
@@ -6047,6 +6064,11 @@ Also, ignores heartbeats not from our target system'''
             pass
         self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
+    def progress_file_content(self, filepath):
+        with open(filepath) as f:
+            for line in f:
+                self.progress(line.rstrip())
+
     def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
@@ -6102,7 +6124,7 @@ Also, ignores heartbeats not from our target system'''
             ardupilot_alive = True
         except Exception:
             # process is dead
-            self.progress("Not alive after test", send_statustext=False)
+            self.progress("No heartbeat after test", send_statustext=False)
             if self.sitl.isalive():
                 self.progress("pexpect says it is alive")
                 for tool in "dumpstack.sh", "dumpcore.sh":
@@ -6112,6 +6134,15 @@ Also, ignores heartbeats not from our target system'''
                         return False
             else:
                 self.progress("pexpect says it is dead")
+
+            # try dumping the process status file for more information:
+            status_filepath = "/proc/%u/status" % self.sitl.pid
+            self.progress("Checking for status filepath (%s)" % status_filepath)
+            if os.path.exists(status_filepath):
+                self.progress_file_content(status_filepath)
+            else:
+                self.progress("... does not exist")
+
             passed = False
             reset_needed = True
 

@@ -25,6 +25,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
+#include <AP_EFI/AP_EFI.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
@@ -352,6 +353,11 @@ protected:
     
 #if HAL_SMARTAUDIO_ENABLED
     AP_SmartAudio smartaudio;
+#endif
+
+#if HAL_EFI_ENABLED
+    // EFI Engine Monitor
+    AP_EFI efi;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];

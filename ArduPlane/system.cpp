@@ -86,11 +86,6 @@ void Plane::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-// init EFI monitoring
-#if HAL_EFI_ENABLED
-    g2.efi.init();
-#endif
-
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);

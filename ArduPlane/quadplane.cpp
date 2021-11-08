@@ -445,6 +445,9 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_PIT_FLTD", 10.0 },
     { "Q_A_RAT_PIT_SMAX", 50.0 },
     { "Q_A_RAT_YAW_SMAX", 50.0 },
+    { "Q_A_RATE_R_MAX",   75.0 },
+    { "Q_A_RATE_P_MAX",   75.0 },
+    { "Q_A_RATE_Y_MAX",   75.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
     { "Q_LOIT_ANG_MAX",   15.0 },
     { "Q_LOIT_ACC_MAX",   250.0 },
@@ -680,7 +683,6 @@ bool QuadPlane::setup(void)
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
-    wp_nav->wp_and_spline_init();
 
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
@@ -709,6 +711,9 @@ bool QuadPlane::setup(void)
     if (!transition) {
         AP_BoardConfig::allocation_error("transition");
     }
+
+    // init wp_nav variables after detaults are setup
+    wp_nav->wp_and_spline_init();
 
     transition->force_transistion_complete();
 
@@ -2282,7 +2287,7 @@ void QuadPlane::vtol_position_controller(void)
         float target_speed = stopping_speed;
 
         // maximum configured VTOL speed
-        const float wp_speed = pos_control->get_max_speed_xy_cms() * 0.01;
+        const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
         const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
 
