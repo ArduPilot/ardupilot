@@ -122,6 +122,19 @@ class AutoTestCopter(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("DISARM_DELAY", delay)
 
+    def set_standby(self, standby_enable):
+        '''set copter standby'''
+        self.run_cmd(218,
+                     76, # standby
+                     2 if standby_enable else 0,  # Set if enable otherwise disable
+                     0,
+                     0,
+                     0,
+                     0,
+                     0
+                     )
+        self.progress("Ran command")
+
     def user_takeoff(self, alt_min=30):
         '''takeoff using mavlink takeoff command'''
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
@@ -3146,12 +3159,13 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SERVO9_FUNCTION", 27)
         self.set_parameter("SIM_PARA_ENABLE", 1)
         self.set_parameter("SIM_PARA_PIN", 9)
-        self.set_parameter("RC10_OPTION", 76)
-        self.set_rc(10, 2000)
-        self.wait_statustext("Stand By Enabled", timeout=60)
+        # self.set_parameter("RC10_OPTION", 76)
+        # self.set_rc(10, 2000)
+        # self.wait_statustext("Stand By Enabled", timeout=60)
 
         # Test loss of control, should trip on SB angle error
         self.progress("Motor failure one motor - test loss of control")
+        self.set_standby(standby_enable=True)
         self.set_parameter("CHUTE_CRT_SINK", 0)
         self.set_parameter("CHUTE_MIN_ACCEL", 0)
         self.set_parameter("CHUTE_CRT_SNK_AB", 0)
@@ -3172,10 +3186,12 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
         self.set_parameter("SIM_ENGINE_FAIL", 0)
         self.set_parameter("SIM_ENGINE_MUL", 1)
+        self.set_standby(standby_enable=False)
         self.reboot_sitl()
 
         # Apply full pitch and roll sticks, should not deploy in standby
         # set standby angle very large so it will not trip
+        self.set_standby(standby_enable=True)
         self.set_parameter("CHUTE_SB_MX_ANG", 1000)
         self.takeoff(40, mode='LOITER', timeout=120)
         self.set_rc(1, 2000)
@@ -3196,12 +3212,14 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_ENGINE_MUL", 1)
         self.set_rc(9, 1000)
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
+        self.set_standby(standby_enable=False)
+        self.reboot_sitl()
 
         # Test that we cannot deploy the sink rate with throttle threshold when in standby
         self.progress("Test should not trip sink rate with throttle check in SB")
+        self.set_standby(standby_enable=True)
         self.set_parameter("CHUTE_CRT_SINK", 6)
         # We only want to be able to trip sink with throttle so switch off all other thresholds or make them very large
         self.set_parameter("CHUTE_MIN_ACCEL", 0)
@@ -3224,10 +3242,12 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_ENGINE_FAIL", 0)
         self.set_parameter("SIM_ENGINE_MUL", 1)
         self.disarm_vehicle(force=True)
+        self.set_standby(standby_enable=False)
         self.reboot_sitl()
 
         # Test that we can deploy on absolute sink rate in standby
         self.progress("Test should trip abs sink rate check in SB")
+        self.set_standby(standby_enable=True)
         self.set_parameter("CHUTE_CRT_SNK_AB", 8)
         self.set_parameter("CHUTE_CRT_SINK", 0)
         self.set_parameter("CHUTE_MIN_ACCEL", 0)
@@ -3243,6 +3263,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_ENGINE_FAIL", 0)
         self.set_parameter("SIM_ENGINE_MUL", 1)
         self.disarm_vehicle(force=True)
+        self.set_standby(standby_enable=False)
         self.reboot_sitl()
 
     def test_motortest(self, timeout=60):
