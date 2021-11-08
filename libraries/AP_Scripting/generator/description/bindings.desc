@@ -218,6 +218,9 @@ singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
+singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null
+singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
+singleton AP_Vehicle method set_target_throttle_rate_rpy boolean float -100 100 float'skip_check float'skip_check float'skip_check
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
