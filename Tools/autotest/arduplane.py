@@ -1921,6 +1921,16 @@ class AutoTestPlane(AutoTest):
             17 # squawk
         )
 
+    def SimADSB(self):
+        '''trivial tests to ensure simulated ADSB sensor continues to
+function'''
+        self.set_parameters({
+            "SIM_ADSB_COUNT": 1,
+            "ADSB_TYPE": 1,
+        })
+        self.reboot_sitl()
+        self.assert_receive_message('ADSB_VEHICLE', timeout=30)
+
     def test_adsb(self):
         self.context_push()
         ex = None
@@ -3297,6 +3307,10 @@ class AutoTestPlane(AutoTest):
             ("ADSB",
              "Test ADSB",
              self.test_adsb),
+
+            ("SimADSB",
+             "Test SIM_ADSB",
+             self.SimADSB),
 
             ("Button",
              "Test Buttons",
