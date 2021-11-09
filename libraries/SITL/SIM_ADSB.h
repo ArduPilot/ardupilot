@@ -49,43 +49,35 @@ private:
     ADSB_EMITTER_TYPE type;
 };
         
-class ADSB {
+    class ADSB : public SerialDevice {
 public:
-    ADSB(const struct sitl_fdm &_fdm, const Location& _home, const uint8_t _instance) : home(_home), instance(_instance) {};
-    void update(void);
+    ADSB() {};
+    void update(const class Aircraft &aircraft);
 
 private:
-    const char *target_address = "127.0.0.1";
-    const uint16_t target_port_base = 5762;
-
-    const uint8_t instance = 0;
-
-    const Location& home;
-    uint8_t num_vehicles = 0;
+    uint8_t num_vehicles;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];
     
     // reporting period in ms
     const float reporting_period_ms = 1000;
-    uint32_t last_report_us = 0;
-    uint32_t last_update_us = 0;
-    uint32_t last_tx_report_ms = 0;
+    uint32_t last_report_us;
+    uint32_t last_update_us;
+    uint32_t last_tx_report_ms;
     
-    uint32_t last_heartbeat_ms = 0;
+    uint32_t last_heartbeat_ms;
     bool seen_heartbeat = false;
     uint8_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
-    SocketAPM mav_socket { false };
     struct {
         // socket to telem2 on aircraft
-        bool connected;
         mavlink_message_t rxmsg;
         mavlink_status_t status;
         uint8_t seq;
     } mavlink {};
 
-    void send_report(void);
+    void send_report(const SITL::Aircraft&);
 };
 
 }  // namespace SITL
