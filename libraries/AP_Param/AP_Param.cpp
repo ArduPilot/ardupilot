@@ -342,7 +342,6 @@ bool AP_Param::setup(void)
             hdr2.revision == k_EEPROM_revision &&
             _storage.copy_area(_storage_bak)) {
             // restored from backup
-            INTERNAL_ERROR(AP_InternalError::error_t::params_restored);
             return true;
         }
         // header doesn't match. We can't recover any variables. Wipe
