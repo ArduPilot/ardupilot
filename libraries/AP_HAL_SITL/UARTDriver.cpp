@@ -89,6 +89,16 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *devtype = strtok_r(s, ":", &saveptr);
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
+#if !defined(HAL_BUILD_AP_PERIPH)
+        if (_portNumber == 2 && AP::sitl()->adsb_plane_count >= 0) {
+            // this is ordinarily port 5762.  The ADSB simulation assumed
+            // this port, so if enabled we assume we'll be doing ADSB...
+            // add sanity check here that we're doing mavlink on this port?
+            ::printf("SIM-ADSB connection on port %u\n", _portNumber);
+            _connected = true;
+            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr);
+        } else
+#endif
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
             bool wait = (args2 && strcmp(args2, "wait") == 0);
