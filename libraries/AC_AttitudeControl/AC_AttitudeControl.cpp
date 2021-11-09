@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Units: deg/s
     // @Range: 0 1080
     // @Increment: 1
-    // @Values: 0:Disabled, 360:Slow, 720:Medium, 1080:Fast
+    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast
     // @User: Advanced
     AP_GROUPINFO("RATE_R_MAX", 17, AC_AttitudeControl, _ang_vel_roll_max, 0.0f),
 
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Units: deg/s
     // @Range: 0 1080
     // @Increment: 1
-    // @Values: 0:Disabled, 360:Slow, 720:Medium, 1080:Fast
+    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast
     // @User: Advanced
     AP_GROUPINFO("RATE_P_MAX", 18, AC_AttitudeControl, _ang_vel_pitch_max, 0.0f),
 
@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Units: deg/s
     // @Range: 0 1080
     // @Increment: 1
-    // @Values: 0:Disabled, 360:Slow, 720:Medium, 1080:Fast
+    // @Values: 0:Disabled, 60:Slow, 180:Medium, 360:Fast
     // @User: Advanced
     AP_GROUPINFO("RATE_Y_MAX", 19, AC_AttitudeControl, _ang_vel_yaw_max, 0.0f),
 
