@@ -292,8 +292,8 @@ private:
         Surface surface = Surface::GROUND;
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
-        bool valid_for_logging;     // true if target_alt_cm is valid for logging
-        bool reset_target;          // true if target should be reset because of change in tracking_state
+        bool valid_for_logging;     // true if we have a desired target altitude
+        bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
 
 #if RPM_ENABLED == ENABLED
