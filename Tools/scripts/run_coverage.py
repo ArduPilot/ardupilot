@@ -136,7 +136,7 @@ class CoverageRunner(object):
                  "build.unit_tests"],
                 check=True)
             subprocess.run([waf_light, "configure", "--debug", "--coverage"], check=True)
-            subprocess.run([waf_light], check=True)
+            subprocess.run([waf_light, "copter"], check=True)
         except subprocess.CalledProcessError as err:
             print("ERROR :")
             print(err.cmd)
@@ -172,7 +172,7 @@ class CoverageRunner(object):
         subprocess.run(["reset"])
         os.set_blocking(sys.stdout.fileno(), True)
         os.set_blocking(sys.stderr.fileno(), True)
-        test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker"]
+        test_list = ["Copter"]
         for test in test_list:
             self.progress("Running test.%s" % test)
             subprocess.run([self.autotest,
