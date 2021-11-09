@@ -103,10 +103,6 @@ void AP_MotorsCoax::output_to_motors()
 uint16_t AP_MotorsCoax::get_motor_mask()
 {
     uint32_t motor_mask =
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 |
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6;
     uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
