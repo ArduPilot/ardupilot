@@ -2353,7 +2353,7 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint32_t flight_sw_version;
     uint32_t middleware_sw_version = 0;
 #ifdef APJ_BOARD_ID
-    uint32_t board_version { APJ_BOARD_ID << 16 };
+    uint32_t board_version { uint32_t(APJ_BOARD_ID) << 16 };
 #else
     uint32_t board_version = 0;
 #endif
