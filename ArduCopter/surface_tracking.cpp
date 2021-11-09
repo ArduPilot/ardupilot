@@ -4,37 +4,50 @@
 //   level measured using the range finder.
 void Copter::SurfaceTracking::update_surface_offset()
 {
-    float offset_cm = 0.0;
 #if RANGEFINDER_ENABLED == ENABLED
+    // check for timeout
+    const uint32_t now_ms = millis();
+    const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
+
     // check tracking state and that range finders are healthy
     if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
         ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0))) {
 
-        // init based on tracking direction/state
+        // calculate surfaces height above the EKF origin
+        // e.g. if vehicle is 10m above the EKF origin and rangefinder reports alt of 3m.  curr_surface_alt_above_origin_cm is 7m (or 700cm)
         RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
         const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
-        offset_cm = copter.inertial_nav.get_altitude() - dir * rf_state.alt_cm;
+        float curr_surface_alt_above_origin_cm = copter.inertial_nav.get_altitude() - dir * rf_state.alt_cm;
+
+        // update position controller target offset to the surface's alt above the EKF origin
+        copter.pos_control->set_pos_offset_target_z_cm(curr_surface_alt_above_origin_cm);
+        last_update_ms = now_ms;
+        valid_for_logging = true;
 
         // reset target altitude if this controller has just been engaged
         // target has been changed between upwards vs downwards
         // or glitch has cleared
-        const uint32_t now = millis();
-        if ((now - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) ||
+        if (timeout ||
             reset_target ||
             (last_glitch_cleared_ms != rf_state.glitch_cleared_ms)) {
-            copter.pos_control->set_pos_offset_z_cm(offset_cm);
+            copter.pos_control->set_pos_offset_z_cm(curr_surface_alt_above_origin_cm);
             reset_target = false;
             last_glitch_cleared_ms = rf_state.glitch_cleared_ms;
         }
-        last_update_ms = now;
-        valid_for_logging = true;
+
     } else {
-        copter.pos_control->set_pos_offset_z_cm(offset_cm);
+        // reset position controller offsets if surface tracking is inactive
+        // flag target should be reset when/if it next becomes active
+        if (timeout) {
+            copter.pos_control->set_pos_offset_z_cm(0);
+            copter.pos_control->set_pos_offset_target_z_cm(0);
+            reset_target = true;
+        }
     }
 #else
-    copter.pos_control->set_pos_offset_z_cm(offset_cm);
+    copter.pos_control->set_pos_offset_z_cm(0);
+    copter.pos_control->set_pos_offset_target_z_cm(0);
 #endif
-    copter.pos_control->set_pos_offset_target_z_cm(offset_cm);
 }
 
 
