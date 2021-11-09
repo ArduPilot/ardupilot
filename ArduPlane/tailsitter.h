@@ -150,6 +150,8 @@ public:
 
     MAV_VTOL_STATE get_mav_vtol_state() const override;
 
+    bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
+
 private:
 
     enum {
@@ -161,6 +163,10 @@ private:
     // for transition to VTOL flight
     uint32_t vtol_transition_start_ms;
     float vtol_transition_initial_pitch;
+
+    // for rate limit of VTOL flight
+    uint32_t vtol_limit_start_ms;
+    float vtol_limit_initial_pitch;
 
     // for transition to FW flight
     uint32_t fw_transition_start_ms;

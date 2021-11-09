@@ -757,6 +757,11 @@ void Tailsitter_Transition::VTOL_update()
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
         }
+        // transition to VTOL complete, if armed set vtol rate limit starting point
+        if (hal.util->get_soft_armed()) {
+            vtol_limit_start_ms = now;
+            vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
+        }
     }
     restart();
 }
@@ -795,6 +800,38 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
         // still in FW, reset transition starting point
         force_transistion_complete();
     }
+}
+
+bool Tailsitter_Transition::set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd)
+{
+    if (vtol_limit_start_ms == 0) {
+        return false;
+    }
+    // prevent pitching towards 0 too quickly
+    const float pitch_change_cd = (AP_HAL::millis() - vtol_limit_start_ms) * tailsitter.transition_rate_vtol * 0.1;
+    if (pitch_change_cd > fabsf(vtol_limit_initial_pitch)) {
+        // limit has passed 0, nothing to do
+        vtol_limit_start_ms = 0;
+        return false;
+    }
+    // continue limiting while limit angle is larger than desired angle
+    if (is_negative(vtol_limit_initial_pitch)) {
+        const float pitch_limit = vtol_limit_initial_pitch + pitch_change_cd;
+        if (nav_pitch_cd > pitch_limit) {
+            nav_pitch_cd = pitch_limit;
+            nav_roll_cd = 0;
+            return true;
+        }
+    } else {
+        const float pitch_limit = vtol_limit_initial_pitch - pitch_change_cd;
+        if (nav_pitch_cd < pitch_limit) {
+            nav_pitch_cd = pitch_limit;
+            nav_roll_cd = 0;
+            return true;
+        }
+    }
+    vtol_limit_start_ms = 0;
+    return false;
 }
 
 // setup for the transition back to fixed wing
