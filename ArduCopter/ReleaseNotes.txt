@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.1.1-rc1 16-Oct-2021
+Copter 4.1.1 10-Nov-2021 / 4.1.1-rc1 16-Oct-2021
 Changes from 4.1.0 
 1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
 2) ESC telemetry sent during compassmot
