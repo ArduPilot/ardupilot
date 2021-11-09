@@ -168,15 +168,6 @@ void SITL_State::_fdm_input_step(void)
     if (_sitl != nullptr) {
         _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder(_sitl->state.range);
-
-        if (_sitl->adsb_plane_count >= 0 &&
-            adsb == nullptr) {
-            adsb = new SITL::ADSB(_sitl->state, sitl_model->get_home(), get_instance());
-        } else if (_sitl->adsb_plane_count == -1 &&
-                   adsb != nullptr) {
-            delete adsb;
-            adsb = nullptr;
-        }
     }
 
     // trigger all APM timers.
@@ -220,6 +211,14 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         vicon = new SITL::Vicon();
         return vicon;
+    } else if (streq(name, "adsb")) {
+        // ADSB is a stand-out as it is the only serial device which
+        // will cope with begin() being called multiple times on a
+        // serial port
+        if (adsb == nullptr) {
+            adsb = new SITL::ADSB();
+        }
+        return adsb;
     } else if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
             AP_HAL::panic("Only one benewake_tf02 at a time");
@@ -534,7 +533,7 @@ void SITL_State::_fdm_input_local(void)
         gimbal->update();
     }
     if (adsb != nullptr) {
-        adsb->update();
+        adsb->update(*sitl_model);
     }
     if (vicon != nullptr) {
         Quaternion attitude;
