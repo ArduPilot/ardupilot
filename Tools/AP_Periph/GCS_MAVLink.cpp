@@ -49,10 +49,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
-const struct AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
-
 uint8_t GCS_MAVLINK_Periph::sysid_my_gcs() const
 {
     return periph.g.sysid_this_mav;
