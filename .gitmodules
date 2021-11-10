@@ -31,3 +31,6 @@
 [submodule "modules/CrashDebug"]
 	path = modules/CrashDebug
 	url = https://github.com/adamgreen/CrashDebug
+[submodule "modules/DroneCAN/pydronecan"]
+	path = modules/DroneCAN/pydronecan
+	url = https://github.com/DroneCAN/pydronecan
