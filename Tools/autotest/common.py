@@ -6001,6 +6001,9 @@ Also, ignores heartbeats not from our target system'''
             text = text.encode('ascii')
         self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text)
 
+    def get_stacktrace(self):
+        return ''.join(traceback.format_stack())
+
     def get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
             ret = "%s\n" % e
