@@ -22,9 +22,6 @@
 [submodule "modules/gsoap"]
 	path = modules/gsoap
 	url = https://github.com/ArduPilot/gsoap
-[submodule "modules/canard_dsdlc"]
-	path = modules/canard_dsdlc
-	url =  https://github.com/ardupilot/canard_dsdlc
 [submodule "modules/DroneCAN/DSDL"]
 	path = modules/DroneCAN/DSDL
 	url = https://github.com/DroneCAN/DSDL.git
