@@ -37,10 +37,6 @@ AP_BoardLED board_led;
 // create fake gcs object
 GCS_Dummy _gcs;
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 // This example uses GPS system. Create it.
 static AP_GPS gps;
 // Serial manager is needed for UART communications
