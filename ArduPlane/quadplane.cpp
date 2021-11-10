@@ -885,6 +885,10 @@ void QuadPlane::hold_stabilize(float throttle_in)
 void QuadPlane::run_z_controller(void)
 {
     const uint32_t now = AP_HAL::millis();
+    if (tailsitter.in_vtol_transition(now)) {
+        // never run Z controller in tailsitter transtion
+        return;
+    }
     if (!pos_control->is_active_z()) {
         // set vertical speed and acceleration limits
         pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
