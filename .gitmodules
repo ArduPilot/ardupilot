@@ -31,3 +31,6 @@
 [submodule "modules/DroneCAN/pydronecan"]
 	path = modules/DroneCAN/pydronecan
 	url = https://github.com/DroneCAN/pydronecan
+[submodule "modules/DroneCAN/dronecan_dsdlc"]
+	path = modules/DroneCAN/dronecan_dsdlc
+	url = https://github.com/DroneCAN/dronecan_dsdlc
