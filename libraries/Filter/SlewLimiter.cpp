@@ -41,6 +41,7 @@ SlewLimiter::SlewLimiter(const float &_slew_rate_max, const float &_slew_rate_ta
 float SlewLimiter::modifier(float sample, float dt)
 {
     if (slew_rate_max <= 0) {
+        _output_slew_rate = 0.0;
         return 1.0;
     }
 
