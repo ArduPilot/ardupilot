@@ -685,6 +685,14 @@ void Tailsitter::speed_scaling(void)
     }
 }
 
+// return true if pitch control should be relaxed
+// on vectored belly sitters the pitch control is not relaxed in order to keep motors pointing and avoid risk of props hitting the ground
+// always relax after a transition
+bool Tailsitter::relax_pitch()
+{
+    return !enabled() || !_is_vectored || (transition->vtol_limit_start_ms != 0);
+}
+
 /*
   update for transition from quadplane to fixed wing mode
  */
