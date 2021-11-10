@@ -62,9 +62,8 @@ public:
     // return the transition_angle_vtol value
     int8_t get_transition_angle_vtol() const;
 
-
-    // true when flying a tilt-vectored tailsitter
-    bool _is_vectored;
+    // return true if pitch control should be relaxed
+    bool relax_pitch();
 
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
@@ -110,6 +109,9 @@ public:
 private:
 
     bool setup_complete;
+
+    // true when flying a tilt-vectored tailsitter
+    bool _is_vectored;
 
     // refences for convenience
     QuadPlane& quadplane;

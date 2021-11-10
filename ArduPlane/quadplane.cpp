@@ -906,7 +906,7 @@ void QuadPlane::relax_attitude_control()
 {
     // disable roll and yaw control for vectored tailsitters
     // if not a vectored tailsitter completely disable attitude control
-    attitude_control->relax_attitude_controllers(tailsitter._is_vectored);
+    attitude_control->relax_attitude_controllers(!tailsitter.relax_pitch());
 }
 
 /*
