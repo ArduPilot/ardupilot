@@ -3132,13 +3132,14 @@ class AutoTestPlane(AutoTest):
 
         self.customise_SITL_commandline([], wipe=True)
 
+        self.set_analog_rangefinder_parameters()
+
         self.set_parameters({
             "SIM_BARO_DRIFT": -0.02,
             "SIM_TERRAIN": 0,
             "RNGFND_LANDING": 1,
-            "RNGFND1_MAX_CM": 4000,
             "LAND_SLOPE_RCALC": 2,
-            "LAND_ABORT_DEG": 2,
+            "LAND_ABORT_DEG": 1,
         })
 
         self.reboot_sitl()
