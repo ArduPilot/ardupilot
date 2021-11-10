@@ -2404,6 +2404,7 @@ class AutoTest(ABC):
         while mav.recv_match(blocking=False) is not None:
             count += 1
         if quiet:
+            self.in_drain_mav = False
             return
         tdelta = time.time() - tstart
         if tdelta == 0:
