@@ -1460,11 +1460,11 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     status.packet_rx_drop_count = 0;
 
+    const uint32_t protocol_timeout = 4000;
     const uint16_t nbytes = _port->available();
     for (uint16_t i=0; i<nbytes; i++)
     {
         const uint8_t c = (uint8_t)_port->read();
-        const uint32_t protocol_timeout = 4000;
         
         if (alternative.handler &&
             now_ms - alternative.last_mavlink_ms > protocol_timeout) {
