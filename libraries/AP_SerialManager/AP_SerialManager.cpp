@@ -465,20 +465,20 @@ void AP_SerialManager::init()
                 case SerialProtocol_Volz:
                                     // Note baudrate is hardcoded to 115200
                                     state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
+                                    uart->set_unbuffered_writes(true);
                                     uart->begin(map_baudrate(state[i].baud),
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
-                                    uart->set_unbuffered_writes(true);
                                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
                 case SerialProtocol_Sbus1:
                     state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
+                    uart->set_unbuffered_writes(true);
                     uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
                     uart->configure_parity(2);    // enable even parity
                     uart->set_stop_bits(2);
-                    uart->set_unbuffered_writes(true);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
@@ -490,10 +490,10 @@ void AP_SerialManager::init()
                     break;
 
                 case SerialProtocol_Robotis:
+                    uart->set_unbuffered_writes(true);
                     uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
-                    uart->set_unbuffered_writes(true);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
