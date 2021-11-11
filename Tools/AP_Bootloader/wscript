@@ -11,14 +11,14 @@ def build(bld):
         flashiface_lib = []
     
     # build external libcanard library
-    bld.stlib(source='../../modules/libcanard/canard.c',
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
               target='libcanard')
 
     bld.ap_program(
         use=['ap','libcanard','AP_Bootloader_libs'],
         program_groups='bootloader',
-        includes=[bld.env.SRCROOT + '/modules/libcanard',
-                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
+        includes=[bld.env.SRCROOT + '/modules/DroneCAN/libcanard',
+                  bld.env.BUILDROOT + '/modules/DroneCAN/libcanard/dsdlc_generated']
         )
 
     bld.ap_stlib(
@@ -31,7 +31,7 @@ def build(bld):
     bld(
         # build libcanard headers
         source=bld.path.ant_glob("modules/DroneCAN/DSDL/**/*.uavcan"),
-        rule="python3 ${SRCROOT}/modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/uavcan ${SRCROOT}/modules/DroneCAN/DSDL/ardupilot ${SRCROOT}/modules/DroneCAN/DSDL/com",
+        rule="python3 ${SRCROOT}/modules/DroneCAN/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/DroneCAN/libcanard/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/uavcan ${SRCROOT}/modules/DroneCAN/DSDL/ardupilot ${SRCROOT}/modules/DroneCAN/DSDL/com",
         group='dynamic_sources',
     )
         
