@@ -31,7 +31,7 @@ public:
 
 private:
 
-    uint32_t gpsDdToDmsFormat(float ddm);
+    uint32_t gpsDdToDmsFormat(int32_t ddm);
 
     // tick - main call to send updates to transmitter
     void tick(void);
