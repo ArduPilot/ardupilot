@@ -137,9 +137,9 @@ bool AP_Torqeedo::init_internals()
     if (_uart == nullptr) {
         return false;
     }
+    _uart->set_unbuffered_writes(true);
     _uart->begin(TORQEEDO_SERIAL_BAUD);
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    _uart->set_unbuffered_writes(true);
 
     // if using tiller connection set on/off pin for 0.5 sec to turn on battery
     if (_type == ConnectionType::TYPE_TILLER) {
