@@ -238,6 +238,31 @@ void AP_RCProtocol::process_handshake( uint32_t baudrate)
   check for bytes from an additional uart. This is used to support RC
   protocols from SERIALn_PROTOCOL
  */
+void AP_RCProtocol::SerialConfig::apply_to_uart(AP_HAL::UARTDriver *uart) const
+{
+    uart->configure_parity(parity);
+    uart->set_stop_bits(stop_bits);
+    if (invert_rx) {
+        uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+    } else {
+        uart->set_options(uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
+    }
+    uart->begin(baud, 128, 128);
+}
+
+static const AP_RCProtocol::SerialConfig serial_configs[] {
+    // BAUD PRTY STOP INVERT-RX
+    // inverted and uninverted 115200 8N1:
+    { 115200,  0,   1, false  },
+    { 115200,  0,   1, true },
+    // SBUS settings, even parity, 2 stop bits:
+    { 100000,  2,   2, true },
+    // CrossFire:
+    { 416666,  0,   1, false },
+};
+
+static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
+
 void AP_RCProtocol::check_added_uart(void)
 {
     if (!added.uart) {
@@ -251,55 +276,29 @@ void AP_RCProtocol::check_added_uart(void)
     }
     if (!added.opened) {
         added.opened = true;
-        switch (added.phase) {
-        case CONFIG_115200_8N1:
-            added.baudrate = 115200;
-            added.uart->configure_parity(0);
-            added.uart->set_stop_bits(1);
-            added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
-            break;
-        case CONFIG_115200_8N1I:
-            added.baudrate = 115200;
-            added.uart->configure_parity(0);
-            added.uart->set_stop_bits(1);
-            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
-            break;
-        case CONFIG_100000_8E2I:
-            // assume SBUS settings, even parity, 2 stop bits
-            added.baudrate = 100000;
-            added.uart->configure_parity(2);
-            added.uart->set_stop_bits(2);
-            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
-            break;
-        case CONFIG_420000_8N1:
-            added.baudrate = CRSF_BAUDRATE;
-            added.uart->configure_parity(0);
-            added.uart->set_stop_bits(1);
-            added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
-            break;
-        }
-        added.uart->begin(added.baudrate, 128, 128);
-        added.last_baud_change_ms = AP_HAL::millis();
+        added.last_config_change_ms = AP_HAL::millis();
+        serial_configs[added.config_num].apply_to_uart(added.uart);
     }
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
 #endif
-    process_handshake(added.baudrate);
+    const uint32_t current_baud = serial_configs[added.config_num].baud;
+    process_handshake(current_baud);
 
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
-            process_byte(uint8_t(b), added.baudrate);
+            process_byte(uint8_t(b), current_baud);
         }
     }
     if (!_detected_with_bytes) {
-        if (now - added.last_baud_change_ms > 1000) {
-            // flip baudrates if not detected once a second
-            added.phase = (enum config_phase)(uint8_t(added.phase) + 1);
-            if (added.phase > CONFIG_420000_8N1) {
-                added.phase = (enum config_phase)0;
+        if (now - added.last_config_change_ms > 1000) {
+            // change configs if not detected once a second
+            added.config_num++;
+            if (added.config_num >= ARRAY_SIZE(serial_configs)) {
+                added.config_num = 0;
             }
             added.opened = false;
         }
@@ -427,8 +426,6 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
 {
     added.uart = uart;
     added.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    // start with DSM
-    added.baudrate = 115200U;
 }
 
 // return true if a specific protocol is enabled

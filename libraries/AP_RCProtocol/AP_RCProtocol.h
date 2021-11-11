@@ -111,6 +111,16 @@ public:
     }
 #endif
 
+    class SerialConfig {
+    public:
+        void apply_to_uart(AP_HAL::UARTDriver *uart) const;
+
+        uint32_t baud;
+        uint8_t parity;
+        uint8_t stop_bits;
+        bool invert_rx;
+    };
+
 private:
     void check_added_uart(void);
 
@@ -125,20 +135,12 @@ private:
     uint32_t _last_input_ms;
     bool _valid_serial_prot;
 
-    enum config_phase {
-        CONFIG_115200_8N1 = 0,
-        CONFIG_115200_8N1I = 1,
-        CONFIG_100000_8E2I = 2,
-        CONFIG_420000_8N1 = 3,
-    };
-
     // optional additional uart
     struct {
         AP_HAL::UARTDriver *uart;
-        uint32_t baudrate;
         bool opened;
-        uint32_t last_baud_change_ms;
-        enum config_phase phase;
+        uint32_t last_config_change_ms;
+        uint8_t config_num;
     } added;
 
     // allowed RC protocols mask (first bit means "all")
