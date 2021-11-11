@@ -135,7 +135,7 @@ I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
     : _bus(bus)
     , _address(address)
 {
-    ::fprintf(stderr, "bus.bus=%u address=0x%02x\n", bus.bus, address);
+    // ::fprintf(stderr, "bus.bus=%u address=0x%02x\n", bus.bus, address);
     set_device_bus(bus.bus);
     set_device_address(address);
 }
