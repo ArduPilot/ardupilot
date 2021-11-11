@@ -398,8 +398,8 @@ void AP_Hott_Telem::send_packet(const uint8_t *b, uint8_t len)
  */
 void AP_Hott_Telem::loop(void)
 {
-    uart->begin(19200, 10, 10);
     uart->set_unbuffered_writes(true);
+    uart->begin(19200, 10, 10);
     uart->set_blocking_writes(true);
 
     while (true) {
