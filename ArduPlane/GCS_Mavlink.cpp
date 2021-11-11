@@ -514,7 +514,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Range: 0 1000000
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("BW_OVERRIDE", 11, GCS_MAVLINK_Parameters, bandwidthOverride,  0),
+    AP_GROUPINFO("BW_OVERRIDE", 10, GCS_MAVLINK_Parameters, bandwidthOverride,  0),
 
     AP_GROUPEND
 };
