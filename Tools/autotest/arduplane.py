@@ -3322,6 +3322,10 @@ class AutoTestPlane(AutoTest):
              "Test LTM serial output",
              self.test_ltm),
 
+            ("DEVO",
+             "Test DEVO serial output",
+             self.DEVO),
+
             ("AdvancedFailsafe",
              "Test Advanced Failsafe",
              self.test_advanced_failsafe),
