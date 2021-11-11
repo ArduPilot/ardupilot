@@ -26,7 +26,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
-#include <uavcan_msgs.h>
+#include <dronecan_msgs.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "../AP_Bootloader/app_comms.h"
