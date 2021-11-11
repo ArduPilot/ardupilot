@@ -509,10 +509,10 @@ def configure(cfg):
 
     _collect_autoconfig_files(cfg)
 
-def generate_canard_dsdlc(cfg):
+def generate_dronecan_dsdlc(cfg):
     dsdlc_gen_path = cfg.bldnode.make_node('modules/libcanard/dsdlc_generated').abspath()
     src = cfg.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
-    dsdlc_path = cfg.srcnode.make_node('modules/canard_dsdlc/canard_dsdlc.py').abspath()
+    dsdlc_path = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py').abspath()
     if not os.path.exists(dsdlc_path):
         print("Please update submodules with: git submodule update --recursive --init")
         sys.exit(1)
@@ -738,7 +738,7 @@ def _load_pre_build(bld):
         #check if canard dsdlc directory empty
         # check if directory exists
         if not os.path.exists(dsdlc_gen_path) or not os.listdir(dsdlc_gen_path):
-            generate_canard_dsdlc(bld)
+            generate_dronecan_dsdlc(bld)
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
 
