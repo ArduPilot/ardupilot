@@ -42,6 +42,8 @@ namespace SITL {
 class GPS : public SerialDevice {
 public:
 
+    CLASS_NO_COPY(GPS);
+
     enum Type {
         NONE  =  0,
         UBLOX =  1,

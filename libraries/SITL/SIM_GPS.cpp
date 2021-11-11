@@ -19,6 +19,7 @@
 #if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
 extern const HAL_SITL& hal_sitl;
 #endif
@@ -45,7 +46,9 @@ GPS::GPS(uint8_t _instance) :
         AP_BoardConfig::allocation_error("gps_fifo filepath");
     }
     if (mkfifo(_gps_fifo, 0666) < 0) {
-        printf("MKFIFO failed with %m\n");
+        if (errno != EEXIST) {
+            printf("MKFIFO failed with %m\n");
+        }
     }
 #endif
 }
