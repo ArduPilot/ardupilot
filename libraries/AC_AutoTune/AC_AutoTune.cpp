@@ -136,7 +136,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         // we are restarting tuning so restart where we left off
         // reset test variables to continue where we left off
         // reset dwell test variables if sweep was interrupted in order to restart sweep
-        if (!is_equal(start_freq,stop_freq)) {
+        if (!is_equal(start_freq, stop_freq)) {
             freq_cnt = 0;
             start_freq = 0.0f;
             stop_freq = 0.0f;
@@ -454,7 +454,7 @@ void AC_AutoTune::control_attitude()
             load_gains(GAIN_INTRA_TEST);
         }
 
-        // Initialize test specific variables
+        // Initialize test-specific variables
         switch (axis) {
         case ROLL:
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
@@ -1365,7 +1365,7 @@ void AC_AutoTune::twitch_test_run(AxisType test_axis, const float dir_sign)
         }
     }
 
-    // capture this iterations rotation rate and lean angle
+    // capture this iteration's rotation rate and lean angle
     float gyro_reading = 0;
     switch (test_axis) {
     case ROLL:
@@ -1627,7 +1627,7 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
     filt_target_rate = 0.0f;
     dwell_start_time_ms = 0.0f;
     settle_time = 200;
-    if (!is_equal(start_freq,stop_freq)) {
+    if (!is_equal(start_freq, stop_freq)) {
         sweep.ph180_freq = 0.0f;
         sweep.ph180_gain = 0.0f;
         sweep.ph180_phase = 0.0f;
@@ -1917,7 +1917,7 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
         filt_target_rate = 0.0f;
         break;
     }
-    if (!is_equal(start_freq,stop_freq)) {
+    if (!is_equal(start_freq, stop_freq)) {
         sweep.ph180_freq = 0.0f;
         sweep.ph180_gain = 0.0f;
         sweep.ph180_phase = 0.0f;
