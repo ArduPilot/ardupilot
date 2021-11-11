@@ -27,6 +27,9 @@
 #define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    50
 #define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
 
+// RSC governor defaults
+#define AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT     100
+
 // rotor controller states
 enum RotorControlState {
     ROTOR_CONTROL_STOP = 0,
@@ -147,9 +150,12 @@ private:
     bool            _autothrottle;                // autothrottle status flag
     bool            _governor_fault;              // governor fault status flag
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
-    bool            _in_autorotation;              // true if vehicle is currently in an autorotation
+    bool            _in_autorotation;             // true if vehicle is currently in an autorotation
     int16_t         _rsc_arot_bailout_pct;        // the throttle percentage sent to the external governor to signal that autorotation bailout ramp should be used
     bool            _spooldown_complete;          // flag for determining if spooldown is complete
+    float           _fast_idle_timer;             // cooldown timer variable
+    uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
+    float           _governor_torque_reference;   // governor reference for load calculations
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -166,22 +172,17 @@ private:
     // parameters
     AP_Int16        _power_slewrate;            // throttle slew rate (percentage per second)
     AP_Int16        _thrcrv[5];                 // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
-    AP_Float        _governor_rpm;              // governor reference for speed calculations
+    AP_Int16        _governor_rpm;              // governor reference for speed calculations
     AP_Float        _governor_torque;           // governor torque rise setting
-    AP_Float        _governor_torque_reference; // governor reference for load calculations
     AP_Float        _governor_compensator;      // governor torque compensator variable
     AP_Float        _governor_droop_response;   // governor response to droop under load
     AP_Float        _governor_ff;               // governor feedforward variable
-    AP_Float        _governor_fault_count;      // variable for tracking governor speed sensor faults
-    AP_Float        _autothrottle_fast_idle;    // autothrottle variable for cooldown
-    AP_Float        _autothrottle_cooldown;     // autothrottle cooldown timer to provide a fast idle
+    AP_Float        _governor_range;            // RPM range +/- governor rpm reference setting where governor is operational
+    AP_Int16        _cooldown_time;             // cooldown time to provide a fast idle
 
     // parameter accessors to allow conversions
     float       get_critical_speed() const { return _critical_speed * 0.01; }
-    float       get_idle_output() { return _idle_output * 0.01; }
-    float       get_governor_torque() { return _governor_torque * 0.01; }
-    float       get_governor_compensator() { return _governor_compensator * 0.000001; }
-    float       get_governor_droop_response() { return _governor_droop_response * 0.0001f; }
-    float       get_governor_ff() { return _governor_ff * 0.01; }
-
+    float       get_idle_output() const { return _idle_output * 0.01; }
+    float       get_governor_torque() const { return _governor_torque * 0.01; }
+    float       get_governor_compensator() const { return _governor_compensator * 0.000001; }
 };
