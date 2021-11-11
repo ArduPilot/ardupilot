@@ -48,10 +48,10 @@ void AP_DEVO_Telem::init()
 }
 
 
-uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(float ddm)
+uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(int32_t ddm)
 {
-    int32_t deg = (int32_t)ddm;
-    float mm = (ddm - deg) * 60.0f;
+    int32_t deg = (int32_t)(ddm * 1e-7);
+    float mm = (ddm * 1.0e-7 - deg) * 60.0f;
 
     mm = ((float)deg * 100.0f + mm) /100.0f;
 
@@ -105,7 +105,7 @@ void AP_DEVO_Telem::send_frames()
         */
         float alt;
         _ahrs.get_relative_position_D_home(alt);
-        devoPacket.alt   = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
+        devoPacket.alt = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
     }
 
 
