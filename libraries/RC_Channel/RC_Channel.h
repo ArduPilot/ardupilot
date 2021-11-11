@@ -247,6 +247,9 @@ public:
         SCRIPTING_6 =        305,
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
+
+        // This AUX_FUNC_END is used in the array of the duplicate_options_exist method.
+        AUX_FUNC_END,
     };
     typedef enum AUX_FUNC aux_func_t;
 
