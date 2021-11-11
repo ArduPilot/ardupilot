@@ -282,13 +282,7 @@ public:
 
     /// Set the current throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
-    void set_current_throttle(float thr_pct) {
-        if (is_zero(_read_thr)) {
-            _thr_mot_factor = 1.0f;
-        } else {
-            _thr_mot_factor = thr_pct / _read_thr;
-        }
-    }
+    void set_current_throttle(float thr_pct);
 
 #if COMPASS_MOT_ENABLED
     /// Set the battery voltage for per-motor compensation

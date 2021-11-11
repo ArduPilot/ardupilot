@@ -1819,6 +1819,17 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const
     return heading;
 }
 
+/// Set the current throttle as a percentage from 0.0 to 1.0
+/// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
+void Compass::set_current_throttle(float thr_pct)
+{
+    if (is_zero(_read_thr)) {
+        _thr_mot_factor = 1.0f;
+    } else {
+        _thr_mot_factor = constrain_float(thr_pct / _read_thr, 0.0f, 1.0f);
+    }
+}
+
 /// Returns True if the compasses have been configured (i.e. offsets saved)
 ///
 /// @returns                    True if compass has been configured
