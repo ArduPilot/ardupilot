@@ -71,16 +71,16 @@ def build(bld):
     )
 
     # build external libcanard library
-    bld.stlib(source=['../../modules/libcanard/canard.c'] +
-                     bld.bldnode.ant_glob('modules/libcanard/dsdlc_generated/src/**.c'),
-              includes=[bld.env.SRCROOT + '/modules/libcanard', 
-                        bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated/include'],
+    bld.stlib(source=['../../modules/DroneCAN/libcanard/canard.c'] +
+                     bld.bldnode.ant_glob('modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'),
+              includes=[bld.env.SRCROOT + '/modules/DroneCAN/libcanard', 
+                        bld.env.BUILDROOT + '/modules/DroneCAN/libcanard/dsdlc_generated/include'],
               target='libcanard')
 
     bld.ap_program(
         program_name='AP_Periph',
         use=['AP_Periph_libs', 'libcanard'],
         program_groups=['bin','AP_Periph'],
-        includes=[bld.env.SRCROOT + '/modules/libcanard',
-                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated/include']
+        includes=[bld.env.SRCROOT + '/modules/DroneCAN/libcanard',
+                  bld.env.BUILDROOT + '/modules/DroneCAN/libcanard/dsdlc_generated/include']
     )
