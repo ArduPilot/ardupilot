@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Benewake_CAN::var_info[] = {
   constructor
  */
 AP_RangeFinder_Benewake_CAN::AP_RangeFinder_Benewake_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    CANSensor("Benewake", 3072),
+    CANSensor("Benewake"),
     AP_RangeFinder_Backend(_state, _params)
 {
     AP_Param::setup_object_defaults(this, var_info);
