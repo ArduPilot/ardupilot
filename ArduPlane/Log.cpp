@@ -117,7 +117,7 @@ void Plane::Log_Write_Control_Tuning()
         pitch           : (int16_t)ahrs.pitch_sensor,
         throttle_out    : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
-        throttle_dem    : SpdHgt_Controller->get_throttle_demand(),
+        throttle_dem    : TECS_controller.get_throttle_demand(),
         airspeed_estimate : est_airspeed,
         synthetic_airspeed : synthetic_airspeed,
         EAS2TAS            : ahrs.get_EAS2TAS(),

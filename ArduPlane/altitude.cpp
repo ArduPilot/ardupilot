@@ -96,7 +96,7 @@ void Plane::setup_glide_slope(void)
     // for calculating out rate of change of altitude
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
-    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    TECS_controller.set_path_proportion(auto_state.wp_proportion);
     update_flight_stage();
 
     /*
@@ -570,7 +570,7 @@ float Plane::lookahead_adjustment(void)
     // we need to know the climb ratio. We use 50% of the maximum
     // climb rate so we are not constantly at 100% throttle and to
     // give a bit more margin on terrain
-    float climb_ratio = 0.5f * SpdHgt_Controller->get_max_climbrate() / groundspeed;
+    float climb_ratio = 0.5f * TECS_controller.get_max_climbrate() / groundspeed;
 
     if (climb_ratio <= 0) {
         // lookahead makes no sense for negative climb rates

@@ -180,7 +180,7 @@ void Plane::update_speed_height(void)
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
-        SpdHgt_Controller->update_50hz();
+        TECS_controller.update_50hz();
     }
 
 #if HAL_QUADPLANE_ENABLED
@@ -525,7 +525,7 @@ void Plane::update_alt()
             target_alt = MAX(target_alt, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
-        SpdHgt_Controller->update_pitch_throttle(target_alt,
+        TECS_controller.update_pitch_throttle(target_alt,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,

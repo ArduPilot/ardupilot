@@ -2158,10 +2158,10 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         // use TECS for throttle
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.SpdHgt_Controller->get_throttle_demand());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.TECS_controller.get_throttle_demand());
 
         // use TECS for pitch
-        int32_t commanded_pitch = plane.SpdHgt_Controller->get_pitch_demand();
+        int32_t commanded_pitch = plane.TECS_controller.get_pitch_demand();
         plane.nav_pitch_cd = constrain_int32(commanded_pitch, plane.pitch_limit_min_cd, plane.aparm.pitch_limit_max_cd.get());
         if (poscontrol.get_state() == QPOS_AIRBRAKE) {
             // don't allow down pitch in airbrake
@@ -2857,7 +2857,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
         // we reset TECS so that the target height filter is not
         // constrained by the climb and sink rates from the initial
         // takeoff height.
-        plane.SpdHgt_Controller->reset();
+        plane.TECS_controller.reset();
     }
 
     // don't crosstrack on next WP
@@ -3616,7 +3616,7 @@ float QuadPlane::get_land_airspeed(void)
 {
     if (poscontrol.get_state() == QPOS_APPROACH ||
         plane.control_mode == &plane.mode_rtl) {
-        float land_airspeed = plane.SpdHgt_Controller->get_land_airspeed();
+        float land_airspeed = plane.TECS_controller.get_land_airspeed();
         if (!is_positive(land_airspeed)) {
             land_airspeed = plane.aparm.airspeed_cruise_cm * 0.01;
         }
