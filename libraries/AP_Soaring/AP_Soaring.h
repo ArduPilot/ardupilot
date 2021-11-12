@@ -14,7 +14,7 @@
 #include <AP_Math/AP_Math.h>
 #include "ExtendedKalmanFilter.h"
 #include "Variometer.h"
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_TECS/AP_TECS.h>
 
 #ifndef HAL_SOARING_ENABLED
  #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
@@ -30,7 +30,7 @@
 
 class SoaringController {
     ExtendedKalmanFilter _ekf{};
-    AP_SpdHgtControl &_spdHgt;
+    AP_TECS &_tecs;
     Variometer _vario;
     const AP_Vehicle::FixedWing &_aparm;
 
@@ -77,7 +77,7 @@ protected:
     AP_Float thermal_bank;
 
 public:
-    SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
+    SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms);
 
     enum class LoiterStatus {
         DISABLED,
