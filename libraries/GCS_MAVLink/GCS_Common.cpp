@@ -1464,25 +1464,23 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     for (uint16_t i=0; i<nbytes; i++)
     {
         const uint8_t c = (uint8_t)_port->read();
-        const uint32_t protocol_timeout = 4000;
         
-        if (alternative.handler &&
-            now_ms - alternative.last_mavlink_ms > protocol_timeout) {
-            /*
-              we have an alternative protocol handler installed and we
-              haven't parsed a MAVLink packet for 4 seconds. Try
-              parsing using alternative handler
-             */
-            if (alternative.handler(c, mavlink_comm_port[chan])) {
-                alternative.last_alternate_ms = now_ms;
-                gcs_alternative_active[chan] = true;
-            }
-            
-            /*
-              we may also try parsing as MAVLink if we haven't had a
-              successful parse on the alternative protocol for 4s
-             */
-            if (now_ms - alternative.last_alternate_ms <= protocol_timeout) {
+        if (alternative.handler) {
+            if (now_ms - alternative.last_mavlink_ms > 4000U) {
+                /*
+                we have an alternative protocol handler installed and we
+                haven't parsed a MAVLink packet for 4 seconds. Try
+                parsing using alternative handler
+                */
+                if (alternative.handler(c, mavlink_comm_port[chan])) {
+                    alternative.last_alternate_ms = now_ms;
+                    gcs_alternative_active[chan] = true;
+                }
+            } else {
+                /*
+                we may also try parsing as MAVLink if we haven't had a
+                successful parse on the alternative protocol for 4s
+                */
                 continue;
             }
         }
