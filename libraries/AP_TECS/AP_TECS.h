@@ -1,6 +1,5 @@
 /// @file    AP_TECS.h
 /// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
-/// AP_SpdHgtControl class
 
 /*
  *  Written by Paul Riseborough 2013 to provide:
@@ -22,10 +21,9 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
-#include <AP_Landing/AP_Landing.h>
 
-class AP_TECS : public AP_SpdHgtControl {
+class AP_Landing;
+class AP_TECS {
 public:
     AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing)
         : _ahrs(ahrs)
@@ -42,7 +40,7 @@ public:
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
     // Should be called at 50Hz or greater
-    void update_50hz(void) override;
+    void update_50hz(void);
 
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
@@ -52,52 +50,52 @@ public:
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor) override;
+                               float load_factor);
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
-    float get_throttle_demand(void) override {
+    float get_throttle_demand(void) {
         return _throttle_dem * 100.0f;
     }
 
     // demanded pitch angle in centi-degrees
     // should return between -9000 to +9000
-    int32_t get_pitch_demand(void) override {
+    int32_t get_pitch_demand(void) {
         return int32_t(_pitch_dem * 5729.5781f);
     }
 
     // Rate of change of velocity along X body axis in m/s^2
-    float get_VXdot(void) override {
+    float get_VXdot(void) {
         return _vel_dot;
     }
 
     // return current target airspeed
-    float get_target_airspeed(void) const override {
+    float get_target_airspeed(void) const {
         return _TAS_dem_adj / _ahrs.get_EAS2TAS();
     }
 
     // return maximum climb rate
-    float get_max_climbrate(void) const override {
+    float get_max_climbrate(void) const {
         return _maxClimbRate;
     }
 
     // return maximum sink rate (+ve number down)
-    float get_max_sinkrate(void) const override {
+    float get_max_sinkrate(void) const {
         return _maxSinkRate;
     }
     
     // added to let SoaringContoller reset pitch integrator to zero
-    void reset_pitch_I(void) override {
+    void reset_pitch_I(void) {
         _integSEB_state = 0.0f;
     }
     
     // return landing sink rate
-    float get_land_sinkrate(void) const override {
+    float get_land_sinkrate(void) const {
         return _land_sink;
     }
 
     // return landing airspeed
-    float get_land_airspeed(void) const override {
+    float get_land_airspeed(void) const {
         return _landAirspeed;
     }
 
@@ -107,17 +105,17 @@ public:
     }
 
     // set path_proportion
-    void set_path_proportion(float path_proportion) override {
+    void set_path_proportion(float path_proportion) {
         _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
     }
 
     // set soaring flag
-    void set_gliding_requested_flag(bool gliding_requested) override {
+    void set_gliding_requested_flag(bool gliding_requested) {
         _flags.gliding_requested = gliding_requested;
     }
 
     // set propulsion failed flag
-    void set_propulsion_failed_flag(bool propulsion_failed) override {
+    void set_propulsion_failed_flag(bool propulsion_failed) {
         _flags.propulsion_failed = propulsion_failed;
     }
 
@@ -133,7 +131,7 @@ public:
     }
 
     // reset on next loop
-    void reset(void) override {
+    void reset(void) {
         _need_reset = true;
     }
 
