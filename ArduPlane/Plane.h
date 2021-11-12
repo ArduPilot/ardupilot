@@ -62,7 +62,6 @@
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_TECS/AP_TECS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -236,9 +235,6 @@ private:
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
-
-    // selected navigation controller
-    AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Camera
 #if CAMERA == ENABLED
@@ -647,7 +643,7 @@ private:
     AP_Terrain terrain{mission};
 #endif
 
-    AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
+    AP_Landing landing{mission,ahrs,&TECS_controller,nav_controller,aparm,
             FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
             FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),

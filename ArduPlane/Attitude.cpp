@@ -554,7 +554,7 @@ void Plane::calc_throttle()
         return;
     }
 
-    float commanded_throttle = SpdHgt_Controller->get_throttle_demand();
+    float commanded_throttle = TECS_controller.get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
     if (control_mode->is_guided_mode() &&
@@ -666,7 +666,7 @@ void Plane::calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
-    int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
+    int32_t commanded_pitch = TECS_controller.get_pitch_demand();
 
     // Received an external msg that guides roll in the last 3 seconds?
     if (control_mode->is_guided_mode() &&
