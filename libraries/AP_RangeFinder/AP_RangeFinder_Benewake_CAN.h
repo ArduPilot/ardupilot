@@ -5,7 +5,7 @@
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 
-class AP_RangeFinder_Benewake_CAN : public CANSensor, public AP_RangeFinder_Backend {
+class AP_RangeFinder_Benewake_CAN : public AP_RangeFinder_Backend, public CANSensor {
 public:
     AP_RangeFinder_Benewake_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
