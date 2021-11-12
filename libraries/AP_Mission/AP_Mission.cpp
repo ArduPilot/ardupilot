@@ -962,7 +962,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        // Spline is not supported by Plane, convert it to NAV_WAYPOINT
+        cmd.id = MAV_CMD_NAV_WAYPOINT;
+        cmd.p1 = 0;
+#else
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
+#endif
         break;
 
     case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
