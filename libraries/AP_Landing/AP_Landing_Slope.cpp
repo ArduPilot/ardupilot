@@ -283,7 +283,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     }
 
     // time before landing that we will flare
-    float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
+    float flare_time = aim_height / tecs_Controller->get_land_sinkrate();
 
     // distance to flare is based on ground speed, adjusted as we
     // get closer. This takes into account the wind
@@ -334,7 +334,7 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     // we're landing, check for custom approach and
     // pre-flare airspeeds. Also increase for head-winds
 
-    const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+    const float land_airspeed = tecs_Controller->get_land_airspeed();
     int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
 
     switch (type_slope_stage) {
