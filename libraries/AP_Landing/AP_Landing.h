@@ -18,7 +18,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_TECS/AP_TECS.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include "AP_Landing_Deepstall.h"
 #include <AP_Common/Location.h>
@@ -36,7 +36,7 @@ public:
     FUNCTOR_TYPEDEF(disarm_if_autoland_complete_fn_t, void);
     FUNCTOR_TYPEDEF(update_flight_stage_fn_t, void);
 
-    AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
+    AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
                set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
                constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
                adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
@@ -135,7 +135,7 @@ private:
 
     AP_Mission &mission;
     AP_AHRS &ahrs;
-    AP_SpdHgtControl *SpdHgt_Controller;
+    AP_TECS *tecs_Controller;
     AP_Navigation *nav_controller;
     
     AP_Vehicle::FixedWing &aparm;
