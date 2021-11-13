@@ -75,11 +75,12 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, SCRIPTING_HEAP_SIZE),
 
-    // @Param: DEBUG_LVL
+    // @Param: DEBUG_OPTS
     // @DisplayName: Scripting Debug Level
-    // @Description: The higher the number the more verbose builtin scripting debug will be.
+    // @Description: Debugging options
+    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time
     // @User: Advanced
-    AP_GROUPINFO("DEBUG_LVL", 4, AP_Scripting, _debug_level, 0),
+    AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
     // @Param: USER1
     // @DisplayName: Scripting User Parameter1
@@ -210,7 +211,7 @@ void AP_Scripting::thread(void) {
         _stop = false;
         _restart = false;
 
-        lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level, terminal);
+        lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options, terminal);
         if (lua == nullptr || !lua->heap_allocated()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
             _init_failed = true;
@@ -237,7 +238,7 @@ void AP_Scripting::thread(void) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restated");
                 break;
             }
-            if (_debug_level > 0) {
+            if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: scripting stopped");
             }
         }

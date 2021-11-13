@@ -27,9 +27,9 @@ char *lua_scripts::error_msg_buf;
 uint8_t lua_scripts::print_error_count;
 uint32_t lua_scripts::last_print_ms;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_level, struct AP_Scripting::terminal_s &_terminal)
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal)
     : _vm_steps(vm_steps),
-      _debug_level(debug_level),
+      _debug_options(debug_options),
      terminal(_terminal) {
     _heap = hal.util->allocate_heap_memory(heap_size);
 }
@@ -460,7 +460,7 @@ void lua_scripts::run(void) {
                 hal.scheduler->delay(scripts->next_run_ms - now_ms);
             }
 
-            if (_debug_level > 1) {
+            if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
 
@@ -471,7 +471,7 @@ void lua_scripts::run(void) {
 
             const uint32_t runEnd = AP_HAL::micros();
             const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-            if (_debug_level > 1) {
+            if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
                                                     (unsigned int)(runEnd - loadEnd),
                                                     (int)endMem,
@@ -482,7 +482,7 @@ void lua_scripts::run(void) {
             lua_gc(L, LUA_GCCOLLECT, 0);
 
         } else {
-            if (_debug_level > 0) {
+            if ((_debug_options.get() & uint8_t(DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }
             hal.scheduler->delay(1000);
