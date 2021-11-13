@@ -572,6 +572,7 @@ void Plane::update_flight_stage(void)
 #endif
             if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
+                return;
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
                 if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
