@@ -71,6 +71,9 @@ extern const AP_HAL::HAL& hal;
 #define POSCONTROL_VIBE_COMP_P_GAIN 0.250f
 #define POSCONTROL_VIBE_COMP_I_GAIN 0.125f
 
+// loop time multiplier for is_active to timeout
+#define active_timeout_loops 5
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -519,7 +522,7 @@ void AC_PosControl::init_xy()
     init_ekf_xy_reset();
 
     // initialise z_controller time out
-    _last_update_xy_us = AP_HAL::micros64();
+    _last_init_or_update_xy_us = AP_HAL::micros64();
 }
 
 /// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
@@ -592,7 +595,7 @@ void AC_PosControl::stop_vel_xy_stabilisation()
 // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
 bool AC_PosControl::is_active_xy() const
 {
-    return ((AP_HAL::micros64() - _last_update_xy_us) <= _dt * 5000000.0);
+    return ((AP_HAL::micros64() - _last_update_xy_us) <= _dt * 1000000.0 * active_timeout_loops);
 }
 
 /// update_xy_controller - runs the horizontal position controller correcting position, velocity and acceleration errors.
@@ -605,14 +608,16 @@ void AC_PosControl::update_xy_controller()
     handle_ekf_xy_reset();
 
     // Check for position control time out
-    if ( !is_active_xy() ) {
+    uint64_t now = AP_HAL::micros64();
+    if ((now - _last_init_or_update_xy_us) > _dt * 1000000.0 * active_timeout_loops) {
         init_xy_controller();
         if (has_good_timing()) {
             // call internal error because initialisation has not been done
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
     }
-    _last_update_xy_us = AP_HAL::micros64();
+    _last_update_xy_us = now;
+    _last_init_or_update_xy_us = now;
 
     float ahrsGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
@@ -790,7 +795,7 @@ void AC_PosControl::init_z()
     init_ekf_z_reset();
 
     // initialise z_controller time out
-    _last_update_z_us = AP_HAL::micros64();
+    _last_init_or_update_z_us = AP_HAL::micros64();
 }
 
 /// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
@@ -932,7 +937,7 @@ void AC_PosControl::update_pos_offset_z(float pos_offset_z)
 // is_active_z - returns true if the z position controller has been run in the previous 5 loop times
 bool AC_PosControl::is_active_z() const
 {
-    return ((AP_HAL::micros64() - _last_update_z_us) <= _dt * 5000000.0);
+    return ((AP_HAL::micros64() - _last_update_z_us) <= _dt * 1000000.0 * active_timeout_loops);
 }
 
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
@@ -945,14 +950,16 @@ void AC_PosControl::update_z_controller()
     handle_ekf_z_reset();
 
     // Check for z_controller time out
-    if (!is_active_z()) {
+    uint64_t now = AP_HAL::micros64();
+    if ((now - _last_init_or_update_z_us) > _dt * 1000000.0 * active_timeout_loops) {
         init_z_controller();
         if (has_good_timing()) {
             // call internal error because initialisation has not been done
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
     }
-    _last_update_z_us = AP_HAL::micros64();
+    _last_update_z_us = now;
+    _last_init_or_update_z_us = now;
 
     const float curr_alt = _inav.get_position().z;
     // calculate the target velocity correction

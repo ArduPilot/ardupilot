@@ -445,7 +445,9 @@ protected:
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
     uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
+    uint64_t    _last_init_or_update_xy_us; // system time (in microseconds) since last update_xy_controller or init_xy call
     uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
+    uint64_t    _last_init_or_update_z_us; // system time (in microseconds) since last update_z_controller or init_z call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
     float       _vel_max_down_cms;      // max descent rate in cm/s used for kinematic shaping
