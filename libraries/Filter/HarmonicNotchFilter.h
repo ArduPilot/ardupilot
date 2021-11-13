@@ -20,7 +20,6 @@
 #include "NotchFilter.h"
 
 #define HNF_MAX_HARMONICS 8
-#define HNF_MAX_HMNC_BITSET 0xF
 
 /*
   a filter that manages a set of notch filters targetted at a fundamental center frequency
@@ -31,7 +30,7 @@ class HarmonicNotchFilter {
 public:
     ~HarmonicNotchFilter();
     // allocate a bank of notch filters for this harmonic notch filter
-    void allocate_filters(uint8_t harmonics, bool double_notch);
+    void allocate_filters(uint8_t num_notches, uint8_t harmonics, bool double_notch);
     // initialize the underlying filters using the provided filter parameters
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
@@ -60,6 +59,8 @@ private:
     bool _double_notch;
     // number of allocated filters
     uint8_t _num_filters;
+    // pre-calculated number of harmonics
+    uint8_t _num_harmonics;
     // number of enabled filters
     uint8_t _num_enabled_filters;
     bool _initialised;
@@ -89,7 +90,9 @@ public:
     // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
     // harmonics enabled on the harmonic notch
-    uint8_t harmonics(void) const { return hasOption(Options::DynamicHarmonic) ? HNF_MAX_HMNC_BITSET : _harmonics; }
+    uint8_t harmonics(void) const { return _harmonics; }
+    // has the user set the harmonics value
+    void set_default_harmonics(uint8_t hmncs) { _harmonics.set_default(hmncs); }
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
     // notch options
