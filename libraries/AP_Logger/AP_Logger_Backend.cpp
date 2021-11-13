@@ -523,6 +523,32 @@ bool AP_Logger_Backend::Write_Rally()
 }
 #endif
 
+#if HAL_LOGGER_FENCE_ENABLED
+// Write a fence point
+bool AP_Logger_Backend::Write_FencePoint(uint8_t total, uint8_t sequence, const AC_PolyFenceItem &fence_point)
+{
+    const struct log_Fence pkt_fence{
+        LOG_PACKET_HEADER_INIT(LOG_FENCE_MSG),
+        time_us         : AP_HAL::micros64(),
+        total           : total,
+        sequence        : sequence,
+        type            : uint8_t(fence_point.type),
+        latitude        : fence_point.loc.x,
+        longitude       : fence_point.loc.y,
+        vertex_count    : fence_point.vertex_count,
+        radius          : fence_point.radius
+    };
+    return WriteBlock(&pkt_fence, sizeof(pkt_fence));
+}
+
+// Write all fence points
+bool AP_Logger_Backend::Write_Fence()
+{
+    // kick off asynchronous write:
+    return _startup_messagewriter->writeallfence();
+}
+#endif // HAL_LOGGER_FENCE_ENABLED
+
 
 bool AP_Logger_Backend::Write_VER()
 {

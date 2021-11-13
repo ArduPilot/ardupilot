@@ -61,6 +61,13 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
 
+#include <AC_Fence/AC_Fence_config.h>
+#define HAL_LOGGER_FENCE_ENABLED (AP_FENCE_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+
+#if HAL_LOGGER_FENCE_ENABLED
+    #include <AC_Fence/AC_Fence.h>
+#endif
+
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
@@ -294,6 +301,9 @@ public:
     void Write_RCOUT(void);
     void Write_RSSI();
     void Write_Rally();
+#if HAL_LOGGER_FENCE_ENABLED
+    void Write_Fence();
+#endif
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);

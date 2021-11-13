@@ -44,6 +44,9 @@ void LoggerMessageWriter_DFLogStart::reset()
 #if HAL_RALLY_ENABLED
     _writeallrallypoints.reset();
 #endif
+#if HAL_LOGGER_FENCE_ENABLED
+    _writeallpolyfence.reset();
+#endif
 
     stage = Stage::FORMATS;
     next_format_to_send = 0;
@@ -152,6 +155,14 @@ void LoggerMessageWriter_DFLogStart::process()
             }
         }
 #endif
+#if HAL_LOGGER_FENCE_ENABLED
+        if (!_writeallpolyfence.finished()) {
+            _writeallpolyfence.process();
+            if (!_writeallpolyfence.finished()) {
+                return;
+            }
+        }
+#endif
         stage = Stage::VEHICLE_MESSAGES;
         FALLTHROUGH;
 
@@ -197,6 +208,19 @@ bool LoggerMessageWriter_DFLogStart::writeallrallypoints()
     stage = Stage::RUNNING_SUBWRITERS;
     _finished = false;
     _writeallrallypoints.reset();
+    return true;
+}
+#endif
+
+#if HAL_LOGGER_FENCE_ENABLED
+bool LoggerMessageWriter_DFLogStart::writeallfence()
+{
+    if (stage != Stage::DONE) {
+        return false;
+    }
+    stage = Stage::RUNNING_SUBWRITERS;
+    _finished = false;
+    _writeallpolyfence.reset();
     return true;
 }
 #endif
@@ -382,3 +406,61 @@ void LoggerMessageWriter_WriteEntireMission::reset()
     stage = Stage::WRITE_NEW_MISSION_MESSAGE;
     _mission_number_to_send = 0;
 }
+
+#if HAL_LOGGER_FENCE_ENABLED
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+// dummy methods to allow build with Replay
+void LoggerMessageWriter_Write_Polyfence::process() { };
+void LoggerMessageWriter_Write_Polyfence::reset() { };
+#else
+void LoggerMessageWriter_Write_Polyfence::process() {
+
+    AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return;
+    }
+
+    switch(stage) {
+
+    case Stage::WRITE_NEW_FENCE_MESSAGE:
+        if (!_logger_backend->Write_Message("New fence")) {
+            return; // call me again
+        }
+        stage = Stage::WRITE_FENCE_ITEMS;
+        FALLTHROUGH;
+
+    case Stage::WRITE_FENCE_ITEMS: {
+        while (_fence_number_to_send < fence->polyfence().num_stored_items()) {
+            if (out_of_time_for_writing_messages()) {
+                return;
+            }
+
+            // upon failure to write the fence we will re-read from
+            // storage; this could be improved.
+            AC_PolyFenceItem fenceitem {};
+            if (fence->polyfence().get_item(_fence_number_to_send, fenceitem)) {
+                if (!_logger_backend->Write_FencePoint(fence->polyfence().num_stored_items(), _fence_number_to_send, fenceitem)) {
+                    return; // call me again
+                }
+            }
+            _fence_number_to_send++;
+        }
+        stage = Stage::DONE;
+        FALLTHROUGH;
+    }
+
+    case Stage::DONE:
+        break;
+    }
+
+    _finished = true;
+}
+
+void LoggerMessageWriter_Write_Polyfence::reset()
+{
+    LoggerMessageWriter::reset();
+    stage = Stage::WRITE_NEW_FENCE_MESSAGE;
+    _fence_number_to_send = 0;
+}
+#endif // !APM_BUILD_TYPE(APM_BUILD_Replay)
+#endif // AP_FENCE_ENABLED
