@@ -67,6 +67,8 @@ public:
     enum class DebugLevel {
         NO_SCRIPTS_TO_RUN = 1U << 0,
         RUNTIME_MSG = 1U << 1,
+        SUPPRESS_SCRIPT_LOG = 1U << 2,
+        LOG_RUNTIME = 1U << 3,
     };
 
 private:
