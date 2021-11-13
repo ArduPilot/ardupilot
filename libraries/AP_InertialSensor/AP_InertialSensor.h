@@ -17,7 +17,7 @@
 #define INS_MAX_INSTANCES 3
 #endif
 #define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
-#define INS_MAX_NOTCHES 4
+#define INS_MAX_NOTCHES 12
 #ifndef INS_VIBRATION_CHECK_INSTANCES
   #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
     #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
@@ -44,7 +44,6 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
-#include <Filter/NotchFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
 #include <AP_Math/polyfit.h>
 
@@ -250,6 +249,9 @@ public:
 
     // harmonic notch current center frequency
     float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
+
+    // number of dynamic harmonic notches
+    uint8_t get_num_gyro_dynamic_notches(void) const { return _num_dynamic_harmonic_notches; }
 
     // set of harmonic notch current center frequencies
     const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
@@ -498,12 +500,14 @@ private:
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
     // optional notch filter on gyro
-    NotchFilterParams _notch_filter;
-    NotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
+    HarmonicNotchFilterParams _notch_filter;
+    HarmonicNotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
 
     // optional harmonic notch filter on gyro
     HarmonicNotchFilterParams _harmonic_notch_filter;
     HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
+    // number of independent notches in the filter
+    uint8_t _num_dynamic_harmonic_notches;
     // the current center frequency for the notch
     float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
     uint8_t _num_calculated_harmonic_notch_frequencies;
