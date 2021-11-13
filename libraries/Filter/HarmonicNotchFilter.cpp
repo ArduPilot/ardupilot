@@ -16,7 +16,7 @@
 #include "HarmonicNotchFilter.h"
 #include <GCS_MAVLink/GCS.h>
 
-#define HNF_MAX_FILTERS 6 // must be even for double-notch filters
+#define HNF_MAX_FILTERS HAL_HNF_MAX_FILTERS // must be even for double-notch filters
 #define HNF_MAX_HARMONICS 8
 
 // table of user settable parameters
@@ -136,27 +136,20 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
   allocate a collection of, at most HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
-void HarmonicNotchFilter<T>::allocate_filters(uint8_t harmonics, bool double_notch)
+void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint8_t harmonics, bool double_notch)
 {
     _double_notch = double_notch;
+    _num_harmonics = __builtin_popcount(harmonics);
+    _num_filters = _num_harmonics * num_notches * (double_notch ? 2 : 1);
+    _harmonics = harmonics;
 
-    for (uint8_t i = 0; i < HNF_MAX_HARMONICS && _num_filters < HNF_MAX_FILTERS; i++) {
-        if ((1U<<i) & harmonics) {
-            _num_filters++;
-            if (_double_notch) {
-                _num_filters++;
-            }
-        }
-    }
     if (_num_filters > 0) {
         _filters = new NotchFilter<T>[_num_filters];
         if (_filters == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for HarmonicNotchFilter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
             _num_filters = 0;
         }
-
     }
-    _harmonics = harmonics;
 }
 
 /*
@@ -216,9 +209,18 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     const float nyquist_limit = _sample_freq_hz * 0.48f;
 
     _num_enabled_filters = 0;
+
     // update all of the filters using the new center frequencies and existing A & Q
-    for (uint8_t i = 0; i < HNF_MAX_HARMONICS && i < num_centers && _num_enabled_filters < _num_filters; i++) {
-        const float notch_center = constrain_float(center_freq_hz[i], 1.0f, nyquist_limit);
+    for (uint8_t i = 0; i < num_centers * HNF_MAX_HARMONICS && _num_enabled_filters < _num_filters; i++) {
+        const uint8_t harmonic_n = i / num_centers;
+        const uint8_t center_n = i % num_centers;
+        // the filters are ordered by center and then harmonic so
+        // f1h1, f2h1, f3h1, f4h1, f1h2, f2h2, etc
+        if (!((1U<<harmonic_n) & _harmonics)) {
+            continue;
+        }
+
+        const float notch_center = constrain_float(center_freq_hz[center_n] * (harmonic_n+1), 1.0f, nyquist_limit);
         if (!_double_notch) {
             // only enable the filter if its center frequency is below the nyquist frequency
             if (notch_center < nyquist_limit) {
