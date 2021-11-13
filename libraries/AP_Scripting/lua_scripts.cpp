@@ -205,6 +205,9 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         }
         reschedule_script(script);
 
+        if ((_debug_options.get() & uint8_t(DebugLevel::SUPPRESS_SCRIPT_LOG)) == 0) {
+            AP::logger().log_file_content(filename);
+        }
     }
     AP::FS().closedir(d);
 }
@@ -463,6 +466,8 @@ void lua_scripts::run(void) {
             if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
+            // copy name for logging, cant do it after as script reschedule moves the pointers
+            const char * script_name = scripts->name;
 
             const int startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
@@ -477,6 +482,24 @@ void lua_scripts::run(void) {
                                                     (int)endMem,
                                                     (int)(endMem - startMem));
             }
+            if ((_debug_options.get() & uint8_t(DebugLevel::LOG_RUNTIME)) != 0) {
+                struct log_Scripting pkt{
+                    LOG_PACKET_HEADER_INIT(LOG_SCRIPTING_MSG),
+                    time_us      : AP_HAL::micros64(),
+                    name         : {},
+                    run_time     : runEnd - loadEnd,
+                    total_mem    : endMem,
+                    run_mem      : endMem - startMem,
+                };
+                const char * name_short = strrchr(script_name, '/');
+                if ((strlen(script_name) > sizeof(pkt.name)) && (name_short != nullptr)) {
+                    strncpy_noterm(pkt.name, name_short+1, sizeof(pkt.name));
+                } else {
+                    strncpy_noterm(pkt.name, script_name, sizeof(pkt.name));
+                }
+                AP::logger().WriteBlock(&pkt, sizeof(pkt));
+            }
+
 
             // garbage collect after each script, this shouldn't matter, but seems to resolve a memory leak
             lua_gc(L, LUA_GCCOLLECT, 0);

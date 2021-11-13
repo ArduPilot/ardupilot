@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Param: DEBUG_OPTS
     // @DisplayName: Scripting Debug Level
     // @Description: Debugging options
-    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time
+    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
