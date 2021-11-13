@@ -421,6 +421,33 @@ void Tailsitter::output(void)
     bool pitch_lim = fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) >= SERVO_MAX;
     bool yaw_lim = fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) >= SERVO_MAX;
 
+    // Mix elevons and V-tail, always giving full priority to pitch
+    float elevator_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (100.0 - plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
+    float aileron_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * (100.0 + plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
+    float rudder_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * (100.0 + plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
+
+    const float headroom = SERVO_MAX - fabsf(elevator_mix);
+    if (is_positive(headroom)) {
+        if (fabsf(aileron_mix) > headroom) {
+            aileron_mix *= headroom / fabsf(aileron_mix);
+            yaw_lim = true;
+        }
+        if (fabsf(rudder_mix) > headroom) {
+            rudder_mix *= headroom / fabsf(rudder_mix);
+            roll_lim = true;
+        }
+    } else {
+        aileron_mix = 0.0;
+        rudder_mix = 0.0;
+        roll_lim = true;
+        pitch_lim = true;
+        yaw_lim = true;
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, elevator_mix - aileron_mix);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, elevator_mix + aileron_mix);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_vtail_right, elevator_mix - rudder_mix);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_vtail_left, elevator_mix + rudder_mix);
+
     if (roll_lim) {
         motors->limit.roll = true;
     }
@@ -680,7 +707,6 @@ void Tailsitter::speed_scaling(void)
         } else {
             v *= spd_scaler;
         }
-        v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
