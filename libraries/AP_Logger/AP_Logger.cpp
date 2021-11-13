@@ -891,6 +891,13 @@ void AP_Logger::Write_Rally()
 }
 #endif
 
+#if HAL_LOGGER_FENCE_ENABLED
+void AP_Logger::Write_Fence()
+{
+    FOR_EACH_BACKEND(Write_Fence());
+}
+#endif
+
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
