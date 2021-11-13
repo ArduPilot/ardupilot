@@ -74,6 +74,25 @@ private:
     Stage stage = Stage::WRITE_NEW_RALLY_MESSAGE;
 };
 
+#if HAL_LOGGER_FENCE_ENABLED
+class LoggerMessageWriter_Write_Polyfence : public LoggerMessageWriter {
+public:
+
+    void reset() override;
+    void process() override;
+
+private:
+    enum Stage {
+        WRITE_NEW_FENCE_MESSAGE = 0,
+        WRITE_FENCE_ITEMS,
+        DONE
+    };
+
+    uint16_t _fence_number_to_send;
+    Stage stage;
+};
+#endif // HAL_LOGGER_FENCE_ENABLED
+
 class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
     LoggerMessageWriter_DFLogStart() :
@@ -83,6 +102,9 @@ public:
 #endif
 #if HAL_RALLY_ENABLED
         , _writeallrallypoints()
+#endif
+#if HAL_LOGGER_FENCE_ENABLED
+        , _writeallpolyfence()
 #endif
         {
         }
@@ -95,6 +117,9 @@ public:
 #endif
 #if HAL_RALLY_ENABLED
         _writeallrallypoints.set_logger_backend(backend);
+#endif
+#if HAL_LOGGER_FENCE_ENABLED
+        _writeallpolyfence.set_logger_backend(backend);
 #endif
     }
 
@@ -112,6 +137,9 @@ public:
 #endif
 #if HAL_RALLY_ENABLED
     bool writeallrallypoints();
+#endif
+#if HAL_LOGGER_FENCE_ENABLED
+    bool writeallfence();
 #endif
 
 private:
@@ -150,5 +178,8 @@ private:
 #endif
 #if HAL_RALLY_ENABLED
     LoggerMessageWriter_WriteAllRallyPoints _writeallrallypoints;
+#endif
+#if HAL_LOGGER_FENCE_ENABLED
+    LoggerMessageWriter_Write_Polyfence _writeallpolyfence;
 #endif
 };
