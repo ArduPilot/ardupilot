@@ -39,7 +39,7 @@ public:
 
 class DSPTest : public AP_HAL::DSP {
 public:
-    virtual FFTWindowState* fft_init(uint16_t w, uint16_t sample_rate, uint8_t harmonics) override { return nullptr; }
+    virtual FFTWindowState* fft_init(uint16_t w, uint16_t sample_rate) override { return nullptr; }
     virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) override {}
     virtual uint16_t fft_analyse(FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff) override { return 0; }
 protected:
@@ -65,7 +65,7 @@ void setup()
     hal.console->printf("DSP test\n");
     board_config.init();   
     serial_manager.init();
-    fft = hal.dsp->fft_init(WINDOW_SIZE, SAMPLE_RATE, 3);
+    fft = hal.dsp->fft_init(WINDOW_SIZE, SAMPLE_RATE);
     attenuation_cutoff = powf(10.0f, -attenuation_power_db / 10.0f);
 
     for(uint16_t i = 0; i < WINDOW_SIZE; i++) {

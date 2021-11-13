@@ -28,11 +28,10 @@ extern const AP_HAL::HAL &hal;
 #define SQRT_2_3 0.816496580927726f
 #define SQRT_6   2.449489742783178f
 
-DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics)
+DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate)
     : _window_size(window_size),
     _bin_count(window_size / 2),
-    _bin_resolution((float)sample_rate / (float)window_size),
-    _harmonics(harmonics)
+    _bin_resolution((float)sample_rate / (float)window_size)
 {
     // includes DC ad Nyquist components and needs to be large enough for intermediate steps
     _freq_bins = (float*)hal.util->malloc_type(sizeof(float) * (window_size), DSP_MEM_REGION);
