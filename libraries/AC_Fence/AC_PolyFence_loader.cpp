@@ -12,6 +12,7 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <stdio.h>
 
@@ -1179,6 +1180,9 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     }
     gcs().send_text(MAV_SEVERITY_DEBUG, "Fence Indexed OK");
 #endif
+
+    // start logger logging new fence
+    AP::logger().Write_Fence();
 
     void_index();
 
