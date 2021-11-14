@@ -10,7 +10,7 @@
 #include <AP_HAL_ChibiOS/sdcard.h>
 #endif
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
+#define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
 /*
   2nd group of parameters
@@ -230,33 +230,54 @@ void AP_Vehicle::fast_loop()
 }
 
 /*
-  common scheduler table for fast CPUs - all common vehicle tasks
-  should be listed here, along with how often they should be called (in hz)
-  and the maximum time they are expected to take (in microseconds)
+  scheduler table - all regular tasks apart from the fast_loop()
+  should be listed here.
+
+  All entries in this table must be ordered by priority.
+
+  This table is interleaved with the table presnet in each of the
+  vehicles to determine the order in which tasks are run.  Convenience
+  methods SCHED_TASK and SCHED_TASK_CLASS are provided to build
+  entries in this structure:
+
+SCHED_TASK arguments:
+ - name of static function to call
+ - rate (in Hertz) at which the function should be called
+ - expected time (in MicroSeconds) that the function should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
+SCHED_TASK_CLASS arguments:
+ - class name of method to be called
+ - instance on which to call the method
+ - method to call on that instance
+ - rate (in Hertz) at which the method should be called
+ - expected time (in MicroSeconds) that the method should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
  */
 const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
+    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
 #if HAL_GYROFFT_ENABLED
-    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
-    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
-    SCHED_TASK(update_dynamic_notch,             LOOP_RATE,    200),
-    SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
-    SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
+    SCHED_TASK(update_dynamic_notch,             LOOP_RATE,    200, 215),
+    SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
+    SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
-    SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                   10,  50),
+    SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                   10,  50, 230),
 #endif
 #if HAL_GENERATOR_ENABLED
-    SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50),
+    SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),
 #endif
 #if OSD_ENABLED
-    SCHED_TASK(publish_osd_info, 1, 10),
+    SCHED_TASK(publish_osd_info, 1, 10, 240),
 #endif
-    SCHED_TASK(accel_cal_update,      10,    100),
+    SCHED_TASK(accel_cal_update,      10,    100, 245),
 #if HAL_EFI_ENABLED
-    SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   10, 200),
+    SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   10, 200, 250),
 #endif
 };
 
