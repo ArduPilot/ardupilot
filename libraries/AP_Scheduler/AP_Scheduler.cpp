@@ -107,16 +107,17 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     }
     _last_loop_time_s = 1.0 / _loop_rate_hz;
 
+    _vehicle_tasks = tasks;
+    _num_vehicle_tasks = num_tasks;
+
     AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
-        vehicle->get_common_scheduler_tasks(_common_tasks, _num_tasks);
+        vehicle->get_common_scheduler_tasks(_common_tasks, _num_common_tasks);
     }
-    _num_tasks += num_tasks;
-    _tasks = tasks;
-    _num_unshared_tasks = num_tasks;
 
-    _last_run = new uint16_t[_num_tasks];
-    memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
+    _num_tasks = _num_vehicle_tasks + _num_common_tasks;
+
+   _last_run = new uint16_t[_num_tasks];
     _tick_counter = 0;
 
     // setup initial performance counters
@@ -128,6 +129,25 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     }
 
     _log_performance_bit = log_performance_bit;
+
+    // sanity check the task lists to ensure the priorities are
+    // never decrease
+    uint8_t old = 0;
+    for (uint8_t i=0; i<_num_common_tasks; i++) {
+        if (_common_tasks[i].priority < old){
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+        old = _common_tasks[i].priority;
+    }
+    old = 0;
+    for (uint8_t i=0; i<_num_vehicle_tasks; i++) {
+        if (_vehicle_tasks[i].priority < old) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+        old = _vehicle_tasks[i].priority;
+    }
 }
 
 // one tick has passed
@@ -157,8 +177,40 @@ void AP_Scheduler::run(uint32_t time_available)
     uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;
 
+    uint8_t vehicle_tasks_offset = 0;
+    uint8_t common_tasks_offset = 0;
+
     for (uint8_t i=0; i<_num_tasks; i++) {
-        const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
+        // determine which of the common task / vehicle task to run
+        bool run_vehicle_task = false;
+        if (vehicle_tasks_offset < _num_vehicle_tasks &&
+            common_tasks_offset < _num_common_tasks) {
+            // still have entries on both lists; compare the
+            // priorities.  In case of a tie the vehicle-specific
+            // entry wins.
+            const Task &vehicle_task = _vehicle_tasks[vehicle_tasks_offset];
+            const Task &common_task = _common_tasks[common_tasks_offset];
+            if (vehicle_task.priority <= common_task.priority) {
+                run_vehicle_task = true;
+            }
+        } else if (vehicle_tasks_offset < _num_vehicle_tasks) {
+            // out of common tasks to run
+            run_vehicle_task = true;
+        } else if (common_tasks_offset < _num_common_tasks) {
+            // out of vehicle tasks to run
+            run_vehicle_task = false;
+        } else {
+            // this is an error; the outside loop should have terminated
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+        }
+
+        const AP_Scheduler::Task &task = run_vehicle_task ? _vehicle_tasks[vehicle_tasks_offset] : _common_tasks[common_tasks_offset];
+        if (run_vehicle_task) {
+            vehicle_tasks_offset++;
+        } else {
+            common_tasks_offset++;
+        }
 
         const uint16_t dt = _tick_counter - _last_run[i];
         // we allow 0 to mean loop rate
@@ -417,9 +469,54 @@ void AP_Scheduler::task_info(ExpandingString &str)
         }
     }
 
+    uint8_t vehicle_tasks_offset = 0;
+    uint8_t common_tasks_offset = 0;
+
     for (uint8_t i = 0; i < _num_tasks + 1; i++) {
-        const char* task_name = (i < _num_unshared_tasks) ? _tasks[i].name : i == _num_tasks ? "fast_loop" : _common_tasks[i - _num_unshared_tasks].name;
-        const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
+        const AP::PerfInfo::TaskInfo* ti;
+        const char *task_name;
+        if (i == 0) {
+            // put the fast-loop entry at the top of the list - it's the last task in perf_info
+            ti = perf_info.get_task_info(_num_tasks);
+            task_name = "fast_loop";
+        } else {
+            ti = perf_info.get_task_info(i - 1);
+
+            // now find the task name:
+
+            // determine which of the common task / vehicle task to run
+            bool run_vehicle_task = false;
+            if (vehicle_tasks_offset < _num_vehicle_tasks &&
+                common_tasks_offset < _num_common_tasks) {
+                // still have entries on both lists; compare the
+                // priorities.  In case of a tie the vehicle-specific
+                // entry wins.
+                const Task &vehicle_task = _vehicle_tasks[vehicle_tasks_offset];
+                const Task &common_task = _common_tasks[common_tasks_offset];
+                if (vehicle_task.priority <= common_task.priority) {
+                    run_vehicle_task = true;
+                }
+            } else if (vehicle_tasks_offset < _num_vehicle_tasks) {
+                // out of common tasks to run
+                run_vehicle_task = true;
+            } else if (common_tasks_offset < _num_common_tasks) {
+                // out of vehicle tasks to run
+                run_vehicle_task = false;
+            } else {
+                // this is an error; the outside loop should have terminated
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return;
+            }
+
+            if (run_vehicle_task) {
+                task_name = _vehicle_tasks[vehicle_tasks_offset++].name;
+            } else {
+                task_name = _common_tasks[common_tasks_offset++].name;
+            }
+            // the loop counter i is adjusted here because we emit the
+            // fast-loop entry first but it appears last in the
+            // perf_info list
+        }
 
         uint16_t avg = 0;
         float pct = 0.0f;
