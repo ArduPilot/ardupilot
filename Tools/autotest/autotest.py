@@ -217,7 +217,8 @@ def all_vehicles():
             'ArduCopter',
             'Rover',
             'AntennaTracker',
-            'ArduSub')
+            'ArduSub',
+            'Blimp')
 
 
 def build_parameters():
@@ -314,6 +315,7 @@ __bin_names = {
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
+    "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
@@ -452,6 +454,9 @@ def run_step(step):
 
     if step == 'build.Copter':
         vehicle_binary = 'bin/arducopter'
+
+    if step == 'build.Blimp':
+        vehicle_binary = 'bin/blimp'
 
     if step == 'build.Tracker':
         vehicle_binary = 'bin/antennatracker'
@@ -1068,6 +1073,9 @@ if __name__ == "__main__":
         'build.Sub',
         'defaults.Sub',
         'test.Sub',
+
+        'build.Blimp',
+        'defaults.Blimp',
 
         'build.SITLPeriphGPS',
         'test.CAN',
