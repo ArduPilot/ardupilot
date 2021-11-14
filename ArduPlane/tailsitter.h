@@ -16,6 +16,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
+#include <AP_Motors/AP_MotorsTailsitter.h>
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -105,6 +106,9 @@ public:
     AP_Float VTOL_roll_scale;
     AP_Float VTOL_pitch_scale;
     AP_Float VTOL_yaw_scale;
+    AP_Float disk_loading_min_outflow;
+
+    AP_MotorsTailsitter* tailsitter_motors;
 
 private:
 

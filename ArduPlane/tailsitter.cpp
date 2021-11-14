@@ -159,6 +159,12 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Range: 0 2
     AP_GROUPINFO("VT_Y_P", 21, Tailsitter, VTOL_yaw_scale, 1),
 
+    // @Param: MIN_VO
+    // @DisplayName: Tailsitter Disk loading minimum outflow speed
+    // @Description: Use in conjunction with disk therory gain scaling and Q_TAILSIT_DSKLD to specify minumum airspeed over control surfaces, this will be used to boost throttle, when decending for example, 0 disables
+    // @Range: 0 15
+    AP_GROUPINFO("MIN_VO", 22, Tailsitter, disk_loading_min_outflow, 0),
+
     AP_GROUPEND
 };
 
@@ -388,6 +394,8 @@ void Tailsitter::output(void)
     if (hal.util->get_soft_armed()) {
         // scale surfaces for throttle
         speed_scaling();
+    } else if (tailsitter_motors != nullptr) {
+        tailsitter_motors->set_min_throttle(0.0);
     }
 
     tilt_left = 0.0f;
@@ -584,8 +592,9 @@ int8_t Tailsitter::get_transition_angle_vtol() const
 void Tailsitter::speed_scaling(void)
 {
     const float hover_throttle = motors->get_throttle_hover();
-    const float throttle = motors->get_throttle();
+    const float throttle = motors->get_throttle_out();
     float spd_scaler = 1.0f;
+    float disk_loading_min_throttle = 0.0;
 
     // Scaleing with throttle
     float throttle_scaler = throttle_scale_max;
@@ -679,6 +688,24 @@ void Tailsitter::speed_scaling(void)
             if (is_positive(sq_outflow)) {
                 spd_scaler = constrain_float(sq_hover_outflow / sq_outflow, gain_scaling_min.get(), throttle_scale_max.get());
             }
+
+            if (is_positive(disk_loading_min_outflow)) {
+                // calculate throttle required to give minimum outflow speed over control surfaces
+                if (is_positive(airspeed)) {
+                    disk_loading_min_throttle = (((sq(disk_loading_min_outflow) - sq(airspeed)) * (0.5 * rho)) / (disk_loading.get() * GRAVITY_MSS)) * hover_throttle;
+                } else {
+                    // estimate backwards airspeed
+                    float reverse_airspeed = 0.0;
+                    Vector3f vel;
+                    if (quadplane.ahrs.get_velocity_NED(vel)) {
+                        reverse_airspeed = quadplane.ahrs.earth_to_body(vel - quadplane.ahrs.wind_estimate()).x;
+                    }
+                    // make sure actually negative
+                    reverse_airspeed = MIN(reverse_airspeed, 0.0);
+                    disk_loading_min_throttle = (((sq(disk_loading_min_outflow) + sq(reverse_airspeed)) * (0.5 * rho)) / (disk_loading.get() * GRAVITY_MSS)) * hover_throttle;
+                }
+                disk_loading_min_throttle = MAX(disk_loading_min_throttle, 0.0);
+            }
         }
 
     } else if ((gain_scaling_mask & TAILSITTER_GSCL_THROTTLE) != 0) {
@@ -708,6 +735,10 @@ void Tailsitter::speed_scaling(void)
             v *= spd_scaler;
         }
         SRV_Channels::set_output_scaled(functions[i], v);
+    }
+
+    if (tailsitter_motors != nullptr) {
+        tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
 }
 
