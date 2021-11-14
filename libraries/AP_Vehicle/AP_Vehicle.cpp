@@ -224,7 +224,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
-    SCHED_TASK(update_dynamic_notch,             LOOP_RATE,    200),
+    SCHED_TASK(update_dynamic_notch_at_specified_rate,             LOOP_RATE,    200),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 #if HAL_WITH_ESC_TELEM
