@@ -92,7 +92,7 @@ DEF DEF_VEHICLE Robot {
       name "inertial_unit"
     }
     Transform {
-      translation -0.1 0 0
+      translation -0.2 0 0
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
@@ -160,7 +160,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0.01 0.1
+      translation 0 0 0.2
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
@@ -227,7 +227,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0.09999999999999999 0 0
+      translation 0.2 0 0
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
@@ -294,7 +294,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0 -0.09999999999999999
+      translation 0 0 -0.2
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
@@ -383,7 +383,7 @@ DEF DEF_VEHICLE Robot {
   customData "1"
 }
 DEF DEF_VEHICLE Robot {
-  translation -2.21265 0.694307 2.19001
+  translation -2.21265 0.904307 2.19001
   rotation 0 1 0 0.785388
   children [
     Emitter {
@@ -427,7 +427,7 @@ DEF DEF_VEHICLE Robot {
       name "inertial_unit"
     }
     Transform {
-      translation -0.1 0 0
+      translation -0.2 0 0
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
@@ -495,7 +495,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0.01 0.1
+      translation 0 0 0.2
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
@@ -562,7 +562,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0.09999999999999999 0 0
+      translation 0.2 0 0
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
@@ -629,7 +629,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0 -0.09999999999999999
+      translation 0 0 -0.2
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {

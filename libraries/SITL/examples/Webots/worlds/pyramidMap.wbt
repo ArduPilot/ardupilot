@@ -14,8 +14,8 @@ WorldInfo {
   randomSeed 52
 }
 Viewpoint {
-  orientation 0.9105337223064622 0.3972882470335872 0.11441323923269492 5.670531893452289
-  position -81.01261461993163 254.55784447899657 285.7682724220764
+  orientation 0.8382771255106711 0.49551794864617704 0.2274937876405669 5.281073186765893
+  position -3.115785721141444 8.10790622845529 5.55883340805579
   near 3
   follow "quad_x_sitl"
   followType "Mounted Shot"
@@ -65,7 +65,7 @@ DEF DEF_VEHICLE Robot {
       name "inertial_unit"
     }
     Transform {
-      translation -0.1 0 0
+      translation -0.2 0 0
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
@@ -133,7 +133,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0.01 0.1
+      translation 0 0 0.2
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
@@ -200,7 +200,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0.09999999999999999 0 0
+      translation 0.2 0 0
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
@@ -267,7 +267,7 @@ DEF DEF_VEHICLE Robot {
       ]
     }
     Transform {
-      translation 0 0 -0.09999999999999999
+      translation 0 0 -0.2
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
