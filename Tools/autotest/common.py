@@ -24,6 +24,7 @@ import numpy
 import socket
 import struct
 import random
+import tempfile
 import threading
 import enum
 
@@ -10926,6 +10927,30 @@ switch value'''
         m = self.assert_receive_message("GPS2_RAW")
         if abs(new_gpi_alt2 - m.alt) > 100:
             raise NotAchievedException("Failover not detected")
+
+    def fetch_file_via_ftp(self, path):
+        '''returns the content of the FTP'able file at path'''
+        mavproxy = self.start_mavproxy()
+        ex = None
+        tmpfile = tempfile.NamedTemporaryFile(mode='r', delete=False)
+        try:
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+            mavproxy.expect("Getting")
+            self.delay_sim_time(2)
+            mavproxy.send("ftp status\n")
+            mavproxy.expect("No transfer in progress")
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is not None:
+            raise ex
+
+        return tmpfile.read()
 
     def MAVFTP(self):
         '''ensure MAVProxy can do MAVFTP to ardupilot'''
