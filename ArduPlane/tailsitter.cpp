@@ -220,6 +220,10 @@ void Tailsitter::setup()
                     (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
                      SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
 
+    _have_elevator = SRV_Channels::function_assigned(SRV_Channel::k_elevator);
+    _have_aileron = SRV_Channels::function_assigned(SRV_Channel::k_aileron);
+    _have_rudder = SRV_Channels::function_assigned(SRV_Channel::k_rudder);
+
     // set defaults for dual/single motor tailsitter
     if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
         AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
@@ -425,9 +429,9 @@ void Tailsitter::output(void)
 
     // Check for saturated limits
     bool tilt_lim = _is_vectored && ((fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) >= SERVO_MAX) || (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) >= SERVO_MAX));
-    bool roll_lim = fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) >= SERVO_MAX;
-    bool pitch_lim = fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) >= SERVO_MAX;
-    bool yaw_lim = fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) >= SERVO_MAX;
+    bool roll_lim = _have_rudder && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) >= SERVO_MAX);
+    bool pitch_lim = _have_elevator && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) >= SERVO_MAX);
+    bool yaw_lim = _have_aileron && (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) >= SERVO_MAX);
 
     // Mix elevons and V-tail, always giving full priority to pitch
     float elevator_mix = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (100.0 - plane.g.mixing_offset) * 0.01 * plane.g.mixing_gain;
