@@ -21,44 +21,64 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros)
+#define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros, priority)
 
 /*
-  scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called (in hz)
-  and the maximum time they are expected to take (in microseconds)
+  scheduler table - all regular tasks apart from the fast_loop()
+  should be listed here.
+
+  All entries in this table must be ordered by priority.
+
+  This table is interleaved with the table in AP_Vehicle to determine
+  the order in which tasks are run.  Convenience methods SCHED_TASK
+  and SCHED_TASK_CLASS are provided to build entries in this structure:
+
+SCHED_TASK arguments:
+ - name of static function to call
+ - rate (in Hertz) at which the function should be called
+ - expected time (in MicroSeconds) that the function should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
+SCHED_TASK_CLASS arguments:
+ - class name of method to be called
+ - instance on which to call the method
+ - method to call on that instance
+ - rate (in Hertz) at which the method should be called
+ - expected time (in MicroSeconds) that the method should take to run
+ - priority (0 through 255, lower number meaning higher priority)
+
  */
 const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,              100,    130),
-    SCHED_TASK(throttle_loop,         50,     75),
-    SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200),
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50),
-    SCHED_TASK(arm_motors_check,      10,     50),
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(three_hz_loop,          3,     75),
-    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75),
-    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,           accumulate,      50,  90),
+    SCHED_TASK(rc_loop,              100,    130,   3),
+    SCHED_TASK(throttle_loop,         50,     75,   6),
+    SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
+    SCHED_TASK(update_batt_compass,   10,    120,  12),
+    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
+    SCHED_TASK(arm_motors_check,      10,     50,  18),
+    SCHED_TASK(update_altitude,       10,    100,  21),
+    SCHED_TASK(three_hz_loop,          3,     75,  24),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75,  27),
+    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,             accumulate,    50,     90,  30),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(full_rate_logging,     50,    50),
+    SCHED_TASK(full_rate_logging,     50,    50,  33),
 #endif
-    SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90),
-    SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
-    SCHED_TASK(check_vibration,       10,     50),
-    SCHED_TASK(gpsglitch_check,       10,     50),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550),
+    SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90,  36),
+    SCHED_TASK(one_hz_loop,            1,    100,  39),
+    SCHED_TASK(ekf_check,             10,     75,  42),
+    SCHED_TASK(check_vibration,       10,     50,  45),
+    SCHED_TASK(gpsglitch_check,       10,     50,  48),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180,  51),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550,  54),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300),
+    SCHED_TASK(ten_hz_logging_loop,   10,    350,  57),
+    SCHED_TASK(twentyfive_hz_logging, 25,    110,  60),
+    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300,  63),
 #endif
-    SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50),
-    SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75),
-    SCHED_TASK_CLASS(Compass,              &blimp.compass,             cal_update,     100, 100),
+    SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50,  66),
+    SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75,  69),
+    SCHED_TASK_CLASS(Compass,              &blimp.compass,             cal_update,     100, 100,  72),
 #if STATS_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100),
+    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100,  75),
 #endif
 };
 
